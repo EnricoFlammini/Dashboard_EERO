@@ -243,13 +243,20 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     startPolling() {
       if (this.pollingTimer) clearInterval(this.pollingTimer);
-      // Polling rapido live metrics ogni 10s
+      // Polling rapido metriche live ogni 3s (YouTube, streaming video, download)
+      let count = 0;
       this.pollingTimer = setInterval(async () => {
         if (this.isAuthenticated) {
           await this.fetchRealtimeMetrics();
-          await this.fetchOverview();
+          count++;
+          if (count % 3 === 0) {
+            await this.fetchOverview();
+            if (this.currentTab === 'devices') {
+              await this.fetchDevices();
+            }
+          }
         }
-      }, 10000);
+      }, 3000);
     },
 
     isRefreshing: false,
