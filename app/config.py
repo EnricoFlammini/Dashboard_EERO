@@ -21,6 +21,10 @@ try:
         # Demo Mode
         demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
         
+        # Permanent eero Authentication Token (Optional)
+        eero_user_token: str = os.getenv("EERO_USER_TOKEN", "")
+        eero_network_id: str = os.getenv("EERO_NETWORK_ID", "")
+
         # Notifications
         telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
         telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")

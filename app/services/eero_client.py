@@ -29,7 +29,16 @@ class EeroClient:
         self._demo_state = self._init_demo_state()
 
     def load_session(self):
-        """Carica il token di sessione e ID di rete dal file session.json."""
+        """Carica il token di sessione e ID di rete dal file session.json o da .env."""
+        # 1. Priorità al token permanente impostato in .env
+        if settings.eero_user_token:
+            self.user_token = settings.eero_user_token.strip()
+            if settings.eero_network_id:
+                self.current_network_id = settings.eero_network_id.strip()
+            logger.info("Loaded eero session token permanently from environment variable (.env).")
+            return
+
+        # 2. Caricamento dal file di sessione persistente nel volume ./data
         try:
             if self.session_path.exists():
                 with open(self.session_path, "r", encoding="utf-8") as f:
