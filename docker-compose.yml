@@ -13,6 +13,7 @@ services:
       - "${HOST_PORT:-8085}:8000"
     volumes:
       - ./data:/app/data
+    environment:
       - TZ=${TZ:-Europe/Rome}
       - DATA_DIR=/app/data
       - EERO_USER_TOKEN=${EERO_USER_TOKEN:-}
