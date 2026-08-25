@@ -1,0 +1,26 @@
+services:
+  eero-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eero_custom_dashboard
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8085}:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATA_DIR=/app/data
+      - POLL_INTERVAL=${POLL_INTERVAL:-30}
+      - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-30}
+      - SPEEDTEST_INTERVAL_HOURS=${SPEEDTEST_INTERVAL_HOURS:-12}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

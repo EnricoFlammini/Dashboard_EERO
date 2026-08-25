@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eero Custom Dashboard & Management Suite</title>
+  
+  <!-- Favicon / SVG Icon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12.55a11 11 0 0 1 14.08 0'/><path d='M1.42 9a16 16 0 0 1 21.16 0'/><path d='M8.53 16.11a6 6 0 0 1 6.95 0'/><line x1='12' y1='20' x2='12.01' y2='20'/></svg>">
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e',
+            },
+            dark: {
+              900: '#0b0f17',
+              800: '#111827',
+              700: '#1e293b',
+              600: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+
+  <!-- Chart.js CDN & Alpine.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- App Logic -->
+  <script src="/static/js/app.js"></script>
+</head>
+<body class="bg-[#0b0f17] text-slate-100 min-h-screen antialiased flex flex-col" x-data="eeroApp">
+
+  <!-- ===================================================================== -->
+  <!-- TOP APP BAR -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-[#111827]/80 backdrop-blur-xl border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">eero <span class="text-sky-400 font-medium">Dashboard</span></h1>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">v1.0 Pro</span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium" x-text="network.name || 'Infrastruttura Mesh'"></p>
+        </div>
+      </div>
+
+      <!-- Center Indicators: WAN & Health -->
+      <div class="hidden md:flex items-center space-x-6">
+        <!-- Live WAN Rate -->
+        <div class="flex items-center space-x-3 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
+          <div class="flex items-center text-xs space-x-1.5 text-sky-400 font-mono">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            <span class="font-bold" x-text="realtimeMetrics.current_download_mbps + ' Mbps'"></span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center text-xs space-x-1.5 text-emerald-400 font-mono">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+            <span class="font-bold" x-text="realtimeMetrics.current_upload_mbps + ' Mbps'"></span>
+          </div>
+        </div>
+
+        <!-- Health Score Badge -->
+        <div class="flex items-center space-x-2">
+          <div class="relative w-8 h-8 flex items-center justify-center">
+            <svg class="w-8 h-8 -rotate-90">
+              <circle cx="16" cy="16" r="13" stroke="rgba(255,255,255,0.1)" stroke-width="3" fill="none"></circle>
+              <circle cx="16" cy="16" r="13" :stroke="healthScore > 80 ? '#10b981' : healthScore > 50 ? '#f59e0b' : '#f43f5e'" stroke-width="3" fill="none" :stroke-dasharray="81.68" :stroke-dashoffset="81.68 - (81.68 * healthScore / 100)" stroke-linecap="round"></circle>
+            </svg>
+            <span class="absolute text-[10px] font-bold" x-text="healthScore"></span>
+          </div>
+          <div class="text-left">
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Health Score</div>
+            <div class="text-xs font-bold text-emerald-400" x-show="healthScore >= 90">Ottimale</div>
+            <div class="text-xs font-bold text-amber-400" x-show="healthScore < 90 && healthScore >= 70">Buono</div>
+            <div class="text-xs font-bold text-rose-400" x-show="healthScore < 70">Attenzione</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Actions: Demo mode, Gaming toggle, Context Help, Logout -->
+      <div class="flex items-center space-x-3">
+        
+        <!-- Demo Mode Badge -->
+        <template x-if="isDemoMode">
+          <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span> Demo Mode
+          </span>
+        </template>
+
+        <!-- Focus Mode One-Click Button -->
+        <button 
+          @click="toggleFocusMode()"
+          :class="focusModeActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          title="Gaming / Low Latency Mode (Pausa traffico secondario)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span x-text="focusModeActive ? 'Gaming: ATTIVO' : 'Gaming Mode'"></span>
+        </button>
+
+        <!-- Context Help Trigger -->
+        <button 
+          @click="openContextHelp('intro')"
+          class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-sky-400 transition"
+          title="Guida & Manuale Rapido">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+
+        <!-- Logout / Session -->
+        <template x-if="isAuthenticated">
+          <button 
+            @click="logout()"
+            class="p-2 rounded-lg bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 transition"
+            title="Disconnetti Sessione">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
+        </template>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- NAVIGATION TABS -->
+  <!-- ===================================================================== -->
+  <nav class="bg-[#111827]/50 border-b border-slate-800/80 sticky top-16 z-30 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2.5 no-scrollbar">
+        
+        <button 
+          @click="currentTab = 'overview'"
+          :class="currentTab === 'overview' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          <span>Dashboard & Mesh</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'metrics'"
+          :class="currentTab === 'metrics' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <span>Storico Banda & WAN</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'devices'"
+          :class="currentTab === 'devices' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          <span>Dispositivi (<span x-text="devices.length"></span>)</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'speedtest'"
+          :class="currentTab === 'speedtest' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <span>Speed Test & Qualità</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'automations'"
+          :class="currentTab === 'automations' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+          <span>Controlli & QR Ospiti</span>
+        </button>
+
+        <button 
+          @click="currentTab = 'manual'"
+          :class="currentTab === 'manual' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+          <span>Guida & Manuale</span>
+        </button>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN CONTENT CONTAINER -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: OVERVIEW & MESH TOPOLOGY -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'overview'" class="space-y-6 animate-fade-in">
+      
+      <!-- WAN Status & Summary Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        <!-- WAN Card -->
+        <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Stato Internet WAN</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></span>
+          </div>
+          <div class="text-2xl font-bold text-white tracking-tight" x-text="network.status === 'online' ? 'Online' : 'Offline'"></div>
+          <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
+            <span>IP Pubblico:</span>
+            <span class="text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
+          </div>
+          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || 'Provider Internet'"></div>
+        </div>
+
+        <!-- Gateway Node Card -->
+        <div class="glass-panel rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Gateway Principale</span>
+            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          </div>
+          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || {}).name || 'Gateway Soggiorno'"></div>
+          <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
+            <span>IP LAN:</span>
+            <span class="text-slate-200" x-text="network.gateway_ip || '192.168.4.1'"></span>
+          </div>
+          <div class="mt-1 text-[11px] text-slate-500">DNS: <span x-text="(network.dns_servers || []).join(', ')"></span></div>
+        </div>
+
+        <!-- Connected Clients Count -->
+        <div class="glass-panel rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Client Connessi</span>
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </div>
+          <div class="text-3xl font-extrabold text-white tracking-tight" x-text="realtimeMetrics.connected_clients_count || devices.filter(d=>d.connected).length"></div>
+          <div class="mt-2 text-xs text-slate-400">Dispositivi attivi nella mesh</div>
+        </div>
+
+        <!-- Last Speedtest Preview -->
+        <div class="glass-panel rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ultimo Speed Test</span>
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-sky-400 font-mono" x-text="((network.speedtest || {}).download_mbps || 912.4).toFixed(0)"></span>
+            <span class="text-xs text-slate-400">↓ Mbps</span>
+            <span class="text-slate-600">/</span>
+            <span class="text-lg font-bold text-emerald-400 font-mono" x-text="((network.speedtest || {}).upload_mbps || 298.1).toFixed(0)"></span>
+            <span class="text-xs text-slate-400">↑ Mbps</span>
+          </div>
+          <div class="mt-2 text-xs text-slate-400">Ping: <span class="text-amber-400 font-semibold" x-text="((network.speedtest || {}).ping_ms || 9.2) + ' ms'"></span></div>
+        </div>
+
+      </div>
+
+      <!-- Quick Actions Header & Topology -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+        <div class="flex items-center space-x-2">
+          <h2 class="text-lg font-bold text-white">Topologia Nodi Mesh eero (<span x-text="eeros.length"></span>)</h2>
+          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-500 hover:text-sky-400" title="Informazioni sui Nodi Mesh">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </button>
+        </div>
+        
+        <!-- Global Actions -->
+        <div class="flex items-center space-x-3">
+          <button 
+            @click="toggleAllLeds(false)"
+            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition">
+            Spegni Tutti i LED
+          </button>
+          <button 
+            @click="toggleAllLeds(true)"
+            class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-400 border border-slate-700 transition">
+            Accendi Tutti i LED
+          </button>
+          <button 
+            @click="rebootNetwork()"
+            class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-xs font-semibold text-rose-400 border border-rose-500/30 transition flex items-center space-x-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>Riavvia Rete</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mesh Nodes Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <template x-for="eero in eeros" :key="eero.id || eero.serial">
+          <div class="glass-panel rounded-2xl p-5 border border-slate-800 hover-glow transition-all flex flex-col justify-between">
+            <div>
+              <!-- Node Header -->
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full" :class="eero.status === 'online' ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+                    <h3 class="font-bold text-white text-base" x-text="eero.name"></h3>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-0.5" x-text="eero.model"></p>
+                </div>
+                <template x-if="eero.is_gateway">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30 uppercase tracking-wider">Gateway</span>
+                </template>
+              </div>
+
+              <!-- Node Specs & Info -->
+              <div class="mt-4 space-y-2 border-t border-b border-slate-800/80 py-3 text-xs">
+                <div class="flex justify-between text-slate-400">
+                  <span>Indirizzo IP:</span>
+                  <span class="font-mono text-slate-200" x-text="eero.ip"></span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>Backhaul:</span>
+                  <span class="font-semibold text-emerald-400" x-text="eero.backhaul_type || 'Ethernet'"></span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>Client Connessi:</span>
+                  <span class="font-bold text-white" x-text="(devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || eero.connected_clients_count || 0"></span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>Temperatura / Uptime:</span>
+                  <span class="text-slate-300" x-text="(eero.temperature || '39°C') + ' • ' + (eero.uptime || '15gg')"></span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                  <span>Firmware OS:</span>
+                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Node Controls -->
+            <div class="mt-4 flex items-center justify-between pt-2">
+              <button 
+                @click="toggleEeroLed(eero)"
+                :class="eero.led_on ? 'bg-sky-500/20 text-sky-400 border-sky-500/40' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center space-x-1.5 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                <span x-text="eero.led_on ? 'LED Acceso' : 'LED Spento'"></span>
+              </button>
+
+              <button 
+                @click="rebootEero(eero)"
+                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-xs font-semibold text-slate-400 hover:text-rose-400 border border-slate-700 transition flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span>Riavvia</span>
+              </button>
+            </div>
+
+          </div>
+        </template>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: BANDWIDTH HISTORIAN & METRICS -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'metrics'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- WAN Traffic Chart Panel -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-lg font-bold text-white">Traffico WAN & Velocità (Download / Upload)</h2>
+              <button @click="openContextHelp('bandwidth-historian')" class="text-slate-500 hover:text-sky-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </button>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Totale dati scambiati nel periodo: <span class="text-sky-400 font-bold font-mono" x-text="wanTotalGb + ' GB'"></span>
+            </p>
+          </div>
+
+          <!-- Time Range Selectors -->
+          <div class="flex items-center space-x-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+            <button 
+              @click="loadWanHistory(24)"
+              :class="selectedWanRange === 24 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+              class="px-3 py-1 rounded-lg text-xs transition">24 Ore</button>
+            <button 
+              @click="loadWanHistory(168)"
+              :class="selectedWanRange === 168 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+              class="px-3 py-1 rounded-lg text-xs transition">7 Giorni</button>
+            <button 
+              @click="loadWanHistory(720)"
+              :class="selectedWanRange === 720 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+              class="px-3 py-1 rounded-lg text-xs transition">30 Giorni</button>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="w-full h-80">
+          <canvas id="wanTrafficChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Bandwidth Hogs Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Top Hogs Horizontal Bar Chart -->
+        <div class="glass-panel rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white">Classifica Top Consumi (Bandwidth Hogs)</h3>
+            <span class="text-xs text-slate-400">Ultimi <span x-text="selectedHogsRange === 24 ? '24h' : selectedHogsRange + 'h'"></span></span>
+          </div>
+          <div class="w-full h-72">
+            <canvas id="topHogsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Top Hogs Detailed Table List -->
+        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white mb-4">Dettaglio Dispositivi a Maggior Consumo</h3>
+            <div class="space-y-3 overflow-y-auto max-h-64 pr-1">
+              <template x-for="(hog, index) in topHogs" :key="hog.mac_address">
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div class="flex items-center space-x-3">
+                    <span class="w-6 h-6 rounded-full bg-slate-800 text-sky-400 font-mono text-xs flex items-center justify-center font-bold" x-text="index + 1"></span>
+                    <div>
+                      <div class="text-sm font-semibold text-white" x-text="hog.display_name"></div>
+                      <div class="text-[11px] font-mono text-slate-500" x-text="hog.mac_address"></div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm font-bold text-sky-400 font-mono" x-text="hog.total_gb + ' GB'"></div>
+                    <div class="text-[10px] text-slate-400 font-mono">↓ <span x-text="hog.rx_gb"></span>GB / ↑ <span x-text="hog.tx_gb"></span>GB</div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: DEVICE MANAGEMENT -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'devices'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Filters and Search Bar -->
+      <div class="glass-panel rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          
+          <!-- Search Input -->
+          <div class="relative w-full md:w-96">
+            <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input 
+              type="text" 
+              x-model="deviceSearchQuery"
+              placeholder="Cerca per Nome, IP, MAC o note..."
+              class="glass-input w-full pl-10 pr-4 py-2 rounded-xl text-sm">
+          </div>
+
+          <!-- Quick Filters: Band, Node, Category -->
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            
+            <!-- Band Filter -->
+            <select x-model="selectedBandFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
+              <option value="all">Tutte le Frequenze</option>
+              <option value="6GHz">Banda 6 GHz</option>
+              <option value="5GHz">Banda 5 GHz</option>
+              <option value="2.4GHz">Banda 2.4 GHz</option>
+              <option value="wired">Cablato (Ethernet)</option>
+            </select>
+
+            <!-- Node Filter -->
+            <select x-model="selectedNodeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
+              <option value="all">Tutti i Nodi Mesh</option>
+              <template x-for="e in eeros" :key="e.id || e.serial">
+                <option :value="e.id" x-text="e.name"></option>
+              </template>
+            </select>
+
+            <!-- Category Filter -->
+            <select x-model="selectedCategoryFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
+              <option value="all">Tutte le Categorie</option>
+              <option value="Computer">Computer & Laptop</option>
+              <option value="Mobile">Smartphone & Tablet</option>
+              <option value="Smart Home">Smart Home & IoT</option>
+              <option value="Intrattenimento">TV & Streaming</option>
+              <option value="Gaming">Console Gaming</option>
+              <option value="Server/Rete">Server & NAS</option>
+            </select>
+
+            <!-- Connected Only Toggle -->
+            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
+              <span>Solo Connessi</span>
+            </label>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Devices Table -->
+      <div class="glass-panel rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 bg-slate-900/80 text-slate-400 uppercase tracking-wider font-semibold">
+                <th class="py-3.5 px-4">Dispositivo / Host</th>
+                <th class="py-3.5 px-4">Indirizzo IP / MAC</th>
+                <th class="py-3.5 px-4">Nodo eero</th>
+                <th class="py-3.5 px-4">Banda / Segnale</th>
+                <th class="py-3.5 px-4">Velocità Live</th>
+                <th class="py-3.5 px-4 text-center">Stato</th>
+                <th class="py-3.5 px-4 text-right">Azioni</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
+                <tr class="hover:bg-slate-800/30 transition-colors">
+                  
+                  <!-- Name & Icon -->
+                  <td class="py-3 px-4">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sky-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                      </div>
+                      <div>
+                        <div class="font-bold text-white text-sm" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                        <div class="text-[11px] text-slate-500" x-text="dev.category || 'Altro'"></div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- IP & MAC -->
+                  <td class="py-3 px-4 font-mono">
+                    <div class="text-slate-200 font-semibold" x-text="dev.ip || '---'"></div>
+                    <div class="text-[10px] text-slate-500" x-text="dev.mac || dev.mac_address"></div>
+                  </td>
+
+                  <!-- Connected eero -->
+                  <td class="py-3 px-4 text-slate-300">
+                    <span class="font-medium" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                  </td>
+
+                  <!-- Band / RSSI -->
+                  <td class="py-3 px-4">
+                    <div class="flex items-center space-x-2">
+                      <span 
+                        class="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
+                        :class="{
+                          'bg-sky-500/20 text-sky-400': dev.wireless_band === '6GHz',
+                          'bg-indigo-500/20 text-indigo-400': dev.wireless_band === '5GHz',
+                          'bg-amber-500/20 text-amber-400': dev.wireless_band === '2.4GHz',
+                          'bg-emerald-500/20 text-emerald-400': dev.connection_type === 'wired'
+                        }"
+                        x-text="dev.connection_type === 'wired' ? 'Ethernet' : (dev.wireless_band || 'Wi-Fi')">
+                      </span>
+                      <template x-if="dev.signal_rssi">
+                        <span class="text-[10px] font-mono text-slate-400" x-text="dev.signal_rssi + ' dBm'"></span>
+                      </template>
+                    </div>
+                  </td>
+
+                  <!-- Live Rate -->
+                  <td class="py-3 px-4 font-mono text-xs">
+                    <div class="text-sky-400">↓ <span x-text="dev.download_rate_mbps || 0"></span> Mbps</div>
+                    <div class="text-emerald-400">↑ <span x-text="dev.upload_rate_mbps || 0"></span> Mbps</div>
+                  </td>
+
+                  <!-- Status (Online/Offline/Paused) -->
+                  <td class="py-3 px-4 text-center">
+                    <template x-if="dev.paused">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">In Pausa</span>
+                    </template>
+                    <template x-if="!dev.paused && dev.connected">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Online</span>
+                    </template>
+                    <template x-if="!dev.paused && !dev.connected">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700">Offline</span>
+                    </template>
+                  </td>
+
+                  <!-- Action Buttons -->
+                  <td class="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+                    <!-- Pause/Unpause -->
+                    <button 
+                      @click="toggleDevicePause(dev)"
+                      :class="dev.paused ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'"
+                      class="p-1.5 rounded-lg transition"
+                      :title="dev.paused ? 'Riabilita Internet' : 'Pausa Connessione'">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </button>
+                    <!-- Detail Modal Trigger -->
+                    <button 
+                      @click="openDeviceModal(dev)"
+                      class="p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
+                      title="Scheda & Metadati Dispositivo">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                  </td>
+
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: SPEED TEST & DIAGNOSTICS -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'speedtest'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Big Gauge & Action Trigger -->
+      <div class="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <div class="max-w-md w-full">
+          
+          <h2 class="text-xl font-bold text-white mb-1">Diagnostica Connessione & Speed Test</h2>
+          <p class="text-xs text-slate-400 mb-6">Misura la banda reale e la latenza della connessione FTTH/eero</p>
+
+          <!-- Action Button / Progress -->
+          <div class="flex flex-col items-center">
+            <button 
+              @click="runSpeedtest()"
+              :disabled="speedtestRunning"
+              class="w-40 h-40 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-lg shadow-2xl shadow-sky-500/30 flex flex-col items-center justify-center space-y-1 transition-transform active:scale-95 disabled:opacity-50">
+              <svg class="w-8 h-8" :class="speedtestRunning ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              <span x-text="speedtestRunning ? 'Misurazione...' : 'AVVIA TEST'"></span>
+            </button>
+
+            <!-- Progress Bar -->
+            <div x-show="speedtestRunning" class="w-full bg-slate-800 rounded-full h-2 mt-6 overflow-hidden">
+              <div class="bg-gradient-to-r from-sky-400 to-emerald-400 h-2 transition-all duration-300" :style="`width: ${speedtestProgress}%`"></div>
+            </div>
+          </div>
+
+          <!-- Latest Result Badge -->
+          <template x-if="lastSpeedtestResult">
+            <div class="mt-8 grid grid-cols-3 gap-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Download</div>
+                <div class="text-lg font-bold text-sky-400 font-mono" x-text="lastSpeedtestResult.download_mbps + ' Mbps'"></div>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Upload</div>
+                <div class="text-lg font-bold text-emerald-400 font-mono" x-text="lastSpeedtestResult.upload_mbps + ' Mbps'"></div>
+              </div>
+              <div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Ping / Latenza</div>
+                <div class="text-lg font-bold text-amber-400 font-mono" x-text="lastSpeedtestResult.ping_ms + ' ms'"></div>
+              </div>
+            </div>
+          </template>
+
+        </div>
+      </div>
+
+      <!-- Historical Speedtest Chart & Stats -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Chart -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
+          <h3 class="text-base font-bold text-white mb-4">Andamento Storico Prestazioni (Mbps & Ping)</h3>
+          <div class="w-full h-72">
+            <canvas id="speedtestHistoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Performance Stats Cards -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <h3 class="text-base font-bold text-white">Statistiche Aggregate</h3>
+          
+          <div class="space-y-3 text-xs">
+            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-400">Velocità Media Download:</span>
+              <span class="font-bold text-sky-400 font-mono" x-text="(speedtestStats.avg_download || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-400">Picco Massimo Download:</span>
+              <span class="font-bold text-sky-300 font-mono" x-text="(speedtestStats.max_download || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-400">Velocità Media Upload:</span>
+              <span class="font-bold text-emerald-400 font-mono" x-text="(speedtestStats.avg_upload || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-400">Ping Medio (Latenza):</span>
+              <span class="font-bold text-amber-400 font-mono" x-text="(speedtestStats.avg_ping || 0) + ' ms'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-slate-400">Totale Test Eseguiti:</span>
+              <span class="font-bold text-white font-mono" x-text="speedtestStats.total_tests || 0"></span>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-500 text-center">
+            Pianificazione automatica attiva ogni 12 ore
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: CONTROLS, QR GUEST, AUTOMATIONS & NOTIFICATIONS -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'automations'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Smart Guest Wi-Fi & Dynamic QR Code -->
+        <div class="glass-panel rounded-2xl p-6 space-y-5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base font-bold text-white">Smart Guest Wi-Fi & QR Code</h3>
+              <button @click="openContextHelp('automations')" class="text-slate-500 hover:text-sky-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </button>
+            </div>
+            <button 
+              @click="toggleGuestNetwork()"
+              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'"
+              class="px-3 py-1 rounded-full text-xs font-bold transition">
+              <span x-text="guestNetwork.enabled ? 'Attiva' : 'Disattivata'"></span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <!-- QR Code Display -->
+            <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <template x-if="guestQrCodeUrl">
+                <img :src="guestQrCodeUrl" alt="WiFi QR Code" class="w-44 h-44 rounded-lg shadow-md border border-slate-700">
+              </template>
+              <template x-if="!guestQrCodeUrl">
+                <div class="w-44 h-44 rounded-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 text-center p-2">
+                  Abilita la rete ospiti per visualizzare il QR Code
+                </div>
+              </template>
+              <span class="text-[11px] text-slate-400 mt-2">Inquadra per connetterti</span>
+            </div>
+
+            <!-- Guest Network Credentials Form -->
+            <div class="space-y-3 text-xs">
+              <div>
+                <label class="block text-slate-400 mb-1">Nome Rete (SSID):</label>
+                <input type="text" x-model="guestNetwork.name" class="glass-input w-full px-3 py-1.5 rounded-lg font-semibold">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Password Rete:</label>
+                <div class="flex space-x-1">
+                  <input type="text" x-model="guestNetwork.password" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400" title="Genera password sicura">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  </button>
+                </div>
+              </div>
+              <button 
+                @click="saveGuestSettings()"
+                class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition">
+                Aggiorna e Salva QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Night Mode LED Scheduler -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">Modalità Notte Automatica (LED)</h3>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="nightMode.enabled" @change="saveNightMode()" class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+            </label>
+          </div>
+          <p class="text-xs text-slate-400">Spegne automaticamente tutti i LED frontali dei nodi mesh a orari prestabiliti per non disturbare il sonno.</p>
+
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Orario Spegnimento:</label>
+              <input type="time" x-model="nightMode.start_time" class="glass-input w-full px-3 py-2 rounded-xl text-sm font-mono">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Orario Riaccensione:</label>
+              <input type="time" x-model="nightMode.end_time" class="glass-input w-full px-3 py-2 rounded-xl text-sm font-mono">
+            </div>
+          </div>
+          <button 
+            @click="saveNightMode()"
+            class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+            Salva Orari Modalità Notte
+          </button>
+        </div>
+
+        <!-- Telegram & Webhook Alert Configuration -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">Notifiche Telegram & Webhook</h3>
+            <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30">
+              Invia Test
+            </button>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">Telegram Bot Token:</label>
+              <input type="password" x-model="notificationSettings.telegram_bot_token" placeholder="123456789:ABCDefGHIjk..." class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Telegram Chat ID:</label>
+              <input type="text" x-model="notificationSettings.telegram_chat_id" placeholder="-100123456789 o ID Utente" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Webhook HTTP URL (Opzionale):</label>
+              <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://tuo-servizio/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+            <button 
+              @click="saveNotificationSettings()"
+              class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition">
+              Salva Canali di Allarme
+            </button>
+          </div>
+        </div>
+
+        <!-- Automated Daily Digest Report -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-white">Report Digest Giornaliero</h3>
+            <p class="text-xs text-slate-400 mt-1">Invia automaticamente alle 21:00 il riepilogo con consumo totale in GB, dispositivo top consumer e stabilità della linea.</p>
+          </div>
+          <button 
+            @click="triggerDigest()"
+            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition">
+            Genera & Invia Digest Ora
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 6: BUILT-IN INTERACTIVE USER MANUAL -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'manual'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Manual Header & Search Bar -->
+      <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Manuale Utente & Guida Interattiva</h2>
+          <p class="text-xs text-slate-400 mt-1">Documentazione integrata per la gestione completa di eero Dashboard</p>
+        </div>
+        <div class="w-full md:w-80">
+          <input 
+            type="text" 
+            x-model="manualSearchQuery" 
+            placeholder="Cerca argomenti nel manuale..."
+            class="glass-input w-full px-4 py-2 rounded-xl text-xs">
+        </div>
+      </div>
+
+      <!-- Manual Content Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Sidebar: Chapter List -->
+        <div class="glass-panel rounded-2xl p-4 space-y-1">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 py-2">Capitoli del Manuale</h3>
+          <div class="space-y-1">
+            <template x-for="section in filteredManualSections" :key="section.id">
+              <button 
+                @click="selectedManualSection = section"
+                :class="selectedManualSection && selectedManualSection.id === section.id ? 'bg-sky-500/15 text-sky-400 border-sky-500/30' : 'text-slate-300 hover:bg-slate-800/60 border-transparent'"
+                class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-between">
+                <span x-text="section.title"></span>
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Right Content: Chapter Reading View -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-8">
+          <template x-if="selectedManualSection">
+            <div>
+              <div class="border-b border-slate-800 pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-white" x-text="selectedManualSection.title"></h2>
+                <p class="text-xs text-sky-400 mt-1" x-text="selectedManualSection.summary"></p>
+              </div>
+              <div class="manual-content text-sm" x-html="renderSimpleMarkdown(selectedManualSection.content)"></div>
+            </div>
+          </template>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: DEVICE DETAILS & METADATA -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showDeviceModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+    style="display: none;"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 scale-100"
+    x-transition:leave-end="opacity-0 scale-95">
+    
+    <div @click.away="showDeviceModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-6 overflow-hidden max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white" x-text="selectedDevice ? (selectedDevice.custom_name || selectedDevice.nickname || selectedDevice.hostname) : 'Dettaglio Dispositivo'"></h3>
+            <span class="text-xs font-mono text-slate-400" x-text="selectedDevice ? (selectedDevice.mac || selectedDevice.mac_address) : ''"></span>
+          </div>
+        </div>
+        <button @click="showDeviceModal = false" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="overflow-y-auto space-y-4 pr-1 text-xs">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-400 mb-1">Nome Personalizzato (Cloud & Locale):</label>
+            <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Categoria:</label>
+            <select x-model="deviceMetadataForm.category" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
+              <option value="Computer">Computer & Laptop</option>
+              <option value="Mobile">Smartphone & Tablet</option>
+              <option value="Smart Home">Smart Home & Domotica</option>
+              <option value="Intrattenimento">TV & Streaming</option>
+              <option value="Gaming">Console Gaming</option>
+              <option value="Server/Rete">Server & NAS</option>
+              <option value="Altro">Altro</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Prenotazione IP Statico (DHCP Reservation):</label>
+          <input type="text" x-model="deviceMetadataForm.static_ip" placeholder="Es. 192.168.4.50" class="glass-input w-full px-3 py-2 rounded-xl text-sm font-mono">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Note & Documentazione Locale:</label>
+          <textarea x-model="deviceMetadataForm.custom_notes" rows="3" placeholder="Ubicazione, porte aperte, credenziali locali, annotazioni..." class="glass-input w-full px-3 py-2 rounded-xl text-xs"></textarea>
+        </div>
+
+        <!-- Toggles -->
+        <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+          <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
+            <input type="checkbox" x-model="deviceMetadataForm.is_favorite" class="rounded bg-slate-900 border-slate-700 text-sky-500">
+            <span>Aggiungi ai Preferiti</span>
+          </label>
+          <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
+            <input type="checkbox" x-model="deviceMetadataForm.is_low_latency_target" class="rounded bg-slate-900 border-slate-700 text-rose-500">
+            <span>Pausa Automatica in Gaming Mode</span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+        <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Annulla</button>
+        <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30">Salva Modifiche</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: CONTEXTUAL HELP & QUICK MANUAL POPUP -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showHelpModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+    style="display: none;"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100">
+    
+    <div @click.away="showHelpModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-sky-400" x-text="helpModalTitle"></h3>
+        <button @click="showHelpModal = false" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto manual-content text-xs pr-2" x-html="helpModalContent"></div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Chiudi Guida</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- LOGIN & 2FA OTP MODAL (WHEN NOT AUTHENTICATED) -->
+  <!-- ===================================================================== -->
+  <template x-if="!isAuthenticated">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div class="glass-panel-elevated w-full max-w-md rounded-3xl p-8 space-y-6 text-center border border-sky-500/20">
+        
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 mx-auto flex items-center justify-center shadow-xl shadow-sky-500/30">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-white">Accesso eero Mesh Suite</h2>
+          <p class="text-xs text-slate-400 mt-1">Autenticazione sicura ufficiale 2FA (One-Time Password)</p>
+        </div>
+
+        <!-- Step 1: Email/Phone Input -->
+        <div x-show="!otpSent" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Email o Telefono associato ad eero:</label>
+            <input 
+              type="text" 
+              x-model="loginIdentifier" 
+              placeholder="es. +393401234567 o mario@email.com" 
+              class="glass-input w-full px-4 py-3 rounded-xl text-sm font-medium">
+          </div>
+          <button 
+            @click="requestOtp()"
+            :disabled="authLoading || !loginIdentifier"
+            class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition disabled:opacity-50">
+            <span x-text="authLoading ? 'Invio in corso...' : 'Invia Codice OTP'"></span>
+          </button>
+        </div>
+
+        <!-- Step 2: OTP Verification Input -->
+        <div x-show="otpSent" class="space-y-4 text-left" style="display: none;">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Codice a 6 cifre ricevuto:</label>
+            <input 
+              type="text" 
+              x-model="otpCode" 
+              placeholder="123456" 
+              maxlength="8"
+              class="glass-input w-full px-4 py-3 rounded-xl text-center text-lg font-mono tracking-widest font-bold">
+          </div>
+          <button 
+            @click="verifyOtp()"
+            :disabled="authLoading || !otpCode"
+            class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition disabled:opacity-50">
+            <span x-text="authLoading ? 'Verifica in corso...' : 'Conferma ed Accedi'"></span>
+          </button>
+          <button @click="otpSent = false" class="w-full text-center text-xs text-slate-400 hover:text-white">← Modifica numero o email</button>
+        </div>
+
+        <!-- Demo Mode Quick Start Button -->
+        <div class="pt-4 border-t border-slate-800">
+          <button 
+            @click="startDemoSession()"
+            class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-400 border border-amber-500/20 transition">
+            ✨ Prova Subito con la Modalità Demo (Simulatore Mesh)
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </template>
+
+  <!-- ===================================================================== -->
+  <!-- TOAST ALERTS NOTIFICATIONS -->
+  <!-- ===================================================================== -->
+  <div class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div 
+        class="pointer-events-auto max-w-sm rounded-xl p-4 shadow-2xl border backdrop-blur-xl flex items-start space-x-3 transition-all animate-fade-in"
+        :class="{
+          'bg-emerald-950/90 border-emerald-500/40 text-emerald-100': toast.type === 'success',
+          'bg-rose-950/90 border-rose-500/40 text-rose-100': toast.type === 'error',
+          'bg-amber-950/90 border-amber-500/40 text-amber-100': toast.type === 'warning',
+          'bg-slate-900/90 border-sky-500/40 text-slate-100': toast.type === 'info'
+        }">
+        <div class="flex-1">
+          <div class="text-xs font-bold" x-text="toast.title"></div>
+          <div class="text-xs mt-0.5 opacity-90" x-text="toast.message"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-800/80 py-4 text-center text-[11px] text-slate-500 font-medium">
+    eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry
+  </footer>
+
+</body>
+</html>

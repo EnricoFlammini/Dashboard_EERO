@@ -1,0 +1,179 @@
+/* ====================================================================
+   eero Custom Dashboard - Premium Dark Glassmorphism Design System
+   ==================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --bg-primary: #0b0f17;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1e293b;
+  --glass-bg: rgba(17, 24, 39, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  
+  --accent-cyan: #38bdf8;
+  --accent-indigo: #6366f1;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: #f3f4f6;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-elevated {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7);
+}
+
+.glass-input {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  transition: all 0.2s ease-in-out;
+}
+.glass-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+  outline: none;
+}
+
+/* Status Indicators */
+.status-dot-pulse {
+  position: relative;
+}
+.status-dot-pulse::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+/* Signal Bars */
+.rssi-bar {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.rssi-bar span {
+  width: 3px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 1px;
+  transition: height 0.3s ease;
+}
+
+/* Speed Gauge Radial Animation */
+.gauge-svg {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+.gauge-circle-bg {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+.gauge-circle-progress {
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Code and Markdown Styling in Manual */
+.manual-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.manual-content h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #818cf8;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.manual-content p {
+  color: #cbd5e1;
+  line-height: 1.65;
+  margin-bottom: 1rem;
+}
+.manual-content ul, .manual-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+.manual-content li {
+  margin-bottom: 0.4rem;
+}
+.manual-content strong {
+  color: #f8fafc;
+}
+.manual-content code {
+  font-family: var(--font-mono);
+  background-color: rgba(30, 41, 59, 0.8);
+  color: #38bdf8;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+/* Card hover glow */
+.hover-glow:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.15);
+}

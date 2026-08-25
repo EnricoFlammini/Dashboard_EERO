@@ -1,0 +1,10 @@
+/03.Prj_Dashboard_EERO.code-workspace
+.env
+data/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
