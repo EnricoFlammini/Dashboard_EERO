@@ -144,25 +144,13 @@ document.addEventListener('alpine:init', () => {
       this.currentTab = tab;
       if (tab === 'metrics') {
         setTimeout(async () => {
-          this.initWanChart();
-          this.initHogsChart();
           await this.loadWanHistory();
           await this.loadTopHogs();
-          setTimeout(() => {
-            if (this.wanChartInstance) { this.wanChartInstance.resize(); this.wanChartInstance.update(); }
-            if (this.hogsChartInstance) { this.hogsChartInstance.resize(); this.hogsChartInstance.update(); }
-            window.dispatchEvent(new Event('resize'));
-          }, 60);
-        }, 30);
+        }, 50);
       } else if (tab === 'speedtest') {
         setTimeout(async () => {
-          this.initSpeedtestChart();
           await this.loadSpeedtestData();
-          setTimeout(() => {
-            if (this.speedtestChartInstance) { this.speedtestChartInstance.resize(); this.speedtestChartInstance.update(); }
-            window.dispatchEvent(new Event('resize'));
-          }, 60);
-        }, 30);
+        }, 50);
       } else if (tab === 'devices') {
         await this.fetchDevices();
       }
@@ -410,21 +398,29 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // BANDWIDTH CHARTS & HISTORIAN
     // =========================================================================
-    initWanChart() {
-      const ctx = document.getElementById('wanTrafficChart');
-      if (!ctx) return;
+    renderWanChart(labels, dlData, ulData) {
+      const canvas = document.getElementById('wanTrafficChart');
+      if (!canvas) return;
       if (this.wanChartInstance) {
         this.wanChartInstance.destroy();
+        this.wanChartInstance = null;
       }
 
+      const p = canvas.parentElement;
+      if (p) {
+        canvas.width = p.clientWidth || 800;
+        canvas.height = p.clientHeight || 320;
+      }
+
+      const ctx = canvas.getContext('2d');
       this.wanChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: [],
+          labels: labels,
           datasets: [
             {
               label: 'Download (Mbps)',
-              data: [],
+              data: dlData,
               borderColor: '#38bdf8',
               backgroundColor: 'rgba(56, 189, 248, 0.15)',
               borderWidth: 2,
@@ -435,7 +431,7 @@ document.addEventListener('alpine:init', () => {
             },
             {
               label: 'Upload (Mbps)',
-              data: [],
+              data: ulData,
               borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.10)',
               borderWidth: 2,
@@ -449,6 +445,7 @@ document.addEventListener('alpine:init', () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           interaction: {
             mode: 'index',
             intersect: false,
@@ -489,23 +486,14 @@ document.addEventListener('alpine:init', () => {
           this.wanTotalGb = json.total_gb_transferred || 0;
           this.wanHistoryData = json.history || [];
 
-          if (!this.wanChartInstance) {
-            this.initWanChart();
-          }
-
-          if (this.wanChartInstance && this.wanHistoryData.length > 0) {
+          if (this.wanHistoryData.length > 0) {
             const labels = this.wanHistoryData.map(d => {
               const dt = new Date(d.timestamp);
               return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             });
             const dl = this.wanHistoryData.map(d => d.download_speed_mbps);
             const ul = this.wanHistoryData.map(d => d.upload_speed_mbps);
-
-            this.wanChartInstance.data.labels = labels;
-            this.wanChartInstance.data.datasets[0].data = dl;
-            this.wanChartInstance.data.datasets[1].data = ul;
-            this.wanChartInstance.resize();
-            this.wanChartInstance.update();
+            this.renderWanChart(labels, dl, ul);
           }
         }
       } catch (err) {
@@ -513,28 +501,37 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    initHogsChart() {
-      const ctx = document.getElementById('topHogsChart');
-      if (!ctx) return;
+    renderHogsChart(labels, data) {
+      const canvas = document.getElementById('topHogsChart');
+      if (!canvas) return;
       if (this.hogsChartInstance) {
         this.hogsChartInstance.destroy();
         this.hogsChartInstance = null;
       }
 
+      const p = canvas.parentElement;
+      if (p) {
+        canvas.width = p.clientWidth || 400;
+        canvas.height = p.clientHeight || 280;
+      }
+
+      const ctx = canvas.getContext('2d');
       this.hogsChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: [],
+          labels: labels,
           datasets: [{
             label: 'Consumo Dati (GB)',
-            data: [],
+            data: data,
             backgroundColor: [
               'rgba(56, 189, 248, 0.8)',
               'rgba(99, 102, 241, 0.8)',
               'rgba(16, 185, 129, 0.8)',
               'rgba(245, 158, 11, 0.8)',
               'rgba(244, 63, 94, 0.8)',
-              'rgba(168, 85, 247, 0.8)'
+              'rgba(168, 85, 247, 0.8)',
+              'rgba(14, 165, 233, 0.8)',
+              'rgba(99, 102, 241, 0.8)'
             ],
             borderRadius: 6,
             borderSkipped: false
@@ -544,6 +541,7 @@ document.addEventListener('alpine:init', () => {
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -573,16 +571,10 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'success') {
           this.topHogs = json.hogs || [];
-
-          if (!this.hogsChartInstance) {
-            this.initHogsChart();
-          }
-
-          if (this.hogsChartInstance && this.topHogs.length > 0) {
-            this.hogsChartInstance.data.labels = this.topHogs.map(h => h.display_name);
-            this.hogsChartInstance.data.datasets[0].data = this.topHogs.map(h => h.total_gb);
-            this.hogsChartInstance.resize();
-            this.hogsChartInstance.update();
+          if (this.topHogs.length > 0) {
+            const labels = this.topHogs.map(h => h.display_name);
+            const data = this.topHogs.map(h => h.total_gb);
+            this.renderHogsChart(labels, data);
           }
         }
       } catch (err) {
@@ -714,21 +706,29 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // SPEED TEST & DIAGNOSTICS
     // =========================================================================
-    initSpeedtestChart() {
-      const ctx = document.getElementById('speedtestHistoryChart');
-      if (!ctx) return;
+    renderSpeedtestChart(labels, dl, ul, ping) {
+      const canvas = document.getElementById('speedtestHistoryChart');
+      if (!canvas) return;
       if (this.speedtestChartInstance) {
         this.speedtestChartInstance.destroy();
+        this.speedtestChartInstance = null;
       }
 
+      const p = canvas.parentElement;
+      if (p) {
+        canvas.width = p.clientWidth || 500;
+        canvas.height = p.clientHeight || 280;
+      }
+
+      const ctx = canvas.getContext('2d');
       this.speedtestChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: [],
+          labels: labels,
           datasets: [
             {
               label: 'Download (Mbps)',
-              data: [],
+              data: dl,
               borderColor: '#38bdf8',
               backgroundColor: 'rgba(56, 189, 248, 0.1)',
               borderWidth: 2,
@@ -736,7 +736,7 @@ document.addEventListener('alpine:init', () => {
             },
             {
               label: 'Upload (Mbps)',
-              data: [],
+              data: ul,
               borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               borderWidth: 2,
@@ -744,7 +744,7 @@ document.addEventListener('alpine:init', () => {
             },
             {
               label: 'Ping (ms)',
-              data: [],
+              data: ping,
               borderColor: '#f59e0b',
               borderDash: [5, 5],
               borderWidth: 1.5,
@@ -756,6 +756,7 @@ document.addEventListener('alpine:init', () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           scales: {
             x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
             y: { title: { display: true, text: 'Mbps', color: '#64748b' }, ticks: { color: '#64748b' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
@@ -776,13 +777,13 @@ document.addEventListener('alpine:init', () => {
 
         if (jsonHist.status === 'success') {
           this.speedtestHistory = jsonHist.tests || [];
-          if (this.speedtestChartInstance && this.speedtestHistory.length > 0) {
+          if (this.speedtestHistory.length > 0) {
             const rev = [...this.speedtestHistory].reverse();
-            this.speedtestChartInstance.data.labels = rev.map(t => new Date(t.timestamp).toLocaleDateString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
-            this.speedtestChartInstance.data.datasets[0].data = rev.map(t => t.download_mbps);
-            this.speedtestChartInstance.data.datasets[1].data = rev.map(t => t.upload_mbps);
-            this.speedtestChartInstance.data.datasets[2].data = rev.map(t => t.ping_ms);
-            this.speedtestChartInstance.update();
+            const labels = rev.map(t => new Date(t.timestamp).toLocaleDateString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+            const dl = rev.map(t => t.download_mbps);
+            const ul = rev.map(t => t.upload_mbps);
+            const ping = rev.map(t => t.ping_ms);
+            this.renderSpeedtestChart(labels, dl, ul, ping);
           }
         }
         if (jsonStats.status === 'success') {
