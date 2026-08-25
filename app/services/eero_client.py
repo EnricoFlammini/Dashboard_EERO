@@ -12,7 +12,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-EERO_API_BASE = "https://api-user.eeroup.com/2.2"
+EERO_API_BASE = "https://api-user.e2ro.com/2.2"
 
 
 class EeroClient:
