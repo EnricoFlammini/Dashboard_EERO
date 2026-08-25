@@ -5,6 +5,10 @@ services:
       dockerfile: Dockerfile
     container_name: eero_custom_dashboard
     restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+      - 9.9.9.9
     ports:
       - "${HOST_PORT:-8085}:8000"
     volumes:
