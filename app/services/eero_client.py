@@ -77,11 +77,16 @@ class EeroClient:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "eero-Custom-Dashboard/1.0",
+            "User-Agent": "eero-ios/3.47.0",
         }
         if self.user_token:
             headers["Cookie"] = f"s={self.user_token}"
         return headers
+
+    def _get_cookies(self) -> Dict[str, str]:
+        if self.user_token:
+            return {"s": self.user_token}
+        return {}
 
     # =========================================================================
     # AUTENTICAZIONE EERO API (2FA OTP)
@@ -95,8 +100,8 @@ class EeroClient:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/login",
-                json={"login": identifier},
-                headers={"Content-Type": "application/json"}
+                json={"login": identifier.strip()},
+                headers=self._get_headers()
             )
             if resp.status_code != 200:
                 error_msg = resp.text
@@ -110,8 +115,11 @@ class EeroClient:
             self.user_token = data.get("user_token")
             return {"status": "success", "user_token": self.user_token, "login": identifier}
 
-    async def verify_login_code(self, code: str) -> Dict[str, Any]:
+    async def verify_login_code(self, code: str, user_token: Optional[str] = None) -> Dict[str, Any]:
         """Verifica il codice OTP e ottiene il session token definitivo."""
+        if user_token:
+            self.user_token = user_token
+
         if settings.demo_mode or self.user_token == "demo_temp_unverified_token":
             if code.strip() in ("123456", "000000", "DEMO", "demo"):
                 self.user_token = "demo_verified_master_token"
@@ -129,7 +137,8 @@ class EeroClient:
             resp = await client.post(
                 f"{EERO_API_BASE}/login/verify",
                 json={"code": code.strip()},
-                headers=self._get_headers()
+                headers=self._get_headers(),
+                cookies=self._get_cookies()
             )
             if resp.status_code != 200:
                 error_msg = resp.text
@@ -138,6 +147,10 @@ class EeroClient:
                 except Exception:
                     pass
                 raise ValueError(f"eero OTP verification failed: {error_msg}")
+
+            data = resp.json().get("data", {})
+            if "user_token" in data:
+                self.user_token = data["user_token"]
 
             # Salvataggio sessione definitiva e fetch rete
             self.save_session()
@@ -150,7 +163,9 @@ class EeroClient:
             return self._get_demo_account()
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers())
+            resp = await client.get(f"{EERO_API_BASE}/account", headers=self._get_headers(), cookies=self._get_cookies())
+            if resp.status_code != 200:
+                resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers(), cookies=self._get_cookies())
             if resp.status_code == 401:
                 self.clear_session()
                 raise PermissionError("Sessione eero scaduta. È necessario riautenticarsi.")

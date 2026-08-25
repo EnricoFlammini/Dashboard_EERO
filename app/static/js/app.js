@@ -14,6 +14,7 @@ document.addEventListener('alpine:init', () => {
     userAccount: null,
     loginIdentifier: '',
     otpCode: '',
+    tempUserToken: null,
     otpSent: false,
     authLoading: false,
     authError: '',
@@ -176,6 +177,9 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Richiesta OTP fallita');
+        if (data.user_token) {
+          this.tempUserToken = data.user_token;
+        }
         this.otpSent = true;
         this.showToast("Codice Inviato", "Inserisci il codice a 6 cifre ricevuto via SMS/Email.", "info");
       } catch (err) {
@@ -194,7 +198,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: this.otpCode })
+          body: JSON.stringify({ code: this.otpCode, user_token: this.tempUserToken })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Verifica OTP fallita');
@@ -202,6 +206,7 @@ document.addEventListener('alpine:init', () => {
         this.isAuthenticated = true;
         this.otpSent = false;
         this.otpCode = '';
+        this.tempUserToken = null;
         this.showToast("Accesso Riuscito", "Connessione con eero stabilita.", "success");
         await this.refreshAllData();
         this.startPolling();

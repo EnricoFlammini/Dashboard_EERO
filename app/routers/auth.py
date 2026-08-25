@@ -17,6 +17,7 @@ class LoginRequest(BaseModel):
 
 class VerifyOTPRequest(BaseModel):
     code: str = Field(..., min_length=4, max_length=8, description="Codice OTP a 6 cifre ricevuto via SMS/Email")
+    user_token: Optional[str] = Field(None, description="Token temporaneo restituito dalla richiesta di login")
 
 
 @router.get("/status")
@@ -56,7 +57,7 @@ async def request_login(payload: LoginRequest):
 async def verify_otp(payload: VerifyOTPRequest):
     """Verifica il codice OTP e salva il session token persistente."""
     try:
-        res = await eero_client.verify_login_code(payload.code.strip())
+        res = await eero_client.verify_login_code(payload.code.strip(), payload.user_token)
         return res
     except Exception as e:
         logger.error(f"OTP verification failed: {e}")
