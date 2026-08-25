@@ -489,7 +489,11 @@ document.addEventListener('alpine:init', () => {
           this.wanTotalGb = json.total_gb_transferred || 0;
           this.wanHistoryData = json.history || [];
 
-          if (this.wanChartInstance) {
+          if (!this.wanChartInstance) {
+            this.initWanChart();
+          }
+
+          if (this.wanChartInstance && this.wanHistoryData.length > 0) {
             const labels = this.wanHistoryData.map(d => {
               const dt = new Date(d.timestamp);
               return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -514,6 +518,7 @@ document.addEventListener('alpine:init', () => {
       if (!ctx) return;
       if (this.hogsChartInstance) {
         this.hogsChartInstance.destroy();
+        this.hogsChartInstance = null;
       }
 
       this.hogsChartInstance = new Chart(ctx, {
@@ -569,7 +574,11 @@ document.addEventListener('alpine:init', () => {
         if (json.status === 'success') {
           this.topHogs = json.hogs || [];
 
-          if (this.hogsChartInstance) {
+          if (!this.hogsChartInstance) {
+            this.initHogsChart();
+          }
+
+          if (this.hogsChartInstance && this.topHogs.length > 0) {
             this.hogsChartInstance.data.labels = this.topHogs.map(h => h.display_name);
             this.hogsChartInstance.data.datasets[0].data = this.topHogs.map(h => h.total_gb);
             this.hogsChartInstance.resize();
