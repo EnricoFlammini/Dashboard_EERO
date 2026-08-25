@@ -1,6 +1,7 @@
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 import aiosqlite
 from app.config import settings
 
@@ -11,15 +12,16 @@ class DBService:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or str(settings.db_file_path)
 
-    async def get_connection(self) -> aiosqlite.Connection:
-        conn = await aiosqlite.connect(self.db_path)
-        conn.row_factory = aiosqlite.Row
-        return conn
+    @asynccontextmanager
+    async def get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            yield conn
 
     async def init_db(self):
         """Initialize database schema with tables and indexes."""
         logger.info(f"Initializing database at: {self.db_path}")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA synchronous = NORMAL;")
             
@@ -140,7 +142,7 @@ class DBService:
         upload_speed_mbps: float,
     ) -> int:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 INSERT INTO wan_metrics 
@@ -158,7 +160,7 @@ class DBService:
         start_time: Optional[str] = None,
         end_time: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             if start_time and end_time:
                 query = """
                     SELECT timestamp, status, public_ip, rx_bytes, tx_bytes, 
@@ -199,7 +201,7 @@ class DBService:
             )
             for m in metrics_list
         ]
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.executemany(
                 """
                 INSERT INTO device_metrics 
@@ -212,7 +214,7 @@ class DBService:
 
     async def get_device_metrics_history(self, mac_address: str, hours: int = 24) -> List[Dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT timestamp, mac_address, hostname, rx_bytes, tx_bytes, download_rate, upload_rate
@@ -227,8 +229,7 @@ class DBService:
 
     async def get_top_bandwidth_hogs(self, hours: int = 24, limit: int = 10) -> List[Dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
-            # Calcoliamo il delta o l'aggregato di banda consumata nel periodo
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT 
@@ -265,7 +266,7 @@ class DBService:
         source: str = "eero_api"
     ) -> int:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 INSERT INTO speedtests 
@@ -278,7 +279,7 @@ class DBService:
             return cursor.lastrowid
 
     async def get_speedtests(self, limit: int = 50) -> List[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT id, timestamp, download_mbps, upload_mbps, ping_ms, jitter, server_name, source
@@ -292,7 +293,7 @@ class DBService:
             return [dict(row) for row in rows]
 
     async def get_speedtest_stats(self) -> Dict[str, Any]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT 
@@ -314,8 +315,8 @@ class DBService:
                     "max_download": round(row["max_download"] or 0, 2),
                     "avg_upload": round(row["avg_upload"] or 0, 2),
                     "max_upload": round(row["max_upload"] or 0, 2),
-                    "avg_ping": round(row["avg_ping"] or 0, 1),
-                    "min_ping": round(row["min_ping"] or 0, 1),
+                    "avg_ping": round(row["avg_ping"] or 1, 1),
+                    "min_ping": round(row["min_ping"] or 1, 1),
                 }
             return {
                 "total_tests": 0,
@@ -329,13 +330,13 @@ class DBService:
 
     # ----------------- DEVICE METADATA -----------------
     async def get_all_device_metadata(self) -> Dict[str, Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute("SELECT * FROM device_metadata")
             rows = await cursor.fetchall()
             return {row["mac_address"]: dict(row) for row in rows}
 
     async def get_device_metadata(self, mac_address: str) -> Optional[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute("SELECT * FROM device_metadata WHERE mac_address = ?", (mac_address,))
             row = await cursor.fetchone()
             return dict(row) if row else None
@@ -345,7 +346,7 @@ class DBService:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         if existing:
             updated = {**existing, **kwargs, "updated_at": now}
-            async with await self.get_connection() as db:
+            async with self.get_connection() as db:
                 await db.execute(
                     """
                     UPDATE device_metadata
@@ -381,7 +382,7 @@ class DBService:
                 "created_at": now,
                 "updated_at": now,
             }
-            async with await self.get_connection() as db:
+            async with self.get_connection() as db:
                 await db.execute(
                     """
                     INSERT INTO device_metadata 
@@ -406,14 +407,14 @@ class DBService:
 
     # ----------------- APP SETTINGS -----------------
     async def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute("SELECT value FROM app_settings WHERE key = ?", (key,))
             row = await cursor.fetchone()
             return row["value"] if row else default
 
     async def set_setting(self, key: str, value: str):
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.execute(
                 """
                 INSERT INTO app_settings (key, value, updated_at)
@@ -425,7 +426,7 @@ class DBService:
             await db.commit()
 
     async def get_all_settings(self) -> Dict[str, str]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute("SELECT key, value FROM app_settings")
             rows = await cursor.fetchall()
             return {row["key"]: row["value"] for row in rows}
@@ -433,7 +434,7 @@ class DBService:
     # ----------------- ALERTS & NOTIFICATIONS -----------------
     async def save_alert(self, alert_type: str, title: str, message: str) -> int:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 INSERT INTO alert_history (timestamp, type, title, message, read)
@@ -445,7 +446,7 @@ class DBService:
             return cursor.lastrowid
 
     async def get_alerts(self, limit: int = 50) -> List[Dict[str, Any]]:
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             cursor = await db.execute(
                 "SELECT id, timestamp, type, title, message, read FROM alert_history ORDER BY timestamp DESC LIMIT ?",
                 (limit,)
@@ -454,7 +455,7 @@ class DBService:
             return [dict(row) for row in rows]
 
     async def mark_alerts_read(self):
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             await db.execute("UPDATE alert_history SET read = 1 WHERE read = 0")
             await db.commit()
 
@@ -463,7 +464,7 @@ class DBService:
         days = retention_days or settings.history_retention_days
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
         deleted_counts = {}
-        async with await self.get_connection() as db:
+        async with self.get_connection() as db:
             c1 = await db.execute("DELETE FROM wan_metrics WHERE timestamp < ?", (cutoff,))
             deleted_counts["wan_metrics"] = c1.rowcount
             

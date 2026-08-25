@@ -101,4 +101,4 @@ async def healthcheck():
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Serve la Single Page Application (SPA) della Dashboard."""
-    return templates.TemplateResponse("index.html", {"request": request, "app_name": settings.app_name})
+    return templates.TemplateResponse(request=request, name="index.html", context={"app_name": settings.app_name})
