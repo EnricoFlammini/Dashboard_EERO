@@ -186,22 +186,16 @@ class EeroClient:
     # =========================================================================
     def _normalize_network_details(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         data = dict(raw)
-        raw_status = str(data.get("status", "")).lower()
-        if raw_status in ("green", "online"):
-            data["status"] = "online"
-        elif raw_status in ("yellow", "warning"):
-            data["status"] = "warning"
-        else:
-            data["status"] = "offline" if raw_status in ("red", "offline") else (raw_status or "online")
-
+        
         # IP Pubblico / WAN IP
-        data["public_ip"] = (
+        pub_ip = (
             data.get("public_ip") or 
             data.get("wan_ip") or 
             (data.get("ip_settings") or {}).get("public_ip") or 
-            data.get("gateway_ip") or 
-            "0.0.0.0"
+            (data.get("gateway_ip")) or 
+            ""
         )
+        data["public_ip"] = pub_ip if pub_ip else "0.0.0.0"
 
         # Gateway IP
         data["gateway_ip"] = (
@@ -219,13 +213,38 @@ class EeroClient:
             ""
         )
 
-        # DNS
-        dns_list = (
-            (data.get("dns") or {}).get("nameservers") or 
-            (data.get("dns") or {}).get("custom") or 
-            data.get("dns_nameservers") or 
-            ["1.1.1.1", "8.8.8.8"]
-        )
+        # Stato Connessione WAN
+        raw_status = str(
+            data.get("status") or 
+            (data.get("connectivity") or {}).get("status") or 
+            (data.get("health") or {}).get("status") or 
+            ""
+        ).lower()
+
+        if raw_status in ("green", "online", "connected", "good", "active", "up", "internet"):
+            data["status"] = "online"
+        elif raw_status in ("yellow", "warning", "degraded"):
+            data["status"] = "warning"
+        elif raw_status in ("red", "offline", "disconnected", "down"):
+            # Se ha un IP valido e ISP, la WAN è comunque attiva
+            data["status"] = "online" if (data["public_ip"] != "0.0.0.0") else "offline"
+        else:
+            # Default: se ha un IP WAN o ISP presente, è online
+            data["status"] = "online" if (data["public_ip"] != "0.0.0.0" or data["isp"]) else "offline"
+
+        # DNS Servers (Supporta sia array che dizionario {'ips': [...]})
+        dns_raw = data.get("dns")
+        dns_list = []
+        if isinstance(dns_raw, dict):
+            dns_list = dns_raw.get("ips") or dns_raw.get("nameservers") or dns_raw.get("custom") or []
+        elif isinstance(dns_raw, list):
+            dns_list = dns_raw
+        elif data.get("dns_nameservers"):
+            dns_list = data.get("dns_nameservers")
+
+        if not dns_list:
+            dns_list = ["1.1.1.1", "8.8.8.8"]
+
         data["dns_servers"] = [str(d) for d in dns_list] if isinstance(dns_list, list) else [str(dns_list)]
 
         # Speed test
