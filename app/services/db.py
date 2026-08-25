@@ -128,6 +128,17 @@ class DBService:
                     (key, val)
                 )
 
+            # Pulizia automatica record di test/mock
+            await db.execute("""
+                DELETE FROM device_metrics 
+                WHERE hostname IN ('Home NAS & Media Server', 'MacBook Pro Lavoro', 'Smart TV OLED 65"', 'iPhone Personale')
+                   OR mac_address IN ('00:11:32:9F:88:44', 'B4:2E:99:A1:01:10', '28:70:4E:88:99:AA', 'A4:C3:F0:11:22:33');
+            """)
+            await db.execute("""
+                DELETE FROM speedtests 
+                WHERE server_name LIKE '%Fastweb Milan%' OR server_name LIKE '%Demo%';
+            """)
+
             await db.commit()
             logger.info("Database schema initialized successfully.")
 
@@ -237,23 +248,36 @@ class DBService:
                     COALESCE(meta.custom_name, dm.hostname, dm.mac_address) as display_name,
                     COALESCE(meta.custom_icon, 'device') as custom_icon,
                     COALESCE(meta.category, 'Altro') as category,
-                    MAX(dm.rx_bytes) - MIN(dm.rx_bytes) as total_rx_bytes,
-                    MAX(dm.tx_bytes) - MIN(dm.tx_bytes) as total_tx_bytes,
-                    (MAX(dm.rx_bytes) - MIN(dm.rx_bytes)) + (MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) as total_bytes,
+                    MAX(dm.rx_bytes) - MIN(dm.rx_bytes) as delta_rx,
+                    MAX(dm.tx_bytes) - MIN(dm.tx_bytes) as delta_tx,
+                    MAX(dm.rx_bytes) as max_rx,
+                    MAX(dm.tx_bytes) as max_tx,
                     AVG(dm.download_rate) as avg_download_rate,
                     AVG(dm.upload_rate) as avg_upload_rate
                 FROM device_metrics dm
                 LEFT JOIN device_metadata meta ON dm.mac_address = meta.mac_address
                 WHERE dm.timestamp >= ?
                 GROUP BY dm.mac_address
-                HAVING total_bytes > 0
-                ORDER BY total_bytes DESC
+                ORDER BY (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes) + AVG(dm.download_rate)*1000000) DESC
                 LIMIT ?
                 """,
                 (since, limit)
             )
             rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
+            results = []
+            for r in rows:
+                row_dict = dict(r)
+                rx_bytes = row_dict.get("delta_rx", 0)
+                tx_bytes = row_dict.get("delta_tx", 0)
+                if rx_bytes == 0 and row_dict.get("max_rx", 0) > 0:
+                    rx_bytes = row_dict["max_rx"]
+                    tx_bytes = row_dict.get("max_tx", 0)
+                tot = rx_bytes + tx_bytes
+                row_dict["total_rx_bytes"] = rx_bytes
+                row_dict["total_tx_bytes"] = tx_bytes
+                row_dict["total_bytes"] = tot
+                results.append(row_dict)
+            return results
 
     # ----------------- SPEEDTESTS -----------------
     async def save_speedtest(
