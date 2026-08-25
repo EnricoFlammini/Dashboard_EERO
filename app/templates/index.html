@@ -116,9 +116,21 @@
         </div>
       </div>
 
-      <!-- Right Actions: Demo mode, Gaming toggle, Context Help, Logout -->
+      <!-- Right Actions: Refresh, Focus Mode, Help, Logout -->
       <div class="flex items-center space-x-3">
         
+        <!-- Refresh Button -->
+        <button 
+          @click="manualRefresh()"
+          :disabled="isRefreshing"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all active:scale-95 disabled:opacity-50"
+          title="Aggiorna tutti i dati in tempo reale">
+          <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span class="hidden sm:inline" x-text="isRefreshing ? 'Aggiornamento...' : 'Aggiorna'"></span>
+        </button>
+
         <!-- Demo Mode Badge -->
         <template x-if="isDemoMode">
           <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
@@ -524,6 +536,17 @@
               <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
               <span>Solo Connessi</span>
             </label>
+
+            <!-- Quick Refresh Dispositivi -->
+            <button 
+              @click="manualRefresh()"
+              :disabled="isRefreshing"
+              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition"
+              title="Ricarica elenco dispositivi">
+              <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
 
           </div>
 

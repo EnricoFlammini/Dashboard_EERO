@@ -252,6 +252,28 @@ document.addEventListener('alpine:init', () => {
       }, 10000);
     },
 
+    isRefreshing: false,
+
+    async manualRefresh() {
+      if (this.isRefreshing) return;
+      this.isRefreshing = true;
+      try {
+        await fetch('/api/network/refresh', { method: 'POST' });
+        await this.refreshAllData();
+        if (this.currentTab === 'metrics') {
+          await this.loadWanHistory();
+          await this.loadTopHogs();
+        } else if (this.currentTab === 'speedtest') {
+          await this.loadSpeedtestData();
+        }
+        this.showToast("Dati Aggiornati", "Dashboard sincronizzata in tempo reale con la rete eero.", "success");
+      } catch (err) {
+        this.showToast("Errore Aggiornamento", err.message, "error");
+      } finally {
+        setTimeout(() => { this.isRefreshing = false; }, 400);
+      }
+    },
+
     async refreshAllData() {
       await Promise.all([
         this.fetchOverview(),

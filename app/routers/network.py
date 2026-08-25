@@ -40,6 +40,22 @@ async def get_network_overview():
     }
 
 
+@router.post("/refresh")
+async def force_network_refresh():
+    """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""
+    try:
+        await background_poller._poll_and_cache()
+        cached = background_poller.get_cached_state()
+        return {
+            "status": "success",
+            "message": "Dati rete aggiornati con successo.",
+            "data": cached
+        }
+    except Exception as e:
+        logger.error(f"Force refresh error: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 @router.get("/eeros")
 async def get_mesh_nodes():
     """Restituisce l'elenco e lo stato dei singoli nodi eero mesh."""
