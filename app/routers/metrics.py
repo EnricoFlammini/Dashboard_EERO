@@ -101,6 +101,7 @@ async def get_top_bandwidth_hogs(
         'sonos speaker salone'
     }
 
+    formatted = []
     seen_macs = set()
     for item in hogs:
         d_name = str(item.get("display_name", "")).strip()
