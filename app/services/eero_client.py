@@ -172,11 +172,12 @@ class EeroClient:
             return self._get_demo_account()
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers())
+            resp = await client.get(f"{EERO_API_BASE}/account", headers=self._get_headers())
+            if resp.status_code != 200:
+                resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers())
+            
             if resp.status_code != 200:
                 logger.error(f"Failed to fetch account info ({resp.status_code}): {resp.text}")
-                if resp.status_code == 401:
-                    logger.warning("Session token might be expired. Keeping session until next manual login.")
                 return self._get_demo_account()
 
             data = resp.json().get("data", {})
@@ -190,7 +191,7 @@ class EeroClient:
             elif isinstance(networks_field, list):
                 networks = networks_field
 
-            if networks and not self.current_network_id:
+            if networks:
                 first_net = networks[0]
                 if isinstance(first_net, dict):
                     net_url = str(first_net.get("url", ""))
@@ -198,6 +199,7 @@ class EeroClient:
                 elif isinstance(first_net, str):
                     self.current_network_id = first_net.split("/")[-1]
 
+            logger.info(f"Resolved eero network: ID={self.current_network_id}")
             self.save_session()
             return data
 
