@@ -134,19 +134,30 @@ document.addEventListener('alpine:init', () => {
         this.startPolling();
       }
 
-      // Reattività cambio tab
+      // Reattività cambio tab con rendering forzato e resize automatico
       this.$watch('currentTab', (tab) => {
-        this.$nextTick(() => {
+        setTimeout(async () => {
           if (tab === 'metrics') {
             this.initWanChart();
             this.initHogsChart();
-            this.loadWanHistory();
-            this.loadTopHogs();
+            await this.loadWanHistory();
+            await this.loadTopHogs();
+            setTimeout(() => {
+              if (this.wanChartInstance) { this.wanChartInstance.resize(); this.wanChartInstance.update(); }
+              if (this.hogsChartInstance) { this.hogsChartInstance.resize(); this.hogsChartInstance.update(); }
+              window.dispatchEvent(new Event('resize'));
+            }, 80);
           } else if (tab === 'speedtest') {
             this.initSpeedtestChart();
-            this.loadSpeedtestData();
+            await this.loadSpeedtestData();
+            setTimeout(() => {
+              if (this.speedtestChartInstance) { this.speedtestChartInstance.resize(); this.speedtestChartInstance.update(); }
+              window.dispatchEvent(new Event('resize'));
+            }, 80);
+          } else if (tab === 'devices') {
+            await this.fetchDevices();
           }
-        });
+        }, 50);
       });
     },
 
@@ -482,6 +493,7 @@ document.addEventListener('alpine:init', () => {
             this.wanChartInstance.data.labels = labels;
             this.wanChartInstance.data.datasets[0].data = dl;
             this.wanChartInstance.data.datasets[1].data = ul;
+            this.wanChartInstance.resize();
             this.wanChartInstance.update();
           }
         }
@@ -553,6 +565,7 @@ document.addEventListener('alpine:init', () => {
           if (this.hogsChartInstance) {
             this.hogsChartInstance.data.labels = this.topHogs.map(h => h.display_name);
             this.hogsChartInstance.data.datasets[0].data = this.topHogs.map(h => h.total_gb);
+            this.hogsChartInstance.resize();
             this.hogsChartInstance.update();
           }
         }
