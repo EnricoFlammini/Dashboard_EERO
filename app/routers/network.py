@@ -44,6 +44,7 @@ async def get_network_overview():
 async def force_network_refresh():
     """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""
     try:
+        await db_service.purge_all_mock_data()
         await background_poller._poll_and_cache()
         cached = background_poller.get_cached_state()
         return {

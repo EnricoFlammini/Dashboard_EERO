@@ -128,19 +128,42 @@ class DBService:
                     (key, val)
                 )
 
-            # Pulizia automatica record di test/mock
-            await db.execute("""
-                DELETE FROM device_metrics 
-                WHERE hostname IN ('Home NAS & Media Server', 'MacBook Pro Lavoro', 'Smart TV OLED 65"', 'iPhone Personale')
-                   OR mac_address IN ('00:11:32:9F:88:44', 'B4:2E:99:A1:01:10', '28:70:4E:88:99:AA', 'A4:C3:F0:11:22:33');
-            """)
-            await db.execute("""
-                DELETE FROM speedtests 
-                WHERE server_name LIKE '%Fastweb Milan%' OR server_name LIKE '%Demo%';
-            """)
+            # Pulizia automatica completa dei dati mock/demo
+            await self.purge_all_mock_data()
 
             await db.commit()
             logger.info("Database schema initialized successfully.")
+
+    async def purge_all_mock_data(self):
+        """Elimina completamente tutti i dati mock/demo sia da device_metrics che da wan_metrics e speedtests."""
+        demo_macs = [
+            '00:11:32:9F:88:44', 'B4:2E:99:A1:01:10', 'F4:F5:DB:33:44:55',
+            '28:70:4E:88:99:AA', 'A8:5E:45:12:34:56', '48:E7:DA:99:88:77',
+            '18:84:30:11:22:33', 'E0:4F:43:AA:BB:CC', '52:54:00:12:34:56',
+            '94:9F:3E:22:33:44', 'A4:C3:F0:11:22:33', 'dev_01', 'dev_02', 'dev_03'
+        ]
+        demo_hostnames = [
+            'Home NAS & Media Server', 'MacBook Pro Lavoro', 'Smart TV OLED 65"',
+            'iPhone Personale', 'PS5 Pro Console', 'Shelly Domotica Quadro',
+            'Termostato Soggiorno', 'iPad Cucina / Ricette', 'Home Assistant Server',
+            'Sonos Speaker Salone', 'Synology-DS920Plus', 'iPhone-15-Pro',
+            'Sony-Bravia-OLED-4K', 'PlayStation-5', 'Shelly-Pro-4PM',
+            'Sonos-One-Gen2', 'HomeAssistant-NUC', 'iPad-Air-M1'
+        ]
+        try:
+            async with self.get_connection() as db:
+                pm = ",".join("?" for _ in demo_macs)
+                ph = ",".join("?" for _ in demo_hostnames)
+                await db.execute(
+                    f"DELETE FROM device_metrics WHERE mac_address IN ({pm}) OR hostname IN ({ph});",
+                    (*demo_macs, *demo_hostnames)
+                )
+                await db.execute("DELETE FROM wan_metrics WHERE public_ip IN ('93.42.180.55', '1.2.3.4', '0.0.0.0') OR download_speed_mbps > 160.0;")
+                await db.execute("DELETE FROM speedtests WHERE server_name LIKE '%Fastweb Milan%' OR server_name LIKE '%Demo%' OR server_name LIKE '%synthetics%';")
+                await db.commit()
+                logger.info("Purged all demo/mock metrics records from SQLite.")
+        except Exception as e:
+            logger.warning(f"Error purging mock data: {e}")
 
     # ----------------- WAN METRICS -----------------
     async def save_wan_metrics(

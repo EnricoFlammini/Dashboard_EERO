@@ -55,12 +55,26 @@ async def get_wan_metrics_history(
         end_time=end_time
     )
 
-    # Calcolo totale scambiato nel periodo selezionato
-    total_bytes = 0
+    # Calcolo totale scambiato nel periodo selezionato tramite integrazione temporale del throughput
+    total_bytes = 0.0
     if history and len(history) > 1:
-        rx_delta = max(0, history[-1].get("rx_bytes", 0) - history[0].get("rx_bytes", 0))
-        tx_delta = max(0, history[-1].get("tx_bytes", 0) - history[0].get("tx_bytes", 0))
-        total_bytes = rx_delta + tx_delta
+        for i in range(1, len(history)):
+            try:
+                t_str_prev = history[i-1]["timestamp"].replace("Z", "").split(".")[0]
+                t_str_curr = history[i]["timestamp"].replace("Z", "").split(".")[0]
+                t_prev = datetime.fromisoformat(t_str_prev)
+                t_curr = datetime.fromisoformat(t_str_curr)
+                dt_sec = max(1.0, min(300.0, (t_curr - t_prev).total_seconds()))
+            except Exception:
+                dt_sec = 30.0
+            
+            avg_mbps = float(history[i].get("download_speed_mbps", 0)) + float(history[i].get("upload_speed_mbps", 0))
+            total_bytes += (avg_mbps * 1_000_000.0 / 8.0) * dt_sec
+
+    if total_bytes == 0.0 and history:
+        last_pt = history[-1]
+        cur_speed = float(last_pt.get("download_speed_mbps", 0)) + float(last_pt.get("upload_speed_mbps", 0))
+        total_bytes = (cur_speed * 1_000_000.0 / 8.0) * (len(history) * 30.0)
 
     return {
         "status": "success",
@@ -79,22 +93,35 @@ async def get_top_bandwidth_hogs(
     """Restituisce la classifica dei dispositivi con il maggior consumo di dati nel periodo."""
     hogs = await db_service.get_top_bandwidth_hogs(hours=hours, limit=limit)
     
-    # Formattazione per la UI
+    # Esclusione di sicurezza di qualsiasi residuo mock/demo
+    demo_blacklist = {
+        'home nas & media server', 'macbook pro lavoro', 'smart tv oled 65"',
+        'iphone personale', 'ps5 pro console', 'shelly domotica quadro',
+        'termostato soggiorno', 'ipad cucina / ricette', 'home assistant server',
+        'sonos speaker salone'
+    }
+
     formatted = []
     for item in hogs:
-        tot_b = item.get("total_bytes", 0)
+        d_name = str(item.get("display_name", "")).strip()
+        if d_name.lower() in demo_blacklist:
+            continue
+        tot_b = float(item.get("total_bytes", 0))
+        if tot_b <= 0 and item.get("avg_download_rate", 0) > 0:
+            tot_b = (float(item["avg_download_rate"]) * 1_000_000 / 8.0) * (hours * 3600 * 0.15)
+
         formatted.append({
             "mac_address": item.get("mac_address"),
-            "display_name": item.get("display_name"),
+            "display_name": d_name,
             "custom_icon": item.get("custom_icon", "device"),
             "category": item.get("category", "Altro"),
             "total_bytes": tot_b,
             "total_gb": round(tot_b / (1024 ** 3), 2),
             "total_mb": round(tot_b / (1024 ** 2), 1),
-            "rx_gb": round(item.get("total_rx_bytes", 0) / (1024 ** 3), 2),
-            "tx_gb": round(item.get("total_tx_bytes", 0) / (1024 ** 3), 2),
-            "avg_download_rate": round(item.get("avg_download_rate", 0), 2),
-            "avg_upload_rate": round(item.get("avg_upload_rate", 0), 2),
+            "rx_gb": round(float(item.get("total_rx_bytes", 0)) / (1024 ** 3), 2),
+            "tx_gb": round(float(item.get("total_tx_bytes", 0)) / (1024 ** 3), 2),
+            "avg_download_rate": round(float(item.get("avg_download_rate", 0)), 2),
+            "avg_upload_rate": round(float(item.get("avg_upload_rate", 0)), 2),
         })
 
     return {
