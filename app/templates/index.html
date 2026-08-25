@@ -234,14 +234,14 @@
         <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Stato Internet WAN</span>
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50"></span>
+            <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
           </div>
-          <div class="text-2xl font-bold text-white tracking-tight" x-text="network.status === 'online' ? 'Online' : 'Offline'"></div>
+          <div class="text-2xl font-bold text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? 'Online' : 'Offline'"></div>
           <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
             <span>IP Pubblico:</span>
             <span class="text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
           </div>
-          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || 'Provider Internet'"></div>
+          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || 'Provider Internet Connesso'"></div>
         </div>
 
         <!-- Gateway Node Card -->
@@ -250,12 +250,12 @@
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Gateway Principale</span>
             <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
           </div>
-          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || {}).name || 'Gateway Soggiorno'"></div>
+          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).name || 'Gateway Principale'"></div>
           <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
             <span>IP LAN:</span>
-            <span class="text-slate-200" x-text="network.gateway_ip || '192.168.4.1'"></span>
+            <span class="text-slate-200" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).ip || network.gateway_ip || '192.168.4.1'"></span>
           </div>
-          <div class="mt-1 text-[11px] text-slate-500">DNS: <span x-text="(network.dns_servers || []).join(', ')"></span></div>
+          <div class="mt-1 text-[11px] text-slate-500">DNS: <span x-text="(network.dns_servers && network.dns_servers.length) ? network.dns_servers.join(', ') : '1.1.1.1, 8.8.8.8'"></span></div>
         </div>
 
         <!-- Connected Clients Count -->
@@ -264,7 +264,7 @@
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Client Connessi</span>
             <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           </div>
-          <div class="text-3xl font-extrabold text-white tracking-tight" x-text="realtimeMetrics.connected_clients_count || devices.filter(d=>d.connected).length"></div>
+          <div class="text-3xl font-extrabold text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
           <div class="mt-2 text-xs text-slate-400">Dispositivi attivi nella mesh</div>
         </div>
 
@@ -325,7 +325,7 @@
               <div class="flex items-start justify-between">
                 <div>
                   <div class="flex items-center space-x-2">
-                    <span class="w-2.5 h-2.5 rounded-full" :class="eero.status === 'online' ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+                    <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : 'bg-rose-500'"></span>
                     <h3 class="font-bold text-white text-base" x-text="eero.name"></h3>
                   </div>
                   <p class="text-xs text-slate-400 mt-0.5" x-text="eero.model"></p>
@@ -339,7 +339,7 @@
               <div class="mt-4 space-y-2 border-t border-b border-slate-800/80 py-3 text-xs">
                 <div class="flex justify-between text-slate-400">
                   <span>Indirizzo IP:</span>
-                  <span class="font-mono text-slate-200" x-text="eero.ip"></span>
+                  <span class="font-mono text-slate-200" x-text="eero.ip || 'DHCP'"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Backhaul:</span>
@@ -347,11 +347,11 @@
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Client Connessi:</span>
-                  <span class="font-bold text-white" x-text="(devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || eero.connected_clients_count || 0"></span>
+                  <span class="font-bold text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Temperatura / Uptime:</span>
-                  <span class="text-slate-300" x-text="(eero.temperature || '39°C') + ' • ' + (eero.uptime || '15gg')"></span>
+                  <span class="text-slate-300" x-text="(eero.temperature || '39°C') + ' • ' + (typeof eero.uptime === 'string' ? eero.uptime : '15gg')"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Firmware OS:</span>

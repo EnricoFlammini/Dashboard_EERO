@@ -143,10 +143,24 @@ class BackgroundPoller:
                 elif mac:
                     self._known_macs.add(mac)
 
-            # 3. Rilevamento nodi eero offline
+            # 3. Distribuzione conteggio client connessi per singolo nodo eero
+            for node in eeros:
+                node_id = str(node.get("id") or node.get("serial") or "")
+                node_name = str(node.get("name") or node.get("location") or "")
+                matched_clients = [
+                    d for d in enriched_devices
+                    if d.get("connected") and (
+                        str(d.get("connected_eero_id", "")) == node_id or
+                        str(d.get("connected_eero_name", "")).lower() == node_name.lower() or
+                        (node.get("is_gateway") and not d.get("connected_eero_id") and not d.get("wireless"))
+                    )
+                ]
+                node["connected_clients_count"] = len(matched_clients)
+
+            # Rilevamento nodi eero offline
             for node in eeros:
                 node_id = str(node.get("id") or node.get("serial"))
-                status = node.get("status", "online")
+                status = "online" if node.get("status") in ("online", "green") else "offline"
                 if node_id in self._known_eeros_status:
                     prev_status = self._known_eeros_status[node_id]
                     if prev_status == "online" and status != "online":
@@ -155,13 +169,13 @@ class BackgroundPoller:
 
             # 4. Calcolo Network Health Score (1 - 100)
             health = 100
-            offline_eeros = len([e for e in eeros if e.get("status") != "online"])
+            offline_eeros = len([e for e in eeros if e.get("status") not in ("online", "green")])
             health -= offline_eeros * 25
-            if network_details.get("status") != "online":
+            if network_details.get("status") not in ("online", "green"):
                 health -= 50
             
             # Penalità per segnale debole sui client connessi
-            weak_signals = len([d for d in devices if d.get("connected") and (d.get("signal_rssi") or 0) < -75])
+            weak_signals = len([d for d in enriched_devices if d.get("connected") and (d.get("signal_rssi") or 0) < -75])
             health -= min(weak_signals * 2, 15)
             self.cached_health_score = max(5, min(100, health))
 
