@@ -175,7 +175,7 @@ class DBService:
         download_speed_mbps: float,
         upload_speed_mbps: float,
     ) -> int:
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
@@ -207,14 +207,15 @@ class DBService:
                 cursor = await db.execute(query, (start_time, end_time))
             else:
                 since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+                since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
                 query = """
                     SELECT timestamp, status, public_ip, rx_bytes, tx_bytes, 
                            download_speed_mbps, upload_speed_mbps 
                     FROM wan_metrics 
-                    WHERE timestamp >= ? 
+                    WHERE timestamp >= ? OR timestamp >= ?
                     ORDER BY timestamp ASC
                 """
-                cursor = await db.execute(query, (since,))
+                cursor = await db.execute(query, (since, since_iso))
             rows = await cursor.fetchall()
             results = [dict(row) for row in rows]
 
@@ -234,7 +235,7 @@ class DBService:
                     dl = max(0.5, dl)
                     ul = round(dl * random.uniform(0.08, 0.16), 2)
                     synth.append({
-                        "timestamp": t.strftime("%Y-%m-%d %H:%M:%S"),
+                        "timestamp": t.strftime("%Y-%m-%dT%H:%M:%SZ"),
                         "status": "online",
                         "public_ip": "192.168.1.190",
                         "rx_bytes": 0,
@@ -251,7 +252,7 @@ class DBService:
     async def save_device_metrics_batch(self, metrics_list: List[Dict[str, Any]]):
         if not metrics_list:
             return
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         records = [
             (
                 now,
@@ -277,21 +278,23 @@ class DBService:
 
     async def get_device_metrics_history(self, mac_address: str, hours: int = 24) -> List[Dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+        since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT timestamp, mac_address, hostname, rx_bytes, tx_bytes, download_rate, upload_rate
                 FROM device_metrics
-                WHERE mac_address = ? AND timestamp >= ?
+                WHERE mac_address = ? AND (timestamp >= ? OR timestamp >= ?)
                 ORDER BY timestamp ASC
                 """,
-                (mac_address, since)
+                (mac_address, since, since_iso)
             )
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
     async def get_top_bandwidth_hogs(self, hours: int = 24, limit: int = 10) -> List[Dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+        since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
@@ -308,12 +311,12 @@ class DBService:
                     AVG(dm.upload_rate) as avg_upload_rate
                 FROM device_metrics dm
                 LEFT JOIN device_metadata meta ON dm.mac_address = meta.mac_address
-                WHERE dm.timestamp >= ?
+                WHERE dm.timestamp >= ? OR dm.timestamp >= ?
                 GROUP BY dm.mac_address
                 ORDER BY (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes) + AVG(dm.download_rate)*1000000) DESC
                 LIMIT ?
                 """,
-                (since, limit)
+                (since, since_iso, limit)
             )
             rows = await cursor.fetchall()
             results = []
@@ -341,7 +344,7 @@ class DBService:
         server_name: str = "eero Cloud SpeedTest",
         source: str = "eero_api"
     ) -> int:
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """

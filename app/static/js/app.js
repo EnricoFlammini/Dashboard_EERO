@@ -477,6 +477,26 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    formatLocalTime(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const dt = new Date(str);
+      return dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false });
+    },
+
+    formatLocalDateTime(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const dt = new Date(str);
+      return dt.toLocaleDateString('it-IT', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    },
+
     async loadWanHistory(hours = null) {
       if (hours) this.selectedWanRange = hours;
       try {
@@ -487,10 +507,7 @@ document.addEventListener('alpine:init', () => {
           this.wanHistoryData = json.history || [];
 
           if (this.wanHistoryData.length > 0) {
-            const labels = this.wanHistoryData.map(d => {
-              const dt = new Date(d.timestamp);
-              return dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            });
+            const labels = this.wanHistoryData.map(d => this.formatLocalTime(d.timestamp));
             const dl = this.wanHistoryData.map(d => d.download_speed_mbps);
             const ul = this.wanHistoryData.map(d => d.upload_speed_mbps);
             this.renderWanChart(labels, dl, ul);
@@ -779,7 +796,7 @@ document.addEventListener('alpine:init', () => {
           this.speedtestHistory = jsonHist.tests || [];
           if (this.speedtestHistory.length > 0) {
             const rev = [...this.speedtestHistory].reverse();
-            const labels = rev.map(t => new Date(t.timestamp).toLocaleDateString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+            const labels = rev.map(t => this.formatLocalDateTime(t.timestamp));
             const dl = rev.map(t => t.download_mbps);
             const ul = rev.map(t => t.upload_mbps);
             const ping = rev.map(t => t.ping_ms);
