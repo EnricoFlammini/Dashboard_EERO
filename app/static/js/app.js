@@ -4,7 +4,11 @@
  */
 
 document.addEventListener('alpine:init', () => {
-  Alpine.data('eeroApp', () => ({
+    // i18n Multi-Language State
+    currentLanguage: localStorage.getItem('eero_lang') || (navigator.language && navigator.language.startsWith('it') ? 'it' : 'en'),
+    translations: {},
+    translationsLoaded: false,
+
     // Navigation State
     currentTab: 'overview',
     
@@ -136,10 +140,11 @@ document.addEventListener('alpine:init', () => {
     toasts: [],
 
     // =========================================================================
-    // INITIALIZATION
+    // INITIALIZATION & I18N
     // =========================================================================
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
+      await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
       await this.loadManualSections();
 
@@ -152,6 +157,42 @@ document.addEventListener('alpine:init', () => {
       this.$watch('currentTab', (tab) => {
         this.setTab(tab);
       });
+    },
+
+    async setLanguage(lang) {
+      this.currentLanguage = lang || 'en';
+      localStorage.setItem('eero_lang', this.currentLanguage);
+      try {
+        const res = await fetch(`/static/locales/${this.currentLanguage}.json`);
+        if (res.ok) {
+          this.translations = await res.json();
+          this.translationsLoaded = true;
+        }
+      } catch (e) {
+        console.warn("Could not load translations for", this.currentLanguage, e);
+      }
+    },
+
+    t(path, params = {}) {
+      if (!path) return '';
+      const keys = path.split('.');
+      let val = this.translations;
+      for (const k of keys) {
+        if (val && typeof val === 'object' && k in val) {
+          val = val[k];
+        } else {
+          val = null;
+          break;
+        }
+      }
+      if (typeof val !== 'string') {
+        return path;
+      }
+      let res = val;
+      for (const [k, v] of Object.entries(params)) {
+        res = res.replaceAll(`{${k}}`, v);
+      }
+      return res;
     },
 
     async setTab(tab) {

@@ -190,12 +190,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.08", "content": content}
+                return {"status": "success", "version": "1.01.00", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.08",
-        "content": "# Changelog v1.00.08\n\n- Sincronizzazione matematica totale tra Speed Test e analisi continua della rete.\n- Unificazione dell'ultimo test tra card, grafico temporale e statistiche aggregate."
+        "version": "1.01.00",
+        "content": "# Changelog v1.01.00\n\n- Supporto multilingua (Italiano / Inglese) con selettore dinamico in tempo reale.\n- Rilascio Open Source con licenza MIT e sicurezza credenziali avanzata."
     }

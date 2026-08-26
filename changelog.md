@@ -6,6 +6,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.01.00] - 2026-08-26
+
+### 🌍 Supporto Multilingua (i18n) & Rilascio Open Source
+* **Supporto Internazionale Completo (Italiano & Inglese):** Aggiunta l'architettura di localizzazione dinamica con dizionari JSON dedicati (`it.json` e `en.json`) e helper reattivo `t(key)`.
+* **Selettore Lingua nell'Header:** Aggiunto il menu a tendina 🇮🇹 IT / 🇬🇧 EN nella barra superiore per cambiare istantaneamente la lingua dell'intera dashboard senza ricaricare la pagina.
+* **Persistenza & Rilevamento Automatico:** Il sistema rileva automaticamente la lingua del browser dell'utente e memorizza la preferenza selezionata in `localStorage`.
+* **Standard Open Source GitHub:** Aggiunto file `LICENSE` (licenza MIT), rafforzato `.gitignore` per prevenire il leak accidentale di credenziali o database e documentazione pronta per la community.
+
+---
+
 ## [1.00.08] - 2026-08-26
 
 ### ⚡ Sincronizzazione Totale Speed Test & Analisi Prestazioni
