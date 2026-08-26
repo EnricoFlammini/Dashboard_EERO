@@ -40,9 +40,8 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 ## 🌟 Key Features
 
 * **📊 Mesh Topology & Health Score:** Live overview with Network Health Score (1-100), WAN public IP, gateway status, DNS servers, ISP information, and individual eero nodes (Gateway & Beacons) with backhaul type (`Ethernet (Wired)` vs `Wireless Mesh`).
-* **👤 Cloud User Profiles & Device Assignment:** Dedicated "Profiles & Users" tab with interactive cards for each eero Cloud profile/family member. One-click profile pause, bi-directional device assignment, unassigned device quick linking, and profile badges in the device table.
-* **🖥️ Certified Hardware Telemetry & Device Management:** Full client table with filters by band (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), profile, connected mesh node, Wi-Fi channel, RSSI signal strength (dBm), negotiated physical PHY rate, and **Static IP vs Dynamic DHCP indicators**.
-* **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), cloud profile selector, categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
+* **🖥️ Certified Hardware Telemetry & Frequency Bands:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, and **Static IP vs Dynamic DHCP indicators**.
+* **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
 * **🌍 Real-Time Multi-Language (i18n):** Native bilingual interface (**English 🇬🇧 / Italian 🇮🇹**) with automatic browser language detection and instant live switcher.
 * **⚡ Speed Test & Performance Analytics:** Manual and scheduled automated speed tests (e.g. every 12 hours) with historical charts (Download, Upload, Ping/Latency) and aggregate statistics.
 * **📱 Dynamic Guest Wi-Fi QR Code:** Scannable Wi-Fi QR Code generator (`WIFI:S:...;T:WPA;P:...;;`) with one-click enable/disable and secure password generation.
@@ -131,7 +130,7 @@ tar -czvf eero_dashboard_backup_$(date +%F).tar.gz ./data
 <a name="italiano"></a>
 # 🇮🇹 Documentazione in Italiano
 
-Applicazione web self-hosted, modulare e containerizzata con Docker per il monitoraggio avanzato, il controllo e l'analisi dell'infrastruttura mesh **Amazon eero**. Include telemetria fisica certificata dai nodi, gestione avanzata dei dispositivi, prenotazione IP statici con rilevamento conflitti, inoltro porte (Port Forwarding), storico Speed Test, Wi-Fi ospiti con QR Code dinamico, Gaming Mode a un clic e manuale interattivo.
+Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon eero**. Offre telemetria autentica hardware, monitoraggio in tempo reale, prenotazioni IP statici DHCP con risoluzione automatica dei conflitti, gestione regole di port forwarding, storico misurazioni speed test, generazione dinamica di QR Code per rete ospiti, modalità gaming low-latency e manuale integrato.
 
 ---
 
@@ -154,9 +153,8 @@ Applicazione web self-hosted, modulare e containerizzata con Docker per il monit
 ## 🌟 Caratteristiche Principali
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con tipo di backhaul (`Ethernet (Cablato)` vs `Wireless Mesh (5/6 GHz)`).
-* **👤 Gestione Profili Utente Cloud & Assegnazione Dispositivi:** Nuovo tab "Profili & Utenti" con card per ciascun membro della famiglia, pausa istantanea dell'accesso a Internet di tutti i dispositivi dell'utente, assegnazione rapida bidirezionale e badge profilo nella tabella client.
-* **🖥️ Telemetria Hardware Certificata & Gestione Dispositivi:** Tabella completa con filtri per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), profilo utente, canale Wi-Fi, nodo eero collegato, potenza del segnale RSSI (dBm), velocità di link PHY negoziata e **indicatori visivi IP Statico vs DHCP**.
-* **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, selettore profilo cloud, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
+* **🖥️ Telemetria Hardware & Frequenze Wi-Fi:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY e **indicatori visivi IP Statico vs DHCP**.
+* **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
 * **🌍 Supporto Multilingua (i18n):** Interfaccia bilingue (**Italiano 🇮🇹 / Inglese 🇬🇧**) con rilevamento automatico della lingua del browser e selettore istantaneo nella barra superiore.
 * **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
 * **📱 Smart Guest Wi-Fi con QR Code Dinamico:** Generatore automatico di QR Code standard Wi-Fi (`WIFI:S:...;T:WPA;P:...;;`) da scansionare al volo con smartphone, con toggle rapido di attivazione e generatore di password sicure.
