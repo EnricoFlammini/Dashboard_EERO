@@ -59,7 +59,6 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 * **Azioni Rapide sui Nodi:**
   - **Riavvio Rete:** Invia un comando di riavvio controllato a tutta l'infrastruttura.
   - **Riavvio Singolo Nodo:** Riavvia unicamente il nodo selezionato senza interrompere il resto della casa.
-  - **Controllo LED:** Pulsanti per accendere o spegnere all'istante i LED frontali dei singoli nodi o di tutta la rete.
         """
     },
     {
@@ -191,12 +190,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.02", "content": content}
+                return {"status": "success", "version": "1.00.03", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.02",
-        "content": "# Changelog v1.00.02\n\n- Allineamento rigoroso a dati reali ufficiali eero.\n- Rimozione schermata e contatori WAN.\n- Visualizzatore changelog integrato."
+        "version": "1.00.03",
+        "content": "# Changelog v1.00.03\n\n- Rimozione controlli LED non supportati via cloud.\n- Allineamento schede nodi a Stato: Online.\n- Visualizzatore changelog integrato."
     }

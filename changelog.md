@@ -6,6 +6,15 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.03] - 2026-08-26
+
+### 🏷️ Raffinamento Interfaccia & Nodi Mesh
+* **Etichetta "Stato" sulle schede dei Nodi:** Sostituita la precedente dicitura con un'etichetta univoca e pulita **`Stato: Online • Ottimale`**.
+* **Rimozione Controlli LED non supportati da Cloud:** Rimosso il pulsante toggle LED dalle schede dei nodi e lo scheduler Notte LED. I nodi eero (in particolare con firmware v7.x) riservano il controllo fisico dei LED all'app mobile ufficiale / BLE; la dashboard evita comandi che verrebbero sovrascritti dal cloud.
+* **Pulsante Riavvio Nodi Dedicato:** Mantenuto il comando nativo e verificato di riavvio individuale per ciascun nodo mesh.
+
+---
+
 ## [1.00.02] - 2026-08-26
 
 ### 🧹 Semplificazione & Allineamento Diretto API eero
