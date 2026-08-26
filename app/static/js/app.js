@@ -1031,34 +1031,18 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Se il profilo utente è cambiato, sincronizza con l'API profili
-        const currentProfId = this.selectedDevice.profile_id || '';
-        const newProfId = this.deviceSelectedProfileId || '';
-        if (currentProfId !== newProfId) {
-          try {
-            await fetch(`/api/devices/${mac}/profile`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ profile_id: newProfId ? newProfId : null })
-            });
-          } catch (pe) {
-            console.warn("Profile sync error:", pe);
-          }
-        }
-
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
           custom_name: this.deviceMetadataForm.custom_name,
           category: this.deviceMetadataForm.category,
           custom_notes: this.deviceMetadataForm.custom_notes,
           is_favorite: Boolean(this.deviceMetadataForm.is_favorite),
-          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target),
-          profile_id: newProfId || null
+          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target)
         });
 
-        this.showToast("Salvato", "Metadati, categoria e profilo utente salvati.", "success");
+        this.showToast("Salvato", "Metadati e categoria dispositivo salvati con successo.", "success");
         this.showDeviceModal = false;
-        await Promise.all([this.fetchDevices(), this.fetchProfiles()]);
+        await this.fetchDevices();
       } catch (err) {
         this.showToast("Errore Salvataggio", err.message, "error");
       }

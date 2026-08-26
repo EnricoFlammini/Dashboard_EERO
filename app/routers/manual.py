@@ -332,6 +332,7 @@ async def get_changelog():
     """Restituisce il contenuto del file changelog.md per il visualizzatore in-app."""
     import os
     from pathlib import Path
+    from app.config import settings
 
     possible_paths = [
         Path("/app/changelog.md"),
@@ -342,13 +343,13 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.01.00", "content": content}
+                return {"status": "success", "version": settings.app_version, "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.01.00",
-        "content": "# Changelog v1.01.00\n\n- Full multi-language support (Italian & English) with real-time selector.\n- Open Source release under MIT License with enhanced credential security."
+        "version": settings.app_version,
+        "content": f"# Changelog v{settings.app_version}\n\n- Full multi-language support (Italian & English) with real-time selector.\n- Frequency band badges (2.4 GHz, 5 GHz, 6 GHz, Ethernet).\n- eero Cloud user profile integration in client table."
     }
 

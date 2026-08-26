@@ -6,29 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
-## [1.02.01] - 2026-08-26
-
-### 📡 Ripristino Badge Frequenze Banda & Ottimizzazione Integrazione Profili
-* **Ripristino Visualizzazione Banda Wi-Fi (6 GHz, 5 GHz, 2.4 GHz, Ethernet):** Ripristinata e potenziata la colonna *Banda / Canale* nella tabella dispositivi con badge cromatici dedicati (Sky Blue `6 GHz`, Indigo `5 GHz`, Amber `2.4 GHz`, Emerald `Ethernet`) ed etichetta canale Wi-Fi (`CH 11`, `CH 36`, ecc.).
-* **Filtro Multi-Frequenza Avanzato:** Potenziato il filtro a tendina nella barra superiore per filtrare istantaneamente i client per frequenza (Tutte le Frequenze, 6 GHz, 5 GHz, 2.4 GHz, Cablato).
-* **Ottimizzazione Sezione Profili & Utente:** Rimossa la schermata dedicata separata a favore di una gestione più pulita e diretta: la colonna *Profilo / Utente* rimane pienamente visibile nella tabella Dispositivi con badge `👤 [Nome Profilo]` e filtro rapido, sincronizzata in tempo reale con l'App eero ufficiale.
-
----
-
 ## [1.02.00] - 2026-08-26
 
-### 👤 Gestione Completa Profili Utente Cloud eero & Assegnazione Dispositivi
-* **Integrazione Nativa Profili Famiglia Cloud eero:** Aggiunta la gestione completa dei Profili Utente eero (`/profiles`) con supporto a creazione, modifica, eliminazione e pausa istantanea dell'accesso a Internet per tutti i dispositivi del profilo.
-* **Nuovo Tab Dedicato "Profili & Utenti":** Introdotta un'intera sezione dell'interfaccia con schede profilo interattive, statistiche aggregate (Totale Profili, Dispositivi Assegnati, Dispositivi Non Assegnati), avatar colorati e gestione unificata.
-* **Assegnazione & Disassociazione Dispositivi Bidirezionale:**
-  * **Dalla scheda Profilo:** Selettore rapido per aggiungere istantaneamente dispositivi non assegnati e pulsante di rimozione con un clic.
-  * **Dalla sezione "Dispositivi Non Assegnati":** Tabella/griglia dedicata con menu a tendina per assegnare subito ogni dispositivo a un utente.
-  * **Dalla modale di Modifica Dispositivo:** Aggiunto il menu *Profilo Utente Cloud* nel tab Generale, con sincronizzazione immediata all'atto del salvataggio.
-* **Badge & Filtro nella Tabella Dispositivi:**
-  * Ciascun dispositivo nella tabella mostra la colonna con badge profilo `👤 [Nome Profilo]`.
-  * Aggiunto il filtro rapido *Tutti i Profili / Non Assegnati / Profilo Specifico* nella barra superiore.
-  * La barra di ricerca testuale permette di cercare i dispositivi anche digitando il nome del profilo utente.
-* **Architettura Zero-Latency & Rate Limit Safe:** I profili sono memorizzati nella cache RAM del Background Poller e arricchiscono ogni oggetto dispositivo in memoria; le mutazioni aggiornano il Cloud eero e sincronizzano istantaneamente la cache RAM senza attendere il ciclo di polling successivo.
+### 📡 Telemetria Frequenze Wi-Fi (2.4/5/6GHz) & Integrazione Utenti Cloud eero
+* **Badge Frequenze di Banda & Canale Wi-Fi:** Visualizzazione esplicita della frequenza per ciascun dispositivo nella tabella principale (**6 GHz**, **5 GHz**, **2.4 GHz**, **Cablato Ethernet**) con badge colorati distintivi (Sky Blue `6 GHz`, Indigo `5 GHz`, Amber `2.4 GHz`, Emerald `Ethernet`) ed etichetta canale wireless (`CH 11`, `CH 36`, ecc.).
+* **Integrazione Utente / Profilo Cloud eero nei Dispositivi:** Ciascun client mostra la colonna *Profilo / Utente* con badge `👤 [Nome Profilo]`, sincronizzata in tempo reale con i profili configurati nell'App eero ufficiale.
+* **Filtri Multi-Criterio Avanzati:**
+  * Filtro rapido a tendina per frequenza di banda (*Tutte le Frequenze, 6 GHz, 5 GHz, 2.4 GHz, Cablato*).
+  * Filtro per profilo utente (*Tutti i Profili / Non Assegnati / Profilo Specifico*).
+  * Filtro per nodo mesh di attestazione (*Gateway / Beacon*).
+  * Filtro per tipo di indirizzo IP (*Tutti gli Assegnamenti / Solo IP Statici / Solo IP DHCP*).
+* **Ottimizzazione Modale Dettaglio Dispositivo:** Interfaccia snella e focalizzata sulla modifica di Nome Personalizzato, Categoria, Note locali, Assegnazione IP Statico permanente e Regole di Port Forwarding.
 
 ---
 

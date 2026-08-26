@@ -80,8 +80,8 @@
             <button 
               @click="openChangelogModal()" 
               class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 hover:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer" 
-              :title="t('header.changelog_title') + ' v1.01.00'">
-              <span>v1.01.00</span>
+              :title="t('header.changelog_title') + ' v1.02.00'">
+              <span>v1.02.00</span>
               <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
 
@@ -943,7 +943,7 @@
         
         <!-- ==================== TAB 1: GENERALE ==================== -->
         <div x-show="deviceDetailTab === 'general'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-400 mb-1" x-text="t('device_modal.custom_name')"></label>
               <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
@@ -958,15 +958,6 @@
                 <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
                 <option value="Server/Rete" x-text="t('devices.cat_server')"></option>
                 <option value="Altro" x-text="t('devices.cat_other')"></option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('device_modal.cloud_profile')"></label>
-              <select x-model="deviceSelectedProfileId" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
-                <option value="" x-text="t('device_modal.profile_unassigned')"></option>
-                <template x-for="prof in profiles" :key="prof.id">
-                  <option :value="prof.id" x-text="'👤 ' + prof.name + ' (' + (prof.devices ? prof.devices.length : 0) + ')'"></option>
-                </template>
               </select>
             </div>
           </div>
@@ -1365,7 +1356,7 @@
       <div class="flex items-center space-x-3">
         <button @click="openChangelogModal()" class="text-sky-400 hover:text-sky-300 font-mono transition flex items-center space-x-1 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>v1.02.01 <span x-text="t('footer.changelog')"></span></span>
+          <span>v1.02.00 <span x-text="t('footer.changelog')"></span></span>
         </button>
       </div>
     </div>
