@@ -981,7 +981,9 @@ class EeroClient:
                 filtered_devs = []
                 for pd in prof.get("devices", []):
                     pd_mac = (pd.get("mac") or "").lower()
-                    meta = metadata_map.get(pd_mac, {})
+                    pd_id = str(pd.get("id") or "")
+                    pd_url = pd.get("url") or ""
+                    meta = metadata_map.get(pd_mac) or metadata_map.get(pd_id) or metadata_map.get(pd_url) or {}
                     override_pid = meta.get("profile_id")
                     if override_pid == "NONE":
                         continue
@@ -992,12 +994,14 @@ class EeroClient:
 
             for d in all_devs:
                 d_mac = (d.get("mac") or "").lower()
-                meta = metadata_map.get(d_mac, {})
+                d_id = str(d.get("id") or "")
+                d_url = d.get("url") or ""
+                meta = metadata_map.get(d_mac) or metadata_map.get(d_id) or metadata_map.get(d_url) or {}
                 override_pid = meta.get("profile_id")
                 if override_pid and override_pid != "NONE":
                     target_p = next((p for p in profiles if p.get("id") == override_pid or p.get("url", "").endswith(override_pid)), None)
                     if target_p:
-                        already_in = any((x.get("mac") or "").lower() == d_mac for x in target_p.get("devices", []))
+                        already_in = any((x.get("mac") or "").lower() == d_mac or str(x.get("id") or "") == d_id for x in target_p.get("devices", []))
                         if not already_in:
                             target_p["devices"].append(d)
 
@@ -1334,12 +1338,20 @@ class EeroClient:
         # 1. Salva la modifica nel Database Locale per garantire persistenza ed effetto immediato
         try:
             from app.services.db import db_service
-            save_mac = target_mac or dev_key.lower()
-            await db_service.upsert_device_metadata(
-                mac_address=save_mac,
-                profile_id=clean_target_pid if clean_target_pid else "NONE"
-            )
-            logger.info(f"Persisted device profile mapping in local database: {save_mac} -> {clean_target_pid or 'NONE'}")
+            keys_to_save = set()
+            if target_mac:
+                keys_to_save.add(target_mac.lower())
+            if clean_dev_id:
+                keys_to_save.add(clean_dev_id)
+            if dev_key:
+                keys_to_save.add(dev_key.lower())
+
+            for k in keys_to_save:
+                await db_service.upsert_device_metadata(
+                    mac_address=k,
+                    profile_id=clean_target_pid if clean_target_pid else "NONE"
+                )
+            logger.info(f"Persisted device profile mapping in local database for keys {keys_to_save} -> {clean_target_pid or 'NONE'}")
         except Exception as db_err:
             logger.error(f"Error persisting profile mapping in database: {db_err}")
 

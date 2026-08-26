@@ -7,7 +7,7 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = "1.02.00"
+        app_version: str = "1.02.01"
         debug: bool = False
         
         # Path configuration

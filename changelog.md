@@ -6,6 +6,15 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.02.01] - 2026-08-26
+
+### 🛠️ Persistenza Ibrida Assegnazione Profili & Sincronizzazione Multi-Alias
+* **Architettura di Persistenza Ibrida:** Implementata la sincronizzazione dell'associazione profilo-dispositivo con il database SQLite locale (`device_metadata.profile_id`), superando le limitazioni dell'API Cloud di eero che impedisce la mutazione diretta dei dispositivi su profili esistenti da client terzi (HTTP 404).
+* **Multi-Key Alias Mapping:** Risolto il matching dei dispositivi salvando e verificando tutti gli identificativi univoci (MAC address, eero Device ID e Resource URL), garantendo la disassociazione immediata e permanente del dispositivo dalla scheda utente (e suo spostamento nella lista non assegnati) con un solo clic sulla `X`.
+* **Pausa Dispositivi Multi-Device Affidabile:** Il comando "Pausa Internet Profilo" agisce ora sia a livello di profilo Cloud sia individualmente su ciascun dispositivo dell'utente, assicurando il blocco effettivo della navigazione su eero Cloud.
+
+---
+
 ## [1.02.00] - 2026-08-26
 
 ### 👤 Gestione Completa Profili Utente Cloud eero & Assegnazione Dispositivi
