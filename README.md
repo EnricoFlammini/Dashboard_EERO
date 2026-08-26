@@ -1,20 +1,19 @@
-# eero Custom Dashboard, Management Suite & Bandwidth Historian 🚀
+# eero Custom Dashboard & Mesh Management Suite 🚀
 
-Applicazione web self-hosted, modulare e containerizzata con Docker per il monitoraggio avanzato del traffico di rete (WAN e per singolo host), controller di rete mesh, storico delle prestazioni (Speed Test), automazioni e **manuale utente integrato interattivo** per sistemi mesh Amazon eero.
+Applicazione web self-hosted, modulare e containerizzata con Docker per il controllo dell'infrastruttura mesh, gestione avanzata dei dispositivi con dati fisici certificati, storico delle prestazioni (Speed Test), automazioni e **manuale utente integrato interattivo** per sistemi mesh Amazon eero.
 
 ---
 
 ## 🌟 Caratteristiche Principali
 
-* **📊 Dashboard Mesh & WAN in Tempo Reale:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, stato dei singoli nodi eero (Gateway e Beacon) con uptime, temperatura interna e tipo di backhaul (Ethernet 1/2.5Gbps vs Wireless Mesh).
-* **📈 Bandwidth Historian & Top Consumer:** Grafici temporali interattivi con Chart.js (Download vs Upload) con intervallo selezionabile a 24h, 7gg, 30gg o personalizzato, e classifica a barre orizzontali dei dispositivi a maggior consumo (Bandwidth Hogs).
-* **🖥️ Gestione Avanzata Dispositivi:** Tabella completa con filtri per frequenza (2.4 / 5 / 6 GHz / Cablato), nodo eero collegato, stato e potenza del segnale RSSI (dBm). Scheda di dettaglio con personalizzazione di nomi, icone, note locali, prenotazione IP statico DHCP, regole di Port Forwarding e toggle per mettere in pausa la connessione internet con sincronizzazione API verso eero.
-* **⚡ Speed Test & Diagnostica:** Esecuzione test manuali e schedulati a intervalli regolari (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
+* **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con uptime e tipo di backhaul (Ethernet 1/2.5Gbps vs Wireless Mesh).
+* **🖥️ Gestione Avanzata Dispositivi con Dati Fisici Certificati:** Tabella completa con filtri per frequenza (2.4 / 5 / 6 GHz / Cablato), canale Wi-Fi, nodo eero collegato, potenza del segnale RSSI (dBm) e velocità di link PHY negoziata (es. 780 / 866.7 Mbps). Scheda di dettaglio con personalizzazione di nomi, icone, note locali, prenotazione IP statico DHCP, regole di Port Forwarding e toggle per mettere in pausa la connessione internet con sincronizzazione API verso eero.
+* **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati a intervalli regolari (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
 * **📱 Smart Guest Wi-Fi con QR Code Dinamico:** Generatore automatico di QR Code standard Wi-Fi (`WIFI:S:...;T:WPA;P:...;;`) da scansionare al volo con smartphone, con pulsante per attivare/disattivare la rete ospiti e generatore di password sicure.
 * **🎮 Gaming & Focus Mode (One-Click Low Latency):** Pulsante a un clic che mette automaticamente in pausa il traffico di background di apparati secondari e IoT preconfigurati per azzerare il jitter e la latenza durante sessioni di gaming o videoconferenze.
 * **🌙 Modalità Notte Automatica:** Scheduler orario per spegnere automaticamente i LED frontali dei nodi mesh durante la notte (es. 23:00 - 07:00) e riaccenderli al mattino.
-* **🔔 Notifiche Telegram & Webhook:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert), anomalie/nodi mesh offline e invio automatico del Daily Digest serale.
-* **📖 Manuale Utente Integrato:** Sezione di documentazione navigabile con ricerca istantanea full-text e tooltip informativi con icona "?" posizionati in tutta l'interfaccia per aprire guide contestuali.
+* **🔔 Notifiche Telegram & Webhook:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert) e anomalie/nodi mesh offline.
+* **📖 Manuale Utente Integrato & Changelog:** Sezione di documentazione navigabile con ricerca istantanea full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app (v1.00.02).
 * **🛡️ Zero-Latency In-Memory Poller:** Cache in memoria RAM per rispondere all'interfaccia con latenza zero senza sovraccaricare le API eero (protezione da rate limiting).
 * **✨ Demo Mode Simulator:** Possibilità di testare e validare tutte le funzioni dell'applicazione senza inserire credenziali reali.
 

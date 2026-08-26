@@ -63,28 +63,26 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
         """
     },
     {
-        "id": "bandwidth-historian",
-        "title": "4. Monitoraggio Banda & Bandwidth Hogs",
-        "icon": "chart-bar",
-        "summary": "Analisi temporale del traffico WAN e identificazione dei dispositivi più esigenti a dati reali.",
+        "id": "telemetry-api",
+        "title": "4. Telemetria & Dati Fisici Certificati eero",
+        "icon": "cpu",
+        "summary": "Lettura autentica dei parametri di rete direttamente dall'infrastruttura eero.",
         "content": """
-### Storico Consumi e Metriche WAN a Dati Reali al 100%
+### Telemetria e Dati Ufficiali al 100%
 
-1. **Grafico Temporale WAN (Download vs Upload):**
-   - Traccia i volumi di traffico e la velocità aggregata reale misurata nel tempo.
-   - Utilizza i pulsanti rapidi **24 Ore**, **7 Giorni**, **30 Giorni** o imposta un intervallo orario personalizzato.
-   - Visualizza il totale dei GigaByte (GB) scambiati nel periodo selezionato calcolato dai delta effettivi registrati.
-2. **Classifica Top Consumi (Bandwidth Hogs):**
-   - Grafico a barre orizzontale e tabella dettagliata che ordina i dispositivi in base alla quantità totale di dati realmente scambiati (`delta_rx + delta_tx`).
-   - **Approccio Rigoroso:** Nessuna simulazione o stima artificiale. Se un dispositivo (es. robot aspirapolvere o domotica) è a riposo o scambia solo minimi pacchetti di telemetria, non viene sovrastimato o inserito artificialmente nei grafici di consumo intensivo.
-3. **Throughput Istantaneo in Tempo Reale:**
-   - Visualizza la velocità live in Mbps (Down/Up) attualmente impegnata da tutti gli host attivi.
+La dashboard adotta un approccio di trasparenza e integrità totale sui dati di rete:
+1. **Dati Fisici Certificati:**
+   - Visualizzazione dei parametri reali inviati dai nodi mesh eero: **Frequenza e Banda Wi-Fi (2.4 GHz, 5 GHz, 6 GHz o Cablato Ethernet)**, **Canale Wi-Fi (es. CH 36, CH 11)**, **Potenza Segnale RSSI (dBm)** e **Velocità di Link Fisico PHY negoziata (es. 780.0 / 866.7 MBit/s)**.
+2. **Speed Test Gateway Ufficiale:**
+   - La velocità della connessione WAN visualizzata nei dettagli di rete è quella misurata direttamente dal nodo Gateway eero verso i server di test dell'infrastruttura (es. 907 Mbps Down / 193 Mbps Up).
+3. **Nessun Dato Simulato o Fittizio:**
+   - L'applicazione esclude intenzionalmente qualsiasi stima artificiale o contatore fittizio, visualizzando unicamente i valori effettivi restituiti dall'API eero.
         """
     },
     {
         "id": "device-management",
         "title": "5. Gestione Dispositivi, IP Statici & Porte",
-        "icon": "cpu",
+        "icon": "devices",
         "summary": "Personalizzazione metadati, prenotazioni DHCP, Port Forwarding e pausa internet.",
         "content": """
 ### Controllo Avanzato dei Client di Rete
@@ -92,7 +90,7 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 * **Ricerca e Filtri:**
   - Cerca per Nome, Indirizzo IP o MAC Address.
   - Filtra per frequenza di connessione (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), nodo eero a cui sono agganciati o stato Online/Offline.
-  - Indicatore visuale della potenza segnale in dBm (RSSI).
+  - Visualizzazione immediata della potenza segnale in dBm (RSSI) e velocità di link PHY.
 * **Scheda Dettaglio Dispositivo:**
   - **Nome e Icona Personalizzata:** Assegna un'icona specifica (Server, PC, Smartphone, Console, Domotica, Telecamera, ecc.) salvata nel database SQLite locale.
   - **Note & Documentazione:** Campo note libero per salvare credenziali locali, ubicazione, garanzie o porte di servizio.
@@ -136,29 +134,24 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 4. **Notifiche Webhook e Telegram Bot:**
    - **Nuovo Dispositivo Connesso:** Ricevi un alert istantaneo su Telegram quando un apparato mai visto prima si connette alla tua rete.
    - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
-   - **Daily Digest:** Ricevi ogni sera alle 21:00 un riassunto dei GB consumati, il dispositivo top consumer e la velocità media.
         """
     },
     {
         "id": "troubleshooting",
         "title": "8. Risoluzione Problemi & Domande Frequenti (FAQ)",
         "icon": "wrench",
-        "summary": "FAQ su telemetria reale, gestione sessione, backup e manutenzione.",
+        "summary": "FAQ su telemetria autentica, gestione sessione, backup e manutenzione.",
         "content": """
 ### Domande Frequenti & Troubleshooting
 
-* **Perché per alcuni dispositivi Wi-Fi o IoT non compare un consumo elevato o indicano 0 GB?**
-  - La dashboard segue un **approccio rigoroso a dati reali al 100%**. A differenza di altre app che inventano stime sintetiche, se un dispositivo (robot aspirapolvere, lampadine smart, sensori) non trasmette flussi consistenti o l'API eero non registra byte per quel client, il sistema mostrerà rigorosamente 0 o il valore esatto campionato, senza gonfiare artificialmente il consumo.
-* **Come viene calcolato il consumo delle ultime 24 ore?**
-  - Il consumo 24h è calcolato calcolando la differenza esatta (delta) tra i campioni registrati nel database SQLite locale all'interno della finestra temporale selezionata: `Consumo = MAX(rx_bytes) - MIN(rx_bytes)`.
+* **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
+  - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline/Pausa), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
 * **Cosa fare se la sessione scade?**
   - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
-* **Come effettuare il backup dei dati storici?**
-  - Tutti i dati storici sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
-* **Come modificare il periodo di conservazione dei dati?**
-  - Nel file `.env` imposta `HISTORY_RETENTION_DAYS=60` (oppure 90) e riavvia il container con `docker compose restart`. Il cleaner notturno adatterà la politica di pulizia.
+* **Come effettuare il backup delle configurazioni e metadati locali?**
+  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
 * **Protezione da Rate Limiting:**
-  - L'applicazione interroga il cloud eero solo a intervalli definiti dal poller (default 30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
+  - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
         """
     }
 ]
@@ -198,12 +191,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.01", "content": content}
+                return {"status": "success", "version": "1.00.02", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.01",
-        "content": "# Changelog v1.00.01\n\n- Approccio rigoroso a dati reali al 100%.\n- Risolto bug consumo Higgins e delta 24h.\n- Visualizzatore changelog integrato."
+        "version": "1.00.02",
+        "content": "# Changelog v1.00.02\n\n- Allineamento rigoroso a dati reali ufficiali eero.\n- Rimozione schermata e contatori WAN.\n- Visualizzatore changelog integrato."
     }
