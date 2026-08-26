@@ -352,12 +352,11 @@ class EeroClient:
             dev["id"] = dev_id
             dev["url"] = dev.get("url") or (f"/2.2/devices/{dev_id}" if dev_id else "")
             dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("mac", "Dispositivo")
-            dev["ip"] = dev.get("ip") or dev.get("ipv4") or ""
-            dev["connected"] = bool(dev.get("connected", False))
-            dev["wireless"] = bool(dev.get("wireless", True))
+            # Channel & Frequency Band extraction
+            conn_dict = dev.get("connectivity") if isinstance(dev.get("connectivity"), dict) else {}
+            iface_dict = dev.get("interface") if isinstance(dev.get("interface"), dict) else {}
 
-            # Channel / Frequency Band (Safe from NoneType TypeError)
-            raw_channel = dev.get("channel")
+            raw_channel = dev.get("channel") if dev.get("channel") is not None else (conn_dict.get("channel") if conn_dict.get("channel") is not None else iface_dict.get("channel"))
             channel = 0
             if raw_channel is not None:
                 try:
@@ -365,15 +364,39 @@ class EeroClient:
                 except Exception:
                     channel = 0
 
-            band_str = str(dev.get("band", ""))
-            if not dev["wireless"]:
+            raw_band = dev.get("band") or dev.get("wireless_band") or dev.get("frequency") or conn_dict.get("frequency") or conn_dict.get("band") or iface_dict.get("frequency") or ""
+            band_str = str(raw_band).lower().replace("ghz", "").replace(" ", "").strip()
+
+            is_wired = dev.get("connection_type") == "wired" or dev.get("wired") is True or dev.get("wireless") is False
+            if is_wired:
+                dev["wireless"] = False
+                dev["connection_type"] = "wired"
                 dev["frequency_band"] = "Cablato"
-            elif band_str == "6" or channel > 64:
-                dev["frequency_band"] = "6 GHz" if band_str == "6" else "5 GHz"
-            elif (channel > 0 and channel <= 14) or band_str == "2.4":
-                dev["frequency_band"] = "2.4 GHz"
+                dev["wireless_band"] = "Ethernet"
             else:
-                dev["frequency_band"] = dev.get("frequency_band") or "5 GHz"
+                dev["wireless"] = True
+                dev["connection_type"] = "wireless"
+                if band_str in ("6", "6.0") or (channel >= 1 and channel <= 233 and band_str == "6"):
+                    dev["frequency_band"] = "6 GHz"
+                    dev["wireless_band"] = "6GHz"
+                elif (channel >= 1 and channel <= 14) or band_str in ("2.4", "2"):
+                    dev["frequency_band"] = "2.4 GHz"
+                    dev["wireless_band"] = "2.4GHz"
+                elif (channel >= 32 and channel <= 177) or band_str in ("5", "5.0", "5.8"):
+                    dev["frequency_band"] = "5 GHz"
+                    dev["wireless_band"] = "5GHz"
+                else:
+                    if channel > 0 and channel <= 14:
+                        dev["frequency_band"] = "2.4 GHz"
+                        dev["wireless_band"] = "2.4GHz"
+                    elif channel >= 32:
+                        dev["frequency_band"] = "5 GHz"
+                        dev["wireless_band"] = "5GHz"
+                    else:
+                        dev["frequency_band"] = "5 GHz"
+                        dev["wireless_band"] = "5GHz"
+
+            dev["channel"] = channel if channel > 0 else (raw_channel if raw_channel else None)
 
             # Signal RSSI
             if "signal_rssi" not in dev:

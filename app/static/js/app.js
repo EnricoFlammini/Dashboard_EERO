@@ -727,9 +727,15 @@ document.addEventListener('alpine:init', () => {
         // Filtro banda
         if (this.selectedBandFilter !== 'all') {
           if (this.selectedBandFilter === 'wired') {
-            if (d.connection_type !== 'wired') return false;
+            if (d.connection_type !== 'wired' && d.wireless && d.frequency_band !== 'Cablato') return false;
           } else {
-            if (d.wireless_band !== this.selectedBandFilter) return false;
+            const b = this.selectedBandFilter;
+            const match = (d.wireless_band === b) ||
+                          (d.frequency_band && d.frequency_band.replace(' ', '') === b) ||
+                          (b === '6GHz' && (d.frequency_band === '6 GHz' || d.wireless_band === '6GHz')) ||
+                          (b === '5GHz' && (d.frequency_band === '5 GHz' || d.wireless_band === '5GHz' || (d.channel >= 32 && d.channel <= 177))) ||
+                          (b === '2.4GHz' && (d.frequency_band === '2.4 GHz' || d.wireless_band === '2.4GHz' || (d.channel >= 1 && d.channel <= 14)));
+            if (!match) return false;
           }
         }
 
