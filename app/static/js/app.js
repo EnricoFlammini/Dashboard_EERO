@@ -640,9 +640,13 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Filtro categoria
+        // Filtro categoria / preferiti
         if (this.selectedCategoryFilter !== 'all') {
-          if (d.category !== this.selectedCategoryFilter) return false;
+          if (this.selectedCategoryFilter === 'favorites') {
+            if (!d.is_favorite) return false;
+          } else if (d.category !== this.selectedCategoryFilter) {
+            return false;
+          }
         }
 
         // Ricerca testuale
@@ -652,7 +656,8 @@ document.addEventListener('alpine:init', () => {
           const ip = (d.ip || '').toLowerCase();
           const mac = (d.mac || d.mac_address || '').toLowerCase();
           const notes = (d.custom_notes || '').toLowerCase();
-          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q);
+          const cat = (d.category || '').toLowerCase();
+          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q);
         }
 
         return true;
@@ -662,10 +667,10 @@ document.addEventListener('alpine:init', () => {
     async openDeviceModal(device) {
       this.selectedDevice = device;
       this.deviceDetailTab = 'info';
-      const mac = device.mac || device.mac_address;
+      const mac = (device.mac || device.mac_address || '').toLowerCase();
       
       this.deviceMetadataForm = {
-        custom_name: device.custom_name || device.nickname || '',
+        custom_name: device.custom_name || device.nickname || device.hostname || '',
         custom_icon: device.custom_icon || 'device',
         category: device.category || 'Altro',
         custom_notes: device.custom_notes || '',
@@ -675,22 +680,11 @@ document.addEventListener('alpine:init', () => {
       };
 
       this.showDeviceModal = true;
-
-      try {
-        const res = await fetch(`/api/devices/${mac}`);
-        const data = await res.json();
-        if (data.status === 'success') {
-          this.deviceForwards = data.forwards || [];
-          this.deviceTrafficHistory = data.traffic_history || [];
-        }
-      } catch (err) {
-        console.error("Fetch device detail error:", err);
-      }
     },
 
     async saveDeviceMetadata() {
       if (!this.selectedDevice) return;
-      const mac = this.selectedDevice.mac || this.selectedDevice.mac_address;
+      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
       try {
         const res = await fetch(`/api/devices/${mac}/metadata`, {
           method: 'POST',
@@ -702,16 +696,29 @@ document.addEventListener('alpine:init', () => {
         // Se il nome è cambiato, sincronizza anche il nickname con eero
         if (this.deviceMetadataForm.custom_name && this.deviceMetadataForm.custom_name !== this.selectedDevice.nickname) {
           const devId = this.selectedDevice.id || mac;
-          await fetch(`/api/devices/${devId}/rename`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nickname: this.deviceMetadataForm.custom_name })
-          });
+          try {
+            await fetch(`/api/devices/${devId}/rename`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nickname: this.deviceMetadataForm.custom_name })
+            });
+          } catch (e) {
+            console.warn("Rename sync warning:", e);
+          }
         }
 
-        this.showToast("Salvato", "Metadati dispositivo aggiornati.", "success");
-        await this.fetchDevices();
+        // Aggiorna immediatamente lo stato reattivo in memoria
+        Object.assign(this.selectedDevice, {
+          custom_name: this.deviceMetadataForm.custom_name,
+          category: this.deviceMetadataForm.category,
+          custom_notes: this.deviceMetadataForm.custom_notes,
+          is_favorite: Boolean(this.deviceMetadataForm.is_favorite),
+          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target)
+        });
+
+        this.showToast("Salvato", "Metadati e categoria dispositivo salvati.", "success");
         this.showDeviceModal = false;
+        await this.fetchDevices();
       } catch (err) {
         this.showToast("Errore Salvataggio", err.message, "error");
       }

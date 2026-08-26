@@ -108,58 +108,19 @@ class BackgroundPoller:
             self._prev_poll_time = now_utc
 
             for dev in devices:
-                mac = dev.get("mac") or dev.get("mac_address") or ""
+                mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
                 meta = metadata_map.get(mac, {})
                 
                 dev_copy = dict(dev)
-                dev_copy["custom_name"] = meta.get("custom_name")
+                dev_copy["mac"] = mac
+                dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
                 dev_copy["custom_icon"] = meta.get("custom_icon", "device")
                 dev_copy["category"] = meta.get("category", "Altro")
                 dev_copy["custom_notes"] = meta.get("custom_notes", "")
                 dev_copy["static_ip"] = meta.get("static_ip", "")
-                dev_copy["is_favorite"] = bool(meta.get("is_favorite", 0))
-                dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", 0))
-
-                # Calcolo metriche throughput da contatori differenziali hardware
-                rx = float(dev.get("rx_bytes", 0))
-                tx = float(dev.get("tx_bytes", 0))
-
-                prev = self._prev_device_metrics.get(mac)
-                if prev and dev.get("connected"):
-                    delta_rx = max(0.0, rx - prev["rx_bytes"])
-                    delta_tx = max(0.0, tx - prev["tx_bytes"])
-                    calc_dl = (delta_rx * 8.0) / (dt_sec * 1_000_000.0)
-                    calc_ul = (delta_tx * 8.0) / (dt_sec * 1_000_000.0)
-                    dl_rate = round(max(float(dev.get("download_rate_mbps", 0)), calc_dl), 2)
-                    ul_rate = round(max(float(dev.get("upload_rate_mbps", 0)), calc_ul), 2)
-                else:
-                    dl_rate = float(dev.get("download_rate_mbps", 0))
-                    ul_rate = float(dev.get("upload_rate_mbps", 0))
-
-                self._prev_device_metrics[mac] = {
-                    "rx_bytes": rx,
-                    "tx_bytes": tx,
-                    "timestamp": now_utc
-                }
-
-                dev_copy["download_rate_mbps"] = dl_rate
-                dev_copy["upload_rate_mbps"] = ul_rate
+                dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
+                dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
                 enriched_devices.append(dev_copy)
-
-                if dev.get("connected", False):
-                    total_rx += rx
-                    total_tx += tx
-                    total_dl_rate += dl_rate
-                    total_ul_rate += ul_rate
-
-                    device_metrics_batch.append({
-                        "mac_address": mac,
-                        "hostname": dev.get("nickname") or dev.get("hostname") or mac,
-                        "rx_bytes": rx,
-                        "tx_bytes": tx,
-                        "download_rate": dl_rate,
-                        "upload_rate": ul_rate,
-                    })
 
                 # Rilevamento nuovo dispositivo
                 if mac and self._known_macs and mac not in self._known_macs:
@@ -210,22 +171,10 @@ class BackgroundPoller:
             self.cached_devices = enriched_devices
             self._last_poll_time = datetime.now(timezone.utc)
 
-            # 6. Registrazione metriche WAN nel DB
-            wan_status = network_details.get("status", "online")
-            public_ip = network_details.get("public_ip", "0.0.0.0")
-            await db_service.save_wan_metrics(
-                status=wan_status,
-                public_ip=public_ip,
-                rx_bytes=total_rx,
-                tx_bytes=total_tx,
-                download_speed_mbps=round(total_dl_rate, 2),
-                upload_speed_mbps=round(total_ul_rate, 2),
-            )
-
-            # 6b. Auto-salvataggio speedtest di fabbrica gateway se database vuoto
+            # 6. Auto-salvataggio speedtest di fabbrica gateway se database vuoto
             sp = network_details.get("speedtest")
             if sp and isinstance(sp, dict) and sp.get("download_mbps"):
-                history_sp = await db_service.get_speedtest_history(limit=1)
+                history_sp = await db_service.get_speedtests(limit=1)
                 if not history_sp:
                     await db_service.save_speedtest(
                         download_mbps=float(sp["download_mbps"]),
@@ -234,10 +183,6 @@ class BackgroundPoller:
                         server_name="eero Gateway SpeedTest",
                         source="eero_gateway"
                     )
-
-            # 7. Registrazione batch metriche dispositivi
-            if device_metrics_batch:
-                await db_service.save_device_metrics_batch(device_metrics_batch)
 
         except Exception as e:
             logger.error(f"Errore durante il salvataggio delle metriche di rete: {e}")

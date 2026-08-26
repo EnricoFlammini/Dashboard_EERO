@@ -7,12 +7,12 @@ Applicazione web self-hosted, modulare e containerizzata con Docker per il contr
 ## 🌟 Caratteristiche Principali
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con uptime e tipo di backhaul (Ethernet 1/2.5Gbps vs Wireless Mesh).
-* **🖥️ Gestione Avanzata Dispositivi con Dati Fisici Certificati:** Tabella completa con filtri per frequenza (2.4 / 5 / 6 GHz / Cablato), canale Wi-Fi, nodo eero collegato, potenza del segnale RSSI (dBm) e velocità di link PHY negoziata (es. 780 / 866.7 Mbps). Scheda di dettaglio con personalizzazione di nomi, icone, note locali, prenotazione IP statico DHCP, regole di Port Forwarding e toggle per mettere in pausa la connessione internet con sincronizzazione API verso eero.
+* **🖥️ Gestione Avanzata Dispositivi con Dati Fisici Certificati:** Tabella completa con filtri per frequenza (2.4 / 5 / 6 GHz / Cablato), canale Wi-Fi, nodo eero collegato, potenza del segnale RSSI (dBm) e velocità di link PHY negoziata (es. 780 / 866.7 Mbps). Scheda di dettaglio con personalizzazione di nomi (sincronizzati con il Cloud eero), categorie, note locali, preferiti (⭐), flag per Gaming Mode e toggle per mettere in pausa la connessione internet.
 * **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati a intervalli regolari (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
 * **📱 Smart Guest Wi-Fi con QR Code Dinamico:** Generatore automatico di QR Code standard Wi-Fi (`WIFI:S:...;T:WPA;P:...;;`) da scansionare al volo con smartphone, con pulsante per attivare/disattivare la rete ospiti e generatore di password sicure.
 * **🎮 Gaming & Focus Mode (One-Click Low Latency):** Pulsante a un clic che mette automaticamente in pausa il traffico di background di apparati secondari e IoT preconfigurati per azzerare il jitter e la latenza durante sessioni di gaming o videoconferenze.
 * **🔔 Notifiche Telegram & Webhook:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert) e anomalie/nodi mesh offline.
-* **📖 Manuale Utente Integrato & Changelog:** Sezione di documentazione navigabile con ricerca istantanea full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app (v1.00.03).
+* **📖 Manuale Utente Integrato & Changelog:** Sezione di documentazione navigabile con ricerca istantanea full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app (v1.00.04).
 * **🛡️ Zero-Latency In-Memory Poller:** Cache in memoria RAM per rispondere all'interfaccia con latenza zero senza sovraccaricare le API eero (protezione da rate limiting).
 * **✨ Demo Mode Simulator:** Possibilità di testare e validare tutte le funzioni dell'applicazione senza inserire credenziali reali.
 

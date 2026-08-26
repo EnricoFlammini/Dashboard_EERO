@@ -190,12 +190,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.03", "content": content}
+                return {"status": "success", "version": "1.00.04", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.03",
-        "content": "# Changelog v1.00.03\n\n- Rimozione controlli LED non supportati via cloud.\n- Allineamento schede nodi a Stato: Online.\n- Visualizzatore changelog integrato."
+        "version": "1.00.04",
+        "content": "# Changelog v1.00.04\n\n- Fix salvataggio categoria e preferiti dispositivi.\n- Rimozione tabelle e logiche storiche banda nel DB.\n- Rimozione pulsanti Spegni/Accendi tutti i LED."
     }

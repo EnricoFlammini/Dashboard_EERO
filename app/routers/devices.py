@@ -94,32 +94,24 @@ async def list_devices(
 
 @router.get("/{mac_address}")
 async def get_device_detail(mac_address: str):
-    """Restituisce la scheda completa del dispositivo: stato live, metadati locali, storico traffico e regole porte."""
-    mac_clean = mac_address.upper()
+    """Restituisce la scheda completa del dispositivo: stato live e metadati locali."""
+    mac_clean = mac_address.lower()
     cached = background_poller.get_cached_state()
-    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").upper() == mac_clean), None)
+    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
     
     metadata = await db_service.get_device_metadata(mac_clean)
-    history = await db_service.get_device_metrics_history(mac_clean, hours=24)
-    forwards_res = await eero_client.get_forwards_and_reservations()
-    
-    # Filtra port forwards associati all'IP del dispositivo
-    dev_ip = live_device.get("ip") if live_device else (metadata.get("static_ip") if metadata else "")
-    dev_forwards = [f for f in forwards_res.get("forwards", []) if f.get("ip") == dev_ip] if dev_ip else []
 
     return {
         "status": "success",
         "device": live_device,
         "metadata": metadata,
-        "forwards": dev_forwards,
-        "traffic_history": history,
     }
 
 
 @router.post("/{mac_address}/metadata")
 async def save_device_metadata(mac_address: str, payload: DeviceMetadataRequest):
     """Salva nel database SQLite locale note, categoria, icona personalizzata e preferiti per il dispositivo."""
-    mac_clean = mac_address.upper()
+    mac_clean = mac_address.lower()
     updated = await db_service.upsert_device_metadata(
         mac_address=mac_clean,
         **payload.model_dump(exclude_unset=True)

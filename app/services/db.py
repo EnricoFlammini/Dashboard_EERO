@@ -26,36 +26,9 @@ class DBService:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA synchronous = NORMAL;")
             
-            # 1. WAN Metrics
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS wan_metrics (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    status TEXT,
-                    public_ip TEXT,
-                    rx_bytes REAL DEFAULT 0,
-                    tx_bytes REAL DEFAULT 0,
-                    download_speed_mbps REAL DEFAULT 0,
-                    upload_speed_mbps REAL DEFAULT 0
-                );
-            """)
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_wan_metrics_time ON wan_metrics(timestamp);")
-
-            # 2. Device Metrics
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS device_metrics (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    mac_address TEXT NOT NULL,
-                    hostname TEXT,
-                    rx_bytes REAL DEFAULT 0,
-                    tx_bytes REAL DEFAULT 0,
-                    download_rate REAL DEFAULT 0,
-                    upload_rate REAL DEFAULT 0
-                );
-            """)
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_dev_metrics_mac_time ON device_metrics(mac_address, timestamp);")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_dev_metrics_time ON device_metrics(timestamp);")
+            # Clean up obsolete bandwidth metrics tables
+            await db.execute("DROP TABLE IF EXISTS wan_metrics;")
+            await db.execute("DROP TABLE IF EXISTS device_metrics;")
 
             # 3. Speedtests
             await db.execute("""
@@ -409,16 +382,18 @@ class DBService:
         async with self.get_connection() as db:
             cursor = await db.execute("SELECT * FROM device_metadata")
             rows = await cursor.fetchall()
-            return {row["mac_address"]: dict(row) for row in rows}
+            return {(row["mac_address"] or "").lower(): dict(row) for row in rows}
 
     async def get_device_metadata(self, mac_address: str) -> Optional[Dict[str, Any]]:
+        mac_clean = (mac_address or "").lower()
         async with self.get_connection() as db:
-            cursor = await db.execute("SELECT * FROM device_metadata WHERE mac_address = ?", (mac_address,))
+            cursor = await db.execute("SELECT * FROM device_metadata WHERE LOWER(mac_address) = ?", (mac_clean,))
             row = await cursor.fetchone()
             return dict(row) if row else None
 
     async def upsert_device_metadata(self, mac_address: str, **kwargs) -> Dict[str, Any]:
-        existing = await self.get_device_metadata(mac_address)
+        mac_clean = (mac_address or "").lower()
+        existing = await self.get_device_metadata(mac_clean)
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         if existing:
             updated = {**existing, **kwargs, "updated_at": now}
@@ -429,7 +404,7 @@ class DBService:
                     SET custom_name = ?, custom_icon = ?, category = ?, 
                         custom_notes = ?, static_ip = ?, is_favorite = ?, 
                         is_low_latency_target = ?, updated_at = ?
-                    WHERE mac_address = ?
+                    WHERE LOWER(mac_address) = ?
                     """,
                     (
                         updated.get("custom_name"),
@@ -437,24 +412,24 @@ class DBService:
                         updated.get("category", "Altro"),
                         updated.get("custom_notes"),
                         updated.get("static_ip"),
-                        int(updated.get("is_favorite", 0)),
-                        int(updated.get("is_low_latency_target", 0)),
+                        1 if bool(updated.get("is_favorite", False)) else 0,
+                        1 if bool(updated.get("is_low_latency_target", False)) else 0,
                         now,
-                        mac_address
+                        mac_clean
                     )
                 )
                 await db.commit()
             return updated
         else:
             new_item = {
-                "mac_address": mac_address,
+                "mac_address": mac_clean,
                 "custom_name": kwargs.get("custom_name"),
                 "custom_icon": kwargs.get("custom_icon", "device"),
                 "category": kwargs.get("category", "Altro"),
                 "custom_notes": kwargs.get("custom_notes"),
                 "static_ip": kwargs.get("static_ip"),
-                "is_favorite": int(kwargs.get("is_favorite", 0)),
-                "is_low_latency_target": int(kwargs.get("is_low_latency_target", 0)),
+                "is_favorite": 1 if bool(kwargs.get("is_favorite", False)) else 0,
+                "is_low_latency_target": 1 if bool(kwargs.get("is_low_latency_target", False)) else 0,
                 "created_at": now,
                 "updated_at": now,
             }
@@ -466,7 +441,7 @@ class DBService:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        new_item["mac_address"],
+                        mac_clean,
                         new_item["custom_name"],
                         new_item["custom_icon"],
                         new_item["category"],

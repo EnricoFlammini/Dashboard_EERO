@@ -6,6 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.04] - 2026-08-26
+
+### 🛠️ Gestione Dispositivi & Metadati Locali
+* **Fix Categoria e Preferiti:** Risolto il disallineamento maiuscole/minuscole sugli indirizzi MAC che impediva la persistenza e il ricaricamento di Categoria, Preferiti, Note e Flag di Gaming Mode in SQLite.
+* **Badge Preferiti ⭐ & Filtro Dedicato:** I dispositivi contrassegnati come preferiti mostrano una stella ⭐ accanto al nome e possono essere filtrati al volo dal selettore di categoria (*Solo Preferiti*).
+* **Semplificazione Modale Dispositivo:** Rimossa la configurazione confusa della prenotazione IP statico dal popup; introdotto un box informativo chiaro con **IP Attuale** e **Nodo Mesh Collegato**.
+* **Rimozione Pulsanti LED Globali:** Eliminati i pulsanti *"Spegni Tutti i LED"* e *"Accendi Tutti i LED"* dalla testata dei Nodi Mesh in linea con i vincoli firmware eero v7.x.
+* **Pulizia Completa Database Banda:** Rimosse le tabelle obsolete `wan_metrics` e `device_metrics` e tutti i cicli di scrittura continui di throughput su SQLite.
+
+---
+
 ## [1.00.03] - 2026-08-26
 
 ### 🏷️ Raffinamento Interfaccia & Nodi Mesh
