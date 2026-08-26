@@ -37,6 +37,8 @@ class BackgroundPoller:
         self._last_retention_run: Optional[datetime] = None
         self._last_scheduled_speedtest: Optional[datetime] = None
         self._last_digest_date: Optional[str] = None
+        self._prev_device_metrics: Dict[str, Dict[str, Any]] = {}
+        self._prev_poll_time: Optional[datetime] = None
 
     async def start(self):
         if self._running:
@@ -100,6 +102,11 @@ class BackgroundPoller:
             total_rx = 0.0
             total_tx = 0.0
 
+            now_utc = datetime.now(timezone.utc)
+            dt_sec = (now_utc - self._prev_poll_time).total_seconds() if self._prev_poll_time else float(settings.poll_interval)
+            dt_sec = max(1.0, min(120.0, dt_sec))
+            self._prev_poll_time = now_utc
+
             for dev in devices:
                 mac = dev.get("mac") or dev.get("mac_address") or ""
                 meta = metadata_map.get(mac, {})
@@ -112,21 +119,39 @@ class BackgroundPoller:
                 dev_copy["static_ip"] = meta.get("static_ip", "")
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", 0))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", 0))
-                
-                enriched_devices.append(dev_copy)
 
-                # Calcolo metriche throughput
+                # Calcolo metriche throughput da contatori differenziali hardware
                 rx = float(dev.get("rx_bytes", 0))
                 tx = float(dev.get("tx_bytes", 0))
-                dl_rate = float(dev.get("download_rate_mbps", 0))
-                ul_rate = float(dev.get("upload_rate_mbps", 0))
 
-                total_rx += rx
-                total_tx += tx
-                total_dl_rate += dl_rate
-                total_ul_rate += ul_rate
+                prev = self._prev_device_metrics.get(mac)
+                if prev and dev.get("connected"):
+                    delta_rx = max(0.0, rx - prev["rx_bytes"])
+                    delta_tx = max(0.0, tx - prev["tx_bytes"])
+                    calc_dl = (delta_rx * 8.0) / (dt_sec * 1_000_000.0)
+                    calc_ul = (delta_tx * 8.0) / (dt_sec * 1_000_000.0)
+                    dl_rate = round(max(float(dev.get("download_rate_mbps", 0)), calc_dl), 2)
+                    ul_rate = round(max(float(dev.get("upload_rate_mbps", 0)), calc_ul), 2)
+                else:
+                    dl_rate = float(dev.get("download_rate_mbps", 0))
+                    ul_rate = float(dev.get("upload_rate_mbps", 0))
+
+                self._prev_device_metrics[mac] = {
+                    "rx_bytes": rx,
+                    "tx_bytes": tx,
+                    "timestamp": now_utc
+                }
+
+                dev_copy["download_rate_mbps"] = dl_rate
+                dev_copy["upload_rate_mbps"] = ul_rate
+                enriched_devices.append(dev_copy)
 
                 if dev.get("connected", False):
+                    total_rx += rx
+                    total_tx += tx
+                    total_dl_rate += dl_rate
+                    total_ul_rate += ul_rate
+
                     device_metrics_batch.append({
                         "mac_address": mac,
                         "hostname": dev.get("nickname") or dev.get("hostname") or mac,

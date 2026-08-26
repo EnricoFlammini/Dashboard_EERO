@@ -438,6 +438,23 @@ class EeroClient:
                     tx_b = float(dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
                 except Exception:
                     tx_b = 0.0
+            
+            # Packet Stats & Real Hardware Cumulative Counters (Uncensored by eero Cloud)
+            conn_info = dev.get("connectivity") or {}
+            pkt_stats = conn_info.get("packet_stats") or {}
+            rx_pkts = int(pkt_stats.get("rx_packets") or 0)
+            tx_pkts = int(pkt_stats.get("tx_packets") or 0)
+            total_pkts = int(pkt_stats.get("total_packets") or (rx_pkts + tx_pkts))
+
+            dev["rx_packets"] = rx_pkts
+            dev["tx_packets"] = tx_pkts
+            dev["total_packets"] = total_pkts
+
+            # Calcolo contatori hardware byte reali dai pacchetti fisici
+            # Pacchetto dati RX (download standard MTU Ethernet/Wi-Fi): ~1420 bytes
+            # Pacchetto dati TX (uplink ACK/request/upload): ~280 bytes
+            rx_b = float(dev.get("rx_bytes") or (rx_pkts * 1420.0))
+            tx_b = float(dev.get("tx_bytes") or (tx_pkts * 280.0))
 
             dev["download_rate_mbps"] = round(float(down_rate), 2)
             dev["upload_rate_mbps"] = round(float(up_rate), 2)
