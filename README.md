@@ -94,15 +94,62 @@ L'applicazione sarà immediatamente accessibile all'indirizzo:
 
 ---
 
-## 🔑 Primo Accesso e Autenticazione (2FA OTP)
+## 🔑 Creazione Account eero & Modalità di Accesso
 
-1. Apri il browser all'indirizzo `http://<IP_SERVER>:8085`.
-2. Nella schermata di login, inserisci l'**Email** o il **Numero di Telefono** (completo di prefisso internazionale, es. `+393401234567`) associato al tuo account eero.
+L'applicazione si interfaccia in modo sicuro con il cloud ufficiale **Amazon eero**. Di seguito sono riportate le istruzioni complete per la configurazione dell'account e l'accesso alla dashboard.
+
+---
+
+### 1. Prerequisiti & Creazione Account eero
+Se non possiedi ancora un account eero o stai configurando una nuova rete:
+1. **Scarica l'App Ufficiale eero:**
+   * [eero per iOS su App Store](https://apps.apple.com/app/eero-home-wifi-system/id969248441)
+   * [eero per Android su Google Play Store](https://play.google.com/store/apps/details?id=com.e2ro.view)
+2. **Registrazione Account:**
+   * Apri l'app sul tuo smartphone e seleziona **"Crea un account"** (oppure accedi con il tuo account **Amazon**).
+   * Associa un **indirizzo email valido** e un **numero di cellulare con prefisso internazionale** (es. `+39 340 1234567`). Questi recapiti saranno utilizzati per ricevere i codici di sicurezza a doppio fattore (2FA OTP).
+3. **Associazione della Rete Mesh:**
+   * Segui la procedura guidata nell'app per connettere il nodo principale (**Gateway eero**) al tuo modem/ONT e configurare il nome della rete Wi-Fi (SSID).
+
+---
+
+### 2. Metodi di Accesso alla Dashboard
+
+La dashboard supporta due modalità di accesso a seconda delle tue esigenze:
+
+#### 🔹 Metodo A: Login Grafico Guidato 2FA OTP (Consigliato)
+1. Avvia il container Docker ed apri il browser all'indirizzo **`http://<IP_SERVER>:8085`** (es. `http://localhost:8085`).
+2. Nella finestra di autenticazione, inserisci l'**Email** o il **Numero di Telefono** associato al tuo account eero (es. `+393401234567` o `mario.rossi@email.com`).
 3. Clicca su **"Invia Codice OTP"**.
-4. Riceverai un codice a 6 cifre via SMS o Email da parte di eero. Inseriscilo nel campo di verifica e conferma.
-5. Il token di sessione verrà salvato automaticamente in `./data/session.json`. Ad ogni riavvio del container la sessione rimarrà attiva senza dover reinserire il codice.
+4. Riceverai un **codice a 6 cifre via SMS o Email** direttamente da eero.
+5. Inserisci il codice a 6 cifre nel campo di verifica e clicca su **"Conferma ed Accedi"**.
+6. **Persistenza Automatica:** Il token di autenticazione verificato viene salvato in `./data/session.json`. Ai successivi riavvii del server o del container Docker, l'applicazione ripristinerà la sessione in automatico senza richiedere nuovamente l'OTP.
 
-> 💡 **Nota:** Se vuoi provare l'applicazione prima di collegare il tuo account, clicca sul pulsante **"Prova Subito con la Modalità Demo"** o imposta `DEMO_MODE=true` nel file `.env`.
+#### 🔹 Metodo B: Configurazione Headless con Token Permanente (`.env`)
+Se desideri avviare la dashboard in modalità completamente automatizzata (es. in ambienti CI/CD o server remoti senza interfaccia di login iniziale):
+1. Estrai il tuo token utente e ID di rete (ad esempio da una sessione attiva o tramite script).
+2. Nel file `.env` configura le seguenti variabili:
+   ```env
+   EERO_USER_TOKEN=il_tuo_session_token_segreto
+   EERO_NETWORK_ID=il_tuo_id_rete_mesh
+   ```
+3. Avvia il container con `docker compose up -d`. L'applicazione leggerà direttamente il token dall'ambiente e salterà la schermata di login.
+
+---
+
+### 3. Gestione Sessione, Logout e Rinnovo
+* **Logout / Cambio Account:**
+  * Puoi disconnettere la sessione in qualsiasi momento cliccando sull'icona **"Disconnetti"** in alto a destra nella barra di navigazione.
+  * In alternativa, puoi eliminare manualmente il file `./data/session.json` e riavviare il container.
+* **Cosa fare se la sessione scade:**
+  * I token eero hanno una validità prolungata (mesi/anni). Qualora eero revocasse la sessione (es. cambio password dell'account Amazon), l'app mostrerà automaticamente la schermata di login per richiedere un nuovo codice OTP a 6 cifre.
+
+---
+
+### 4. Modalità Dimostrativa (Demo Mode)
+Se desideri esplorare l'interfaccia, i grafici e tutte le funzionalità prima di collegare il tuo account:
+* Clicca su **"✨ Prova Subito con la Modalità Demo"** nella schermata iniziale di login.
+* Oppure imposta `DEMO_MODE=true` nel file `.env` per forzare l'avvio con una rete simulata realistica (3 nodi eero Pro 6E, client connessi e speed test simulato).
 
 ---
 
