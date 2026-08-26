@@ -874,6 +874,305 @@ class EeroClient:
             return {"status": "success", "deleted": forward_id}
 
     # =========================================================================
+    # GESTIONE PROFILI UTENTE CLOUD (FAMILY PROFILES / USERS)
+    # =========================================================================
+    def _normalize_profile(self, p: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalizza un profilo utente del Cloud eero."""
+        profile = dict(p)
+        prof_id = str(profile.get("id") or profile.get("url", "").split("/")[-1])
+        profile["id"] = prof_id
+        profile["name"] = profile.get("name") or "Profilo Utente"
+        profile["paused"] = bool(profile.get("paused", False))
+        
+        # Normalizzazione lista dispositivi associati
+        raw_devices = profile.get("devices") or []
+        normalized_devs = []
+        if isinstance(raw_devices, list):
+            for d in raw_devices:
+                if isinstance(d, dict):
+                    d_id = str(d.get("id") or d.get("url", "").split("/")[-1])
+                    d_mac = (d.get("mac") or d.get("mac_address") or "").lower()
+                    normalized_devs.append({
+                        "id": d_id,
+                        "url": d.get("url") or f"/2.2/devices/{d_id}",
+                        "mac": d_mac,
+                        "nickname": d.get("nickname") or d.get("hostname") or d.get("display_name") or d_mac,
+                        "hostname": d.get("hostname") or "",
+                        "ip": d.get("ip") or d.get("ipv4") or "",
+                        "connected": bool(d.get("connected", False)),
+                        "paused": bool(d.get("paused", False)),
+                    })
+                elif isinstance(d, str):
+                    d_id = d.split("/")[-1]
+                    normalized_devs.append({
+                        "id": d_id,
+                        "url": d if "/" in d else f"/2.2/devices/{d_id}",
+                        "mac": "",
+                        "nickname": d_id,
+                        "connected": True,
+                    })
+        profile["devices"] = normalized_devs
+        profile["device_count"] = len(normalized_devs)
+        return profile
+
+    async def get_profiles(self) -> List[Dict[str, Any]]:
+        """Recupera l'elenco dei profili utente configurati nel Cloud eero."""
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            return self._get_demo_profiles()
+
+        if not self.current_network_id:
+            await self.fetch_account_info()
+
+        if not self.current_network_id:
+            return self._get_demo_profiles()
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles", headers=self._get_headers())
+            if resp.status_code != 200:
+                logger.warning(f"Error fetching profiles ({resp.status_code}): {resp.text}")
+                return self._get_demo_profiles()
+
+            raw_list = resp.json().get("data", [])
+            profiles = []
+            for p in raw_list:
+                try:
+                    profiles.append(self._normalize_profile(p))
+                except Exception as ex:
+                    logger.error(f"Error normalizing profile item: {ex}")
+            return profiles
+
+    async def create_profile(self, name: str, device_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Crea un nuovo profilo utente nel Cloud eero."""
+        if not name or not name.strip():
+            raise ValueError("Il nome del profilo non può essere vuoto.")
+        
+        name = name.strip()
+        device_ids = device_ids or []
+
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            new_id = f"prof_{int(time.time())}"
+            assigned_devs = []
+            for d in self._demo_state.get("devices", []):
+                d_id = str(d.get("id"))
+                d_mac = (d.get("mac") or "").lower()
+                if d_id in device_ids or d_mac in [x.lower() for x in device_ids]:
+                    assigned_devs.append({
+                        "id": d_id,
+                        "url": f"/2.2/devices/{d_id}",
+                        "mac": d_mac,
+                        "nickname": d.get("nickname") or d.get("hostname"),
+                        "hostname": d.get("hostname") or "",
+                        "ip": d.get("ip") or "",
+                        "connected": bool(d.get("connected", False)),
+                        "paused": bool(d.get("paused", False)),
+                    })
+                    # Rimuovi da eventuali altri profili demo
+                    for p in self._demo_state.get("profiles", []):
+                        p["devices"] = [x for x in p.get("devices", []) if str(x.get("id")) != d_id and (x.get("mac") or "").lower() != d_mac]
+
+            new_profile = {
+                "id": new_id,
+                "url": f"/2.2/profiles/{new_id}",
+                "name": name,
+                "paused": False,
+                "devices": assigned_devs,
+                "device_count": len(assigned_devs)
+            }
+            if "profiles" not in self._demo_state:
+                self._demo_state["profiles"] = []
+            self._demo_state["profiles"].append(new_profile)
+            return {"status": "success", "profile": new_profile}
+
+        formatted_devices = [f"/2.2/devices/{d}" if not d.startswith("/2.2/") else d for d in device_ids]
+        payload = {"name": name, "devices": formatted_devices}
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles",
+                json=payload,
+                headers=self._get_headers()
+            )
+            if resp.status_code not in (200, 201):
+                raise RuntimeError(f"Errore creazione profilo eero: {resp.text}")
+            created = resp.json().get("data", payload)
+            return {"status": "success", "profile": self._normalize_profile(created)}
+
+    async def update_profile(
+        self,
+        profile_id: str,
+        name: Optional[str] = None,
+        paused: Optional[bool] = None,
+        device_ids: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Aggiorna le informazioni o i dispositivi associati a un profilo eero."""
+        clean_id = str(profile_id).split("/")[-1]
+
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            for p in self._demo_state.get("profiles", []):
+                if p["id"] == clean_id or p.get("url", "").endswith(clean_id):
+                    if name is not None:
+                        p["name"] = name.strip()
+                    if paused is not None:
+                        p["paused"] = paused
+                    if device_ids is not None:
+                        assigned_devs = []
+                        for d in self._demo_state.get("devices", []):
+                            d_id = str(d.get("id"))
+                            d_mac = (d.get("mac") or "").lower()
+                            if d_id in device_ids or d_mac in [x.lower() for x in device_ids]:
+                                assigned_devs.append({
+                                    "id": d_id,
+                                    "url": f"/2.2/devices/{d_id}",
+                                    "mac": d_mac,
+                                    "nickname": d.get("nickname") or d.get("hostname"),
+                                    "hostname": d.get("hostname") or "",
+                                    "ip": d.get("ip") or "",
+                                    "connected": bool(d.get("connected", False)),
+                                    "paused": bool(d.get("paused", False)),
+                                })
+                        p["devices"] = assigned_devs
+                        p["device_count"] = len(assigned_devs)
+                    return {"status": "success", "profile": p}
+            raise ValueError(f"Profilo demo '{clean_id}' non trovato.")
+
+        payload: Dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name.strip()
+        if paused is not None:
+            payload["paused"] = paused
+        if device_ids is not None:
+            payload["devices"] = [f"/2.2/devices/{d}" if not d.startswith("/2.2/") else d for d in device_ids]
+
+        headers = self._get_headers()
+        endpoints = [
+            f"{EERO_API_BASE}/profiles/{clean_id}",
+            f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}"
+        ]
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            last_err = ""
+            for url in endpoints:
+                try:
+                    resp = await client.put(url, json=payload, headers=headers)
+                    if resp.status_code in (200, 204):
+                        data = resp.json().get("data", payload) if resp.status_code == 200 else payload
+                        return {"status": "success", "profile": self._normalize_profile(data)}
+                    last_err = f"{resp.status_code}: {resp.text}"
+                except Exception as ex:
+                    last_err = str(ex)
+            raise RuntimeError(f"Errore aggiornamento profilo eero: {last_err}")
+
+    async def delete_profile(self, profile_id: str) -> Dict[str, Any]:
+        """Elimina un profilo utente da eero Cloud."""
+        clean_id = str(profile_id).split("/")[-1]
+
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            self._demo_state["profiles"] = [
+                p for p in self._demo_state.get("profiles", [])
+                if p["id"] != clean_id and not p.get("url", "").endswith(clean_id)
+            ]
+            return {"status": "success", "deleted": clean_id}
+
+        headers = self._get_headers()
+        endpoints = [
+            f"{EERO_API_BASE}/profiles/{clean_id}",
+            f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}"
+        ]
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            last_err = ""
+            for url in endpoints:
+                try:
+                    resp = await client.delete(url, headers=headers)
+                    if resp.status_code in (200, 204):
+                        return {"status": "success", "deleted": clean_id}
+                    last_err = f"{resp.status_code}: {resp.text}"
+                except Exception as ex:
+                    last_err = str(ex)
+            raise RuntimeError(f"Errore eliminazione profilo eero: {last_err}")
+
+    async def set_profile_paused(self, profile_id: str, paused: bool) -> Dict[str, Any]:
+        """Mette in pausa o riattiva la connessione di tutti i dispositivi del profilo."""
+        return await self.update_profile(profile_id=profile_id, paused=paused)
+
+    async def assign_device_to_profile(self, device_id_or_mac: str, profile_id: Optional[str]) -> Dict[str, Any]:
+        """
+        Assegna o sposta un dispositivo a un profilo utente.
+        Se profile_id è None o stringa vuota, il dispositivo viene rimosso dal profilo attuale.
+        """
+        clean_target_pid = str(profile_id).split("/")[-1] if profile_id else None
+        dev_key = str(device_id_or_mac).strip()
+
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            # Trova il dispositivo corrispondente
+            target_dev = None
+            for d in self._demo_state.get("devices", []):
+                if str(d.get("id")) == dev_key or (d.get("mac") or "").lower() == dev_key.lower():
+                    target_dev = d
+                    break
+            
+            if not target_dev:
+                target_dev = {"id": dev_key, "mac": dev_key if ":" in dev_key else "", "nickname": dev_key}
+
+            dev_id = str(target_dev.get("id"))
+            dev_mac = (target_dev.get("mac") or "").lower()
+
+            # 1. Rimuovi il dispositivo da tutti i profili esistenti
+            for p in self._demo_state.get("profiles", []):
+                p["devices"] = [
+                    x for x in p.get("devices", [])
+                    if str(x.get("id")) != dev_id and (x.get("mac") or "").lower() != dev_mac
+                ]
+                p["device_count"] = len(p["devices"])
+
+            # 2. Se è specificato un profilo di destinazione, aggiungilo
+            if clean_target_pid:
+                assigned = False
+                for p in self._demo_state.get("profiles", []):
+                    if p["id"] == clean_target_pid or p.get("url", "").endswith(clean_target_pid):
+                        p["devices"].append({
+                            "id": dev_id,
+                            "url": f"/2.2/devices/{dev_id}",
+                            "mac": dev_mac,
+                            "nickname": target_dev.get("nickname") or target_dev.get("hostname") or dev_key,
+                            "hostname": target_dev.get("hostname") or "",
+                            "ip": target_dev.get("ip") or "",
+                            "connected": bool(target_dev.get("connected", False)),
+                            "paused": bool(target_dev.get("paused", False)),
+                        })
+                        p["device_count"] = len(p["devices"])
+                        assigned = True
+                        break
+                if not assigned:
+                    raise ValueError(f"Profilo target '{clean_target_pid}' non trovato.")
+
+            return {"status": "success", "device": dev_key, "assigned_profile_id": clean_target_pid}
+
+        # Modalità Cloud Reale:
+        profiles = await self.get_profiles()
+        dev_url_suffix = dev_key if dev_key.startswith("/2.2/devices/") else f"/2.2/devices/{dev_key}"
+
+        # 1. Rimuovi il dispositivo dal profilo sorgente se già associato
+        for p in profiles:
+            p_id = p["id"]
+            current_dev_urls = [d.get("url") or f"/2.2/devices/{d.get('id')}" for d in p.get("devices", [])]
+            matching = [u for u in current_dev_urls if u.endswith(f"/{dev_key}") or dev_key in u]
+            if matching and p_id != clean_target_pid:
+                updated_urls = [u for u in current_dev_urls if not (u.endswith(f"/{dev_key}") or dev_key in u)]
+                await self.update_profile(profile_id=p_id, device_ids=updated_urls)
+
+        # 2. Aggiungi il dispositivo al profilo di destinazione
+        if clean_target_pid:
+            target_profile = next((p for p in profiles if p["id"] == clean_target_pid), None)
+            if target_profile:
+                target_urls = [d.get("url") or f"/2.2/devices/{d.get('id')}" for d in target_profile.get("devices", [])]
+                if not any(u.endswith(f"/{dev_key}") or dev_key in u for u in target_urls):
+                    target_urls.append(dev_url_suffix)
+                    await self.update_profile(profile_id=clean_target_pid, device_ids=target_urls)
+
+        return {"status": "success", "device": dev_key, "assigned_profile_id": clean_target_pid}
+
+    # =========================================================================
     # SIMULATORE DEMO MODE (FALLBACK & TESTING REALISTICO)
     # =========================================================================
     def _init_demo_state(self) -> Dict[str, Any]:
@@ -1149,6 +1448,38 @@ class EeroClient:
                 {"id": "fwd_01", "ip": "192.168.4.10", "port_from": 5001, "port_to": 5001, "protocol": "tcp", "description": "Synology DSM HTTPS"},
                 {"id": "fwd_02", "ip": "192.168.4.20", "port_from": 8123, "port_to": 8123, "protocol": "tcp", "description": "Home Assistant WebUI"},
                 {"id": "fwd_03", "ip": "192.168.4.10", "port_from": 32400, "port_to": 32400, "protocol": "tcp", "description": "Plex Media Server"},
+            ],
+            "profiles": [
+                {
+                    "id": "prof_01",
+                    "url": "/2.2/profiles/prof_01",
+                    "name": "Marco",
+                    "paused": False,
+                    "devices": [
+                        {"id": "dev_01", "url": "/2.2/devices/dev_01", "mac": "b4:2e:99:a1:01:10", "nickname": "MacBook Pro Lavoro", "hostname": "MacBook-Pro-M3", "ip": "192.168.4.101", "connected": True, "paused": False},
+                        {"id": "dev_03", "url": "/2.2/devices/dev_03", "mac": "f4:f5:db:33:44:55", "nickname": "iPhone Personale", "hostname": "iPhone-15-Pro", "ip": "192.168.4.110", "connected": True, "paused": False},
+                    ]
+                },
+                {
+                    "id": "prof_02",
+                    "url": "/2.2/profiles/prof_02",
+                    "name": "Giulia",
+                    "paused": False,
+                    "devices": [
+                        {"id": "dev_08", "url": "/2.2/devices/dev_08", "mac": "e0:4f:43:aa:bb:cc", "nickname": "iPad Cucina / Ricette", "hostname": "Apple-iPad-Air", "ip": "192.168.4.135", "connected": False, "paused": False}
+                    ]
+                },
+                {
+                    "id": "prof_03",
+                    "url": "/2.2/profiles/prof_03",
+                    "name": "Intrattenimento & Salotto",
+                    "paused": False,
+                    "devices": [
+                        {"id": "dev_04", "url": "/2.2/devices/dev_04", "mac": "28:70:4e:88:99:aa", "nickname": "Smart TV OLED 65\"", "hostname": "Sony-Bravia-OLED-4K", "ip": "192.168.4.120", "connected": True, "paused": False},
+                        {"id": "dev_05", "url": "/2.2/devices/dev_05", "mac": "a8:5e:45:12:34:56", "nickname": "PS5 Pro Console", "hostname": "PlayStation-5", "ip": "192.168.4.125", "connected": True, "paused": False},
+                        {"id": "dev_10", "url": "/2.2/devices/dev_10", "mac": "7c:49:eb:12:34:78", "nickname": "Sonos Speaker Salone", "hostname": "Sonos-Era-300-L", "ip": "192.168.4.150", "connected": True, "paused": False}
+                    ]
+                }
             ]
         }
 
@@ -1180,6 +1511,10 @@ class EeroClient:
 
     def _get_demo_eeros(self) -> List[Dict[str, Any]]:
         return self._demo_state["eeros"]
+
+    def _get_demo_profiles(self) -> List[Dict[str, Any]]:
+        raw_list = self._demo_state.get("profiles", [])
+        return [self._normalize_profile(p) for p in raw_list]
 
     def _get_demo_devices(self) -> List[Dict[str, Any]]:
         # Varia leggermente i tassi di trasmissione per simulare traffico live

@@ -189,6 +189,14 @@
         </button>
 
         <button 
+          @click="setTab('profiles')"
+          :class="currentTab === 'profiles' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <span><span x-text="t('nav.profiles')"></span> (<span x-text="profiles.length"></span>)</span>
+        </button>
+
+        <button 
           @click="setTab('speedtest')"
           :class="currentTab === 'speedtest' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
@@ -422,6 +430,15 @@
               <option value="Altro" x-text="t('devices.cat_other')"></option>
             </select>
 
+            <!-- Profile Filter -->
+            <select x-model="selectedProfileFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
+              <option value="all" x-text="t('devices.filter_all_profiles')"></option>
+              <option value="unassigned" x-text="t('devices.filter_unassigned')"></option>
+              <template x-for="prof in profiles" :key="prof.id">
+                <option :value="prof.id" x-text="'👤 ' + prof.name"></option>
+              </template>
+            </select>
+
             <!-- IP Type Filter (Statico / DHCP) -->
             <select x-model="selectedIpTypeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
               <option value="all" x-text="t('devices.filter_all_assignments')"></option>
@@ -459,6 +476,7 @@
               <tr class="border-b border-slate-800 bg-slate-900/80 text-slate-400 uppercase tracking-wider font-semibold">
                 <th class="py-3.5 px-4" x-text="t('devices.col_device')"></th>
                 <th class="py-3.5 px-4" x-text="t('devices.col_ip_mac')"></th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_profile')"></th>
                 <th class="py-3.5 px-4" x-text="t('devices.col_node')"></th>
                 <th class="py-3.5 px-4" x-text="t('devices.col_band')"></th>
                 <th class="py-3.5 px-4" x-text="t('devices.col_signal')"></th>
@@ -507,6 +525,19 @@
                       </template>
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5" x-text="dev.mac || dev.mac_address"></div>
+                  </td>
+
+                  <!-- Profile / User -->
+                  <td class="py-3 px-4 whitespace-nowrap">
+                    <template x-if="dev.profile_name">
+                      <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                        <span>👤</span>
+                        <span x-text="dev.profile_name"></span>
+                      </span>
+                    </template>
+                    <template x-if="!dev.profile_name">
+                      <span class="text-[11px] text-slate-500 italic" x-text="t('profiles.total_unassigned')"></span>
+                    </template>
                   </td>
 
                   <!-- Connected eero -->
@@ -583,6 +614,210 @@
             </tbody>
           </table>
         </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: PROFILI FAMIGLIA & UTENTI CLOUD -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'profiles'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Top Action & Statistics Header -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+              </div>
+              <div>
+                <h2 class="text-lg font-bold text-white tracking-tight" x-text="t('profiles.title')"></h2>
+                <p class="text-xs text-slate-400" x-text="t('profiles.subtitle')"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Badges & Create Action -->
+          <div class="flex items-center space-x-3 flex-wrap gap-2">
+            <!-- Stats -->
+            <div class="flex items-center space-x-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+              <span class="text-slate-400 font-medium" x-text="t('profiles.total_profiles') + ':'"></span>
+              <span class="text-sky-400 font-bold" x-text="profiles.length"></span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+              <span class="text-slate-400 font-medium" x-text="t('profiles.total_assigned') + ':'"></span>
+              <span class="text-emerald-400 font-bold" x-text="devices.filter(d => d.profile_id).length"></span>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+              <span class="text-slate-400 font-medium" x-text="t('profiles.total_unassigned') + ':'"></span>
+              <span class="text-amber-400 font-bold" x-text="unassignedDevices.length"></span>
+            </div>
+
+            <!-- Create Profile Button -->
+            <button 
+              @click="openCreateProfileModal()"
+              class="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white shadow-lg shadow-sky-500/25 transition active:scale-95 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+              <span x-text="t('profiles.create_btn')"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="prof in profiles" :key="prof.id">
+          <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 border border-slate-800 hover:border-slate-700/80 transition shadow-xl relative overflow-hidden">
+            
+            <!-- Card Header -->
+            <div>
+              <div class="flex items-start justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500/30 to-indigo-600/30 border border-sky-500/40 flex items-center justify-center text-sky-300 font-bold text-lg shadow-inner">
+                    <span x-text="prof.name ? prof.name.charAt(0).toUpperCase() : 'U'"></span>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white tracking-tight" x-text="prof.name"></h3>
+                    <div class="flex items-center space-x-2 mt-0.5">
+                      <template x-if="prof.paused">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center space-x-1">
+                          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                          <span x-text="t('profiles.status_paused')"></span>
+                        </span>
+                      </template>
+                      <template x-if="!prof.paused">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                          <span x-text="t('profiles.status_online')"></span>
+                        </span>
+                      </template>
+                      <span class="text-[11px] text-slate-400">
+                        • <span x-text="(prof.devices ? prof.devices.length : 0) + ' disp.'"></span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Delete Profile Button -->
+                <button 
+                  @click="deleteProfile(prof)" 
+                  class="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition" 
+                  :title="t('profiles.delete_profile_title')">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+
+              <!-- Quick Pause Toggle Button for User -->
+              <div class="mt-4">
+                <button 
+                  @click="toggleProfilePause(prof)"
+                  :class="prof.paused ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/40' : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border-rose-500/30'"
+                  class="w-full flex items-center justify-center space-x-2 py-2 px-3 rounded-xl border text-xs font-bold transition active:scale-98">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span x-text="prof.paused ? t('profiles.resume_all_btn') : t('profiles.pause_all_btn')"></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Assigned Devices List -->
+            <div class="space-y-2 border-t border-slate-800/80 pt-3">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                <span x-text="t('profiles.total_assigned')"></span>
+                <span class="text-sky-400 font-mono" x-text="prof.devices ? prof.devices.length : 0"></span>
+              </div>
+
+              <!-- Devices scroll area -->
+              <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 no-scrollbar text-xs">
+                <template x-if="!prof.devices || prof.devices.length === 0">
+                  <div class="text-[11px] text-slate-500 italic py-2 text-center" x-text="t('profiles.no_devices')"></div>
+                </template>
+
+                <template x-for="pdev in (prof.devices || [])" :key="pdev.mac || pdev.id">
+                  <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700/60 transition group">
+                    <div class="flex items-center space-x-2 truncate">
+                      <div class="w-2 h-2 rounded-full" :class="pdev.connected ? 'bg-emerald-400' : 'bg-slate-600'"></div>
+                      <div class="truncate">
+                        <div class="font-semibold text-slate-200 truncate" x-text="pdev.nickname || pdev.hostname || pdev.mac || pdev.id"></div>
+                        <div class="text-[10px] text-slate-500 font-mono" x-text="pdev.ip || pdev.mac"></div>
+                      </div>
+                    </div>
+                    <!-- Remove device from profile -->
+                    <button 
+                      @click="removeDeviceFromProfile(pdev.mac || pdev.id)"
+                      class="text-slate-500 hover:text-rose-400 p-1 rounded-md transition opacity-60 group-hover:opacity-100"
+                      :title="t('profiles.unassign_device')">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Quick Add Device to this profile dropdown -->
+              <div class="pt-2 border-t border-slate-800/60">
+                <select 
+                  @change="if ($event.target.value) { assignDeviceToProfile($event.target.value, prof.id); $event.target.value = ''; }"
+                  class="w-full bg-slate-900/90 text-slate-300 text-xs rounded-xl border border-slate-800 px-3 py-1.5 focus:ring-1 focus:ring-sky-500 outline-none cursor-pointer">
+                  <option value="" x-text="'+ ' + t('profiles.quick_assign_btn') + '...'"></option>
+                  <template x-for="d in unassignedDevices" :key="d.mac || d.id">
+                    <option :value="d.mac || d.id" x-text="d.custom_name || d.nickname || d.hostname || d.ip || d.mac"></option>
+                  </template>
+                </select>
+              </div>
+
+            </div>
+
+          </div>
+        </template>
+      </div>
+
+      <!-- Unassigned Devices Section -->
+      <div class="glass-panel rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <span x-text="t('profiles.unassigned_section_title')"></span>
+              <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30" x-text="unassignedDevices.length"></span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5" x-text="t('profiles.unassigned_section_desc')"></p>
+          </div>
+        </div>
+
+        <template x-if="unassignedDevices.length === 0">
+          <div class="py-6 text-center text-xs text-emerald-400 font-medium" x-text="t('profiles.no_unassigned')"></div>
+        </template>
+
+        <template x-if="unassignedDevices.length > 0">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <template x-for="dev in unassignedDevices" :key="dev.mac || dev.id">
+              <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between gap-3">
+                <div class="truncate">
+                  <div class="font-semibold text-slate-200 text-xs truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                  <div class="text-[10px] text-slate-400 font-mono flex items-center space-x-1 mt-0.5">
+                    <span x-text="dev.ip || 'DHCP'"></span>
+                    <span>•</span>
+                    <span x-text="dev.mac"></span>
+                  </div>
+                </div>
+                <!-- Assign Selector -->
+                <div class="shrink-0">
+                  <select 
+                    @change="if ($event.target.value) { assignDeviceToProfile(dev.mac || dev.id, $event.target.value); $event.target.value = ''; }"
+                    class="bg-slate-800 text-sky-400 font-medium text-[11px] rounded-lg border border-slate-700 px-2 py-1 focus:ring-1 focus:ring-sky-500 outline-none cursor-pointer">
+                    <option value="" x-text="t('profiles.select_user_target')"></option>
+                    <template x-for="p in profiles" :key="p.id">
+                      <option :value="p.id" x-text="'👤 ' + p.name"></option>
+                    </template>
+                  </select>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
       </div>
 
     </div>
@@ -918,14 +1153,14 @@
         
         <!-- ==================== TAB 1: GENERALE ==================== -->
         <div x-show="deviceDetailTab === 'general'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label class="block text-slate-400 mb-1" x-text="t('device_modal.custom_name')"></label>
-              <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
+              <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
             </div>
             <div>
               <label class="block text-slate-400 mb-1" x-text="t('device_modal.category')"></label>
-              <select x-model="deviceMetadataForm.category" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
+              <select x-model="deviceMetadataForm.category" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
                 <option value="Computer" x-text="t('devices.cat_computer')"></option>
                 <option value="Mobile" x-text="t('devices.cat_mobile')"></option>
                 <option value="Smart Home" x-text="t('devices.cat_smarthome')"></option>
@@ -933,6 +1168,15 @@
                 <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
                 <option value="Server/Rete" x-text="t('devices.cat_server')"></option>
                 <option value="Altro" x-text="t('devices.cat_other')"></option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1" x-text="t('device_modal.cloud_profile')"></label>
+              <select x-model="deviceSelectedProfileId" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
+                <option value="" x-text="t('device_modal.profile_unassigned')"></option>
+                <template x-for="prof in profiles" :key="prof.id">
+                  <option :value="prof.id" x-text="'👤 ' + prof.name + ' (' + (prof.devices ? prof.devices.length : 0) + ')'"></option>
+                </template>
               </select>
             </div>
           </div>
@@ -1324,6 +1568,89 @@
     </div>
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- MODAL: CREA NUOVO PROFILO UTENTE CLOUD -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showCreateProfileModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+    style="display: none;"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 scale-100"
+    x-transition:leave-end="opacity-0 scale-95">
+    
+    <div @click.away="showCreateProfileModal = false" class="glass-panel-elevated w-full max-w-lg rounded-2xl p-6 space-y-5 flex flex-col border border-sky-500/30 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white" x-text="t('profiles.modal_create_title')"></h3>
+            <p class="text-xs text-slate-400" x-text="t('profiles.modal_create_desc')"></p>
+          </div>
+        </div>
+        <button @click="showCreateProfileModal = false" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1" x-text="t('profiles.modal_name_label')"></label>
+          <input 
+            type="text" 
+            x-model="newProfileForm.name" 
+            :placeholder="t('profiles.modal_name_placeholder')" 
+            class="glass-input w-full px-3 py-2 rounded-xl text-sm font-medium focus:ring-2 focus:ring-sky-500"
+            @keydown.enter="createProfile()">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-2" x-text="t('profiles.modal_devices_label')"></label>
+          <div class="max-h-56 overflow-y-auto space-y-1.5 pr-1 border border-slate-800 rounded-xl p-2 bg-slate-900/40">
+            <template x-for="dev in devices" :key="dev.mac || dev.id">
+              <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition select-none">
+                <div class="flex items-center space-x-2.5 truncate">
+                  <input 
+                    type="checkbox" 
+                    :checked="newProfileForm.selectedDeviceIds.includes(dev.id || dev.mac)" 
+                    @change="toggleNewProfileDeviceSelection(dev)"
+                    class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
+                  <div class="truncate">
+                    <div class="font-medium text-slate-200 truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                    <div class="text-[10px] text-slate-400 font-mono" x-text="(dev.ip || 'DHCP') + ' • ' + (dev.profile_name ? ('Attuale: ' + dev.profile_name) : 'Non Assegnato')"></div>
+                  </div>
+                </div>
+                <div class="text-[10px] font-semibold" :class="dev.connected ? 'text-emerald-400' : 'text-slate-500'" x-text="dev.connected ? 'Online' : 'Offline'"></div>
+              </label>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+        <button 
+          @click="showCreateProfileModal = false" 
+          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+          x-text="t('profiles.modal_cancel')">
+        </button>
+        <button 
+          @click="createProfile()" 
+          :disabled="!newProfileForm.name || profileAssigningLoading"
+          class="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-lg shadow-sky-500/20"
+          x-text="profileAssigningLoading ? 'Creazione in corso...' : t('profiles.modal_create_submit')">
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="mt-auto border-t border-slate-800/80 py-4 px-4 bg-[#0b0f17]/80">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 font-medium gap-2">
@@ -1331,7 +1658,7 @@
       <div class="flex items-center space-x-3">
         <button @click="openChangelogModal()" class="text-sky-400 hover:text-sky-300 font-mono transition flex items-center space-x-1 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>v1.01.00 <span x-text="t('footer.changelog')"></span></span>
+          <span>v1.02.00 <span x-text="t('footer.changelog')"></span></span>
         </button>
       </div>
     </div>

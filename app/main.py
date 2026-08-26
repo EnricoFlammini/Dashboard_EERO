@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
-from app.routers import auth, automations, devices, manual, metrics, network, speedtest
+from app.routers import auth, automations, devices, manual, metrics, network, profiles, speedtest
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -80,6 +80,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.include_router(auth.router)
 app.include_router(network.router)
 app.include_router(devices.router)
+app.include_router(profiles.router)
 app.include_router(metrics.router)
 app.include_router(speedtest.router)
 app.include_router(automations.router)

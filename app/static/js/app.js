@@ -53,8 +53,19 @@ document.addEventListener('alpine:init', () => {
     selectedBandFilter: 'all',
     selectedNodeFilter: 'all',
     selectedCategoryFilter: 'all',
+    selectedProfileFilter: 'all',
     selectedIpTypeFilter: 'all',
     showConnectedOnly: false,
+
+    // Profiles & Cloud Users State
+    profiles: [],
+    showCreateProfileModal: false,
+    newProfileForm: {
+      name: '',
+      selectedDeviceIds: []
+    },
+    deviceSelectedProfileId: '',
+    profileAssigningLoading: false,
     
     selectedDevice: null,
     deviceDetailTab: 'general',
@@ -366,6 +377,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchOverview(),
         this.fetchRealtimeMetrics(),
         this.fetchDevices(),
+        this.fetchProfiles(),
         this.fetchGuestNetwork(),
         this.fetchFocusMode(),
         this.fetchNightMode(),
@@ -410,6 +422,18 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Fetch devices error:", err);
+      }
+    },
+
+    async fetchProfiles() {
+      try {
+        const res = await fetch('/api/profiles');
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.profiles = json.profiles || [];
+        }
+      } catch (err) {
+        console.error("Fetch profiles error:", err);
       }
     },
 
@@ -729,6 +753,17 @@ document.addEventListener('alpine:init', () => {
         if (this.selectedIpTypeFilter === 'static' && !d.is_static) return false;
         if (this.selectedIpTypeFilter === 'dhcp' && d.is_static) return false;
 
+        // Filtro profilo utente
+        if (this.selectedProfileFilter !== 'all') {
+          if (this.selectedProfileFilter === 'unassigned') {
+            if (d.profile_id) return false;
+          } else {
+            if (d.profile_id !== this.selectedProfileFilter && d.profile_name !== this.selectedProfileFilter) {
+              return false;
+            }
+          }
+        }
+
         // Ricerca testuale
         if (this.deviceSearchQuery) {
           const q = this.deviceSearchQuery.toLowerCase();
@@ -737,7 +772,8 @@ document.addEventListener('alpine:init', () => {
           const mac = (d.mac || d.mac_address || '').toLowerCase();
           const notes = (d.custom_notes || '').toLowerCase();
           const cat = (d.category || '').toLowerCase();
-          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q);
+          const prof = (d.profile_name || '').toLowerCase();
+          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q);
         }
 
         return true;
@@ -827,6 +863,7 @@ document.addEventListener('alpine:init', () => {
         is_low_latency_target: Boolean(device.is_low_latency_target)
       };
 
+      this.deviceSelectedProfileId = device.profile_id || '';
       this.deviceStaticIpInput = device.static_ip || device.ip || '';
       this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
       this.showDeviceModal = true;
@@ -988,18 +1025,34 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
+        // Se il profilo utente è cambiato, sincronizza con l'API profili
+        const currentProfId = this.selectedDevice.profile_id || '';
+        const newProfId = this.deviceSelectedProfileId || '';
+        if (currentProfId !== newProfId) {
+          try {
+            await fetch(`/api/devices/${mac}/profile`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ profile_id: newProfId ? newProfId : null })
+            });
+          } catch (pe) {
+            console.warn("Profile sync error:", pe);
+          }
+        }
+
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
           custom_name: this.deviceMetadataForm.custom_name,
           category: this.deviceMetadataForm.category,
           custom_notes: this.deviceMetadataForm.custom_notes,
           is_favorite: Boolean(this.deviceMetadataForm.is_favorite),
-          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target)
+          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target),
+          profile_id: newProfId || null
         });
 
-        this.showToast("Salvato", "Metadati e categoria dispositivo salvati.", "success");
+        this.showToast("Salvato", "Metadati, categoria e profilo utente salvati.", "success");
         this.showDeviceModal = false;
-        await this.fetchDevices();
+        await Promise.all([this.fetchDevices(), this.fetchProfiles()]);
       } catch (err) {
         this.showToast("Errore Salvataggio", err.message, "error");
       }
@@ -1023,6 +1076,135 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         this.showToast("Errore Pausa", err.message, "error");
       }
+    },
+
+    // =========================================================================
+    // CLOUD PROFILES & USERS MANAGEMENT ACTIONS
+    // =========================================================================
+    get unassignedDevices() {
+      return this.devices.filter(d => !d.profile_id);
+    },
+
+    openCreateProfileModal() {
+      this.newProfileForm = {
+        name: '',
+        selectedDeviceIds: []
+      };
+      this.showCreateProfileModal = true;
+    },
+
+    toggleNewProfileDeviceSelection(device) {
+      const devKey = device.id || device.mac;
+      const idx = this.newProfileForm.selectedDeviceIds.indexOf(devKey);
+      if (idx >= 0) {
+        this.newProfileForm.selectedDeviceIds.splice(idx, 1);
+      } else {
+        this.newProfileForm.selectedDeviceIds.push(devKey);
+      }
+    },
+
+    async createProfile() {
+      if (!this.newProfileForm.name || !this.newProfileForm.name.trim()) {
+        this.showToast("Nome Richiesto", "Inserisci il nome del profilo o dell'utente.", "warning");
+        return;
+      }
+
+      this.profileAssigningLoading = true;
+      try {
+        const res = await fetch('/api/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: this.newProfileForm.name.trim(),
+            device_ids: this.newProfileForm.selectedDeviceIds
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Impossibile creare il profilo');
+        }
+
+        this.showToast("Profilo Creato", `Profilo '${this.newProfileForm.name}' creato con successo su eero.`, "success");
+        this.showCreateProfileModal = false;
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.showToast("Errore Creazione Profilo", err.message, "error");
+      } finally {
+        this.profileAssigningLoading = false;
+      }
+    },
+
+    async deleteProfile(profile) {
+      const pName = profile.name || 'questo profilo';
+      const promptMsg = (this.translations.profiles && this.translations.profiles.delete_profile_confirm)
+        ? this.translations.profiles.delete_profile_confirm.replace('{name}', pName)
+        : `Sei sicuro di voler eliminare il profilo '${pName}'?`;
+
+      if (!confirm(promptMsg)) return;
+
+      try {
+        const res = await fetch(`/api/profiles/${profile.id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Impossibile eliminare il profilo');
+        }
+
+        this.showToast("Profilo Eliminato", `Profilo '${pName}' rimosso da eero.`, "info");
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.showToast("Errore Eliminazione", err.message, "error");
+      }
+    },
+
+    async toggleProfilePause(profile) {
+      const targetState = !profile.paused;
+      try {
+        const res = await fetch(`/api/profiles/${profile.id}/pause`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paused: targetState })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Impossibile modificare la pausa del profilo');
+        }
+
+        profile.paused = targetState;
+        this.showToast(
+          targetState ? "Profilo in Pausa" : "Profilo Riattivato",
+          `Accesso Internet per il profilo '${profile.name}' ${targetState ? 'sospeso' : 'ripristinato'}.`,
+          targetState ? "warning" : "success"
+        );
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.showToast("Errore Pausa Profilo", err.message, "error");
+      }
+    },
+
+    async assignDeviceToProfile(deviceMacOrId, profileId) {
+      if (!deviceMacOrId) return;
+      try {
+        const res = await fetch(`/api/devices/${deviceMacOrId}/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_id: profileId ? profileId : null })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Impossibile assegnare il profilo al dispositivo');
+        }
+
+        this.showToast("Assegnazione Salvata", "Dispositivo associato al profilo con successo.", "success");
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.showToast("Errore Assegnazione", err.message, "error");
+      }
+    },
+
+    async removeDeviceFromProfile(deviceMacOrId) {
+      await this.assignDeviceToProfile(deviceMacOrId, null);
     },
 
     // =========================================================================

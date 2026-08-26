@@ -43,6 +43,10 @@ class PortForwardRequest(BaseModel):
     description: str = Field("Custom Service", max_length=100, description="Etichetta descrittiva della regola")
 
 
+class DeviceProfileAssignRequest(BaseModel):
+    profile_id: Optional[str] = Field(None, description="ID del profilo utente Cloud a cui associare il dispositivo (null per disassociare)")
+
+
 @router.get("")
 async def list_devices(
     search: Optional[str] = None,
@@ -50,6 +54,7 @@ async def list_devices(
     node: Optional[str] = None,
     connected_only: Optional[bool] = None,
     category: Optional[str] = None,
+    profile: Optional[str] = None,
 ):
     """Restituisce l'elenco dei dispositivi arricchiti con metadati locali e filtri."""
     cached = background_poller.get_cached_state()
@@ -77,6 +82,17 @@ async def list_devices(
         if category and category != "all" and d.get("category") != category:
             continue
 
+        # Filtro profilo utente
+        if profile and profile != "all":
+            if profile == "unassigned":
+                if d.get("profile_id"):
+                    continue
+            else:
+                p_id = str(d.get("profile_id") or "")
+                p_name = str(d.get("profile_name") or "").lower()
+                if p_id != profile and p_name != profile.lower():
+                    continue
+
         # Filtro ricerca testuale
         if search:
             s = search.lower()
@@ -84,7 +100,8 @@ async def list_devices(
             ip = (d.get("ip") or "").lower()
             mac = (d.get("mac") or d.get("mac_address") or "").lower()
             notes = (d.get("custom_notes") or "").lower()
-            if s not in name and s not in ip and s not in mac and s not in notes:
+            prof_n = (d.get("profile_name") or "").lower()
+            if s not in name and s not in ip and s not in mac and s not in notes and s not in prof_n:
                 continue
 
         filtered.append(d)
@@ -261,3 +278,39 @@ async def delete_device_port_forward(mac_address: str, forward_id: str):
     except Exception as e:
         logger.error(f"Failed to delete port forward {forward_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{mac_address}/profile")
+async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRequest):
+    """Assegna, sposta o rimuove un dispositivo da un profilo utente Cloud eero."""
+    try:
+        res = await eero_client.assign_device_to_profile(
+            device_id_or_mac=mac_address,
+            profile_id=payload.profile_id
+        )
+        # Sincronizza cache in memoria
+        cached_p = await eero_client.get_profiles()
+        background_poller.cached_profiles = cached_p
+        
+        # Aggiorna anche lo stato arricchito in cached_devices
+        clean_mac = mac_address.lower()
+        target_prof_name = None
+        if payload.profile_id:
+            for p in cached_p:
+                if p["id"] == str(payload.profile_id).split("/")[-1]:
+                    target_prof_name = p["name"]
+                    break
+
+        for d in background_poller.cached_devices:
+            if (d.get("mac") or "").lower() == clean_mac or str(d.get("id")) == mac_address:
+                d["profile_id"] = str(payload.profile_id).split("/")[-1] if payload.profile_id else None
+                d["profile_name"] = target_prof_name
+
+        return {
+            "status": "success",
+            "message": "Profilo dispositivo aggiornato con successo.",
+            "result": res
+        }
+    except Exception as e:
+        logger.error(f"Failed to assign profile for device {mac_address}: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))

@@ -6,6 +6,23 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.02.00] - 2026-08-26
+
+### 👤 Gestione Completa Profili Utente Cloud eero & Assegnazione Dispositivi
+* **Integrazione Nativa Profili Famiglia Cloud eero:** Aggiunta la gestione completa dei Profili Utente eero (`/profiles`) con supporto a creazione, modifica, eliminazione e pausa istantanea dell'accesso a Internet per tutti i dispositivi del profilo.
+* **Nuovo Tab Dedicato "Profili & Utenti":** Introdotta un'intera sezione dell'interfaccia con schede profilo interattive, statistiche aggregate (Totale Profili, Dispositivi Assegnati, Dispositivi Non Assegnati), avatar colorati e gestione unificata.
+* **Assegnazione & Disassociazione Dispositivi Bidirezionale:**
+  * **Dalla scheda Profilo:** Selettore rapido per aggiungere istantaneamente dispositivi non assegnati e pulsante di rimozione con un clic.
+  * **Dalla sezione "Dispositivi Non Assegnati":** Tabella/griglia dedicata con menu a tendina per assegnare subito ogni dispositivo a un utente.
+  * **Dalla modale di Modifica Dispositivo:** Aggiunto il menu *Profilo Utente Cloud* nel tab Generale, con sincronizzazione immediata all'atto del salvataggio.
+* **Badge & Filtro nella Tabella Dispositivi:**
+  * Ciascun dispositivo nella tabella mostra la colonna con badge profilo `👤 [Nome Profilo]`.
+  * Aggiunto il filtro rapido *Tutti i Profili / Non Assegnati / Profilo Specifico* nella barra superiore.
+  * La barra di ricerca testuale permette di cercare i dispositivi anche digitando il nome del profilo utente.
+* **Architettura Zero-Latency & Rate Limit Safe:** I profili sono memorizzati nella cache RAM del Background Poller e arricchiscono ogni oggetto dispositivo in memoria; le mutazioni aggiornano il Cloud eero e sincronizzano istantaneamente la cache RAM senza attendere il ciclo di polling successivo.
+
+---
+
 ## [1.01.00] - 2026-08-26
 
 ### 🌍 Supporto Multilingua (i18n) & Rilascio Open Source

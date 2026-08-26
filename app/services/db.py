@@ -516,12 +516,6 @@ class DBService:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
         deleted_counts = {}
         async with self.get_connection() as db:
-            c1 = await db.execute("DELETE FROM wan_metrics WHERE timestamp < ?", (cutoff,))
-            deleted_counts["wan_metrics"] = c1.rowcount
-            
-            c2 = await db.execute("DELETE FROM device_metrics WHERE timestamp < ?", (cutoff,))
-            deleted_counts["device_metrics"] = c2.rowcount
-            
             c3 = await db.execute("DELETE FROM speedtests WHERE timestamp < ?", (cutoff,))
             deleted_counts["speedtests"] = c3.rowcount
 

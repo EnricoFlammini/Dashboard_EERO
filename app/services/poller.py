@@ -28,6 +28,7 @@ class BackgroundPoller:
         self.cached_network: Dict[str, Any] = {}
         self.cached_eeros: List[Dict[str, Any]] = []
         self.cached_devices: List[Dict[str, Any]] = []
+        self.cached_profiles: List[Dict[str, Any]] = []
         self.cached_health_score: int = 100
         
         # Tracking states for alert detection
@@ -63,6 +64,7 @@ class BackgroundPoller:
             "network": self.cached_network,
             "eeros": self.cached_eeros,
             "devices": self.cached_devices,
+            "profiles": self.cached_profiles,
             "health_score": self.cached_health_score,
             "last_poll_time": self._last_poll_time.isoformat() if self._last_poll_time else None,
             "is_authenticated": eero_client.is_authenticated,
@@ -92,6 +94,12 @@ class BackgroundPoller:
             eeros = await eero_client.get_eeros()
             devices = await eero_client.get_devices()
             try:
+                profiles = await eero_client.get_profiles()
+            except Exception as ep:
+                logger.warning(f"Failed to fetch profiles in poller: {ep}")
+                profiles = []
+
+            try:
                 forwards_res = await eero_client.get_forwards_and_reservations()
                 cloud_reservations = {
                     (r.get("mac") or "").lower(): r.get("ip") 
@@ -102,7 +110,20 @@ class BackgroundPoller:
                 logger.warning(f"Failed to fetch cloud reservations in poller: {e}")
                 cloud_reservations = {}
 
-            # 2. Arricchimento dispositivi con metadati locali (nomi custom, icone, note, stato IP statico/DHCP)
+            # Costruzione mappa dispositivi -> profili per arricchimento immediato
+            device_to_profile: Dict[str, Dict[str, Any]] = {}
+            for prof in profiles:
+                p_id = prof.get("id")
+                p_name = prof.get("name")
+                for p_dev in prof.get("devices", []):
+                    p_mac = (p_dev.get("mac") or "").lower()
+                    p_dev_id = str(p_dev.get("id") or "")
+                    if p_mac:
+                        device_to_profile[p_mac] = {"profile_id": p_id, "profile_name": p_name}
+                    if p_dev_id:
+                        device_to_profile[p_dev_id] = {"profile_id": p_id, "profile_name": p_name}
+
+            # 2. Arricchimento dispositivi con metadati locali e profilo utente cloud
             metadata_map = await db_service.get_all_device_metadata()
             enriched_devices = []
             device_metrics_batch = []
@@ -119,10 +140,14 @@ class BackgroundPoller:
 
             for dev in devices:
                 mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
+                dev_id_str = str(dev.get("id") or "")
                 meta = metadata_map.get(mac, {})
                 cloud_res_ip = cloud_reservations.get(mac)
                 static_ip_val = cloud_res_ip or meta.get("static_ip", "")
                 is_static = bool(cloud_res_ip or meta.get("static_ip") or dev.get("is_static"))
+                
+                # Profilo utente associato
+                prof_info = device_to_profile.get(mac) or device_to_profile.get(dev_id_str) or {}
                 
                 dev_copy = dict(dev)
                 dev_copy["mac"] = mac
@@ -134,6 +159,8 @@ class BackgroundPoller:
                 dev_copy["is_static"] = is_static
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
+                dev_copy["profile_id"] = prof_info.get("profile_id")
+                dev_copy["profile_name"] = prof_info.get("profile_name")
                 enriched_devices.append(dev_copy)
 
                 # Rilevamento nuovo dispositivo
@@ -183,6 +210,7 @@ class BackgroundPoller:
             self.cached_network = network_details
             self.cached_eeros = eeros
             self.cached_devices = enriched_devices
+            self.cached_profiles = profiles
             self._last_poll_time = datetime.now(timezone.utc)
 
             # 6. Sincronizzazione automatica Speed Test reale da eero Gateway
