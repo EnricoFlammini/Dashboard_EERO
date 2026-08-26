@@ -941,6 +941,36 @@ class EeroClient:
                     profiles.append(self._normalize_profile(p))
                 except Exception as ex:
                     logger.error(f"Error normalizing profile item: {ex}")
+
+            # Arricchimento dispositivi interni di ciascun profilo con metadati/MAC completi
+            try:
+                all_devs = await self.get_devices()
+                dev_lookup = {}
+                for d in all_devs:
+                    if d.get("id"):
+                        dev_lookup[str(d["id"])] = d
+                    if d.get("mac"):
+                        dev_lookup[d["mac"].lower()] = d
+                    if d.get("url"):
+                        dev_lookup[d["url"]] = d
+
+                for prof in profiles:
+                    enriched_pdevs = []
+                    for pdev in prof.get("devices", []):
+                        p_id = str(pdev.get("id") or "")
+                        p_mac = (pdev.get("mac") or "").lower()
+                        p_url = pdev.get("url") or ""
+                        match = dev_lookup.get(p_id) or dev_lookup.get(p_mac) or dev_lookup.get(p_url)
+                        if match:
+                            merged = dict(match)
+                            merged.update({k: v for k, v in pdev.items() if v})
+                            enriched_pdevs.append(merged)
+                        else:
+                            enriched_pdevs.append(pdev)
+                    prof["devices"] = enriched_pdevs
+            except Exception as enrich_ex:
+                logger.warning(f"Profile device enrichment warning: {enrich_ex}")
+
             return profiles
 
     async def create_profile(self, name: str, device_ids: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -1040,57 +1070,77 @@ class EeroClient:
         if not self.current_network_id:
             await self.fetch_account_info()
 
-        payload: Dict[str, Any] = {}
-        if name is not None:
-            payload["name"] = name.strip()
-        if paused is not None:
-            payload["paused"] = paused
+        formatted_urls = []
+        clean_ids = []
         if device_ids is not None:
-            formatted = []
             for d in device_ids:
                 d_str = str(d).strip()
                 if not d_str:
                     continue
+                c_id = d_str.split("/")[-1]
+                clean_ids.append(c_id)
                 if d_str.startswith("/2.2/"):
-                    formatted.append(d_str)
+                    formatted_urls.append(d_str)
                 elif d_str.startswith("/"):
-                    formatted.append(f"/2.2{d_str}")
+                    formatted_urls.append(f"/2.2{d_str}")
                 else:
-                    formatted.append(f"/2.2/devices/{d_str}")
-            payload["devices"] = formatted
+                    formatted_urls.append(f"/2.2/devices/{d_str}")
+
+        payloads = []
+        base_p: Dict[str, Any] = {}
+        if name is not None:
+            base_p["name"] = name.strip()
+        if paused is not None:
+            base_p["paused"] = paused
+
+        if device_ids is not None:
+            p1 = dict(base_p)
+            p1["devices"] = formatted_urls
+            payloads.append(p1)
+
+            p2 = dict(base_p)
+            p2["devices"] = clean_ids
+            payloads.append(p2)
+
+            payloads.append({"devices": formatted_urls})
+            payloads.append({"devices": clean_ids})
+        else:
+            payloads.append(base_p)
 
         headers = self._get_headers()
         endpoints = []
         if str(profile_id).startswith("/2.2/"):
-            endpoints.append((f"https://api-user.e2ro.com{profile_id}", "PUT"))
-            endpoints.append((f"https://api-user.e2ro.com{profile_id}", "POST"))
+            endpoints.append(f"https://api-user.e2ro.com{profile_id}")
 
         if self.current_network_id:
-            endpoints.append((f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}", "PUT"))
-            endpoints.append((f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}", "POST"))
+            endpoints.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}")
+            endpoints.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/profile/{clean_id}")
 
-        endpoints.append((f"{EERO_API_BASE}/profiles/{clean_id}", "PUT"))
-        endpoints.append((f"{EERO_API_BASE}/profiles/{clean_id}", "POST"))
+        endpoints.append(f"{EERO_API_BASE}/profiles/{clean_id}")
+
+        methods = ["PUT", "POST", "PATCH"]
 
         async with httpx.AsyncClient(timeout=15.0) as client:
             last_err = ""
-            for url, method in endpoints:
-                try:
-                    logger.info(f"Sending profile update to {method} {url} with payload: {payload}")
-                    if method == "PUT":
-                        resp = await client.put(url, json=payload, headers=headers)
-                    else:
-                        resp = await client.post(url, json=payload, headers=headers)
+            for url in endpoints:
+                for method in methods:
+                    for payload in payloads:
+                        try:
+                            logger.info(f"Trying profile update: {method} {url} with {payload}")
+                            if method == "PUT":
+                                resp = await client.put(url, json=payload, headers=headers)
+                            elif method == "POST":
+                                resp = await client.post(url, json=payload, headers=headers)
+                            else:
+                                resp = await client.patch(url, json=payload, headers=headers)
 
-                    if resp.status_code in (200, 201, 204):
-                        data = resp.json().get("data", payload) if (resp.status_code in (200, 201) and resp.text) else payload
-                        logger.info(f"Profile {clean_id} updated successfully ({resp.status_code}) via {method} {url}")
-                        return {"status": "success", "profile": self._normalize_profile(data)}
-                    last_err = f"{resp.status_code}: {resp.text}"
-                    logger.warning(f"Endpoint {method} {url} returned {resp.status_code}: {resp.text}")
-                except Exception as ex:
-                    last_err = str(ex)
-                    logger.warning(f"Exception requesting {method} {url}: {ex}")
+                            if resp.status_code in (200, 201, 204):
+                                data = resp.json().get("data", payload) if (resp.status_code in (200, 201) and resp.text) else payload
+                                logger.info(f"Profile {clean_id} updated successfully ({resp.status_code}) via {method} {url}")
+                                return {"status": "success", "profile": self._normalize_profile(data)}
+                            last_err = f"{resp.status_code}: {resp.text}"
+                        except Exception as ex:
+                            last_err = str(ex)
             raise RuntimeError(f"Errore aggiornamento profilo eero: {last_err}")
 
     async def delete_profile(self, profile_id: str) -> Dict[str, Any]:
@@ -1225,38 +1275,45 @@ class EeroClient:
             {"profile": f"/2.2/networks/{self.current_network_id}/profiles/{clean_target_pid}" if clean_target_pid else None},
             {"profile": clean_target_pid if clean_target_pid else None},
             {"profile": None} if not clean_target_pid else {"profile": target_profile_url},
+            {"profile": ""} if not clean_target_pid else {"profile": target_profile_url},
+            {"profile_id": clean_target_pid if clean_target_pid else None},
         ]
 
         dev_endpoints = []
         if self.current_network_id and clean_dev_id:
-            dev_endpoints.extend([
-                (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}", "PUT"),
-                (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}", "POST"),
-            ])
+            dev_endpoints.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}")
+        if self.current_network_id and target_mac:
+            dev_endpoints.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{target_mac}")
         if clean_dev_id:
-            dev_endpoints.extend([
-                (f"{EERO_API_BASE}/devices/{clean_dev_id}", "PUT"),
-                (f"{EERO_API_BASE}/devices/{clean_dev_id}", "POST"),
-            ])
+            dev_endpoints.append(f"{EERO_API_BASE}/devices/{clean_dev_id}")
+        if target_mac:
+            dev_endpoints.append(f"{EERO_API_BASE}/devices/{target_mac}")
+
+        dev_methods = ["PUT", "POST", "PATCH"]
 
         device_updated_successfully = False
         async with httpx.AsyncClient(timeout=15.0) as client:
             headers = self._get_headers()
-            for url, method in dev_endpoints:
-                for p_load in dev_payloads:
-                    try:
-                        logger.info(f"Trying device profile update: {method} {url} with {p_load}")
-                        if method == "PUT":
-                            resp = await client.put(url, json=p_load, headers=headers)
-                        else:
-                            resp = await client.post(url, json=p_load, headers=headers)
+            for url in dev_endpoints:
+                for method in dev_methods:
+                    for p_load in dev_payloads:
+                        try:
+                            logger.info(f"Trying device profile update: {method} {url} with {p_load}")
+                            if method == "PUT":
+                                resp = await client.put(url, json=p_load, headers=headers)
+                            elif method == "POST":
+                                resp = await client.post(url, json=p_load, headers=headers)
+                            else:
+                                resp = await client.patch(url, json=p_load, headers=headers)
 
-                        if resp.status_code in (200, 201, 204):
-                            logger.info(f"Device-level profile assignment succeeded via {method} {url} (HTTP {resp.status_code})")
-                            device_updated_successfully = True
-                            break
-                    except Exception as ex:
-                        logger.debug(f"Device update attempt failed {method} {url}: {ex}")
+                            if resp.status_code in (200, 201, 204):
+                                logger.info(f"Device-level profile assignment succeeded via {method} {url} (HTTP {resp.status_code})")
+                                device_updated_successfully = True
+                                break
+                        except Exception as ex:
+                            logger.debug(f"Device update attempt failed {method} {url}: {ex}")
+                    if device_updated_successfully:
+                        break
                 if device_updated_successfully:
                     break
 
@@ -1336,7 +1393,7 @@ class EeroClient:
             logger.warning(f"Profile-level update warning: {p_ex}")
             profile_update_error = p_ex
 
-        # Se il metodo a livello device ha avuto successo, consideriamo l'operazione completata
+        # Se entrambi i metodi sono falliti, solleva l'errore per informare l'utente
         if not device_updated_successfully and profile_update_error:
             raise profile_update_error
 
