@@ -292,9 +292,8 @@ class EeroClient:
         node["wired"] = is_wired
         node["backhaul_type"] = "Ethernet (Cablato)" if is_wired else "Wireless Mesh (5/6 GHz)"
 
-        # Uptime
+        # Uptime (solo se esplicitamente fornito da un contatore numerico in secondi)
         up_val = node.get("uptime")
-        last_reboot = node.get("last_reboot") or node.get("boot_time") or node.get("connected_at")
         if isinstance(up_val, (int, float)) and up_val > 0:
             days = int(up_val // 86400)
             hours = int((up_val % 86400) // 3600)
@@ -305,23 +304,8 @@ class EeroClient:
                 node["uptime"] = f"{hours}h {mins}m"
             else:
                 node["uptime"] = f"{mins}m"
-        elif last_reboot:
-            try:
-                from datetime import datetime, timezone
-                dt = datetime.fromisoformat(str(last_reboot).replace("Z", "+00:00"))
-                delta_sec = (datetime.now(timezone.utc) - dt).total_seconds()
-                if delta_sec > 0:
-                    days = int(delta_sec // 86400)
-                    hours = int((delta_sec % 86400) // 3600)
-                    node["uptime"] = f"{days}g {hours}h" if days > 0 else f"{hours}h"
-                else:
-                    node["uptime"] = "Riavviato di recente"
-            except Exception:
-                node["uptime"] = str(last_reboot)
-        elif isinstance(up_val, str) and up_val:
-            node["uptime"] = up_val
         else:
-            node["uptime"] = "Attivo"
+            node["uptime"] = ""
 
         # Temperature / Thermal State (Real Eero API data)
         raw_temp = node.get("temperature") or node.get("temp")
@@ -601,22 +585,45 @@ class EeroClient:
             return {"status": "success", "message": f"Riavvio del nodo {eero_id} inviato."}
 
     async def set_eero_led(self, eero_id: str, led_on: bool) -> Dict[str, Any]:
-        """Accende o spegne il LED frontale di un nodo eero."""
+        """Accende o spegne il LED frontale di un nodo eero supportando i vari endpoint API eero."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             for eero in self._demo_state["eeros"]:
                 if eero["id"] == eero_id or eero["serial"] == eero_id:
                     eero["led_on"] = led_on
             return {"status": "success", "eero_id": eero_id, "led_on": led_on}
 
+        clean_id = str(eero_id).split("/")[-1]
+        action = "on" if led_on else "off"
+        headers = self._get_headers()
+
+        attempts = [
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}", {"led_on": led_on, "led_action": action}),
+            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/led_action", {"led_action": action}),
+            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/led_action", {"led_action": action}),
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/status_light", {"enabled": led_on})
+        ]
+
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.put(
-                f"{EERO_API_BASE}/eeros/{eero_id}/led",
-                json={"led_on": led_on},
-                headers=self._get_headers()
-            )
-            if resp.status_code not in (200, 204):
-                raise RuntimeError(f"Errore impostazione LED: {resp.text}")
-            return {"status": "success", "eero_id": eero_id, "led_on": led_on}
+            last_err = ""
+            for method, url, payload in attempts:
+                try:
+                    if method == "POST":
+                        resp = await client.post(url, json=payload, headers=headers)
+                    else:
+                        resp = await client.put(url, json=payload, headers=headers)
+
+                    if resp.status_code in (200, 201, 202, 204):
+                        logger.info(f"LED update succeeded for eero {clean_id} via {method} {url}")
+                        return {"status": "success", "eero_id": clean_id, "led_on": led_on}
+                    else:
+                        last_err = f"{method} {url} returned {resp.status_code}: {resp.text}"
+                except Exception as ex:
+                    last_err = f"{method} {url} error: {ex}"
+
+            logger.error(f"All LED update attempts failed for eero {clean_id}. Last error: {last_err}")
+            raise RuntimeError(f"Errore impostazione LED eero: {last_err}")
 
     async def set_all_leds(self, led_on: bool) -> Dict[str, Any]:
         """Accende o spegne i LED di tutti i nodi mesh."""
