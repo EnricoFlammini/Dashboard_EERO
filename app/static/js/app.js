@@ -255,7 +255,7 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     startPolling() {
       if (this.pollingTimer) clearInterval(this.pollingTimer);
-      // Polling rapido metriche live ogni 3s (YouTube, streaming video, download)
+      // Polling rapido metriche live ogni 3s
       let count = 0;
       this.pollingTimer = setInterval(async () => {
         if (this.isAuthenticated) {
@@ -265,6 +265,9 @@ document.addEventListener('alpine:init', () => {
             await this.fetchOverview();
             if (this.currentTab === 'devices') {
               await this.fetchDevices();
+            } else if (this.currentTab === 'metrics') {
+              await this.loadWanHistory();
+              await this.loadTopHogs();
             }
           }
         }

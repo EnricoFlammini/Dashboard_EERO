@@ -109,8 +109,8 @@ async def get_top_bandwidth_hogs(
         avg_dl = float(item.get("avg_download_rate", 0))
         avg_ul = float(item.get("avg_upload_rate", 0))
 
-        # Se non ci sono byte o traffico reale registrato (meno di 100 KB totali e 0 rate), non mostrare
-        if tot_b < 100_000 and avg_dl <= 0 and avg_ul <= 0:
+        # Se non ci sono byte o traffico reale registrato (meno di 1 KB totale e 0 rate), non mostrare
+        if tot_b < 1024 and avg_dl <= 0 and avg_ul <= 0:
             continue
 
         seen_macs.add(mac)
