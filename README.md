@@ -12,7 +12,7 @@ Applicazione web self-hosted, modulare e containerizzata con Docker per il contr
 * **📱 Smart Guest Wi-Fi con QR Code Dinamico:** Generatore automatico di QR Code standard Wi-Fi (`WIFI:S:...;T:WPA;P:...;;`) da scansionare al volo con smartphone, con pulsante per attivare/disattivare la rete ospiti e generatore di password sicure.
 * **🎮 Gaming & Focus Mode (One-Click Low Latency):** Pulsante a un clic che mette automaticamente in pausa il traffico di background di apparati secondari e IoT preconfigurati per azzerare il jitter e la latenza durante sessioni di gaming o videoconferenze.
 * **🔔 Notifiche Telegram & Webhook:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert) e anomalie/nodi mesh offline.
-* **📖 Manuale Utente Integrato & Changelog:** Sezione di documentazione navigabile con ricerca istantanea full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app (v1.00.07).
+* **📖 Manuale Utente Integrato & Changelog:** Sezione di documentazione navigabile con ricerca istantanea full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app (v1.00.08).
 * **🛡️ Zero-Latency In-Memory Poller:** Cache in memoria RAM per rispondere all'interfaccia con latenza zero senza sovraccaricare le API eero (protezione da rate limiting).
 * **✨ Demo Mode Simulator:** Possibilità di testare e validare tutte le funzioni dell'applicazione senza inserire credenziali reali.
 

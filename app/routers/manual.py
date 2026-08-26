@@ -190,12 +190,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.07", "content": content}
+                return {"status": "success", "version": "1.00.08", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.07",
-        "content": "# Changelog v1.00.07\n\n- Badge indicatore STATICO / DHCP nella tabella dispositivi.\n- Filtro rapido per tipo di assegnazione IP (Statici vs Dinamici)."
+        "version": "1.00.08",
+        "content": "# Changelog v1.00.08\n\n- Sincronizzazione matematica totale tra Speed Test e analisi continua della rete.\n- Unificazione dell'ultimo test tra card, grafico temporale e statistiche aggregate."
     }

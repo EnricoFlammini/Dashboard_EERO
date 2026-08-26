@@ -185,16 +185,29 @@ class BackgroundPoller:
             self.cached_devices = enriched_devices
             self._last_poll_time = datetime.now(timezone.utc)
 
-            # 6. Auto-salvataggio speedtest di fabbrica gateway se database vuoto
+            # 6. Sincronizzazione automatica Speed Test reale da eero Gateway
             sp = network_details.get("speedtest")
             if sp and isinstance(sp, dict) and sp.get("download_mbps"):
+                down_val = round(float(sp["download_mbps"]), 2)
+                up_val = round(float(sp.get("upload_mbps", 0)), 2)
+                ping_val = round(float(sp.get("ping_ms", 0)), 1)
+                
                 history_sp = await db_service.get_speedtests(limit=1)
+                should_save = False
                 if not history_sp:
+                    should_save = True
+                else:
+                    latest = history_sp[0]
+                    # Se l'ultimo test registrato ha valori diversi
+                    if abs(float(latest.get("download_mbps", 0)) - down_val) > 2.0 or abs(float(latest.get("upload_mbps", 0)) - up_val) > 2.0:
+                        should_save = True
+                
+                if should_save:
                     await db_service.save_speedtest(
-                        download_mbps=float(sp["download_mbps"]),
-                        upload_mbps=float(sp.get("upload_mbps", 0)),
-                        ping_ms=float(sp.get("ping_ms", 0)),
-                        server_name="eero Gateway SpeedTest",
+                        download_mbps=down_val,
+                        upload_mbps=up_val,
+                        ping_ms=ping_val,
+                        server_name=f"{network_details.get('isp', 'eero Gateway')} (WAN SpeedTest)",
                         source="eero_gateway"
                     )
 

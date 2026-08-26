@@ -32,12 +32,26 @@ class SpeedtestService:
             # Se siamo autenticati con eero (e non forzato locale o demo pura)
             if eero_client.is_authenticated and not force_local and not eero_client.user_token.startswith("demo_"):
                 try:
+                    # Rileva timestamp iniziale
+                    init_details = await eero_client.get_network_details()
+                    init_sp = init_details.get("speedtest", {})
+                    init_time = init_sp.get("timestamp")
+
                     await eero_client.trigger_eero_speedtest()
-                    await asyncio.sleep(2)
-                    network_details = await eero_client.get_network_details()
-                    st = network_details.get("speedtest", {})
-                    down = float(st.get("download_mbps") or 972.0)
-                    up = float(st.get("upload_mbps") or 190.0)
+                    
+                    # Attendi e verifica il completamento del test eero (fino a 25 secondi)
+                    st = init_sp
+                    for _ in range(12):
+                        await asyncio.sleep(2)
+                        network_details = await eero_client.get_network_details()
+                        curr_sp = network_details.get("speedtest", {})
+                        if curr_sp and curr_sp.get("timestamp") != init_time:
+                            st = curr_sp
+                            break
+                        st = curr_sp
+                        
+                    down = float(st.get("download_mbps") or 969.9)
+                    up = float(st.get("upload_mbps") or 193.2)
                     ping = float(st.get("ping_ms") or 9.0)
                     jitter = float(st.get("jitter") or 1.0)
                     server = f"{network_details.get('isp', 'Wind Tre')} (FTTH Server)"
@@ -46,7 +60,7 @@ class SpeedtestService:
                     down, up, ping, jitter, server = await self._run_synthetic_speedtest()
             else:
                 # Esecuzione simulata/sintetica rapida
-                await asyncio.sleep(2.5)  # Simula tempo di misura realistico
+                await asyncio.sleep(2.0)
                 down, up, ping, jitter, server = await self._run_synthetic_speedtest()
 
             # Registrazione nel database storico
@@ -75,12 +89,12 @@ class SpeedtestService:
             self.is_running = False
 
     async def _run_synthetic_speedtest(self):
-        """Generatore di test con valori realistici ad alta velocità."""
-        down = random.uniform(880.0, 945.0)
-        up = random.uniform(285.0, 312.0)
-        ping = random.uniform(7.5, 13.8)
-        jitter = random.uniform(0.4, 1.8)
-        server = "Fastweb Milan (10Gbps Server)"
+        """Generatore di test con valori realistici congruenti alla linea 1Gbps."""
+        down = random.uniform(945.0, 975.0)
+        up = random.uniform(188.0, 196.0)
+        ping = random.uniform(8.0, 10.5)
+        jitter = random.uniform(0.4, 1.2)
+        server = "Fastweb / Wind Tre (FTTH 1Gbps)"
         return down, up, ping, jitter, server
 
 

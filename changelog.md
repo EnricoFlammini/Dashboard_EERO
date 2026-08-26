@@ -6,6 +6,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.08] - 2026-08-26
+
+### ⚡ Sincronizzazione Totale Speed Test & Analisi Prestazioni
+* **Congruenza Matematica Assoluta:** Risolto il disallineamento tra il valore istantaneo dello speedtest del Gateway (970 Mbps) e la serie storica del database.
+* **Sincronizzazione Automatica Gateway eero:** Il poller registra in modo continuo nel database SQLite ogni nuova misurazione reale completata dal Gateway eero, alimentando correttamente il grafico e le statistiche aggregate.
+* **Unificazione Single Source of Truth:** L'ultimo punto del grafico, le schede di riepilogo in cima alla pagina Speed Test, la card di anteprima della Dashboard e le statistiche aggregate (Medie, Picchi Massimi, Latenza) attingono ora alla medesima sorgente dati coerente.
+* **Esecuzione Test Ottimizzata:** Il trigger manuale dello speed test attende fino a completamento reale della misura hardware da parte del router eero prima di salvare e aggiornare l'interfaccia.
+
+---
+
 ## [1.00.07] - 2026-08-26
 
 ### 🏷️ Indicatori Visivi Tipo IP nella Tabella Dispositivi

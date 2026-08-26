@@ -732,6 +732,19 @@ document.addEventListener('alpine:init', () => {
       return { hasConflict: false, isReassign: false, message: "Indirizzo IP disponibile e pronto per la prenotazione." };
     },
 
+    get latestSpeedtest() {
+      if (this.lastSpeedtestResult && this.lastSpeedtestResult.download_mbps) {
+        return this.lastSpeedtestResult;
+      }
+      if (this.speedtestHistory && this.speedtestHistory.length > 0) {
+        return this.speedtestHistory[0];
+      }
+      if (this.network && this.network.speedtest && this.network.speedtest.download_mbps) {
+        return this.network.speedtest;
+      }
+      return { download_mbps: 0, upload_mbps: 0, ping_ms: 0 };
+    },
+
     async openDeviceModal(device) {
       this.selectedDevice = device;
       this.deviceDetailTab = 'general';
@@ -1010,7 +1023,7 @@ document.addEventListener('alpine:init', () => {
     async loadSpeedtestData() {
       try {
         const [resHist, resStats] = await Promise.all([
-          fetch('/api/speedtest/history?limit=25'),
+          fetch('/api/speedtest/history?limit=30'),
           fetch('/api/speedtest/stats')
         ]);
         const jsonHist = await resHist.json();
@@ -1019,12 +1032,15 @@ document.addEventListener('alpine:init', () => {
         if (jsonHist.status === 'success') {
           this.speedtestHistory = jsonHist.tests || [];
           if (this.speedtestHistory.length > 0) {
+            this.lastSpeedtestResult = this.speedtestHistory[0];
             const rev = [...this.speedtestHistory].reverse();
             const labels = rev.map(t => this.formatLocalDateTime(t.timestamp));
             const dl = rev.map(t => t.download_mbps);
             const ul = rev.map(t => t.upload_mbps);
             const ping = rev.map(t => t.ping_ms);
             this.renderSpeedtestChart(labels, dl, ul, ping);
+          } else if (this.network && this.network.speedtest) {
+            this.lastSpeedtestResult = this.network.speedtest;
           }
         }
         if (jsonStats.status === 'success') {
