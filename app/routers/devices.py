@@ -292,9 +292,10 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
         cached_p = await eero_client.get_profiles()
         background_poller.update_cached_profiles(cached_p)
 
+        msg = "Dispositivo rimosso dal profilo con successo." if not payload.profile_id else "Profilo dispositivo aggiornato con successo."
         return {
             "status": "success",
-            "message": "Profilo dispositivo aggiornato con successo.",
+            "message": msg,
             "result": res
         }
     except Exception as e:

@@ -1185,6 +1185,7 @@ document.addEventListener('alpine:init', () => {
 
     async assignDeviceToProfile(deviceMacOrId, profileId) {
       if (!deviceMacOrId) return;
+      const isRemoving = !profileId;
       try {
         const res = await fetch(`/api/devices/${deviceMacOrId}/profile`, {
           method: 'POST',
@@ -1193,10 +1194,14 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Impossibile assegnare il profilo al dispositivo');
+          throw new Error(data.detail || data.message || 'Impossibile aggiornare l\'associazione al profilo');
         }
 
-        this.showToast("Assegnazione Salvata", "Dispositivo associato al profilo con successo.", "success");
+        this.showToast(
+          isRemoving ? "Assegnazione Rimossa" : "Assegnazione Salvata",
+          isRemoving ? "Dispositivo disassociato dal profilo con successo." : "Dispositivo associato al profilo con successo.",
+          "success"
+        );
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
         this.showToast("Errore Assegnazione", err.message, "error");
