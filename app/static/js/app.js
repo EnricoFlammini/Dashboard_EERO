@@ -680,35 +680,52 @@ document.addEventListener('alpine:init', () => {
       // Controllo formato IPv4 base
       const ipParts = targetIp.split('.');
       if (ipParts.length !== 4 || ipParts.some(p => isNaN(p) || p === '' || Number(p) < 0 || Number(p) > 255)) {
-        return { hasConflict: true, message: "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." };
+        return { hasConflict: true, isReassign: false, message: "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." };
       }
 
-      // 1. Conflitto con Gateway o nodi mesh
+      // 1. Conflitto Bloccante: Gateway o nodi mesh
       if (this.network && this.network.gateway_ip === targetIp) {
-        return { hasConflict: true, message: `L'IP ${targetIp} è l'indirizzo del Gateway eero.` };
+        return { hasConflict: true, isReassign: false, message: `L'IP ${targetIp} è l'indirizzo del Gateway eero.` };
       }
       for (const node of (this.eeros || [])) {
         if (node.ip === targetIp) {
-          return { hasConflict: true, message: `L'IP ${targetIp} è assegnato al nodo mesh '${node.name}'.` };
+          return { hasConflict: true, isReassign: false, message: `L'IP ${targetIp} appartiene al nodo mesh '${node.name}'.` };
         }
       }
 
-      // 2. Conflitto con prenotazioni esistenti per altri MAC
+      // 2. Se questo stesso dispositivo sta già usando questo IP (lease dinamico o statico)
+      if (this.selectedDevice.ip === targetIp) {
+        return { 
+          hasConflict: false, 
+          isReassign: false, 
+          message: `Questo dispositivo sta già usando l'IP ${targetIp}. Clicca 'Riserva' per confermarlo fisso e permanente su eero.` 
+        };
+      }
+
+      // 3. Riassegnazione da una prenotazione esistente (es. altra scheda di rete dello stesso PC o vecchio dispositivo)
       for (const res of (this.allReservations || [])) {
         if (res.ip === targetIp && (res.mac || '').toLowerCase() !== currentMac) {
-          return { hasConflict: true, message: `L'IP ${targetIp} è già riservato per '${res.description || res.mac}'.` };
+          return { 
+            hasConflict: false, 
+            isReassign: true, 
+            message: `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.mac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
+          };
         }
       }
 
-      // 3. Conflitto con altri dispositivi live
+      // 4. Riassegnazione da un altro dispositivo con lease attivo
       for (const dev of (this.devices || [])) {
         const dMac = (dev.mac || dev.mac_address || '').toLowerCase();
         if (dev.ip === targetIp && dMac !== currentMac) {
-          return { hasConflict: true, message: `L'IP ${targetIp} è attualmente utilizzato da '${dev.custom_name || dev.nickname || dev.hostname || dMac}'.` };
+          return { 
+            hasConflict: false, 
+            isReassign: true, 
+            message: `L'IP ${targetIp} è attualmente assegnato a '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Cliccando 'Riserva', verrà riservato per questo dispositivo.` 
+          };
         }
       }
 
-      return { hasConflict: false, message: "Indirizzo IP valido e disponibile." };
+      return { hasConflict: false, isReassign: false, message: "Indirizzo IP disponibile e pronto per la prenotazione." };
     },
 
     async openDeviceModal(device) {

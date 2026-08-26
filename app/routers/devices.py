@@ -177,18 +177,20 @@ async def get_device_rules(mac_address: str):
 
 @router.post("/{mac_address}/reservation")
 async def set_device_reservation(mac_address: str, payload: ReservationRequest):
-    """Riserva un IP statico DHCP per il dispositivo su Amazon eero."""
+    """Riserva un IP statico DHCP per il dispositivo su Amazon eero, riassegnando se necessario."""
     mac_clean = mac_address.lower()
     target_ip = payload.ip.strip()
     
-    # Verifica che l'IP non sia occupato da un altro dispositivo (diverso da questo MAC)
+    # Se l'IP era già prenotato per un vecchio MAC o un'altra interfaccia dello stesso host, elimina prima la vecchia prenotazione per evitare conflitti su eero
     forwards_res = await eero_client.get_forwards_and_reservations()
     for res in forwards_res.get("reservations", []):
         if res.get("ip") == target_ip and (res.get("mac") or "").lower() != mac_clean:
-            raise HTTPException(
-                status_code=400,
-                detail=f"L'IP {target_ip} è già riservato per un altro dispositivo ({res.get('description') or res.get('mac')})."
-            )
+            old_res_id = res.get("id") or res.get("mac")
+            logger.info(f"Reassigning IP {target_ip} from {res.get('mac')} to {mac_clean}. Deleting old reservation {old_res_id}...")
+            try:
+                await eero_client.delete_reservation(old_res_id)
+            except Exception as e:
+                logger.warning(f"Could not delete old reservation {old_res_id}: {e}")
             
     try:
         res = await eero_client.add_reservation(

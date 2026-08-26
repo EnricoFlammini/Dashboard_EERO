@@ -6,6 +6,15 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.06] - 2026-08-26
+
+### 🔄 Assegnazione IP Corrente & Riassegnazione Intelligente
+* **Assegnazione IP Corrente del Dispositivo:** Permette di confermare e rendere permanente tramite prenotazione DHCP l'indirizzo IP che il dispositivo sta già utilizzando (tramite lease dinamico).
+* **Riassegnazione Automatica da Altre Schede di Rete / Vecchi Host:** Se un IP apparteneva precedentemente a un'altra scheda di rete (es. Wi-Fi vs Ethernet dello stesso PC) o a un vecchio apparato, la dashboard non blocca più l'operazione ma offre il pulsante **`Riassegna e Riserva`**, rimuovendo automaticamente la vecchia prenotazione obsoleta dal Cloud eero prima di registrare la nuova.
+* **Alert Contestuali Informativi:** Gli avvisi di occupazione IP per dispositivi client diventano avvisi informativi (badge ambra) che informano sul trasferimento senza impedire l'azione all'amministratore di rete.
+
+---
+
 ## [1.00.05] - 2026-08-26
 
 ### 🌐 Gestione Nativa IP Statici (DHCP) & Port Forwarding
