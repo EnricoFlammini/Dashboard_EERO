@@ -190,12 +190,12 @@ async def get_changelog():
         if p.exists():
             try:
                 content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": "1.00.04", "content": content}
+                return {"status": "success", "version": "1.00.05", "content": content}
             except Exception as e:
                 logger.error(f"Error reading changelog from {p}: {e}")
                 
     return {
         "status": "success",
-        "version": "1.00.04",
-        "content": "# Changelog v1.00.04\n\n- Fix salvataggio categoria e preferiti dispositivi.\n- Rimozione tabelle e logiche storiche banda nel DB.\n- Rimozione pulsanti Spegni/Accendi tutti i LED."
+        "version": "1.00.05",
+        "content": "# Changelog v1.00.05\n\n- Gestione integrata e nativa IP Statici (DHCP) e Port Forwarding con Cloud eero.\n- Rilevamento automatico conflitti IP in tempo reale.\n- Nuova interfaccia a schede per i dettagli dispositivo."
     }

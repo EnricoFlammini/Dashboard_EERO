@@ -755,8 +755,8 @@ class EeroClient:
         """Recupera le regole di inoltro porte e prenotazioni IP statico."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             return {
-                "reservations": self._demo_state["reservations"],
-                "forwards": self._demo_state["forwards"],
+                "reservations": self._demo_state.get("reservations", []),
+                "forwards": self._demo_state.get("forwards", []),
             }
 
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -772,6 +772,62 @@ class EeroClient:
                 "reservations": res_reservations.json().get("data", []) if res_reservations.status_code == 200 else [],
                 "forwards": res_forwards.json().get("data", []) if res_forwards.status_code == 200 else [],
             }
+
+    async def add_reservation(
+        self,
+        ip: str,
+        mac: str,
+        description: Optional[str] = "Device"
+    ) -> Dict[str, Any]:
+        """Crea o aggiorna una prenotazione IP statico (DHCP Reservation) nel Cloud eero."""
+        reservation = {
+            "id": f"res_{mac.replace(':', '')}",
+            "ip": ip,
+            "mac": mac.lower(),
+            "description": description or "Device"
+        }
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            self._demo_state["reservations"] = [
+                r for r in self._demo_state.get("reservations", [])
+                if (r.get("mac") or "").lower() != mac.lower() and r.get("ip") != ip
+            ]
+            self._demo_state["reservations"].append(reservation)
+            return {"status": "success", "reservation": reservation}
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
+                json={"ip": ip, "mac": mac.lower(), "description": description or "Device"},
+                headers=self._get_headers()
+            )
+            if resp.status_code not in (200, 201):
+                resp_put = await client.put(
+                    f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
+                    json={"ip": ip, "mac": mac.lower(), "description": description or "Device"},
+                    headers=self._get_headers()
+                )
+                if resp_put.status_code not in (200, 201, 204):
+                    raise RuntimeError(f"Errore prenotazione DHCP su eero: {resp.text}")
+                return resp_put.json().get("data", reservation)
+            return resp.json().get("data", reservation)
+
+    async def delete_reservation(self, reservation_id: str) -> Dict[str, Any]:
+        """Elimina una prenotazione IP statico dal Cloud eero."""
+        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            self._demo_state["reservations"] = [
+                r for r in self._demo_state.get("reservations", [])
+                if r.get("id") != reservation_id and (r.get("mac") or "").lower() != reservation_id.lower() and r.get("ip") != reservation_id
+            ]
+            return {"status": "success", "deleted": reservation_id}
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.delete(
+                f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations/{reservation_id}",
+                headers=self._get_headers()
+            )
+            if resp.status_code not in (200, 204):
+                raise RuntimeError(f"Errore eliminazione prenotazione DHCP: {resp.text}")
+            return {"status": "success", "deleted": reservation_id}
 
     async def add_port_forward(
         self,

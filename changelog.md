@@ -6,6 +6,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.05] - 2026-08-26
+
+### 🌐 Gestione Nativa IP Statici (DHCP) & Port Forwarding
+* **Prenotazioni DHCP Sincronizzate con Cloud eero:** Aggiunta la gestione autentica delle prenotazioni IP statico con creazione (`POST /reservations`) ed eliminazione (`DELETE /reservations/{id}`) in tempo reale tramite Cloud eero.
+* **Rilevamento Conflitti IP in Tempo Reale:** L'interfaccia analizza istantaneamente l'IP digitato confrontandolo con il Gateway, i nodi mesh, le altre prenotazioni attive e tutti i dispositivi connessi, impedendo conflitti o collisioni di rete.
+* **Gestione Port Forwarding Integrata per Dispositivo:** Tabella interattiva delle porte aperte per ciascun host (Porta WAN, Porta LAN, Protocollo TCP/UDP/Both, Descrizione) con aggiunta e cancellazione con un clic.
+* **Nuova Interfaccia Modale a Schede (Tabs):** Organizzazione in 3 sezioni chiare: `Dati & Categoria`, `IP Statico (DHCP)` e `Port Forwarding`.
+
+---
+
 ## [1.00.04] - 2026-08-26
 
 ### 🛠️ Gestione Dispositivi & Metadati Locali

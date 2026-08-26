@@ -30,6 +30,11 @@ class DeviceRenameRequest(BaseModel):
     nickname: str = Field(..., description="Nuovo nome dispositivo da sincronizzare con il cloud eero")
 
 
+class ReservationRequest(BaseModel):
+    ip: str = Field(..., description="Indirizzo IP statico da riservare per il dispositivo")
+    description: Optional[str] = Field(None, description="Descrizione della prenotazione")
+
+
 class PortForwardRequest(BaseModel):
     ip: str = Field(..., description="Indirizzo IP interno di destinazione")
     port_from: int = Field(..., description="Porta esterna WAN")
@@ -141,17 +146,80 @@ async def rename_device(device_id: str, payload: DeviceRenameRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{mac_address}/traffic")
-async def get_device_traffic_history(mac_address: str, hours: int = Query(24, ge=1, le=720)):
-    """Restituisce la serie temporale di download/upload per il singolo dispositivo."""
-    history = await db_service.get_device_metrics_history(mac_address.upper(), hours=hours)
+@router.get("/{mac_address}/rules")
+async def get_device_rules(mac_address: str):
+    """Restituisce la prenotazione DHCP attiva e tutte le regole di port forwarding per questo dispositivo."""
+    mac_clean = mac_address.lower()
+    cached = background_poller.get_cached_state()
+    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
+    
+    forwards_res = await eero_client.get_forwards_and_reservations()
+    all_reservations = forwards_res.get("reservations", [])
+    all_forwards = forwards_res.get("forwards", [])
+    
+    # Trova prenotazione per questo MAC o IP
+    dev_reservation = next((r for r in all_reservations if (r.get("mac") or "").lower() == mac_clean), None)
+    
+    # Determina l'IP effettivo o prenotato
+    dev_ip = dev_reservation.get("ip") if dev_reservation else (live_device.get("ip") if live_device else "")
+    dev_forwards = [f for f in all_forwards if f.get("ip") == dev_ip] if dev_ip else []
+    
     return {
         "status": "success",
-        "mac_address": mac_address,
-        "hours": hours,
-        "points_count": len(history),
-        "history": history
+        "mac_address": mac_clean,
+        "current_ip": dev_ip or (live_device.get("ip") if live_device else None),
+        "reservation": dev_reservation,
+        "forwards": dev_forwards,
+        "all_reservations": all_reservations,
+        "all_forwards": all_forwards,
     }
+
+
+@router.post("/{mac_address}/reservation")
+async def set_device_reservation(mac_address: str, payload: ReservationRequest):
+    """Riserva un IP statico DHCP per il dispositivo su Amazon eero."""
+    mac_clean = mac_address.lower()
+    target_ip = payload.ip.strip()
+    
+    # Verifica che l'IP non sia occupato da un altro dispositivo (diverso da questo MAC)
+    forwards_res = await eero_client.get_forwards_and_reservations()
+    for res in forwards_res.get("reservations", []):
+        if res.get("ip") == target_ip and (res.get("mac") or "").lower() != mac_clean:
+            raise HTTPException(
+                status_code=400,
+                detail=f"L'IP {target_ip} è già riservato per un altro dispositivo ({res.get('description') or res.get('mac')})."
+            )
+            
+    try:
+        res = await eero_client.add_reservation(
+            ip=target_ip,
+            mac=mac_clean,
+            description=payload.description or "Static IP"
+        )
+        # Aggiorna anche static_ip nei metadati locali
+        await db_service.upsert_device_metadata(mac_address=mac_clean, static_ip=target_ip)
+        return {"status": "success", "reservation": res}
+    except Exception as e:
+        logger.error(f"Failed to add DHCP reservation for {mac_clean}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{mac_address}/reservation")
+async def delete_device_reservation(mac_address: str):
+    """Rimuove la prenotazione IP statico dal router eero."""
+    mac_clean = mac_address.lower()
+    forwards_res = await eero_client.get_forwards_and_reservations()
+    target_res = next((r for r in forwards_res.get("reservations", []) if (r.get("mac") or "").lower() == mac_clean), None)
+    
+    res_id = target_res.get("id") if target_res else mac_clean
+    try:
+        res = await eero_client.delete_reservation(res_id)
+        # Pulisce static_ip nei metadati locali
+        await db_service.upsert_device_metadata(mac_address=mac_clean, static_ip="")
+        return {"status": "success", "deleted": res}
+    except Exception as e:
+        logger.error(f"Failed to delete DHCP reservation for {mac_clean}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/rules/forwards")
@@ -165,29 +233,29 @@ async def get_port_forwards_and_reservations():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/rules/forwards")
-async def create_port_forward(payload: PortForwardRequest):
-    """Aggiunge una nuova regola di inoltro porte."""
+@router.post("/{mac_address}/forwards")
+async def create_device_port_forward(mac_address: str, payload: PortForwardRequest):
+    """Aggiunge una nuova regola di inoltro porte per il dispositivo."""
     try:
         res = await eero_client.add_port_forward(
-            ip=payload.ip,
+            ip=payload.ip.strip(),
             port_from=payload.port_from,
             port_to=payload.port_to,
             protocol=payload.protocol,
-            description=payload.description
+            description=payload.description.strip()
         )
-        return res
+        return {"status": "success", "forward": res}
     except Exception as e:
         logger.error(f"Failed to add port forward: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/rules/forwards/{forward_id}")
-async def delete_port_forward(forward_id: str):
+@router.delete("/{mac_address}/forwards/{forward_id}")
+async def delete_device_port_forward(mac_address: str, forward_id: str):
     """Elimina una regola di inoltro porte."""
     try:
         res = await eero_client.delete_port_forward(forward_id)
-        return res
+        return {"status": "success", "deleted": res}
     except Exception as e:
         logger.error(f"Failed to delete port forward {forward_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -52,18 +52,26 @@ document.addEventListener('alpine:init', () => {
     showConnectedOnly: false,
     
     selectedDevice: null,
-    deviceDetailTab: 'info',
+    deviceDetailTab: 'general',
     deviceMetadataForm: {
       custom_name: '',
       custom_icon: 'device',
       category: 'Altro',
       custom_notes: '',
-      static_ip: '',
       is_favorite: false,
       is_low_latency_target: false
     },
-    deviceTrafficHistory: [],
+    deviceReservation: null,
     deviceForwards: [],
+    allReservations: [],
+    deviceStaticIpInput: '',
+    deviceRulesLoading: false,
+    newPortForward: {
+      port_from: '',
+      port_to: '',
+      protocol: 'tcp',
+      description: ''
+    },
     showDeviceModal: false,
 
     // Port Forwarding Global State
@@ -664,9 +672,48 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    get ipConflictInfo() {
+      if (!this.deviceStaticIpInput || !this.selectedDevice) return null;
+      const targetIp = this.deviceStaticIpInput.trim();
+      const currentMac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      
+      // Controllo formato IPv4 base
+      const ipParts = targetIp.split('.');
+      if (ipParts.length !== 4 || ipParts.some(p => isNaN(p) || p === '' || Number(p) < 0 || Number(p) > 255)) {
+        return { hasConflict: true, message: "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." };
+      }
+
+      // 1. Conflitto con Gateway o nodi mesh
+      if (this.network && this.network.gateway_ip === targetIp) {
+        return { hasConflict: true, message: `L'IP ${targetIp} è l'indirizzo del Gateway eero.` };
+      }
+      for (const node of (this.eeros || [])) {
+        if (node.ip === targetIp) {
+          return { hasConflict: true, message: `L'IP ${targetIp} è assegnato al nodo mesh '${node.name}'.` };
+        }
+      }
+
+      // 2. Conflitto con prenotazioni esistenti per altri MAC
+      for (const res of (this.allReservations || [])) {
+        if (res.ip === targetIp && (res.mac || '').toLowerCase() !== currentMac) {
+          return { hasConflict: true, message: `L'IP ${targetIp} è già riservato per '${res.description || res.mac}'.` };
+        }
+      }
+
+      // 3. Conflitto con altri dispositivi live
+      for (const dev of (this.devices || [])) {
+        const dMac = (dev.mac || dev.mac_address || '').toLowerCase();
+        if (dev.ip === targetIp && dMac !== currentMac) {
+          return { hasConflict: true, message: `L'IP ${targetIp} è attualmente utilizzato da '${dev.custom_name || dev.nickname || dev.hostname || dMac}'.` };
+        }
+      }
+
+      return { hasConflict: false, message: "Indirizzo IP valido e disponibile." };
+    },
+
     async openDeviceModal(device) {
       this.selectedDevice = device;
-      this.deviceDetailTab = 'info';
+      this.deviceDetailTab = 'general';
       const mac = (device.mac || device.mac_address || '').toLowerCase();
       
       this.deviceMetadataForm = {
@@ -674,12 +721,144 @@ document.addEventListener('alpine:init', () => {
         custom_icon: device.custom_icon || 'device',
         category: device.category || 'Altro',
         custom_notes: device.custom_notes || '',
-        static_ip: device.static_ip || '',
         is_favorite: Boolean(device.is_favorite),
         is_low_latency_target: Boolean(device.is_low_latency_target)
       };
 
+      this.deviceStaticIpInput = device.static_ip || device.ip || '';
+      this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
       this.showDeviceModal = true;
+      
+      await this.loadDeviceRules(mac);
+    },
+
+    async loadDeviceRules(mac) {
+      if (!mac) return;
+      this.deviceRulesLoading = true;
+      try {
+        const res = await fetch(`/api/devices/${mac}/rules`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          this.deviceReservation = data.reservation || null;
+          this.deviceForwards = data.forwards || [];
+          this.allReservations = data.all_reservations || [];
+          
+          if (this.deviceReservation) {
+            this.deviceStaticIpInput = this.deviceReservation.ip;
+          } else if (this.selectedDevice && this.selectedDevice.ip) {
+            this.deviceStaticIpInput = this.selectedDevice.ip;
+          }
+        }
+      } catch (err) {
+        console.error("Load device rules error:", err);
+      } finally {
+        this.deviceRulesLoading = false;
+      }
+    },
+
+    async saveDeviceReservation() {
+      if (!this.selectedDevice || !this.deviceStaticIpInput) return;
+      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      try {
+        const desc = this.deviceMetadataForm.custom_name || this.selectedDevice.nickname || this.selectedDevice.hostname || 'Device';
+        const res = await fetch(`/api/devices/${mac}/reservation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ip: this.deviceStaticIpInput.trim(),
+            description: desc
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Errore durante la prenotazione DHCP');
+        }
+
+        this.showToast("IP Statico Riservato", `Indirizzo ${this.deviceStaticIpInput} prenotato con successo su eero.`, "success");
+        await this.loadDeviceRules(mac);
+        await this.fetchDevices();
+      } catch (err) {
+        this.showToast("Errore Prenotazione IP", err.message, "error");
+      }
+    },
+
+    async removeDeviceReservation() {
+      if (!this.selectedDevice) return;
+      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      try {
+        const res = await fetch(`/api/devices/${mac}/reservation`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Errore durante la rimozione della prenotazione');
+        }
+
+        this.showToast("Prenotazione Rimossa", "IP Statico rimosso. Il dispositivo utilizzerà DHCP dinamico.", "info");
+        await this.loadDeviceRules(mac);
+        await this.fetchDevices();
+      } catch (err) {
+        this.showToast("Errore Rimozione", err.message, "error");
+      }
+    },
+
+    async addDevicePortForward() {
+      if (!this.selectedDevice) return;
+      const targetIp = (this.deviceReservation ? this.deviceReservation.ip : (this.selectedDevice.ip || '')).trim();
+      if (!targetIp) {
+        this.showToast("IP Mancante", "Il dispositivo deve avere un indirizzo IP valido per aprire porte.", "warning");
+        return;
+      }
+      const pFrom = parseInt(this.newPortForward.port_from);
+      const pTo = parseInt(this.newPortForward.port_to);
+      if (isNaN(pFrom) || isNaN(pTo) || pFrom < 1 || pFrom > 65535 || pTo < 1 || pTo > 65535) {
+        this.showToast("Porta non valida", "Inserisci numeri di porta validi compresi tra 1 e 65535.", "warning");
+        return;
+      }
+
+      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      try {
+        const res = await fetch(`/api/devices/${mac}/forwards`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ip: targetIp,
+            port_from: pFrom,
+            port_to: pTo,
+            protocol: this.newPortForward.protocol || 'tcp',
+            description: this.newPortForward.description || 'Custom Forward'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Errore durante la creazione del port forward');
+        }
+
+        this.showToast("Porta Inoltrata", `Regola per porta ${pFrom} creata con successo su eero.`, "success");
+        this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
+        await this.loadDeviceRules(mac);
+      } catch (err) {
+        this.showToast("Errore Port Forwarding", err.message, "error");
+      }
+    },
+
+    async deleteDevicePortForward(forwardId) {
+      if (!this.selectedDevice || !forwardId) return;
+      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      try {
+        const res = await fetch(`/api/devices/${mac}/forwards/${forwardId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || 'Errore durante la cancellazione della regola');
+        }
+
+        this.showToast("Regola Eliminata", "Port forwarding rimosso da eero.", "info");
+        await this.loadDeviceRules(mac);
+      } catch (err) {
+        this.showToast("Errore Cancellazione", err.message, "error");
+      }
     },
 
     async saveDeviceMetadata() {
