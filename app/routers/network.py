@@ -5,7 +5,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.services.eero_client import eero_client
+from app.services.db import db_service
+from app.services.eero_client import eero_client, EERO_API_BASE
 from app.services.poller import background_poller
 from app.services.qrcode_gen import generate_wifi_qr_code
 
@@ -44,7 +45,6 @@ async def get_network_overview():
 async def force_network_refresh():
     """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""
     try:
-        await db_service.purge_all_mock_data()
         await background_poller._poll_and_cache()
         cached = background_poller.get_cached_state()
         return {
@@ -55,6 +55,57 @@ async def force_network_refresh():
     except Exception as e:
         logger.error(f"Force refresh error: {e}")
         return {"status": "error", "message": str(e)}
+
+
+@router.get("/debug-raw")
+async def get_debug_raw():
+    """Diagnostica: recupera i campi raw completi restituiti da eero per capire come vengono forniti i dati."""
+    import httpx
+    if not eero_client.is_authenticated or not eero_client.current_network_id:
+        return {"status": "error", "message": "Non autenticato con eero"}
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp_dev = await client.get(
+                f"{EERO_API_BASE}/networks/{eero_client.current_network_id}/devices",
+                headers=eero_client._get_headers()
+            )
+            resp_net = await client.get(
+                f"{EERO_API_BASE}/networks/{eero_client.current_network_id}",
+                headers=eero_client._get_headers()
+            )
+            raw_devices = resp_dev.json().get("data", [])
+            raw_network = resp_net.json().get("data", {})
+
+            # Estrai solo i campi rilevanti per la telemetria di ogni dispositivo
+            devices_summary = []
+            for d in raw_devices:
+                devices_summary.append({
+                    "nickname": d.get("nickname") or d.get("hostname") or d.get("mac"),
+                    "mac": d.get("mac"),
+                    "connected": d.get("connected"),
+                    "wireless": d.get("wireless"),
+                    "usage": d.get("usage"),
+                    "rates": d.get("rates"),
+                    "connectivity": d.get("connectivity"),
+                    "rx_bytes": d.get("rx_bytes"),
+                    "tx_bytes": d.get("tx_bytes"),
+                    "channel": d.get("channel"),
+                    "all_keys": list(d.keys())
+                })
+
+            return {
+                "status": "success",
+                "network_keys": list(raw_network.keys()),
+                "network_speed": raw_network.get("speed"),
+                "network_rates": raw_network.get("rates"),
+                "network_activity": raw_network.get("activity"),
+                "devices_count": len(devices_summary),
+                "devices": devices_summary
+            }
+    except Exception as e:
+        logger.error(f"Debug raw error: {e}")
+        return {"status": "error", "error": str(e)}
 
 
 @router.get("/eeros")
