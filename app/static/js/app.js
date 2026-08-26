@@ -118,6 +118,12 @@ document.addEventListener('alpine:init', () => {
     helpModalTitle: '',
     helpModalContent: '',
 
+    // Changelog Modal State
+    showChangelogModal: false,
+    changelogContent: '',
+    changelogVersion: '1.00.01',
+    changelogLoading: false,
+
     // Toast Notification System
     toasts: [],
 
@@ -592,6 +598,9 @@ document.addEventListener('alpine:init', () => {
             const labels = this.topHogs.map(h => h.display_name);
             const data = this.topHogs.map(h => h.total_gb);
             this.renderHogsChart(labels, data);
+          } else if (this.hogsChartInstance) {
+            this.hogsChartInstance.destroy();
+            this.hogsChartInstance = null;
           }
         }
       } catch (err) {
@@ -1066,16 +1075,36 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async openChangelogModal() {
+      this.changelogLoading = true;
+      this.showChangelogModal = true;
+      try {
+        const res = await fetch('/api/manual/changelog');
+        const json = await res.json();
+        if (json.status === 'success' && json.content) {
+          this.changelogVersion = json.version || '1.00.01';
+          this.changelogContent = this.renderSimpleMarkdown(json.content);
+        }
+      } catch (err) {
+        console.error("Open changelog error:", err);
+        this.changelogContent = '<p class="text-rose-400">Impossibile caricare il changelog.</p>';
+      } finally {
+        this.changelogLoading = false;
+      }
+    },
+
     renderSimpleMarkdown(md) {
       if (!md) return '';
       let html = md
-        .replace(/### (.*?)\n/g, '<h3>$1</h3>')
-        .replace(/#### (.*?)\n/g, '<h4>$1</h4>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/- (.*?)\n/g, '<li>$1</li>')
-        .replace(/\n\n/g, '<p></p>');
+        .replace(/^## (.*?)$/gm, '<h2 class="text-base font-bold text-sky-400 mt-4 mb-2 pb-1 border-b border-slate-800">$1</h2>')
+        .replace(/^### (.*?)$/gm, '<h3 class="text-sm font-bold text-white mt-3 mb-1">$1</h3>')
+        .replace(/^#### (.*?)$/gm, '<h4 class="text-xs font-bold text-slate-300 mt-2 mb-1">$1</h4>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-sky-300 font-semibold">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="text-slate-300">$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[11px]">$1</code>')
+        .replace(/^[\*\-] (.*?)$/gm, '<li class="ml-4 list-disc text-slate-300 my-1 leading-relaxed">$1</li>')
+        .replace(/---/g, '<hr class="border-slate-800 my-4"/>')
+        .replace(/\n\n/g, '<p class="my-2 leading-relaxed text-slate-300"></p>');
       return html;
     },
 

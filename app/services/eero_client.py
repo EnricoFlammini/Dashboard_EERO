@@ -387,17 +387,6 @@ class EeroClient:
         if up_rate == 0.0 and dev.get("tx_rate"):
             up_rate = float(dev.get("tx_rate")) / 1000.0
 
-        # Se il device è connesso ma l'API eero non riporta throughput (es. account standard senza eero Plus),
-        # calcoliamo il flusso coerente basato sul tipo di dispositivo (PC, Smartphone, Smart TV in streaming)
-        if down_rate == 0.0 and dev["connected"]:
-            hostname_lower = dev["hostname"].lower()
-            if any(k in hostname_lower for k in ("pc", "android", "a54", "a34", "elettra", "higgins", "tv", "macbook", "ipad", "phone")):
-                down_rate = round(random.uniform(3.5, 16.8), 2)
-                up_rate = round(random.uniform(0.15, 1.4), 2)
-            else:
-                down_rate = round(random.uniform(0.02, 0.12), 2)
-                up_rate = round(random.uniform(0.01, 0.05), 2)
-
         dev["download_rate_mbps"] = round(float(down_rate), 2)
         dev["upload_rate_mbps"] = round(float(up_rate), 2)
         dev["rx_bytes"] = rx_b

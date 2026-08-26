@@ -220,33 +220,6 @@ class DBService:
             rows = await cursor.fetchall()
             results = [dict(row) for row in rows]
 
-            # Se ci sono meno di 8 campioni (DB appena avviato/ripulito), genera baseline temporale
-            if len(results) < 8:
-                now_dt = datetime.now(timezone.utc)
-                step_mins = 15 if hours <= 24 else (60 if hours <= 168 else 240)
-                num_points = int((hours * 60) / step_mins)
-                synth = []
-                for i in range(num_points, 0, -1):
-                    t = now_dt - timedelta(minutes=i * step_mins)
-                    h = (t.hour + 2) % 24
-                    is_active = 8 <= h <= 23
-                    is_peak = 20 <= h <= 23 or 13 <= h <= 15
-                    base_dl = 22.0 if is_peak else (8.0 if is_active else 0.8)
-                    dl = round(base_dl + (random.uniform(-3.0, 12.0) if is_active else random.uniform(0.1, 0.8)), 2)
-                    dl = max(0.5, dl)
-                    ul = round(dl * random.uniform(0.08, 0.16), 2)
-                    synth.append({
-                        "timestamp": t.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "status": "online",
-                        "public_ip": "192.168.1.190",
-                        "rx_bytes": 0,
-                        "tx_bytes": 0,
-                        "download_speed_mbps": dl,
-                        "upload_speed_mbps": ul,
-                    })
-                synth.extend(results)
-                return synth
-
             return results
 
     # ----------------- DEVICE METRICS -----------------
@@ -309,12 +282,15 @@ class DBService:
                     MAX(dm.rx_bytes) as max_rx,
                     MAX(dm.tx_bytes) as max_tx,
                     AVG(dm.download_rate) as avg_download_rate,
-                    AVG(dm.upload_rate) as avg_upload_rate
+                    AVG(dm.upload_rate) as avg_upload_rate,
+                    COUNT(*) as samples_count
                 FROM device_metrics dm
                 LEFT JOIN device_metadata meta ON dm.mac_address = meta.mac_address
                 WHERE dm.timestamp >= ? OR dm.timestamp >= ?
                 GROUP BY dm.mac_address
-                ORDER BY (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes) + AVG(dm.download_rate)*1000000) DESC
+                HAVING (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) > 0 
+                       OR AVG(dm.download_rate) > 0.05
+                ORDER BY (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) DESC, AVG(dm.download_rate) DESC
                 LIMIT ?
                 """,
                 (since, since_iso, limit)
@@ -323,11 +299,8 @@ class DBService:
             results = []
             for r in rows:
                 row_dict = dict(r)
-                rx_bytes = row_dict.get("delta_rx", 0)
-                tx_bytes = row_dict.get("delta_tx", 0)
-                if rx_bytes == 0 and row_dict.get("max_rx", 0) > 0:
-                    rx_bytes = row_dict["max_rx"]
-                    tx_bytes = row_dict.get("max_tx", 0)
+                rx_bytes = max(0.0, float(row_dict.get("delta_rx") or 0.0))
+                tx_bytes = max(0.0, float(row_dict.get("delta_tx") or 0.0))
                 tot = rx_bytes + tx_bytes
                 row_dict["total_rx_bytes"] = rx_bytes
                 row_dict["total_tx_bytes"] = tx_bytes

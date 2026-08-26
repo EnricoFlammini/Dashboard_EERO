@@ -66,17 +66,17 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
         "id": "bandwidth-historian",
         "title": "4. Monitoraggio Banda & Bandwidth Hogs",
         "icon": "chart-bar",
-        "summary": "Analisi temporale del traffico WAN e identificazione dei dispositivi più esigenti.",
+        "summary": "Analisi temporale del traffico WAN e identificazione dei dispositivi più esigenti a dati reali.",
         "content": """
-### Storico Consumi e Metriche WAN
+### Storico Consumi e Metriche WAN a Dati Reali al 100%
 
 1. **Grafico Temporale WAN (Download vs Upload):**
-   - Traccia i volumi di traffico e la velocità aggregata nel tempo.
+   - Traccia i volumi di traffico e la velocità aggregata reale misurata nel tempo.
    - Utilizza i pulsanti rapidi **24 Ore**, **7 Giorni**, **30 Giorni** o imposta un intervallo orario personalizzato.
-   - Visualizza il totale dei GigaByte (GB) scambiati nel periodo selezionato.
+   - Visualizza il totale dei GigaByte (GB) scambiati nel periodo selezionato calcolato dai delta effettivi registrati.
 2. **Classifica Top Consumi (Bandwidth Hogs):**
-   - Grafico a barre orizzontale che ordina i dispositivi in base alla quantità totale di dati inviati e ricevuti.
-   - Consente di identificare istantaneamente download massivi, backup automatici o apparati non autorizzati che saturano la banda.
+   - Grafico a barre orizzontale e tabella dettagliata che ordina i dispositivi in base alla quantità totale di dati realmente scambiati (`delta_rx + delta_tx`).
+   - **Approccio Rigoroso:** Nessuna simulazione o stima artificiale. Se un dispositivo (es. robot aspirapolvere o domotica) è a riposo o scambia solo minimi pacchetti di telemetria, non viene sovrastimato o inserito artificialmente nei grafici di consumo intensivo.
 3. **Throughput Istantaneo in Tempo Reale:**
    - Visualizza la velocità live in Mbps (Down/Up) attualmente impegnata da tutti gli host attivi.
         """
@@ -141,12 +141,16 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
     },
     {
         "id": "troubleshooting",
-        "title": "8. Risoluzione Problemi & Manutenzione",
+        "title": "8. Risoluzione Problemi & Domande Frequenti (FAQ)",
         "icon": "wrench",
-        "summary": "FAQ, gestione token scaduto, backup database e riavvio container.",
+        "summary": "FAQ su telemetria reale, gestione sessione, backup e manutenzione.",
         "content": """
 ### Domande Frequenti & Troubleshooting
 
+* **Perché per alcuni dispositivi Wi-Fi o IoT non compare un consumo elevato o indicano 0 GB?**
+  - La dashboard segue un **approccio rigoroso a dati reali al 100%**. A differenza di altre app che inventano stime sintetiche, se un dispositivo (robot aspirapolvere, lampadine smart, sensori) non trasmette flussi consistenti o l'API eero non registra byte per quel client, il sistema mostrerà rigorosamente 0 o il valore esatto campionato, senza gonfiare artificialmente il consumo.
+* **Come viene calcolato il consumo delle ultime 24 ore?**
+  - Il consumo 24h è calcolato calcolando la differenza esatta (delta) tra i campioni registrati nel database SQLite locale all'interno della finestra temporale selezionata: `Consumo = MAX(rx_bytes) - MIN(rx_bytes)`.
 * **Cosa fare se la sessione scade?**
   - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
 * **Come effettuare il backup dei dati storici?**
@@ -177,3 +181,29 @@ async def get_manual_section(section_id: str):
     if not section:
         return {"status": "error", "message": "Sezione non trovata."}
     return {"status": "success", "section": section}
+
+
+@router.get("/changelog")
+async def get_changelog():
+    """Restituisce il contenuto del file changelog.md per il visualizzatore in-app."""
+    import os
+    from pathlib import Path
+
+    possible_paths = [
+        Path("/app/changelog.md"),
+        Path(__file__).resolve().parent.parent.parent / "changelog.md",
+        Path("changelog.md")
+    ]
+    for p in possible_paths:
+        if p.exists():
+            try:
+                content = p.read_text(encoding="utf-8")
+                return {"status": "success", "version": "1.00.01", "content": content}
+            except Exception as e:
+                logger.error(f"Error reading changelog from {p}: {e}")
+                
+    return {
+        "status": "success",
+        "version": "1.00.01",
+        "content": "# Changelog v1.00.01\n\n- Approccio rigoroso a dati reali al 100%.\n- Risolto bug consumo Higgins e delta 24h.\n- Visualizzatore changelog integrato."
+    }
