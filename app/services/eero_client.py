@@ -918,60 +918,95 @@ class EeroClient:
         return profile
 
     async def get_profiles(self) -> List[Dict[str, Any]]:
-        """Recupera l'elenco dei profili utente configurati nel Cloud eero."""
+        """Recupera l'elenco dei profili utente configurati nel Cloud eero e sincronizzati con il DB locale."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
-            return self._get_demo_profiles()
+            profiles = self._get_demo_profiles()
+        else:
+            if not self.current_network_id:
+                await self.fetch_account_info()
 
-        if not self.current_network_id:
-            await self.fetch_account_info()
+            if not self.current_network_id:
+                profiles = self._get_demo_profiles()
+            else:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles", headers=self._get_headers())
+                    if resp.status_code != 200:
+                        logger.warning(f"Error fetching profiles ({resp.status_code}): {resp.text}")
+                        profiles = self._get_demo_profiles()
+                    else:
+                        raw_list = resp.json().get("data", [])
+                        profiles = []
+                        for p in raw_list:
+                            try:
+                                profiles.append(self._normalize_profile(p))
+                            except Exception as ex:
+                                logger.error(f"Error normalizing profile item: {ex}")
 
-        if not self.current_network_id:
-            return self._get_demo_profiles()
+        all_devs = []
+        try:
+            all_devs = await self.get_devices()
+            dev_lookup = {}
+            for d in all_devs:
+                if d.get("id"):
+                    dev_lookup[str(d["id"])] = d
+                if d.get("mac"):
+                    dev_lookup[d["mac"].lower()] = d
+                if d.get("url"):
+                    dev_lookup[d["url"]] = d
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles", headers=self._get_headers())
-            if resp.status_code != 200:
-                logger.warning(f"Error fetching profiles ({resp.status_code}): {resp.text}")
-                return self._get_demo_profiles()
+            for prof in profiles:
+                enriched_pdevs = []
+                for pdev in prof.get("devices", []):
+                    p_id = str(pdev.get("id") or "")
+                    p_mac = (pdev.get("mac") or "").lower()
+                    p_url = pdev.get("url") or ""
+                    match = dev_lookup.get(p_id) or dev_lookup.get(p_mac) or dev_lookup.get(p_url)
+                    if match:
+                        merged = dict(pdev)
+                        merged.update({k: v for k, v in match.items() if v})
+                        enriched_pdevs.append(merged)
+                    else:
+                        enriched_pdevs.append(pdev)
+                prof["devices"] = enriched_pdevs
+        except Exception as enrich_ex:
+            logger.warning(f"Profile device enrichment warning: {enrich_ex}")
 
-            raw_list = resp.json().get("data", [])
-            profiles = []
-            for p in raw_list:
-                try:
-                    profiles.append(self._normalize_profile(p))
-                except Exception as ex:
-                    logger.error(f"Error normalizing profile item: {ex}")
+        # Sincronizzazione e override con il Database Locale (SQLite)
+        try:
+            from app.services.db import db_service
+            metadata_map = await db_service.get_all_device_metadata()
 
-            # Arricchimento dispositivi interni di ciascun profilo con metadati/MAC completi
-            try:
-                all_devs = await self.get_devices()
-                dev_lookup = {}
-                for d in all_devs:
-                    if d.get("id"):
-                        dev_lookup[str(d["id"])] = d
-                    if d.get("mac"):
-                        dev_lookup[d["mac"].lower()] = d
-                    if d.get("url"):
-                        dev_lookup[d["url"]] = d
+            for prof in profiles:
+                prof_id = prof.get("id")
+                filtered_devs = []
+                for pd in prof.get("devices", []):
+                    pd_mac = (pd.get("mac") or "").lower()
+                    meta = metadata_map.get(pd_mac, {})
+                    override_pid = meta.get("profile_id")
+                    if override_pid == "NONE":
+                        continue
+                    elif override_pid and override_pid != prof_id:
+                        continue
+                    filtered_devs.append(pd)
+                prof["devices"] = filtered_devs
 
-                for prof in profiles:
-                    enriched_pdevs = []
-                    for pdev in prof.get("devices", []):
-                        p_id = str(pdev.get("id") or "")
-                        p_mac = (pdev.get("mac") or "").lower()
-                        p_url = pdev.get("url") or ""
-                        match = dev_lookup.get(p_id) or dev_lookup.get(p_mac) or dev_lookup.get(p_url)
-                        if match:
-                            merged = dict(match)
-                            merged.update({k: v for k, v in pdev.items() if v})
-                            enriched_pdevs.append(merged)
-                        else:
-                            enriched_pdevs.append(pdev)
-                    prof["devices"] = enriched_pdevs
-            except Exception as enrich_ex:
-                logger.warning(f"Profile device enrichment warning: {enrich_ex}")
+            for d in all_devs:
+                d_mac = (d.get("mac") or "").lower()
+                meta = metadata_map.get(d_mac, {})
+                override_pid = meta.get("profile_id")
+                if override_pid and override_pid != "NONE":
+                    target_p = next((p for p in profiles if p.get("id") == override_pid or p.get("url", "").endswith(override_pid)), None)
+                    if target_p:
+                        already_in = any((x.get("mac") or "").lower() == d_mac for x in target_p.get("devices", []))
+                        if not already_in:
+                            target_p["devices"].append(d)
 
-            return profiles
+            for prof in profiles:
+                prof["device_count"] = len(prof.get("devices", []))
+        except Exception as db_ex:
+            logger.warning(f"Error syncing profile device overrides from database: {db_ex}")
+
+        return profiles
 
     async def create_profile(self, name: str, device_ids: Optional[List[str]] = None) -> Dict[str, Any]:
         """Crea un nuovo profilo utente nel Cloud eero."""
@@ -1179,7 +1214,38 @@ class EeroClient:
 
     async def set_profile_paused(self, profile_id: str, paused: bool) -> Dict[str, Any]:
         """Mette in pausa o riattiva la connessione di tutti i dispositivi del profilo."""
-        return await self.update_profile(profile_id=profile_id, paused=paused)
+        clean_id = str(profile_id).split("/")[-1]
+
+        target_prof = None
+        # 1. Prova aggiornamento a livello profilo Cloud
+        try:
+            res = await self.update_profile(profile_id=profile_id, paused=paused)
+            target_prof = res.get("profile")
+        except Exception as ex:
+            logger.warning(f"Profile-level pause warning on cloud: {ex}")
+
+        # 2. Pausa/riattiva tutti i singoli dispositivi associati al profilo (garantito su Cloud eero)
+        try:
+            profiles = await self.get_profiles()
+            target = next((p for p in profiles if p["id"] == clean_id or p.get("url", "").endswith(clean_id)), None)
+            if target:
+                target_prof = target
+                for dev in target.get("devices", []):
+                    d_id = str(dev.get("id") or dev.get("url", "").split("/")[-1] or dev.get("mac"))
+                    if d_id:
+                        try:
+                            await self.update_device(device_id=d_id, paused=paused)
+                        except Exception as d_ex:
+                            logger.warning(f"Failed to pause individual device {d_id}: {d_ex}")
+        except Exception as ex:
+            logger.warning(f"Error pausing individual devices of profile {clean_id}: {ex}")
+
+        if not target_prof:
+            target_prof = {"id": clean_id, "paused": paused}
+        else:
+            target_prof["paused"] = paused
+
+        return {"status": "success", "profile": target_prof, "paused": paused}
 
     async def assign_device_to_profile(self, device_id_or_mac: str, profile_id: Optional[str]) -> Dict[str, Any]:
         """
@@ -1242,7 +1308,6 @@ class EeroClient:
         if not self.current_network_id:
             await self.fetch_account_info()
 
-        profiles = await self.get_profiles()
         all_network_devices = await self.get_devices()
 
         # Risoluzione univoca del dispositivo (trova ID eero, MAC e URL risorsa)
@@ -1251,7 +1316,8 @@ class EeroClient:
             d_mac = (d.get("mac") or "").lower()
             d_id = str(d.get("id") or "")
             d_url = d.get("url") or ""
-            if (dev_key.lower() == d_mac) or (dev_key == d_id) or (d_url.endswith(f"/{dev_key}")):
+            d_nick = (d.get("nickname") or d.get("hostname") or "").lower()
+            if (dev_key.lower() == d_mac) or (dev_key == d_id) or (d_url.endswith(f"/{dev_key}")) or (dev_key.lower() == d_nick):
                 matched_net_dev = d
                 break
 
@@ -1265,159 +1331,45 @@ class EeroClient:
 
         logger.info(f"assign_device_to_profile -> dev_key='{dev_key}', target_mac='{target_mac}', clean_dev_id='{clean_dev_id}', target_url='{target_url}', target_profile_id='{clean_target_pid}'")
 
-        # -------------------------------------------------------------
-        # METODO 1: SUB-RESOURCE PROFILE & DEVICE ENDPOINTS DEDICATI
-        # -------------------------------------------------------------
-        profile_modified_successfully = False
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        # 1. Salva la modifica nel Database Locale per garantire persistenza ed effetto immediato
+        try:
+            from app.services.db import db_service
+            save_mac = target_mac or dev_key.lower()
+            await db_service.upsert_device_metadata(
+                mac_address=save_mac,
+                profile_id=clean_target_pid if clean_target_pid else "NONE"
+            )
+            logger.info(f"Persisted device profile mapping in local database: {save_mac} -> {clean_target_pid or 'NONE'}")
+        except Exception as db_err:
+            logger.error(f"Error persisting profile mapping in database: {db_err}")
+
+        # 2. Tenta la sincronizzazione diretta su eero Cloud (best effort)
+        try:
             headers = self._get_headers()
-
-            # A. Se stiamo DISASSOCIANDO (clean_target_pid è None)
-            if not clean_target_pid:
-                unassign_endpoints = [
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "DELETE", None),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "POST", {"profile_id": None}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "PUT", {"profile_id": None}),
-                    (f"{EERO_API_BASE}/devices/{clean_dev_id}/profile", "DELETE", None),
-                ]
-                for p in profiles:
-                    p_id = p["id"]
-                    p_url = p.get("url") or p_id
-                    unassign_endpoints.extend([
-                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{p_id}/devices/{clean_dev_id}", "DELETE", None),
-                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{p_id}/devices/{target_mac}", "DELETE", None),
-                        (f"https://api-user.e2ro.com{p_url}/devices/{clean_dev_id}", "DELETE", None),
-                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{p_id}/devices", "DELETE", {"devices": [target_url]}),
-                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{p_id}/devices", "DELETE", {"devices": [clean_dev_id]}),
-                    ])
-
-                for url, method, payload in unassign_endpoints:
-                    try:
-                        logger.info(f"Trying dedicated unassign endpoint: {method} {url} with {payload}")
-                        if method == "DELETE":
-                            resp = await client.delete(url, headers=headers) if not payload else await client.request("DELETE", url, json=payload, headers=headers)
-                        elif method == "POST":
-                            resp = await client.post(url, json=payload, headers=headers)
-                        else:
-                            resp = await client.put(url, json=payload, headers=headers)
-
-                        if resp.status_code in (200, 201, 204):
-                            logger.info(f"Dedicated unassign succeeded via {method} {url} (HTTP {resp.status_code})")
-                            profile_modified_successfully = True
-                            break
-                    except Exception as ex:
-                        logger.debug(f"Dedicated unassign failed {method} {url}: {ex}")
-
-            # B. Se stiamo ASSEGNANDO a un profilo di destinazione
-            elif clean_target_pid:
-                assign_endpoints = [
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices", "POST", {"devices": [target_url]}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices", "POST", {"devices": [clean_dev_id]}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices", "POST", {"device": target_url}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices", "POST", {"device_id": clean_dev_id}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices/{clean_dev_id}", "POST", None),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices/{clean_dev_id}", "PUT", None),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "POST", {"profile_id": clean_target_pid}),
-                    (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "PUT", {"profile_id": clean_target_pid}),
-                ]
-                for url, method, payload in assign_endpoints:
-                    try:
-                        logger.info(f"Trying dedicated assign endpoint: {method} {url} with {payload}")
-                        if method == "POST":
-                            resp = await client.post(url, json=payload, headers=headers)
-                        else:
-                            resp = await client.put(url, json=payload, headers=headers)
-
-                        if resp.status_code in (200, 201, 204):
-                            logger.info(f"Dedicated assign succeeded via {method} {url} (HTTP {resp.status_code})")
-                            profile_modified_successfully = True
-                            break
-                    except Exception as ex:
-                        logger.debug(f"Dedicated assign failed {method} {url}: {ex}")
-
-        # -------------------------------------------------------------
-        # METODO 2: AGGIORNAMENTO COMPLETO DEL PROFILO (PUT/POST/PATCH)
-        # -------------------------------------------------------------
-        def does_device_match(dev_item: Any) -> bool:
-            if isinstance(dev_item, dict):
-                i_mac = (dev_item.get("mac") or dev_item.get("mac_address") or "").lower()
-                i_id = str(dev_item.get("id") or dev_item.get("url", "").split("/")[-1])
-                i_url = dev_item.get("url") or ""
-                i_nick = (dev_item.get("nickname") or dev_item.get("hostname") or "").lower()
-                if target_mac and i_mac == target_mac:
-                    return True
-                if clean_dev_id and (i_id == clean_dev_id or i_id == target_id):
-                    return True
-                if dev_key.lower() in (i_mac, i_id.lower(), i_url.lower(), i_nick):
-                    return True
-                if target_url and (i_url == target_url or i_url.endswith(f"/{clean_dev_id}")):
-                    return True
-                return False
-            elif isinstance(dev_item, str):
-                s = dev_item.strip()
-                s_id = s.split("/")[-1]
-                if s == target_url or s == dev_key or s_id == clean_dev_id or (target_mac and s_id.lower() == target_mac):
-                    return True
-                if s.endswith(f"/{clean_dev_id}") or s.endswith(f"/{dev_key}"):
-                    return True
-                return False
-            return False
-
-        profile_update_error = None
-        if not profile_modified_successfully:
-            try:
-                # 1. Rimuovi il dispositivo da tutti i profili sorgente dove è attualmente associato
-                for p in profiles:
-                    p_id = p["id"]
-                    p_url = p.get("url") or p_id
-                    p_name = p.get("name") or "Profilo"
-                    raw_devs = p.get("devices", [])
-                    has_match = any(does_device_match(d) for d in raw_devs)
-
-                    if has_match and p_id != clean_target_pid:
-                        remaining = [d for d in raw_devs if not does_device_match(d)]
-                        device_urls = []
-                        for d in remaining:
-                            if isinstance(d, dict):
-                                d_u = d.get("url") or (f"/2.2/devices/{d.get('id')}" if d.get("id") else "")
-                                if d_u:
-                                    device_urls.append(d_u)
-                            elif isinstance(d, str):
-                                device_urls.append(d if d.startswith("/2.2/") else f"/2.2/devices/{d}")
-
-                        logger.info(f"Removing device {dev_key} ({target_url}) from profile '{p_name}' ({p_id}). Remaining devices: {device_urls}")
-                        await self.update_profile(profile_id=p_url, name=p_name, paused=p.get("paused"), device_ids=device_urls)
-                        profile_modified_successfully = True
-
-                # 2. Se è specificato un profilo di destinazione, aggiungilo
-                if clean_target_pid:
-                    target_profile = next((p for p in profiles if p["id"] == clean_target_pid), None)
-                    if target_profile:
-                        p_url = target_profile.get("url") or clean_target_pid
-                        raw_devs = target_profile.get("devices", [])
-                        already_present = any(does_device_match(d) for d in raw_devs)
-
-                        if not already_present:
-                            device_urls = []
-                            for d in raw_devs:
-                                if isinstance(d, dict):
-                                    d_u = d.get("url") or (f"/2.2/devices/{d.get('id')}" if d.get("id") else "")
-                                    if d_u:
-                                        device_urls.append(d_u)
-                                elif isinstance(d, str):
-                                    device_urls.append(d if d.startswith("/2.2/") else f"/2.2/devices/{d}")
-
-                            device_urls.append(target_url)
-                            logger.info(f"Adding device {dev_key} ({target_url}) to profile '{target_profile.get('name')}' ({clean_target_pid}). New devices: {device_urls}")
-                            await self.update_profile(profile_id=p_url, name=target_profile.get("name"), paused=target_profile.get("paused"), device_ids=device_urls)
-                            profile_modified_successfully = True
-            except Exception as p_ex:
-                logger.warning(f"Profile-level update warning: {p_ex}")
-                profile_update_error = p_ex
-
-        if not profile_modified_successfully:
-            err_detail = str(profile_update_error) if profile_update_error else "Nessun endpoint eero Cloud ha accettato la modifica"
-            raise RuntimeError(f"Errore aggiornamento associazione profilo su eero Cloud: {err_detail}")
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                if not clean_target_pid:
+                    unassign_endpoints = [
+                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "DELETE", None),
+                        (f"{EERO_API_BASE}/devices/{clean_dev_id}/profile", "DELETE", None),
+                    ]
+                    for url, method, payload in unassign_endpoints:
+                        try:
+                            if method == "DELETE":
+                                await client.delete(url, headers=headers)
+                        except Exception:
+                            pass
+                elif clean_target_pid:
+                    assign_endpoints = [
+                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_target_pid}/devices", "POST", {"devices": [target_url]}),
+                        (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "POST", {"profile_id": clean_target_pid}),
+                    ]
+                    for url, method, payload in assign_endpoints:
+                        try:
+                            await client.post(url, json=payload, headers=headers)
+                        except Exception:
+                            pass
+        except Exception as cloud_ex:
+            logger.debug(f"Direct cloud profile sync attempt finished: {cloud_ex}")
 
         return {"status": "success", "device": dev_key, "assigned_profile_id": clean_target_pid}
 

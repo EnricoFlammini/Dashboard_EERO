@@ -403,7 +403,7 @@ class DBService:
                     UPDATE device_metadata
                     SET custom_name = ?, custom_icon = ?, category = ?, 
                         custom_notes = ?, static_ip = ?, is_favorite = ?, 
-                        is_low_latency_target = ?, updated_at = ?
+                        is_low_latency_target = ?, profile_id = ?, updated_at = ?
                     WHERE LOWER(mac_address) = ?
                     """,
                     (
@@ -414,6 +414,7 @@ class DBService:
                         updated.get("static_ip"),
                         1 if bool(updated.get("is_favorite", False)) else 0,
                         1 if bool(updated.get("is_low_latency_target", False)) else 0,
+                        updated.get("profile_id"),
                         now,
                         mac_clean
                     )
@@ -430,6 +431,7 @@ class DBService:
                 "static_ip": kwargs.get("static_ip"),
                 "is_favorite": 1 if bool(kwargs.get("is_favorite", False)) else 0,
                 "is_low_latency_target": 1 if bool(kwargs.get("is_low_latency_target", False)) else 0,
+                "profile_id": kwargs.get("profile_id"),
                 "created_at": now,
                 "updated_at": now,
             }
@@ -437,8 +439,8 @@ class DBService:
                 await db.execute(
                     """
                     INSERT INTO device_metadata 
-                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         mac_clean,

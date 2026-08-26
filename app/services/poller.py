@@ -149,6 +149,19 @@ class BackgroundPoller:
                 # Profilo utente associato
                 prof_info = device_to_profile.get(mac) or device_to_profile.get(dev_id_str) or {}
                 
+                # Controllo eventuale override profilo dal database locale
+                meta_pid = meta.get("profile_id")
+                if meta_pid == "NONE":
+                    final_prof_id = None
+                    final_prof_name = None
+                elif meta_pid:
+                    final_prof_id = meta_pid
+                    target_p = next((p for p in profiles if p.get("id") == meta_pid or p.get("url", "").endswith(meta_pid)), None)
+                    final_prof_name = target_p.get("name") if target_p else None
+                else:
+                    final_prof_id = prof_info.get("profile_id")
+                    final_prof_name = prof_info.get("profile_name")
+                
                 dev_copy = dict(dev)
                 dev_copy["mac"] = mac
                 dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
@@ -159,8 +172,8 @@ class BackgroundPoller:
                 dev_copy["is_static"] = is_static
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
-                dev_copy["profile_id"] = prof_info.get("profile_id")
-                dev_copy["profile_name"] = prof_info.get("profile_name")
+                dev_copy["profile_id"] = final_prof_id
+                dev_copy["profile_name"] = final_prof_name
                 enriched_devices.append(dev_copy)
 
                 # Rilevamento nuovo dispositivo
