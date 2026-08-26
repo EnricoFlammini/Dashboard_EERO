@@ -319,6 +319,36 @@ class BackgroundPoller:
         except Exception as e:
             logger.error(f"Errore invio digest giornaliero: {e}")
 
+    def update_cached_profiles(self, profiles: List[Dict[str, Any]]):
+        """Aggiorna atomicamente i profili in RAM e re-indicizza le associazioni di tutti i dispositivi in cache."""
+        self.cached_profiles = profiles
+        device_to_profile: Dict[str, Dict[str, Any]] = {}
+        for prof in profiles:
+            p_id = prof.get("id")
+            p_name = prof.get("name")
+            for p_dev in prof.get("devices", []):
+                p_mac = (p_dev.get("mac") or "").lower()
+                p_dev_id = str(p_dev.get("id") or "")
+                p_url = p_dev.get("url") or ""
+                if p_mac:
+                    device_to_profile[p_mac] = {"profile_id": p_id, "profile_name": p_name}
+                if p_dev_id:
+                    device_to_profile[p_dev_id] = {"profile_id": p_id, "profile_name": p_name}
+                if p_url:
+                    device_to_profile[p_url] = {"profile_id": p_id, "profile_name": p_name}
+
+        for d in self.cached_devices:
+            d_mac = (d.get("mac") or "").lower()
+            d_id = str(d.get("id") or "")
+            d_url = d.get("url") or ""
+            info = device_to_profile.get(d_mac) or device_to_profile.get(d_id) or device_to_profile.get(d_url)
+            if info:
+                d["profile_id"] = info["profile_id"]
+                d["profile_name"] = info["profile_name"]
+            else:
+                d["profile_id"] = None
+                d["profile_name"] = None
+
 
 # Istanza singleton background poller
 background_poller = BackgroundPoller()

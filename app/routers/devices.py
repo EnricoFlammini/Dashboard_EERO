@@ -288,23 +288,9 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
             device_id_or_mac=mac_address,
             profile_id=payload.profile_id
         )
-        # Sincronizza cache in memoria
+        # Sincronizza cache in memoria e re-indicizza tutti i dispositivi
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
-        
-        # Aggiorna anche lo stato arricchito in cached_devices
-        clean_mac = mac_address.lower()
-        target_prof_name = None
-        if payload.profile_id:
-            for p in cached_p:
-                if p["id"] == str(payload.profile_id).split("/")[-1]:
-                    target_prof_name = p["name"]
-                    break
-
-        for d in background_poller.cached_devices:
-            if (d.get("mac") or "").lower() == clean_mac or str(d.get("id")) == mac_address:
-                d["profile_id"] = str(payload.profile_id).split("/")[-1] if payload.profile_id else None
-                d["profile_name"] = target_prof_name
+        background_poller.update_cached_profiles(cached_p)
 
         return {
             "status": "success",

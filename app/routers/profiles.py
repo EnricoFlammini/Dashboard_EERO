@@ -62,7 +62,7 @@ async def create_profile(req: CreateProfileRequest):
         res = await eero_client.create_profile(name=req.name, device_ids=req.device_ids)
         # Forza un polling rapido in background
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
+        background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
             "message": f"Profilo '{req.name}' creato con successo.",
@@ -84,7 +84,7 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
             device_ids=req.device_ids
         )
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
+        background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
             "message": "Profilo aggiornato con successo.",
@@ -101,7 +101,7 @@ async def delete_profile(profile_id: str):
     try:
         res = await eero_client.delete_profile(profile_id=profile_id)
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
+        background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
             "message": "Profilo eliminato con successo.",
@@ -118,7 +118,7 @@ async def toggle_profile_pause(profile_id: str, req: ProfilePauseRequest):
     try:
         res = await eero_client.set_profile_paused(profile_id=profile_id, paused=req.paused)
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
+        background_poller.update_cached_profiles(cached_p)
         action_str = "messo in pausa" if req.paused else "riattivato"
         return {
             "status": "success",
@@ -138,7 +138,7 @@ async def assign_devices_to_profile(profile_id: str, req: AssignDevicesRequest):
             await eero_client.assign_device_to_profile(device_id_or_mac=dev_id, profile_id=profile_id)
         
         cached_p = await eero_client.get_profiles()
-        background_poller.cached_profiles = cached_p
+        background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
             "message": f"{len(req.device_ids)} dispositivi assegnati al profilo.",
