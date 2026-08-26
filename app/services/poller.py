@@ -197,6 +197,19 @@ class BackgroundPoller:
                 upload_speed_mbps=round(total_ul_rate, 2),
             )
 
+            # 6b. Auto-salvataggio speedtest di fabbrica gateway se database vuoto
+            sp = network_details.get("speedtest")
+            if sp and isinstance(sp, dict) and sp.get("download_mbps"):
+                history_sp = await db_service.get_speedtest_history(limit=1)
+                if not history_sp:
+                    await db_service.save_speedtest(
+                        download_mbps=float(sp["download_mbps"]),
+                        upload_mbps=float(sp.get("upload_mbps", 0)),
+                        ping_ms=float(sp.get("ping_ms", 0)),
+                        server_name="eero Gateway SpeedTest",
+                        source="eero_gateway"
+                    )
+
             # 7. Registrazione batch metriche dispositivi
             if device_metrics_batch:
                 await db_service.save_device_metrics_batch(device_metrics_batch)
