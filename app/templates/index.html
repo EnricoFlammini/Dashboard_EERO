@@ -337,8 +337,8 @@
                   <span class="font-bold text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Stato Nodo / Termico:</span>
-                  <span class="text-emerald-400 font-medium" x-text="(eero.status === 'online' ? 'Online' : 'Offline') + ' • ' + (eero.temperature || 'Ottimale') + (eero.uptime ? ' • ' + eero.uptime : '')"></span>
+                  <span>Stato:</span>
+                  <span class="text-emerald-400 font-medium" x-text="(eero.status === 'online' ? 'Online' : 'Offline') + ' • ' + (eero.temperature || 'Ottimale')"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Firmware OS:</span>

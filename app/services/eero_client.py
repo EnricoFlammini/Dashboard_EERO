@@ -595,15 +595,25 @@ class EeroClient:
         clean_id = str(eero_id).split("/")[-1]
         action = "on" if led_on else "off"
         headers = self._get_headers()
+        net_id = self.current_network_id
 
         attempts = [
-            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
-            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}", {"led_on": led_on, "led_action": action}),
-            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
             ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/led_action", {"led_action": action}),
             ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/led_action", {"led_action": action}),
-            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/status_light", {"enabled": led_on})
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
+            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/led", {"led_on": led_on}),
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}", {"led_on": led_on, "led_action": action}),
+            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}", {"led_on": led_on, "led_action": action}),
+            ("POST", f"{EERO_API_BASE}/eeros/{clean_id}/status_light", {"enabled": led_on}),
+            ("PUT", f"{EERO_API_BASE}/eeros/{clean_id}/status_light", {"enabled": led_on}),
         ]
+        if net_id:
+            attempts.extend([
+                ("POST", f"{EERO_API_BASE}/networks/{net_id}/eeros/{clean_id}/led_action", {"led_action": action}),
+                ("PUT", f"{EERO_API_BASE}/networks/{net_id}/eeros/{clean_id}/led_action", {"led_action": action}),
+                ("POST", f"{EERO_API_BASE}/networks/{net_id}/eeros/{clean_id}", {"led_on": led_on}),
+                ("PUT", f"{EERO_API_BASE}/networks/{net_id}/eeros/{clean_id}", {"led_on": led_on}),
+            ])
 
         async with httpx.AsyncClient(timeout=15.0) as client:
             last_err = ""
@@ -618,9 +628,9 @@ class EeroClient:
                         logger.info(f"LED update succeeded for eero {clean_id} via {method} {url}")
                         return {"status": "success", "eero_id": clean_id, "led_on": led_on}
                     else:
-                        last_err = f"{method} {url} returned {resp.status_code}: {resp.text}"
+                        last_err = f"{method} {url} -> HTTP {resp.status_code}: {resp.text}"
                 except Exception as ex:
-                    last_err = f"{method} {url} error: {ex}"
+                    last_err = f"{method} {url} -> Exception: {ex}"
 
             logger.error(f"All LED update attempts failed for eero {clean_id}. Last error: {last_err}")
             raise RuntimeError(f"Errore impostazione LED eero: {last_err}")

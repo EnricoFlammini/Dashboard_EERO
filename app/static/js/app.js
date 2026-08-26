@@ -367,11 +367,15 @@ document.addEventListener('alpine:init', () => {
       const eid = eero.id || eero.serial;
       const targetState = !eero.led_on;
       try {
-        await fetch(`/api/network/eeros/${eid}/led`, {
+        const res = await fetch(`/api/network/eeros/${eid}/led`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ led_on: targetState })
         });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.message || data.detail || 'Impossibile modificare il LED via API eero');
+        }
         eero.led_on = targetState;
         this.showToast("LED Aggiornato", `LED ${eero.name}: ${targetState ? 'Acceso' : 'Spento'}`, "success");
       } catch (err) {
@@ -381,11 +385,15 @@ document.addEventListener('alpine:init', () => {
 
     async toggleAllLeds(ledOn) {
       try {
-        await fetch('/api/network/leds', {
+        const res = await fetch('/api/network/leds', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ led_on: ledOn })
         });
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.message || data.detail || 'Impossibile modificare tutti i LED');
+        }
         this.eeros.forEach(e => e.led_on = ledOn);
         this.showToast("Tutti i LED", `Tutti i LED impostati a: ${ledOn ? 'Accesi' : 'Spenti'}`, "success");
       } catch (err) {
