@@ -327,83 +327,112 @@ class EeroClient:
         return node
 
     def _normalize_device(self, d: Dict[str, Any]) -> Dict[str, Any]:
-        dev = dict(d)
-        dev["mac"] = dev.get("mac") or dev.get("mac_address") or ""
-        dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("mac", "Dispositivo")
-        dev["ip"] = dev.get("ip") or dev.get("ipv4") or ""
-        dev["connected"] = bool(dev.get("connected", False))
-        dev["wireless"] = bool(dev.get("wireless", True))
+        try:
+            dev = dict(d)
+            dev["mac"] = dev.get("mac") or dev.get("mac_address") or ""
+            dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("mac", "Dispositivo")
+            dev["ip"] = dev.get("ip") or dev.get("ipv4") or ""
+            dev["connected"] = bool(dev.get("connected", False))
+            dev["wireless"] = bool(dev.get("wireless", True))
 
-        # Band
-        if not dev["wireless"]:
-            dev["frequency_band"] = "Cablato"
-        elif dev.get("band") == "6" or dev.get("channel", 0) > 64:
-            dev["frequency_band"] = "6 GHz" if dev.get("band") == "6" else "5 GHz"
-        elif dev.get("channel", 0) <= 14 or dev.get("band") == "2.4":
-            dev["frequency_band"] = "2.4 GHz"
-        else:
-            dev["frequency_band"] = dev.get("frequency_band", "5 GHz")
-
-        # Signal RSSI
-        if "signal_rssi" not in dev:
-            rssi = dev.get("rssi")
-            if rssi is None and isinstance(dev.get("connectivity"), dict):
-                sig_str = str(dev["connectivity"].get("signal", "-55"))
+            # Channel / Frequency Band (Safe from NoneType TypeError)
+            raw_channel = dev.get("channel")
+            channel = 0
+            if raw_channel is not None:
                 try:
-                    rssi = int(sig_str.split()[0].replace("dBm", ""))
+                    channel = int(raw_channel)
                 except Exception:
-                    rssi = -55
-            dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] else None)
+                    channel = 0
 
-        # Source / Connected eero
-        source = dev.get("source")
-        if isinstance(source, dict):
-            dev["connected_eero_id"] = str(source.get("id") or source.get("url", "").split("/")[-1])
-            dev["connected_eero_name"] = source.get("location") or source.get("name") or ""
-        elif isinstance(dev.get("eero"), dict):
-            dev["connected_eero_id"] = str(dev["eero"].get("id") or dev["eero"].get("url", "").split("/")[-1])
-            dev["connected_eero_name"] = dev["eero"].get("location") or dev["eero"].get("name") or ""
+            band_str = str(dev.get("band", ""))
+            if not dev["wireless"]:
+                dev["frequency_band"] = "Cablato"
+            elif band_str == "6" or channel > 64:
+                dev["frequency_band"] = "6 GHz" if band_str == "6" else "5 GHz"
+            elif (channel > 0 and channel <= 14) or band_str == "2.4":
+                dev["frequency_band"] = "2.4 GHz"
+            else:
+                dev["frequency_band"] = dev.get("frequency_band") or "5 GHz"
 
-        # Usage / Throughput rates (STRICT REAL DATA ONLY)
-        # Note: "rates", "rx_rate", "rx_bitrate" represent Wi-Fi PHY Link Speed (channel capacity).
-        # We strictly inspect "usage" for actual data throughput.
-        usage = dev.get("usage")
-        down_rate = 0.0
-        up_rate = 0.0
-        rx_b = 0.0
-        tx_b = 0.0
+            # Signal RSSI
+            if "signal_rssi" not in dev:
+                rssi = dev.get("rssi")
+                if rssi is None and isinstance(dev.get("connectivity"), dict):
+                    sig_str = str(dev["connectivity"].get("signal", "-55"))
+                    try:
+                        rssi = int(sig_str.split()[0].replace("dBm", ""))
+                    except Exception:
+                        rssi = -55
+                dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] else None)
 
-        if isinstance(usage, dict):
-            if usage.get("down_mbps") is not None:
-                down_rate = float(usage["down_mbps"])
-            elif usage.get("download_mbps") is not None:
-                down_rate = float(usage["download_mbps"])
-            elif usage.get("down_kbps") is not None:
-                down_rate = float(usage["down_kbps"]) / 1000.0
+            # Source / Connected eero
+            source = dev.get("source")
+            if isinstance(source, dict):
+                dev["connected_eero_id"] = str(source.get("id") or source.get("url", "").split("/")[-1])
+                dev["connected_eero_name"] = source.get("location") or source.get("name") or ""
+            elif isinstance(dev.get("eero"), dict):
+                dev["connected_eero_id"] = str(dev["eero"].get("id") or dev["eero"].get("url", "").split("/")[-1])
+                dev["connected_eero_name"] = dev["eero"].get("location") or dev["eero"].get("name") or ""
 
-            if usage.get("up_mbps") is not None:
-                up_rate = float(usage["up_mbps"])
-            elif usage.get("upload_mbps") is not None:
-                up_rate = float(usage["upload_mbps"])
-            elif usage.get("up_kbps") is not None:
-                up_rate = float(usage["up_kbps"]) / 1000.0
+            # Usage / Throughput rates (STRICT REAL DATA ONLY)
+            usage = dev.get("usage")
+            down_rate = 0.0
+            up_rate = 0.0
+            rx_b = 0.0
+            tx_b = 0.0
 
-            rx_b = float(usage.get("rx_bytes") or dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
-            tx_b = float(usage.get("tx_bytes") or dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
-        elif isinstance(usage, (int, float)):
-            rx_b = float(usage)
-        else:
-            rx_b = float(dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
-            tx_b = float(dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
+            if isinstance(usage, dict):
+                try:
+                    if usage.get("down_mbps") is not None:
+                        down_rate = float(usage["down_mbps"])
+                    elif usage.get("download_mbps") is not None:
+                        down_rate = float(usage["download_mbps"])
+                    elif usage.get("down_kbps") is not None:
+                        down_rate = float(usage["down_kbps"]) / 1000.0
+                except Exception:
+                    down_rate = 0.0
 
-        # Do NOT fallback to rx_rate/rates/bitrate (PHY link rates)
-        dev["download_rate_mbps"] = round(float(down_rate), 2)
-        dev["upload_rate_mbps"] = round(float(up_rate), 2)
-        dev["rx_bytes"] = rx_b
-        dev["tx_bytes"] = tx_b
+                try:
+                    if usage.get("up_mbps") is not None:
+                        up_rate = float(usage["up_mbps"])
+                    elif usage.get("upload_mbps") is not None:
+                        up_rate = float(usage["upload_mbps"])
+                    elif usage.get("up_kbps") is not None:
+                        up_rate = float(usage["up_kbps"]) / 1000.0
+                except Exception:
+                    up_rate = 0.0
 
-        dev["is_paused"] = bool(dev.get("paused", False) or dev.get("is_paused", False) or dev.get("blacklisted", False))
-        return dev
+                try:
+                    rx_b = float(usage.get("rx_bytes") or dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
+                except Exception:
+                    rx_b = 0.0
+
+                try:
+                    tx_b = float(usage.get("tx_bytes") or dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
+                except Exception:
+                    tx_b = 0.0
+            elif isinstance(usage, (int, float)):
+                rx_b = float(usage)
+            else:
+                try:
+                    rx_b = float(dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
+                except Exception:
+                    rx_b = 0.0
+                try:
+                    tx_b = float(dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
+                except Exception:
+                    tx_b = 0.0
+
+            dev["download_rate_mbps"] = round(float(down_rate), 2)
+            dev["upload_rate_mbps"] = round(float(up_rate), 2)
+            dev["rx_bytes"] = rx_b
+            dev["tx_bytes"] = tx_b
+
+            dev["is_paused"] = bool(dev.get("paused", False) or dev.get("is_paused", False) or dev.get("blacklisted", False))
+            return dev
+        except Exception as ex:
+            logger.error(f"Error normalizing single device: {ex}")
+            return dict(d)
 
     # =========================================================================
     # RECUPERO DATI RETE & MESH
@@ -443,7 +472,13 @@ class EeroClient:
                 logger.error(f"Error fetching eeros: {resp.status_code} {resp.text}")
                 return self._get_demo_eeros()
             raw_list = resp.json().get("data", [])
-            return [self._normalize_eero_node(n) for n in raw_list]
+            nodes = []
+            for n in raw_list:
+                try:
+                    nodes.append(self._normalize_eero_node(n))
+                except Exception as ex:
+                    logger.error(f"Error normalizing eero node: {ex}")
+            return nodes
 
     async def get_devices(self) -> List[Dict[str, Any]]:
         """Recupera l'elenco dei dispositivi connessi/noti e il loro stato di banda."""
@@ -462,7 +497,13 @@ class EeroClient:
                 logger.error(f"Error fetching devices: {resp.status_code} {resp.text}")
                 return self._get_demo_devices()
             raw_list = resp.json().get("data", [])
-            return [self._normalize_device(d) for d in raw_list]
+            devices_list = []
+            for d in raw_list:
+                try:
+                    devices_list.append(self._normalize_device(d))
+                except Exception as ex:
+                    logger.error(f"Error normalizing device item: {ex}")
+            return devices_list
 
     # =========================================================================
     # CONTROLLI E AZIONI SU RETE E NODI
