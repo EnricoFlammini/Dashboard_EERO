@@ -6,6 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.07] - 2026-08-26
+
+### 🏷️ Indicatori Visivi Tipo IP nella Tabella Dispositivi
+* **Badge Distintivo STATICO vs DHCP:** Ciascun dispositivo nella tabella principale mostra ora chiaramente lo stato dell'indirizzo IP con un badge dedicato:
+  * 🟢 **`STATICO`** (Verde Smeraldo) se il dispositivo ha una prenotazione DHCP attiva su Cloud eero o un IP statico configurato.
+  * ⚪ **`DHCP`** (Grigio Slate) se il dispositivo ottiene un indirizzo IP in assegnazione dinamica.
+* **Filtro Rapido per Tipo di Assegnamento:** Aggiunto un menu a tendina nella barra filtri per isolare al volo *Solo IP Statici* o *Solo DHCP Dinamici*.
+* **Sincronizzazione Poller delle Prenotazioni:** Il poller di background interroga le prenotazioni Cloud eero e propaga lo stato statico in tempo reale su tutta la dashboard.
+
+---
+
 ## [1.00.06] - 2026-08-26
 
 ### 🔄 Assegnazione IP Corrente & Riassegnazione Intelligente

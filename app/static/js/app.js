@@ -44,11 +44,11 @@ document.addEventListener('alpine:init', () => {
     topHogs: [],
     hogsChartInstance: null,
 
-    // Device Management State
     deviceSearchQuery: '',
     selectedBandFilter: 'all',
     selectedNodeFilter: 'all',
     selectedCategoryFilter: 'all',
+    selectedIpTypeFilter: 'all',
     showConnectedOnly: false,
     
     selectedDevice: null,
@@ -656,6 +656,10 @@ document.addEventListener('alpine:init', () => {
             return false;
           }
         }
+
+        // Filtro tipo IP (Statico / DHCP)
+        if (this.selectedIpTypeFilter === 'static' && !d.is_static) return false;
+        if (this.selectedIpTypeFilter === 'dhcp' && d.is_static) return false;
 
         // Ricerca testuale
         if (this.deviceSearchQuery) {

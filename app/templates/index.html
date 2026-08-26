@@ -80,8 +80,8 @@
             <button 
               @click="openChangelogModal()" 
               class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 hover:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer" 
-              title="Visualizza Changelog v1.00.06">
-              <span>v1.00.06</span>
+              title="Visualizza Changelog v1.00.07">
+              <span>v1.00.07</span>
               <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
           </div>
@@ -410,6 +410,13 @@
               <option value="Altro">Altro</option>
             </select>
 
+            <!-- IP Type Filter (Statico / DHCP) -->
+            <select x-model="selectedIpTypeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
+              <option value="all">Tutti gli Assegnamenti</option>
+              <option value="static">🟢 Solo IP Statici</option>
+              <option value="dhcp">⚪ Solo DHCP Dinamici</option>
+            </select>
+
             <!-- Connected Only Toggle -->
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
               <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
@@ -472,10 +479,22 @@
                     </div>
                   </td>
 
-                  <!-- IP & MAC -->
+                  <!-- IP & MAC with Static / DHCP badge -->
                   <td class="py-3 px-4 font-mono">
-                    <div class="text-slate-200 font-semibold" x-text="dev.ip || '---'"></div>
-                    <div class="text-[10px] text-slate-500" x-text="dev.mac || dev.mac_address"></div>
+                    <div class="flex items-center space-x-2">
+                      <span class="text-slate-200 font-semibold text-xs" x-text="dev.ip || '---'"></span>
+                      <template x-if="dev.is_static">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider inline-flex items-center" title="Indirizzo IP Statico Fisso (Prenotazione DHCP Cloud)">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span>STATICO
+                        </span>
+                      </template>
+                      <template x-if="!dev.is_static">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800/90 text-slate-400 border border-slate-700/80 tracking-wider inline-flex items-center" title="Assegnazione Dinamica DHCP">
+                          <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block mr-1"></span>DHCP
+                        </span>
+                      </template>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5" x-text="dev.mac || dev.mac_address"></div>
                   </td>
 
                   <!-- Connected eero -->
@@ -1306,7 +1325,7 @@
       <div class="flex items-center space-x-3">
         <button @click="openChangelogModal()" class="text-sky-400 hover:text-sky-300 font-mono transition flex items-center space-x-1 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>v1.00.06 Changelog</span>
+          <span>v1.00.07 Changelog</span>
         </button>
       </div>
     </div>

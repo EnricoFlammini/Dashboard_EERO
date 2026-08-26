@@ -91,8 +91,18 @@ class BackgroundPoller:
             network_details = await eero_client.get_network_details()
             eeros = await eero_client.get_eeros()
             devices = await eero_client.get_devices()
+            try:
+                forwards_res = await eero_client.get_forwards_and_reservations()
+                cloud_reservations = {
+                    (r.get("mac") or "").lower(): r.get("ip") 
+                    for r in forwards_res.get("reservations", [])
+                    if r.get("mac")
+                }
+            except Exception as e:
+                logger.warning(f"Failed to fetch cloud reservations in poller: {e}")
+                cloud_reservations = {}
 
-            # 2. Arricchimento dispositivi con metadati locali (nomi custom, icone, note)
+            # 2. Arricchimento dispositivi con metadati locali (nomi custom, icone, note, stato IP statico/DHCP)
             metadata_map = await db_service.get_all_device_metadata()
             enriched_devices = []
             device_metrics_batch = []
@@ -110,6 +120,9 @@ class BackgroundPoller:
             for dev in devices:
                 mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
                 meta = metadata_map.get(mac, {})
+                cloud_res_ip = cloud_reservations.get(mac)
+                static_ip_val = cloud_res_ip or meta.get("static_ip", "")
+                is_static = bool(cloud_res_ip or meta.get("static_ip") or dev.get("is_static"))
                 
                 dev_copy = dict(dev)
                 dev_copy["mac"] = mac
@@ -117,7 +130,8 @@ class BackgroundPoller:
                 dev_copy["custom_icon"] = meta.get("custom_icon", "device")
                 dev_copy["category"] = meta.get("category", "Altro")
                 dev_copy["custom_notes"] = meta.get("custom_notes", "")
-                dev_copy["static_ip"] = meta.get("static_ip", "")
+                dev_copy["static_ip"] = static_ip_val
+                dev_copy["is_static"] = is_static
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
                 enriched_devices.append(dev_copy)
