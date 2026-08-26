@@ -8,12 +8,32 @@
 
 > **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
 
+<p align="center">
+  <img src="docs/screenshots/dashboard_overview.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
+
 ---
 
 <a name="english"></a>
 # 🇬🇧 English Documentation
 
 Self-hosted, containerized web dashboard and management suite for **Amazon eero** mesh Wi-Fi networks. Features authentic certified hardware telemetry, real-time traffic monitoring, DHCP static IP reservation with collision detection, port forwarding rules, speed testing history, dynamic guest Wi-Fi QR generator, one-click gaming focus mode, and interactive documentation.
+
+---
+
+## 📸 Screenshots Showcase
+
+<div align="center">
+
+| Dashboard & Mesh Topology | Speed Test & Analytics |
+| :---: | :---: |
+| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+
+| Device Details & Static IP (DHCP) |
+| :---: |
+| <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
+
+</div>
 
 ---
 
@@ -111,6 +131,22 @@ tar -czvf eero_dashboard_backup_$(date +%F).tar.gz ./data
 # 🇮🇹 Documentazione in Italiano
 
 Applicazione web self-hosted, modulare e containerizzata con Docker per il monitoraggio avanzato, il controllo e l'analisi dell'infrastruttura mesh **Amazon eero**. Include telemetria fisica certificata dai nodi, gestione avanzata dei dispositivi, prenotazione IP statici con rilevamento conflitti, inoltro porte (Port Forwarding), storico Speed Test, Wi-Fi ospiti con QR Code dinamico, Gaming Mode a un clic e manuale interattivo.
+
+---
+
+## 📸 Galleria Screenshot
+
+<div align="center">
+
+| Panoramica Dashboard & Topologia Mesh | Diagnostica Speed Test & Storico |
+| :---: | :---: |
+| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+
+| Dettaglio Dispositivo & Assegnazione IP Statico DHCP |
+| :---: |
+| <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
+
+</div>
 
 ---
 
