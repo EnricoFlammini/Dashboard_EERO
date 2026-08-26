@@ -31,16 +31,16 @@ class DeviceRenameRequest(BaseModel):
 
 
 class ReservationRequest(BaseModel):
-    ip: str = Field(..., description="Indirizzo IP statico da riservare per il dispositivo")
-    description: Optional[str] = Field(None, description="Descrizione della prenotazione")
+    ip: str = Field(..., max_length=45, description="Indirizzo IP statico da riservare per il dispositivo")
+    description: Optional[str] = Field(None, max_length=100, description="Descrizione della prenotazione")
 
 
 class PortForwardRequest(BaseModel):
-    ip: str = Field(..., description="Indirizzo IP interno di destinazione")
-    port_from: int = Field(..., description="Porta esterna WAN")
-    port_to: int = Field(..., description="Porta interna LAN")
-    protocol: str = Field("tcp", description="Protocollo: tcp, udp, o both")
-    description: str = Field("Custom Service", description="Etichetta descrittiva della regola")
+    ip: str = Field(..., max_length=45, description="Indirizzo IP interno di destinazione")
+    port_from: int = Field(..., ge=1, le=65535, description="Porta esterna WAN (1-65535)")
+    port_to: int = Field(..., ge=1, le=65535, description="Porta interna LAN (1-65535)")
+    protocol: str = Field("tcp", pattern="^(tcp|udp|both)$", description="Protocollo: tcp, udp, o both")
+    description: str = Field("Custom Service", max_length=100, description="Etichetta descrittiva della regola")
 
 
 @router.get("")

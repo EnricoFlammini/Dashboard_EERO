@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Environment & Secrets
+.env
+*.env
+*.env.*
+!.env.example
+
+# Local Persistent Data & Databases
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+session.json
+eero_session.json
+*.session
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation & Scratch
+.gemini/
+scratch/
+check_keys.*

@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Crea utente di sistema non-root dedicato
+RUN groupadd -g 1000 appgroup && \
+    useradd -u 1000 -g appgroup -s /bin/bash -m appuser
+
 # Copia e installa le dipendenze Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -24,8 +28,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copia il codice sorgente
 COPY app/ /app/app/
 
-# Crea la directory dati per la persistenza di database e sessione
-RUN mkdir -p /app/data
+# Crea la directory dati e assegna i permessi all'utente appuser
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app
+
+# Esegui come utente non-root
+USER appuser
 
 # Espone la porta del container
 EXPOSE 8000

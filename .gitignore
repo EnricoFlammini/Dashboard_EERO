@@ -12,8 +12,10 @@ data/
 *.db-shm
 *.sqlite
 *.sqlite3
+session.json
 eero_session.json
 *.session
+scratch/
 
 # Python Cache & Bytecode
 __pycache__/

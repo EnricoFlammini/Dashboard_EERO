@@ -1395,7 +1395,13 @@ document.addEventListener('alpine:init', () => {
 
     renderSimpleMarkdown(md) {
       if (!md) return '';
-      let html = md
+      // Escape raw HTML entities to prevent XSS
+      let escaped = String(md)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      let html = escaped
         .replace(/^## (.*?)$/gm, '<h2 class="text-base font-bold text-sky-400 mt-4 mb-2 pb-1 border-b border-slate-800">$1</h2>')
         .replace(/^### (.*?)$/gm, '<h3 class="text-sm font-bold text-white mt-3 mb-1">$1</h3>')
         .replace(/^#### (.*?)$/gm, '<h4 class="text-xs font-bold text-slate-300 mt-2 mb-1">$1</h4>')
