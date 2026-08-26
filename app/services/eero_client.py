@@ -269,11 +269,11 @@ class EeroClient:
 
     def _normalize_eero_node(self, n: Dict[str, Any]) -> Dict[str, Any]:
         node = dict(n)
-        node["status"] = "online"
+        node["status"] = "online" if bool(node.get("connected", True) or node.get("status") == "online") else "offline"
 
-        # Name / Location
-        node["name"] = node.get("location") or node.get("name") or node.get("model") or "Nodo eero"
-        node["model"] = node.get("model") or node.get("model_number") or "eero"
+        # Name / Location / Model
+        node["name"] = node.get("location") or node.get("name") or node.get("nickname") or node.get("model") or "Nodo eero"
+        node["model"] = node.get("model") or node.get("model_number") or node.get("product_name") or "eero"
 
         # IP address
         node["ip"] = (
@@ -288,39 +288,74 @@ class EeroClient:
         node["is_gateway"] = bool(node.get("gateway") or node.get("is_gateway", False))
 
         # Backhaul
-        is_wired = bool(node.get("wired", False) or node.get("using_wan", False) or node.get("is_gateway", False))
+        is_wired = bool(node.get("wired", False) or node.get("using_wan", False) or node.get("is_gateway", False) or node.get("connection_type") == "wired")
         node["wired"] = is_wired
-        node["backhaul_type"] = "Ethernet" if is_wired else "Wireless Mesh (5/6 GHz)"
+        node["backhaul_type"] = "Ethernet (Cablato)" if is_wired else "Wireless Mesh (5/6 GHz)"
 
         # Uptime
         up_val = node.get("uptime")
-        if isinstance(up_val, (int, float)):
+        last_reboot = node.get("last_reboot") or node.get("boot_time") or node.get("connected_at")
+        if isinstance(up_val, (int, float)) and up_val > 0:
             days = int(up_val // 86400)
             hours = int((up_val % 86400) // 3600)
-            node["uptime"] = f"{days}gg {hours}h" if days > 0 else f"{hours}h"
-        elif isinstance(up_val, dict):
-            node["uptime"] = up_val.get("display") or f"{up_val.get('days', 15)}gg"
+            mins = int((up_val % 3600) // 60)
+            if days > 0:
+                node["uptime"] = f"{days}g {hours}h"
+            elif hours > 0:
+                node["uptime"] = f"{hours}h {mins}m"
+            else:
+                node["uptime"] = f"{mins}m"
+        elif last_reboot:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.fromisoformat(str(last_reboot).replace("Z", "+00:00"))
+                delta_sec = (datetime.now(timezone.utc) - dt).total_seconds()
+                if delta_sec > 0:
+                    days = int(delta_sec // 86400)
+                    hours = int((delta_sec % 86400) // 3600)
+                    node["uptime"] = f"{days}g {hours}h" if days > 0 else f"{hours}h"
+                else:
+                    node["uptime"] = "Riavviato di recente"
+            except Exception:
+                node["uptime"] = str(last_reboot)
         elif isinstance(up_val, str) and up_val:
             node["uptime"] = up_val
         else:
-            node["uptime"] = "15gg"
+            node["uptime"] = "Attivo"
 
-        # Temperature
-        temp_val = node.get("temperature")
-        if not temp_val:
-            therm = node.get("thermal_status")
-            if isinstance(therm, dict):
-                temp_val = f"{therm.get('temp', 39)}°C"
-            else:
-                temp_val = "39°C"
-        node["temperature"] = temp_val
+        # Temperature / Thermal State (Real Eero API data)
+        raw_temp = node.get("temperature") or node.get("temp")
+        therm = node.get("thermal_status") or node.get("thermal_state") or node.get("thermal")
+        if raw_temp is not None:
+            node["temperature"] = f"{raw_temp}°C" if isinstance(raw_temp, (int, float)) else str(raw_temp)
+        elif isinstance(therm, dict):
+            t = therm.get("temp") or therm.get("temperature")
+            node["temperature"] = f"{t}°C" if t is not None else str(therm.get("status") or "Normale")
+        elif isinstance(therm, str):
+            node["temperature"] = therm
+        else:
+            node["temperature"] = "Normale"
 
-        # OS Version
-        node["os_version"] = node.get("os_version") or node.get("firmware") or node.get("os") or "v7.16.2"
+        # OS Version / Firmware
+        os_v = (
+            node.get("os_version") or 
+            node.get("firmware") or 
+            node.get("os") or 
+            node.get("software_version") or 
+            node.get("version")
+        )
+        node["os_version"] = str(os_v) if os_v else "Aggiornato"
 
-        # LED
-        if "led_on" not in node:
-            node["led_on"] = (node.get("led_status") != "off" and node.get("led_action") != "off")
+        # LED State (status_light, led_on, led_status, led_action)
+        status_light = node.get("status_light")
+        if isinstance(status_light, dict):
+            node["led_on"] = bool(status_light.get("enabled", True))
+            node["led_brightness"] = status_light.get("brightness", 100)
+        elif "led_on" in node:
+            node["led_on"] = bool(node["led_on"])
+        else:
+            led_st = str(node.get("led_status") or node.get("led_action") or "on").lower()
+            node["led_on"] = (led_st not in ("off", "disabled", "false", "0"))
 
         # Serial & ID
         node["id"] = str(node.get("id") or node.get("serial") or node.get("url", "").split("/")[-1])

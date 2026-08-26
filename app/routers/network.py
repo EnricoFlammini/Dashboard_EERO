@@ -74,8 +74,13 @@ async def get_debug_raw():
                 f"{EERO_API_BASE}/networks/{eero_client.current_network_id}",
                 headers=eero_client._get_headers()
             )
+            resp_eeros = await client.get(
+                f"{EERO_API_BASE}/networks/{eero_client.current_network_id}/eeros",
+                headers=eero_client._get_headers()
+            )
             raw_devices = resp_dev.json().get("data", [])
             raw_network = resp_net.json().get("data", {})
+            raw_eeros = resp_eeros.json().get("data", [])
 
             # Estrai solo i campi rilevanti per la telemetria di ogni dispositivo
             devices_summary = []
@@ -100,6 +105,8 @@ async def get_debug_raw():
                 "network_speed": raw_network.get("speed"),
                 "network_rates": raw_network.get("rates"),
                 "network_activity": raw_network.get("activity"),
+                "eeros_count": len(raw_eeros),
+                "eeros": raw_eeros,
                 "devices_count": len(devices_summary),
                 "devices": devices_summary
             }

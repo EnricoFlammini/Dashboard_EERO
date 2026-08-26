@@ -337,12 +337,12 @@
                   <span class="font-bold text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Temperatura / Uptime:</span>
-                  <span class="text-slate-300" x-text="(eero.temperature || '39°C') + ' • ' + (typeof eero.uptime === 'string' ? eero.uptime : '15gg')"></span>
+                  <span>Stato Termico / Uptime:</span>
+                  <span class="text-slate-300" x-text="(eero.temperature || 'Normale') + (eero.uptime ? ' • ' + eero.uptime : '')"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span>Firmware OS:</span>
-                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version"></span>
+                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version || 'Aggiornato'"></span>
                 </div>
               </div>
             </div>
