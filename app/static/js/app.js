@@ -148,12 +148,7 @@ document.addEventListener('alpine:init', () => {
 
     async setTab(tab) {
       this.currentTab = tab;
-      if (tab === 'metrics') {
-        setTimeout(async () => {
-          await this.loadWanHistory();
-          await this.loadTopHogs();
-        }, 50);
-      } else if (tab === 'speedtest') {
+      if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
         }, 50);
@@ -265,9 +260,6 @@ document.addEventListener('alpine:init', () => {
             await this.fetchOverview();
             if (this.currentTab === 'devices') {
               await this.fetchDevices();
-            } else if (this.currentTab === 'metrics') {
-              await this.loadWanHistory();
-              await this.loadTopHogs();
             }
           }
         }
@@ -282,10 +274,7 @@ document.addEventListener('alpine:init', () => {
       try {
         await fetch('/api/network/refresh', { method: 'POST' });
         await this.refreshAllData();
-        if (this.currentTab === 'metrics') {
-          await this.loadWanHistory();
-          await this.loadTopHogs();
-        } else if (this.currentTab === 'speedtest') {
+        if (this.currentTab === 'speedtest') {
           await this.loadSpeedtestData();
         }
         this.showToast("Dati Aggiornati", "Dashboard sincronizzata in tempo reale con la rete eero.", "success");

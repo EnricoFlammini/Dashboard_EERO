@@ -6,6 +6,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.00.02] - 2026-08-26
+
+### 🧹 Semplificazione & Allineamento Diretto API eero
+* **Rimozione Scheda Storico Banda & WAN:** Eliminata la sezione e i grafici storici non supportati in modo nativo continuo dall'API base eero.
+* **Rimozione Contatore WAN nell'Header:** Eliminato il tachimetro di throughput al centro dell'header per mostrare solo informazioni certe e certificate.
+* **Rimozione Velocità Live nella Pagina Dispositivi:** Eliminata la colonna di velocità istantanea, sostituita con i dati fisici autentici delle API eero: **Banda & Canale Wi-Fi**, **Segnale RSSI (dBm)** e **Link Speed PHY (es. 780 / 866.7 Mbps)**.
+* **Integrità Assoluta:** L'applicazione visualizza esclusivamente ciò che viene inviato senza intermediari dall'infrastruttura eero.
+
+---
+
 ## [1.00.01] - 2026-08-26
 
 ### 🛡️ Approccio Rigoroso a Dati Reali (No Simulation)

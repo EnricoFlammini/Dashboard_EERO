@@ -80,8 +80,8 @@
             <button 
               @click="openChangelogModal()" 
               class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 hover:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer" 
-              title="Visualizza Changelog v1.00.01">
-              <span>v1.00.01</span>
+              title="Visualizza Changelog v1.00.02">
+              <span>v1.00.02</span>
               <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
           </div>
@@ -89,21 +89,8 @@
         </div>
       </div>
 
-      <!-- Center Indicators: WAN & Health -->
+      <!-- Center Indicator: Health Score -->
       <div class="hidden md:flex items-center space-x-6">
-        <!-- Live WAN Rate -->
-        <div class="flex items-center space-x-3 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800">
-          <div class="flex items-center text-xs space-x-1.5 text-sky-400 font-mono">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-            <span class="font-bold" x-text="realtimeMetrics.current_download_mbps + ' Mbps'"></span>
-          </div>
-          <span class="text-slate-700">|</span>
-          <div class="flex items-center text-xs space-x-1.5 text-emerald-400 font-mono">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
-            <span class="font-bold" x-text="realtimeMetrics.current_upload_mbps + ' Mbps'"></span>
-          </div>
-        </div>
-
         <!-- Health Score Badge -->
         <div class="flex items-center space-x-2">
           <div class="relative w-8 h-8 flex items-center justify-center">
@@ -189,14 +176,6 @@
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           <span>Dashboard & Mesh</span>
-        </button>
-
-        <button 
-          @click="setTab('metrics')"
-          :class="currentTab === 'metrics' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
-          class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-          <span>Storico Banda & WAN</span>
         </button>
 
         <button 
@@ -403,97 +382,7 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- TAB 2: BANDWIDTH HISTORIAN & METRICS -->
-    <!-- =================================================================== -->
-    <div x-show="currentTab === 'metrics'" class="space-y-6 animate-fade-in" style="display: none;">
-      
-      <!-- WAN Traffic Chart Panel -->
-      <div class="glass-panel rounded-2xl p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <div class="flex items-center space-x-2">
-              <h2 class="text-lg font-bold text-white">Traffico WAN & Velocità (Download / Upload)</h2>
-              <button @click="openContextHelp('bandwidth-historian')" class="text-slate-500 hover:text-sky-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </button>
-            </div>
-            <p class="text-xs text-slate-400 mt-1">
-              Totale dati scambiati nel periodo: <span class="text-sky-400 font-bold font-mono" x-text="wanTotalGb + ' GB'"></span>
-            </p>
-          </div>
-
-          <!-- Time Range Selectors -->
-          <div class="flex items-center space-x-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
-            <button 
-              @click="loadWanHistory(24)"
-              :class="selectedWanRange === 24 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
-              class="px-3 py-1 rounded-lg text-xs transition">24 Ore</button>
-            <button 
-              @click="loadWanHistory(168)"
-              :class="selectedWanRange === 168 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
-              class="px-3 py-1 rounded-lg text-xs transition">7 Giorni</button>
-            <button 
-              @click="loadWanHistory(720)"
-              :class="selectedWanRange === 720 ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
-              class="px-3 py-1 rounded-lg text-xs transition">30 Giorni</button>
-          </div>
-        </div>
-
-        <!-- Chart Container -->
-        <div style="position: relative; height: 320px; width: 100%; min-height: 320px;">
-          <canvas id="wanTrafficChart" style="width: 100%; height: 100%; display: block;"></canvas>
-        </div>
-      </div>
-
-      <!-- Top Bandwidth Hogs Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        <!-- Top Hogs Horizontal Bar Chart -->
-        <div class="glass-panel rounded-2xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold text-white">Classifica Top Consumi (Bandwidth Hogs)</h3>
-            <span class="text-xs text-slate-400">Ultimi <span x-text="selectedHogsRange === 24 ? '24h' : selectedHogsRange + 'h'"></span></span>
-          </div>
-          <div style="position: relative; height: 280px; width: 100%; min-height: 280px;">
-            <canvas id="topHogsChart" style="width: 100%; height: 100%; display: block;"></canvas>
-          </div>
-        </div>
-
-        <!-- Top Hogs Detailed Table List -->
-        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <h3 class="text-base font-bold text-white mb-4">Dettaglio Dispositivi a Maggior Consumo</h3>
-            <div class="space-y-3 overflow-y-auto max-h-64 pr-1">
-              <template x-if="topHogs.length === 0">
-                <div class="py-12 text-center text-slate-500 text-xs">
-                  Nessun consumo dati anomalo o significativo rilevato nel periodo selezionato.
-                </div>
-              </template>
-              <template x-for="(hog, index) in topHogs" :key="hog.mac_address">
-                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div class="flex items-center space-x-3">
-                    <span class="w-6 h-6 rounded-full bg-slate-800 text-sky-400 font-mono text-xs flex items-center justify-center font-bold" x-text="index + 1"></span>
-                    <div>
-                      <div class="text-sm font-semibold text-white" x-text="hog.display_name"></div>
-                      <div class="text-[11px] font-mono text-slate-500" x-text="hog.mac_address"></div>
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-sm font-bold text-sky-400 font-mono" x-text="hog.display_consumption || (hog.total_gb + ' GB')"></div>
-                    <div class="text-[10px] text-slate-400 font-mono">↓ <span x-text="hog.rx_display || (hog.rx_gb + 'GB')"></span> / ↑ <span x-text="hog.tx_display || (hog.tx_gb + 'GB')"></span></div>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- =================================================================== -->
-    <!-- TAB 3: DEVICE MANAGEMENT -->
+    <!-- TAB 2: DEVICE MANAGEMENT -->
     <!-- =================================================================== -->
     <div x-show="currentTab === 'devices'" class="space-y-6 animate-fade-in" style="display: none;">
       
@@ -573,8 +462,8 @@
                 <th class="py-3.5 px-4">Dispositivo / Host</th>
                 <th class="py-3.5 px-4">Indirizzo IP / MAC</th>
                 <th class="py-3.5 px-4">Nodo eero</th>
-                <th class="py-3.5 px-4">Banda / Segnale</th>
-                <th class="py-3.5 px-4">Velocità Live</th>
+                <th class="py-3.5 px-4">Banda / Canale</th>
+                <th class="py-3.5 px-4">Segnale / Link PHY</th>
                 <th class="py-3.5 px-4 text-center">Stato</th>
                 <th class="py-3.5 px-4 text-right">Azioni</th>
               </tr>
@@ -607,29 +496,36 @@
                     <span class="font-medium" x-text="dev.connected_eero_name || 'Gateway'"></span>
                   </td>
 
-                  <!-- Band / RSSI -->
+                  <!-- Band / Channel -->
                   <td class="py-3 px-4">
                     <div class="flex items-center space-x-2">
                       <span 
                         class="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
                         :class="{
-                          'bg-sky-500/20 text-sky-400': dev.wireless_band === '6GHz',
-                          'bg-indigo-500/20 text-indigo-400': dev.wireless_band === '5GHz',
-                          'bg-amber-500/20 text-amber-400': dev.wireless_band === '2.4GHz',
-                          'bg-emerald-500/20 text-emerald-400': dev.connection_type === 'wired'
+                          'bg-sky-500/20 text-sky-400': dev.wireless_band === '6GHz' || dev.frequency_band === '6 GHz',
+                          'bg-indigo-500/20 text-indigo-400': dev.wireless_band === '5GHz' || dev.frequency_band === '5 GHz',
+                          'bg-amber-500/20 text-amber-400': dev.wireless_band === '2.4GHz' || dev.frequency_band === '2.4 GHz',
+                          'bg-emerald-500/20 text-emerald-400': dev.connection_type === 'wired' || !dev.wireless
                         }"
-                        x-text="dev.connection_type === 'wired' ? 'Ethernet' : (dev.wireless_band || 'Wi-Fi')">
+                        x-text="dev.connection_type === 'wired' || !dev.wireless ? 'Ethernet' : (dev.frequency_band || dev.wireless_band || 'Wi-Fi')">
                       </span>
-                      <template x-if="dev.signal_rssi">
-                        <span class="text-[10px] font-mono text-slate-400" x-text="dev.signal_rssi + ' dBm'"></span>
+                      <template x-if="dev.channel">
+                        <span class="text-[10px] font-mono text-slate-400">CH <span x-text="dev.channel"></span></span>
                       </template>
                     </div>
                   </td>
 
-                  <!-- Live Rate -->
+                  <!-- Signal & PHY Link Speed (Real Eero API data) -->
                   <td class="py-3 px-4 font-mono text-xs">
-                    <div class="text-sky-400">↓ <span x-text="dev.download_rate_mbps > 0 ? dev.download_rate_mbps.toFixed(2) : (dev.connected ? ((dev.mac.charCodeAt(dev.mac.length-1) % 15) * 0.08 + 0.04).toFixed(2) : '0.00')"></span> Mbps</div>
-                    <div class="text-emerald-400">↑ <span x-text="dev.upload_rate_mbps > 0 ? dev.upload_rate_mbps.toFixed(2) : (dev.connected ? ((dev.mac.charCodeAt(dev.mac.length-2) % 8) * 0.02 + 0.01).toFixed(2) : '0.00')"></span> Mbps</div>
+                    <template x-if="dev.signal_rssi">
+                      <div class="text-slate-300 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
+                    </template>
+                    <template x-if="dev.connectivity && dev.connectivity.rx_bitrate">
+                      <div class="text-[10px] text-slate-500" x-text="'PHY: ' + dev.connectivity.rx_bitrate"></div>
+                    </template>
+                    <template x-if="!dev.signal_rssi && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
+                      <div class="text-[10px] text-slate-500" x-text="dev.wireless ? 'Wi-Fi' : 'GbE 1.0 Gbps'"></div>
+                    </template>
                   </td>
 
                   <!-- Status (Online/Offline/Paused) -->
@@ -1210,7 +1106,7 @@
       <div class="flex items-center space-x-3">
         <button @click="openChangelogModal()" class="text-sky-400 hover:text-sky-300 font-mono transition flex items-center space-x-1 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>v1.00.01 Changelog</span>
+          <span>v1.00.02 Changelog</span>
         </button>
       </div>
     </div>
