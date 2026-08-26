@@ -172,6 +172,32 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {
         console.warn("Could not load translations for", this.currentLanguage, e);
       }
+      await this.loadManualSections();
+    },
+
+    formatBackhaul(eero) {
+      if (!eero) return '';
+      const bh = String(eero.backhaul_type || '').trim();
+      const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
+      if (isWired) {
+        if (bh.includes('2.5')) return 'Ethernet (2.5 Gbps)';
+        if (bh.includes('1.0') || bh.includes('1 Gbps')) return 'Ethernet (1.0 Gbps)';
+        return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
+      }
+      if (bh.includes('dBm') || (bh.includes('GHz') && bh.includes('/'))) {
+        return bh;
+      }
+      return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5/6 GHz)';
+    },
+
+    formatNodeStatus(eero) {
+      if (!eero) return '';
+      const statusLabel = ['online', 'green'].includes(eero.status) ? this.t('devices.status_online') : this.t('devices.status_offline');
+      let temp = eero.temperature;
+      if (!temp || temp === 'Normale' || temp === 'Normal' || temp === 'Ottimale' || temp === 'Optimal') {
+        temp = this.t('dashboard.status_normal') || (this.currentLanguage === 'it' ? 'Normale' : 'Normal');
+      }
+      return `${statusLabel} • ${temp}`;
     },
 
     t(path, params = {}) {
@@ -1310,12 +1336,13 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async loadManualSections() {
       try {
-        const res = await fetch('/api/manual/sections');
+        const currentId = this.selectedManualSection ? this.selectedManualSection.id : null;
+        const res = await fetch(`/api/manual/sections?lang=${this.currentLanguage || 'it'}`);
         const json = await res.json();
         if (json.status === 'success') {
           this.manualSections = json.sections || [];
           if (this.manualSections.length > 0) {
-            this.selectedManualSection = this.manualSections[0];
+            this.selectedManualSection = this.manualSections.find(s => s.id === currentId) || this.manualSections[0];
           }
         }
       } catch (err) {
@@ -1335,7 +1362,7 @@ document.addEventListener('alpine:init', () => {
 
     async openContextHelp(sectionId) {
       try {
-        const res = await fetch(`/api/manual/sections/${sectionId}`);
+        const res = await fetch(`/api/manual/sections/${sectionId}?lang=${this.currentLanguage || 'it'}`);
         const json = await res.json();
         if (json.status === 'success' && json.section) {
           this.helpModalTitle = json.section.title;

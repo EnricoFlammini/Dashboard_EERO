@@ -1,12 +1,12 @@
 import logging
-from typing import Any, Dict, List
-from fastapi import APIRouter
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Query
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/manual", tags=["User Manual"])
 
-MANUAL_SECTIONS: List[Dict[str, Any]] = [
+MANUAL_SECTIONS_IT: List[Dict[str, Any]] = [
     {
         "id": "intro",
         "title": "1. Introduzione & Architettura",
@@ -93,8 +93,8 @@ La dashboard adotta un approccio di trasparenza e integrità totale sui dati di 
 * **Scheda Dettaglio Dispositivo:**
   - **Nome e Icona Personalizzata:** Assegna un'icona specifica (Server, PC, Smartphone, Console, Domotica, Telecamera, ecc.) salvata nel database SQLite locale.
   - **Note & Documentazione:** Campo note libero per salvare credenziali locali, ubicazione, garanzie o porte di servizio.
-  - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo basandoti sul suo indirizzo MAC.
-  - **Port Forwarding Integrato:** Aggiungi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
+  - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo basandoti sul suo indirizzo MAC con controllo automatico dei conflitti e supporto alla riassegnazione.
+  - **Port Forwarding Integrato:** Aggiungi e rimuovi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
   - **Pausa Connessione:** Interruttore con 1 clic per bloccare o consentire l'accesso a Internet del singolo dispositivo (es. parental control o isolamento).
         """
     },
@@ -155,24 +155,176 @@ La dashboard adotta un approccio di trasparenza e integrità totale sui dati di 
     }
 ]
 
+MANUAL_SECTIONS_EN: List[Dict[str, Any]] = [
+    {
+        "id": "intro",
+        "title": "1. Introduction & Architecture",
+        "icon": "book-open",
+        "summary": "Overview of the self-hosted architecture, 2FA security, and data persistence.",
+        "content": """
+### What is eero Custom Dashboard & Management Suite?
+This web application is a full-featured, self-hosted management and monitoring platform for your **Amazon eero** mesh Wi-Fi network.
+
+#### Architectural Features:
+1. **Self-Hosted & Private:** Runs inside an isolated Docker container on your local server or NAS (HomeLab). Zero external data telemetry, accessible via LAN or private VPN (Tailscale/WireGuard).
+2. **Official 2FA OTP Authentication:** Initial connection to the eero cloud utilizes the official two-factor authentication (One-Time Password via SMS or Email).
+3. **Persistence & Isolation:** User session token (`session.json`) and SQLite database (`metrics.db`) reside exclusively in the persistent `./data:/app/data` volume.
+4. **Zero-Latency In-Memory Poller:** An asynchronous background worker periodically polls the network and maintains an in-memory cache, providing instant UI navigation with zero rate-limiting risk.
+        """
+    },
+    {
+        "id": "auth-flow",
+        "title": "2. 2FA Authentication & Session Management",
+        "icon": "key",
+        "summary": "Step-by-step OTP login procedure and session lifecycle.",
+        "content": """
+### Authenticating the Dashboard with your eero Account
+
+1. **Requesting the OTP Code:**
+   - In the login screen, enter the phone number or email address associated with your eero account (e.g., `+1234567890` or `user@example.com`).
+   - Click **"Send OTP Code"**.
+2. **Verifying the Code:**
+   - You will receive a 6-digit verification code from eero via SMS or Email.
+   - Enter the code into the verification input and confirm.
+3. **Session Persistence:**
+   - The verified authentication token is saved to `/app/data/session.json`. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
+4. **Demo Mode:**
+   - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
+        """
+    },
+    {
+        "id": "dashboard-mesh",
+        "title": "3. Dashboard & Mesh Topology",
+        "icon": "network",
+        "summary": "Network Health Score, node status cards, and one-click actions.",
+        "content": """
+### Understanding the Overview Dashboard
+
+* **Network Health Score (1-100):** A comprehensive real-time score calculated from mesh node availability, gateway status, and client RSSI signal quality.
+* **eero Mesh Nodes Topology:**
+  - *Gateway Node:* The primary node connected directly to your modem/ONT.
+  - *Beacon / Mesh Extenders:* Secondary nodes extending wireless coverage.
+  - *Backhaul Type:* Displays whether inter-node links use high-speed Ethernet (1 Gbps / 2.5 Gbps) or dedicated wireless mesh backhaul (5 GHz / 6 GHz).
+* **Quick Node Actions:**
+  - **Reboot Network:** Dispatches a controlled reboot command across the entire mesh infrastructure.
+  - **Reboot Single Node:** Reboots only the selected node without disrupting the rest of the household.
+        """
+    },
+    {
+        "id": "telemetry-api",
+        "title": "4. Telemetry & Certified eero Hardware Metrics",
+        "icon": "cpu",
+        "summary": "Authentic physical network telemetry straight from eero hardware nodes.",
+        "content": """
+### 100% Authentic Telemetry & Certified Hardware Metrics
+
+The dashboard adheres to strict data integrity standards:
+1. **Certified Physical Metrics:**
+   - Real-time data reported by eero mesh nodes: **Wi-Fi Band & Frequency (2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet)**, **Wi-Fi Channel (e.g., CH 36, CH 11)**, **Signal Power RSSI (dBm)**, and **Negotiated Physical PHY Link Rate (e.g., 780.0 / 866.7 Mbps)**.
+2. **Official Gateway Speed Test:**
+   - WAN speeds shown in network overviews are measured directly by the eero Gateway node to cloud test servers (e.g., 907 Mbps Down / 193 Mbps Up).
+3. **Zero Fabricated or Simulated Telemetry:**
+   - The platform deliberately excludes artificial bandwidth counters or synthetic estimates, displaying strictly genuine telemetry returned by the eero API.
+        """
+    },
+    {
+        "id": "device-management",
+        "title": "5. Device Management, Static IP & Port Forwarding",
+        "icon": "devices",
+        "summary": "Custom metadata, DHCP reservations, port forwarding rules, and internet access control.",
+        "content": """
+### Advanced Client Control & Configuration
+
+* **Search & Filter:**
+  - Search instantly by Custom Name, Hostname, IP Address, or MAC Address.
+  - Filter by frequency (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), connected mesh node, or Online/Offline status.
+  - Instant visibility of signal strength in dBm and physical link speed.
+* **Device Detail Modal:**
+  - **Custom Name & Category:** Assign categories (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Other) saved to the local SQLite database.
+  - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
+  - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
+  - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
+  - **Pause Internet Access:** One-click toggle to block or restore internet access for individual devices.
+        """
+    },
+    {
+        "id": "speedtest",
+        "title": "6. Speed Test & Performance Diagnostics",
+        "icon": "gauge",
+        "summary": "On-demand speed testing, historical performance tracking, and latency analytics.",
+        "content": """
+### Performance & Bandwidth Diagnostics
+
+* **Manual Speed Test:** Click **"Start Speedtest"** to trigger a real-time measurement of Download, Upload, Ping/Latency, and Jitter.
+* **Automated Scheduled Testing:** The system can be scheduled to run automated background tests (e.g., every 12 hours) to track line consistency over time.
+* **Historical Charts & Statistics:**
+  - Visual time-series graph of speeds and latency over days and weeks.
+  - Aggregate statistics including average download/upload, maximum peak speeds, and average ping.
+        """
+    },
+    {
+        "id": "automations",
+        "title": "7. Automations, Guest QR, Gaming Mode & Notifications",
+        "icon": "zap",
+        "summary": "Smart Guest Wi-Fi with QR Code, one-click Gaming Focus Mode, and Telegram alerts.",
+        "content": """
+### Advanced Features & Automations
+
+1. **Smart Guest Wi-Fi with Dynamic QR Code:**
+   - Instantly renders a printable, scannable QR Code for guests to connect without manually entering the password.
+   - One-click toggle to enable or disable the guest network at any time.
+   - Built-in secure password generator and credentials updater.
+2. **One-Click Gaming / Focus Mode (Low-Latency Priority):**
+   - Pauses all tagged secondary/streaming devices (smart TVs, backup downloads) with a single click to eliminate jitter and minimize latency for competitive gaming rigs.
+   - A second click instantly restores normal internet access for all devices.
+3. **Automated Night Mode (LED Dimming):**
+   - Scheduled night mode (e.g., 23:00 - 07:00) to turn off node LEDs at night and restore them in the morning.
+4. **Telegram Bot & Webhook Notifications:**
+   - **New Device Alert:** Receive an instant Telegram alert when an unknown MAC address connects to your network.
+   - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
+        """
+    },
+    {
+        "id": "troubleshooting",
+        "title": "8. Troubleshooting & Frequently Asked Questions (FAQ)",
+        "icon": "wrench",
+        "summary": "Frequently asked questions regarding telemetry, session handling, backups, and maintenance.",
+        "content": """
+### Troubleshooting & FAQ
+
+* **Which client metrics come directly from eero hardware?**
+  - The dashboard reads client connection state (Online/Offline/Paused), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
+* **What should I do if my session expires?**
+  - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
+* **How do I back up local configurations and custom metadata?**
+  - All custom device names, categories, notes, and notification settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
+* **Rate Limiting Protection:**
+  - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.
+        """
+    }
+]
+
 
 @router.get("/sections")
-async def get_manual_sections():
-    """Restituisce tutti i capitoli e le sezioni del manuale utente integrato."""
+async def get_manual_sections(lang: Optional[str] = Query("it")):
+    """Restituisce tutti i capitoli del manuale utente nella lingua richiesta (it/en)."""
+    sections = MANUAL_SECTIONS_EN if lang and lang.lower().startswith("en") else MANUAL_SECTIONS_IT
     return {
         "status": "success",
-        "count": len(MANUAL_SECTIONS),
-        "sections": MANUAL_SECTIONS
+        "count": len(sections),
+        "language": "en" if lang and lang.lower().startswith("en") else "it",
+        "sections": sections
     }
 
 
 @router.get("/sections/{section_id}")
-async def get_manual_section(section_id: str):
+async def get_manual_section(section_id: str, lang: Optional[str] = Query("it")):
     """Restituisce una specifica sezione del manuale (utilizzata anche per i tooltip contestuali)."""
-    section = next((s for s in MANUAL_SECTIONS if s["id"] == section_id), None)
+    sections = MANUAL_SECTIONS_EN if lang and lang.lower().startswith("en") else MANUAL_SECTIONS_IT
+    section = next((s for s in sections if s["id"] == section_id), None)
     if not section:
-        return {"status": "error", "message": "Sezione non trovata."}
-    return {"status": "success", "section": section}
+        return {"status": "error", "message": "Section not found."}
+    return {"status": "success", "language": "en" if lang and lang.lower().startswith("en") else "it", "section": section}
 
 
 @router.get("/changelog")
@@ -197,5 +349,6 @@ async def get_changelog():
     return {
         "status": "success",
         "version": "1.01.00",
-        "content": "# Changelog v1.01.00\n\n- Supporto multilingua (Italiano / Inglese) con selettore dinamico in tempo reale.\n- Rilascio Open Source con licenza MIT e sicurezza credenziali avanzata."
+        "content": "# Changelog v1.01.00\n\n- Full multi-language support (Italian & English) with real-time selector.\n- Open Source release under MIT License with enhanced credential security."
     }
+

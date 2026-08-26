@@ -332,7 +332,7 @@
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span x-text="t('dashboard.backhaul')"></span>
-                  <span class="font-semibold text-emerald-400" x-text="eero.backhaul_type || 'Ethernet'"></span>
+                  <span class="font-semibold text-emerald-400" x-text="formatBackhaul(eero)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span x-text="t('dashboard.connected_clients')"></span>
@@ -340,11 +340,11 @@
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span x-text="t('dashboard.status')"></span>
-                  <span class="text-emerald-400 font-medium" x-text="(eero.status === 'online' ? t('devices.status_online') : t('devices.status_offline')) + ' • ' + (eero.temperature || t('header.optimal'))"></span>
+                  <span class="text-emerald-400 font-medium" x-text="formatNodeStatus(eero)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
                   <span x-text="t('dashboard.firmware')"></span>
-                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version || 'Aggiornato'"></span>
+                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version || t('dashboard.updated')"></span>
                 </div>
               </div>
             </div>
