@@ -113,10 +113,10 @@
             <span class="absolute text-[10px] font-bold" x-text="healthScore"></span>
           </div>
           <div class="text-left">
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Health Score</div>
-            <div class="text-xs font-bold text-emerald-400" x-show="healthScore >= 90">Ottimale</div>
-            <div class="text-xs font-bold text-amber-400" x-show="healthScore < 90 && healthScore >= 70">Buono</div>
-            <div class="text-xs font-bold text-rose-400" x-show="healthScore < 70">Attenzione</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold" x-text="t('dashboard.health_score')"></div>
+            <div class="text-xs font-bold text-emerald-400" x-show="healthScore >= 90" x-text="t('header.optimal')"></div>
+            <div class="text-xs font-bold text-amber-400" x-show="healthScore < 90 && healthScore >= 70" x-text="t('header.good')"></div>
+            <div class="text-xs font-bold text-rose-400" x-show="healthScore < 70" x-text="t('header.warning')"></div>
           </div>
         </div>
       </div>
@@ -129,17 +129,17 @@
           @click="manualRefresh()"
           :disabled="isRefreshing"
           class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all active:scale-95 disabled:opacity-50"
-          title="Aggiorna tutti i dati in tempo reale">
+          :title="t('header.refresh_title')">
           <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
-          <span class="hidden sm:inline" x-text="isRefreshing ? 'Aggiornamento...' : 'Aggiorna'"></span>
+          <span class="hidden sm:inline" x-text="isRefreshing ? t('header.refreshing') : t('header.refresh')"></span>
         </button>
 
         <!-- Demo Mode Badge -->
         <template x-if="isDemoMode">
           <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span> Demo Mode
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span> <span x-text="t('demo_mode')"></span>
           </span>
         </template>
 
@@ -148,16 +148,16 @@
           @click="toggleFocusMode()"
           :class="focusModeActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'"
           class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-          title="Gaming / Low Latency Mode (Pausa traffico secondario)">
+          :title="t('header.gaming_tooltip')">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <span x-text="focusModeActive ? 'Gaming: ATTIVO' : 'Gaming Mode'"></span>
+          <span x-text="focusModeActive ? t('header.gaming_active') : t('header.gaming_mode')"></span>
         </button>
 
         <!-- Context Help Trigger -->
         <button 
           @click="openContextHelp('intro')"
           class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-sky-400 transition"
-          title="Guida & Manuale Rapido">
+          :title="t('header.quick_help')">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </button>
       </div>
@@ -232,26 +232,26 @@
         <!-- WAN Card -->
         <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Stato Internet WAN</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.wan_status')"></span>
             <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
           </div>
-          <div class="text-2xl font-bold text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? 'Online' : 'Offline'"></div>
+          <div class="text-2xl font-bold text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
           <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
-            <span>IP WAN:</span>
+            <span x-text="t('dashboard.wan_ip')"></span>
             <span class="text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
           </div>
-          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || 'Provider Internet Connesso'"></div>
+          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
         </div>
 
         <!-- Gateway Node Card -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Gateway Principale</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.node_gateway')"></span>
             <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
           </div>
-          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).name || 'Gateway Principale'"></div>
+          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).name || t('dashboard.node_gateway')"></div>
           <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
-            <span>IP LAN:</span>
+            <span x-text="t('dashboard.lan_ip')"></span>
             <span class="text-slate-200" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).ip || network.gateway_ip || '192.168.4.1'"></span>
           </div>
           <div class="mt-1 text-[11px] text-slate-500">DNS: <span x-text="Array.isArray(network.dns_servers) ? network.dns_servers.join(', ') : (typeof network.dns_servers === 'object' && network.dns_servers !== null && network.dns_servers.ips ? network.dns_servers.ips.join(', ') : (network.dns_servers || '192.168.4.104, 1.1.1.1'))"></span></div>
@@ -260,17 +260,17 @@
         <!-- Connected Clients Count -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Client Connessi</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.connected_devices')"></span>
             <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           </div>
           <div class="text-3xl font-extrabold text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
-          <div class="mt-2 text-xs text-slate-400">Dispositivi attivi nella mesh</div>
+          <div class="mt-2 text-xs text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
         </div>
 
         <!-- Last Speedtest Preview -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ultimo Speed Test</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
             <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
           <div class="flex items-baseline space-x-2">
@@ -288,8 +288,8 @@
       <!-- Quick Actions Header & Topology -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
         <div class="flex items-center space-x-2">
-          <h2 class="text-lg font-bold text-white">Topologia Nodi Mesh eero (<span x-text="eeros.length"></span>)</h2>
-          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-500 hover:text-sky-400" title="Informazioni sui Nodi Mesh">
+          <h2 class="text-lg font-bold text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
+          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-500 hover:text-sky-400" :title="t('dashboard.mesh_topology_sub')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </button>
         </div>
@@ -300,7 +300,7 @@
             @click="rebootNetwork()"
             class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-xs font-semibold text-rose-400 border border-rose-500/30 transition flex items-center space-x-1.5">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span>Riavvia Rete</span>
+            <span x-text="t('dashboard.restart_network_btn')"></span>
           </button>
         </div>
       </div>
@@ -327,23 +327,23 @@
               <!-- Node Specs & Info -->
               <div class="mt-4 space-y-2 border-t border-b border-slate-800/80 py-3 text-xs">
                 <div class="flex justify-between text-slate-400">
-                  <span>Indirizzo IP:</span>
+                  <span x-text="t('dashboard.ip_address')"></span>
                   <span class="font-mono text-slate-200" x-text="eero.ip || 'DHCP'"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Backhaul:</span>
+                  <span x-text="t('dashboard.backhaul')"></span>
                   <span class="font-semibold text-emerald-400" x-text="eero.backhaul_type || 'Ethernet'"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Client Connessi:</span>
+                  <span x-text="t('dashboard.connected_clients')"></span>
                   <span class="font-bold text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Stato:</span>
-                  <span class="text-emerald-400 font-medium" x-text="(eero.status === 'online' ? 'Online' : 'Offline') + ' • ' + (eero.temperature || 'Ottimale')"></span>
+                  <span x-text="t('dashboard.status')"></span>
+                  <span class="text-emerald-400 font-medium" x-text="(eero.status === 'online' ? t('devices.status_online') : t('devices.status_offline')) + ' • ' + (eero.temperature || t('header.optimal'))"></span>
                 </div>
                 <div class="flex justify-between text-slate-400">
-                  <span>Firmware OS:</span>
+                  <span x-text="t('dashboard.firmware')"></span>
                   <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version || 'Aggiornato'"></span>
                 </div>
               </div>
@@ -353,14 +353,14 @@
             <div class="mt-4 flex items-center justify-between pt-2">
               <span class="text-[11px] text-slate-500 flex items-center space-x-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span>Mesh Attivo</span>
+                <span x-text="t('dashboard.mesh_active')"></span>
               </span>
 
               <button 
                 @click="rebootEero(eero)"
                 class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-xs font-semibold text-slate-400 hover:text-rose-400 border border-slate-700 transition flex items-center space-x-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                <span>Riavvia Nodo</span>
+                <span x-text="t('dashboard.restart_node_btn')"></span>
               </button>
             </div>
 
@@ -385,7 +385,7 @@
             <input 
               type="text" 
               x-model="deviceSearchQuery"
-              placeholder="Cerca per Nome, IP, MAC o note..."
+              :placeholder="t('devices.search_placeholder')"
               class="glass-input w-full pl-10 pr-4 py-2 rounded-xl text-sm">
           </div>
 
@@ -394,16 +394,16 @@
             
             <!-- Band Filter -->
             <select x-model="selectedBandFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all">Tutte le Frequenze</option>
-              <option value="6GHz">Banda 6 GHz</option>
-              <option value="5GHz">Banda 5 GHz</option>
-              <option value="2.4GHz">Banda 2.4 GHz</option>
-              <option value="wired">Cablato (Ethernet)</option>
+              <option value="all" x-text="t('devices.filter_all_bands')"></option>
+              <option value="6GHz" x-text="t('devices.filter_band_6ghz')"></option>
+              <option value="5GHz" x-text="t('devices.filter_band_5ghz')"></option>
+              <option value="2.4GHz" x-text="t('devices.filter_band_24ghz')"></option>
+              <option value="wired" x-text="t('devices.filter_band_wired')"></option>
             </select>
 
             <!-- Node Filter -->
             <select x-model="selectedNodeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all">Tutti i Nodi Mesh</option>
+              <option value="all" x-text="t('devices.filter_all_nodes')"></option>
               <template x-for="e in eeros" :key="e.id || e.serial">
                 <option :value="e.id" x-text="e.name"></option>
               </template>
@@ -411,28 +411,28 @@
 
             <!-- Category Filter -->
             <select x-model="selectedCategoryFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all">Tutte le Categorie</option>
-              <option value="favorites">⭐ Solo Preferiti</option>
-              <option value="Computer">Computer & Laptop</option>
-              <option value="Mobile">Smartphone & Tablet</option>
-              <option value="Smart Home">Smart Home & Domotica</option>
-              <option value="Intrattenimento">TV & Streaming</option>
-              <option value="Gaming">Console Gaming</option>
-              <option value="Server/Rete">Server & NAS</option>
-              <option value="Altro">Altro</option>
+              <option value="all" x-text="t('devices.filter_all_categories')"></option>
+              <option value="favorites" x-text="t('devices.filter_favorites')"></option>
+              <option value="Computer" x-text="t('devices.cat_computer')"></option>
+              <option value="Mobile" x-text="t('devices.cat_mobile')"></option>
+              <option value="Smart Home" x-text="t('devices.cat_smarthome')"></option>
+              <option value="Intrattenimento" x-text="t('devices.cat_entertainment')"></option>
+              <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
+              <option value="Server/Rete" x-text="t('devices.cat_server')"></option>
+              <option value="Altro" x-text="t('devices.cat_other')"></option>
             </select>
 
             <!-- IP Type Filter (Statico / DHCP) -->
             <select x-model="selectedIpTypeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all">Tutti gli Assegnamenti</option>
-              <option value="static">🟢 Solo IP Statici</option>
-              <option value="dhcp">⚪ Solo DHCP Dinamici</option>
+              <option value="all" x-text="t('devices.filter_all_assignments')"></option>
+              <option value="static" x-text="t('devices.filter_only_static')"></option>
+              <option value="dhcp" x-text="t('devices.filter_only_dhcp')"></option>
             </select>
 
             <!-- Connected Only Toggle -->
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
               <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
-              <span>Solo Connessi</span>
+              <span x-text="t('devices.filter_connected_only')"></span>
             </label>
 
             <!-- Quick Refresh Dispositivi -->
@@ -440,7 +440,7 @@
               @click="manualRefresh()"
               :disabled="isRefreshing"
               class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition"
-              title="Ricarica elenco dispositivi">
+              :title="t('devices.refresh_title')">
               <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
@@ -457,13 +457,13 @@
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="border-b border-slate-800 bg-slate-900/80 text-slate-400 uppercase tracking-wider font-semibold">
-                <th class="py-3.5 px-4">Dispositivo / Host</th>
-                <th class="py-3.5 px-4">Indirizzo IP / MAC</th>
-                <th class="py-3.5 px-4">Nodo eero</th>
-                <th class="py-3.5 px-4">Banda / Canale</th>
-                <th class="py-3.5 px-4">Segnale / Link PHY</th>
-                <th class="py-3.5 px-4 text-center">Stato</th>
-                <th class="py-3.5 px-4 text-right">Azioni</th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_device')"></th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_ip_mac')"></th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_node')"></th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_band')"></th>
+                <th class="py-3.5 px-4" x-text="t('devices.col_signal')"></th>
+                <th class="py-3.5 px-4 text-center" x-text="t('devices.col_status')"></th>
+                <th class="py-3.5 px-4 text-right" x-text="t('devices.col_actions')"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
@@ -480,13 +480,13 @@
                         <div class="flex items-center space-x-1.5">
                           <div class="font-bold text-white text-sm" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
                           <template x-if="dev.is_favorite">
-                            <span class="text-amber-400 text-xs" title="Dispositivo Preferito">⭐</span>
+                            <span class="text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
                           </template>
                           <template x-if="dev.is_low_latency_target">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30" title="Pausa Automatica in Gaming Mode">Gaming Target</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
                           </template>
                         </div>
-                        <div class="text-[11px] text-slate-500" x-text="dev.category || 'Altro'"></div>
+                        <div class="text-[11px] text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
                       </div>
                     </div>
                   </td>
@@ -496,13 +496,13 @@
                     <div class="flex items-center space-x-2">
                       <span class="text-slate-200 font-semibold text-xs" x-text="dev.ip || '---'"></span>
                       <template x-if="dev.is_static">
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider inline-flex items-center" title="Indirizzo IP Statico Fisso (Prenotazione DHCP Cloud)">
-                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span>STATICO
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider inline-flex items-center" :title="t('devices.badge_static')">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span><span x-text="t('devices.badge_static')"></span>
                         </span>
                       </template>
                       <template x-if="!dev.is_static">
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800/90 text-slate-400 border border-slate-700/80 tracking-wider inline-flex items-center" title="Assegnazione Dinamica DHCP">
-                          <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block mr-1"></span>DHCP
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800/90 text-slate-400 border border-slate-700/80 tracking-wider inline-flex items-center" :title="t('devices.badge_dhcp')">
+                          <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block mr-1"></span><span x-text="t('devices.badge_dhcp')"></span>
                         </span>
                       </template>
                     </div>
@@ -549,13 +549,13 @@
                   <!-- Status (Online/Offline/Paused) -->
                   <td class="py-3 px-4 text-center">
                     <template x-if="dev.paused">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">In Pausa</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" x-text="t('devices.status_paused')"></span>
                     </template>
                     <template x-if="!dev.paused && dev.connected">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Online</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" x-text="t('devices.status_online')"></span>
                     </template>
                     <template x-if="!dev.paused && !dev.connected">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700">Offline</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700" x-text="t('devices.status_offline')"></span>
                     </template>
                   </td>
 
@@ -566,14 +566,14 @@
                       @click="toggleDevicePause(dev)"
                       :class="dev.paused ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'"
                       class="p-1.5 rounded-lg transition"
-                      :title="dev.paused ? 'Riabilita Internet' : 'Pausa Connessione'">
+                      :title="dev.paused ? t('devices.resume_access') : t('devices.pause_access')">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </button>
                     <!-- Detail Modal Trigger -->
                     <button 
                       @click="openDeviceModal(dev)"
                       class="p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
-                      title="Scheda & Metadati Dispositivo">
+                      :title="t('devices.edit_rules')">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     </button>
                   </td>
@@ -596,8 +596,8 @@
       <div class="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
         <div class="max-w-md w-full">
           
-          <h2 class="text-xl font-bold text-white mb-1">Diagnostica Connessione & Speed Test</h2>
-          <p class="text-xs text-slate-400 mb-6">Misura la banda reale e la latenza della connessione FTTH/eero</p>
+          <h2 class="text-xl font-bold text-white mb-1" x-text="t('speedtest.title')"></h2>
+          <p class="text-xs text-slate-400 mb-6" x-text="t('speedtest.subtitle')"></p>
 
           <!-- Action Button / Progress -->
           <div class="flex flex-col items-center">
@@ -606,7 +606,7 @@
               :disabled="speedtestRunning"
               class="w-40 h-40 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-lg shadow-2xl shadow-sky-500/30 flex flex-col items-center justify-center space-y-1 transition-transform active:scale-95 disabled:opacity-50">
               <svg class="w-8 h-8" :class="speedtestRunning ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-              <span x-text="speedtestRunning ? 'Misurazione...' : 'AVVIA TEST'"></span>
+              <span x-text="speedtestRunning ? t('speedtest.running_btn') : t('speedtest.run_btn')"></span>
             </button>
 
             <!-- Progress Bar -->
@@ -618,15 +618,15 @@
           <!-- Latest Result Badge -->
           <div class="mt-8 grid grid-cols-3 gap-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Download</div>
+              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.download')"></div>
               <div class="text-lg font-bold text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(1) + ' Mbps'"></div>
             </div>
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Upload</div>
+              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.upload')"></div>
               <div class="text-lg font-bold text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(1) + ' Mbps'"></div>
             </div>
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Ping / Latenza</div>
+              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.ping_latency')"></div>
               <div class="text-lg font-bold text-amber-400 font-mono" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></div>
             </div>
           </div>
@@ -639,7 +639,7 @@
         
         <!-- Chart -->
         <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
-          <h3 class="text-base font-bold text-white mb-4">Andamento Storico Prestazioni (Mbps & Ping)</h3>
+          <h3 class="text-base font-bold text-white mb-4" x-text="t('speedtest.chart_title')"></h3>
           <div style="position: relative; height: 280px; width: 100%; min-height: 280px;">
             <canvas id="speedtestHistoryChart" style="width: 100%; height: 100%; display: block;"></canvas>
           </div>
@@ -647,34 +647,32 @@
 
         <!-- Performance Stats Cards -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
-          <h3 class="text-base font-bold text-white">Statistiche Aggregate</h3>
+          <h3 class="text-base font-bold text-white" x-text="t('speedtest.stats_title')"></h3>
           
           <div class="space-y-3 text-xs">
             <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400">Velocità Media Download:</span>
+              <span class="text-slate-400" x-text="t('speedtest.avg_download')"></span>
               <span class="font-bold text-sky-400 font-mono" x-text="(speedtestStats.avg_download || 0) + ' Mbps'"></span>
             </div>
             <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400">Picco Massimo Download:</span>
+              <span class="text-slate-400" x-text="t('speedtest.max_download')"></span>
               <span class="font-bold text-sky-300 font-mono" x-text="(speedtestStats.max_download || 0) + ' Mbps'"></span>
             </div>
             <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400">Velocità Media Upload:</span>
+              <span class="text-slate-400" x-text="t('speedtest.avg_upload')"></span>
               <span class="font-bold text-emerald-400 font-mono" x-text="(speedtestStats.avg_upload || 0) + ' Mbps'"></span>
             </div>
             <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400">Ping Medio (Latenza):</span>
+              <span class="text-slate-400" x-text="t('speedtest.avg_ping')"></span>
               <span class="font-bold text-amber-400 font-mono" x-text="(speedtestStats.avg_ping || 0) + ' ms'"></span>
             </div>
             <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400">Totale Test Eseguiti:</span>
+              <span class="text-slate-400" x-text="t('speedtest.total_tests')"></span>
               <span class="font-bold text-white font-mono" x-text="speedtestStats.total_tests || 0"></span>
             </div>
           </div>
 
-          <div class="text-[11px] text-slate-500 text-center">
-            Pianificazione automatica attiva ogni 12 ore
-          </div>
+          <div class="text-[11px] text-slate-500 text-center" x-text="t('speedtest.schedule_info')"></div>
         </div>
 
       </div>
@@ -692,8 +690,8 @@
         <div class="glass-panel rounded-2xl p-6 space-y-5">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <h3 class="text-base font-bold text-white">Smart Guest Wi-Fi & QR Code</h3>
-              <button @click="openContextHelp('automations')" class="text-slate-500 hover:text-sky-400">
+              <h3 class="text-base font-bold text-white" x-text="t('controls.guest_title')"></h3>
+              <button @click="openContextHelp('automations')" class="text-slate-500 hover:text-sky-400" :title="t('header.quick_help')">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </button>
             </div>
@@ -701,7 +699,7 @@
               @click="toggleGuestNetwork()"
               :class="guestNetwork.enabled ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'"
               class="px-3 py-1 rounded-full text-xs font-bold transition">
-              <span x-text="guestNetwork.enabled ? 'Attiva' : 'Disattivata'"></span>
+              <span x-text="guestNetwork.enabled ? t('controls.enabled') : t('controls.disabled')"></span>
             </button>
           </div>
 
@@ -712,32 +710,31 @@
                 <img :src="guestQrCodeUrl" alt="WiFi QR Code" class="w-44 h-44 rounded-lg shadow-md border border-slate-700">
               </template>
               <template x-if="!guestQrCodeUrl">
-                <div class="w-44 h-44 rounded-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 text-center p-2">
-                  Abilita la rete ospiti per visualizzare il QR Code
+                <div class="w-44 h-44 rounded-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 text-center p-2" x-text="t('controls.qr_disabled')">
                 </div>
               </template>
-              <span class="text-[11px] text-slate-400 mt-2">Inquadra per connetterti</span>
+              <span class="text-[11px] text-slate-400 mt-2" x-text="t('controls.qr_desc')"></span>
             </div>
 
             <!-- Guest Network Credentials Form -->
             <div class="space-y-3 text-xs">
               <div>
-                <label class="block text-slate-400 mb-1">Nome Rete (SSID):</label>
+                <label class="block text-slate-400 mb-1" x-text="t('controls.guest_name')"></label>
                 <input type="text" x-model="guestNetwork.name" class="glass-input w-full px-3 py-1.5 rounded-lg font-semibold">
               </div>
               <div>
-                <label class="block text-slate-400 mb-1">Password Rete:</label>
+                <label class="block text-slate-400 mb-1" x-text="t('controls.guest_password')"></label>
                 <div class="flex space-x-1">
                   <input type="text" x-model="guestNetwork.password" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400" title="Genera password sicura">
+                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400" :title="t('controls.generate_password')">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   </button>
                 </div>
               </div>
               <button 
                 @click="saveGuestSettings()"
-                class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition">
-                Aggiorna e Salva QR Code
+                class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition"
+                x-text="t('controls.save_guest_btn')">
               </button>
             </div>
           </div>
@@ -746,29 +743,28 @@
         <!-- Telegram & Webhook Alert Configuration -->
         <div class="glass-panel rounded-2xl p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-bold text-white">Notifiche Telegram & Webhook</h3>
-            <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30">
-              Invia Test
+            <h3 class="text-base font-bold text-white" x-text="t('controls.notifications_title')"></h3>
+            <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30" x-text="t('controls.send_test')">
             </button>
           </div>
 
           <div class="space-y-3 text-xs">
             <div>
-              <label class="block text-slate-400 mb-1">Telegram Bot Token:</label>
+              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_token')"></label>
               <input type="password" x-model="notificationSettings.telegram_bot_token" placeholder="123456789:ABCDefGHIjk..." class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Telegram Chat ID:</label>
+              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_chat_id')"></label>
               <input type="text" x-model="notificationSettings.telegram_chat_id" placeholder="-100123456789 o ID Utente" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Webhook HTTP URL (Opzionale):</label>
-              <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://tuo-servizio/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+              <label class="block text-slate-400 mb-1" x-text="t('controls.webhook_url')"></label>
+              <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://your-domain.com/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
             <button 
               @click="saveNotificationSettings()"
-              class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition">
-              Salva Canali di Allarme
+              class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition"
+              x-text="t('controls.save_notifications')">
             </button>
           </div>
         </div>
@@ -776,13 +772,13 @@
         <!-- Automated Daily Digest Report -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div>
-            <h3 class="text-base font-bold text-white">Report Digest Giornaliero</h3>
-            <p class="text-xs text-slate-400 mt-1">Invia automaticamente alle 21:00 il riepilogo con consumo totale in GB, dispositivo top consumer e stabilità della linea.</p>
+            <h3 class="text-base font-bold text-white" x-text="t('controls.digest_title')"></h3>
+            <p class="text-xs text-slate-400 mt-1" x-text="t('controls.digest_desc')"></p>
           </div>
           <button 
             @click="triggerDigest()"
-            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition">
-            Genera & Invia Digest Ora
+            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition"
+            x-text="t('controls.digest_btn')">
           </button>
         </div>
 
@@ -798,14 +794,14 @@
       <!-- Manual Header & Search Bar -->
       <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h2 class="text-xl font-bold text-white">Manuale Utente & Guida Interattiva</h2>
-          <p class="text-xs text-slate-400 mt-1">Documentazione integrata per la gestione completa di eero Dashboard</p>
+          <h2 class="text-xl font-bold text-white" x-text="t('manual.title')"></h2>
+          <p class="text-xs text-slate-400 mt-1" x-text="t('manual.subtitle')"></p>
         </div>
         <div class="w-full md:w-80">
           <input 
             type="text" 
             x-model="manualSearchQuery" 
-            placeholder="Cerca argomenti nel manuale..."
+            :placeholder="t('manual.search_placeholder')"
             class="glass-input w-full px-4 py-2 rounded-xl text-xs">
         </div>
       </div>
@@ -815,7 +811,7 @@
         
         <!-- Left Sidebar: Chapter List -->
         <div class="glass-panel rounded-2xl p-4 space-y-1">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 py-2">Capitoli del Manuale</h3>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 py-2" x-text="t('manual.chapters_title')"></h3>
           <div class="space-y-1">
             <template x-for="section in filteredManualSections" :key="section.id">
               <button 
@@ -872,7 +868,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-white flex items-center space-x-2">
-              <span x-text="selectedDevice ? (selectedDevice.custom_name || selectedDevice.nickname || selectedDevice.hostname) : 'Dettaglio Dispositivo'"></span>
+              <span x-text="selectedDevice ? (selectedDevice.custom_name || selectedDevice.nickname || selectedDevice.hostname) : t('device_modal.title')"></span>
               <template x-if="selectedDevice && selectedDevice.is_favorite">
                 <span class="text-amber-400 text-sm">⭐</span>
               </template>
@@ -896,14 +892,14 @@
           class="pb-2.5 px-3 font-semibold transition border-b-2 flex items-center space-x-1.5"
           :class="deviceDetailTab === 'general' ? 'text-sky-400 border-sky-400' : 'text-slate-400 border-transparent hover:text-slate-200'">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          <span>Dati & Categoria</span>
+          <span x-text="t('device_modal.tab_general')"></span>
         </button>
         <button 
           @click="deviceDetailTab = 'static_ip'"
           class="pb-2.5 px-3 font-semibold transition border-b-2 flex items-center space-x-1.5"
           :class="deviceDetailTab === 'static_ip' ? 'text-sky-400 border-sky-400' : 'text-slate-400 border-transparent hover:text-slate-200'">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
-          <span>IP Statico (DHCP)</span>
+          <span x-text="t('device_modal.tab_static_ip')"></span>
           <template x-if="deviceReservation">
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
           </template>
@@ -913,7 +909,7 @@
           class="pb-2.5 px-3 font-semibold transition border-b-2 flex items-center space-x-1.5"
           :class="deviceDetailTab === 'ports' ? 'text-sky-400 border-sky-400' : 'text-slate-400 border-transparent hover:text-slate-200'">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          <span>Port Forwarding (<span x-text="deviceForwards.length"></span>)</span>
+          <span><span x-text="t('device_modal.tab_forwards')"></span> (<span x-text="deviceForwards.length"></span>)</span>
         </button>
       </div>
 
@@ -924,19 +920,19 @@
         <div x-show="deviceDetailTab === 'general'" class="space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-slate-400 mb-1">Nome Personalizzato (Cloud & Locale):</label>
+              <label class="block text-slate-400 mb-1" x-text="t('device_modal.custom_name')"></label>
               <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
             </div>
             <div>
-              <label class="block text-slate-400 mb-1">Categoria Dispositivo:</label>
+              <label class="block text-slate-400 mb-1" x-text="t('device_modal.category')"></label>
               <select x-model="deviceMetadataForm.category" class="glass-input w-full px-3 py-2 rounded-xl text-sm">
-                <option value="Computer">Computer & Laptop</option>
-                <option value="Mobile">Smartphone & Tablet</option>
-                <option value="Smart Home">Smart Home & Domotica</option>
-                <option value="Intrattenimento">TV & Streaming</option>
-                <option value="Gaming">Console Gaming</option>
-                <option value="Server/Rete">Server & NAS</option>
-                <option value="Altro">Altro</option>
+                <option value="Computer" x-text="t('devices.cat_computer')"></option>
+                <option value="Mobile" x-text="t('devices.cat_mobile')"></option>
+                <option value="Smart Home" x-text="t('devices.cat_smarthome')"></option>
+                <option value="Intrattenimento" x-text="t('devices.cat_entertainment')"></option>
+                <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
+                <option value="Server/Rete" x-text="t('devices.cat_server')"></option>
+                <option value="Altro" x-text="t('devices.cat_other')"></option>
               </select>
             </div>
           </div>
@@ -944,29 +940,29 @@
           <!-- Device Connection Info -->
           <div class="grid grid-cols-2 gap-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
             <div>
-              <span class="text-slate-500 block text-[11px]">Indirizzo IP Attuale:</span>
+              <span class="text-slate-500 block text-[11px]" x-text="t('device_modal.current_ip')"></span>
               <span class="font-mono text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.ip || 'DHCP') : '---'"></span>
             </div>
             <div>
-              <span class="text-slate-500 block text-[11px]">Nodo Mesh Collegato:</span>
+              <span class="text-slate-500 block text-[11px]" x-text="t('device_modal.connected_node')"></span>
               <span class="text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.connected_eero_name || 'Gateway') : '---'"></span>
             </div>
           </div>
 
           <div>
-            <label class="block text-slate-400 mb-1">Note & Documentazione Locale:</label>
-            <textarea x-model="deviceMetadataForm.custom_notes" rows="2" placeholder="Ubicazione, credenziali locali, note d'uso..." class="glass-input w-full px-3 py-2 rounded-xl text-xs"></textarea>
+            <label class="block text-slate-400 mb-1" x-text="t('device_modal.notes')"></label>
+            <textarea x-model="deviceMetadataForm.custom_notes" rows="2" :placeholder="t('device_modal.notes_placeholder')" class="glass-input w-full px-3 py-2 rounded-xl text-xs"></textarea>
           </div>
 
           <!-- Toggles -->
           <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-800">
             <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
               <input type="checkbox" x-model="deviceMetadataForm.is_favorite" class="rounded bg-slate-900 border-slate-700 text-sky-500">
-              <span>Aggiungi ai Preferiti ⭐</span>
+              <span x-text="t('device_modal.favorite_toggle')"></span>
             </label>
             <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
               <input type="checkbox" x-model="deviceMetadataForm.is_low_latency_target" class="rounded bg-slate-900 border-slate-700 text-rose-500">
-              <span>Pausa in Gaming Mode</span>
+              <span x-text="t('device_modal.gaming_target_toggle')"></span>
             </label>
           </div>
         </div>
@@ -976,7 +972,7 @@
           
           <div x-show="deviceRulesLoading" class="py-6 text-center text-slate-400">
             <svg class="w-5 h-5 animate-spin mx-auto mb-2 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Lettura configurazione DHCP dal Cloud eero...
+            <span x-text="t('device_modal.loading_dhcp')"></span>
           </div>
 
           <div x-show="!deviceRulesLoading" class="space-y-4">
@@ -988,15 +984,15 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                   </div>
                   <div>
-                    <div class="font-bold text-emerald-300">IP Statico Riservato su eero</div>
-                    <div class="text-xs text-slate-300 mt-0.5">Questo dispositivo ha un indirizzo IP fisso permanente: <strong class="font-mono text-emerald-400 text-sm" x-text="deviceReservation.ip"></strong></div>
-                    <div class="text-[11px] text-slate-400 mt-0.5" x-text="'Etichetta Cloud: ' + (deviceReservation.description || 'Device')"></div>
+                    <div class="font-bold text-emerald-300" x-text="t('device_modal.static_active_title')"></div>
+                    <div class="text-xs text-slate-300 mt-0.5"><span x-text="t('device_modal.static_active_desc')"></span> <strong class="font-mono text-emerald-400 text-sm" x-text="deviceReservation.ip"></strong></div>
+                    <div class="text-[11px] text-slate-400 mt-0.5" x-text="t('device_modal.cloud_label') + ' ' + (deviceReservation.description || 'Device')"></div>
                   </div>
                 </div>
                 <button 
                   @click="removeDeviceReservation()"
-                  class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-xs font-semibold transition shrink-0">
-                  Rimuovi IP Statico
+                  class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-xs font-semibold transition shrink-0"
+                  x-text="t('device_modal.remove_static_btn')">
                 </button>
               </div>
             </template>
@@ -1005,13 +1001,13 @@
               <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
                 <div class="flex items-center space-x-2 text-slate-300">
                   <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                  <span class="font-semibold">Assegnazione DHCP Dinamica</span>
+                  <span class="font-semibold" x-text="t('device_modal.dhcp_dynamic_title')"></span>
                 </div>
-                <p class="text-xs text-slate-400">Attualmente questo dispositivo ottiene un IP dinamico (assegnato: <strong class="font-mono text-slate-200" x-text="selectedDevice ? (selectedDevice.ip || '---') : ''"></strong>). Puoi riservare un IP fisso inserendolo qui sotto.</p>
+                <p class="text-xs text-slate-400" x-text="t('device_modal.dhcp_dynamic_desc', {ip: (selectedDevice ? (selectedDevice.ip || '---') : '---')})"></p>
 
                 <!-- Input Indirizzo IP -->
                 <div class="pt-2">
-                  <label class="block text-xs text-slate-400 mb-1">Indirizzo IP Statico da Riservare:</label>
+                  <label class="block text-xs text-slate-400 mb-1" x-text="t('device_modal.static_ip_label')"></label>
                   <div class="flex space-x-2">
                     <input 
                       type="text" 
@@ -1022,7 +1018,7 @@
                       @click="saveDeviceReservation()"
                       :disabled="!deviceStaticIpInput || (ipConflictInfo && ipConflictInfo.hasConflict)"
                       class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-lg shadow-sky-600/20 shrink-0">
-                      <span x-text="ipConflictInfo && ipConflictInfo.isReassign ? 'Riassegna e Riserva' : 'Riserva su eero'"></span>
+                      <span x-text="ipConflictInfo && ipConflictInfo.isReassign ? t('device_modal.reassign_btn') : t('device_modal.reserve_btn')"></span>
                     </button>
                   </div>
                 </div>
@@ -1056,7 +1052,7 @@
 
             <!-- Lista Altre Prenotazioni Attive sulla Rete -->
             <div class="pt-2">
-              <div class="text-xs font-bold text-slate-300 mb-2">Altre Prenotazioni DHCP Attive sulla Rete (<span x-text="allReservations.length"></span>):</div>
+              <div class="text-xs font-bold text-slate-300 mb-2"><span x-text="t('device_modal.other_reservations_title', {count: allReservations.length})"></span></div>
               <div class="max-h-32 overflow-y-auto space-y-1.5 pr-1 font-mono text-[11px]">
                 <template x-for="res in allReservations" :key="res.id || res.mac">
                   <div class="p-2 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
@@ -1068,7 +1064,7 @@
                   </div>
                 </template>
                 <template x-if="allReservations.length === 0">
-                  <div class="text-slate-500 text-xs py-2">Nessun'altra prenotazione IP presente.</div>
+                  <div class="text-slate-500 text-xs py-2" x-text="t('device_modal.no_reservations')"></div>
                 </template>
               </div>
             </div>
@@ -1081,8 +1077,8 @@
           
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="font-bold text-white text-xs">Regole di Inoltro Porte (Port Forwarding)</h4>
-              <p class="text-[11px] text-slate-400">Inoltra il traffico in ingresso dalla WAN verso questo dispositivo (<span class="font-mono text-sky-400" x-text="selectedDevice ? (selectedDevice.ip || 'IP Dispositivo') : ''"></span>).</p>
+              <h4 class="font-bold text-white text-xs" x-text="t('device_modal.forwards_title')"></h4>
+              <p class="text-[11px] text-slate-400" x-text="t('device_modal.forwards_desc', {ip: (selectedDevice ? (selectedDevice.ip || 'IP') : 'IP')})"></p>
             </div>
           </div>
 
@@ -1091,11 +1087,11 @@
             <table class="w-full text-left text-xs border-collapse">
               <thead>
                 <tr class="bg-slate-900/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase font-semibold">
-                  <th class="py-2.5 px-3">Descrizione</th>
-                  <th class="py-2.5 px-3">Porta WAN (Esterna)</th>
-                  <th class="py-2.5 px-3">Porta LAN (Interna)</th>
-                  <th class="py-2.5 px-3">Protocollo</th>
-                  <th class="py-2.5 px-3 text-right">Azione</th>
+                  <th class="py-2.5 px-3" x-text="t('device_modal.col_desc')"></th>
+                  <th class="py-2.5 px-3" x-text="t('device_modal.col_wan_port')"></th>
+                  <th class="py-2.5 px-3" x-text="t('device_modal.col_lan_port')"></th>
+                  <th class="py-2.5 px-3" x-text="t('device_modal.col_protocol')"></th>
+                  <th class="py-2.5 px-3 text-right" x-text="t('device_modal.col_action')"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-800/60 font-mono">
@@ -1111,7 +1107,7 @@
                       <button 
                         @click="deleteDevicePortForward(fwd.id)"
                         class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition"
-                        title="Elimina regola">
+                        :title="t('device_modal.delete_forward_title')">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
                     </td>
@@ -1119,9 +1115,7 @@
                 </template>
                 <template x-if="deviceForwards.length === 0">
                   <tr>
-                    <td colspan="5" class="py-4 text-center text-slate-500 font-sans text-xs">
-                      Nessuna porta inoltrata attiva per questo indirizzo IP.
-                    </td>
+                    <td colspan="5" class="py-4 text-center text-slate-500 font-sans text-xs" x-text="t('device_modal.no_forwards')"></td>
                   </tr>
                 </template>
               </tbody>
@@ -1130,18 +1124,18 @@
 
           <!-- Form Nuova Regola -->
           <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-            <div class="font-bold text-white text-xs">Aggiungi Nuova Regola di Inoltro</div>
+            <div class="font-bold text-white text-xs" x-text="t('device_modal.add_forward_title')"></div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div>
-                <label class="block text-slate-400 text-[11px] mb-1">Porta WAN:</label>
+                <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.wan_port_label')"></label>
                 <input type="number" x-model="newPortForward.port_from" placeholder="es. 8080" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
               </div>
               <div>
-                <label class="block text-slate-400 text-[11px] mb-1">Porta LAN:</label>
+                <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.lan_port_label')"></label>
                 <input type="number" x-model="newPortForward.port_to" placeholder="es. 80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
               </div>
               <div>
-                <label class="block text-slate-400 text-[11px] mb-1">Protocollo:</label>
+                <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.protocol_label')"></label>
                 <select x-model="newPortForward.protocol" class="glass-input w-full px-2 py-1.5 rounded-lg text-xs">
                   <option value="tcp">TCP</option>
                   <option value="udp">UDP</option>
@@ -1149,15 +1143,15 @@
                 </select>
               </div>
               <div>
-                <label class="block text-slate-400 text-[11px] mb-1">Descrizione:</label>
-                <input type="text" x-model="newPortForward.description" placeholder="es. Web Server" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+                <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.service_label')"></label>
+                <input type="text" x-model="newPortForward.description" :placeholder="t('device_modal.service_placeholder')" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
               </div>
             </div>
             <button 
               @click="addDevicePortForward()"
               :disabled="!newPortForward.port_from || !newPortForward.port_to"
-              class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-md shadow-sky-600/20">
-              + Aggiungi Regola Inoltro Porta su eero
+              class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-md shadow-sky-600/20"
+              x-text="t('device_modal.create_forward_btn')">
             </button>
           </div>
 
@@ -1167,9 +1161,9 @@
 
       <!-- Modal Footer -->
       <div class="flex items-center justify-between pt-3 border-t border-slate-800">
-        <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Chiudi</button>
+        <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300" x-text="t('device_modal.close_btn')"></button>
         <template x-if="deviceDetailTab === 'general'">
-          <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30">Salva Modifiche</button>
+          <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30" x-text="t('device_modal.save_metadata_btn')"></button>
         </template>
       </div>
 
@@ -1196,7 +1190,7 @@
       </div>
       <div class="overflow-y-auto manual-content text-xs pr-2" x-html="helpModalContent"></div>
       <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Chiudi Guida</button>
+        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300" x-text="t('manual.close_guide')"></button>
       </div>
     </div>
   </div>
@@ -1213,32 +1207,32 @@
         </div>
 
         <div>
-          <h2 class="text-xl font-bold text-white">Accesso eero Mesh Suite</h2>
-          <p class="text-xs text-slate-400 mt-1">Autenticazione sicura ufficiale 2FA (One-Time Password)</p>
+          <h2 class="text-xl font-bold text-white" x-text="t('auth.title')"></h2>
+          <p class="text-xs text-slate-400 mt-1" x-text="t('auth.subtitle')"></p>
         </div>
 
         <!-- Step 1: Email/Phone Input -->
         <div x-show="!otpSent" class="space-y-4 text-left">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Email o Telefono associato ad eero:</label>
+            <label class="block text-xs text-slate-400 mb-1" x-text="t('auth.identifier_label')"></label>
             <input 
               type="text" 
               x-model="loginIdentifier" 
-              placeholder="es. +393401234567 o mario@email.com" 
+              :placeholder="t('auth.identifier_placeholder')" 
               class="glass-input w-full px-4 py-3 rounded-xl text-sm font-medium">
           </div>
           <button 
             @click="requestOtp()"
             :disabled="authLoading || !loginIdentifier"
             class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition disabled:opacity-50">
-            <span x-text="authLoading ? 'Invio in corso...' : 'Invia Codice OTP'"></span>
+            <span x-text="authLoading ? t('auth.sending_otp') : t('auth.send_otp')"></span>
           </button>
         </div>
 
         <!-- Step 2: OTP Verification Input -->
         <div x-show="otpSent" class="space-y-4 text-left" style="display: none;">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Codice a 6 cifre ricevuto:</label>
+            <label class="block text-xs text-slate-400 mb-1" x-text="t('auth.otp_label')"></label>
             <input 
               type="text" 
               x-model="otpCode" 
@@ -1250,7 +1244,7 @@
             @click="verifyOtp()"
             :disabled="authLoading || !otpCode"
             class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition disabled:opacity-50">
-            <span x-text="authLoading ? 'Verifica in corso...' : 'Conferma ed Accedi'"></span>
+            <span x-text="authLoading ? t('auth.verifying_otp') : t('auth.verify_otp')"></span>
           </button>
           <button @click="otpSent = false" class="w-full text-center text-xs text-slate-400 hover:text-white">← Modifica numero o email</button>
         </div>
@@ -1260,7 +1254,7 @@
           <button 
             @click="startDemoSession()"
             class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-400 border border-amber-500/20 transition">
-            ✨ Prova Subito con la Modalità Demo (Simulatore Mesh)
+            ✨ <span x-text="t('demo_mode')"></span>
           </button>
         </div>
 
@@ -1307,8 +1301,8 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           </div>
           <div>
-            <h3 class="text-base font-bold text-white">Changelog & Note di Rilascio</h3>
-            <span class="text-[11px] text-slate-400">Cronologia aggiornamenti e note di versione</span>
+            <h3 class="text-base font-bold text-white" x-text="t('changelog_modal.title')"></h3>
+            <span class="text-[11px] text-slate-400">Release Notes & Version History</span>
           </div>
         </div>
         <button @click="showChangelogModal = false" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
@@ -1318,14 +1312,14 @@
       
       <div x-show="changelogLoading" class="py-12 text-center text-slate-400">
         <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        Caricamento changelog in corso...
+        Loading...
       </div>
 
       <div x-show="!changelogLoading" class="overflow-y-auto manual-content text-xs pr-2 space-y-2 select-text" x-html="changelogContent"></div>
       
       <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
-        <span class="text-[11px] text-slate-500">Versione corrente: <strong class="text-sky-400 font-mono" x-text="'v' + changelogVersion"></strong></span>
-        <button @click="showChangelogModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition">Chiudi</button>
+        <span class="text-[11px] text-slate-500">Version: <strong class="text-sky-400 font-mono" x-text="'v' + changelogVersion"></strong></span>
+        <button @click="showChangelogModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition" x-text="t('changelog_modal.close')"></button>
       </div>
     </div>
   </div>
@@ -1333,11 +1327,11 @@
   <!-- Footer -->
   <footer class="mt-auto border-t border-slate-800/80 py-4 px-4 bg-[#0b0f17]/80">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 font-medium gap-2">
-      <div>eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry</div>
+      <div x-text="t('footer.text')"></div>
       <div class="flex items-center space-x-3">
         <button @click="openChangelogModal()" class="text-sky-400 hover:text-sky-300 font-mono transition flex items-center space-x-1 cursor-pointer">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          <span>v1.00.08 Changelog</span>
+          <span>v1.01.00 <span x-text="t('footer.changelog')"></span></span>
         </button>
       </div>
     </div>
