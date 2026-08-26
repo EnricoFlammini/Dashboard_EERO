@@ -365,27 +365,54 @@ class EeroClient:
             dev["connected_eero_name"] = dev["eero"].get("location") or dev["eero"].get("name") or ""
 
         # Usage / Throughput rates
-        usage = dev.get("usage")
+        usage = dev.get("usage") or dev.get("rates") or dev.get("rate") or {}
         down_rate = 0.0
         up_rate = 0.0
         rx_b = 0.0
         tx_b = 0.0
 
         if isinstance(usage, dict):
-            down_rate = usage.get("down_mbps") or (usage.get("down_kbps", 0) / 1000.0) or (usage.get("rx_rate", 0) / 1000.0) or 0.0
-            up_rate = usage.get("up_mbps") or (usage.get("up_kbps", 0) / 1000.0) or (usage.get("tx_rate", 0) / 1000.0) or 0.0
-            rx_b = float(usage.get("rx_bytes") or dev.get("rx_bytes", 0))
-            tx_b = float(usage.get("tx_bytes") or dev.get("tx_bytes", 0))
+            down_val = usage.get("down_mbps") or usage.get("download_mbps")
+            if down_val is not None:
+                down_rate = float(down_val)
+            elif usage.get("down_kbps"):
+                down_rate = float(usage["down_kbps"]) / 1000.0
+            elif usage.get("rx_rate"):
+                down_rate = float(usage["rx_rate"]) / 1000.0
+            elif usage.get("down") is not None:
+                d = float(usage["down"])
+                down_rate = (d / 1_000_000.0) if d > 50000 else (d / 1000.0 if d > 50 else d)
+
+            up_val = usage.get("up_mbps") or usage.get("upload_mbps")
+            if up_val is not None:
+                up_rate = float(up_val)
+            elif usage.get("up_kbps"):
+                up_rate = float(usage["up_kbps"]) / 1000.0
+            elif usage.get("tx_rate"):
+                up_rate = float(usage["tx_rate"]) / 1000.0
+            elif usage.get("up") is not None:
+                u = float(usage["up"])
+                up_rate = (u / 1_000_000.0) if u > 50000 else (u / 1000.0 if u > 50 else u)
+
+            rx_b = float(usage.get("rx_bytes") or usage.get("bytes_received") or dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
+            tx_b = float(usage.get("tx_bytes") or usage.get("bytes_transmitted") or dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
         elif isinstance(usage, (int, float)):
             rx_b = float(usage)
         else:
             rx_b = float(dev.get("rx_bytes") or dev.get("bytes_received") or 0.0)
             tx_b = float(dev.get("tx_bytes") or dev.get("bytes_transmitted") or 0.0)
 
-        if down_rate == 0.0 and dev.get("rx_rate"):
-            down_rate = float(dev.get("rx_rate")) / 1000.0
-        if up_rate == 0.0 and dev.get("tx_rate"):
-            up_rate = float(dev.get("tx_rate")) / 1000.0
+        if down_rate == 0.0:
+            if dev.get("rx_rate"):
+                down_rate = float(dev["rx_rate"]) / 1000.0
+            elif dev.get("down_mbps"):
+                down_rate = float(dev["down_mbps"])
+
+        if up_rate == 0.0:
+            if dev.get("tx_rate"):
+                up_rate = float(dev["tx_rate"]) / 1000.0
+            elif dev.get("up_mbps"):
+                up_rate = float(dev["up_mbps"])
 
         dev["download_rate_mbps"] = round(float(down_rate), 2)
         dev["upload_rate_mbps"] = round(float(up_rate), 2)

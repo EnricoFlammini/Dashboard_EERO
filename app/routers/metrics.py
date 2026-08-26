@@ -109,21 +109,48 @@ async def get_top_bandwidth_hogs(
         avg_dl = float(item.get("avg_download_rate", 0))
         avg_ul = float(item.get("avg_upload_rate", 0))
 
-        # Se non ci sono byte o traffico reale registrato, non mostrare dati fittizi
-        if tot_b <= 0 and avg_dl <= 0 and avg_ul <= 0:
+        # Se non ci sono byte o traffico reale registrato (meno di 100 KB totali e 0 rate), non mostrare
+        if tot_b < 100_000 and avg_dl <= 0 and avg_ul <= 0:
             continue
 
         seen_macs.add(mac)
+
+        tot_gb = tot_b / (1024 ** 3)
+        tot_mb = tot_b / (1024 ** 2)
+        rx_gb = rx_b / (1024 ** 3)
+        rx_mb = rx_b / (1024 ** 2)
+        tx_gb = tx_b / (1024 ** 3)
+        tx_mb = tx_b / (1024 ** 2)
+
+        # Formattazione intelligente per visualizzare unità corrette
+        if tot_gb >= 0.1:
+            disp_tot = f"{tot_gb:.2f} GB"
+        else:
+            disp_tot = f"{tot_mb:.1f} MB"
+
+        if rx_gb >= 0.1:
+            disp_rx = f"{rx_gb:.2f}GB"
+        else:
+            disp_rx = f"{rx_mb:.1f}MB"
+
+        if tx_gb >= 0.1:
+            disp_tx = f"{tx_gb:.2f}GB"
+        else:
+            disp_tx = f"{tx_mb:.1f}MB"
+
         formatted.append({
             "mac_address": mac,
             "display_name": d_name,
             "custom_icon": item.get("custom_icon", "device"),
             "category": item.get("category", "Altro"),
             "total_bytes": tot_b,
-            "total_gb": round(tot_b / (1024 ** 3), 2),
-            "total_mb": round(tot_b / (1024 ** 2), 1),
-            "rx_gb": round(rx_b / (1024 ** 3), 2),
-            "tx_gb": round(tx_b / (1024 ** 3), 2),
+            "total_gb": round(tot_gb, 2) if tot_gb >= 0.01 else round(tot_mb / 1024.0, 4),
+            "display_consumption": disp_tot,
+            "rx_display": disp_rx,
+            "tx_display": disp_tx,
+            "total_mb": round(tot_mb, 1),
+            "rx_gb": round(rx_gb, 2),
+            "tx_gb": round(tx_gb, 2),
             "avg_download_rate": round(avg_dl, 2),
             "avg_upload_rate": round(avg_ul, 2),
         })

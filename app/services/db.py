@@ -269,6 +269,11 @@ class DBService:
     async def get_top_bandwidth_hogs(self, hours: int = 24, limit: int = 10) -> List[Dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
         since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            poll_interval = float(await self.get_setting("poll_interval", str(settings.poll_interval)))
+        except Exception:
+            poll_interval = 30.0
+
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
@@ -283,24 +288,42 @@ class DBService:
                     MAX(dm.tx_bytes) as max_tx,
                     AVG(dm.download_rate) as avg_download_rate,
                     AVG(dm.upload_rate) as avg_upload_rate,
+                    SUM(dm.download_rate) as sum_download_rate,
+                    SUM(dm.upload_rate) as sum_upload_rate,
                     COUNT(*) as samples_count
                 FROM device_metrics dm
                 LEFT JOIN device_metadata meta ON dm.mac_address = meta.mac_address
                 WHERE dm.timestamp >= ? OR dm.timestamp >= ?
                 GROUP BY dm.mac_address
                 HAVING (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) > 0 
-                       OR AVG(dm.download_rate) > 0.05
-                ORDER BY (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) DESC, AVG(dm.download_rate) DESC
+                       OR SUM(dm.download_rate) > 0 OR SUM(dm.upload_rate) > 0
+                ORDER BY (
+                    (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) + 
+                    (SUM(dm.download_rate) + SUM(dm.upload_rate)) * 125000.0 * ?
+                ) DESC
                 LIMIT ?
                 """,
-                (since, since_iso, limit)
+                (since, since_iso, poll_interval, limit)
             )
             rows = await cursor.fetchall()
             results = []
             for r in rows:
                 row_dict = dict(r)
-                rx_bytes = max(0.0, float(row_dict.get("delta_rx") or 0.0))
-                tx_bytes = max(0.0, float(row_dict.get("delta_tx") or 0.0))
+                delta_rx = max(0.0, float(row_dict.get("delta_rx") or 0.0))
+                delta_tx = max(0.0, float(row_dict.get("delta_tx") or 0.0))
+                sum_dl = float(row_dict.get("sum_download_rate") or 0.0)
+                sum_ul = float(row_dict.get("sum_upload_rate") or 0.0)
+
+                # Se ci sono contatori hardware di byte delta da eero
+                if (delta_rx + delta_tx) > 0:
+                    rx_bytes = delta_rx
+                    tx_bytes = delta_tx
+                else:
+                    # Integrazione fisica reale dei campioni di velocità rilevati dal poller:
+                    # Byte = sum(Mbps) * 1_000_000 / 8 * poll_interval
+                    rx_bytes = (sum_dl * 1_000_000.0 / 8.0) * poll_interval
+                    tx_bytes = (sum_ul * 1_000_000.0 / 8.0) * poll_interval
+
                 tot = rx_bytes + tx_bytes
                 row_dict["total_rx_bytes"] = rx_bytes
                 row_dict["total_tx_bytes"] = tx_bytes

@@ -479,8 +479,8 @@
                     </div>
                   </div>
                   <div class="text-right">
-                    <div class="text-sm font-bold text-sky-400 font-mono" x-text="hog.total_gb + ' GB'"></div>
-                    <div class="text-[10px] text-slate-400 font-mono">↓ <span x-text="hog.rx_gb"></span>GB / ↑ <span x-text="hog.tx_gb"></span>GB</div>
+                    <div class="text-sm font-bold text-sky-400 font-mono" x-text="hog.display_consumption || (hog.total_gb + ' GB')"></div>
+                    <div class="text-[10px] text-slate-400 font-mono">↓ <span x-text="hog.rx_display || (hog.rx_gb + 'GB')"></span> / ↑ <span x-text="hog.tx_display || (hog.tx_gb + 'GB')"></span></div>
                   </div>
                 </div>
               </template>

@@ -524,7 +524,7 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    renderHogsChart(labels, data) {
+    renderHogsChart(labels, data, isMb = false) {
       const canvas = document.getElementById('topHogsChart');
       if (!canvas) return;
       if (this.hogsChartInstance) {
@@ -538,23 +538,24 @@ document.addEventListener('alpine:init', () => {
         canvas.height = p.clientHeight || 280;
       }
 
+      const unit = isMb ? 'MB' : 'GB';
       const ctx = canvas.getContext('2d');
       this.hogsChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: labels,
           datasets: [{
-            label: 'Consumo Dati (GB)',
+            label: `Consumo Dati (${unit})`,
             data: data,
             backgroundColor: [
-              'rgba(56, 189, 248, 0.8)',
-              'rgba(99, 102, 241, 0.8)',
-              'rgba(16, 185, 129, 0.8)',
-              'rgba(245, 158, 11, 0.8)',
-              'rgba(244, 63, 94, 0.8)',
-              'rgba(168, 85, 247, 0.8)',
-              'rgba(14, 165, 233, 0.8)',
-              'rgba(99, 102, 241, 0.8)'
+              'rgba(56, 189, 248, 0.85)',
+              'rgba(99, 102, 241, 0.85)',
+              'rgba(16, 185, 129, 0.85)',
+              'rgba(245, 158, 11, 0.85)',
+              'rgba(244, 63, 94, 0.85)',
+              'rgba(168, 85, 247, 0.85)',
+              'rgba(14, 165, 233, 0.85)',
+              'rgba(99, 102, 241, 0.85)'
             ],
             borderRadius: 6,
             borderSkipped: false
@@ -570,7 +571,12 @@ document.addEventListener('alpine:init', () => {
             tooltip: {
               backgroundColor: 'rgba(15, 23, 42, 0.95)',
               titleColor: '#38bdf8',
-              bodyColor: '#f8fafc'
+              bodyColor: '#f8fafc',
+              callbacks: {
+                label: function(context) {
+                  return `Consumo: ${context.parsed.x} ${unit}`;
+                }
+              }
             }
           },
           scales: {
@@ -595,9 +601,11 @@ document.addEventListener('alpine:init', () => {
         if (json.status === 'success') {
           this.topHogs = json.hogs || [];
           if (this.topHogs.length > 0) {
+            const maxGb = Math.max(...this.topHogs.map(h => h.total_gb || 0));
+            const useMb = maxGb < 0.1;
             const labels = this.topHogs.map(h => h.display_name);
-            const data = this.topHogs.map(h => h.total_gb);
-            this.renderHogsChart(labels, data);
+            const data = this.topHogs.map(h => useMb ? (h.total_mb || 0) : (h.total_gb || 0));
+            this.renderHogsChart(labels, data, useMb);
           } else if (this.hogsChartInstance) {
             this.hogsChartInstance.destroy();
             this.hogsChartInstance = null;
