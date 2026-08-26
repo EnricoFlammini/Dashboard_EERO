@@ -389,6 +389,14 @@ class EeroClient:
                         down_rate = float(usage["download_mbps"])
                     elif usage.get("down_kbps") is not None:
                         down_rate = float(usage["down_kbps"]) / 1000.0
+                    elif usage.get("down") is not None:
+                        d_val = float(usage["down"])
+                        if d_val > 10000:
+                            down_rate = (d_val * 8.0) / 1_000_000.0
+                        elif d_val > 100:
+                            down_rate = (d_val * 8.0) / 1000.0
+                        else:
+                            down_rate = d_val
                 except Exception:
                     down_rate = 0.0
 
@@ -399,6 +407,14 @@ class EeroClient:
                         up_rate = float(usage["upload_mbps"])
                     elif usage.get("up_kbps") is not None:
                         up_rate = float(usage["up_kbps"]) / 1000.0
+                    elif usage.get("up") is not None:
+                        u_val = float(usage["up"])
+                        if u_val > 10000:
+                            up_rate = (u_val * 8.0) / 1_000_000.0
+                        elif u_val > 100:
+                            up_rate = (u_val * 8.0) / 1000.0
+                        else:
+                            up_rate = u_val
                 except Exception:
                     up_rate = 0.0
 

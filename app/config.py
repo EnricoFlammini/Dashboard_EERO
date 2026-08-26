@@ -14,7 +14,7 @@ try:
         data_dir: str = os.getenv("DATA_DIR", "./data")
         
         # Polling & History
-        poll_interval: int = int(os.getenv("POLL_INTERVAL", "30"))
+        poll_interval: int = int(os.getenv("POLL_INTERVAL", "10"))
         history_retention_days: int = int(os.getenv("HISTORY_RETENTION_DAYS", "30"))
         speedtest_interval_hours: int = int(os.getenv("SPEEDTEST_INTERVAL_HOURS", "12"))
         
