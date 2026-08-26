@@ -1,0 +1,35 @@
+services:
+  eero-dashboard-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eero_dashboard_test
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+      - 9.9.9.9
+    ports:
+      # Porta differente per l'ambiente di TEST (default: 8086)
+      - "${HOST_PORT_TEST:-8086}:8000"
+    volumes:
+      # Volume dati separato per non sovrascrivere o sporcare il database di Produzione
+      - ./data_test:/app/data
+    environment:
+      - TZ=${TZ:-Europe/Rome}
+      - DATA_DIR=/app/data
+      - EERO_USER_TOKEN=${EERO_USER_TOKEN:-}
+      - EERO_NETWORK_ID=${EERO_NETWORK_ID:-}
+      - POLL_INTERVAL=${POLL_INTERVAL:-30}
+      - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-30}
+      - SPEEDTEST_INTERVAL_HOURS=${SPEEDTEST_INTERVAL_HOURS:-12}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
