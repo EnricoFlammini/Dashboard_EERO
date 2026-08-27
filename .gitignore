@@ -63,3 +63,7 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Local Planning & Notes
+ROADMAP.md
+*.docx
