@@ -287,10 +287,57 @@ class EeroClient:
         # Gateway
         node["is_gateway"] = bool(node.get("gateway") or node.get("is_gateway", False))
 
-        # Backhaul
-        is_wired = bool(node.get("wired", False) or node.get("using_wan", False) or node.get("is_gateway", False) or node.get("connection_type") == "wired")
+        # Backhaul & Inter-node Link
+        conn_info = node.get("connectivity") if isinstance(node.get("connectivity"), dict) else {}
+        iface_info = node.get("interface") if isinstance(node.get("interface"), dict) else {}
+
+        raw_channel = node.get("channel") if node.get("channel") is not None else (conn_info.get("channel") or iface_info.get("channel"))
+        raw_band = node.get("wireless_band") or node.get("band") or conn_info.get("frequency") or conn_info.get("band") or iface_info.get("frequency") or ""
+        band_str = str(raw_band).lower().replace("ghz", "").replace(" ", "").strip()
+        
+        channel = 0
+        if raw_channel is not None:
+            try:
+                channel = int(raw_channel)
+            except Exception:
+                channel = 0
+
+        # Signal / RSSI
+        signal_str = ""
+        raw_rssi = node.get("signal_rssi") or node.get("rssi") or conn_info.get("signal")
+        if raw_rssi:
+            rssi_val = str(raw_rssi).replace("dBm", "").strip()
+            signal_str = f" / {rssi_val} dBm"
+
+        is_wired = bool(
+            node.get("wired", False) or 
+            node.get("using_wan", False) or 
+            node.get("connection_type") == "wired" or 
+            node.get("ethernet_addresses")
+        )
         node["wired"] = is_wired
-        node["backhaul_type"] = "Ethernet (Cablato)" if is_wired else "Wireless Mesh (5/6 GHz)"
+
+        if node["is_gateway"]:
+            node["backhaul_type"] = "Gateway (WAN)"
+        elif is_wired:
+            eth_speed = str(node.get("ethernet_speed") or iface_info.get("speed") or "").lower()
+            if "10000" in eth_speed or "10g" in eth_speed or "10 gbps" in eth_speed:
+                node["backhaul_type"] = "Ethernet (10 Gbps)"
+            elif "2.5" in eth_speed or "2500" in eth_speed or "2.5g" in eth_speed:
+                node["backhaul_type"] = "Ethernet (2.5 Gbps)"
+            elif "1000" in eth_speed or "1.0" in eth_speed or "1g" in eth_speed or "1 gbps" in eth_speed:
+                node["backhaul_type"] = "Ethernet (1.0 Gbps)"
+            else:
+                node["backhaul_type"] = "Ethernet (Cablato)"
+        else:
+            if band_str in ("6", "6.0") or (channel >= 1 and channel <= 233 and "6" in band_str):
+                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str})"
+            elif (channel >= 1 and channel <= 14) or band_str in ("2.4", "2"):
+                node["backhaul_type"] = f"Wireless Mesh (2.4 GHz{signal_str})"
+            elif (channel >= 32 and channel <= 177) or band_str in ("5", "5.0", "5.8"):
+                node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
+            else:
+                node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
         # Uptime (solo se esplicitamente fornito da un contatore numerico in secondi)
         up_val = node.get("uptime")

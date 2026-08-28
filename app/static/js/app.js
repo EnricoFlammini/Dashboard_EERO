@@ -219,17 +219,21 @@ document.addEventListener('alpine:init', () => {
 
     formatBackhaul(eero) {
       if (!eero) return '';
+      if (eero.is_gateway) {
+        return this.t('dashboard.backhaul_gateway') || 'Gateway (WAN)';
+      }
       const bh = String(eero.backhaul_type || '').trim();
       const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
       if (isWired) {
         if (bh.includes('2.5')) return 'Ethernet (2.5 Gbps)';
+        if (bh.includes('10')) return 'Ethernet (10 Gbps)';
         if (bh.includes('1.0') || bh.includes('1 Gbps')) return 'Ethernet (1.0 Gbps)';
         return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
       }
-      if (bh.includes('dBm') || (bh.includes('GHz') && bh.includes('/'))) {
+      if (bh && !bh.includes('5/6')) {
         return bh;
       }
-      return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5/6 GHz)';
+      return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5 GHz)';
     },
 
     formatNodeStatus(eero) {
