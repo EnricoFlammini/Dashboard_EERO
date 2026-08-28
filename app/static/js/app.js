@@ -450,9 +450,14 @@ document.addEventListener('alpine:init', () => {
         if (this.currentTab === 'speedtest') {
           await this.loadSpeedtestData();
         }
-        this.showToast("Dati Aggiornati", "Dashboard sincronizzata in tempo reale con la rete eero.", "success");
+        const title = this.currentLanguage === 'it' ? "Dati Aggiornati" : "Data Refreshed";
+        const msg = this.currentLanguage === 'it' 
+          ? "Dashboard sincronizzata in tempo reale con la rete eero." 
+          : "Dashboard synchronized in real-time with eero network.";
+        this.showToast(title, msg, "success");
       } catch (err) {
-        this.showToast("Errore Aggiornamento", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Aggiornamento" : "Refresh Error";
+        this.showToast(title, err.message, "error");
       } finally {
         setTimeout(() => { this.isRefreshing = false; }, 400);
       }
@@ -1690,14 +1695,19 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         this.focusModeActive = json.active;
+        const isIt = this.currentLanguage === 'it';
+        const title = targetState 
+          ? (isIt ? "Gaming Mode Attiva" : "Gaming Mode Activated")
+          : (isIt ? "Gaming Mode Disattivata" : "Gaming Mode Deactivated");
         this.showToast(
-          targetState ? "Gaming Mode Attiva" : "Gaming Mode Disattivata",
+          title,
           json.message,
           targetState ? "warning" : "success"
         );
         await this.fetchDevices();
       } catch (err) {
-        this.showToast("Errore Focus Mode", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Focus Mode" : "Focus Mode Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1720,9 +1730,12 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.nightMode)
         });
-        this.showToast("Modalità Notte", "Orari LED salvati correttamente.", "success");
+        const title = this.currentLanguage === 'it' ? "Modalità Notte" : "Night Mode";
+        const msg = this.currentLanguage === 'it' ? "Orari LED salvati correttamente." : "LED schedule saved successfully.";
+        this.showToast(title, msg, "success");
       } catch (err) {
-        this.showToast("Errore", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1745,9 +1758,12 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.notificationSettings)
         });
-        this.showToast("Notifiche Salvate", "Impostazioni canali di allarme aggiornate.", "success");
+        const title = this.currentLanguage === 'it' ? "Notifiche Salvate" : "Notifications Saved";
+        const msg = this.currentLanguage === 'it' ? "Impostazioni canali di allarme aggiornate." : "Alert channel settings updated.";
+        this.showToast(title, msg, "success");
       } catch (err) {
-        this.showToast("Errore", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1755,9 +1771,11 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/notifications/test', { method: 'POST' });
         const json = await res.json();
-        this.showToast("Test Inviato", `Telegram: ${json.telegram_sent ? 'OK' : 'No'} | Webhook: ${json.webhook_sent ? 'OK' : 'No'}`, "info");
+        const title = this.currentLanguage === 'it' ? "Test Inviato" : "Test Sent";
+        this.showToast(title, `Telegram: ${json.telegram_sent ? 'OK' : 'No'} | Webhook: ${json.webhook_sent ? 'OK' : 'No'}`, "info");
       } catch (err) {
-        this.showToast("Errore Test", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1808,13 +1826,17 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (res.ok) {
-          this.showToast("AdGuard Home", json.message || "Impostazioni salvate con successo.", "success");
+          const msg = json.message || (this.currentLanguage === 'it' ? "Impostazioni salvate con successo." : "Settings saved successfully.");
+          this.showToast("AdGuard Home", msg, "success");
           await this.fetchAdGuardSettings();
         } else {
-          this.showToast("Errore AdGuard", json.detail || "Impossibile salvare le impostazioni.", "error");
+          const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
+          const msg = json.detail || (this.currentLanguage === 'it' ? "Impossibile salvare le impostazioni." : "Could not save settings.");
+          this.showToast(title, msg, "error");
         }
       } catch (err) {
-        this.showToast("Errore AdGuard", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1844,12 +1866,16 @@ document.addEventListener('alpine:init', () => {
           if (json.normalized_url) {
             this.adguardSettings.url = json.normalized_url;
           }
-          this.showToast("Test Connessione Riuscito", json.message, "success");
+          const title = this.currentLanguage === 'it' ? "Test Connessione Riuscito" : "Connection Test Succeeded";
+          this.showToast(title, json.message, "success");
         } else {
-          this.showToast("Test Fallito", json.message || "Impossibile connettersi ad AdGuard Home", "error");
+          const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
+          const msg = json.message || (this.currentLanguage === 'it' ? "Impossibile connettersi ad AdGuard Home" : "Could not connect to AdGuard Home");
+          this.showToast(title, msg, "error");
         }
       } catch (err) {
-        this.showToast("Errore Test", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        this.showToast(title, err.message, "error");
       } finally {
         this.adguardTesting = false;
       }
@@ -1870,13 +1896,17 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (res.ok && json.status === 'success') {
-          this.showToast("Sincronizzazione Completata", json.message, "success");
+          const title = this.currentLanguage === 'it' ? "Sincronizzazione Completata" : "Sync Completed";
+          this.showToast(title, json.message, "success");
           await this.fetchAdGuardSettings();
         } else {
-          this.showToast("Errore Sincronizzazione", json.detail || json.message || "Sincronizzazione non riuscita.", "error");
+          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Sincronizzazione non riuscita." : "Synchronization failed.");
+          this.showToast(title, msg, "error");
         }
       } catch (err) {
-        this.showToast("Errore Sincronizzazione", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        this.showToast(title, err.message, "error");
       } finally {
         this.adguardSyncing = false;
       }
@@ -1915,16 +1945,22 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (res.ok) {
-          this.showToast(
-            this.digestSettings.enabled ? "Digest Programmato Attivo" : "Digest Programmato Disattivato",
-            this.digestSettings.enabled ? "Il report automatico delle 21:00 è abilitato." : "L'invio automatico delle 21:00 è stato sospeso.",
-            "info"
-          );
+          const isIt = this.currentLanguage === 'it';
+          const title = this.digestSettings.enabled 
+            ? (isIt ? "Digest Programmato Attivo" : "Scheduled Digest Enabled") 
+            : (isIt ? "Digest Programmato Disattivato" : "Scheduled Digest Disabled");
+          const msg = this.digestSettings.enabled 
+            ? (isIt ? "Il report automatico delle 21:00 è abilitato." : "Automatic 21:00 daily report is enabled.") 
+            : (isIt ? "L'invio automatico delle 21:00 è stato sospeso." : "Automatic 21:00 daily report has been paused.");
+          this.showToast(title, msg, "info");
         } else {
-          this.showToast("Errore", json.detail || "Impossibile salvare l'impostazione.", "error");
+          const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+          const msg = json.detail || (this.currentLanguage === 'it' ? "Impossibile salvare l'impostazione." : "Could not save setting.");
+          this.showToast(title, msg, "error");
         }
       } catch (err) {
-        this.showToast("Errore", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1933,13 +1969,18 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/automations/digest/generate', { method: 'POST' });
         const json = await res.json();
         if (res.ok && json.status === 'success') {
-          this.showToast("Digest Inviato", json.message || "Riepilogo generato e inoltrato sui canali attivi.", "success");
+          const title = this.currentLanguage === 'it' ? "Digest Inviato" : "Digest Sent";
+          const msg = json.message || (this.currentLanguage === 'it' ? "Riepilogo generato e inoltrato sui canali attivi." : "Digest generated and sent to active channels.");
+          this.showToast(title, msg, "success");
           await this.fetchAlerts();
         } else {
-          this.showToast("Errore Invio Digest", json.detail || json.message || "Impossibile inviare il digest.", "error");
+          const title = this.currentLanguage === 'it' ? "Errore Invio Digest" : "Digest Sending Error";
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile inviare il digest." : "Could not send digest.");
+          this.showToast(title, msg, "error");
         }
       } catch (err) {
-        this.showToast("Errore Digest", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Digest" : "Digest Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
