@@ -207,6 +207,9 @@ document.addEventListener('alpine:init', () => {
         console.warn("Could not load translations for", this.currentLanguage, e);
       }
       await this.loadManualSections();
+      if (this.showChangelogModal) {
+        await this.openChangelogModal();
+      }
     },
 
     formatBackhaul(eero) {
@@ -1738,10 +1741,10 @@ document.addEventListener('alpine:init', () => {
       this.changelogLoading = true;
       this.showChangelogModal = true;
       try {
-        const res = await fetch('/api/manual/changelog');
+        const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'it'}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.00.01';
+          this.changelogVersion = json.version || '1.03.00';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         }
       } catch (err) {

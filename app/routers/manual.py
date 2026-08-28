@@ -335,12 +335,7 @@ async def get_manual_section(section_id: str, lang: Optional[str] = Query("it"))
     return {"status": "success", "language": "en" if lang and lang.lower().startswith("en") else "it", "section": section}
 
 
-@router.get("/changelog")
-async def get_changelog():
-    """Restituisce solo i titoli e gli highlight principali delle versioni per il visualizzatore in-app."""
-    from app.config import settings
-
-    content = f"""# Changelog - Sommario Versioni
+CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
@@ -404,8 +399,84 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 ## v1.0.0
 * **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
 """
+
+CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
+
+Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+---
+
+## v1.03.00
+* **Official Multi-Arch Docker Hub Image (amd64/arm64)**
+* **Native In-App AdGuard Home Integration (DNS & DHCP Sync)**
+* **Secure Logout Button with OTP Confirmation Modal**
+* **Daily Digest Report Fixes & Rich Live Telemetry**
+* **Automations Tab 2x2 Layout & Dedicated Notification Toggles**
+* **Optimized In-App Markdown Rendering & Ordered Lists**
+* **DNS (/etc/hosts, JSON) & Webhook Exporting**
+
+---
+
+## v1.02.00
+* **Wi-Fi Band Telemetry (2.4 / 5 / 6 GHz) & Channel Badges**
+* **eero Cloud User & Family Profile Integration**
+* **Advanced Multi-Criteria Client Table Filters**
+
+---
+
+## v1.01.00
+* **Dynamic Multilingual Support (Italian & English)**
+* **Header Language Selector & Preference Persistence**
+* **GitHub Open Source Standards & MIT License**
+
+---
+
+## v1.00.08
+* **Total Speed Test Synchronization & Gateway Statistics**
+
+---
+
+## v1.00.07
+* **Visual IP Assignment Badges (STATIC vs DHCP)**
+
+---
+
+## v1.00.06
+* **Current IP Lease Binding & Smart IP Reassignment**
+
+---
+
+## v1.00.05
+* **Native Cloud DHCP Reservations & Port Forwarding Rules**
+
+---
+
+## v1.00.04
+* **Device Management, Custom Icons, Categories & Favorites**
+
+---
+
+## v1.00.01 - v1.00.03
+* **Synthetic Data Removal in Favor of 100% Certified Telemetry**
+
+---
+
+## v1.0.0
+* **Initial Release: Self-Hosted Docker Architecture, 2FA OTP & Poller**
+"""
+
+
+@router.get("/changelog")
+async def get_changelog(lang: Optional[str] = Query("it")):
+    """Restituisce solo i titoli e gli highlight principali delle versioni nella lingua richiesta (it/en)."""
+    from app.config import settings
+
+    is_en = bool(lang and lang.lower().startswith("en"))
+    content = CHANGELOG_SUMMARY_EN if is_en else CHANGELOG_SUMMARY_IT
+
     return {
         "status": "success",
+        "language": "en" if is_en else "it",
         "version": settings.app_version,
         "content": content
     }
