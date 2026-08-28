@@ -900,7 +900,7 @@ class EeroClient:
         urls_to_try = []
         clean_target_url = None
         if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
-            clean_target_url = f"https://api-user.eeroup.com/{device_id.lstrip('/')}"
+            clean_target_url = f"https://api-user.e2ro.com/{device_id.lstrip('/')}"
         elif "/" in device_id:
             clean_target_url = f"{EERO_API_BASE}/{device_id.lstrip('/')}"
 
@@ -909,7 +909,7 @@ class EeroClient:
 
         if found_dev and found_dev.get("url"):
             dev_u = found_dev["url"].lstrip("/")
-            urls_to_try.append(f"https://api-user.eeroup.com/{dev_u}" if dev_u.startswith("2.2/") else f"{EERO_API_BASE}/{dev_u}")
+            urls_to_try.append(f"https://api-user.e2ro.com/{dev_u}" if dev_u.startswith("2.2/") else f"{EERO_API_BASE}/{dev_u}")
         if found_dev and found_dev.get("id"):
             fid = str(found_dev["id"]).split("/")[-1]
             if self.current_network_id:
