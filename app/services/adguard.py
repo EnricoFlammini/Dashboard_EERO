@@ -139,15 +139,21 @@ class AdGuardService:
         auth = (target_user, target_pass) if target_user and target_pass else None
 
         # 1. Recupero client esistenti su AdGuard per distinguere ADD da UPDATE
-        existing_clients_map: Dict[str, Dict[str, Any]] = {}
+        existing_clients_by_name: Dict[str, Dict[str, Any]] = {}
+        existing_clients_by_id: Dict[str, Dict[str, Any]] = {}
         try:
             async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
                 resp = await client.get(f"{target_url}/control/clients", auth=auth)
                 if resp.status_code == 200:
                     resp_data = resp.json() if isinstance(resp.json(), dict) else {}
                     for c in (resp_data.get("clients") or []):
-                        if isinstance(c, dict) and c.get("name"):
-                            existing_clients_map[c["name"]] = c
+                        if isinstance(c, dict):
+                            c_name = c.get("name")
+                            if c_name:
+                                existing_clients_by_name[c_name.lower()] = c
+                            for cid in (c.get("ids") or []):
+                                if cid:
+                                    existing_clients_by_id[str(cid).strip().lower()] = c
                 elif resp.status_code in (401, 403):
                     return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica le credenziali."}
         except Exception as e:
@@ -176,25 +182,37 @@ class AdGuardService:
 
                 name = dev.get("nickname") or dev.get("hostname") or dev.get("device_name") or f"eero-{ip or mac}"
 
-                tags = ["eero-mesh"]
-                if dev.get("connection_type") == "wired":
-                    tags.append("wired")
-                elif dev.get("wireless_band"):
-                    tags.append(f"wifi-{dev.get('wireless_band')}".lower().replace(" ", "").replace(".", ""))
-
                 payload = {
                     "name": name,
                     "ids": ids,
-                    "tags": tags,
+                    "tags": [],
+                    "upstreams": [],
+                    "blocked_services": [],
+                    "use_global_blocked_services": True,
                     "use_global_settings": True,
                     "filtering_enabled": True,
                     "parental_enabled": False,
-                    "safebrowsing_enabled": True
+                    "safebrowsing_enabled": True,
+                    "safesearch_enabled": False,
                 }
 
-                is_update = name in existing_clients_map
-                endpoint = f"{target_url}/control/clients/update" if is_update else f"{target_url}/control/clients/add"
-                body_data = {"name": name, "data": payload} if is_update else payload
+                # Cerca corrispondenza per nome o per ID (IP/MAC)
+                matched_client = existing_clients_by_name.get(name.lower())
+                if not matched_client:
+                    for cid in ids:
+                        matched_client = existing_clients_by_id.get(str(cid).lower())
+                        if matched_client:
+                            break
+
+                if matched_client:
+                    orig_name = matched_client.get("name") or name
+                    endpoint = f"{target_url}/control/clients/update"
+                    body_data = {"name": orig_name, "data": payload}
+                    is_update = True
+                else:
+                    endpoint = f"{target_url}/control/clients/add"
+                    body_data = payload
+                    is_update = False
 
                 try:
                     r = await client.post(endpoint, json=body_data, auth=auth)
@@ -204,13 +222,13 @@ class AdGuardService:
                         else:
                             added_count += 1
                     else:
-                        # Se fallisce update, prova add di fallback
-                        if is_update:
-                            r_fallback = await client.post(f"{target_url}/control/clients/add", json=payload, auth=auth)
-                            if r_fallback.status_code in (200, 201, 204):
-                                added_count += 1
+                        # Se l'add fallisce perché esiste già per ID, tenta l'update
+                        if not is_update:
+                            r_upd = await client.post(f"{target_url}/control/clients/update", json={"name": name, "data": payload}, auth=auth)
+                            if r_upd.status_code in (200, 201, 204):
+                                updated_count += 1
                                 continue
-                        logger.warning(f"Errore sincronizzazione client '{name}' su AdGuard: {r.status_code} - {r.text[:80]}")
+                        logger.warning(f"Errore sincronizzazione client '{name}' su AdGuard (HTTP {r.status_code}): {r.text[:120]}")
                         failed_count += 1
                 except Exception as e:
                     logger.error(f"Eccezione durante la sincronizzazione di '{name}' su AdGuard: {e}")
