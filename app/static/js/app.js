@@ -239,12 +239,12 @@ document.addEventListener('alpine:init', () => {
 
     formatNodeStatus(eero) {
       if (!eero) return '';
-      const statusLabel = ['online', 'green'].includes(eero.status) ? this.t('devices.status_online') : this.t('devices.status_offline');
-      let temp = eero.temperature;
-      if (!temp || temp === 'Normale' || temp === 'Normal' || temp === 'Ottimale' || temp === 'Optimal') {
-        temp = this.t('dashboard.status_normal') || (this.currentLanguage === 'it' ? 'Normale' : 'Normal');
-      }
-      return `${statusLabel} • ${temp}`;
+      const isOnline = ['online', 'green'].includes(eero.status);
+      const statusLabel = isOnline ? this.t('devices.status_online') : this.t('devices.status_offline');
+      const healthLabel = isOnline 
+        ? (this.t('dashboard.status_normal') || (this.currentLanguage === 'it' ? 'Normale' : 'Normal'))
+        : (this.currentLanguage === 'it' ? 'Disconnesso' : 'Disconnected');
+      return `${statusLabel} • ${healthLabel}`;
     },
 
     t(path, params = {}) {

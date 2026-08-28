@@ -430,33 +430,7 @@ class EeroClient:
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
-        # Uptime (solo se esplicitamente fornito da un contatore numerico in secondi)
-        up_val = node.get("uptime")
-        if isinstance(up_val, (int, float)) and up_val > 0:
-            days = int(up_val // 86400)
-            hours = int((up_val % 86400) // 3600)
-            mins = int((up_val % 3600) // 60)
-            if days > 0:
-                node["uptime"] = f"{days}g {hours}h"
-            elif hours > 0:
-                node["uptime"] = f"{hours}h {mins}m"
-            else:
-                node["uptime"] = f"{mins}m"
-        else:
-            node["uptime"] = ""
 
-        # Temperature / Thermal State (Real Eero API data)
-        raw_temp = node.get("temperature") or node.get("temp")
-        therm = node.get("thermal_status") or node.get("thermal_state") or node.get("thermal")
-        if raw_temp is not None:
-            node["temperature"] = f"{raw_temp}°C" if isinstance(raw_temp, (int, float)) else str(raw_temp)
-        elif isinstance(therm, dict):
-            t = therm.get("temp") or therm.get("temperature")
-            node["temperature"] = f"{t}°C" if t is not None else str(therm.get("status") or "Normale")
-        elif isinstance(therm, str):
-            node["temperature"] = therm
-        else:
-            node["temperature"] = "Normale"
 
         # OS Version / Firmware
         os_v = (
@@ -1930,8 +1904,6 @@ class EeroClient:
                     "ip": "192.168.4.1",
                     "mac": "70:54:D2:11:22:33",
                     "os_version": "v7.5.2-192",
-                    "uptime": "24d 14h",
-                    "temperature": "Normale",
                     "led_on": True,
                     "backhaul_type": "Gateway (WAN)",
                     "connected_clients_count": 8,
@@ -1947,8 +1919,6 @@ class EeroClient:
                     "ip": "192.168.4.2",
                     "mac": "70:54:D2:44:55:66",
                     "os_version": "v7.5.2-192",
-                    "uptime": "24d 14h",
-                    "temperature": "Normale",
                     "led_on": True,
                     "backhaul_type": "Ethernet (1.0 Gbps)",
                     "connected_clients_count": 5,
@@ -1964,8 +1934,6 @@ class EeroClient:
                     "ip": "192.168.4.3",
                     "mac": "70:54:D2:77:88:99",
                     "os_version": "v7.5.2-192",
-                    "uptime": "18d 6h",
-                    "temperature": "Normale",
                     "led_on": False,
                     "backhaul_type": "Wireless Mesh (5 GHz / -52 dBm)",
                     "connected_clients_count": 4,

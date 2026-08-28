@@ -47,7 +47,7 @@
     "gateway_ip": "eero Gateway",
     "dns_servers": "Active DNS Servers",
     "mesh_topology": "Mesh Topology & eero Nodes",
-    "mesh_topology_sub": "Operating status, temperatures, uptime and backhaul",
+    "mesh_topology_sub": "Operating status, mesh nodes and backhaul",
     "restart_network_btn": "Restart Network",
     "restart_node_btn": "Restart Node",
     "node_gateway": "Primary Gateway",

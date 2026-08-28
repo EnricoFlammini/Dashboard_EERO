@@ -74,6 +74,10 @@ class BackgroundPoller:
             "demo_mode": settings.demo_mode or (eero_client.user_token and eero_client.user_token.startswith("demo_")),
         }
 
+    async def poll_once(self):
+        """Esegue un ciclo di polling immediato e aggiorna la cache."""
+        await self._poll_and_cache()
+
     async def _poll_loop(self):
         # Primo popolamento immediato
         await self._poll_and_cache()
