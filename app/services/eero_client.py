@@ -642,7 +642,15 @@ class EeroClient:
             dev["rx_bytes"] = rx_b
             dev["tx_bytes"] = tx_b
 
-            dev["is_paused"] = bool(dev.get("paused", False) or dev.get("is_paused", False) or dev.get("blacklisted", False))
+            is_paused_val = bool(
+                dev.get("paused") is True or
+                dev.get("is_paused") is True or
+                dev.get("blacklisted") is True or
+                str(dev.get("status", "")).lower() == "paused" or
+                (isinstance(dev.get("profile"), dict) and dev["profile"].get("paused") is True)
+            )
+            dev["paused"] = is_paused_val
+            dev["is_paused"] = is_paused_val
             return dev
         except Exception as ex:
             logger.error(f"Error normalizing single device: {ex}")
@@ -859,24 +867,64 @@ class EeroClient:
         if paused is not None:
             payload["paused"] = paused
 
+        # Aggiorna lo stato in memoria se presente nel poller
+        try:
+            from app.services.poller import background_poller
+            cached_state = background_poller.get_cached_state()
+            found_dev = None
+            for dev in cached_state.get("devices", []):
+                if str(dev.get("id")) == str(device_id) or (dev.get("mac") or "").lower() == str(device_id).lower():
+                    found_dev = dev
+                    if nickname is not None:
+                        dev["nickname"] = nickname
+                        dev["custom_name"] = nickname
+                    if paused is not None:
+                        dev["paused"] = bool(paused)
+                        dev["is_paused"] = bool(paused)
+                    break
+        except Exception:
+            found_dev = None
+
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             for dev in self._demo_state["devices"]:
                 if dev["id"] == device_id or dev["mac"] == device_id:
                     if nickname is not None:
                         dev["nickname"] = nickname
                     if paused is not None:
-                        dev["paused"] = paused
+                        dev["paused"] = bool(paused)
+                        dev["is_paused"] = bool(paused)
                     return {"status": "success", "device": dev}
             return {"status": "success", "device_id": device_id, "updated": payload}
 
+        # Risoluzione endpoint cloud reale eero
+        clean_target_url = None
+        if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
+            clean_target_url = f"https://api-user.eeroup.com/{device_id.lstrip('/')}"
+        elif "/" in device_id:
+            clean_target_url = f"{EERO_API_BASE}/{device_id.lstrip('/')}"
+        elif found_dev and found_dev.get("url"):
+            dev_url = found_dev["url"].lstrip("/")
+            clean_target_url = f"https://api-user.eeroup.com/{dev_url}" if dev_url.startswith("2.2/") else f"{EERO_API_BASE}/{dev_url}"
+        elif self.current_network_id:
+            clean_target_url = f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}"
+        else:
+            clean_target_url = f"{EERO_API_BASE}/devices/{device_id}"
+
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.put(
-                f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}",
+                clean_target_url,
                 json=payload,
                 headers=self._get_headers()
             )
             if resp.status_code not in (200, 204):
-                raise RuntimeError(f"Errore aggiornamento dispositivo: {resp.text}")
+                # Fallback tentativo su endpoint alternativo se 404
+                if resp.status_code == 404 and self.current_network_id and not clean_target_url.endswith(f"/devices/{device_id}"):
+                    fallback_url = f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}"
+                    resp_fb = await client.put(fallback_url, json=payload, headers=self._get_headers())
+                    if resp_fb.status_code in (200, 204):
+                        return {"status": "success", "device_id": device_id, "payload": payload}
+                logger.error(f"Errore aggiornamento dispositivo ({resp.status_code}) su {clean_target_url}: {resp.text}")
+                raise RuntimeError(f"Errore aggiornamento dispositivo ({resp.status_code}): {resp.text}")
             return {"status": "success", "device_id": device_id, "payload": payload}
 
     # =========================================================================

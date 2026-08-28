@@ -186,8 +186,15 @@ class BackgroundPoller:
                 dev_copy["is_static"] = is_static
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
-                dev_copy["profile_id"] = final_prof_id
-                dev_copy["profile_name"] = final_prof_name
+                is_prof_paused = False
+                if final_prof_id:
+                    target_p = next((p for p in profiles if str(p.get("id")) == str(final_prof_id) or p.get("url", "").endswith(str(final_prof_id))), None)
+                    if target_p and (target_p.get("paused") is True or target_p.get("is_paused") is True):
+                        is_prof_paused = True
+
+                is_paused_final = bool(dev.get("paused") is True or dev.get("is_paused") is True or is_prof_paused)
+                dev_copy["paused"] = is_paused_final
+                dev_copy["is_paused"] = is_paused_final
                 enriched_devices.append(dev_copy)
 
                 # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
