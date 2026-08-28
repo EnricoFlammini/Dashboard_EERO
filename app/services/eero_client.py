@@ -898,6 +898,15 @@ class EeroClient:
 
         # Raccolta URL candidati da testare in sequenza
         urls_to_try = []
+        clean_target_url = None
+        if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
+            clean_target_url = f"https://api-user.eeroup.com/{device_id.lstrip('/')}"
+        elif "/" in device_id:
+            clean_target_url = f"{EERO_API_BASE}/{device_id.lstrip('/')}"
+
+        if clean_target_url:
+            urls_to_try.append(clean_target_url)
+
         if found_dev and found_dev.get("url"):
             dev_u = found_dev["url"].lstrip("/")
             urls_to_try.append(f"https://api-user.eeroup.com/{dev_u}" if dev_u.startswith("2.2/") else f"{EERO_API_BASE}/{dev_u}")
@@ -906,13 +915,11 @@ class EeroClient:
             if self.current_network_id:
                 urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{fid}")
             urls_to_try.append(f"{EERO_API_BASE}/devices/{fid}")
-        if clean_target_url:
-            urls_to_try.append(clean_target_url)
         if self.current_network_id:
             urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}")
         urls_to_try.append(f"{EERO_API_BASE}/devices/{device_id}")
 
-        unique_urls = list(dict.fromkeys(urls_to_try))
+        unique_urls = [u for u in dict.fromkeys(urls_to_try) if u]
 
         payload_variants = [payload]
         if paused is not None:
