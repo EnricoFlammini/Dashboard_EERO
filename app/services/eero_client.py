@@ -958,20 +958,27 @@ class EeroClient:
                             if resp.status_code in (200, 201, 204):
                                 logger.info(f"Dispositivo {device_id} aggiornato con successo su eero Cloud via {method} {url} (payload: {p_var})")
                                 success = True
-                                break
+                                return {
+                                    "status": "success",
+                                    "device_id": device_id,
+                                    "url_used": url,
+                                    "method_used": method,
+                                    "payload_used": p_var,
+                                    "cloud_synced": True
+                                }
                             else:
                                 last_error = f"{method} HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
                         except Exception as e:
                             last_error = f"{method} {url}: {e}"
-                    if success:
-                        break
-                if success:
-                    break
 
-        if not success:
-            logger.warning(f"Tentativi di aggiornamento del dispositivo {device_id} su eero Cloud: {last_error}")
-
-        return {"status": "success", "device_id": device_id, "payload": payload, "cloud_synced": success}
+        logger.warning(f"Tentativi di aggiornamento del dispositivo {device_id} su eero Cloud falliti: {last_error}")
+        return {
+            "status": "warning",
+            "device_id": device_id,
+            "payload": payload,
+            "last_error": last_error,
+            "cloud_synced": False
+        }
 
     # =========================================================================
     # RETE OSPITI (GUEST WI-FI)

@@ -1244,10 +1244,16 @@ document.addEventListener('alpine:init', () => {
           ? (this.currentLanguage === 'it' ? "Accesso in Pausa" : "Internet Paused") 
           : (this.currentLanguage === 'it' ? "Accesso Riabilitato" : "Internet Restored");
         const devName = device.custom_name || device.nickname || device.hostname;
-        const msg = this.currentLanguage === 'it'
+        let msg = this.currentLanguage === 'it'
           ? `Dispositivo '${devName}' ${targetState ? 'messo in pausa' : 'riattivato'}.`
           : `Device '${devName}' ${targetState ? 'paused' : 'restored'}.`;
-        this.showToast(title, msg, targetState ? "warning" : "success");
+        
+        if (json.cloud_synced === false && json.cloud_response?.last_error) {
+          msg += ` (Cloud: ${json.cloud_response.last_error})`;
+          this.showToast(title, msg, "warning");
+        } else {
+          this.showToast(title, msg, targetState ? "warning" : "success");
+        }
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Pausa" : "Pause Error";
         this.showToast(title, err.message, "error");

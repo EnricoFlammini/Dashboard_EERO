@@ -261,19 +261,21 @@ async def toggle_device_pause(device_id: str, payload: DevicePauseRequest):
 
         # 3. Invia la richiesta al cloud eero
         res = await eero_client.update_device(device_id=device_id, paused=payload.paused)
+        is_cloud_synced = bool(res.get("cloud_synced", False))
         return {
-            "status": "success",
+            "status": "success" if is_cloud_synced else "warning",
             "device_id": device_id,
             "paused": bool(payload.paused),
+            "cloud_synced": is_cloud_synced,
             "cloud_response": res
         }
     except Exception as e:
         logger.warning(f"Cloud update warning on device {device_id}: {e}")
         return {
-            "status": "success",
+            "status": "warning",
             "device_id": device_id,
             "paused": bool(payload.paused),
-            "local_only": True,
+            "cloud_synced": False,
             "warning": str(e)
         }
 
