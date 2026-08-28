@@ -1709,22 +1709,108 @@ document.addEventListener('alpine:init', () => {
     renderSimpleMarkdown(md) {
       if (!md) return '';
       // Escape raw HTML entities to prevent XSS
-      let escaped = String(md)
+      let text = String(md)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
-      let html = escaped
-        .replace(/^## (.*?)$/gm, '<h2 class="text-base font-bold text-sky-400 mt-4 mb-2 pb-1 border-b border-slate-800">$1</h2>')
-        .replace(/^### (.*?)$/gm, '<h3 class="text-sm font-bold text-white mt-3 mb-1">$1</h3>')
-        .replace(/^#### (.*?)$/gm, '<h4 class="text-xs font-bold text-slate-300 mt-2 mb-1">$1</h4>')
+
+      // Inline styles first: bold, italic, code, horizontal rules
+      text = text
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-sky-300 font-semibold">$1</strong>')
         .replace(/\*(.*?)\*/g, '<em class="text-slate-300">$1</em>')
         .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[11px]">$1</code>')
-        .replace(/^[\*\-] (.*?)$/gm, '<li class="ml-4 list-disc text-slate-300 my-1 leading-relaxed">$1</li>')
-        .replace(/---/g, '<hr class="border-slate-800 my-4"/>')
-        .replace(/\n\n/g, '<p class="my-2 leading-relaxed text-slate-300"></p>');
-      return html;
+        .replace(/---/g, '<hr class="border-slate-800 my-4"/>');
+
+      const lines = text.split('\n');
+      let out = [];
+      let inUl = false;
+      let inOl = false;
+      let inSubUl = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let trimmed = line.trim();
+
+        if (!trimmed) {
+          if (inSubUl) { out.push('</ul>'); inSubUl = false; }
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          continue;
+        }
+
+        // Headings
+        if (/^## (.*?)$/.test(trimmed)) {
+          if (inSubUl) { out.push('</ul>'); inSubUl = false; }
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          out.push(`<h2 class="text-base font-bold text-sky-400 mt-5 mb-2 pb-1 border-b border-slate-800">${trimmed.slice(3)}</h2>`);
+          continue;
+        }
+        if (/^### (.*?)$/.test(trimmed)) {
+          if (inSubUl) { out.push('</ul>'); inSubUl = false; }
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          out.push(`<h3 class="text-sm font-bold text-white mt-4 mb-2">${trimmed.slice(4)}</h3>`);
+          continue;
+        }
+        if (/^#### (.*?)$/.test(trimmed)) {
+          if (inSubUl) { out.push('</ul>'); inSubUl = false; }
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          out.push(`<h4 class="text-xs font-bold text-slate-300 mt-3 mb-1.5">${trimmed.slice(5)}</h4>`);
+          continue;
+        }
+
+        // Nested sub-bullet (2+ spaces indentation)
+        let subBulletMatch = line.match(/^(\s{2,}|\t+)[\*\-]\s+(.*)$/);
+        if (subBulletMatch) {
+          if (!inSubUl) {
+            out.push('<ul class="pl-6 space-y-1.5 my-1.5 list-disc text-slate-300">');
+            inSubUl = true;
+          }
+          out.push(`<li class="leading-relaxed">${subBulletMatch[2]}</li>`);
+          continue;
+        } else if (inSubUl) {
+          out.push('</ul>');
+          inSubUl = false;
+        }
+
+        // Main Bullet list (* or -)
+        let bulletMatch = trimmed.match(/^[\*\-]\s+(.*)$/);
+        if (bulletMatch) {
+          if (inOl) { out.push('</ol>'); inOl = false; }
+          if (!inUl) {
+            out.push('<ul class="pl-5 space-y-2 my-2 list-disc text-slate-300">');
+            inUl = true;
+          }
+          out.push(`<li class="leading-relaxed">${bulletMatch[1]}</li>`);
+          continue;
+        }
+
+        // Numbered list (1. 2. etc)
+        let numberedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+        if (numberedMatch) {
+          if (inUl) { out.push('</ul>'); inUl = false; }
+          if (!inOl) {
+            out.push('<ol class="pl-5 space-y-2.5 my-2 list-decimal text-slate-300">');
+            inOl = true;
+          }
+          out.push(`<li class="leading-relaxed pl-1">${numberedMatch[2]}</li>`);
+          continue;
+        }
+
+        // Regular paragraph or plain line
+        if (inUl) { out.push('</ul>'); inUl = false; }
+        if (inOl) { out.push('</ol>'); inOl = false; }
+        out.push(`<p class="my-2 leading-relaxed text-slate-300">${trimmed}</p>`);
+      }
+
+      if (inSubUl) out.push('</ul>');
+      if (inUl) out.push('</ul>');
+      if (inOl) out.push('</ol>');
+
+      return out.join('\n');
     },
 
     // =========================================================================
