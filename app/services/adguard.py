@@ -180,14 +180,20 @@ class AdGuardService:
                     continue
 
                 ids = []
-                if ip and not ip.startswith("169.254."):
-                    ids.append(ip)
+                # 1. Clean IPv4
+                if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
+                    ids.append(ip.strip())
+                # 2. Clean Global IPv6 (skip link-local fe80:)
                 for v6 in (dev.get("ipv6_addresses") or []):
-                    if v6 and ":" in v6 and not v6.lower().startswith("fe80:"):
-                        if v6 not in ids:
-                            ids.append(v6)
-                if mac:
-                    ids.append(mac.upper())
+                    if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
+                        v6_clean = v6.strip()
+                        if v6_clean and v6_clean not in ids:
+                            ids.append(v6_clean)
+                # 3. Clean MAC Address
+                if mac and isinstance(mac, str) and len(mac) >= 12:
+                    mac_clean = mac.strip().upper()
+                    if mac_clean not in ids:
+                        ids.append(mac_clean)
 
                 if not ids:
                     continue

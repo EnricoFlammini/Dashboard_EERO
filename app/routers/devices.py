@@ -171,14 +171,17 @@ async def export_adguard(
             continue
 
         ids = []
-        if ip and not ip.startswith("169.254."):
-            ids.append(ip)
+        if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
+            ids.append(ip.strip())
         for v6 in (d.get("ipv6_addresses") or []):
-            if v6 and ":" in v6 and not v6.lower().startswith("fe80:"):
-                if v6 not in ids:
-                    ids.append(v6)
-        if mac:
-            ids.append(mac.upper())
+            if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
+                v6_clean = v6.strip()
+                if v6_clean and v6_clean not in ids:
+                    ids.append(v6_clean)
+        if mac and isinstance(mac, str) and len(mac) >= 12:
+            mac_clean = mac.strip().upper()
+            if mac_clean not in ids:
+                ids.append(mac_clean)
 
         if not ids:
             continue

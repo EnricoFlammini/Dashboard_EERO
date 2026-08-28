@@ -418,6 +418,20 @@ class EeroClient:
             # Hostname & Display Name
             dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or "Dispositivo"
 
+            # Helper to extract clean IP string from str or dict (eero can return dicts like {'address': 'fe80::...', 'scope': 'link'})
+            def _clean_ip(item: Any) -> Optional[str]:
+                if not item:
+                    return None
+                if isinstance(item, str):
+                    s = item.strip()
+                    return s if s else None
+                if isinstance(item, dict):
+                    addr = item.get("address") or item.get("ip") or item.get("ipv6") or item.get("ipv4")
+                    if addr and isinstance(addr, str):
+                        s = addr.strip()
+                        return s if s else None
+                return None
+
             # IP Address Extraction (IPv4 and IPv6)
             all_ips_raw = []
             if isinstance(dev.get("ips"), list):
@@ -442,13 +456,26 @@ class EeroClient:
             if dev.get("ipv6"):
                 all_ips_raw.append(dev["ipv6"])
 
-            ipv4_candidates = [str(ip).strip() for ip in all_ips_raw if ip and "." in str(ip) and not str(ip).startswith("169.254.")]
-            ipv6_candidates = [str(ip).strip() for ip in all_ips_raw if ip and ":" in str(ip)]
+            ipv4_candidates = []
+            ipv6_candidates = []
 
-            raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") or dev.get("ipv4"))
+            for raw_item in all_ips_raw:
+                ip_str = _clean_ip(raw_item)
+                if not ip_str:
+                    continue
+                # IPv4 check (must contain dot, no colon, exclude 169.254.x.x link-local APIPA)
+                if "." in ip_str and ":" not in ip_str and not ip_str.startswith("169.254."):
+                    if ip_str not in ipv4_candidates:
+                        ipv4_candidates.append(ip_str)
+                # IPv6 check (must contain colon, exclude link-local fe80:: which is invalid in DNS IDs)
+                elif ":" in ip_str and not ip_str.lower().startswith("fe80:"):
+                    if ip_str not in ipv6_candidates:
+                        ipv6_candidates.append(ip_str)
+
+            raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") if isinstance(dev.get("ip"), str) else None)
             dev["ip"] = str(raw_ip).strip() if raw_ip else None
-            dev["ipv6_addresses"] = list(dict.fromkeys(ipv6_candidates))
-            dev["ipv6"] = dev["ipv6_addresses"][0] if dev["ipv6_addresses"] else None
+            dev["ipv6_addresses"] = ipv6_candidates
+            dev["ipv6"] = ipv6_candidates[0] if ipv6_candidates else None
 
             # Connection Status (Online / Offline / Paused)
             conn_val = dev.get("connected")
