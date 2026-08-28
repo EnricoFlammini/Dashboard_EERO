@@ -418,13 +418,37 @@ class EeroClient:
             # Hostname & Display Name
             dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or "Dispositivo"
 
-            # IP Address
-            raw_ip = dev.get("ip") or dev.get("ipv4")
-            if not raw_ip and isinstance(dev.get("ips"), list) and dev["ips"]:
-                raw_ip = dev["ips"][0]
-            if not raw_ip and isinstance(dev.get("interface"), dict):
-                raw_ip = dev["interface"].get("ip") or dev["interface"].get("ipv4")
+            # IP Address Extraction (IPv4 and IPv6)
+            all_ips_raw = []
+            if isinstance(dev.get("ips"), list):
+                all_ips_raw.extend(dev["ips"])
+            if isinstance(dev.get("ip_addresses"), list):
+                all_ips_raw.extend(dev["ip_addresses"])
+            if isinstance(dev.get("ipv6_addresses"), list):
+                all_ips_raw.extend(dev["ipv6_addresses"])
+            if isinstance(dev.get("interface"), dict):
+                iface_ips = dev["interface"].get("ips") or []
+                if isinstance(iface_ips, list):
+                    all_ips_raw.extend(iface_ips)
+                if dev["interface"].get("ip"):
+                    all_ips_raw.append(dev["interface"]["ip"])
+                if dev["interface"].get("ipv6"):
+                    all_ips_raw.append(dev["interface"]["ipv6"])
+
+            if dev.get("ip"):
+                all_ips_raw.append(dev["ip"])
+            if dev.get("ipv4"):
+                all_ips_raw.append(dev["ipv4"])
+            if dev.get("ipv6"):
+                all_ips_raw.append(dev["ipv6"])
+
+            ipv4_candidates = [str(ip).strip() for ip in all_ips_raw if ip and "." in str(ip) and not str(ip).startswith("169.254.")]
+            ipv6_candidates = [str(ip).strip() for ip in all_ips_raw if ip and ":" in str(ip)]
+
+            raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") or dev.get("ipv4"))
             dev["ip"] = str(raw_ip).strip() if raw_ip else None
+            dev["ipv6_addresses"] = list(dict.fromkeys(ipv6_candidates))
+            dev["ipv6"] = dev["ipv6_addresses"][0] if dev["ipv6_addresses"] else None
 
             # Connection Status (Online / Offline / Paused)
             conn_val = dev.get("connected")
