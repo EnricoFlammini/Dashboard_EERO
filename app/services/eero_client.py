@@ -309,17 +309,23 @@ class EeroClient:
             rssi_val = str(raw_rssi).replace("dBm", "").strip()
             signal_str = f" / {rssi_val} dBm"
 
-        is_wired = bool(
-            node.get("wired", False) or 
-            node.get("using_wan", False) or 
-            node.get("connection_type") == "wired" or 
-            node.get("ethernet_addresses")
-        )
-        node["wired"] = is_wired
+        # In eero API, wireless nodes have wired == False (or wireless == True / connection_type == "wireless").
+        # Note: Do NOT check ethernet_addresses because all physical eero units list their port MACs!
+        is_wireless = bool(node.get("wireless") is True or node.get("connection_type") == "wireless")
+        raw_wired = node.get("wired")
+        
+        if raw_wired is not None:
+            is_wired = bool(raw_wired)
+        elif is_wireless:
+            is_wired = False
+        else:
+            is_wired = (node.get("connection_type") == "wired")
 
         if node["is_gateway"]:
+            node["wired"] = True
             node["backhaul_type"] = "Gateway (WAN)"
         elif is_wired:
+            node["wired"] = True
             eth_speed = str(node.get("ethernet_speed") or iface_info.get("speed") or "").lower()
             if "10000" in eth_speed or "10g" in eth_speed or "10 gbps" in eth_speed:
                 node["backhaul_type"] = "Ethernet (10 Gbps)"
@@ -330,6 +336,7 @@ class EeroClient:
             else:
                 node["backhaul_type"] = "Ethernet (Cablato)"
         else:
+            node["wired"] = False
             if band_str in ("6", "6.0") or (channel >= 1 and channel <= 233 and "6" in band_str):
                 node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str})"
             elif (channel >= 1 and channel <= 14) or band_str in ("2.4", "2"):
