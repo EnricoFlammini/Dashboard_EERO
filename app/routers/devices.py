@@ -259,15 +259,25 @@ async def toggle_device_pause(device_id: str, payload: DevicePauseRequest):
             target_dev["is_paused"] = bool(payload.paused)
             target_dev["is_local_paused"] = bool(payload.paused)
 
-        # 3. Invia la richiesta al cloud eero
+        # 3. Se il dispositivo appartiene a un Profilo eero, sincronizza anche il Profilo
+        profile_res = None
+        prof_id = target_dev.get("profile_id") if target_dev else None
+        if prof_id and prof_id != "NONE":
+            try:
+                profile_res = await eero_client.set_profile_paused(profile_id=prof_id, paused=payload.paused)
+            except Exception as pe:
+                logger.warning(f"Could not toggle profile pause on cloud ({pe})")
+
+        # 4. Invia la richiesta al cloud eero per il singolo dispositivo
         res = await eero_client.update_device(device_id=device_id, paused=payload.paused)
-        is_cloud_synced = bool(res.get("cloud_synced", False))
+        is_cloud_synced = bool(res.get("cloud_synced", False) or (profile_res and profile_res.get("status") == "success"))
         return {
             "status": "success" if is_cloud_synced else "warning",
             "device_id": device_id,
             "paused": bool(payload.paused),
             "cloud_synced": is_cloud_synced,
-            "cloud_response": res
+            "cloud_response": res,
+            "profile_response": profile_res
         }
     except Exception as e:
         logger.warning(f"Cloud update warning on device {device_id}: {e}")

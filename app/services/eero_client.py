@@ -924,56 +924,65 @@ class EeroClient:
         urls_to_try.append(f"{EERO_API_BASE}/devices/{device_id}")
 
         base_urls = [u for u in dict.fromkeys(urls_to_try) if u]
-        extended_urls = list(base_urls)
 
+        # Priorità assoluta agli endpoint di azione specifici per pause/blacklist
+        action_calls = []
         if paused is True:
             for u in base_urls:
-                extended_urls.append(f"{u}/pause")
-                extended_urls.append(f"{u}/blacklist")
+                action_calls.append((f"{u}/pause", "POST"))
+                action_calls.append((f"{u}/blacklist", "POST"))
+                action_calls.append((f"{u}/pause", "PUT"))
+                action_calls.append((f"{u}/blacklist", "PUT"))
         elif paused is False:
             for u in base_urls:
-                extended_urls.append(f"{u}/unpause")
-                extended_urls.append(f"{u}/unblacklist")
+                action_calls.append((f"{u}/unpause", "POST"))
+                action_calls.append((f"{u}/unblacklist", "POST"))
+                action_calls.append((f"{u}/unpause", "PUT"))
+                action_calls.append((f"{u}/unblacklist", "PUT"))
 
-        unique_urls = [u for u in dict.fromkeys(extended_urls) if u]
+        # Aggiunta degli endpoint base
+        for u in base_urls:
+            action_calls.append((u, "PUT"))
+            action_calls.append((u, "POST"))
+            action_calls.append((u, "PATCH"))
 
-        payload_variants = [payload]
+        composite_payload = dict(payload)
         if paused is not None:
-            payload_variants.append({"paused": paused})
-            payload_variants.append({"is_paused": paused})
-            payload_variants.append({"blacklisted": paused})
-            payload_variants.append({})
+            composite_payload["paused"] = paused
+            composite_payload["is_paused"] = paused
+            composite_payload["blacklisted"] = paused
+            composite_payload["blocked"] = paused
+
+        payload_variants = [composite_payload, {"paused": paused} if paused is not None else payload, {"blacklisted": paused} if paused is not None else payload, {}]
 
         last_error = ""
         success = False
 
         async with httpx.AsyncClient(timeout=12.0) as client:
-            for url in unique_urls:
-                for method in ["PUT", "POST", "PATCH"]:
-                    for p_var in payload_variants:
-                        try:
-                            if method == "PUT":
-                                resp = await client.put(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
-                            elif method == "POST":
-                                resp = await client.post(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
-                            elif method == "PATCH":
-                                resp = await client.patch(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+            for url, method in action_calls:
+                for p_var in payload_variants:
+                    try:
+                        if method == "PUT":
+                            resp = await client.put(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+                        elif method == "POST":
+                            resp = await client.post(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+                        elif method == "PATCH":
+                            resp = await client.patch(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
 
-                            if resp.status_code in (200, 201, 204):
-                                logger.info(f"Dispositivo {device_id} aggiornato con successo su eero Cloud via {method} {url} (payload: {p_var})")
-                                success = True
-                                return {
-                                    "status": "success",
-                                    "device_id": device_id,
-                                    "url_used": url,
-                                    "method_used": method,
-                                    "payload_used": p_var,
-                                    "cloud_synced": True
-                                }
-                            else:
-                                last_error = f"{method} HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
-                        except Exception as e:
-                            last_error = f"{method} {url}: {e}"
+                        if resp.status_code in (200, 201, 204):
+                            logger.info(f"Dispositivo {device_id} aggiornato con successo su eero Cloud via {method} {url} (payload: {p_var})")
+                            return {
+                                "status": "success",
+                                "device_id": device_id,
+                                "url_used": url,
+                                "method_used": method,
+                                "payload_used": p_var,
+                                "cloud_synced": True
+                            }
+                        else:
+                            last_error = f"{method} HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
+                    except Exception as e:
+                        last_error = f"{method} {url}: {e}"
 
         logger.warning(f"Tentativi di aggiornamento del dispositivo {device_id} su eero Cloud falliti: {last_error}")
         return {
