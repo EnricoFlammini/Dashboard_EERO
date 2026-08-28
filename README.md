@@ -10,7 +10,7 @@
 > **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
 
 <p align="center">
-  <img src="docs/screenshots/dashboard_overview.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+  <img src="docs/screenshots/dashboard_overview_en.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </p>
 
 ---
@@ -28,7 +28,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 | Dashboard & Mesh Topology | Speed Test & Analytics |
 | :---: | :---: |
-| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+| <img src="docs/screenshots/dashboard_overview_en.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
 
 | Device Details & Static IP (DHCP) |
 | :---: |
@@ -255,6 +255,10 @@ This project stands on the shoulders of the open-source networking and home auto
 
 Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon eero**. Offre telemetria autentica hardware, monitoraggio in tempo reale, prenotazioni IP statici DHCP con risoluzione automatica dei conflitti, gestione regole di port forwarding, storico misurazioni speed test, generazione dinamica di QR Code per rete ospiti, modalità gaming low-latency e manuale integrato.
 
+<p align="center">
+  <img src="docs/screenshots/dashboard_overview_it.png" alt="Panoramica eero Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
+
 ---
 
 ## 📸 Galleria Screenshot
@@ -263,7 +267,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 | Panoramica Dashboard & Topologia Mesh | Diagnostica Speed Test & Storico |
 | :---: | :---: |
-| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+| <img src="docs/screenshots/dashboard_overview_it.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
 
 | Dettaglio Dispositivo & Assegnazione IP Statico DHCP |
 | :---: |
