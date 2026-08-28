@@ -304,7 +304,11 @@ class BackgroundPoller:
         today_str = now.strftime("%Y-%m-%d")
         if now.hour == 21 and self._last_digest_date != today_str:
             self._last_digest_date = today_str
-            asyncio.create_task(self._send_daily_digest())
+            digest_enabled = (await db_service.get_setting("daily_digest_enabled", "true")).lower() == "true"
+            if digest_enabled:
+                asyncio.create_task(self._send_daily_digest())
+            else:
+                logger.debug("Daily digest automatic dispatch is disabled in settings.")
 
         # E. Sincronizzazione periodica AdGuard Home (ogni 30 minuti)
         if self.cached_devices and (not self._last_adguard_sync or (now - self._last_adguard_sync).total_seconds() > 1800):

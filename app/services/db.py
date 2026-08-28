@@ -92,6 +92,7 @@ class DBService:
                 ("focus_mode_paused_macs", "[]"),
                 ("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false"),
                 ("webhook_alerts_enabled", "true" if settings.webhook_url else "false"),
+                ("daily_digest_enabled", "true"),
                 ("history_retention_days", str(settings.history_retention_days)),
                 ("poll_interval", str(settings.poll_interval)),
                 ("speedtest_schedule_hours", str(settings.speedtest_interval_hours)),

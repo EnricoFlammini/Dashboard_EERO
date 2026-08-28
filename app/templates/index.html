@@ -888,12 +888,20 @@
 
         <!-- 4. Automated Daily Digest Report (Bottom-Right) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
-          <div>
+          <div class="space-y-3">
             <div class="flex items-center justify-between border-b border-white/5 pb-3">
               <h3 class="text-base font-bold text-white" x-text="t('controls.digest_title')"></h3>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Ore 21:00</span>
             </div>
-            <p class="text-xs text-slate-400 mt-3 leading-relaxed" x-text="t('controls.digest_desc')"></p>
+            <p class="text-xs text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
+
+            <!-- Toggle Abilitazione Invio Automatico Daily Digest -->
+            <div class="pt-2">
+              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="digestSettings.enabled" @change="saveDigestSettings()" class="rounded border-slate-700 text-indigo-500 focus:ring-indigo-500/30 bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-200" x-text="t('controls.digest_enable_toggle')"></span>
+              </label>
+            </div>
           </div>
           <div class="pt-2 border-t border-white/5">
             <button 

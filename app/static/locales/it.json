@@ -224,6 +224,7 @@
     "save_notifications": "Salva Canali di Allarme",
     "digest_title": "Report Digest Giornaliero",
     "digest_desc": "Invia automaticamente alle 21:00 il riepilogo con consumo totale in GB, dispositivo top consumer e stabilità della linea.",
+    "digest_enable_toggle": "Abilita invio automatico programmato (ore 21:00)",
     "digest_btn": "Genera & Invia Digest Ora",
     "gaming_title": "Gaming & Focus Mode (Bassa Latenza)",
     "gaming_subtitle": "Sospende temporaneamente il traffico dei dispositivi secondari per azzerare la latenza",

@@ -25,6 +25,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **📊 Fix & Arricchimento Daily Digest Telegram:**
   * Risolto l'errore di generazione del report giornaliero delle 21:00 (e manuale da interfaccia) causato da riferimenti a tabelle storiche obsolete.
   * Il report inviato su Telegram e via Webhook include ora dati reali certificati: Health Score, ISP, nodi mesh online, client attivi totali, suddivisione dettagliata per frequenza (6GHz, 5GHz, 2.4GHz, Cablati), Speed Test Gateway e Latenza Ping.
+  * Introdotto un toggle esplicito *"Abilita invio automatico programmato (ore 21:00)"* per consentire all'utente di disattivare la schedulazione del digest mantenendo disponibile l'invio istantaneo on-demand.
 * **🎛️ Riorganizzazione Scheda Automazioni & Toggle Notifiche Telegram:**
   * Layout del tab **Controlli & QR Ospiti** riorganizzato a matrice 2x2: *Guest Wi-Fi* (alto-sx), *Integrazione AdGuard Home* (alto-dx), *Notifiche Telegram & Webhook* (basso-sx) e *Report Digest Giornaliero* (basso-dx).
   * Introdotto un toggle esplicito *"Abilita invio notifiche su Telegram"* per attivare/disattivare rapidamente gli avvisi automatici senza cancellare token o chat ID salvati.

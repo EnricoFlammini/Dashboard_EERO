@@ -33,6 +33,10 @@ class NotificationSettingsRequest(BaseModel):
     webhook_url: Optional[str] = None
 
 
+class DigestSettingsRequest(BaseModel):
+    enabled: bool
+
+
 class AdGuardSettingsRequest(BaseModel):
     enabled: bool
     url: str = Field(..., description="URL di base dell'istanza AdGuard Home (es. http://192.168.4.2:80)")
@@ -234,6 +238,20 @@ async def mark_all_alerts_read():
     """Segna tutti gli allarmi come letti."""
     await db_service.mark_alerts_read()
     return {"status": "success", "message": "Tutti gli allarmi sono stati contrassegnati come letti."}
+
+
+@router.get("/digest")
+async def get_digest_settings():
+    """Restituisce le impostazioni del report digest giornaliero."""
+    val = await db_service.get_setting("daily_digest_enabled", "true")
+    return {"status": "success", "enabled": val.lower() == "true"}
+
+
+@router.post("/digest")
+async def update_digest_settings(payload: DigestSettingsRequest):
+    """Aggiorna lo stato di abilitazione del report digest giornaliero."""
+    await db_service.set_setting("daily_digest_enabled", "true" if payload.enabled else "false")
+    return {"status": "success", "message": "Impostazioni Digest aggiornate con successo.", "enabled": payload.enabled}
 
 
 @router.post("/digest/generate")

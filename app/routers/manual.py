@@ -17,7 +17,7 @@ MANUAL_SECTIONS_IT: List[Dict[str, Any]] = [
 Questa applicazione web è un sistema completo e self-hosted per il monitoraggio, il controllo e l'analisi avanzata della tua infrastruttura mesh **Amazon eero**.
 
 #### Caratteristiche Architetturali:
-1. **Self-Hosted & Riservatezza:** L'applicazione viene eseguita all'interno di un container Docker isolato sul tuo server locale o NAS (HomeLab). Non trasmette dati a terzi ed è accessibile via LAN o VPN privata.
+1. **Self-Hosted & Riservatezza:** L'applicazione viene eseguita all'interno di un container Docker isolato sul tuo server locale o NAS (HomeLab). Immagine ufficiale Docker Hub multi-architettura pronta per `linux/amd64` e `linux/arm64` (Raspberry Pi 4/5, Synology, QNAP, TrueNAS, Apple Silicon).
 2. **Autenticazione Sicura 2FA OTP:** La connessione iniziale con il cloud eero avviene tramite il meccanismo ufficiale a doppio fattore (One-Time Password via SMS o Email).
 3. **Persistenza e Isolamento:** Il token di sessione (`session.json`) e il database SQLite (`metrics.db`) risiedono esclusivamente nel volume persistente `./data:/app/data`.
 4. **Zero-Latency In-Memory Poller:** Un worker asincrono in background interroga periodicamente la rete e mantiene una cache in memoria RAM, garantendo navigazione istantanea senza rallentamenti o sovraccarico di richieste (rate-limiting).
@@ -62,40 +62,32 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
         """
     },
     {
-        "id": "telemetry-api",
-        "title": "4. Telemetria & Dati Fisici Certificati eero",
-        "icon": "cpu",
-        "summary": "Lettura autentica dei parametri di rete direttamente dall'infrastruttura eero.",
+        "id": "devices-table",
+        "title": "4. Dispositivi Connessi & Analisi Frequenze",
+        "icon": "devices",
+        "summary": "Tabella live dei client, badge bande Wi-Fi, profili utente e filtri multi-criterio.",
         "content": """
-### Telemetria e Dati Ufficiali al 100%
+### Inventario Client in Tempo Reale
 
-La dashboard adotta un approccio di trasparenza e integrità totale sui dati di rete:
-1. **Dati Fisici Certificati:**
-   - Visualizzazione dei parametri reali inviati dai nodi mesh eero: **Frequenza e Banda Wi-Fi (2.4 GHz, 5 GHz, 6 GHz o Cablato Ethernet)**, **Canale Wi-Fi (es. CH 36, CH 11)**, **Potenza Segnale RSSI (dBm)** e **Velocità di Link Fisico PHY negoziata (es. 780.0 / 866.7 MBit/s)**.
-2. **Speed Test Gateway Ufficiale:**
-   - La velocità della connessione WAN visualizzata nei dettagli di rete è quella misurata direttamente dal nodo Gateway eero verso i server di test dell'infrastruttura (es. 907 Mbps Down / 193 Mbps Up).
-3. **Nessun Dato Simulato o Fittizio:**
-   - L'applicazione esclude intenzionalmente qualsiasi stima artificiale o contatore fittizio, visualizzando unicamente i valori effettivi restituiti dall'API eero.
+* **Indicatori di Banda & Canale Wi-Fi:** Badge espliciti per ciascun dispositivo (**6 GHz, 5 GHz, 2.4 GHz, Cablato Ethernet**) e canale wireless attivo (**CH 36, CH 11**, ecc.).
+* **Profili Utente Cloud eero:** Visualizzazione del membro della famiglia assegnato a ciascun apparato direttamente sincronizzato con l'app eero.
+* **Filtri Multi-Criterio Avanzati:** Filtra rapidamente per Frequenza di Banda, Profilo Utente, Nodo Mesh di attestazione o Tipo di Assegnazione IP (Statico vs DHCP).
         """
     },
     {
-        "id": "device-management",
-        "title": "5. Gestione Dispositivi, IP Statici & Porte",
-        "icon": "devices",
-        "summary": "Personalizzazione metadati, prenotazioni DHCP, Port Forwarding e pausa internet.",
+        "id": "device-details",
+        "title": "5. Metadati Dispositivo, IP Statici & Port Forwarding",
+        "icon": "adjustments",
+        "summary": "Personalizzazione nomi, categorie, note locali, prenotazioni DHCP e port forwarding.",
         "content": """
-### Controllo Avanzato dei Client di Rete
+### Gestione e Configurazione del Singolo Dispositivo
 
-* **Ricerca e Filtri:**
-  - Cerca per Nome, Indirizzo IP o MAC Address.
-  - Filtra per frequenza di connessione (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), nodo eero a cui sono agganciati o stato Online/Offline.
-  - Visualizzazione immediata della potenza segnale in dBm (RSSI) e velocità di link PHY.
-* **Scheda Dettaglio Dispositivo:**
-  - **Nome e Icona Personalizzata:** Assegna un'icona specifica (Server, PC, Smartphone, Console, Domotica, Telecamera, ecc.) salvata nel database SQLite locale.
-  - **Note & Documentazione:** Campo note libero per salvare credenziali locali, ubicazione, garanzie o porte di servizio.
-  - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo basandoti sul suo indirizzo MAC con controllo automatico dei conflitti e supporto alla riassegnazione.
+* **Modale Dettaglio Dispositivo:**
+  - **Nome e Categoria Personalizzata:** Assegna categorie (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Altro) salvate nel database SQLite locale.
+  - **Note & Documentazione Locale:** Campo note libero per salvare credenziali locali, ubicazione o porte di servizio.
+  - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo con verifica automatica dei conflitti.
   - **Port Forwarding Integrato:** Aggiungi e rimuovi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
-  - **Pausa Connessione:** Interruttore con 1 clic per bloccare o consentire l'accesso a Internet del singolo dispositivo (es. parental control o isolamento).
+  - **Pausa Connessione:** Interruttore per bloccare o consentire l'accesso a Internet del singolo dispositivo.
         """
     },
     {
@@ -138,8 +130,9 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
    - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
    - **Pulsante "Invia Test":** Verifica il corretto recapito dei messaggi verso il bot Telegram e l'URL Webhook.
 4. **Report Digest Giornaliero (In basso a destra):**
-   - Invia automaticamente alle ore 21:00 un riepilogo dettagliato con: stato di salute della rete, ISP, nodi mesh online, client connessi suddivisi per frequenza (**6 GHz, 5 GHz, 2.4 GHz, Cablati**) e velocità Speed Test Gateway.
-   - Pulsante **"Genera & Invia Digest Ora"** per richiedere l'inoltro immediato del report.
+   - **Toggle di Abilitazione Programmata:** Consente di attivare o sospendere l'inoltro automatico delle ore 21:00.
+   - Invia un riepilogo dettagliato con: stato di salute della rete, ISP, nodi mesh online, client connessi suddivisi per frequenza (**6 GHz, 5 GHz, 2.4 GHz, Cablati**) e velocità Speed Test Gateway.
+   - Pulsante **"Genera & Invia Digest Ora"** per richiedere l'inoltro immediato del report in qualsiasi momento.
 5. **Gaming & Focus Mode (Bassa Latenza):**
    - Accessibile direttamente dalla barra superiore: sospende temporaneamente il traffico dei dispositivi secondari (Smart TV, download di backup) per azzerare la latenza e il jitter a favore delle postazioni da gioco competitive.
         """
@@ -247,6 +240,7 @@ This web application is a full-featured, self-hosted management and monitoring p
   - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
   - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
   - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
+  - **Pause Internet Access:** One-click toggle to block or restore internet access for individual devices.
         """
     },
     {
@@ -289,7 +283,8 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
    - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
    - **"Send Test" Button:** Instantly tests message delivery to your Telegram bot and Webhook URL.
 4. **Daily Digest Report (Bottom-Right):**
-   - Automated 21:00 report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
+   - **Scheduled Dispatch Toggle:** Enable or suspend the automatic 21:00 summary dispatch.
+   - Automated report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
    - **"Generate & Send Digest Now"** button for immediate on-demand dispatch.
 5. **One-Click Gaming / Focus Mode (Low Latency):**
    - Located in the top header: pauses tagged background streaming/downloading devices with a single click to eliminate latency and jitter for competitive gaming setups.
@@ -368,7 +363,7 @@ async def get_changelog():
 ### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
 * **Distribuzione Ufficiale Docker Hub:** Immagine multi-architettura pronta per `linux/amd64` e `linux/arm64`.
 * **Integrazione Nativa AdGuard Home in-App:** Configurazione grafica diretta in Automazioni per la sincronizzazione continua di nomi host, IP e MAC address verso AdGuard Home.
-* **🎛️ Riorganizzazione Scheda Automazioni:** Layout a quadranti con toggle dedicato per le notifiche Telegram.
+* **🎛️ Riorganizzazione Scheda Automazioni & Toggle Notifiche:** Layout a quadranti con toggle dedicati per le notifiche Telegram e per il Report Digest delle 21:00.
 * **🔒 Pulsante Disconnessione Sicura:** Ripristinato il logout con modale di sicurezza e avviso per ri-autenticazione OTP.
 * **📊 Fix Daily Digest Telegram & Webhook:** Report arricchito con suddivisione dettagliata delle frequenze Wi-Fi e telemetria live.
 * **Esportazione DNS & Webhooks:** Endpoint `/api/devices/export/hosts` e `/api/devices/export/adguard` + script CLI.

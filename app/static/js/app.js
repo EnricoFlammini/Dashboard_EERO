@@ -136,6 +136,10 @@ document.addEventListener('alpine:init', () => {
       webhook_enabled: false,
       webhook_url: ''
     },
+
+    digestSettings: {
+      enabled: true
+    },
     
     // AdGuard Home DNS Integration State
     adguardSettings: {
@@ -263,6 +267,7 @@ document.addEventListener('alpine:init', () => {
       } else if (tab === 'controls') {
         await this.fetchNightMode();
         await this.fetchNotificationSettings();
+        await this.fetchDigestSettings();
         await this.fetchAdGuardSettings();
         await this.fetchAlerts();
       }
@@ -406,6 +411,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchFocusMode(),
         this.fetchNightMode(),
         this.fetchNotificationSettings(),
+        this.fetchDigestSettings(),
         this.fetchAdGuardSettings(),
         this.fetchAlerts(),
       ]);
@@ -1632,6 +1638,40 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Fetch alerts error:", err);
+      }
+    },
+
+    async fetchDigestSettings() {
+      try {
+        const res = await fetch('/api/automations/digest');
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.digestSettings.enabled = Boolean(json.enabled);
+        }
+      } catch (err) {
+        console.error("Fetch digest settings error:", err);
+      }
+    },
+
+    async saveDigestSettings() {
+      try {
+        const res = await fetch('/api/automations/digest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: Boolean(this.digestSettings.enabled) })
+        });
+        const json = await res.json();
+        if (res.ok) {
+          this.showToast(
+            this.digestSettings.enabled ? "Digest Programmato Attivo" : "Digest Programmato Disattivato",
+            this.digestSettings.enabled ? "Il report automatico delle 21:00 è abilitato." : "L'invio automatico delle 21:00 è stato sospeso.",
+            "info"
+          );
+        } else {
+          this.showToast("Errore", json.detail || "Impossibile salvare l'impostazione.", "error");
+        }
+      } catch (err) {
+        this.showToast("Errore", err.message, "error");
       }
     },
 

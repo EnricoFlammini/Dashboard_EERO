@@ -224,6 +224,7 @@
     "save_notifications": "Save Alert Channels",
     "digest_title": "Daily Digest Report",
     "digest_desc": "Automatically sends a summary at 21:00 with total GB consumed, top hog client and line stability.",
+    "digest_enable_toggle": "Enable automated scheduled dispatch (at 21:00)",
     "digest_btn": "Generate & Send Digest Now",
     "gaming_title": "Gaming & Focus Mode (Low Latency)",
     "gaming_subtitle": "Temporarily pause background traffic on secondary devices to eliminate latency and jitter",
