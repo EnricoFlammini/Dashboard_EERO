@@ -353,7 +353,8 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 ## v1.03.00
 * **Risoluzione Universale Nodi e Client Mesh Multi-Generazione (Pro 7 / 6E / 6+)**
 * **Switch Istantaneo Modalità Demo / Rete Live senza perdita Token**
-* **Rilevamento Dinamico Velocità Ethernet 2.5G/10G & Assegnazione Profili nel Modale**
+* **Rilevamento Dinamico Velocità Ethernet 2.5G/10G & Telemetria Segnale dBm/PHY**
+* **Sincronizzazione Profili Famiglia / Utente Cloud eero in Tabella e Dettaglio**
 * **Distribuzione Ufficiale Docker Hub Multi-Arch (amd64/arm64)**
 * **Integrazione Nativa AdGuard Home in-App (DNS & DHCP Sync)**
 * **Pulsante Disconnessione Sicura con Modale di Conferma OTP**
@@ -425,7 +426,8 @@ Below is a summary of the main release highlights. The complete changelog with a
 ## v1.03.00
 * **Universal Multi-Generation Mesh Nodes & Client Resolution (Pro 7 / 6E / 6+)**
 * **Instant Demo Mode / Live Network Switcher without Token Loss**
-* **Dynamic 2.5G/10G Ethernet Speed Detection & Profile Selector in Modal**
+* **Dynamic 2.5G/10G Ethernet Speed Detection & Signal dBm/PHY Rate Telemetry**
+* **eero Cloud User & Family Profile Telemetry in Table and Modal**
 * **Official Multi-Arch Docker Hub Image (amd64/arm64)**
 * **Native In-App AdGuard Home Integration (DNS & DHCP Sync)**
 * **Secure Logout Button with OTP Confirmation Modal**

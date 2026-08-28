@@ -1180,12 +1180,10 @@
             </div>
             <div>
               <label class="block text-slate-400 mb-1" x-text="t('devices.col_profile')"></label>
-              <select x-model="deviceSelectedProfileId" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
-                <option value="" x-text="t('profiles.total_unassigned')"></option>
-                <template x-for="prof in profiles" :key="prof.id">
-                  <option :value="prof.id" x-text="'👤 ' + prof.name"></option>
-                </template>
-              </select>
+              <div class="glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between text-slate-300 bg-slate-900/40 border border-slate-800">
+                <span class="font-medium" x-text="selectedDevice && selectedDevice.profile_name ? ('👤 ' + selectedDevice.profile_name) : t('profiles.total_unassigned')"></span>
+                <span class="text-[10px] text-slate-500 font-mono" :title="currentLanguage === 'it' ? 'Sincronizzato dall\'app mobile eero' : 'Synced from eero mobile app'">eero Cloud</span>
+              </div>
             </div>
           </div>
 

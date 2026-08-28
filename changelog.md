@@ -19,8 +19,8 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **⚡ Velocità Negoziata Ethernet Dispositivi & Backhaul Mesh:**
   * Rimosso il testo fisso `'GbE 1.0 Gbps'`. Ora il sistema rileva e mostra dinamicamente la reale velocità di link per apparati cablati a **10 Gbps**, **5.0 Gbps**, **2.5 Gbps**, **1.0 Gbps** e **100 Mbps**.
   * Ispezione automatica delle porte ethernet fisiche (`ports`/`ethernet_ports`) dei nodi eero per rilevare e mostrare la velocità di backhaul cablato.
-* **👤 Selettore Profilo Utente nel Dettaglio Dispositivo:**
-  * Aggiunto menu a tendina nel modale dettaglio client per assegnare, modificare o rimuovere un dispositivo dal rispettivo profilo utente Cloud eero direttamente dalla Dashboard.
+* **👤 Sincronizzazione Profilo Famiglia / Utente Cloud eero:**
+  * Visualizzazione e filtro in tempo reale dell'assegnazione profilo utente eero sia nella tabella principale che nel modale dettaglio client.
 * **📶 Telemetria Segnale RSSI (dBm) & PHY Link Rate nel Modale:**
   * Integrata la visualizzazione avanzata della qualità del segnale in dBm e della velocità di modulazione PHY nel riquadro di connessione del modale.
 * **🌍 Rimozione Residui di Testo e Localizzazione Completa:**

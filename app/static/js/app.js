@@ -1265,25 +1265,6 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Se il profilo utente è cambiato, sincronizza con l'endpoint profilo (Punto 4)
-        const currentProfileId = this.selectedDevice.profile_id || '';
-        if (this.deviceSelectedProfileId !== currentProfileId) {
-          try {
-            const pRes = await fetch(`/api/devices/${mac}/profile`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ profile_id: this.deviceSelectedProfileId || null })
-            });
-            if (pRes.ok) {
-              const matchedProf = (this.profiles || []).find(p => p.id === this.deviceSelectedProfileId);
-              this.selectedDevice.profile_id = this.deviceSelectedProfileId || null;
-              this.selectedDevice.profile_name = matchedProf ? matchedProf.name : null;
-            }
-          } catch (e) {
-            console.warn("Profile sync warning:", e);
-          }
-        }
-
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
           custom_name: this.deviceMetadataForm.custom_name,
@@ -1294,7 +1275,7 @@ document.addEventListener('alpine:init', () => {
         });
 
         const title = this.currentLanguage === 'it' ? "Salvato" : "Saved";
-        const msg = this.currentLanguage === 'it' ? "Metadati e profilo dispositivo salvati con successo." : "Device metadata and profile saved successfully.";
+        const msg = this.currentLanguage === 'it' ? "Metadati e categoria dispositivo salvati con successo." : "Device metadata and category saved successfully.";
         this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
