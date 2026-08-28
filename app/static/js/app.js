@@ -160,7 +160,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.00.01',
+    changelogVersion: '1.03.00',
     changelogLoading: false,
 
     // Toast Notification System

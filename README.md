@@ -1,9 +1,10 @@
 # eero Custom Dashboard & Mesh Management Suite 🚀
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker Image](https://img.shields.io/docker/v/enricoflammini/eero-dashboard?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/enricoflammini/eero-dashboard)
+[![Multi-Arch](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue?logo=docker)](#)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 [![i18n](https://img.shields.io/badge/i18n-IT%20%7C%20EN-purple.svg)](#)
 
 > **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
@@ -17,7 +18,7 @@
 <a name="english"></a>
 # 🇬🇧 English Documentation
 
-Self-hosted, containerized web dashboard and management suite for **Amazon eero** mesh Wi-Fi networks. Features authentic certified hardware telemetry, real-time traffic monitoring, DHCP static IP reservation with collision detection, port forwarding rules, speed testing history, dynamic guest Wi-Fi QR generator, one-click gaming focus mode, and interactive documentation.
+Self-hosted, containerized web dashboard and management suite for **Amazon eero** mesh Wi-Fi networks. Features authentic certified hardware telemetry, real-time traffic monitoring, DHCP static IP reservation with collision detection, port forwarding rules, speed testing history, dynamic guest Wi-Fi QR generator, one-click gaming focus mode, native in-app AdGuard Home DNS sync, and interactive documentation.
 
 ---
 
@@ -41,6 +42,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 * **📊 Mesh Topology & Health Score:** Live overview with Network Health Score (1-100), WAN public IP, gateway status, DNS servers, ISP information, and individual eero nodes (Gateway & Beacons) with backhaul type (`Ethernet (Wired)` vs `Wireless Mesh`).
 * **🖥️ Certified Hardware Telemetry & Frequency Bands:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, and **Static IP vs Dynamic DHCP indicators**.
+* **🛡️ Native In-App AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, and static/dynamic IP leases directly to your **AdGuard Home** DNS server with automatic background synchronization.
 * **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
 * **🌍 Real-Time Multi-Language (i18n):** Native bilingual interface (**English 🇬🇧 / Italian 🇮🇹**) with automatic browser language detection and instant live switcher.
 * **⚡ Speed Test & Performance Analytics:** Manual and scheduled automated speed tests (e.g. every 12 hours) with historical charts (Download, Upload, Ping/Latency) and aggregate statistics.
@@ -59,26 +61,35 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 * **HTTP Client:** `httpx` (async client for eero REST API 2.2).
 * **Storage:** Async SQLite with `aiosqlite` (WAL mode).
 * **Frontend:** Semantic HTML5, Vanilla CSS / Tailwind CSS, Alpine.js (v3.14+), Chart.js (v4.4+).
-* **Containerization:** Docker & Docker Compose (Compose V2).
+* **Containerization:** Docker & Docker Compose (Multi-Arch `linux/amd64` & `linux/arm64`).
 
 ---
 
-## 🚀 Quick Start with Docker Compose
+## 🚀 Quick Start
 
-### 1. Clone or download the repository
+### Option A: 1-Line `docker run` (Recommended)
+
+Run instantly from **Docker Hub** without needing to clone or compile locally:
+
 ```bash
+docker run -d \
+  --name eero-dashboard \
+  -p 8085:8000 \
+  -v $(pwd)/data:/app/data \
+  -e TZ=Europe/Rome \
+  --restart unless-stopped \
+  enricoflammini/eero-dashboard:latest
+```
+
+### Option B: Docker Compose
+
+```bash
+# 1. Clone repository
 git clone https://github.com/EnricoFlammini/Dashboard_EERO.git
 cd Dashboard_EERO
-```
 
-### 2. Configure Environment Variables (Optional)
-```bash
-cp .env.example .env
-```
-
-### 3. Launch the Container
-```bash
-docker compose up -d --build
+# 2. Start container
+docker compose up -d
 ```
 
 Access the dashboard in your browser:
@@ -266,6 +277,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con tipo di backhaul (`Ethernet (Cablato)` vs `Wireless Mesh (5/6 GHz)`).
 * **🖥️ Telemetria Hardware & Frequenze Wi-Fi:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY e **indicatori visivi IP Statico vs DHCP**.
+* **🛡️ Sincronizzazione Nativa AdGuard Home in-App:** Pannello di configurazione visuale dedicato per sincronizzare in automatico e in modo continuo i nomi dei dispositivi, MAC e IP verso il server DNS **AdGuard Home** con supporto alla sincronizzazione silenziosa in background.
 * **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
 * **🌍 Supporto Multilingua (i18n):** Interfaccia bilingue (**Italiano 🇮🇹 / Inglese 🇬🇧**) con rilevamento automatico della lingua del browser e selettore istantaneo nella barra superiore.
 * **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
@@ -284,26 +296,35 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 * **Client HTTP:** `httpx` (client asincrono per REST API eero 2.2).
 * **Database & Storico:** SQLite asincrono con `aiosqlite` (WAL mode).
 * **Frontend:** HTML5 semantico, Vanilla CSS / Tailwind CSS, Alpine.js (v3.14+), Chart.js (v4.4+).
-* **Containerizzazione:** Docker e Docker Compose (Compose V2).
+* **Containerizzazione:** Docker e Docker Compose (Multi-Arch `linux/amd64` e `linux/arm64`).
 
 ---
 
-## 🚀 Avvio Rapido con Docker Compose
+## 🚀 Avvio Rapido
 
-### 1. Clona il repository o posizionati nella cartella
+### Opzione A: Comando Diretto `docker run` (Consigliato)
+
+Esegui immediatamente l'immagine ufficiale da **Docker Hub** senza dover clonare o compilare il codice:
+
 ```bash
+docker run -d \
+  --name eero-dashboard \
+  -p 8085:8000 \
+  -v $(pwd)/data:/app/data \
+  -e TZ=Europe/Rome \
+  --restart unless-stopped \
+  enricoflammini/eero-dashboard:latest
+```
+
+### Opzione B: Docker Compose
+
+```bash
+# 1. Clona il repository
 git clone https://github.com/EnricoFlammini/Dashboard_EERO.git
 cd Dashboard_EERO
-```
 
-### 2. Configura le Variabili d'Ambiente (Opzionale)
-```bash
-cp .env.example .env
-```
-
-### 3. Avvia il Container
-```bash
-docker compose up -d --build
+# 2. Avvia il container
+docker compose up -d
 ```
 
 Accedi alla dashboard dal browser:

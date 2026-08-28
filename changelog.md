@@ -6,14 +6,23 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
-## [Unreleased / Pre-v1.03.00] - 2026-08-28
+## [1.03.00] - 2026-08-28
 
-### 🔔 Integrazioni Webhook, REST API & Sincronizzazione DNS (AdGuard Home / Pi-hole)
-* **Documentazione Completa Webhooks:** Aggiunta nel `README.md` la specifica formale dei payload JSON e degli eventi asincroni (`new_device`, `node_offline`, `daily_digest`, `test_ping`) inviati da `WEBHOOK_URL`.
-* **Nuovi Endpoint di Esportazione Client & DHCP:**
-  * `GET /api/devices/export/hosts`: Restituisce i client attivi formattati in standard `/etc/hosts` / `dnsmasq` con supporto a suffissi di dominio (es. `.lan`).
-  * `GET /api/devices/export/adguard`: Restituisce un array JSON compatibile con le API di provisioning client di AdGuard Home (`/control/clients/add` e `/control/clients/update`).
-* **Script di Sincronizzazione AdGuard:** Creato [`scripts/adguard_sync.py`](scripts/adguard_sync.py) pronto per l'esecuzione automatica via cron per sincronizzare i nomi host dei client su AdGuard Home.
+### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
+* **Distribuzione Ufficiale Docker Hub Multi-Arch:**
+  * Configurato workflow GitHub Actions per la compilazione e il push automatico su Docker Hub (`enricoflammini/eero-dashboard`).
+  * Supporto nativo alle architetture `linux/amd64` (Server x86, PC, VM) e `linux/arm64` (Raspberry Pi 4/5, NAS Synology/QNAP/TrueNAS, Apple Silicon).
+  * Avvio immediato a riga di comando senza compilazione locale tramite `docker run` o `docker compose pull`.
+* **Integrazione Nativa AdGuard Home in-App:**
+  * Nuova scheda visuale dedicata nel tab **Automazioni & Controlli** per configurare la connessione verso AdGuard Home (URL, Username, Password).
+  * Normalizzazione automatica degli URL locali (pulizia frammenti `#`, supporto HTTP e fallback SSL/TLS per certificati self-signed).
+  * Pulsante **"Test Connessione"** con riscontro immediato via Toast e verifica delle credenziali.
+  * Pulsante **"Sincronizza Ora Tutti i Client"** con matching intelligente per nome, MAC e IP (`/control/clients/add` e `/control/clients/update`).
+  * Toggle **"Abilita sincronizzazione automatica continua"** per sincronizzare silenziosamente in background all'accesso di nuovi dispositivi e su base periodica.
+* **Esportazione DNS & Webhooks:**
+  * Endpoint `GET /api/devices/export/hosts` (standard `/etc/hosts` / `dnsmasq`) e `GET /api/devices/export/adguard` (JSON provisioning).
+  * Script standalone CLI [`scripts/adguard_sync.py`](scripts/adguard_sync.py).
+  * Specifiche formali e schemi JSON dei payload Webhook nel `README.md`.
 
 ---
 
