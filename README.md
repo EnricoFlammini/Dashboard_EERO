@@ -41,15 +41,15 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 ## 🌟 Key Features
 
 * **📊 Mesh Topology & Health Score:** Live overview with Network Health Score (1-100), WAN public IP, gateway status, DNS servers, ISP information, and individual eero nodes (Gateway & Beacons) with backhaul type (`Ethernet (Wired)` vs `Wireless Mesh`).
-* **🖥️ Certified Hardware Telemetry & Frequency Bands:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, and **Static IP vs Dynamic DHCP indicators**.
+* **🖥️ Certified Hardware Telemetry & Interactive Sorting:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, **Static IP vs Dynamic DHCP indicators**, **interactive column sorting (Name, IPv4, Node, Band, Signal, Status)**, and a **locked sticky header bar**.
 * **🛡️ Native In-App AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, and static/dynamic IP leases directly to your **AdGuard Home** DNS server with automatic background synchronization.
 * **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
-* **🌍 Real-Time Multi-Language (i18n):** Native bilingual interface (**English 🇬🇧 / Italian 🇮🇹**) with automatic browser language detection and instant live switcher.
+* **🌍 Real-Time Multi-Language (i18n):** Native bilingual interface (**English 🇬🇧 default / Italian 🇮🇹**) with instant live switcher and permanent preference persistence.
 * **⚡ Speed Test & Performance Analytics:** Manual and scheduled automated speed tests (e.g. every 12 hours) with historical charts (Download, Upload, Ping/Latency) and aggregate statistics.
 * **📱 Dynamic Guest Wi-Fi QR Code:** Scannable Wi-Fi QR Code generator (`WIFI:S:...;T:WPA;P:...;;`) with one-click enable/disable and secure password generation.
 * **🎮 One-Click Gaming Focus Mode:** Low-latency automation that temporarily pauses non-essential streaming/IoT devices to eliminate jitter during competitive gaming or video calls.
-* **🔔 Telegram Bot & Webhook Alerts:** Instant notifications on new unknown device connections (Intruder Alert) or mesh node disconnections.
-* **📖 Interactive In-App User Manual:** Fully searchable embedded documentation and release notes changelog viewer.
+* **🔔 Telegram Bot, Webhook Alerts & Daily Digest:** Instant notifications on new unknown device connections (Intruder Alert) and offline mesh nodes, backed by a **persistent SQLite registry (`known_devices`)** ensuring zero duplicate alerts on container restarts, plus dedicated activation toggles and rich live daily digests.
+* **📖 Interactive In-App User Manual & Changelog:** Fully searchable embedded documentation, release notes summary with GitHub link, and dedicated About & Open Source modal.
 * **🛡️ Zero-Latency RAM Cache:** Asynchronous in-memory background poller eliminating eero API rate-limiting.
 * **✨ Demo Mode Simulator:** Test and explore all dashboard features without real credentials.
 
@@ -276,15 +276,15 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 ## 🌟 Caratteristiche Principali
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con tipo di backhaul (`Ethernet (Cablato)` vs `Wireless Mesh (5/6 GHz)`).
-* **🖥️ Telemetria Hardware & Frequenze Wi-Fi:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY e **indicatori visivi IP Statico vs DHCP**.
+* **🖥️ Telemetria Hardware & Ordinamento Interattivo:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY, **indicatori visivi IP Statico vs DHCP**, **ordinamento interattivo per colonna (Nome, IPv4, Profilo, Nodo, Banda, Segnale, Stato)** e **barra dei titoli bloccata (Sticky Header)**.
 * **🛡️ Sincronizzazione Nativa AdGuard Home in-App:** Pannello di configurazione visuale dedicato per sincronizzare in automatico e in modo continuo i nomi dei dispositivi, MAC e IP verso il server DNS **AdGuard Home** con supporto alla sincronizzazione silenziosa in background.
 * **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
-* **🌍 Supporto Multilingua (i18n):** Interfaccia bilingue (**Italiano 🇮🇹 / Inglese 🇬🇧**) con rilevamento automatico della lingua del browser e selettore istantaneo nella barra superiore.
+* **🌍 Supporto Multilingua (i18n):** Interfaccia bilingue (**Inglese 🇬🇧 default / Italiano 🇮🇹**) con selettore istantaneo nella barra superiore e salvataggio permanente delle preferenze.
 * **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
 * **📱 Smart Guest Wi-Fi con QR Code Dinamico:** Generatore automatico di QR Code standard Wi-Fi (`WIFI:S:...;T:WPA;P:...;;`) da scansionare al volo con smartphone, con toggle rapido di attivazione e generatore di password sicure.
 * **🎮 Gaming & Focus Mode (One-Click Low Latency):** Pulsante a un clic che mette automaticamente in pausa il traffico di background di apparati secondari e IoT preconfigurati per azzerare il jitter e la latenza durante sessioni di gaming o videoconferenze.
-* **🔔 Notifiche Telegram & Webhook:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert) e anomalie/nodi mesh offline.
-* **📖 Manuale Utente Integrato & Changelog:** Documentazione completa navigabile con ricerca full-text, tooltip contestuali e visualizzatore Changelog interattivo in-app.
+* **🔔 Notifiche Telegram, Webhook & Daily Digest:** Avvisi in tempo reale per la connessione di nuovi dispositivi sconosciuti (Intruder Alert) e nodi mesh offline, supportati dal **registro persistente SQLite (`known_devices`)** che previene notifiche duplicate al riavvio del container, toggle dedicati di abilitazione e report digest giornaliero dettagliato.
+* **📖 Manuale Utente Integrato & Changelog:** Documentazione completa navigabile con ricerca full-text, tooltip contestuali, sommario delle release con link a GitHub e modale dedicato About & Dedica Open Source.
 * **🛡️ Zero-Latency In-Memory Poller:** Cache in memoria RAM per rispondere all'interfaccia con latenza zero senza sovraccaricare le API eero (protezione da rate limiting).
 * **✨ Modalità Demo:** Simulatore integrato per testare l'applicazione senza inserire credenziali reali.
 

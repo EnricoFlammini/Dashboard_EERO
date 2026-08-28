@@ -65,10 +65,12 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
         "id": "devices-table",
         "title": "4. Dispositivi Connessi & Analisi Frequenze",
         "icon": "devices",
-        "summary": "Tabella live dei client, badge bande Wi-Fi, profili utente e filtri multi-criterio.",
+        "summary": "Tabella live dei client, ordinamento colonne, barra titoli sticky, badge bande Wi-Fi e profili.",
         "content": """
 ### Inventario Client in Tempo Reale
 
+* **Ordinamento Interattivo Multi-Colonna:** Clicca su qualunque intestazione di colonna (Dispositivo/Nome, Indirizzo IP numerico IPv4, Profilo, Nodo Mesh, Banda, Segnale RSSI in dBm e Stato) per commutare istantaneamente l'ordine crescente e decrescente.
+* **Barra dei Titoli Bloccata (Sticky Header):** L'intestazione della tabella rimane sempre visibile in cima allo schermo durante lo scorrimento di elenchi con decine o centinaia di apparati.
 * **Indicatori di Banda & Canale Wi-Fi:** Badge espliciti per ciascun dispositivo (**6 GHz, 5 GHz, 2.4 GHz, Cablato Ethernet**) e canale wireless attivo (**CH 36, CH 11**, ecc.).
 * **Profili Utente Cloud eero:** Visualizzazione del membro della famiglia assegnato a ciascun apparato direttamente sincronizzato con l'app eero.
 * **Filtri Multi-Criterio Avanzati:** Filtra rapidamente per Frequenza di Banda, Profilo Utente, Nodo Mesh di attestazione o Tipo di Assegnazione IP (Statico vs DHCP).
@@ -125,6 +127,7 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
    - **Pulsante "Sincronizza Ora":** Forza l'allineamento istantaneo di tutta la tabella host verso AdGuard Home.
    - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
 3. **Notifiche Telegram & Webhook (In basso a sinistra):**
+   - **Registro Persistente Dispositivi Noti:** Tabella SQLite `known_devices` per memorizzare gli apparati già visti ed evitare qualsiasi invio di notifiche duplicate al riavvio o all'aggiornamento del container.
    - **Toggle di Abilitazione Dedicato:** Attiva o disattiva l'invio delle notifiche Telegram con un semplice clic senza eliminare le chiavi salvate.
    - **Nuovo Dispositivo Connesso:** Alert istantaneo quando un apparato mai visto prima si connette alla rete.
    - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
@@ -218,10 +221,12 @@ This web application is a full-featured, self-hosted management and monitoring p
         "id": "devices-table",
         "title": "4. Connected Devices & Frequency Analysis",
         "icon": "devices",
-        "summary": "Live device table, Wi-Fi band badges, eero cloud profile integration, and multi-filters.",
+        "summary": "Live device table, multi-column sorting, sticky headers, Wi-Fi band badges, and eero cloud profiles.",
         "content": """
 ### Real-Time Device Inventory
 
+* **Interactive Multi-Column Sorting:** Click any column header (Device/Name, Numerical IPv4 Address, Profile, Mesh Node, Band, RSSI Signal dBm, or Status) to toggle ascending and descending sort order.
+* **Locked Sticky Header Bar:** The table header stays permanently anchored at the top of the viewport while scrolling through dozens of clients.
 * **Wi-Fi Band & Channel Indicators:** Explicit frequency badges (**6 GHz, 5 GHz, 2.4 GHz, Wired Ethernet**) and active wireless channels (**CH 36, CH 11**, etc.).
 * **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
 * **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
@@ -278,6 +283,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
    - **One-Click "Sync Now":** Instantly reconciles all network clients against AdGuard Home.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
 3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
+   - **Persistent Known Devices Registry:** SQLite `known_devices` table tracking previously discovered MACs to prevent duplicate alerts on container restarts.
    - **Dedicated Activation Toggle:** Enable or disable Telegram notifications with one click while safely preserving your Bot Token and Chat ID.
    - **New Device Alert:** Receive an instant alert when an unknown MAC address connects to your mesh.
    - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
