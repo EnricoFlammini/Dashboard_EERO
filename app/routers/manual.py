@@ -314,25 +314,27 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 
 
 @router.get("/sections")
-async def get_manual_sections(lang: Optional[str] = Query("it")):
+async def get_manual_sections(lang: Optional[str] = Query("en")):
     """Restituisce tutti i capitoli del manuale utente nella lingua richiesta (it/en)."""
-    sections = MANUAL_SECTIONS_EN if lang and lang.lower().startswith("en") else MANUAL_SECTIONS_IT
+    is_it = bool(lang and lang.lower().startswith("it"))
+    sections = MANUAL_SECTIONS_IT if is_it else MANUAL_SECTIONS_EN
     return {
         "status": "success",
         "count": len(sections),
-        "language": "en" if lang and lang.lower().startswith("en") else "it",
+        "language": "it" if is_it else "en",
         "sections": sections
     }
 
 
 @router.get("/sections/{section_id}")
-async def get_manual_section(section_id: str, lang: Optional[str] = Query("it")):
+async def get_manual_section(section_id: str, lang: Optional[str] = Query("en")):
     """Restituisce una specifica sezione del manuale (utilizzata anche per i tooltip contestuali)."""
-    sections = MANUAL_SECTIONS_EN if lang and lang.lower().startswith("en") else MANUAL_SECTIONS_IT
+    is_it = bool(lang and lang.lower().startswith("it"))
+    sections = MANUAL_SECTIONS_IT if is_it else MANUAL_SECTIONS_EN
     section = next((s for s in sections if s["id"] == section_id), None)
     if not section:
         return {"status": "error", "message": "Section not found."}
-    return {"status": "success", "language": "en" if lang and lang.lower().startswith("en") else "it", "section": section}
+    return {"status": "success", "language": "it" if is_it else "en", "section": section}
 
 
 CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
@@ -471,16 +473,16 @@ Below is a summary of the main release highlights. The complete changelog with a
 
 
 @router.get("/changelog")
-async def get_changelog(lang: Optional[str] = Query("it")):
+async def get_changelog(lang: Optional[str] = Query("en")):
     """Restituisce solo i titoli e gli highlight principali delle versioni nella lingua richiesta (it/en)."""
     from app.config import settings
 
-    is_en = bool(lang and lang.lower().startswith("en"))
-    content = CHANGELOG_SUMMARY_EN if is_en else CHANGELOG_SUMMARY_IT
+    is_it = bool(lang and lang.lower().startswith("it"))
+    content = CHANGELOG_SUMMARY_IT if is_it else CHANGELOG_SUMMARY_EN
 
     return {
         "status": "success",
-        "language": "en" if is_en else "it",
+        "language": "it" if is_it else "en",
         "version": settings.app_version,
         "content": content
     }

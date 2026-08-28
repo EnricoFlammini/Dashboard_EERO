@@ -9,7 +9,7 @@ document.addEventListener('alpine:init', () => {
     appVersion: '1.03.00',
 
     // i18n Multi-Language State
-    currentLanguage: localStorage.getItem('eero_lang') || (navigator.language && navigator.language.startsWith('it') ? 'it' : 'en'),
+    currentLanguage: localStorage.getItem('eero_lang') || 'en',
     translations: {},
     translationsLoaded: false,
 
@@ -1702,7 +1702,7 @@ document.addEventListener('alpine:init', () => {
     async loadManualSections() {
       try {
         const currentId = this.selectedManualSection ? this.selectedManualSection.id : null;
-        const res = await fetch(`/api/manual/sections?lang=${this.currentLanguage || 'it'}`);
+        const res = await fetch(`/api/manual/sections?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success') {
           this.manualSections = json.sections || [];
@@ -1727,7 +1727,7 @@ document.addEventListener('alpine:init', () => {
 
     async openContextHelp(sectionId) {
       try {
-        const res = await fetch(`/api/manual/sections/${sectionId}?lang=${this.currentLanguage || 'it'}`);
+        const res = await fetch(`/api/manual/sections/${sectionId}?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success' && json.section) {
           this.helpModalTitle = json.section.title;
@@ -1744,7 +1744,7 @@ document.addEventListener('alpine:init', () => {
       this.changelogLoading = true;
       this.showChangelogModal = true;
       try {
-        const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'it'}`);
+        const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
           this.changelogVersion = json.version || '1.03.00';
