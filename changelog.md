@@ -41,6 +41,11 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🔀 Ordinamento Dispositivi & Barra dei Titoli Bloccata (Sticky Header):**
   * Introdotta la possibilità di ordinare la tabella dei dispositivi cliccando direttamente su ciascuna intestazione di colonna (Dispositivo/Host, Indirizzo IP numerico IPv4, Profilo, Nodo Mesh, Banda, Segnale RSSI e Stato).
   * La barra dei titoli della tabella rimane ora bloccata in alto (`sticky`) durante lo scorrimento, garantendo visibilità e orientamento costante anche con centinaia di client connessi.
+* **⚙️ Normalizzazione Dinamica Dispositivi & Gestione Flessibile Nodi/Sensori:**
+  * Risolto il bug di parsing dei dispositivi che poteva impedire la visualizzazione dei client connessi con determinati payload eero Cloud.
+  * Reso pienamente dinamico il rendering dei client e dei conteggi (1, 2, N client o stato vuoto dedicato) con fallback automatico tra endpoint `/devices` e dettagli di rete.
+  * I campi e i sensori hardware (es. backhaul su gateway standalone, temperature o firmware) vengono ora mostrati solo se effettivamente disponibili sulla versione hardware in uso.
+  * Revisionate e completate al 100% tutte le etichette, placeholder e notifiche Toast in lingua inglese e italiana.
 * **Esportazione DNS & Webhooks:**
   * Endpoint `GET /api/devices/export/hosts` (standard `/etc/hosts` / `dnsmasq`) e `GET /api/devices/export/adguard` (JSON provisioning).
   * Script standalone CLI [`scripts/adguard_sync.py`](scripts/adguard_sync.py).

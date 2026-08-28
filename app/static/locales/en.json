@@ -219,6 +219,7 @@
     "send_test": "Send Test",
     "telegram_token": "Telegram Bot Token:",
     "telegram_chat_id": "Telegram Chat ID:",
+    "telegram_chat_id_placeholder": "-100123456789 or Chat ID",
     "telegram_enable_toggle": "Enable Telegram notifications",
     "webhook_url": "Webhook HTTP URL (Optional):",
     "save_notifications": "Save Alert Channels",
@@ -258,6 +259,7 @@
     "send_otp": "Send OTP Code",
     "sending_otp": "Sending...",
     "otp_label": "6-digit code received:",
+    "change_identifier": "← Edit phone or email",
     "verify_otp": "Verify & Login",
     "verifying_otp": "Verifying..."
   },

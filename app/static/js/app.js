@@ -312,10 +312,13 @@ document.addEventListener('alpine:init', () => {
           this.tempUserToken = data.user_token;
         }
         this.otpSent = true;
-        this.showToast("Codice Inviato", "Inserisci il codice a 6 cifre ricevuto via SMS/Email.", "info");
+        const title = this.currentLanguage === 'it' ? "Codice Inviato" : "Code Sent";
+        const msg = this.currentLanguage === 'it' ? "Inserisci il codice a 6 cifre ricevuto via SMS/Email." : "Enter the 6-digit verification code received via SMS/Email.";
+        this.showToast(title, msg, "info");
       } catch (err) {
         this.authError = err.message;
-        this.showToast("Errore Login", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Login" : "Login Error";
+        this.showToast(title, err.message, "error");
       } finally {
         this.authLoading = false;
       }
@@ -332,18 +335,21 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ code: this.otpCode, user_token: this.tempUserToken })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Verifica OTP fallita');
+        if (!res.ok) throw new Error(data.detail || (this.currentLanguage === 'it' ? 'Verifica OTP fallita' : 'OTP verification failed'));
         
         this.isAuthenticated = true;
         this.otpSent = false;
         this.otpCode = '';
         this.tempUserToken = null;
-        this.showToast("Accesso Riuscito", "Connessione con eero stabilita.", "success");
+        const title = this.currentLanguage === 'it' ? "Accesso Riuscito" : "Login Successful";
+        const msg = this.currentLanguage === 'it' ? "Connessione con eero stabilita." : "Connected to eero mesh network.";
+        this.showToast(title, msg, "success");
         await this.refreshAllData();
         this.startPolling();
       } catch (err) {
         this.authError = err.message;
-        this.showToast("Errore OTP", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore OTP" : "OTP Error";
+        this.showToast(title, err.message, "error");
       } finally {
         this.authLoading = false;
       }
@@ -363,7 +369,9 @@ document.addEventListener('alpine:init', () => {
         this.isDemoMode = false;
         this.userAccount = null;
         if (this.pollingTimer) clearInterval(this.pollingTimer);
-        this.showToast("Disconnesso", "Sessione terminata con successo.", "info");
+        const title = this.currentLanguage === 'it' ? "Disconnesso" : "Logged Out";
+        const msg = this.currentLanguage === 'it' ? "Sessione terminata con successo." : "Session closed successfully.";
+        this.showToast(title, msg, "info");
       } catch (err) {
         console.error("Logout error:", err);
       }
@@ -480,25 +488,37 @@ document.addEventListener('alpine:init', () => {
     // NETWORK & NODES ACTIONS
     // =========================================================================
     async rebootNetwork() {
-      if (!confirm("Sei sicuro di voler riavviare l'intera rete mesh eero? La connessione cadrà per 2-3 minuti.")) return;
+      const confirmMsg = this.currentLanguage === 'it'
+        ? "Sei sicuro di voler riavviare l'intera rete mesh eero? La connessione cadrà per 2-3 minuti."
+        : "Are you sure you want to reboot the entire eero mesh network? Internet connectivity will drop for 2-3 minutes.";
+      if (!confirm(confirmMsg)) return;
+
       try {
         const res = await fetch('/api/network/reboot', { method: 'POST' });
         const data = await res.json();
-        this.showToast("Riavvio Rete", data.message || "Comando inviato.", "info");
+        const title = this.currentLanguage === 'it' ? "Riavvio Rete" : "Network Reboot";
+        this.showToast(title, data.message || (this.currentLanguage === 'it' ? "Comando inviato." : "Reboot command sent."), "info");
       } catch (err) {
-        this.showToast("Errore Riavvio", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Riavvio" : "Reboot Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
     async rebootEero(eero) {
       const eid = eero.id || eero.serial;
-      if (!confirm(`Riavviare il nodo '${eero.name || eid}'?`)) return;
+      const confirmMsg = this.currentLanguage === 'it'
+        ? `Riavviare il nodo '${eero.name || eid}'?`
+        : `Reboot node '${eero.name || eid}'?`;
+      if (!confirm(confirmMsg)) return;
+
       try {
         const res = await fetch(`/api/network/eeros/${eid}/reboot`, { method: 'POST' });
         const data = await res.json();
-        this.showToast("Riavvio Nodo", data.message || `Riavvio nodo ${eero.name} avviato.`, "info");
+        const title = this.currentLanguage === 'it' ? "Riavvio Nodo" : "Node Reboot";
+        this.showToast(title, data.message || (this.currentLanguage === 'it' ? `Riavvio nodo ${eero.name} avviato.` : `Rebooting node ${eero.name}.`), "info");
       } catch (err) {
-        this.showToast("Errore Riavvio", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Riavvio" : "Reboot Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -513,12 +533,17 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.message || data.detail || 'Impossibile modificare il LED via API eero');
+          throw new Error(data.message || data.detail || (this.currentLanguage === 'it' ? 'Impossibile modificare il LED via API eero' : 'Failed to update LED via eero API'));
         }
         eero.led_on = targetState;
-        this.showToast("LED Aggiornato", `LED ${eero.name}: ${targetState ? 'Acceso' : 'Spento'}`, "success");
+        const title = this.currentLanguage === 'it' ? "LED Aggiornato" : "LED Updated";
+        const msg = this.currentLanguage === 'it' 
+          ? `LED ${eero.name}: ${targetState ? 'Acceso' : 'Spento'}` 
+          : `LED ${eero.name}: ${targetState ? 'ON' : 'OFF'}`;
+        this.showToast(title, msg, "success");
       } catch (err) {
-        this.showToast("Errore LED", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore LED" : "LED Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -531,12 +556,17 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.message || data.detail || 'Impossibile modificare tutti i LED');
+          throw new Error(data.message || data.detail || (this.currentLanguage === 'it' ? 'Impossibile modificare tutti i LED' : 'Failed to update all LEDs'));
         }
         this.eeros.forEach(e => e.led_on = ledOn);
-        this.showToast("Tutti i LED", `Tutti i LED impostati a: ${ledOn ? 'Accesi' : 'Spenti'}`, "success");
+        const title = this.currentLanguage === 'it' ? "Tutti i LED" : "All LEDs";
+        const msg = this.currentLanguage === 'it' 
+          ? `Tutti i LED impostati a: ${ledOn ? 'Accesi' : 'Spenti'}` 
+          : `All LEDs set to: ${ledOn ? 'ON' : 'OFF'}`;
+        this.showToast(title, msg, "success");
       } catch (err) {
-        this.showToast("Errore LED", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore LED" : "LED Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1039,11 +1069,16 @@ document.addEventListener('alpine:init', () => {
           throw new Error(data.detail || data.message || 'Errore durante la prenotazione DHCP');
         }
 
-        this.showToast("IP Statico Riservato", `Indirizzo ${this.deviceStaticIpInput} prenotato con successo su eero.`, "success");
+        const title = this.currentLanguage === 'it' ? "IP Statico Riservato" : "Static IP Reserved";
+        const msg = this.currentLanguage === 'it' 
+          ? `Indirizzo ${this.deviceStaticIpInput} prenotato con successo su eero.`
+          : `IP address ${this.deviceStaticIpInput} successfully reserved on eero.`;
+        this.showToast(title, msg, "success");
         await this.loadDeviceRules(mac);
         await this.fetchDevices();
       } catch (err) {
-        this.showToast("Errore Prenotazione IP", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Prenotazione IP" : "IP Reservation Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1056,14 +1091,19 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Errore durante la rimozione della prenotazione');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la rimozione della prenotazione' : 'Error removing IP reservation'));
         }
 
-        this.showToast("Prenotazione Rimossa", "IP Statico rimosso. Il dispositivo utilizzerà DHCP dinamico.", "info");
+        const title = this.currentLanguage === 'it' ? "Prenotazione Rimossa" : "Reservation Removed";
+        const msg = this.currentLanguage === 'it' 
+          ? "IP Statico rimosso. Il dispositivo utilizzerà DHCP dinamico." 
+          : "Static IP reservation removed. Device will use dynamic DHCP.";
+        this.showToast(title, msg, "info");
         await this.loadDeviceRules(mac);
         await this.fetchDevices();
       } catch (err) {
-        this.showToast("Errore Rimozione", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Rimozione" : "Removal Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1071,13 +1111,17 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedDevice) return;
       const targetIp = (this.deviceReservation ? this.deviceReservation.ip : (this.selectedDevice.ip || '')).trim();
       if (!targetIp) {
-        this.showToast("IP Mancante", "Il dispositivo deve avere un indirizzo IP valido per aprire porte.", "warning");
+        const title = this.currentLanguage === 'it' ? "IP Mancante" : "Missing IP";
+        const msg = this.currentLanguage === 'it' ? "Il dispositivo deve avere un indirizzo IP valido per aprire porte." : "Device must have a valid IP address for port forwarding.";
+        this.showToast(title, msg, "warning");
         return;
       }
       const pFrom = parseInt(this.newPortForward.port_from);
       const pTo = parseInt(this.newPortForward.port_to);
       if (isNaN(pFrom) || isNaN(pTo) || pFrom < 1 || pFrom > 65535 || pTo < 1 || pTo > 65535) {
-        this.showToast("Porta non valida", "Inserisci numeri di porta validi compresi tra 1 e 65535.", "warning");
+        const title = this.currentLanguage === 'it' ? "Porta non valida" : "Invalid Port";
+        const msg = this.currentLanguage === 'it' ? "Inserisci numeri di porta validi compresi tra 1 e 65535." : "Please enter valid port numbers between 1 and 65535.";
+        this.showToast(title, msg, "warning");
         return;
       }
 
@@ -1096,14 +1140,17 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Errore durante la creazione del port forward');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la creazione del port forward' : 'Error creating port forward'));
         }
 
-        this.showToast("Porta Inoltrata", `Regola per porta ${pFrom} creata con successo su eero.`, "success");
+        const title = this.currentLanguage === 'it' ? "Porta Inoltrata" : "Port Forwarded";
+        const msg = this.currentLanguage === 'it' ? `Regola per porta ${pFrom} creata con successo su eero.` : `Rule for port ${pFrom} created on eero.`;
+        this.showToast(title, msg, "success");
         this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
         await this.loadDeviceRules(mac);
       } catch (err) {
-        this.showToast("Errore Port Forwarding", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Port Forwarding" : "Port Forward Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1116,13 +1163,16 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Errore durante la cancellazione della regola');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la cancellazione della regola' : 'Error deleting forwarding rule'));
         }
 
-        this.showToast("Regola Eliminata", "Port forwarding rimosso da eero.", "info");
+        const title = this.currentLanguage === 'it' ? "Regola Eliminata" : "Rule Deleted";
+        const msg = this.currentLanguage === 'it' ? "Port forwarding rimosso da eero." : "Port forwarding rule deleted from eero.";
+        this.showToast(title, msg, "info");
         await this.loadDeviceRules(mac);
       } catch (err) {
-        this.showToast("Errore Cancellazione", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Cancellazione" : "Deletion Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1160,11 +1210,14 @@ document.addEventListener('alpine:init', () => {
           is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target)
         });
 
-        this.showToast("Salvato", "Metadati e categoria dispositivo salvati con successo.", "success");
+        const title = this.currentLanguage === 'it' ? "Salvato" : "Saved";
+        const msg = this.currentLanguage === 'it' ? "Metadati e categoria dispositivo salvati con successo." : "Device metadata and category saved successfully.";
+        this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
       } catch (err) {
-        this.showToast("Errore Salvataggio", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Salvataggio" : "Save Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1178,13 +1231,17 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ paused: targetState })
         });
         device.paused = targetState;
-        this.showToast(
-          targetState ? "Accesso in Pausa" : "Accesso Riabilitato",
-          `Dispositivo '${device.custom_name || device.nickname || device.hostname}' ${targetState ? 'messo in pausa' : 'riattivato'}.`,
-          targetState ? "warning" : "success"
-        );
+        const title = targetState 
+          ? (this.currentLanguage === 'it' ? "Accesso in Pausa" : "Internet Paused") 
+          : (this.currentLanguage === 'it' ? "Accesso Riabilitato" : "Internet Restored");
+        const devName = device.custom_name || device.nickname || device.hostname;
+        const msg = this.currentLanguage === 'it'
+          ? `Dispositivo '${devName}' ${targetState ? 'messo in pausa' : 'riattivato'}.`
+          : `Device '${devName}' ${targetState ? 'paused' : 'restored'}.`;
+        this.showToast(title, msg, targetState ? "warning" : "success");
       } catch (err) {
-        this.showToast("Errore Pausa", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Pausa" : "Pause Error";
+        this.showToast(title, err.message, "error");
       }
     },
 

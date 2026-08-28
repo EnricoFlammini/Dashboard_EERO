@@ -347,11 +347,39 @@ class EeroClient:
 
     def _normalize_device(self, d: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            dev["mac"] = dev.get("mac") or dev.get("mac_address") or ""
+            dev = dict(d)
+            
+            # MAC Address
+            mac_val = dev.get("mac") or dev.get("mac_address")
+            if not mac_val and isinstance(dev.get("interface"), dict):
+                mac_val = dev["interface"].get("mac")
+            dev["mac"] = str(mac_val).strip() if mac_val else ""
+            dev["mac_address"] = dev["mac"]
+
+            # ID & URL
             dev_id = str(dev.get("id") or (dev.get("url", "").split("/")[-1] if dev.get("url") else "") or dev.get("mac") or "")
             dev["id"] = dev_id
             dev["url"] = dev.get("url") or (f"/2.2/devices/{dev_id}" if dev_id else "")
-            dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("mac", "Dispositivo")
+            
+            # Hostname & Display Name
+            dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or "Dispositivo"
+
+            # IP Address
+            raw_ip = dev.get("ip") or dev.get("ipv4")
+            if not raw_ip and isinstance(dev.get("ips"), list) and dev["ips"]:
+                raw_ip = dev["ips"][0]
+            if not raw_ip and isinstance(dev.get("interface"), dict):
+                raw_ip = dev["interface"].get("ip") or dev["interface"].get("ipv4")
+            dev["ip"] = str(raw_ip).strip() if raw_ip else None
+
+            # Connection Status (Online / Offline / Paused)
+            conn_val = dev.get("connected")
+            if conn_val is None and isinstance(dev.get("connectivity"), dict):
+                conn_val = dev["connectivity"].get("connected")
+            if conn_val is None:
+                conn_val = (dev.get("status") == "connected")
+            dev["connected"] = bool(conn_val)
+
             # Channel & Frequency Band extraction
             conn_dict = dev.get("connectivity") if isinstance(dev.get("connectivity"), dict) else {}
             iface_dict = dev.get("interface") if isinstance(dev.get("interface"), dict) else {}
@@ -371,7 +399,7 @@ class EeroClient:
             if is_wired:
                 dev["wireless"] = False
                 dev["connection_type"] = "wired"
-                dev["frequency_band"] = "Cablato"
+                dev["frequency_band"] = "Ethernet"
                 dev["wireless_band"] = "Ethernet"
             else:
                 dev["wireless"] = True
@@ -399,15 +427,16 @@ class EeroClient:
             dev["channel"] = channel if channel > 0 else (raw_channel if raw_channel else None)
 
             # Signal RSSI
-            if "signal_rssi" not in dev:
+            if "signal_rssi" not in dev or dev["signal_rssi"] is None:
                 rssi = dev.get("rssi")
                 if rssi is None and isinstance(dev.get("connectivity"), dict):
-                    sig_str = str(dev["connectivity"].get("signal", "-55"))
+                    sig_str = str(dev["connectivity"].get("signal", ""))
                     try:
-                        rssi = int(sig_str.split()[0].replace("dBm", ""))
+                        if sig_str:
+                            rssi = int(sig_str.split()[0].replace("dBm", ""))
                     except Exception:
-                        rssi = -55
-                dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] else None)
+                        rssi = None
+                dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] and dev["wireless"] else None)
 
             # Source / Connected eero
             source = dev.get("source")
@@ -417,6 +446,9 @@ class EeroClient:
             elif isinstance(dev.get("eero"), dict):
                 dev["connected_eero_id"] = str(dev["eero"].get("id") or dev["eero"].get("url", "").split("/")[-1])
                 dev["connected_eero_name"] = dev["eero"].get("location") or dev["eero"].get("name") or ""
+            elif isinstance(dev.get("parent"), dict):
+                dev["connected_eero_id"] = str(dev["parent"].get("id") or dev["parent"].get("url", "").split("/")[-1])
+                dev["connected_eero_name"] = dev["parent"].get("location") or dev["parent"].get("name") or ""
 
             # Usage / Throughput rates (STRICT REAL DATA ONLY)
             usage = dev.get("usage")
@@ -568,19 +600,51 @@ class EeroClient:
         if not self.current_network_id:
             return self._get_demo_devices()
 
+        raw_list = []
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices", headers=self._get_headers())
-            if resp.status_code != 200:
-                logger.error(f"Error fetching devices: {resp.status_code} {resp.text}")
-                return self._get_demo_devices()
-            raw_list = resp.json().get("data", [])
-            devices_list = []
-            for d in raw_list:
+            try:
+                resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices", headers=self._get_headers())
+                if resp.status_code == 200:
+                    json_data = resp.json()
+                    data = json_data.get("data", json_data) if isinstance(json_data, dict) else json_data
+                    if isinstance(data, list):
+                        raw_list = data
+                    elif isinstance(data, dict):
+                        if isinstance(data.get("devices"), list):
+                            raw_list = data["devices"]
+                        elif isinstance(data.get("clients"), list):
+                            raw_list = data["clients"]
+            except Exception as e:
+                logger.warning(f"Error fetching /devices endpoint: {e}")
+
+            # Fallback 1: recupero dispositivi dai dettagli completi della rete se /devices era vuoto o assente
+            if not raw_list:
                 try:
-                    devices_list.append(self._normalize_device(d))
-                except Exception as ex:
-                    logger.error(f"Error normalizing device item: {ex}")
-            return devices_list
+                    resp_net = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}", headers=self._get_headers())
+                    if resp_net.status_code == 200:
+                        net_data = resp_net.json().get("data", {})
+                        if isinstance(net_data, dict):
+                            if isinstance(net_data.get("devices"), list) and net_data["devices"]:
+                                raw_list = net_data["devices"]
+                            elif isinstance(net_data.get("clients"), list) and net_data["clients"]:
+                                raw_list = net_data["clients"]
+                except Exception as e:
+                    logger.warning(f"Error fetching devices fallback from /networks: {e}")
+
+        # Se non ci sono dispositivi connessi/noti sulla rete reale, ritorna lista vuota dinamica
+        if not raw_list:
+            return []
+
+        devices_list = []
+        for d in raw_list:
+            if not isinstance(d, dict):
+                continue
+            try:
+                devices_list.append(self._normalize_device(d))
+            except Exception as ex:
+                logger.error(f"Error normalizing device item: {ex}")
+                devices_list.append(dict(d))
+        return devices_list
 
     # =========================================================================
     # CONTROLLI E AZIONI SU RETE E NODI
