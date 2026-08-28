@@ -103,18 +103,42 @@ class NotificationService:
 
     async def notify_digest(self, digest_summary: Dict[str, Any]):
         title = "📊 Riepilogo Giornaliero eero Mesh"
+        net_name = digest_summary.get("network_name", "Rete eero")
+        health = digest_summary.get("health_score", 100)
+        isp = digest_summary.get("isp", "N/D")
+        active = digest_summary.get("active_devices_count", 0)
+        c_6g = digest_summary.get("count_6ghz", 0)
+        c_5g = digest_summary.get("count_5ghz", 0)
+        c_24g = digest_summary.get("count_24ghz", 0)
+        c_wired = digest_summary.get("count_wired", 0)
+        nodes_on = digest_summary.get("online_nodes", 0)
+        nodes_tot = digest_summary.get("total_nodes", 0)
+        down = digest_summary.get("wan_down", 0)
+        up = digest_summary.get("wan_up", 0)
+        ping = digest_summary.get("wan_ping", 0)
+
+        # Formattazione dettagliata delle frequenze
+        bands_detail = []
+        if c_6g > 0: bands_detail.append(f"6 GHz: {c_6g}")
+        if c_5g > 0: bands_detail.append(f"5 GHz: {c_5g}")
+        if c_24g > 0: bands_detail.append(f"2.4 GHz: {c_24g}")
+        if c_wired > 0: bands_detail.append(f"Cablati: {c_wired}")
+        bands_str = " | ".join(bands_detail) if bands_detail else f"{active} totali"
+
         text = (
             f"<b>{title}</b>\n\n"
-            f"• <b>Traffico Totale WAN:</b> {digest_summary.get('total_gb', 0)} GB\n"
-            f"• <b>Top Consumer:</b> {digest_summary.get('top_device', 'N/D')} ({digest_summary.get('top_device_gb', 0)} GB)\n"
-            f"• <b>Velocità Media:</b> ↓ {digest_summary.get('avg_down_mbps', 0)} Mbps / ↑ {digest_summary.get('avg_up_mbps', 0)} Mbps\n"
-            f"• <b>Ping Medio:</b> {digest_summary.get('avg_ping_ms', 0)} ms\n"
-            f"• <b>Dispositivi Attivi:</b> {digest_summary.get('active_devices_count', 0)}\n"
+            f"🏠 <b>Rete:</b> {net_name} (Health Score: <b>{health}/100</b>)\n"
+            f"🌐 <b>Provider Internet (ISP):</b> {isp}\n"
+            f"📡 <b>Nodi Mesh Operativi:</b> {nodes_on}/{nodes_tot}\n"
+            f"📱 <b>Client Attivi:</b> {active}\n"
+            f"📶 <b>Frequenze Wi-Fi:</b> {bands_str}\n"
+            f"⚡ <b>Speed Test Gateway:</b> ↓ {down} Mbps / ↑ {up} Mbps\n"
+            f"⏱️ <b>Latenza Ping:</b> {ping} ms\n"
         )
         await db_service.save_alert(
             alert_type="daily_digest",
             title=title,
-            message=f"Consumo giornaliero {digest_summary.get('total_gb', 0)} GB. Top host: {digest_summary.get('top_device', 'N/D')}."
+            message=f"Report giornaliero inviato: {active} client connessi, {nodes_on}/{nodes_tot} nodi mesh attivi, ISP: {isp}."
         )
         await self.send_telegram_message(text)
         await self.send_webhook("daily_digest", digest_summary)

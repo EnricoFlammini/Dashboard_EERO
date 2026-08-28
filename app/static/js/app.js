@@ -1637,9 +1637,14 @@ document.addEventListener('alpine:init', () => {
 
     async triggerDigest() {
       try {
-        await fetch('/api/automations/digest/generate', { method: 'POST' });
-        this.showToast("Digest Inviato", "Riepilogo generato e inoltrato sui canali attivi.", "success");
-        await this.fetchAlerts();
+        const res = await fetch('/api/automations/digest/generate', { method: 'POST' });
+        const json = await res.json();
+        if (res.ok && json.status === 'success') {
+          this.showToast("Digest Inviato", json.message || "Riepilogo generato e inoltrato sui canali attivi.", "success");
+          await this.fetchAlerts();
+        } else {
+          this.showToast("Errore Invio Digest", json.detail || json.message || "Impossibile inviare il digest.", "error");
+        }
       } catch (err) {
         this.showToast("Errore Digest", err.message, "error");
       }

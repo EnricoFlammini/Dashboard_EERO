@@ -311,34 +311,53 @@ class BackgroundPoller:
             self._last_adguard_sync = now
             asyncio.create_task(adguard_service.auto_sync_if_enabled(self.cached_devices))
 
-    async def _send_daily_digest(self):
+    async def _send_daily_digest(self) -> Dict[str, Any]:
         try:
-            hogs = await db_service.get_top_bandwidth_hogs(hours=24, limit=1)
             stats = await db_service.get_speedtest_stats()
-            wan_hist = await db_service.get_wan_metrics_history(hours=24)
             
-            total_gb = 0.0
-            if wan_hist and len(wan_hist) > 1:
-                total_rx = wan_hist[-1].get("rx_bytes", 0) - wan_hist[0].get("rx_bytes", 0)
-                total_tx = wan_hist[-1].get("tx_bytes", 0) - wan_hist[0].get("tx_bytes", 0)
-                total_gb = round(max(0, total_rx + total_tx) / (1024 ** 3), 2)
+            # Calcolo dispositivi connessi e suddivisione per banda fisica
+            connected_devices = [d for d in self.cached_devices if d.get("connected")]
+            total_active = len(connected_devices)
+            
+            count_6ghz = sum(1 for d in connected_devices if "6" in str(d.get("wireless_band", "")))
+            count_5ghz = sum(1 for d in connected_devices if "5" in str(d.get("wireless_band", "")))
+            count_24ghz = sum(1 for d in connected_devices if "2.4" in str(d.get("wireless_band", "")))
+            count_wired = sum(1 for d in connected_devices if d.get("wired") or "wired" in str(d.get("connection_type", "")).lower() or "cablato" in str(d.get("wireless_band", "")).lower())
 
-            top_dev_name = hogs[0].get("display_name", "N/D") if hogs else "N/D"
-            top_dev_gb = round(hogs[0].get("total_bytes", 0) / (1024 ** 3), 2) if hogs else 0
+            # Informazioni sui nodi mesh
+            total_nodes = len(self.cached_eeros)
+            online_nodes = sum(1 for e in self.cached_eeros if e.get("connected") or e.get("status") in ("connected", "online"))
+            
+            # Informazioni WAN e Speedtest Gateway
+            net = self.cached_network or {}
+            wan_down = net.get("speed_down_mbps") or stats.get("avg_download") or 0.0
+            wan_up = net.get("speed_up_mbps") or stats.get("avg_upload") or 0.0
+            wan_ping = net.get("ping_ms") or stats.get("avg_ping") or 0.0
+            isp_name = net.get("isp") or "N/D"
+            network_name = net.get("name") or "Rete eero"
+            health_score = self.cached_health_score or 100
 
             digest_payload = {
-                "total_gb": total_gb,
-                "top_device": top_dev_name,
-                "top_device_gb": top_dev_gb,
-                "avg_down_mbps": stats.get("avg_download", 0),
-                "avg_up_mbps": stats.get("avg_upload", 0),
-                "avg_ping_ms": stats.get("avg_ping", 0),
-                "active_devices_count": len([d for d in self.cached_devices if d.get("connected")]),
+                "network_name": network_name,
+                "health_score": health_score,
+                "isp": isp_name,
+                "active_devices_count": total_active,
+                "count_6ghz": count_6ghz,
+                "count_5ghz": count_5ghz,
+                "count_24ghz": count_24ghz,
+                "count_wired": count_wired,
+                "online_nodes": online_nodes,
+                "total_nodes": total_nodes,
+                "wan_down": wan_down,
+                "wan_up": wan_up,
+                "wan_ping": wan_ping,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             await notification_service.notify_digest(digest_payload)
+            return digest_payload
         except Exception as e:
-            logger.error(f"Errore invio digest giornaliero: {e}")
+            logger.error(f"Errore invio digest giornaliero: {e}", exc_info=True)
+            raise e
 
     def update_cached_profiles(self, profiles: List[Dict[str, Any]]):
         """Aggiorna atomicamente i profili in RAM e re-indicizza le associazioni di tutti i dispositivi in cache."""

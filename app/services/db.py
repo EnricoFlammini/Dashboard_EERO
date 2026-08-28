@@ -109,200 +109,29 @@ class DBService:
             logger.info("Database schema initialized successfully.")
 
     async def purge_all_mock_data(self):
-        """Elimina completamente tutti i dati mock/demo sia da device_metrics che da wan_metrics e speedtests."""
-        demo_macs = [
-            '00:11:32:9F:88:44', 'B4:2E:99:A1:01:10', 'F4:F5:DB:33:44:55',
-            '28:70:4E:88:99:AA', 'A8:5E:45:12:34:56', '48:E7:DA:99:88:77',
-            '18:84:30:11:22:33', 'E0:4F:43:AA:BB:CC', '52:54:00:12:34:56',
-            '94:9F:3E:22:33:44', 'A4:C3:F0:11:22:33', 'dev_01', 'dev_02', 'dev_03'
-        ]
-        demo_hostnames = [
-            'Home NAS & Media Server', 'MacBook Pro Lavoro', 'Smart TV OLED 65"',
-            'iPhone Personale', 'PS5 Pro Console', 'Shelly Domotica Quadro',
-            'Termostato Soggiorno', 'iPad Cucina / Ricette', 'Home Assistant Server',
-            'Sonos Speaker Salone', 'Synology-DS920Plus', 'iPhone-15-Pro',
-            'Sony-Bravia-OLED-4K', 'PlayStation-5', 'Shelly-Pro-4PM',
-            'Sonos-One-Gen2', 'HomeAssistant-NUC', 'iPad-Air-M1'
-        ]
+        """Elimina completamente tutti i dati mock/demo dai record speedtest."""
         try:
             async with self.get_connection() as db:
-                pm = ",".join("?" for _ in demo_macs)
-                ph = ",".join("?" for _ in demo_hostnames)
-                await db.execute(
-                    f"DELETE FROM device_metrics WHERE mac_address IN ({pm}) OR hostname IN ({ph});",
-                    (*demo_macs, *demo_hostnames)
-                )
-                await db.execute("DELETE FROM wan_metrics WHERE public_ip IN ('93.42.180.55', '1.2.3.4', '0.0.0.0') OR download_speed_mbps > 160.0;")
                 await db.execute("DELETE FROM speedtests WHERE server_name LIKE '%Fastweb Milan%' OR server_name LIKE '%Demo%' OR server_name LIKE '%synthetics%';")
                 await db.commit()
-                logger.info("Purged all demo/mock metrics records from SQLite.")
+                logger.info("Purged all demo/mock speedtest records from SQLite.")
         except Exception as e:
             logger.warning(f"Error purging mock data: {e}")
 
-    # ----------------- WAN METRICS -----------------
-    async def save_wan_metrics(
-        self,
-        status: str,
-        public_ip: str,
-        rx_bytes: float,
-        tx_bytes: float,
-        download_speed_mbps: float,
-        upload_speed_mbps: float,
-    ) -> int:
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        async with self.get_connection() as db:
-            cursor = await db.execute(
-                """
-                INSERT INTO wan_metrics 
-                (timestamp, status, public_ip, rx_bytes, tx_bytes, download_speed_mbps, upload_speed_mbps)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (now, status, public_ip, rx_bytes, tx_bytes, download_speed_mbps, upload_speed_mbps)
-            )
-            await db.commit()
-            return cursor.lastrowid
-
+    # ----------------- WAN & DEVICE METRICS (LEGACY/SAFE STUBS) -----------------
     async def get_wan_metrics_history(
         self,
         hours: Optional[int] = 24,
         start_time: Optional[str] = None,
         end_time: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        hours = hours or 24
-        async with self.get_connection() as db:
-            if start_time and end_time:
-                query = """
-                    SELECT timestamp, status, public_ip, rx_bytes, tx_bytes, 
-                           download_speed_mbps, upload_speed_mbps 
-                    FROM wan_metrics 
-                    WHERE timestamp BETWEEN ? AND ? 
-                    ORDER BY timestamp ASC
-                """
-                cursor = await db.execute(query, (start_time, end_time))
-            else:
-                since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-                since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
-                query = """
-                    SELECT timestamp, status, public_ip, rx_bytes, tx_bytes, 
-                           download_speed_mbps, upload_speed_mbps 
-                    FROM wan_metrics 
-                    WHERE timestamp >= ? OR timestamp >= ?
-                    ORDER BY timestamp ASC
-                """
-                cursor = await db.execute(query, (since, since_iso))
-            rows = await cursor.fetchall()
-            results = [dict(row) for row in rows]
-
-            return results
-
-    # ----------------- DEVICE METRICS -----------------
-    async def save_device_metrics_batch(self, metrics_list: List[Dict[str, Any]]):
-        if not metrics_list:
-            return
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        records = [
-            (
-                now,
-                m.get("mac_address", ""),
-                m.get("hostname", "Unknown"),
-                float(m.get("rx_bytes", 0)),
-                float(m.get("tx_bytes", 0)),
-                float(m.get("download_rate", 0)),
-                float(m.get("upload_rate", 0))
-            )
-            for m in metrics_list
-        ]
-        async with self.get_connection() as db:
-            await db.executemany(
-                """
-                INSERT INTO device_metrics 
-                (timestamp, mac_address, hostname, rx_bytes, tx_bytes, download_rate, upload_rate)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                records
-            )
-            await db.commit()
+        return []
 
     async def get_device_metrics_history(self, mac_address: str, hours: int = 24) -> List[Dict[str, Any]]:
-        since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        async with self.get_connection() as db:
-            cursor = await db.execute(
-                """
-                SELECT timestamp, mac_address, hostname, rx_bytes, tx_bytes, download_rate, upload_rate
-                FROM device_metrics
-                WHERE mac_address = ? AND (timestamp >= ? OR timestamp >= ?)
-                ORDER BY timestamp ASC
-                """,
-                (mac_address, since, since_iso)
-            )
-            rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
+        return []
 
     async def get_top_bandwidth_hogs(self, hours: int = 24, limit: int = 10) -> List[Dict[str, Any]]:
-        since = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        since_iso = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        try:
-            poll_interval = float(await self.get_setting("poll_interval", str(settings.poll_interval)))
-        except Exception:
-            poll_interval = 30.0
-
-        async with self.get_connection() as db:
-            cursor = await db.execute(
-                """
-                SELECT 
-                    dm.mac_address,
-                    COALESCE(meta.custom_name, dm.hostname, dm.mac_address) as display_name,
-                    COALESCE(meta.custom_icon, 'device') as custom_icon,
-                    COALESCE(meta.category, 'Altro') as category,
-                    MAX(dm.rx_bytes) - MIN(dm.rx_bytes) as delta_rx,
-                    MAX(dm.tx_bytes) - MIN(dm.tx_bytes) as delta_tx,
-                    MAX(dm.rx_bytes) as max_rx,
-                    MAX(dm.tx_bytes) as max_tx,
-                    AVG(dm.download_rate) as avg_download_rate,
-                    AVG(dm.upload_rate) as avg_upload_rate,
-                    SUM(dm.download_rate) as sum_download_rate,
-                    SUM(dm.upload_rate) as sum_upload_rate,
-                    COUNT(*) as samples_count
-                FROM device_metrics dm
-                LEFT JOIN device_metadata meta ON dm.mac_address = meta.mac_address
-                WHERE dm.timestamp >= ? OR dm.timestamp >= ?
-                GROUP BY dm.mac_address
-                HAVING (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) > 0 
-                       OR SUM(dm.download_rate) > 0 OR SUM(dm.upload_rate) > 0
-                ORDER BY (
-                    (MAX(dm.rx_bytes) - MIN(dm.rx_bytes) + MAX(dm.tx_bytes) - MIN(dm.tx_bytes)) + 
-                    (SUM(dm.download_rate) + SUM(dm.upload_rate)) * 125000.0 * ?
-                ) DESC
-                LIMIT ?
-                """,
-                (since, since_iso, poll_interval, limit)
-            )
-            rows = await cursor.fetchall()
-            results = []
-            for r in rows:
-                row_dict = dict(r)
-                delta_rx = max(0.0, float(row_dict.get("delta_rx") or 0.0))
-                delta_tx = max(0.0, float(row_dict.get("delta_tx") or 0.0))
-                sum_dl = float(row_dict.get("sum_download_rate") or 0.0)
-                sum_ul = float(row_dict.get("sum_upload_rate") or 0.0)
-
-                # Se ci sono contatori hardware di byte delta da eero
-                if (delta_rx + delta_tx) > 0:
-                    rx_bytes = delta_rx
-                    tx_bytes = delta_tx
-                else:
-                    # Integrazione fisica reale dei campioni di velocità rilevati dal poller:
-                    # Byte = sum(Mbps) * 1_000_000 / 8 * poll_interval
-                    rx_bytes = (sum_dl * 1_000_000.0 / 8.0) * poll_interval
-                    tx_bytes = (sum_ul * 1_000_000.0 / 8.0) * poll_interval
-
-                tot = rx_bytes + tx_bytes
-                row_dict["total_rx_bytes"] = rx_bytes
-                row_dict["total_tx_bytes"] = tx_bytes
-                row_dict["total_bytes"] = tot
-                results.append(row_dict)
-            return results
+        return []
 
     # ----------------- SPEEDTESTS -----------------
     async def save_speedtest(

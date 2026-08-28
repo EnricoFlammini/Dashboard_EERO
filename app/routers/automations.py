@@ -239,8 +239,12 @@ async def mark_all_alerts_read():
 @router.post("/digest/generate")
 async def generate_immediate_digest():
     """Genera e invia immediatamente il report di riepilogo della rete."""
-    await background_poller._send_daily_digest()
-    return {"status": "success", "message": "Report Digest generato e inviato con successo."}
+    try:
+        data = await background_poller._send_daily_digest()
+        return {"status": "success", "message": "Report Digest generato e inviato con successo sui canali attivi.", "data": data}
+    except Exception as e:
+        logger.error(f"Errore generazione digest: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore durante l'invio del report: {str(e)}")
 
 
 # =========================================================================
