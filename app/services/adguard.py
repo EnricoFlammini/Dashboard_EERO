@@ -170,6 +170,19 @@ class AdGuardService:
                 logger.warning(f"Impossibile recuperare i client esistenti da AdGuard ({e})")
             return True
 
+        # Calcola occorrenze di ciascun IP per escludere indirizzi gateway o broadcast condivisi
+        ip_counts: Dict[str, int] = {}
+        for dev in devices:
+            raw_ips = []
+            if dev.get("ip"):
+                raw_ips.append(str(dev["ip"]).strip())
+            for v6 in (dev.get("ipv6_addresses") or []):
+                if isinstance(v6, str):
+                    raw_ips.append(v6.strip())
+            for single_ip in set(raw_ips):
+                if single_ip:
+                    ip_counts[single_ip.lower()] = ip_counts.get(single_ip.lower(), 0) + 1
+
         # Preparazione e disambiguazione dei dispositivi da sincronizzare
         used_names: Dict[str, int] = {}
         prepared_clients: List[Dict[str, Any]] = []
@@ -181,16 +194,23 @@ class AdGuardService:
                 continue
 
             ids: List[str] = []
-            # 1. IPv4 pulito
+            # 1. IPv4 pulito (solo se non condiviso tra più apparati)
             if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
-                ids.append(ip.strip())
-            # 2. IPv6 globale/SLAAC instradabile (esclude link-local fe80:)
+                ip_clean = ip.strip()
+                if ip_counts.get(ip_clean.lower(), 0) == 1:
+                    ids.append(ip_clean)
+
+            # 2. IPv6 globale/SLAAC instradabile (esclude link-local fe80:, gateway ::1 e IP condivisi)
             for v6 in (dev.get("ipv6_addresses") or []):
                 if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
                     v6_clean = v6.strip()
-                    if v6_clean and v6_clean not in ids:
-                        ids.append(v6_clean)
-            # 3. MAC address pulito
+                    if v6_clean.endswith("::1"):
+                        continue  # Gateway / Thread router loopback
+                    if ip_counts.get(v6_clean.lower(), 0) == 1:
+                        if v6_clean not in ids:
+                            ids.append(v6_clean)
+
+            # 3. MAC address pulito (univoco per scheda di rete)
             if mac and isinstance(mac, str) and len(mac) >= 12:
                 mac_clean = mac.strip().upper()
                 if mac_clean not in ids:

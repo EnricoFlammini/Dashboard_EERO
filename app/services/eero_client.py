@@ -467,8 +467,8 @@ class EeroClient:
                 if "." in ip_str and ":" not in ip_str and not ip_str.startswith("169.254."):
                     if ip_str not in ipv4_candidates:
                         ipv4_candidates.append(ip_str)
-                # IPv6 check (must contain colon, exclude link-local fe80:: which is invalid in DNS IDs)
-                elif ":" in ip_str and not ip_str.lower().startswith("fe80:"):
+                # IPv6 check (must contain colon, exclude link-local fe80:: and mesh gateway ::1)
+                elif ":" in ip_str and not ip_str.lower().startswith("fe80:") and not ip_str.endswith("::1"):
                     if ip_str not in ipv6_candidates:
                         ipv6_candidates.append(ip_str)
 
