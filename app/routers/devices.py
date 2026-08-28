@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Dict, List, Optional
+import re
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.services.db import db_service
@@ -111,6 +113,94 @@ async def list_devices(
         "total": len(devices),
         "count": len(filtered),
         "devices": filtered
+    }
+
+
+@router.get("/export/hosts", response_class=PlainTextResponse)
+async def export_hosts(
+    connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi"),
+    domain_suffix: Optional[str] = Query(None, description="Suffisso dominio opzionale (es. .lan o .home)")
+):
+    """Esporta la lista dispositivi in formato standard /etc/hosts (compatibile con AdGuard Home, Pi-hole, dnsmasq)."""
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+
+    lines = [
+        "# ========================================================================",
+        "# eero Mesh Network - Hosts Export for AdGuard Home / Pi-hole / dnsmasq",
+        "# ========================================================================",
+        ""
+    ]
+
+    suffix = f".{domain_suffix.lstrip('.')}" if domain_suffix else ""
+
+    for d in devices:
+        if connected_only and not d.get("connected"):
+            continue
+        ip = d.get("ip")
+        if not ip or ip.startswith("169.254."):
+            continue
+
+        raw_name = d.get("nickname") or d.get("hostname") or d.get("device_name") or f"device-{ip.replace('.', '-')}"
+        clean_name = re.sub(r"[^a-zA-Z0-9\-_]", "-", raw_name).strip("-").lower()
+        if not clean_name:
+            clean_name = f"device-{ip.replace('.', '-')}"
+
+        host_fqdn = f"{clean_name}{suffix}"
+        mac = d.get("mac") or "N/D"
+        lines.append(f"{ip:<16} {host_fqdn:<32} # {raw_name} ({mac})")
+
+    return "\n".join(lines) + "\n"
+
+
+@router.get("/export/adguard")
+async def export_adguard(
+    connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi")
+):
+    """Esporta i dispositivi in formato JSON conforme alla configurazione client di AdGuard Home (/control/clients)."""
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+
+    clients = []
+    for d in devices:
+        if connected_only and not d.get("connected"):
+            continue
+        ip = d.get("ip")
+        mac = d.get("mac")
+        if not ip and not mac:
+            continue
+
+        ids = []
+        if ip and not ip.startswith("169.254."):
+            ids.append(ip)
+        if mac:
+            ids.append(mac.upper())
+
+        if not ids:
+            continue
+
+        name = d.get("nickname") or d.get("hostname") or d.get("device_name") or f"eero-client-{ip or mac}"
+
+        tag_list = ["eero-mesh"]
+        if d.get("connection_type") == "wired":
+            tag_list.append("wired")
+        elif d.get("wireless_band"):
+            tag_list.append(f"wifi-{d.get('wireless_band')}".lower().replace(" ", "").replace(".", ""))
+
+        clients.append({
+            "name": name,
+            "ids": ids,
+            "tags": tag_list,
+            "use_global_settings": True,
+            "filtering_enabled": True,
+            "parental_enabled": False,
+            "safebrowsing_enabled": True
+        })
+
+    return {
+        "status": "success",
+        "count": len(clients),
+        "clients": clients
     }
 
 

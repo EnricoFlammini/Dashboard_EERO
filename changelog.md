@@ -6,6 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [Unreleased / Pre-v1.03.00] - 2026-08-28
+
+### 🔔 Integrazioni Webhook, REST API & Sincronizzazione DNS (AdGuard Home / Pi-hole)
+* **Documentazione Completa Webhooks:** Aggiunta nel `README.md` la specifica formale dei payload JSON e degli eventi asincroni (`new_device`, `node_offline`, `daily_digest`, `test_ping`) inviati da `WEBHOOK_URL`.
+* **Nuovi Endpoint di Esportazione Client & DHCP:**
+  * `GET /api/devices/export/hosts`: Restituisce i client attivi formattati in standard `/etc/hosts` / `dnsmasq` con supporto a suffissi di dominio (es. `.lan`).
+  * `GET /api/devices/export/adguard`: Restituisce un array JSON compatibile con le API di provisioning client di AdGuard Home (`/control/clients/add` e `/control/clients/update`).
+* **Script di Sincronizzazione AdGuard:** Creato [`scripts/adguard_sync.py`](scripts/adguard_sync.py) pronto per l'esecuzione automatica via cron per sincronizzare i nomi host dei client su AdGuard Home.
+
+---
+
 ## [1.02.00] - 2026-08-26
 
 ### 📡 Telemetria Frequenze Wi-Fi (2.4/5/6GHz) & Integrazione Utenti Cloud eero

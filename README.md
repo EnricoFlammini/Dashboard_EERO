@@ -127,6 +127,116 @@ tar -czvf eero_dashboard_backup_$(date +%F).tar.gz ./data
 
 ---
 
+## 🔔 Webhooks & REST API Reference
+
+When `WEBHOOK_URL` is set in `.env` (or configured via the in-app settings UI), the dashboard issues an asynchronous `HTTP POST` request with a JSON payload whenever critical network events occur.
+
+### Webhook Event Types & JSON Payloads
+
+#### 1. `new_device` (Intruder Alert / New Device Connected)
+Triggered immediately when a device connects to the mesh network for the first time:
+```json
+{
+  "event": "new_device",
+  "timestamp": "2026-08-28T08:25:00Z",
+  "source": "eero_custom_dashboard",
+  "data": {
+    "hostname": "Living-Room-AppleTV",
+    "ip": "192.168.4.52",
+    "mac": "AA:BB:CC:DD:EE:FF",
+    "wireless": true,
+    "wireless_band": "5GHz",
+    "connected_eero_name": "Living Room Gateway"
+  }
+}
+```
+
+#### 2. `node_offline` (Mesh Node Disconnected)
+Triggered when an eero Beacon or Gateway drops offline:
+```json
+{
+  "event": "node_offline",
+  "timestamp": "2026-08-28T08:26:00Z",
+  "source": "eero_custom_dashboard",
+  "data": {
+    "location": "Kitchen Beacon",
+    "model": "eero Pro 6E",
+    "status": "offline",
+    "ip": "192.168.4.2"
+  }
+}
+```
+
+#### 3. `daily_digest` (Daily Network Health Summary)
+Sent daily with WAN performance, latency averages, and active device counts:
+```json
+{
+  "event": "daily_digest",
+  "timestamp": "2026-08-28T09:00:00Z",
+  "source": "eero_custom_dashboard",
+  "data": {
+    "avg_download_mbps": 842.5,
+    "avg_upload_mbps": 110.2,
+    "avg_ping_ms": 11.4,
+    "total_devices_seen": 34,
+    "nodes_online": 3
+  }
+}
+```
+
+---
+
+## 🛡️ AdGuard Home & Pi-hole DNS Integration
+
+You can easily synchronize your eero mesh client names, IP assignments, and MAC addresses into **AdGuard Home** or **Pi-hole** so your DNS query logs display readable hostnames instead of raw IP addresses.
+
+### 1. `/etc/hosts` / `dnsmasq` Plain-Text Export
+* **Endpoint:** `GET http://<dashboard-ip>:8085/api/devices/export/hosts`
+* **Query Parameters:**
+  * `connected_only=true` *(default: true)* — Only export active devices.
+  * `domain_suffix=lan` *(optional)* — Appends a local domain suffix (e.g. `.lan` or `.home`).
+
+```bash
+# Pull hosts file from dashboard
+curl -s "http://localhost:8085/api/devices/export/hosts?domain_suffix=lan"
+```
+**Output Example:**
+```text
+# ========================================================================
+# eero Mesh Network - Hosts Export for AdGuard Home / Pi-hole / dnsmasq
+# ========================================================================
+192.168.4.20    eagle.lan                        # eagle (AA:BB:CC:11:22:33)
+192.168.4.31    mantra-kitchen.lan               # Mantra (AA:BB:CC:44:55:66)
+192.168.4.52    living-room-appletv.lan          # Apple TV (AA:BB:CC:77:88:99)
+```
+
+### 2. AdGuard Home REST API Format (`/control/clients`)
+* **Endpoint:** `GET http://<dashboard-ip>:8085/api/devices/export/adguard`
+* Returns a structured JSON list ready for AdGuard Home client provisioning.
+
+### 3. Automated AdGuard Home Sync Script
+A ready-to-use Python sync script is provided in [`scripts/adguard_sync.py`](scripts/adguard_sync.py).
+
+```bash
+# Run once or add to crontab (e.g. every 10 minutes)
+python scripts/adguard_sync.py \
+  --eero http://localhost:8085 \
+  --adguard http://192.168.4.2:80 \
+  --user admin \
+  --pass MySecretPassword
+```
+
+---
+
+## 🙏 Acknowledgements & Prior Art
+
+This project stands on the shoulders of the open-source networking and home automation community:
+* **[`343max/eero-client`](https://github.com/343max/eero-client):** The foundational pioneer library for reverse-engineering and exploring the private eero cloud REST API.
+* **[Home Assistant Community](https://github.com/home-assistant/core):** For valuable historical insights into eero authentication flows, device tracker models, and API stability.
+* **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** For inspiring clean local DNS resolution and client discovery patterns.
+
+---
+
 <a name="italiano"></a>
 # 🇮🇹 Documentazione in Italiano
 
@@ -237,6 +347,41 @@ Tutti i dati risiedono nella cartella montata `./data`:
 # Esempio di backup rapido
 tar -czvf eero_dashboard_backup_$(date +%F).tar.gz ./data
 ```
+
+---
+
+## 🔔 Riferimento Webhook & Integrazione DNS (AdGuard Home / Pi-hole)
+
+Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannello Impostazioni nell'interfaccia web), la dashboard invia automaticamente una richiesta `HTTP POST` con un payload JSON all'accadere di eventi critici sulla rete.
+
+### Tipologie di Eventi Webhook & Payload JSON
+
+* **`new_device` (Rilevamento Nuovo Dispositivo):** Inviato istantaneamente quando un dispositivo si collega per la prima volta. Contiene `hostname`, `ip`, `mac`, frequenza Wi-Fi e nodo eero di connessione.
+* **`node_offline` (Nodo Mesh Disconnesso):** Inviato quando un Beacon o il Gateway perde la connessione.
+* **`daily_digest` (Report Giornaliero):** Inviato ogni 24 ore con medie di download, upload, latenza (ping) e conteggio dispositivi.
+
+### Sincronizzazione Nomi Dispositivi con AdGuard Home & Pi-hole
+
+1. **Export Formato File `/etc/hosts` / `dnsmasq`:**  
+   `GET http://<dashboard-ip>:8085/api/devices/export/hosts?domain_suffix=lan`  
+   Restituisce l'elenco dei dispositivi attivi nel formato compatibile con file hosts e regole DNS personalizzate.
+2. **Export Formato JSON AdGuard Home (`/control/clients`):**  
+   `GET http://<dashboard-ip>:8085/api/devices/export/adguard`  
+   Restituisce un array JSON strutturato per il provisioning diretto dei client in AdGuard.
+3. **Script di Sincronizzazione Python Automatico:**  
+   È disponibile lo script pronto all'uso [`scripts/adguard_sync.py`](scripts/adguard_sync.py) eseguibile manualmente o via cron:
+   ```bash
+   python scripts/adguard_sync.py --eero http://localhost:8085 --adguard http://192.168.4.2:80 --user admin --pass MiaPassword
+   ```
+
+---
+
+## 🙏 Fonti & Riconoscimenti (Acknowledgements)
+
+Questo progetto si basa e si ispira al lavoro pionieristico della community open-source e dell'home automation:
+* **[`343max/eero-client`](https://github.com/343max/eero-client):** La libreria di riferimento originaria per il reverse-engineering e l'esplorazione delle REST API private del cloud eero.
+* **[Home Assistant Community](https://github.com/home-assistant/core):** Per gli studi approfonditi sui flussi di autenticazione 2FA e la stabilità delle chiamate di telemetria.
+* **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** Per gli standard e l'ispirazione nella gestione della risoluzione DNS locale e mappatura host.
 
 ---
 
