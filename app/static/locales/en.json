@@ -228,7 +228,17 @@
     "gaming_active_desc": "Gaming Mode is ACTIVE. {count} secondary devices are currently paused.",
     "gaming_inactive_desc": "Gaming Mode is DISABLED. All devices operate normally.",
     "disable_gaming_btn": "Disable Gaming Mode",
-    "enable_gaming_btn": "Enable Gaming Mode"
+    "enable_gaming_btn": "Enable Gaming Mode",
+    "adguard_title": "AdGuard Home DNS & DHCP Sync",
+    "adguard_subtitle": "Automatically sync eero device nicknames, MACs, and IP assignments into your AdGuard Home DNS server",
+    "adguard_enable_toggle": "Enable continuous automatic synchronization",
+    "adguard_url": "AdGuard Home Instance URL:",
+    "adguard_username": "Username (Optional):",
+    "adguard_password": "Password (Optional):",
+    "adguard_test_btn": "Test Connection",
+    "adguard_sync_btn": "Sync All Clients Now",
+    "adguard_save_btn": "Save AdGuard Settings",
+    "adguard_last_sync": "Last Sync:"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",

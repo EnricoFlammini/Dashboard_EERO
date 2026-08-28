@@ -4,6 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app.services.adguard import adguard_service
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
@@ -30,6 +31,19 @@ class NotificationSettingsRequest(BaseModel):
     telegram_chat_id: Optional[str] = None
     webhook_enabled: bool
     webhook_url: Optional[str] = None
+
+
+class AdGuardSettingsRequest(BaseModel):
+    enabled: bool
+    url: str = Field(..., description="URL di base dell'istanza AdGuard Home (es. http://192.168.4.2:80)")
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
+class AdGuardTestRequest(BaseModel):
+    url: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 
 @router.get("/focus-mode")
@@ -227,3 +241,57 @@ async def generate_immediate_digest():
     """Genera e invia immediatamente il report di riepilogo della rete."""
     await background_poller._send_daily_digest()
     return {"status": "success", "message": "Report Digest generato e inviato con successo."}
+
+
+# =========================================================================
+# ADGUARD HOME DNS INTEGRATION
+# =========================================================================
+
+@router.get("/adguard")
+async def get_adguard_settings():
+    """Restituisce la configurazione corrente dell'integrazione AdGuard Home."""
+    settings = await adguard_service.get_settings()
+    return {
+        "status": "success",
+        **settings
+    }
+
+
+@router.post("/adguard")
+async def update_adguard_settings(payload: AdGuardSettingsRequest):
+    """Salva le impostazioni di connessione verso AdGuard Home."""
+    await adguard_service.save_settings(
+        enabled=payload.enabled,
+        url=payload.url,
+        username=payload.username,
+        password=payload.password
+    )
+    return {"status": "success", "message": "Impostazioni AdGuard Home salvate con successo."}
+
+
+@router.post("/adguard/test")
+async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
+    """Verifica la connessione e l'autenticazione con l'istanza AdGuard Home."""
+    url = payload.url if payload else None
+    username = payload.username if payload else None
+    password = payload.password if payload else None
+    res = await adguard_service.test_connection(url=url, username=username, password=password)
+    return res
+
+
+@router.post("/adguard/sync")
+async def sync_adguard_devices():
+    """Forza la sincronizzazione immediata di tutti i dispositivi correnti verso AdGuard Home."""
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+    if not devices:
+        raise HTTPException(status_code=400, detail="Nessun dispositivo disponibile nella cache per la sincronizzazione.")
+    
+    res = await adguard_service.sync_devices(devices)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
+        
+    return {
+        "status": "success",
+        **res
+    }

@@ -4,6 +4,7 @@ from datetime import datetime, timezone, time as dt_time
 from typing import Any, Dict, List, Optional, Set
 
 from app.config import settings
+from app.services.adguard import adguard_service
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
@@ -38,6 +39,7 @@ class BackgroundPoller:
         self._last_retention_run: Optional[datetime] = None
         self._last_scheduled_speedtest: Optional[datetime] = None
         self._last_digest_date: Optional[str] = None
+        self._last_adguard_sync: Optional[datetime] = None
         self._prev_device_metrics: Dict[str, Dict[str, Any]] = {}
         self._prev_poll_time: Optional[datetime] = None
 
@@ -180,6 +182,7 @@ class BackgroundPoller:
                 if mac and self._known_macs and mac not in self._known_macs:
                     self._known_macs.add(mac)
                     asyncio.create_task(notification_service.notify_new_device(dev_copy))
+                    asyncio.create_task(adguard_service.auto_sync_if_enabled(enriched_devices))
                 elif mac:
                     self._known_macs.add(mac)
 
@@ -302,6 +305,11 @@ class BackgroundPoller:
         if now.hour == 21 and self._last_digest_date != today_str:
             self._last_digest_date = today_str
             asyncio.create_task(self._send_daily_digest())
+
+        # E. Sincronizzazione periodica AdGuard Home (ogni 30 minuti)
+        if self.cached_devices and (not self._last_adguard_sync or (now - self._last_adguard_sync).total_seconds() > 1800):
+            self._last_adguard_sync = now
+            asyncio.create_task(adguard_service.auto_sync_if_enabled(self.cached_devices))
 
     async def _send_daily_digest(self):
         try:

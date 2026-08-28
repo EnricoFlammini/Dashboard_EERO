@@ -228,7 +228,17 @@
     "gaming_active_desc": "La Gaming Mode è ATTIVA. {count} dispositivi secondari sono in pausa.",
     "gaming_inactive_desc": "La Gaming Mode è DISATTIVATA. Tutti i dispositivi operano normalmente.",
     "disable_gaming_btn": "Disattiva Gaming Mode",
-    "enable_gaming_btn": "Attiva Gaming Mode"
+    "enable_gaming_btn": "Attiva Gaming Mode",
+    "adguard_title": "Integrazione AdGuard Home (DNS & DHCP Sync)",
+    "adguard_subtitle": "Sincronizza automaticamente i nomi dei dispositivi e le assegnazioni IP verso il tuo server AdGuard Home",
+    "adguard_enable_toggle": "Abilita sincronizzazione automatica continua",
+    "adguard_url": "URL Istanza AdGuard Home:",
+    "adguard_username": "Username (Opzionale):",
+    "adguard_password": "Password (Opzionale):",
+    "adguard_test_btn": "Test Connessione",
+    "adguard_sync_btn": "Sincronizza Ora Tutti i Client",
+    "adguard_save_btn": "Salva Impostazioni AdGuard",
+    "adguard_last_sync": "Ultima Sincronizzazione:"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",

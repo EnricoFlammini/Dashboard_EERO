@@ -132,6 +132,21 @@ document.addEventListener('alpine:init', () => {
       webhook_enabled: false,
       webhook_url: ''
     },
+    
+    // AdGuard Home DNS Integration State
+    adguardSettings: {
+      enabled: false,
+      url: '',
+      username: '',
+      password: '',
+      has_password: false,
+      last_sync_time: '',
+      last_sync_count: 0,
+      last_sync_status: ''
+    },
+    adguardTesting: false,
+    adguardSyncing: false,
+    
     alertsList: [],
 
     // Built-in User Manual State
@@ -241,6 +256,11 @@ document.addEventListener('alpine:init', () => {
         }, 50);
       } else if (tab === 'devices') {
         await this.fetchDevices();
+      } else if (tab === 'controls') {
+        await this.fetchNightMode();
+        await this.fetchNotificationSettings();
+        await this.fetchAdGuardSettings();
+        await this.fetchAlerts();
       }
     },
 
@@ -1483,6 +1503,99 @@ document.addEventListener('alpine:init', () => {
         this.showToast("Test Inviato", `Telegram: ${json.telegram_sent ? 'OK' : 'No'} | Webhook: ${json.webhook_sent ? 'OK' : 'No'}`, "info");
       } catch (err) {
         this.showToast("Errore Test", err.message, "error");
+      }
+    },
+
+    // =========================================================================
+    // ADGUARD HOME DNS & DHCP CLIENT SYNC
+    // =========================================================================
+    async fetchAdGuardSettings() {
+      try {
+        const res = await fetch('/api/automations/adguard');
+        const json = await res.json();
+        if (json.status === 'success') {
+          this.adguardSettings = {
+            enabled: Boolean(json.enabled),
+            url: json.url || '',
+            username: json.username || '',
+            password: '',
+            has_password: Boolean(json.has_password),
+            last_sync_time: json.last_sync_time || '',
+            last_sync_count: json.last_sync_count || 0,
+            last_sync_status: json.last_sync_status || ''
+          };
+        }
+      } catch (err) {
+        console.error("Fetch AdGuard settings error:", err);
+      }
+    },
+
+    async saveAdGuardSettings() {
+      try {
+        const payload = {
+          enabled: this.adguardSettings.enabled,
+          url: this.adguardSettings.url,
+          username: this.adguardSettings.username,
+          password: this.adguardSettings.password || undefined
+        };
+        const res = await fetch('/api/automations/adguard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (res.ok) {
+          this.showToast("AdGuard Home", json.message || "Impostazioni salvate con successo.", "success");
+          await this.fetchAdGuardSettings();
+        } else {
+          this.showToast("Errore AdGuard", json.detail || "Impossibile salvare le impostazioni.", "error");
+        }
+      } catch (err) {
+        this.showToast("Errore AdGuard", err.message, "error");
+      }
+    },
+
+    async testAdGuardConnection() {
+      this.adguardTesting = true;
+      try {
+        const payload = {
+          url: this.adguardSettings.url,
+          username: this.adguardSettings.username,
+          password: this.adguardSettings.password || undefined
+        };
+        const res = await fetch('/api/automations/adguard/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.success) {
+          this.showToast("Test Connessione Riuscito", json.message, "success");
+        } else {
+          this.showToast("Test Fallito", json.message || "Impossibile connettersi ad AdGuard Home", "error");
+        }
+      } catch (err) {
+        this.showToast("Errore Test", err.message, "error");
+      } finally {
+        this.adguardTesting = false;
+      }
+    },
+
+    async syncAdGuardNow() {
+      this.adguardSyncing = true;
+      try {
+        const res = await fetch('/api/automations/adguard/sync', { method: 'POST' });
+        const json = await res.json();
+        if (res.ok && json.status === 'success') {
+          this.showToast("Sincronizzazione Completata", json.message, "success");
+          await this.fetchAdGuardSettings();
+        } else {
+          this.showToast("Errore Sincronizzazione", json.detail || json.message || "Sincronizzazione non riuscita.", "error");
+        }
+      } catch (err) {
+        this.showToast("Errore Sincronizzazione", err.message, "error");
+      } finally {
+        this.adguardSyncing = false;
       }
     },
 
