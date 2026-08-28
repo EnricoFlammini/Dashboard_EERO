@@ -402,6 +402,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchFocusMode(),
         this.fetchNightMode(),
         this.fetchNotificationSettings(),
+        this.fetchAdGuardSettings(),
         this.fetchAlerts(),
       ]);
     },
@@ -1532,10 +1533,18 @@ document.addEventListener('alpine:init', () => {
 
     async saveAdGuardSettings() {
       try {
+        let cleanUrl = (this.adguardSettings.url || '').trim();
+        if (cleanUrl.includes('#')) cleanUrl = cleanUrl.split('#')[0];
+        cleanUrl = cleanUrl.replace(/\/+$/, '');
+        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+          cleanUrl = 'http://' + cleanUrl;
+        }
+        this.adguardSettings.url = cleanUrl;
+
         const payload = {
-          enabled: this.adguardSettings.enabled,
-          url: this.adguardSettings.url,
-          username: this.adguardSettings.username,
+          enabled: Boolean(this.adguardSettings.enabled),
+          url: cleanUrl,
+          username: this.adguardSettings.username || '',
           password: this.adguardSettings.password || undefined
         };
         const res = await fetch('/api/automations/adguard', {
