@@ -371,6 +371,8 @@ async def get_changelog():
 ### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
 * **Distribuzione Ufficiale Docker Hub:** Immagine multi-architettura pronta per `linux/amd64` e `linux/arm64`.
 * **Integrazione Nativa AdGuard Home in-App:** Configurazione grafica diretta in Automazioni per la sincronizzazione continua di nomi host, IP e MAC address verso AdGuard Home.
+* **🔒 Pulsante Disconnessione Sicura:** Ripristinato il logout con modale di sicurezza e avviso per ri-autenticazione OTP.
+* **📊 Fix Daily Digest Telegram & Webhook:** Report arricchito con suddivisione dettagliata delle frequenze Wi-Fi e telemetria live.
 * **Esportazione DNS & Webhooks:** Endpoint `/api/devices/export/hosts` e `/api/devices/export/adguard` + script CLI.
 """
     }

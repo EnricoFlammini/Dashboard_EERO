@@ -19,6 +19,14 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Pulsante **"Test Connessione"** con riscontro immediato via Toast e verifica delle credenziali.
   * Pulsante **"Sincronizza Ora Tutti i Client"** con matching intelligente per nome, MAC e IP (`/control/clients/add` e `/control/clients/update`).
   * Toggle **"Abilita sincronizzazione automatica continua"** per sincronizzare silenziosamente in background all'accesso di nuovi dispositivi e su base periodica.
+* **🔒 Pulsante Disconnessione con Modale di Sicurezza:**
+  * Ripristinato il pulsante di logout nella barra superiore accanto alla guida rapida.
+  * Introdotto un modale di conferma Glassmorphism con avviso esplicito sulla necessità di richiedere un nuovo codice 2FA OTP al successivo accesso.
+* **📊 Fix & Arricchimento Daily Digest Telegram:**
+  * Risolto l'errore di generazione del report giornaliero delle 21:00 (e manuale da interfaccia) causato da riferimenti a tabelle storiche obsolete.
+  * Il report inviato su Telegram e via Webhook include ora dati reali certificati: Health Score, ISP, nodi mesh online, client attivi totali, suddivisione dettagliata per frequenza (6GHz, 5GHz, 2.4GHz, Cablati), Speed Test Gateway e Latenza Ping.
+* **📖 Rendering Ottimizzato del Manuale Utente & Changelog In-App:**
+  * Riscritto il parser Markdown interno (`renderSimpleMarkdown`) con supporto completo a liste numerate ordinate (`<ol>`), sottoelenchi puntati indentati (`<ul>`) e formattazione dei paragrafi.
 * **Esportazione DNS & Webhooks:**
   * Endpoint `GET /api/devices/export/hosts` (standard `/etc/hosts` / `dnsmasq`) e `GET /api/devices/export/adguard` (JSON provisioning).
   * Script standalone CLI [`scripts/adguard_sync.py`](scripts/adguard_sync.py).
