@@ -32,8 +32,12 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🛡️ Registro Persistente Dispositivi Noti (Zero Notifiche Duplicate al Riavvio):**
   * Creata la tabella SQLite `known_devices` per memorizzare in modo permanente gli indirizzi MAC e lo stato di notifica dei client di rete.
   * Al riavvio o all'aggiornamento del server/container, il poller carica l'elenco completo dal database, evitando l'invio ripetuto di notifiche Telegram per apparati già noti.
-* **📖 Rendering Ottimizzato del Manuale Utente & Changelog In-App:**
-  * Riscritto il parser Markdown interno (`renderSimpleMarkdown`) con supporto completo a liste numerate ordinate (`<ol>`), sottoelenchi puntati indentati (`<ul>`) e formattazione dei paragrafi.
+* **📖 Rendering Ottimizzato del Manuale Utente & Changelog In-App Bilingue:**
+  * Riscritto il parser Markdown interno (`renderSimpleMarkdown`) con supporto completo a liste numerate ordinate (`<ol>`), sottoelenchi puntati indentati (`<ul>`), collegamenti ipertestuali e formattazione dei paragrafi.
+  * Il visualizzatore del Changelog interno all'app è ora bilingue (Italiano e Inglese) e presenta un sommario essenziale dei soli titoli principali delle release, con link diretto per consultare il registro completo su GitHub.
+* **❤️ Modale About, Dedica & Informazioni Open Source:**
+  * Aggiunto pulsante dedicato *"About"* nella barra superiore accanto al badge di versione.
+  * Include dedica alla community homelab & self-hosted (*Crafted with ❤️ by Enrico Flammini*), collegamenti rapidi a repository GitHub (codice e issues), licenza MIT, immagine Docker Hub e sezione Fun Notes.
 * **Esportazione DNS & Webhooks:**
   * Endpoint `GET /api/devices/export/hosts` (standard `/etc/hosts` / `dnsmasq`) e `GET /api/devices/export/adguard` (JSON provisioning).
   * Script standalone CLI [`scripts/adguard_sync.py`](scripts/adguard_sync.py).
