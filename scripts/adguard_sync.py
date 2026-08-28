@@ -92,6 +92,7 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
     success_count = 0
     for client in clients:
         name = client["name"]
+        client["tags"] = []
         is_update = name in existing_names
         endpoint = f"{adguard_url}/control/clients/update" if is_update else f"{adguard_url}/control/clients/add"
 

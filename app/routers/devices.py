@@ -181,20 +181,18 @@ async def export_adguard(
 
         name = d.get("nickname") or d.get("hostname") or d.get("device_name") or f"eero-client-{ip or mac}"
 
-        tag_list = ["eero-mesh"]
-        if d.get("connection_type") == "wired":
-            tag_list.append("wired")
-        elif d.get("wireless_band"):
-            tag_list.append(f"wifi-{d.get('wireless_band')}".lower().replace(" ", "").replace(".", ""))
-
         clients.append({
             "name": name,
             "ids": ids,
-            "tags": tag_list,
+            "tags": [],
+            "upstreams": [],
+            "blocked_services": [],
+            "use_global_blocked_services": True,
             "use_global_settings": True,
             "filtering_enabled": True,
             "parental_enabled": False,
-            "safebrowsing_enabled": True
+            "safebrowsing_enabled": True,
+            "safesearch_enabled": False,
         })
 
     return {
