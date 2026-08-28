@@ -115,9 +115,9 @@ La dashboard adotta un approccio di trasparenza e integrità totale sui dati di 
     },
     {
         "id": "automations",
-        "title": "7. Automazioni, QR Ospiti, Gaming Mode & Notifiche",
+        "title": "7. Automazioni, QR Ospiti, Gaming Mode, Notifiche & AdGuard",
         "icon": "zap",
-        "summary": "Smart Guest Wi-Fi con QR Code, Gaming Mode a un clic, modalità notte e notifiche Telegram.",
+        "summary": "Smart Guest Wi-Fi, Gaming Mode, notifiche Telegram/Webhook e sincronizzazione nativa con AdGuard Home.",
         "content": """
 ### Funzionalità Avanzate & Automazioni
 
@@ -133,22 +133,30 @@ La dashboard adotta un approccio di trasparenza e integrità totale sui dati di 
 4. **Notifiche Webhook e Telegram Bot:**
    - **Nuovo Dispositivo Connesso:** Ricevi un alert istantaneo su Telegram quando un apparato mai visto prima si connette alla tua rete.
    - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
+   - **Daily Digest:** Report giornaliero delle 21:00 con consumo totale, top bandwidth hog e salute della linea.
+5. **Integrazione Nativa AdGuard Home (DNS & DHCP Sync in-App):**
+   - **Sincronizzazione Nomi Dispositivi:** Associa i nickname personalizzati e gli indirizzi IP/MAC dei client eero direttamente nella lista dei client persistenti di AdGuard Home (`/control/clients`).
+   - **Auto-Sync Continuo:** Il poller di background aggiorna automaticamente AdGuard Home all'accesso di ogni nuovo dispositivo o a intervalli regolari.
+   - **Pulsante "Sincronizza Ora":** Forza l'allineamento istantaneo di tutta la tabella host verso AdGuard Home.
+   - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
         """
     },
     {
         "id": "troubleshooting",
         "title": "8. Risoluzione Problemi & Domande Frequenti (FAQ)",
         "icon": "wrench",
-        "summary": "FAQ su telemetria autentica, gestione sessione, backup e manutenzione.",
+        "summary": "FAQ su telemetria autentica, gestione sessione, AdGuard Home, backup e manutenzione.",
         "content": """
 ### Domande Frequenti & Troubleshooting
 
 * **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
   - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline/Pausa), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
+* **Come configurare l'integrazione con AdGuard Home?**
+  - Nel tab *Automazioni & Controlli*, inserisci l'URL della tua istanza (es. `http://192.168.4.100:8085` o semplicemente `192.168.4.100:8085`), il tuo username e la password. Clicca su **Test Connessione** per verificare il collegamento e poi su **Salva Impostazioni AdGuard**. La password viene salvata in modo sicuro nel database SQLite locale e non viene mai esposta in chiaro.
 * **Cosa fare se la sessione scade?**
   - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
 * **Come effettuare il backup delle configurazioni e metadati locali?**
-  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
+  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
 * **Protezione da Rate Limiting:**
   - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
         """
@@ -166,7 +174,7 @@ MANUAL_SECTIONS_EN: List[Dict[str, Any]] = [
 This web application is a full-featured, self-hosted management and monitoring platform for your **Amazon eero** mesh Wi-Fi network.
 
 #### Architectural Features:
-1. **Self-Hosted & Private:** Runs inside an isolated Docker container on your local server or NAS (HomeLab). Zero external data telemetry, accessible via LAN or private VPN (Tailscale/WireGuard).
+1. **Self-Hosted & Private:** Runs inside an isolated Docker container on your local server or NAS (HomeLab). Multi-Arch official Docker Hub image for `linux/amd64` and `linux/arm64` (Raspberry Pi, Synology, QNAP, TrueNAS, Apple Silicon).
 2. **Official 2FA OTP Authentication:** Initial connection to the eero cloud utilizes the official two-factor authentication (One-Time Password via SMS or Email).
 3. **Persistence & Isolation:** User session token (`session.json`) and SQLite database (`metrics.db`) reside exclusively in the persistent `./data:/app/data` volume.
 4. **Zero-Latency In-Memory Poller:** An asynchronous background worker periodically polls the network and maintains an in-memory cache, providing instant UI navigation with zero rate-limiting risk.
@@ -264,9 +272,9 @@ The dashboard adheres to strict data integrity standards:
     },
     {
         "id": "automations",
-        "title": "7. Automations, Guest QR, Gaming Mode & Notifications",
+        "title": "7. Automations, Guest QR, Gaming Mode, Notifications & AdGuard",
         "icon": "zap",
-        "summary": "Smart Guest Wi-Fi with QR Code, one-click Gaming Focus Mode, and Telegram alerts.",
+        "summary": "Smart Guest Wi-Fi, Gaming Focus Mode, Telegram/Webhook alerts, and native AdGuard Home sync.",
         "content": """
 ### Advanced Features & Automations
 
@@ -282,22 +290,30 @@ The dashboard adheres to strict data integrity standards:
 4. **Telegram Bot & Webhook Notifications:**
    - **New Device Alert:** Receive an instant Telegram alert when an unknown MAC address connects to your network.
    - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
+   - **Daily Digest Report:** Automated summary at 21:00 with total GB consumed, top hog client, and line health.
+5. **Native AdGuard Home DNS & Client Sync:**
+   - **Client Nickname Synchronization:** Push eero custom device nicknames, IP leases, and MAC addresses directly into AdGuard Home persistent client registry (`/control/clients`).
+   - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into AdGuard Home.
+   - **One-Click "Sync Now":** Instantly reconciles all network clients against AdGuard Home.
+   - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
         """
     },
     {
         "id": "troubleshooting",
         "title": "8. Troubleshooting & Frequently Asked Questions (FAQ)",
         "icon": "wrench",
-        "summary": "Frequently asked questions regarding telemetry, session handling, backups, and maintenance.",
+        "summary": "Frequently asked questions regarding telemetry, session handling, AdGuard sync, backups, and maintenance.",
         "content": """
 ### Troubleshooting & FAQ
 
 * **Which client metrics come directly from eero hardware?**
   - The dashboard reads client connection state (Online/Offline/Paused), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
+* **How do I configure the AdGuard Home integration?**
+  - Under the *Automations & Controls* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
 * **What should I do if my session expires?**
   - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
 * **How do I back up local configurations and custom metadata?**
-  - All custom device names, categories, notes, and notification settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
+  - All custom device names, categories, notes, notification settings, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
 * **Rate Limiting Protection:**
   - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.
         """
