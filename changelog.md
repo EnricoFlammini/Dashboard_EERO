@@ -6,6 +6,19 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.03.01] - 2026-08-28
+
+### 🔄 Risoluzione Nodi Mesh Multi-Generazione & Switch Istantaneo Demo/Live (#12)
+* **📡 Risoluzione Universale Nodi e Client Mesh (Issue #12):**
+  * Introdotto motore di indicizzazione multi-chiave in `poller.py` e `eero_client.py` (`id` numerico, `serial`, `url`, `location`/nome, `ip`) per garantire il matching affidabile dei client connessi su tutte le generazioni eero (eero Pro 7, Pro 6E, eero 6+, Max 7) e versioni eeroOS 7.x.
+  * Risolto il bug per cui i dispositivi su nodi beacon potevano risultare tutti associati al Gateway in presenza di payload cloud privi del campo `location`.
+* **✨ Switch Istantaneo Modalità Demo / Rete Live (senza perdita di Token):**
+  * Aggiunto pulsante interattivo nella barra superiore per passare istantaneamente alla **Modalità Demo** a scopo di test/anteprima e ritornare alla **Rete Live** preservando sempre il token di sessione autenticato senza dover reinserire l'OTP.
+* **🌡️ Armonizzazione Stato Termico Nodi:**
+  * Ottimizzato il rendering dello stato termico e operativo dei nodi mesh, riflettendo accuratamente lo stato di salute reale fornito dalle API ufficiali eero (`thermal_status`: Normale / Nominale).
+
+---
+
 ## [1.03.00] - 2026-08-28
 
 ### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
