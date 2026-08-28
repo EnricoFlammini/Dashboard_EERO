@@ -896,36 +896,54 @@ class EeroClient:
                     return {"status": "success", "device": dev}
             return {"status": "success", "device_id": device_id, "updated": payload}
 
-        # Risoluzione endpoint cloud reale eero
-        clean_target_url = None
-        if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
-            clean_target_url = f"https://api-user.eeroup.com/{device_id.lstrip('/')}"
-        elif "/" in device_id:
-            clean_target_url = f"{EERO_API_BASE}/{device_id.lstrip('/')}"
-        elif found_dev and found_dev.get("url"):
-            dev_url = found_dev["url"].lstrip("/")
-            clean_target_url = f"https://api-user.eeroup.com/{dev_url}" if dev_url.startswith("2.2/") else f"{EERO_API_BASE}/{dev_url}"
-        elif self.current_network_id:
-            clean_target_url = f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}"
-        else:
-            clean_target_url = f"{EERO_API_BASE}/devices/{device_id}"
+        # Raccolta URL candidati da testare in sequenza
+        urls_to_try = []
+        if found_dev and found_dev.get("url"):
+            dev_u = found_dev["url"].lstrip("/")
+            urls_to_try.append(f"https://api-user.eeroup.com/{dev_u}" if dev_u.startswith("2.2/") else f"{EERO_API_BASE}/{dev_u}")
+        if found_dev and found_dev.get("id"):
+            fid = str(found_dev["id"]).split("/")[-1]
+            if self.current_network_id:
+                urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{fid}")
+            urls_to_try.append(f"{EERO_API_BASE}/devices/{fid}")
+        if clean_target_url:
+            urls_to_try.append(clean_target_url)
+        if self.current_network_id:
+            urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}")
+        urls_to_try.append(f"{EERO_API_BASE}/devices/{device_id}")
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.put(
-                clean_target_url,
-                json=payload,
-                headers=self._get_headers()
-            )
-            if resp.status_code not in (200, 204):
-                # Fallback tentativo su endpoint alternativo se 404
-                if resp.status_code == 404 and self.current_network_id and not clean_target_url.endswith(f"/devices/{device_id}"):
-                    fallback_url = f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}"
-                    resp_fb = await client.put(fallback_url, json=payload, headers=self._get_headers())
-                    if resp_fb.status_code in (200, 204):
-                        return {"status": "success", "device_id": device_id, "payload": payload}
-                logger.error(f"Errore aggiornamento dispositivo ({resp.status_code}) su {clean_target_url}: {resp.text}")
-                raise RuntimeError(f"Errore aggiornamento dispositivo ({resp.status_code}): {resp.text}")
-            return {"status": "success", "device_id": device_id, "payload": payload}
+        unique_urls = list(dict.fromkeys(urls_to_try))
+
+        payload_variants = [payload]
+        if paused is not None:
+            payload_variants.append({"paused": paused})
+            payload_variants.append({"is_paused": paused})
+            payload_variants.append({"blacklisted": paused})
+
+        last_error = ""
+        success = False
+
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            for url in unique_urls:
+                for p_var in payload_variants:
+                    try:
+                        resp = await client.put(url, json=p_var, headers=self._get_headers())
+                        if resp.status_code in (200, 204):
+                            logger.info(f"Dispositivo aggiornato con successo su eero Cloud via {url} (payload: {p_var})")
+                            success = True
+                            break
+                        else:
+                            last_error = f"HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
+                    except Exception as e:
+                        last_error = f"Errore connessione su {url}: {e}"
+                if success:
+                    break
+
+        if not success:
+            logger.error(f"Tutti i tentativi di aggiornamento del dispositivo {device_id} sono falliti. Ultimo errore: {last_error}")
+            raise RuntimeError(f"Impossibile aggiornare dispositivo su eero Cloud: {last_error}")
+
+        return {"status": "success", "device_id": device_id, "payload": payload}
 
     # =========================================================================
     # RETE OSPITI (GUEST WI-FI)

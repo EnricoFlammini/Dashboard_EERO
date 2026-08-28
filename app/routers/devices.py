@@ -236,7 +236,7 @@ async def save_device_metadata(mac_address: str, payload: DeviceMetadataRequest)
     return {"status": "success", "metadata": updated}
 
 
-@router.post("/{device_id}/pause")
+@router.post("/{device_id:path}/pause")
 async def toggle_device_pause(device_id: str, payload: DevicePauseRequest):
     """Mette in pausa o riabilita l'accesso a internet per il dispositivo."""
     try:
@@ -247,7 +247,7 @@ async def toggle_device_pause(device_id: str, payload: DevicePauseRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{device_id}/rename")
+@router.post("/{device_id:path}/rename")
 async def rename_device(device_id: str, payload: DeviceRenameRequest):
     """Rinomina il dispositivo sincronizzando il nuovo nickname con il cloud eero."""
     try:

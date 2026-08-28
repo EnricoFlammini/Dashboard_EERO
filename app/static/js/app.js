@@ -1226,15 +1226,20 @@ document.addEventListener('alpine:init', () => {
     },
 
     async toggleDevicePause(device) {
-      const devId = device.id || device.mac;
+      const devId = encodeURIComponent(device.id || device.mac);
       const targetState = !device.paused;
       try {
-        await fetch(`/api/devices/${devId}/pause`, {
+        const res = await fetch(`/api/devices/${devId}/pause`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paused: targetState })
         });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json.detail || json.message || "Impossibile aggiornare la pausa sul cloud eero");
+        }
         device.paused = targetState;
+        device.is_paused = targetState;
         const title = targetState 
           ? (this.currentLanguage === 'it' ? "Accesso in Pausa" : "Internet Paused") 
           : (this.currentLanguage === 'it' ? "Accesso Riabilitato" : "Internet Restored");
