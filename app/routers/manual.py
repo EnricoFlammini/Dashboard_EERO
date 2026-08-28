@@ -115,30 +115,33 @@ La dashboard adotta un approccio di trasparenza e integrità totale sui dati di 
     },
     {
         "id": "automations",
-        "title": "7. Automazioni, QR Ospiti, Gaming Mode, Notifiche & AdGuard",
+        "title": "7. Automazioni, QR Ospiti, AdGuard Home, Telegram & Notifiche",
         "icon": "zap",
-        "summary": "Smart Guest Wi-Fi, Gaming Mode, notifiche Telegram/Webhook e sincronizzazione nativa con AdGuard Home.",
+        "summary": "Smart Guest Wi-Fi con QR, integrazione AdGuard Home, allarmi Telegram/Webhook con toggle e report digest.",
         "content": """
-### Funzionalità Avanzate & Automazioni
+### Funzionalità Avanzate e Centro Automazioni
 
-1. **Smart Guest Wi-Fi con QR Code Dinamico:**
-   - Genera all'istante un QR Code pronto per essere inquadrato da smartphone per connettersi senza dover digitare la password.
-   - Pulsante per attivare/disattivare la rete ospiti in qualsiasi momento.
-   - Generatore rapido di password sicure e rotazione delle credenziali.
-2. **Modalità Gaming / Focus (One-Click Low-Latency):**
-   - Con un solo clic, mette automaticamente in pausa tutti i dispositivi secondari/IoT contrassegnati (es. TV in streaming, download di backup) per abbattere il jitter e garantire la minima latenza alle console e ai PC da gioco.
-   - Un secondo clic ripristina la normale connettività per tutti gli host.
-3. **Modalità Notte Automatica (Night Mode LED):**
-   - Scheduler orario (es. 23:00 - 07:00) per spegnere automaticamente i LED dei nodi mesh durante la notte e riaccenderli al mattino.
-4. **Notifiche Webhook e Telegram Bot:**
-   - **Nuovo Dispositivo Connesso:** Ricevi un alert istantaneo su Telegram quando un apparato mai visto prima si connette alla tua rete.
-   - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
-   - **Daily Digest:** Report giornaliero delle 21:00 con consumo totale, top bandwidth hog e salute della linea.
-5. **Integrazione Nativa AdGuard Home (DNS & DHCP Sync in-App):**
+La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4 comodi quadranti:
+
+1. **Smart Guest Wi-Fi con QR Code Dinamico (In alto a sinistra):**
+   - Genera all'istante un QR Code ad alta risoluzione pronto per essere inquadrato da ospiti e smartphone.
+   - Toggle per abilitare/disabilitare la rete ospiti con un clic.
+   - Generatore integrato di password sicure e aggiornamento credenziali senza accedere all'app mobile.
+2. **Integrazione Nativa AdGuard Home (In alto a destra):**
    - **Sincronizzazione Nomi Dispositivi:** Associa i nickname personalizzati e gli indirizzi IP/MAC dei client eero direttamente nella lista dei client persistenti di AdGuard Home (`/control/clients`).
    - **Auto-Sync Continuo:** Il poller di background aggiorna automaticamente AdGuard Home all'accesso di ogni nuovo dispositivo o a intervalli regolari.
    - **Pulsante "Sincronizza Ora":** Forza l'allineamento istantaneo di tutta la tabella host verso AdGuard Home.
    - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
+3. **Notifiche Telegram & Webhook (In basso a sinistra):**
+   - **Toggle di Abilitazione Dedicato:** Attiva o disattiva l'invio delle notifiche Telegram con un semplice clic senza eliminare le chiavi salvate.
+   - **Nuovo Dispositivo Connesso:** Alert istantaneo quando un apparato mai visto prima si connette alla rete.
+   - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
+   - **Pulsante "Invia Test":** Verifica il corretto recapito dei messaggi verso il bot Telegram e l'URL Webhook.
+4. **Report Digest Giornaliero (In basso a destra):**
+   - Invia automaticamente alle ore 21:00 un riepilogo dettagliato con: stato di salute della rete, ISP, nodi mesh online, client connessi suddivisi per frequenza (**6 GHz, 5 GHz, 2.4 GHz, Cablati**) e velocità Speed Test Gateway.
+   - Pulsante **"Genera & Invia Digest Ora"** per richiedere l'inoltro immediato del report.
+5. **Gaming & Focus Mode (Bassa Latenza):**
+   - Accessibile direttamente dalla barra superiore: sospende temporaneamente il traffico dei dispositivi secondari (Smart TV, download di backup) per azzerare la latenza e il jitter a favore delle postazioni da gioco competitive.
         """
     },
     {
@@ -219,40 +222,31 @@ This web application is a full-featured, self-hosted management and monitoring p
         """
     },
     {
-        "id": "telemetry-api",
-        "title": "4. Telemetry & Certified eero Hardware Metrics",
-        "icon": "cpu",
-        "summary": "Authentic physical network telemetry straight from eero hardware nodes.",
+        "id": "devices-table",
+        "title": "4. Connected Devices & Frequency Analysis",
+        "icon": "devices",
+        "summary": "Live device table, Wi-Fi band badges, eero cloud profile integration, and multi-filters.",
         "content": """
-### 100% Authentic Telemetry & Certified Hardware Metrics
+### Real-Time Device Inventory
 
-The dashboard adheres to strict data integrity standards:
-1. **Certified Physical Metrics:**
-   - Real-time data reported by eero mesh nodes: **Wi-Fi Band & Frequency (2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet)**, **Wi-Fi Channel (e.g., CH 36, CH 11)**, **Signal Power RSSI (dBm)**, and **Negotiated Physical PHY Link Rate (e.g., 780.0 / 866.7 Mbps)**.
-2. **Official Gateway Speed Test:**
-   - WAN speeds shown in network overviews are measured directly by the eero Gateway node to cloud test servers (e.g., 907 Mbps Down / 193 Mbps Up).
-3. **Zero Fabricated or Simulated Telemetry:**
-   - The platform deliberately excludes artificial bandwidth counters or synthetic estimates, displaying strictly genuine telemetry returned by the eero API.
+* **Wi-Fi Band & Channel Indicators:** Explicit frequency badges (**6 GHz, 5 GHz, 2.4 GHz, Wired Ethernet**) and active wireless channels (**CH 36, CH 11**, etc.).
+* **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
+* **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
         """
     },
     {
-        "id": "device-management",
-        "title": "5. Device Management, Static IP & Port Forwarding",
-        "icon": "devices",
-        "summary": "Custom metadata, DHCP reservations, port forwarding rules, and internet access control.",
+        "id": "device-details",
+        "title": "5. Device Metadata, Static IP & Port Forwarding",
+        "icon": "adjustments",
+        "summary": "Custom names, categories, local notes, DHCP reservations, and port forwarding.",
         "content": """
-### Advanced Client Control & Configuration
+### Device Management & Rules
 
-* **Search & Filter:**
-  - Search instantly by Custom Name, Hostname, IP Address, or MAC Address.
-  - Filter by frequency (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), connected mesh node, or Online/Offline status.
-  - Instant visibility of signal strength in dBm and physical link speed.
 * **Device Detail Modal:**
   - **Custom Name & Category:** Assign categories (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Other) saved to the local SQLite database.
   - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
   - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
   - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
-  - **Pause Internet Access:** One-click toggle to block or restore internet access for individual devices.
         """
     },
     {
@@ -272,30 +266,33 @@ The dashboard adheres to strict data integrity standards:
     },
     {
         "id": "automations",
-        "title": "7. Automations, Guest QR, Gaming Mode, Notifications & AdGuard",
+        "title": "7. Automations, Guest QR, AdGuard Home, Telegram & Notifications",
         "icon": "zap",
-        "summary": "Smart Guest Wi-Fi, Gaming Focus Mode, Telegram/Webhook alerts, and native AdGuard Home sync.",
+        "summary": "Smart Guest Wi-Fi with QR, native AdGuard Home sync, Telegram/Webhook alerts with toggle, and Daily Digest.",
         "content": """
-### Advanced Features & Automations
+### Advanced Features & Automations Hub
 
-1. **Smart Guest Wi-Fi with Dynamic QR Code:**
-   - Instantly renders a printable, scannable QR Code for guests to connect without manually entering the password.
+The **Automations & Controls** tab organizes your network tools into a clean 2x2 grid:
+
+1. **Smart Guest Wi-Fi with Dynamic QR Code (Top-Left):**
+   - Instantly renders a printable, scannable QR Code for guests to connect without typing credentials.
    - One-click toggle to enable or disable the guest network at any time.
    - Built-in secure password generator and credentials updater.
-2. **One-Click Gaming / Focus Mode (Low-Latency Priority):**
-   - Pauses all tagged secondary/streaming devices (smart TVs, backup downloads) with a single click to eliminate jitter and minimize latency for competitive gaming rigs.
-   - A second click instantly restores normal internet access for all devices.
-3. **Automated Night Mode (LED Dimming):**
-   - Scheduled night mode (e.g., 23:00 - 07:00) to turn off node LEDs at night and restore them in the morning.
-4. **Telegram Bot & Webhook Notifications:**
-   - **New Device Alert:** Receive an instant Telegram alert when an unknown MAC address connects to your network.
-   - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
-   - **Daily Digest Report:** Automated summary at 21:00 with total GB consumed, top hog client, and line health.
-5. **Native AdGuard Home DNS & Client Sync:**
+2. **Native AdGuard Home DNS & Client Sync (Top-Right):**
    - **Client Nickname Synchronization:** Push eero custom device nicknames, IP leases, and MAC addresses directly into AdGuard Home persistent client registry (`/control/clients`).
    - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into AdGuard Home.
    - **One-Click "Sync Now":** Instantly reconciles all network clients against AdGuard Home.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
+3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
+   - **Dedicated Activation Toggle:** Enable or disable Telegram notifications with one click while safely preserving your Bot Token and Chat ID.
+   - **New Device Alert:** Receive an instant alert when an unknown MAC address connects to your mesh.
+   - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
+   - **"Send Test" Button:** Instantly tests message delivery to your Telegram bot and Webhook URL.
+4. **Daily Digest Report (Bottom-Right):**
+   - Automated 21:00 report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
+   - **"Generate & Send Digest Now"** button for immediate on-demand dispatch.
+5. **One-Click Gaming / Focus Mode (Low Latency):**
+   - Located in the top header: pauses tagged background streaming/downloading devices with a single click to eliminate latency and jitter for competitive gaming setups.
         """
     },
     {
@@ -371,9 +368,9 @@ async def get_changelog():
 ### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
 * **Distribuzione Ufficiale Docker Hub:** Immagine multi-architettura pronta per `linux/amd64` e `linux/arm64`.
 * **Integrazione Nativa AdGuard Home in-App:** Configurazione grafica diretta in Automazioni per la sincronizzazione continua di nomi host, IP e MAC address verso AdGuard Home.
+* **🎛️ Riorganizzazione Scheda Automazioni:** Layout a quadranti con toggle dedicato per le notifiche Telegram.
 * **🔒 Pulsante Disconnessione Sicura:** Ripristinato il logout con modale di sicurezza e avviso per ri-autenticazione OTP.
 * **📊 Fix Daily Digest Telegram & Webhook:** Report arricchito con suddivisione dettagliata delle frequenze Wi-Fi e telemetria live.
 * **Esportazione DNS & Webhooks:** Endpoint `/api/devices/export/hosts` e `/api/devices/export/adguard` + script CLI.
 """
     }
-
