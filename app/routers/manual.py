@@ -346,7 +346,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
-## 📦 v1.03.00 (28 Ago 2026)
+## v1.03.00
 * **Distribuzione Ufficiale Docker Hub Multi-Arch (amd64/arm64)**
 * **Integrazione Nativa AdGuard Home in-App (DNS & DHCP Sync)**
 * **Pulsante Disconnessione Sicura con Modale di Conferma OTP**
@@ -357,51 +357,51 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
-## 📡 v1.02.00 (26 Ago 2026)
+## v1.02.00
 * **Telemetria Frequenze Wi-Fi (2.4 / 5 / 6 GHz) & Canali Radio**
 * **Integrazione Profili Famiglia / Utente Cloud eero**
 * **Filtri Multi-Criterio Avanzati su Tabella Client**
 
 ---
 
-## 🌍 v1.01.00 (26 Ago 2026)
+## v1.01.00
 * **Supporto Multilingua Dinamico (Italiano & Inglese)**
 * **Selettore Lingua nell'Header & Persistenza Preferenze**
 * **Standard Open Source GitHub & Licenza MIT**
 
 ---
 
-## ⚡ v1.00.08 (26 Ago 2026)
+## v1.00.08
 * **Sincronizzazione Totale Speed Test & Statistiche Gateway**
 
 ---
 
-## 🏷️ v1.00.07 (26 Ago 2026)
+## v1.00.07
 * **Indicatori Visivi Tipo IP (Badge STATICO vs DHCP)**
 
 ---
 
-## 🔄 v1.00.06 (26 Ago 2026)
+## v1.00.06
 * **Assegnazione IP Corrente & Riassegnazione Intelligente**
 
 ---
 
-## 🌐 v1.00.05 (26 Ago 2026)
+## v1.00.05
 * **Gestione Nativa IP Statici (DHCP) & Port Forwarding**
 
 ---
 
-## 🛠️ v1.00.04 (26 Ago 2026)
-* **Gestione Dispositivi, Icone, Categorie e Preferiti ⭐**
+## v1.00.04
+* **Gestione Dispositivi, Icone, Categorie e Preferiti**
 
 ---
 
-## 🧹 v1.00.01 - v1.00.03 (26 Ago 2026)
+## v1.00.01 - v1.00.03
 * **Eliminazione Dati Fittizi a Favore di Telemetria Certificata 100%**
 
 ---
 
-## 🚀 v1.0.0 (25 Ago 2026)
+## v1.0.0
 * **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
 """
     return {
