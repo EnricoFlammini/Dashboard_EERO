@@ -34,6 +34,7 @@ class BackgroundPoller:
         
         # Tracking states for alert detection
         self._known_macs: Set[str] = set()
+        self._initial_macs_loaded: bool = False
         self._known_eeros_status: Dict[str, str] = {}
         self._last_night_mode_state: Optional[bool] = None
         self._last_retention_run: Optional[datetime] = None
@@ -91,6 +92,15 @@ class BackgroundPoller:
 
     async def _poll_and_cache(self):
         try:
+            # Caricamento iniziale MAC noti dal database SQLite
+            if not self._initial_macs_loaded:
+                try:
+                    db_macs = await db_service.get_known_device_macs()
+                    self._known_macs.update(db_macs)
+                    self._initial_macs_loaded = True
+                except Exception as e:
+                    logger.warning(f"Error loading known MACs from DB: {e}")
+
             # 1. Recupero dati da eero client
             network_details = await eero_client.get_network_details()
             eeros = await eero_client.get_eeros()
@@ -140,6 +150,8 @@ class BackgroundPoller:
             dt_sec = max(1.0, min(120.0, dt_sec))
             self._prev_poll_time = now_utc
 
+            is_initial_discovery = len(self._known_macs) == 0
+
             for dev in devices:
                 mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
                 dev_id_str = str(dev.get("id") or "")
@@ -178,13 +190,25 @@ class BackgroundPoller:
                 dev_copy["profile_name"] = final_prof_name
                 enriched_devices.append(dev_copy)
 
-                # Rilevamento nuovo dispositivo
-                if mac and self._known_macs and mac not in self._known_macs:
-                    self._known_macs.add(mac)
-                    asyncio.create_task(notification_service.notify_new_device(dev_copy))
-                    asyncio.create_task(adguard_service.auto_sync_if_enabled(enriched_devices))
-                elif mac:
-                    self._known_macs.add(mac)
+                # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
+                if mac:
+                    if not is_initial_discovery and mac not in self._known_macs:
+                        # Nuovo dispositivo autentico rilevato durante l'operatività
+                        self._known_macs.add(mac)
+                        asyncio.create_task(db_service.register_known_device(
+                            mac=mac,
+                            hostname=dev_copy.get("custom_name") or dev_copy.get("hostname", ""),
+                            ip=dev_copy.get("ip", ""),
+                            notified=True
+                        ))
+                        asyncio.create_task(notification_service.notify_new_device(dev_copy))
+                        asyncio.create_task(adguard_service.auto_sync_if_enabled(enriched_devices))
+                    else:
+                        self._known_macs.add(mac)
+
+            # Se era la primissima discovery assoluta (db vuoto), registriamo tutto su SQLite senza inviare notifiche
+            if is_initial_discovery and enriched_devices:
+                await db_service.register_known_devices_batch(enriched_devices, notified=True)
 
             # 3. Distribuzione conteggio client connessi per singolo nodo eero
             for node in eeros:

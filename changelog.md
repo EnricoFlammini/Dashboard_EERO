@@ -29,6 +29,9 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🎛️ Riorganizzazione Scheda Automazioni & Toggle Notifiche Telegram:**
   * Layout del tab **Controlli & QR Ospiti** riorganizzato a matrice 2x2: *Guest Wi-Fi* (alto-sx), *Integrazione AdGuard Home* (alto-dx), *Notifiche Telegram & Webhook* (basso-sx) e *Report Digest Giornaliero* (basso-dx).
   * Introdotto un toggle esplicito *"Abilita invio notifiche su Telegram"* per attivare/disattivare rapidamente gli avvisi automatici senza cancellare token o chat ID salvati.
+* **🛡️ Registro Persistente Dispositivi Noti (Zero Notifiche Duplicate al Riavvio):**
+  * Creata la tabella SQLite `known_devices` per memorizzare in modo permanente gli indirizzi MAC e lo stato di notifica dei client di rete.
+  * Al riavvio o all'aggiornamento del server/container, il poller carica l'elenco completo dal database, evitando l'invio ripetuto di notifiche Telegram per apparati già noti.
 * **📖 Rendering Ottimizzato del Manuale Utente & Changelog In-App:**
   * Riscritto il parser Markdown interno (`renderSimpleMarkdown`) con supporto completo a liste numerate ordinate (`<ol>`), sottoelenchi puntati indentati (`<ul>`) e formattazione dei paragrafi.
 * **Esportazione DNS & Webhooks:**

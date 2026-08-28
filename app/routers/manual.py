@@ -347,6 +347,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Pulsante Disconnessione Sicura con Modale di Conferma OTP**
 * **Fix & Arricchimento Report Daily Digest Telegram**
 * **Riorganizzazione Scheda Automazioni & Toggle Notifiche Dedicati**
+* **Registro Persistente Dispositivi Noti (Zero Notifiche Duplicate al Riavvio)**
 * **Rendering Ottimizzato del Manuale & Liste Markdown**
 * **Esportazione DNS (/etc/hosts, JSON) & Webhooks**
 
@@ -412,6 +413,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Secure Logout Button with OTP Confirmation Modal**
 * **Daily Digest Report Fixes & Rich Live Telemetry**
 * **Automations Tab 2x2 Layout & Dedicated Notification Toggles**
+* **Persistent Known Devices Registry (Zero Duplicate Alerts on Restart)**
 * **Optimized In-App Markdown Rendering & Ordered Lists**
 * **DNS (/etc/hosts, JSON) & Webhook Exporting**
 

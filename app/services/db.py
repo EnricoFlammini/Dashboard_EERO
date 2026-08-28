@@ -2,7 +2,7 @@ import logging
 import random
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 import aiosqlite
 from app.config import settings
 
@@ -82,6 +82,26 @@ class DBService:
                 );
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_alerts_time ON alert_history(timestamp);")
+
+            # 7. Known Devices Registry (Persistent MAC registry to prevent duplicate Telegram alerts)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS known_devices (
+                    mac_address TEXT PRIMARY KEY,
+                    first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    hostname TEXT,
+                    ip TEXT,
+                    notified INTEGER DEFAULT 1
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_known_devices_mac ON known_devices(mac_address);")
+
+            # Backfill known_devices from device_metadata
+            await db.execute("""
+                INSERT OR IGNORE INTO known_devices (mac_address, first_seen, hostname, ip, notified)
+                SELECT LOWER(mac_address), created_at, custom_name, static_ip, 1 
+                FROM device_metadata 
+                WHERE mac_address IS NOT NULL AND mac_address != '';
+            """)
 
             # Inserimento impostazioni predefinite se assenti
             default_settings = [
@@ -287,6 +307,57 @@ class DBService:
                 )
                 await db.commit()
             return new_item
+
+    # ----------------- KNOWN DEVICES (PERSISTENT NOTIFICATION TRACKING) -----------------
+    async def get_known_device_macs(self) -> Set[str]:
+        """Restituisce l'insieme dei MAC address già noti nel database."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("SELECT LOWER(mac_address) as mac FROM known_devices")
+            rows = await cursor.fetchall()
+            return {row["mac"] for row in rows if row["mac"]}
+
+    async def register_known_device(self, mac: str, hostname: str = "", ip: str = "", notified: bool = True):
+        """Registra un dispositivo come noto nel database."""
+        mac_clean = (mac or "").lower().strip()
+        if not mac_clean:
+            return
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        async with self.get_connection() as db:
+            await db.execute(
+                """
+                INSERT INTO known_devices (mac_address, first_seen, hostname, ip, notified)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(mac_address) DO UPDATE SET 
+                    hostname = COALESCE(NULLIF(excluded.hostname, ''), known_devices.hostname),
+                    ip = COALESCE(NULLIF(excluded.ip, ''), known_devices.ip),
+                    notified = CASE WHEN excluded.notified = 1 THEN 1 ELSE known_devices.notified END
+                """,
+                (mac_clean, now, hostname or "", ip or "", 1 if notified else 0)
+            )
+            await db.commit()
+
+    async def register_known_devices_batch(self, devices: List[Dict[str, Any]], notified: bool = True):
+        """Registra un batch di dispositivi come noti nel database."""
+        if not devices:
+            return
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        records = []
+        for d in devices:
+            mac = (d.get("mac") or d.get("mac_address") or "").lower().strip()
+            if mac:
+                hostname = d.get("custom_name") or d.get("nickname") or d.get("hostname") or ""
+                ip = d.get("ip") or ""
+                records.append((mac, now, hostname, ip, 1 if notified else 0))
+        if records:
+            async with self.get_connection() as db:
+                await db.executemany(
+                    """
+                    INSERT OR IGNORE INTO known_devices (mac_address, first_seen, hostname, ip, notified)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    records
+                )
+                await db.commit()
 
     # ----------------- APP SETTINGS -----------------
     async def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
