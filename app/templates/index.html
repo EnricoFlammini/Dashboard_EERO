@@ -680,29 +680,18 @@
                     </template>
                   </td>
 
-                  <!-- Status (Online/Offline/Paused) -->
+                  <!-- Status (Online/Offline) -->
                   <td class="py-3 px-4 text-center">
-                    <template x-if="dev.paused">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" x-text="t('devices.status_paused')"></span>
-                    </template>
-                    <template x-if="!dev.paused && dev.connected">
+                    <template x-if="dev.connected">
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" x-text="t('devices.status_online')"></span>
                     </template>
-                    <template x-if="!dev.paused && !dev.connected">
+                    <template x-if="!dev.connected">
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700" x-text="t('devices.status_offline')"></span>
                     </template>
                   </td>
 
                   <!-- Action Buttons -->
                   <td class="py-3 px-4 text-right space-x-2 whitespace-nowrap">
-                    <!-- Pause/Unpause -->
-                    <button 
-                      @click="toggleDevicePause(dev)"
-                      :class="dev.paused ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-slate-400 hover:text-amber-400 hover:bg-amber-500/10'"
-                      class="p-1.5 rounded-lg transition"
-                      :title="dev.paused ? t('devices.resume_access') : t('devices.pause_access')">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </button>
                     <!-- Detail Modal Trigger -->
                     <button 
                       @click="openDeviceModal(dev)"

@@ -193,6 +193,8 @@ class BackgroundPoller:
                 
                 dev_copy = dict(dev)
                 dev_copy["mac"] = mac
+                dev_copy["profile_id"] = final_prof_id
+                dev_copy["profile_name"] = final_prof_name
                 dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
                 dev_copy["custom_icon"] = meta.get("custom_icon", "device")
                 dev_copy["category"] = meta.get("category", "Altro")
@@ -207,12 +209,10 @@ class BackgroundPoller:
                     if target_p and (target_p.get("paused") is True or target_p.get("is_paused") is True):
                         is_prof_paused = True
 
-                is_local_paused = bool(meta.get("is_paused", 0))
                 is_cloud_paused = bool(dev.get("paused") is True or dev.get("is_paused") is True or is_prof_paused)
-                is_paused_final = bool(is_local_paused or is_cloud_paused)
-                dev_copy["paused"] = is_paused_final
-                dev_copy["is_paused"] = is_paused_final
-                dev_copy["is_local_paused"] = is_local_paused
+                dev_copy["paused"] = is_cloud_paused
+                dev_copy["is_paused"] = is_cloud_paused
+                dev_copy["is_local_paused"] = False
                 enriched_devices.append(dev_copy)
 
                 # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
