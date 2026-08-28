@@ -145,13 +145,15 @@ class AdGuardService:
 
         auth = (target_user, target_pass) if target_user and target_pass else None
 
-        # 1. Recupero client esistenti su AdGuard per distinguere ADD da UPDATE
         existing_clients_by_name: Dict[str, Dict[str, Any]] = {}
         existing_clients_by_id: Dict[str, Dict[str, Any]] = {}
-        try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
-                resp = await client.get(f"{target_url}/control/clients", auth=auth)
+
+        async def _fetch_adguard_clients(http_client: httpx.AsyncClient) -> bool:
+            try:
+                resp = await http_client.get(f"{target_url}/control/clients", auth=auth)
                 if resp.status_code == 200:
+                    existing_clients_by_name.clear()
+                    existing_clients_by_id.clear()
                     resp_data = resp.json() if isinstance(resp.json(), dict) else {}
                     for c in (resp_data.get("clients") or []):
                         if isinstance(c, dict):
@@ -161,66 +163,91 @@ class AdGuardService:
                             for cid in (c.get("ids") or []):
                                 if cid:
                                     existing_clients_by_id[str(cid).strip().lower()] = c
+                    return True
                 elif resp.status_code in (401, 403):
-                    return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica Username e Password."}
-        except Exception as e:
-            logger.warning(f"Impossibile recuperare i client esistenti da AdGuard ({e}), si tenterà l'inserimento diretto.")
+                    return False
+            except Exception as e:
+                logger.warning(f"Impossibile recuperare i client esistenti da AdGuard ({e})")
+            return True
 
-        # 2. Preparazione client da sincronizzare
+        # Preparazione e disambiguazione dei dispositivi da sincronizzare
+        used_names: Dict[str, int] = {}
+        prepared_clients: List[Dict[str, Any]] = []
+
+        for dev in devices:
+            ip = dev.get("ip")
+            mac = dev.get("mac")
+            if not ip and not mac:
+                continue
+
+            ids: List[str] = []
+            # 1. IPv4 pulito
+            if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
+                ids.append(ip.strip())
+            # 2. IPv6 globale/SLAAC instradabile (esclude link-local fe80:)
+            for v6 in (dev.get("ipv6_addresses") or []):
+                if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
+                    v6_clean = v6.strip()
+                    if v6_clean and v6_clean not in ids:
+                        ids.append(v6_clean)
+            # 3. MAC address pulito
+            if mac and isinstance(mac, str) and len(mac) >= 12:
+                mac_clean = mac.strip().upper()
+                if mac_clean not in ids:
+                    ids.append(mac_clean)
+
+            if not ids:
+                continue
+
+            base_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("device_name") or f"eero-{ip or mac}").strip()
+            
+            # Se esistono più dispositivi con lo stesso identico nome, disambigua con suffisso IP/MAC
+            if base_name in used_names:
+                used_names[base_name] += 1
+                suffix = ip.split(".")[-1] if (ip and "." in ip) else (mac[-5:].replace(":", "") if mac else str(used_names[base_name]))
+                unique_name = f"{base_name} ({suffix})"
+            else:
+                used_names[base_name] = 1
+                unique_name = base_name
+
+            prepared_clients.append({
+                "name": unique_name,
+                "ids": ids,
+                "tags": [],
+                "upstreams": [],
+                "blocked_services": [],
+                "use_global_blocked_services": True,
+                "use_global_settings": True,
+                "filtering_enabled": True,
+                "parental_enabled": False,
+                "safebrowsing_enabled": True,
+                "safesearch_enabled": False,
+            })
+
         added_count = 0
         updated_count = 0
         failed_count = 0
-        last_error_sample = ""
+        error_details: List[str] = []
 
-        async with httpx.AsyncClient(timeout=6.0, verify=False, follow_redirects=True) as client:
-            for dev in devices:
-                ip = dev.get("ip")
-                mac = dev.get("mac")
-                if not ip and not mac:
-                    continue
+        async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            # 1. Recupero iniziale client su AdGuard
+            auth_ok = await _fetch_adguard_clients(client)
+            if not auth_ok:
+                return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica Username e Password."}
 
-                ids = []
-                # 1. Clean IPv4
-                if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
-                    ids.append(ip.strip())
-                # 2. Clean Global IPv6 (skip link-local fe80:)
-                for v6 in (dev.get("ipv6_addresses") or []):
-                    if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
-                        v6_clean = v6.strip()
-                        if v6_clean and v6_clean not in ids:
-                            ids.append(v6_clean)
-                # 3. Clean MAC Address
-                if mac and isinstance(mac, str) and len(mac) >= 12:
-                    mac_clean = mac.strip().upper()
-                    if mac_clean not in ids:
-                        ids.append(mac_clean)
+            for payload in prepared_clients:
+                name = payload["name"]
+                ids = payload["ids"]
 
-                if not ids:
-                    continue
+                # Cerca corrispondenza: prima per ID (MAC o IP), poi per Nome
+                matched_client = None
+                for cid in ids:
+                    matched_client = existing_clients_by_id.get(str(cid).lower())
+                    if matched_client:
+                        break
 
-                name = dev.get("nickname") or dev.get("hostname") or dev.get("device_name") or f"eero-{ip or mac}"
-
-                payload = {
-                    "name": name,
-                    "ids": ids,
-                    "tags": [],
-                    "upstreams": [],
-                    "blocked_services": [],
-                    "use_global_blocked_services": True,
-                    "use_global_settings": True,
-                    "filtering_enabled": True,
-                    "parental_enabled": False,
-                    "safebrowsing_enabled": True,
-                    "safesearch_enabled": False,
-                }
-
-                # Cerca corrispondenza per nome o per ID (IP/MAC)
-                matched_client = existing_clients_by_name.get(name.lower())
                 if not matched_client:
-                    for cid in ids:
-                        matched_client = existing_clients_by_id.get(str(cid).lower())
-                        if matched_client:
-                            break
+                    matched_client = existing_clients_by_name.get(name.lower())
 
                 if matched_client:
                     orig_name = matched_client.get("name") or name
@@ -239,20 +266,44 @@ class AdGuardService:
                             updated_count += 1
                         else:
                             added_count += 1
+                        # Aggiorna mappe in memoria
+                        existing_clients_by_name[name.lower()] = payload
+                        for cid in ids:
+                            existing_clients_by_id[str(cid).lower()] = payload
                     else:
-                        # Se l'add fallisce perché esiste già per ID, tenta l'update
+                        # Se l'add fallisce perché esiste già un conflitto su AdGuard, ricarica e tenta l'update
                         if not is_update:
-                            r_upd = await client.post(f"{target_url}/control/clients/update", json={"name": name, "data": payload}, auth=auth)
-                            if r_upd.status_code in (200, 201, 204):
-                                updated_count += 1
-                                continue
-                        err_text = r.text.strip()[:100]
-                        last_error_sample = f"{name}: HTTP {r.status_code} ({err_text})"
-                        logger.warning(f"Errore sincronizzazione client '{name}' su AdGuard: {last_error_sample}")
+                            await _fetch_adguard_clients(client)
+                            rematched = None
+                            for cid in ids:
+                                rematched = existing_clients_by_id.get(str(cid).lower())
+                                if rematched:
+                                    break
+                            if not rematched:
+                                rematched = existing_clients_by_name.get(name.lower())
+
+                            if rematched:
+                                target_orig = rematched.get("name") or name
+                                r_upd = await client.post(
+                                    f"{target_url}/control/clients/update",
+                                    json={"name": target_orig, "data": payload},
+                                    auth=auth
+                                )
+                                if r_upd.status_code in (200, 201, 204):
+                                    updated_count += 1
+                                    existing_clients_by_name[name.lower()] = payload
+                                    for cid in ids:
+                                        existing_clients_by_id[str(cid).lower()] = payload
+                                    continue
+
+                        err_text = r.text.strip()[:90]
+                        err_entry = f"{name} (HTTP {r.status_code}: {err_text})"
+                        error_details.append(err_entry)
+                        logger.warning(f"Errore sync AdGuard per '{name}': {err_text}")
                         failed_count += 1
                 except Exception as e:
-                    last_error_sample = f"{name}: {str(e)}"
-                    logger.error(f"Eccezione durante la sincronizzazione di '{name}' su AdGuard: {e}")
+                    error_details.append(f"{name}: {str(e)}")
+                    logger.error(f"Eccezione sync AdGuard per '{name}': {e}")
                     failed_count += 1
 
         total_synced = added_count + updated_count
@@ -272,7 +323,7 @@ class AdGuardService:
                 "success": False,
                 "total_synced": 0,
                 "failed_count": failed_count,
-                "message": f"Sincronizzazione fallita per tutti i {failed_count} client. {last_error_sample}",
+                "message": f"Sincronizzazione fallita per tutti i {failed_count} client. Errori: {'; '.join(error_details[:2])}",
                 "last_sync_time": now_iso,
             }
 
@@ -282,7 +333,7 @@ class AdGuardService:
             "added_count": added_count,
             "updated_count": updated_count,
             "failed_count": failed_count,
-            "message": status_text,
+            "message": status_text if failed_count == 0 else f"{status_text} ({'; '.join(error_details[:2])})",
             "last_sync_time": now_iso,
         }
 
