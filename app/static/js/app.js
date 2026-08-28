@@ -1558,8 +1558,16 @@ document.addEventListener('alpine:init', () => {
     async testAdGuardConnection() {
       this.adguardTesting = true;
       try {
+        let cleanUrl = (this.adguardSettings.url || '').trim();
+        if (cleanUrl.includes('#')) cleanUrl = cleanUrl.split('#')[0];
+        cleanUrl = cleanUrl.replace(/\/+$/, '');
+        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+          cleanUrl = 'http://' + cleanUrl;
+        }
+        this.adguardSettings.url = cleanUrl;
+
         const payload = {
-          url: this.adguardSettings.url,
+          url: cleanUrl,
           username: this.adguardSettings.username,
           password: this.adguardSettings.password || undefined
         };
@@ -1570,6 +1578,9 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (json.success) {
+          if (json.normalized_url) {
+            this.adguardSettings.url = json.normalized_url;
+          }
           this.showToast("Test Connessione Riuscito", json.message, "success");
         } else {
           this.showToast("Test Fallito", json.message || "Impossibile connettersi ad AdGuard Home", "error");
