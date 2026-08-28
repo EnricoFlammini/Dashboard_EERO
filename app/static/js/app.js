@@ -171,6 +171,9 @@ document.addEventListener('alpine:init', () => {
     changelogVersion: '1.03.00',
     changelogLoading: false,
 
+    // About Modal State
+    showAboutModal: false,
+
     // Toast Notification System
     toasts: [],
 

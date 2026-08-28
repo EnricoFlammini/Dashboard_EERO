@@ -280,6 +280,22 @@
     "view_on_github": "View Full Changelog on GitHub",
     "close": "Close"
   },
+  "about_modal": {
+    "title": "About & Credits",
+    "subtitle": "Project Information",
+    "crafted_by": "Crafted with ❤️ by Enrico Flammini for the homelab & self-hosted community.",
+    "links_title": "Useful Links & Open Source",
+    "source_code": "Source Code",
+    "source_code_desc": "GitHub Repository (open issues and contribute)",
+    "license": "License",
+    "license_desc": "MIT License (Open Source & Free to use)",
+    "deployment": "Deployment",
+    "deployment_desc": "Docker Hub Multi-Arch Container",
+    "fun_notes_title": "Fun Notes",
+    "coffee_note": "Powered by coffee, late-night packet sniffing, and private eero APIs.",
+    "telemetry_note": "Zero Cloud Telemetry: Your data lives strictly in your local volume.",
+    "close": "Close"
+  },
   "toasts": {
     "saved": "Saved",
     "error": "Error",
