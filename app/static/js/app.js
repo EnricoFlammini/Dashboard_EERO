@@ -19,6 +19,7 @@ document.addEventListener('alpine:init', () => {
     // Auth & Session State
     isAuthenticated: false,
     isDemoMode: false,
+    showLogoutModal: false,
     userAccount: null,
     loginIdentifier: '',
     otpCode: '',

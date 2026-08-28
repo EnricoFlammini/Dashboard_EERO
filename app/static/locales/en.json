@@ -23,7 +23,8 @@
     "gaming_active": "Gaming: ACTIVE",
     "gaming_tooltip": "Gaming / Low Latency Mode (Pause secondary traffic)",
     "quick_help": "Quick Guide & Manual",
-    "changelog_title": "View Changelog"
+    "changelog_title": "View Changelog",
+    "logout": "Logout Session"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -263,6 +264,14 @@
     "desc": "Are you sure you want to reboot the entire eero network? Internet connectivity for all devices will be interrupted for about 2-3 minutes.",
     "cancel": "Cancel",
     "confirm": "Yes, Restart Now"
+  },
+  "logout_modal": {
+    "title": "Confirm Logout",
+    "subtitle": "Are you sure you want to log out of your session?",
+    "warning_title": "Notice: New OTP verification will be required",
+    "warning_desc": "The saved session on the server will be deleted. On your next login, you will need to enter your email/phone and verify a new 6-digit OTP code sent via SMS or Email.",
+    "cancel": "Cancel",
+    "confirm": "Yes, Log Out"
   },
   "changelog_modal": {
     "title": "Changelog & Release Notes",

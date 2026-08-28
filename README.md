@@ -237,7 +237,7 @@ python scripts/adguard_sync.py \
   --pass MySecretPassword
 ```
 
-> 💡 **Coming in v1.03.00:** A dedicated **Native In-App AdGuard Home UI** panel in the Settings menu with one-click connection tests, live status indicators, and automatic background synchronization!
+> 🛡️ **Native In-App AdGuard Home Integration:** You can also configure AdGuard Home directly from the **Automations & Controls** tab with one-click connection tests, continuous background synchronization, and instant "Sync Now" trigger!
 
 ---
 
@@ -397,7 +397,7 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    python scripts/adguard_sync.py --eero http://localhost:8085 --adguard http://192.168.4.2:80 --user admin --pass MiaPassword
    ```
 
-> 💡 **In arrivo nella v1.03.00:** Un pannello di **Integrazione Nativa AdGuard Home in-App** nelle Impostazioni con verifica connessione in 1 clic, indicatore di stato live e sincronizzazione automatica continua in background!
+> 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!
 
 ---
 

@@ -23,7 +23,8 @@
     "gaming_active": "Gaming: ATTIVO",
     "gaming_tooltip": "Gaming / Low Latency Mode (Pausa traffico secondario)",
     "quick_help": "Guida & Manuale Rapido",
-    "changelog_title": "Visualizza Changelog"
+    "changelog_title": "Visualizza Changelog",
+    "logout": "Disconnetti Sessione"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -263,6 +264,14 @@
     "desc": "Sei sicuro di voler riavviare l'intera rete eero? La connessione internet di tutti i dispositivi verrà temporaneamente interrotta per circa 2-3 minuti.",
     "cancel": "Annulla",
     "confirm": "Sì, Riavvia Ora"
+  },
+  "logout_modal": {
+    "title": "Conferma Disconnessione",
+    "subtitle": "Sei sicuro di voler effettuare il logout?",
+    "warning_title": "Attenzione: Nuova richiesta OTP necessaria",
+    "warning_desc": "La sessione salvata sul server verrà eliminata. Al prossimo accesso dovrai inserire nuovamente la tua email o telefono e verificare il codice OTP a 6 cifre ricevuto via SMS o Email.",
+    "cancel": "Annulla",
+    "confirm": "Sì, Disconnetti"
   },
   "changelog_modal": {
     "title": "Changelog & Note di Rilascio",
