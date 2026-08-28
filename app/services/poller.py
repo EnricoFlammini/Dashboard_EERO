@@ -235,15 +235,69 @@ class BackgroundPoller:
             if is_initial_discovery and enriched_devices:
                 await db_service.register_known_devices_batch(enriched_devices, notified=True)
 
+            # 2.5 Risoluzione robusta dei nodi eero per ciascun dispositivo
+            eero_by_key: Dict[str, Dict[str, Any]] = {}
+            gateway_node = None
+            for node in eeros:
+                if node.get("is_gateway") and not gateway_node:
+                    gateway_node = node
+
+                n_id = str(node.get("id") or "").strip()
+                n_serial = str(node.get("serial") or "").strip()
+                n_url = str(node.get("url") or "").strip()
+                n_url_tail = n_url.split("/")[-1] if n_url else ""
+                n_name = str(node.get("name") or node.get("location") or "").strip()
+                n_ip = str(node.get("ip") or "").strip()
+
+                for key in [n_id, n_serial, n_url, n_url_tail, n_name.lower(), n_ip]:
+                    if key:
+                        eero_by_key[key] = node
+
+            if not gateway_node and eeros:
+                gateway_node = eeros[0]
+
+            for dev_copy in enriched_devices:
+                cand_keys = [
+                    str(dev_copy.get("connected_eero_id") or "").strip(),
+                    str(dev_copy.get("connected_eero_url") or "").strip(),
+                    str(dev_copy.get("connected_eero_name") or "").strip().lower(),
+                ]
+                cand_keys = [k for k in cand_keys if k]
+
+                matched_node = None
+                for k in cand_keys:
+                    if k in eero_by_key:
+                        matched_node = eero_by_key[k]
+                        break
+                    if "/" in k and k.split("/")[-1] in eero_by_key:
+                        matched_node = eero_by_key[k.split("/")[-1]]
+                        break
+
+                if matched_node:
+                    dev_copy["connected_eero_id"] = str(matched_node.get("id") or "")
+                    dev_copy["connected_eero_name"] = str(matched_node.get("name") or matched_node.get("location") or "eero")
+                elif dev_copy.get("connected"):
+                    # Dispositivi cablati o reti a singolo nodo: attribuzione automatica al gateway se non specificato
+                    if not dev_copy.get("wireless") or dev_copy.get("connection_type") == "wired" or len(eeros) == 1:
+                        if gateway_node:
+                            dev_copy["connected_eero_id"] = str(gateway_node.get("id") or "")
+                            dev_copy["connected_eero_name"] = str(gateway_node.get("name") or gateway_node.get("location") or "Gateway")
+
             # 3. Distribuzione conteggio client connessi per singolo nodo eero
             for node in eeros:
-                node_id = str(node.get("id") or node.get("serial") or "")
-                node_name = str(node.get("name") or node.get("location") or "")
+                n_id = str(node.get("id") or "").strip()
+                n_serial = str(node.get("serial") or "").strip()
+                n_name = str(node.get("name") or node.get("location") or "").strip().lower()
+                n_url = str(node.get("url") or "").strip()
+                n_url_tail = n_url.split("/")[-1] if n_url else ""
+
+                node_ident_keys = {k for k in [n_id, n_serial, n_name, n_url, n_url_tail] if k}
+
                 matched_clients = [
                     d for d in enriched_devices
                     if d.get("connected") and (
-                        str(d.get("connected_eero_id", "")) == node_id or
-                        str(d.get("connected_eero_name", "")).lower() == node_name.lower() or
+                        str(d.get("connected_eero_id", "")).strip() in node_ident_keys or
+                        str(d.get("connected_eero_name", "")).strip().lower() == n_name or
                         (node.get("is_gateway") and not d.get("connected_eero_id") and not d.get("wireless"))
                     )
                 ]

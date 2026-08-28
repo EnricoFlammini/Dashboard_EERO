@@ -395,8 +395,12 @@ class EeroClient:
             led_st = str(node.get("led_status") or node.get("led_action") or "on").lower()
             node["led_on"] = (led_st not in ("off", "disabled", "false", "0"))
 
-        # Serial & ID
-        node["id"] = str(node.get("id") or node.get("serial") or node.get("url", "").split("/")[-1])
+        # Serial, ID & URL (ensure id matches url identifier, serial and id are both preserved)
+        node_url = str(node.get("url") or "")
+        url_id = node_url.split("/")[-1] if node_url else ""
+        node["url"] = node_url
+        node["serial"] = str(node.get("serial") or "")
+        node["id"] = str(node.get("id") or url_id or node.get("serial") or "")
         return node
 
     def _normalize_device(self, d: Dict[str, Any]) -> Dict[str, Any]:
@@ -543,17 +547,45 @@ class EeroClient:
                         rssi = None
                 dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] and dev["wireless"] else None)
 
-            # Source / Connected eero
-            source = dev.get("source")
-            if isinstance(source, dict):
-                dev["connected_eero_id"] = str(source.get("id") or source.get("url", "").split("/")[-1])
-                dev["connected_eero_name"] = source.get("location") or source.get("name") or ""
-            elif isinstance(dev.get("eero"), dict):
-                dev["connected_eero_id"] = str(dev["eero"].get("id") or dev["eero"].get("url", "").split("/")[-1])
-                dev["connected_eero_name"] = dev["eero"].get("location") or dev["eero"].get("name") or ""
-            elif isinstance(dev.get("parent"), dict):
-                dev["connected_eero_id"] = str(dev["parent"].get("id") or dev["parent"].get("url", "").split("/")[-1])
-                dev["connected_eero_name"] = dev["parent"].get("location") or dev["parent"].get("name") or ""
+            # Source / Connected eero (Robust multi-source resolution across all eero models and firmware versions)
+            c_id = ""
+            c_name = ""
+            c_url = ""
+
+            def _extract_source_candidate(src: Any):
+                nonlocal c_id, c_name, c_url
+                if isinstance(src, dict):
+                    u = str(src.get("url") or "")
+                    if u:
+                        c_url = u
+                        c_id = u.split("/")[-1]
+                    if not c_id:
+                        c_id = str(src.get("id") or src.get("serial") or "")
+                    c_name = str(src.get("location") or src.get("name") or src.get("nickname") or "")
+                elif isinstance(src, str) and src:
+                    if "/" in src:
+                        c_url = src
+                        c_id = src.split("/")[-1]
+                    else:
+                        c_id = src
+
+            for src_cand in [
+                dev.get("source"),
+                dev.get("eero"),
+                dev.get("parent"),
+                (dev.get("connectivity") or {}).get("source") if isinstance(dev.get("connectivity"), dict) else None,
+                (dev.get("connectivity") or {}).get("eero") if isinstance(dev.get("connectivity"), dict) else None,
+                (dev.get("connectivity") or {}).get("parent") if isinstance(dev.get("connectivity"), dict) else None,
+                (dev.get("interface") or {}).get("source") if isinstance(dev.get("interface"), dict) else None,
+            ]:
+                if src_cand:
+                    _extract_source_candidate(src_cand)
+                    if c_id or c_name:
+                        break
+
+            dev["connected_eero_id"] = c_id
+            dev["connected_eero_name"] = c_name
+            dev["connected_eero_url"] = c_url
 
             # Usage / Throughput rates (STRICT REAL DATA ONLY)
             usage = dev.get("usage")
