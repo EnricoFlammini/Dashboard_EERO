@@ -64,7 +64,7 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
         print(f"❌ Failed to reach eero Dashboard: {e}")
         sys.exit(1)
 
-    clients = data.get("clients", [])
+    clients = data.get("clients") or []
     print(f"✅ Found {len(clients)} active eero clients.")
 
     if dry_run:
@@ -79,9 +79,10 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
     try:
         status, body = http_request(f"{adguard_url}/control/clients", user=user, password=password)
         if status == 200:
-            existing_data = json.loads(body)
-            for ec in existing_data.get("clients", []):
-                existing_names.add(ec.get("name"))
+            existing_data = json.loads(body) if body else {}
+            for ec in (existing_data.get("clients") or []):
+                if isinstance(ec, dict) and ec.get("name"):
+                    existing_names.add(ec.get("name"))
         elif status == 401:
             print("❌ AdGuard Home returned 401 Unauthorized. Check your username and password.")
             sys.exit(1)

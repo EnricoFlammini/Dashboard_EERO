@@ -88,13 +88,14 @@ class AdGuardService:
                 async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
                     resp = await client.get(f"{try_url}/control/clients", auth=auth)
                     if resp.status_code == 200:
-                        data = resp.json()
-                        clients = data.get("clients", [])
+                        data = resp.json() if isinstance(resp.json(), dict) else {}
+                        clients = data.get("clients") or []
+                        auto_clients = data.get("auto_clients") or []
                         return {
                             "success": True,
                             "status_code": 200,
                             "normalized_url": try_url,
-                            "message": f"Connessione riuscita! Trovati {len(clients)} client esistenti su AdGuard Home.",
+                            "message": f"Connessione riuscita! Trovati {len(clients)} client manuali ({len(auto_clients)} scoperti automaticamente) su AdGuard Home.",
                             "existing_clients_count": len(clients),
                         }
                     elif resp.status_code in (401, 403):
@@ -143,8 +144,9 @@ class AdGuardService:
             async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
                 resp = await client.get(f"{target_url}/control/clients", auth=auth)
                 if resp.status_code == 200:
-                    for c in resp.json().get("clients", []):
-                        if c.get("name"):
+                    resp_data = resp.json() if isinstance(resp.json(), dict) else {}
+                    for c in (resp_data.get("clients") or []):
+                        if isinstance(c, dict) and c.get("name"):
                             existing_clients_map[c["name"]] = c
                 elif resp.status_code in (401, 403):
                     return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica le credenziali."}
