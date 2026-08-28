@@ -885,7 +885,7 @@ class EeroClient:
         except Exception:
             found_dev = None
 
-        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+        if settings.demo_mode or not self.is_authenticated or (self.user_token and self.user_token.startswith("demo_")):
             for dev in self._demo_state["devices"]:
                 if dev["id"] == device_id or dev["mac"] == device_id:
                     if nickname is not None:
@@ -893,8 +893,8 @@ class EeroClient:
                     if paused is not None:
                         dev["paused"] = bool(paused)
                         dev["is_paused"] = bool(paused)
-                    return {"status": "success", "device": dev}
-            return {"status": "success", "device_id": device_id, "updated": payload}
+                    return {"status": "success", "device": dev, "cloud_synced": True, "mode": "demo"}
+            return {"status": "warning", "device_id": device_id, "updated": payload, "cloud_synced": False, "last_error": "Modalità Demo o Sessione eero non autenticata"}
 
         # Raccolta URL candidati da testare in sequenza
         urls_to_try = []

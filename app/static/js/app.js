@@ -1248,8 +1248,17 @@ document.addEventListener('alpine:init', () => {
           ? `Dispositivo '${devName}' ${targetState ? 'messo in pausa' : 'riattivato'}.`
           : `Device '${devName}' ${targetState ? 'paused' : 'restored'}.`;
         
-        if (json.cloud_synced === false && json.cloud_response?.last_error) {
-          msg += ` (Cloud: ${json.cloud_response.last_error})`;
+        const cResp = json.cloud_response || {};
+        if (cResp.url_used) {
+          const shortUrl = cResp.url_used.replace("https://api-user.e2ro.com/", "");
+          msg += ` [Cloud OK: ${cResp.method_used} ${shortUrl}]`;
+          this.showToast(title, msg, "success");
+        } else if (cResp.last_error || json.warning) {
+          const errDetail = cResp.last_error || json.warning;
+          msg += ` [Cloud: ${errDetail}]`;
+          this.showToast(title, msg, "warning");
+        } else if (json.cloud_synced === false) {
+          msg += ` [Cloud non sincronizzato]`;
           this.showToast(title, msg, "warning");
         } else {
           this.showToast(title, msg, targetState ? "warning" : "success");
