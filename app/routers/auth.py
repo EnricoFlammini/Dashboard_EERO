@@ -20,25 +20,55 @@ class VerifyOTPRequest(BaseModel):
     user_token: Optional[str] = Field(None, description="Token temporaneo restituito dalla richiesta di login")
 
 
+class ModeSwitchRequest(BaseModel):
+    demo: bool = Field(..., description="True per attivare Demo Mode, False per tornare a Live Network")
+
+
 @router.get("/status")
 async def get_auth_status():
     """Restituisce lo stato corrente di autenticazione e le informazioni dell'account."""
+    is_demo = eero_client.is_demo_mode
     is_auth = eero_client.is_authenticated
-    is_demo = settings.demo_mode or (bool(eero_client.user_token) and eero_client.user_token.startswith("demo_"))
+    has_live = eero_client.has_saved_live_token or (bool(eero_client.user_token) and not eero_client.user_token.startswith("demo_"))
     
     account = None
-    if is_auth:
+    if is_auth and not is_demo:
         try:
             account = await eero_client.fetch_account_info()
         except Exception as e:
             logger.warning(f"Failed to fetch account info on status check: {e}")
             is_auth = False
+    elif is_demo:
+        account = eero_client.account_info or {"name": "Demo Administrator", "email": "admin@demo-eero.lan"}
 
     return {
         "authenticated": is_auth,
         "demo_mode": is_demo,
+        "has_saved_live_token": has_live,
         "network_id": eero_client.current_network_id,
         "account": account,
+    }
+
+
+@router.post("/mode")
+async def switch_mode(payload: ModeSwitchRequest):
+    """Passa istantaneamente tra Demo Mode e Live Network preservando il token reale."""
+    eero_client.set_demo_mode(payload.demo)
+    
+    # Forza un ciclo di polling immediato
+    try:
+        from app.services.poller import background_poller
+        await background_poller.poll_once()
+    except Exception as e:
+        logger.warning(f"Poller refresh after mode switch: {e}")
+
+    return {
+        "status": "success",
+        "demo_mode": eero_client.is_demo_mode,
+        "has_saved_live_token": eero_client.has_saved_live_token,
+        "authenticated": eero_client.is_authenticated,
+        "network_id": eero_client.current_network_id,
+        "account": eero_client.account_info
     }
 
 

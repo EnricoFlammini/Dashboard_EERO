@@ -23,6 +23,10 @@ class EeroClient:
         self.user_token: Optional[str] = None
         self.account_info: Optional[Dict[str, Any]] = None
         self.current_network_id: Optional[str] = None
+        self.saved_live_token: Optional[str] = None
+        self.saved_live_network_id: Optional[str] = None
+        self.saved_live_account_info: Optional[Dict[str, Any]] = None
+        self._is_demo_active: bool = False
         self.load_session()
 
         # Simulated Demo State
@@ -33,8 +37,10 @@ class EeroClient:
         # 1. Priorità al token permanente impostato in .env
         if settings.eero_user_token:
             self.user_token = settings.eero_user_token.strip()
+            self.saved_live_token = self.user_token
             if settings.eero_network_id:
                 self.current_network_id = settings.eero_network_id.strip()
+                self.saved_live_network_id = self.current_network_id
             logger.info("Loaded eero session token permanently from environment variable (.env).")
             return
 
@@ -43,10 +49,26 @@ class EeroClient:
             if self.session_path.exists():
                 with open(self.session_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.user_token = data.get("user_token")
-                    self.current_network_id = data.get("network_id")
-                    self.account_info = data.get("account_info")
-                    logger.info(f"Loaded existing eero session (Network ID: {self.current_network_id})")
+                    stored_user_token = data.get("user_token")
+                    saved_live_tok = data.get("saved_live_token")
+                    if not saved_live_tok and stored_user_token and not stored_user_token.startswith("demo_"):
+                        saved_live_tok = stored_user_token
+
+                    self.saved_live_token = saved_live_tok
+                    self.saved_live_network_id = data.get("saved_live_network_id") or data.get("network_id")
+                    self.saved_live_account_info = data.get("saved_live_account_info") or data.get("account_info")
+                    self._is_demo_active = bool(data.get("is_demo_active", False))
+
+                    if self._is_demo_active:
+                        self.user_token = "demo_verified_master_token"
+                        self.current_network_id = "network_demo_mesh_01"
+                        self.account_info = {"name": "Demo Administrator", "email": "admin@demo-eero.lan"}
+                    else:
+                        self.user_token = stored_user_token
+                        self.current_network_id = data.get("network_id")
+                        self.account_info = data.get("account_info")
+
+                    logger.info(f"Loaded existing eero session (Network ID: {self.current_network_id}, Demo Mode: {self.is_demo_mode})")
         except Exception as e:
             logger.warning(f"Could not load session from {self.session_path}: {e}")
 
@@ -58,6 +80,10 @@ class EeroClient:
                 "user_token": self.user_token,
                 "network_id": self.current_network_id,
                 "account_info": self.account_info,
+                "saved_live_token": self.saved_live_token,
+                "saved_live_network_id": self.saved_live_network_id,
+                "saved_live_account_info": self.saved_live_account_info,
+                "is_demo_active": self._is_demo_active,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             with open(self.session_path, "w", encoding="utf-8") as f:
@@ -66,11 +92,38 @@ class EeroClient:
         except Exception as e:
             logger.error(f"Error saving session: {e}")
 
+    def set_demo_mode(self, active: bool):
+        """Attiva o disattiva la modalità demo preservando il token reale salvato."""
+        if active:
+            if self.user_token and not self.user_token.startswith("demo_"):
+                self.saved_live_token = self.user_token
+                self.saved_live_network_id = self.current_network_id
+                self.saved_live_account_info = self.account_info
+            self._is_demo_active = True
+            self.user_token = "demo_verified_master_token"
+            self.current_network_id = "network_demo_mesh_01"
+            self.account_info = {"name": "Demo Administrator", "email": "admin@demo-eero.lan"}
+        else:
+            self._is_demo_active = False
+            if self.saved_live_token and not self.saved_live_token.startswith("demo_"):
+                self.user_token = self.saved_live_token
+                self.current_network_id = self.saved_live_network_id
+                self.account_info = self.saved_live_account_info
+            else:
+                self.user_token = None
+                self.current_network_id = None
+                self.account_info = None
+        self.save_session()
+
     def clear_session(self):
         """Rimuove la sessione corrente per effettuare il logout."""
         self.user_token = None
         self.current_network_id = None
         self.account_info = None
+        self.saved_live_token = None
+        self.saved_live_network_id = None
+        self.saved_live_account_info = None
+        self._is_demo_active = False
         if self.session_path.exists():
             try:
                 os.remove(self.session_path)
@@ -80,7 +133,15 @@ class EeroClient:
 
     @property
     def is_authenticated(self) -> bool:
-        return bool(self.user_token)
+        return bool(self.user_token) or self._is_demo_active or settings.demo_mode
+
+    @property
+    def is_demo_mode(self) -> bool:
+        return bool(settings.demo_mode or self._is_demo_active or (self.user_token and self.user_token.startswith("demo_")))
+
+    @property
+    def has_saved_live_token(self) -> bool:
+        return bool(self.saved_live_token and not self.saved_live_token.startswith("demo_"))
 
     def _get_headers(self) -> Dict[str, str]:
         headers = {

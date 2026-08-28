@@ -147,11 +147,28 @@
           <span class="hidden sm:inline" x-text="isRefreshing ? t('header.refreshing') : t('header.refresh')"></span>
         </button>
 
-        <!-- Demo Mode Badge -->
+        <!-- Demo Mode Active - Toggle back to Live -->
         <template x-if="isDemoMode">
-          <span class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-ping"></span> <span x-text="t('demo_mode')"></span>
-          </span>
+          <button 
+            @click="toggleDemoMode(false)"
+            class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95 shadow-sm shadow-emerald-500/10"
+            :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+            <span class="font-bold">✨ Demo</span>
+            <span class="text-[11px] opacity-70">→</span>
+            <span class="text-[11px] text-emerald-300 font-bold" x-text="hasSavedLiveToken ? t('header.switch_to_live') : t('header.live_login_btn')"></span>
+          </button>
+        </template>
+
+        <!-- Live Mode Active - Quick Switch to Demo -->
+        <template x-if="!isDemoMode && isAuthenticated">
+          <button 
+            @click="toggleDemoMode(true)"
+            class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/15 text-slate-400 hover:text-amber-400 border border-slate-700 hover:border-amber-500/30 transition-all active:scale-95"
+            :title="t('header.demo_switch_title')">
+            <span>✨</span>
+            <span x-text="t('header.switch_to_demo')"></span>
+          </button>
         </template>
 
         <!-- Focus Mode One-Click Button -->
@@ -367,11 +384,6 @@
                 <div class="flex justify-between text-slate-400" x-show="eero.status">
                   <span x-text="t('dashboard.status')"></span>
                   <span class="text-emerald-400 font-medium" x-text="formatNodeStatus(eero)"></span>
-                </div>
-                <!-- Temperature (if sensor is present on this hardware version) -->
-                <div class="flex justify-between text-slate-400" x-show="eero.temperature_celsius !== undefined && eero.temperature_celsius !== null">
-                  <span x-text="t('dashboard.temperature')"></span>
-                  <span class="font-mono text-slate-300" x-text="eero.temperature_celsius + ' °C'"></span>
                 </div>
                 <!-- Firmware OS Version -->
                 <div class="flex justify-between text-slate-400" x-show="eero.os_version">

@@ -19,6 +19,7 @@ document.addEventListener('alpine:init', () => {
     // Auth & Session State
     isAuthenticated: false,
     isDemoMode: false,
+    hasSavedLiveToken: false,
     showLogoutModal: false,
     userAccount: null,
     loginIdentifier: '',
@@ -292,12 +293,48 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/auth/status');
         const data = await res.json();
-        this.isAuthenticated = data.authenticated;
-        this.isDemoMode = data.demo_mode;
+        this.isAuthenticated = Boolean(data.authenticated);
+        this.isDemoMode = Boolean(data.demo_mode);
+        this.hasSavedLiveToken = Boolean(data.has_saved_live_token);
         this.userAccount = data.account;
       } catch (err) {
         console.error("Auth status check failed:", err);
       }
+    },
+
+    async toggleDemoMode(enableDemo) {
+      this.authLoading = true;
+      try {
+        const resp = await fetch('/api/auth/mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ demo: Boolean(enableDemo) })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          this.isDemoMode = Boolean(data.demo_mode);
+          this.hasSavedLiveToken = Boolean(data.has_saved_live_token);
+          this.isAuthenticated = Boolean(data.authenticated);
+          this.userAccount = data.account;
+          await this.refreshAllData();
+          if (this.isAuthenticated) {
+            this.startPolling();
+          }
+          const title = this.currentLanguage === 'it' ? "Modalità Aggiornata" : "Mode Switched";
+          const msg = this.isDemoMode
+            ? (this.currentLanguage === 'it' ? "Modalità Demo attiva. Il tuo token live reale rimane salvato." : "Demo Mode active. Your live session token is preserved.")
+            : (this.currentLanguage === 'it' ? "Rete Live attiva. Dati eero in tempo reale caricati." : "Live Network active. Real-time eero data loaded.");
+          this.showToast(title, msg, "info");
+        }
+      } catch (err) {
+        console.error("Failed to toggle demo mode:", err);
+      } finally {
+        this.authLoading = false;
+      }
+    },
+
+    async startDemoSession() {
+      await this.toggleDemoMode(true);
     },
 
     async requestOtp() {

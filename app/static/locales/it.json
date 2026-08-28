@@ -24,7 +24,13 @@
     "gaming_tooltip": "Gaming / Low Latency Mode (Pausa traffico secondario)",
     "quick_help": "Guida & Manuale Rapido",
     "changelog_title": "Visualizza Changelog",
-    "logout": "Disconnetti Sessione"
+    "logout": "Disconnetti Sessione",
+    "switch_to_demo": "Demo Mode",
+    "switch_to_live": "Torna a Live",
+    "live_login_btn": "Login Live",
+    "demo_switch_title": "Passa alla Modalità Demo (il token reale rimarrà memorizzato)",
+    "live_switch_title": "Torna alla rete eero reale Live",
+    "live_login_title": "Accedi con le tue credenziali eero"
   },
   "dashboard": {
     "health_score": "Network Health Score",
