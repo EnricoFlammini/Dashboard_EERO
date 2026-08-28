@@ -1,5 +1,6 @@
 services:
   eero-dashboard:
+    image: enricoflammini/eero-dashboard:latest
     build:
       context: .
       dockerfile: Dockerfile
