@@ -99,6 +99,25 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
         "icon": "gauge",
         "summary": "Esecuzione test di velocità, storico delle misurazioni e analisi della latenza.",
         "content": """
+### Diagnostica di Velocità
+
+* **Test Manuale:** Clicca sul pulsante **"Avvia Speed Test"** per lanciare una misurazione in tempo reale di Download, Upload, Latenza (Ping) e Jitter direttamente dal Gateway eero.
+* **Test Automatici Pianificati:** Il sistema monitora e storicizza periodicamente i test eseguiti dall'infrastruttura mesh per valutare la costanza della linea FTTH/VDSL.
+* **Grafico Storico & Statistiche:**
+  - Grafico dell'andamento di velocità e stabilità della linea nel corso dei giorni.
+  - Calcolo automatico di velocità media, picco massimo e latenza minima.
+        """
+    },
+    {
+        "id": "automations",
+        "title": "7. Automazioni, QR Ospiti, AdGuard Home, Telegram & Notifiche",
+        "icon": "zap",
+        "summary": "Smart Guest Wi-Fi con QR, integrazione AdGuard Home, allarmi Telegram/Webhook con toggle e report digest.",
+        "content": """
+### Funzionalità Avanzate e Centro Automazioni
+
+La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4 comodi quadranti:
+
 1. **Smart Guest Wi-Fi con QR Code Dinamico (In alto a sinistra):**
    - Genera all'istante un QR Code ad alta risoluzione pronto per essere inquadrato da ospiti e smartphone.
    - Toggle per abilitare/disabilitare la rete ospiti con un clic.

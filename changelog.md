@@ -8,14 +8,23 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.03.01] - 2026-08-28
 
-### 🔄 Risoluzione Nodi Mesh Multi-Generazione & Switch Istantaneo Demo/Live (#12)
-* **📡 Risoluzione Universale Nodi e Client Mesh (Issue #12):**
+### 🚀 Risoluzione Nodi Mesh, Velocità Cablate 2.5G/10G & Assegnazione Profili (#12)
+* **📡 Risoluzione Universale Nodi e Client Mesh (Issue #12 - Punto 1):**
   * Introdotto motore di indicizzazione multi-chiave in `poller.py` e `eero_client.py` (`id` numerico, `serial`, `url`, `location`/nome, `ip`) per garantire il matching affidabile dei client connessi su tutte le generazioni eero (eero Pro 7, Pro 6E, eero 6+, Max 7) e versioni eeroOS 7.x.
   * Risolto il bug per cui i dispositivi su nodi beacon potevano risultare tutti associati al Gateway in presenza di payload cloud privi del campo `location`.
 * **✨ Switch Istantaneo Modalità Demo / Rete Live (senza perdita di Token):**
   * Aggiunto pulsante interattivo nella barra superiore per passare istantaneamente alla **Modalità Demo** a scopo di test/anteprima e ritornare alla **Rete Live** preservando sempre il token di sessione autenticato senza dover reinserire l'OTP.
-* **🌡️ Armonizzazione Stato Termico Nodi:**
+* **🌡️ Armonizzazione Stato Termico Nodi (Issue #12 - Punto 2):**
   * Ottimizzato il rendering dello stato termico e operativo dei nodi mesh, riflettendo accuratamente lo stato di salute reale fornito dalle API ufficiali eero (`thermal_status`: Normale / Nominale).
+* **⚡ Velocità Negoziata Ethernet Dispositivi & Backhaul Mesh (Issue #12 - Punti 3 & 5):**
+  * Rimosso il testo fisso `'GbE 1.0 Gbps'`. Ora il sistema rileva e mostra dinamicamente la reale velocità di link per apparati cablati a **10 Gbps**, **5.0 Gbps**, **2.5 Gbps**, **1.0 Gbps** e **100 Mbps**.
+  * Ispezione automatica delle porte ethernet fisiche (`ports`/`ethernet_ports`) dei nodi eero per rilevare e mostrare la velocità di backhaul cablato.
+* **👤 Selettore Profilo Utente nel Dettaglio Dispositivo (Issue #12 - Punto 4):**
+  * Aggiunto menu a tendina nel modale dettaglio client per assegnare, modificare o rimuovere un dispositivo dal rispettivo profilo utente Cloud eero direttamente dalla Dashboard.
+* **📶 Telemetria Segnale RSSI (dBm) & PHY Link Rate nel Modale (Issue #12 - Punto 6):**
+  * Integrata la visualizzazione avanzata della qualità del segnale in dBm e della velocità di modulazione PHY nel riquadro di connessione del modale.
+* **🌍 Rimozione Residui di Testo e Localizzazione Completa (Issue #12 - Punto 7):**
+  * Localizzati integralmente in inglese e italiano tutti i messaggi di verifica conflitti IP statici, avvisi e notifiche Toast.
 
 ---
 

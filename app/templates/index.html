@@ -684,11 +684,11 @@
                     <template x-if="dev.signal_rssi">
                       <div class="text-slate-300 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
                     </template>
-                    <template x-if="dev.connectivity && dev.connectivity.rx_bitrate">
-                      <div class="text-[10px] text-slate-500" x-text="'PHY: ' + dev.connectivity.rx_bitrate"></div>
+                    <template x-if="dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)">
+                      <div class="text-[10px] text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
                     </template>
-                    <template x-if="!dev.signal_rssi && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
-                      <div class="text-[10px] text-slate-500" x-text="dev.wireless ? 'Wi-Fi' : 'GbE 1.0 Gbps'"></div>
+                    <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
+                      <div class="text-[10px] text-slate-400" x-text="dev.wireless ? 'Wi-Fi' : (dev.ethernet_speed || 'Ethernet')"></div>
                     </template>
                   </td>
 
@@ -1161,7 +1161,7 @@
         
         <!-- ==================== TAB 1: GENERALE ==================== -->
         <div x-show="deviceDetailTab === 'general'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label class="block text-slate-400 mb-1" x-text="t('device_modal.custom_name')"></label>
               <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
@@ -1178,10 +1178,19 @@
                 <option value="Altro" x-text="t('devices.cat_other')"></option>
               </select>
             </div>
+            <div>
+              <label class="block text-slate-400 mb-1" x-text="t('devices.col_profile')"></label>
+              <select x-model="deviceSelectedProfileId" class="glass-input w-full px-3 py-2 rounded-xl text-xs">
+                <option value="" x-text="t('profiles.total_unassigned')"></option>
+                <template x-for="prof in profiles" :key="prof.id">
+                  <option :value="prof.id" x-text="'👤 ' + prof.name"></option>
+                </template>
+              </select>
+            </div>
           </div>
 
-          <!-- Device Connection Info -->
-          <div class="grid grid-cols-2 gap-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+          <!-- Device Connection & Signal Info (Points 3, 4, 6) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
             <div>
               <span class="text-slate-500 block text-[11px]" x-text="t('device_modal.current_ip')"></span>
               <span class="font-mono text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.ip || 'DHCP') : '---'"></span>
@@ -1189,6 +1198,14 @@
             <div>
               <span class="text-slate-500 block text-[11px]" x-text="t('device_modal.connected_node')"></span>
               <span class="text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.connected_eero_name || 'Gateway') : '---'"></span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[11px]" x-text="t('devices.col_band')"></span>
+              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? (selectedDevice.wireless_band || selectedDevice.frequency_band || 'Wi-Fi') + (selectedDevice.channel ? ' (CH ' + selectedDevice.channel + ')' : '') : (selectedDevice.ethernet_speed || 'Ethernet')) : '---'"></span>
+            </div>
+            <div>
+              <span class="text-slate-500 block text-[11px]" x-text="t('devices.col_signal')"></span>
+              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed || 'Ethernet')) : '---'"></span>
             </div>
           </div>
 

@@ -382,18 +382,41 @@ class EeroClient:
         else:
             is_wired = (node.get("connection_type") == "wired")
 
+        # Check node ports for ethernet backhaul speed (Point 5)
+        ports_list = node.get("ethernet_ports") or node.get("ports") or node.get("interfaces")
+        active_port_speeds = []
+        if isinstance(ports_list, list):
+            for p in ports_list:
+                if isinstance(p, dict):
+                    p_speed = str(p.get("speed") or p.get("negotiated_speed") or p.get("rate") or p.get("link_speed") or "").lower()
+                    p_conn = p.get("connected") if p.get("connected") is not None else (p.get("carrier") if p.get("carrier") is not None else p.get("link"))
+                    if p_speed and (p_conn is True or p_conn is None or p_conn == "up"):
+                        active_port_speeds.append(p_speed)
+                elif isinstance(p, (str, int)):
+                    active_port_speeds.append(str(p).lower())
+
+        eth_speed = " ".join([
+            str(node.get("ethernet_speed") or ""),
+            str(iface_info.get("speed") or ""),
+            str(conn_info.get("speed") or ""),
+            " ".join(active_port_speeds)
+        ]).lower()
+
         if node["is_gateway"]:
             node["wired"] = True
             node["backhaul_type"] = "Gateway (WAN)"
         elif is_wired:
             node["wired"] = True
-            eth_speed = str(node.get("ethernet_speed") or iface_info.get("speed") or "").lower()
             if "10000" in eth_speed or "10g" in eth_speed or "10 gbps" in eth_speed:
                 node["backhaul_type"] = "Ethernet (10 Gbps)"
+            elif "5000" in eth_speed or "5g" in eth_speed or "5 gbps" in eth_speed:
+                node["backhaul_type"] = "Ethernet (5.0 Gbps)"
             elif "2.5" in eth_speed or "2500" in eth_speed or "2.5g" in eth_speed:
                 node["backhaul_type"] = "Ethernet (2.5 Gbps)"
-            elif "1000" in eth_speed or "1.0" in eth_speed or "1g" in eth_speed or "1 gbps" in eth_speed:
+            elif "1000" in eth_speed or "1.0" in eth_speed or "1g" in eth_speed or "1 gbps" in eth_speed or "gbe" in eth_speed:
                 node["backhaul_type"] = "Ethernet (1.0 Gbps)"
+            elif "100" in eth_speed or "fe" in eth_speed or "fast" in eth_speed:
+                node["backhaul_type"] = "Ethernet (100 Mbps)"
             else:
                 node["backhaul_type"] = "Ethernet (Cablato)"
         else:
@@ -607,6 +630,66 @@ class EeroClient:
                     except Exception:
                         rssi = None
                 dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] and dev["wireless"] else None)
+
+            # Ethernet Speed extraction (Point 3)
+            eth_speed_str = ""
+            raw_speed_cand = [
+                dev.get("ethernet_speed"),
+                dev.get("negotiated_speed"),
+                dev.get("speed"),
+                iface_dict.get("speed"),
+                iface_dict.get("negotiated_speed"),
+                conn_dict.get("speed"),
+                conn_dict.get("negotiated_speed"),
+                conn_dict.get("rate"),
+                conn_dict.get("bitrate"),
+                conn_dict.get("rx_bitrate"),
+                dev.get("bitrate")
+            ]
+            for s in raw_speed_cand:
+                if s is not None:
+                    s_str = str(s).strip().lower()
+                    if s_str:
+                        if "10000" in s_str or "10g" in s_str or "10 gbps" in s_str:
+                            eth_speed_str = "10 Gbps"
+                            break
+                        elif "5000" in s_str or "5g" in s_str or "5 gbps" in s_str:
+                            eth_speed_str = "5.0 Gbps"
+                            break
+                        elif "2.5" in s_str or "2500" in s_str or "2.5g" in s_str:
+                            eth_speed_str = "2.5 Gbps"
+                            break
+                        elif "1000" in s_str or "1.0" in s_str or "1g" in s_str or "1 gbps" in s_str or "gbe" in s_str:
+                            eth_speed_str = "1.0 Gbps"
+                            break
+                        elif "100" in s_str or "fe" in s_str or "fast" in s_str:
+                            eth_speed_str = "100 Mbps"
+                            break
+                        elif "10" in s_str and "100" not in s_str:
+                            eth_speed_str = "10 Mbps"
+                            break
+                        elif s_str and not s_str.isdigit():
+                            eth_speed_str = str(s).strip()
+                            break
+
+            dev["ethernet_speed"] = eth_speed_str if eth_speed_str else ("Ethernet" if is_wired else "")
+
+            # Wireless PHY Link Rate extraction (Point 6)
+            phy_rate = dev.get("rx_bitrate") or dev.get("tx_bitrate") or dev.get("bitrate") or conn_dict.get("rx_bitrate") or conn_dict.get("tx_bitrate") or conn_dict.get("bitrate") or conn_dict.get("rate") or iface_dict.get("bitrate")
+            if phy_rate:
+                phy_str = str(phy_rate).strip()
+                if phy_str.isdigit():
+                    num = int(phy_str)
+                    if num > 1000000:
+                        dev["phy_rate"] = f"{num // 1000000} Mbps"
+                    elif num > 1000:
+                        dev["phy_rate"] = f"{num // 1000} Mbps"
+                    else:
+                        dev["phy_rate"] = f"{num} Mbps"
+                else:
+                    dev["phy_rate"] = phy_str
+            else:
+                dev["phy_rate"] = None
 
             # Source / Connected eero (Robust multi-source resolution across all eero models and firmware versions)
             c_id = ""

@@ -981,20 +981,33 @@ document.addEventListener('alpine:init', () => {
       if (!this.deviceStaticIpInput || !this.selectedDevice) return null;
       const targetIp = this.deviceStaticIpInput.trim();
       const currentMac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      const isIt = this.currentLanguage === 'it';
       
       // Controllo formato IPv4 base
       const ipParts = targetIp.split('.');
       if (ipParts.length !== 4 || ipParts.some(p => isNaN(p) || p === '' || Number(p) < 0 || Number(p) > 255)) {
-        return { hasConflict: true, isReassign: false, message: "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." };
+        return { 
+          hasConflict: true, 
+          isReassign: false, 
+          message: isIt ? "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." : "Invalid IPv4 address format (e.g. 192.168.4.50)." 
+        };
       }
 
       // 1. Conflitto Bloccante: Gateway o nodi mesh
       if (this.network && this.network.gateway_ip === targetIp) {
-        return { hasConflict: true, isReassign: false, message: `L'IP ${targetIp} è l'indirizzo del Gateway eero.` };
+        return { 
+          hasConflict: true, 
+          isReassign: false, 
+          message: isIt ? `L'IP ${targetIp} è l'indirizzo del Gateway eero.` : `IP ${targetIp} is the eero Gateway address.` 
+        };
       }
       for (const node of (this.eeros || [])) {
         if (node.ip === targetIp) {
-          return { hasConflict: true, isReassign: false, message: `L'IP ${targetIp} appartiene al nodo mesh '${node.name}'.` };
+          return { 
+            hasConflict: true, 
+            isReassign: false, 
+            message: isIt ? `L'IP ${targetIp} appartiene al nodo mesh '${node.name}'.` : `IP ${targetIp} is assigned to mesh node '${node.name}'.` 
+          };
         }
       }
 
@@ -1003,7 +1016,9 @@ document.addEventListener('alpine:init', () => {
         return { 
           hasConflict: false, 
           isReassign: false, 
-          message: `Questo dispositivo sta già usando l'IP ${targetIp}. Clicca 'Riserva' per confermarlo fisso e permanente su eero.` 
+          message: isIt 
+            ? `Questo dispositivo sta già usando l'IP ${targetIp}. Clicca 'Riserva' per confermarlo fisso e permanente su eero.` 
+            : `This device is already using IP ${targetIp}. Click 'Reserve' to fix it permanently on eero.`
         };
       }
 
@@ -1013,7 +1028,9 @@ document.addEventListener('alpine:init', () => {
           return { 
             hasConflict: false, 
             isReassign: true, 
-            message: `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.mac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
+            message: isIt 
+              ? `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.mac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
+              : `IP ${targetIp} is currently reserved for '${res.description || res.mac}'. Clicking 'Reserve' will reassign the reservation to this device.`
           };
         }
       }
@@ -1025,12 +1042,18 @@ document.addEventListener('alpine:init', () => {
           return { 
             hasConflict: false, 
             isReassign: true, 
-            message: `L'IP ${targetIp} è attualmente assegnato a '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Cliccando 'Riserva', verrà riservato per questo dispositivo.` 
+            message: isIt 
+              ? `L'IP ${targetIp} è attualmente assegnato a '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Cliccando 'Riserva', verrà riservato per questo dispositivo.` 
+              : `IP ${targetIp} is currently assigned to '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Clicking 'Reserve' will reserve it for this device.`
           };
         }
       }
 
-      return { hasConflict: false, isReassign: false, message: "Indirizzo IP disponibile e pronto per la prenotazione." };
+      return { 
+        hasConflict: false, 
+        isReassign: false, 
+        message: isIt ? "Indirizzo IP disponibile e pronto per la prenotazione." : "IP address is available and ready for reservation." 
+      };
     },
 
     get latestSpeedtest() {
@@ -1242,6 +1265,25 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
+        // Se il profilo utente è cambiato, sincronizza con l'endpoint profilo (Punto 4)
+        const currentProfileId = this.selectedDevice.profile_id || '';
+        if (this.deviceSelectedProfileId !== currentProfileId) {
+          try {
+            const pRes = await fetch(`/api/devices/${mac}/profile`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ profile_id: this.deviceSelectedProfileId || null })
+            });
+            if (pRes.ok) {
+              const matchedProf = (this.profiles || []).find(p => p.id === this.deviceSelectedProfileId);
+              this.selectedDevice.profile_id = this.deviceSelectedProfileId || null;
+              this.selectedDevice.profile_name = matchedProf ? matchedProf.name : null;
+            }
+          } catch (e) {
+            console.warn("Profile sync warning:", e);
+          }
+        }
+
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
           custom_name: this.deviceMetadataForm.custom_name,
@@ -1252,7 +1294,7 @@ document.addEventListener('alpine:init', () => {
         });
 
         const title = this.currentLanguage === 'it' ? "Salvato" : "Saved";
-        const msg = this.currentLanguage === 'it' ? "Metadati e categoria dispositivo salvati con successo." : "Device metadata and category saved successfully.";
+        const msg = this.currentLanguage === 'it' ? "Metadati e profilo dispositivo salvati con successo." : "Device metadata and profile saved successfully.";
         this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
@@ -1333,7 +1375,9 @@ document.addEventListener('alpine:init', () => {
 
     async createProfile() {
       if (!this.newProfileForm.name || !this.newProfileForm.name.trim()) {
-        this.showToast("Nome Richiesto", "Inserisci il nome del profilo o dell'utente.", "warning");
+        const title = this.currentLanguage === 'it' ? "Nome Richiesto" : "Name Required";
+        const msg = this.currentLanguage === 'it' ? "Inserisci il nome del profilo o dell'utente." : "Please enter a profile or user name.";
+        this.showToast(title, msg, "warning");
         return;
       }
 
@@ -1349,24 +1393,29 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Impossibile creare il profilo');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile creare il profilo' : 'Unable to create profile'));
         }
 
-        this.showToast("Profilo Creato", `Profilo '${this.newProfileForm.name}' creato con successo su eero.`, "success");
+        const title = this.currentLanguage === 'it' ? "Profilo Creato" : "Profile Created";
+        const msg = this.currentLanguage === 'it' 
+          ? `Profilo '${this.newProfileForm.name}' creato con successo su eero.`
+          : `Profile '${this.newProfileForm.name}' created successfully on eero.`;
+        this.showToast(title, msg, "success");
         this.showCreateProfileModal = false;
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        this.showToast("Errore Creazione Profilo", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Creazione Profilo" : "Profile Creation Error";
+        this.showToast(title, err.message, "error");
       } finally {
         this.profileAssigningLoading = false;
       }
     },
 
     async deleteProfile(profile) {
-      const pName = profile.name || 'questo profilo';
+      const pName = profile.name || (this.currentLanguage === 'it' ? 'questo profilo' : 'this profile');
       const promptMsg = (this.translations.profiles && this.translations.profiles.delete_profile_confirm)
         ? this.translations.profiles.delete_profile_confirm.replace('{name}', pName)
-        : `Sei sicuro di voler eliminare il profilo '${pName}'?`;
+        : (this.currentLanguage === 'it' ? `Sei sicuro di voler eliminare il profilo '${pName}'?` : `Are you sure you want to delete profile '${pName}'?`);
 
       if (!confirm(promptMsg)) return;
 
@@ -1376,13 +1425,16 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Impossibile eliminare il profilo');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile eliminare il profilo' : 'Unable to delete profile'));
         }
 
-        this.showToast("Profilo Eliminato", `Profilo '${pName}' rimosso da eero.`, "info");
+        const title = this.currentLanguage === 'it' ? "Profilo Eliminato" : "Profile Deleted";
+        const msg = this.currentLanguage === 'it' ? `Profilo '${pName}' rimosso da eero.` : `Profile '${pName}' removed from eero.`;
+        this.showToast(title, msg, "info");
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        this.showToast("Errore Eliminazione", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Eliminazione" : "Deletion Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1396,18 +1448,21 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Impossibile modificare la pausa del profilo');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile modificare la pausa del profilo' : 'Unable to toggle profile pause'));
         }
 
         profile.paused = targetState;
-        this.showToast(
-          targetState ? "Profilo in Pausa" : "Profilo Riattivato",
-          `Accesso Internet per il profilo '${profile.name}' ${targetState ? 'sospeso' : 'ripristinato'}.`,
-          targetState ? "warning" : "success"
-        );
+        const title = targetState 
+          ? (this.currentLanguage === 'it' ? "Profilo in Pausa" : "Profile Paused")
+          : (this.currentLanguage === 'it' ? "Profilo Riattivato" : "Profile Restored");
+        const msg = this.currentLanguage === 'it'
+          ? `Accesso Internet per il profilo '${profile.name}' ${targetState ? 'sospeso' : 'ripristinato'}.`
+          : `Internet access for profile '${profile.name}' ${targetState ? 'paused' : 'restored'}.`;
+        this.showToast(title, msg, targetState ? "warning" : "success");
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        this.showToast("Errore Pausa Profilo", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Pausa Profilo" : "Profile Pause Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
@@ -1418,21 +1473,22 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch(`/api/devices/${deviceMacOrId}/profile`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile_id: profileId ? profileId : null })
+          body: JSON.stringify({ profile_id: profileId || null })
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Impossibile aggiornare l\'associazione al profilo');
+          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore assegnazione profilo' : 'Profile assignment error'));
         }
 
-        this.showToast(
-          isRemoving ? "Assegnazione Rimossa" : "Assegnazione Salvata",
-          isRemoving ? "Dispositivo disassociato dal profilo con successo." : "Dispositivo associato al profilo con successo.",
-          "success"
-        );
+        const title = this.currentLanguage === 'it' ? "Profilo Aggiornato" : "Profile Updated";
+        const msg = isRemoving
+          ? (this.currentLanguage === 'it' ? "Dispositivo rimosso dal profilo con successo." : "Device removed from profile successfully.")
+          : (this.currentLanguage === 'it' ? "Dispositivo assegnato al profilo con successo." : "Device assigned to profile successfully.");
+        this.showToast(title, msg, "success");
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        this.showToast("Errore Assegnazione", err.message, "error");
+        const title = this.currentLanguage === 'it' ? "Errore Assegnazione" : "Assignment Error";
+        this.showToast(title, err.message, "error");
       }
     },
 
