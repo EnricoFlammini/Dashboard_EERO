@@ -192,9 +192,12 @@ class BackgroundPoller:
                     if target_p and (target_p.get("paused") is True or target_p.get("is_paused") is True):
                         is_prof_paused = True
 
-                is_paused_final = bool(dev.get("paused") is True or dev.get("is_paused") is True or is_prof_paused)
+                is_local_paused = bool(meta.get("is_paused", 0))
+                is_cloud_paused = bool(dev.get("paused") is True or dev.get("is_paused") is True or is_prof_paused)
+                is_paused_final = bool(is_local_paused or is_cloud_paused)
                 dev_copy["paused"] = is_paused_final
                 dev_copy["is_paused"] = is_paused_final
+                dev_copy["is_local_paused"] = is_local_paused
                 enriched_devices.append(dev_copy)
 
                 # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB

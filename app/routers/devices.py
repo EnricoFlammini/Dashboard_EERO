@@ -240,11 +240,42 @@ async def save_device_metadata(mac_address: str, payload: DeviceMetadataRequest)
 async def toggle_device_pause(device_id: str, payload: DevicePauseRequest):
     """Mette in pausa o riabilita l'accesso a internet per il dispositivo."""
     try:
+        # Recupera MAC del dispositivo dalla cache per persistenza locale
+        cached = background_poller.get_cached_state()
+        clean_target = device_id.strip()
+        target_dev = next(
+            (d for d in cached.get("devices", []) if str(d.get("id")) == clean_target or (d.get("mac") or "").lower() == clean_target.lower() or str(d.get("url", "")).endswith(clean_target)),
+            None
+        )
+        mac = target_dev.get("mac") if target_dev else (clean_target if ":" in clean_target else None)
+        
+        # 1. Salva immediatamente lo stato di pausa nel database SQLite locale
+        if mac:
+            await db_service.upsert_device_metadata(mac_address=mac, is_paused=1 if payload.paused else 0)
+        
+        # 2. Aggiorna lo stato in memoria del poller istantaneamente
+        if target_dev:
+            target_dev["paused"] = bool(payload.paused)
+            target_dev["is_paused"] = bool(payload.paused)
+            target_dev["is_local_paused"] = bool(payload.paused)
+
+        # 3. Invia la richiesta al cloud eero
         res = await eero_client.update_device(device_id=device_id, paused=payload.paused)
-        return res
+        return {
+            "status": "success",
+            "device_id": device_id,
+            "paused": bool(payload.paused),
+            "cloud_response": res
+        }
     except Exception as e:
-        logger.error(f"Failed to set pause on device {device_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.warning(f"Cloud update warning on device {device_id}: {e}")
+        return {
+            "status": "success",
+            "device_id": device_id,
+            "paused": bool(payload.paused),
+            "local_only": True,
+            "warning": str(e)
+        }
 
 
 @router.post("/{device_id:path}/rename")

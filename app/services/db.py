@@ -56,10 +56,22 @@ class DBService:
                     static_ip TEXT,
                     is_favorite INTEGER DEFAULT 0,
                     is_low_latency_target INTEGER DEFAULT 0,
+                    profile_id TEXT,
+                    is_paused INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+
+            # Migrazione colonne opzionali per database esistenti
+            try:
+                await db.execute("ALTER TABLE device_metadata ADD COLUMN profile_id TEXT;")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE device_metadata ADD COLUMN is_paused INTEGER DEFAULT 0;")
+            except Exception:
+                pass
 
             # 5. App Settings (Key-Value store for automations, credentials, toggles)
             await db.execute("""
@@ -253,7 +265,7 @@ class DBService:
                     UPDATE device_metadata
                     SET custom_name = ?, custom_icon = ?, category = ?, 
                         custom_notes = ?, static_ip = ?, is_favorite = ?, 
-                        is_low_latency_target = ?, profile_id = ?, updated_at = ?
+                        is_low_latency_target = ?, profile_id = ?, is_paused = ?, updated_at = ?
                     WHERE LOWER(mac_address) = ?
                     """,
                     (
@@ -265,6 +277,7 @@ class DBService:
                         1 if bool(updated.get("is_favorite", False)) else 0,
                         1 if bool(updated.get("is_low_latency_target", False)) else 0,
                         updated.get("profile_id"),
+                        1 if bool(updated.get("is_paused", False)) else 0,
                         now,
                         mac_clean
                     )
@@ -282,6 +295,7 @@ class DBService:
                 "is_favorite": 1 if bool(kwargs.get("is_favorite", False)) else 0,
                 "is_low_latency_target": 1 if bool(kwargs.get("is_low_latency_target", False)) else 0,
                 "profile_id": kwargs.get("profile_id"),
+                "is_paused": 1 if bool(kwargs.get("is_paused", False)) else 0,
                 "created_at": now,
                 "updated_at": now,
             }
@@ -289,8 +303,8 @@ class DBService:
                 await db.execute(
                     """
                     INSERT INTO device_metadata 
-                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, is_paused, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         mac_clean,
@@ -301,6 +315,8 @@ class DBService:
                         new_item["static_ip"],
                         new_item["is_favorite"],
                         new_item["is_low_latency_target"],
+                        new_item["profile_id"],
+                        new_item["is_paused"],
                         new_item["created_at"],
                         new_item["updated_at"]
                     )
