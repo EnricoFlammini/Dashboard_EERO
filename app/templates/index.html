@@ -775,94 +775,56 @@
           </div>
         </div>
 
-        <!-- Telegram & Webhook Alert Configuration -->
-        <div class="glass-panel rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-bold text-white" x-text="t('controls.notifications_title')"></h3>
-            <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30" x-text="t('controls.send_test')">
-            </button>
-          </div>
-
-          <div class="space-y-3 text-xs">
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_token')"></label>
-              <input type="password" x-model="notificationSettings.telegram_bot_token" placeholder="123456789:ABCDefGHIjk..." class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_chat_id')"></label>
-              <input type="text" x-model="notificationSettings.telegram_chat_id" placeholder="-100123456789 o ID Utente" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.webhook_url')"></label>
-              <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://your-domain.com/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-            <button 
-              @click="saveNotificationSettings()"
-              class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition"
-              x-text="t('controls.save_notifications')">
-            </button>
-          </div>
-        </div>
-
-        <!-- Automated Daily Digest Report -->
+        <!-- 2. AdGuard Home DNS Integration Card (Top-Right) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
-          <div>
-            <h3 class="text-base font-bold text-white" x-text="t('controls.digest_title')"></h3>
-            <p class="text-xs text-slate-400 mt-1" x-text="t('controls.digest_desc')"></p>
-          </div>
-          <button 
-            @click="triggerDigest()"
-            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition"
-            x-text="t('controls.digest_btn')">
-          </button>
-        </div>
-
-        <!-- AdGuard Home DNS Integration Card -->
-        <div class="glass-panel rounded-2xl p-6 space-y-4 md:col-span-2">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
-            <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-white" x-text="t('controls.adguard_title')"></h3>
+                  <p class="text-xs text-slate-400" x-text="t('controls.adguard_subtitle')"></p>
+                </div>
               </div>
+              <div class="flex items-center space-x-2 shrink-0">
+                <button 
+                  @click="testAdGuardConnection()"
+                  :disabled="adguardTesting"
+                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5">
+                  <span x-show="adguardTesting" class="animate-spin text-[10px]">⏳</span>
+                  <span x-text="t('controls.adguard_test_btn')"></span>
+                </button>
+                <button 
+                  @click="syncAdGuardNow()"
+                  :disabled="adguardSyncing"
+                  class="px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-xs font-semibold border border-sky-500/30 transition flex items-center space-x-1.5">
+                  <span x-show="adguardSyncing" class="animate-spin text-[10px]">🔄</span>
+                  <span x-text="t('controls.adguard_sync_btn')"></span>
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-3 text-xs">
               <div>
-                <h3 class="text-base font-bold text-white" x-text="t('controls.adguard_title')"></h3>
-                <p class="text-xs text-slate-400" x-text="t('controls.adguard_subtitle')"></p>
+                <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_url')"></label>
+                <input type="text" x-model="adguardSettings.url" placeholder="http://192.168.4.2:80" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_username')"></label>
+                  <input type="text" x-model="adguardSettings.username" placeholder="admin" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+                </div>
+                <div>
+                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_password')"></label>
+                  <input type="password" x-model="adguardSettings.password" :placeholder="adguardSettings.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+                </div>
               </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <button 
-                @click="testAdGuardConnection()"
-                :disabled="adguardTesting"
-                class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5">
-                <span x-show="adguardTesting" class="animate-spin text-[10px]">⏳</span>
-                <span x-text="t('controls.adguard_test_btn')"></span>
-              </button>
-              <button 
-                @click="syncAdGuardNow()"
-                :disabled="adguardSyncing"
-                class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-xs font-semibold border border-sky-500/30 transition flex items-center space-x-1.5">
-                <span x-show="adguardSyncing" class="animate-spin text-[10px]">🔄</span>
-                <span x-text="t('controls.adguard_sync_btn')"></span>
-              </button>
-            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_url')"></label>
-              <input type="text" x-model="adguardSettings.url" placeholder="http://192.168.4.2:80" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_username')"></label>
-              <input type="text" x-model="adguardSettings.username" placeholder="admin" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_password')"></label>
-              <input type="password" x-model="adguardSettings.password" :placeholder="adguardSettings.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-            </div>
-          </div>
-
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
               <input type="checkbox" x-model="adguardSettings.enabled" class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-800 w-4 h-4">
               <span x-text="t('controls.adguard_enable_toggle')"></span>
@@ -876,10 +838,69 @@
               </template>
               <button 
                 @click="saveAdGuardSettings()"
-                class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
+                class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
                 x-text="t('controls.adguard_save_btn')">
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- 3. Telegram & Webhook Alert Configuration (Bottom-Left) -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 class="text-base font-bold text-white" x-text="t('controls.notifications_title')"></h3>
+              <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30 transition" x-text="t('controls.send_test')">
+              </button>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_token')"></label>
+              <input type="password" x-model="notificationSettings.telegram_bot_token" placeholder="123456789:ABCDefGHIjk..." class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_chat_id')"></label>
+              <input type="text" x-model="notificationSettings.telegram_chat_id" placeholder="-100123456789 o ID Utente" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+
+            <!-- Toggle Abilitazione Notifiche Telegram -->
+            <div class="py-1">
+              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="notificationSettings.telegram_enabled" class="rounded border-slate-700 text-sky-500 focus:ring-sky-500/30 bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-200" x-text="t('controls.telegram_enable_toggle')"></span>
+              </label>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1" x-text="t('controls.webhook_url')"></label>
+              <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://your-domain.com/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-white/5">
+            <button 
+              @click="saveNotificationSettings()"
+              class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition shadow-lg shadow-sky-600/20 text-xs"
+              x-text="t('controls.save_notifications')">
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Automated Daily Digest Report (Bottom-Right) -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+              <h3 class="text-base font-bold text-white" x-text="t('controls.digest_title')"></h3>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Ore 21:00</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-3 leading-relaxed" x-text="t('controls.digest_desc')"></p>
+          </div>
+          <div class="pt-2 border-t border-white/5">
+            <button 
+              @click="triggerDigest()"
+              class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition"
+              x-text="t('controls.digest_btn')">
+            </button>
           </div>
         </div>
 

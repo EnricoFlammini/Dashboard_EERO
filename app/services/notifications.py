@@ -10,7 +10,13 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     """Dispatches event alerts and reports via Telegram Bot and custom Webhook."""
 
-    async def send_telegram_message(self, message: str) -> bool:
+    async def send_telegram_message(self, message: str, ignore_enabled: bool = False) -> bool:
+        if not ignore_enabled:
+            enabled = await db_service.get_setting("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false")
+            if enabled.lower() != "true":
+                logger.debug("Telegram alerts are disabled in settings.")
+                return False
+
         token = await db_service.get_setting("telegram_bot_token", settings.telegram_bot_token)
         chat_id = await db_service.get_setting("telegram_chat_id", settings.telegram_chat_id)
         

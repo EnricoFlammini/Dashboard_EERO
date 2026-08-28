@@ -219,6 +219,7 @@
     "send_test": "Send Test",
     "telegram_token": "Telegram Bot Token:",
     "telegram_chat_id": "Telegram Chat ID:",
+    "telegram_enable_toggle": "Enable Telegram notifications",
     "webhook_url": "Webhook HTTP URL (Optional):",
     "save_notifications": "Save Alert Channels",
     "digest_title": "Daily Digest Report",

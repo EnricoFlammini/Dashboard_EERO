@@ -212,7 +212,7 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
 async def test_notification_channels():
     """Invia un messaggio di prova per verificare che Telegram e Webhook funzionino."""
     msg = "🔔 <b>Test Notifiche eero Dashboard</b>\n\nConnessione con il server completata con successo!"
-    tg_res = await notification_service.send_telegram_message(msg)
+    tg_res = await notification_service.send_telegram_message(msg, ignore_enabled=True)
     wh_res = await notification_service.send_webhook("test_ping", {"test": True, "message": "Ping test da eero Dashboard"})
     
     return {

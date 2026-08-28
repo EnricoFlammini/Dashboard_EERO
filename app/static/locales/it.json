@@ -219,6 +219,7 @@
     "send_test": "Invia Test",
     "telegram_token": "Telegram Bot Token:",
     "telegram_chat_id": "Telegram Chat ID:",
+    "telegram_enable_toggle": "Abilita invio notifiche su Telegram",
     "webhook_url": "Webhook HTTP URL (Opzionale):",
     "save_notifications": "Salva Canali di Allarme",
     "digest_title": "Report Digest Giornaliero",
