@@ -65,12 +65,15 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
         sys.exit(1)
 
     clients = data.get("clients") or []
+    # AdGuard Home only accepts predefined enum tags. Custom freeform tags cause HTTP 400.
+    for c in clients:
+        c["tags"] = []
     print(f"✅ Found {len(clients)} active eero clients.")
 
     if dry_run:
         print("\n🔍 [DRY RUN] Showing devices to sync:")
         for c in clients:
-            print(f"  • {c['name']} -> IDs: {c['ids']} (Tags: {c.get('tags', [])})")
+            print(f"  • {c['name']} -> IDs: {c['ids']}")
         return
 
     # Check AdGuard Home existing clients to determine ADD vs UPDATE
