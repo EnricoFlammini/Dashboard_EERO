@@ -6,31 +6,25 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
-## [1.03.01] - 2026-08-28
+## [1.03.00] - 2026-08-28
 
-### 🚀 Risoluzione Nodi Mesh, Velocità Cablate 2.5G/10G & Assegnazione Profili (#12)
-* **📡 Risoluzione Universale Nodi e Client Mesh (Issue #12 - Punto 1):**
+### 📦 Docker Hub Multi-Arch, Sincronizzazione AdGuard Home & Ottimizzazioni Mesh (#12)
+* **📡 Risoluzione Universale Nodi e Client Mesh (Issue #12):**
   * Introdotto motore di indicizzazione multi-chiave in `poller.py` e `eero_client.py` (`id` numerico, `serial`, `url`, `location`/nome, `ip`) per garantire il matching affidabile dei client connessi su tutte le generazioni eero (eero Pro 7, Pro 6E, eero 6+, Max 7) e versioni eeroOS 7.x.
   * Risolto il bug per cui i dispositivi su nodi beacon potevano risultare tutti associati al Gateway in presenza di payload cloud privi del campo `location`.
 * **✨ Switch Istantaneo Modalità Demo / Rete Live (senza perdita di Token):**
   * Aggiunto pulsante interattivo nella barra superiore per passare istantaneamente alla **Modalità Demo** a scopo di test/anteprima e ritornare alla **Rete Live** preservando sempre il token di sessione autenticato senza dover reinserire l'OTP.
-* **🌡️ Armonizzazione Stato Termico Nodi (Issue #12 - Punto 2):**
+* **🌡️ Armonizzazione Stato Termico Nodi:**
   * Ottimizzato il rendering dello stato termico e operativo dei nodi mesh, riflettendo accuratamente lo stato di salute reale fornito dalle API ufficiali eero (`thermal_status`: Normale / Nominale).
-* **⚡ Velocità Negoziata Ethernet Dispositivi & Backhaul Mesh (Issue #12 - Punti 3 & 5):**
+* **⚡ Velocità Negoziata Ethernet Dispositivi & Backhaul Mesh:**
   * Rimosso il testo fisso `'GbE 1.0 Gbps'`. Ora il sistema rileva e mostra dinamicamente la reale velocità di link per apparati cablati a **10 Gbps**, **5.0 Gbps**, **2.5 Gbps**, **1.0 Gbps** e **100 Mbps**.
   * Ispezione automatica delle porte ethernet fisiche (`ports`/`ethernet_ports`) dei nodi eero per rilevare e mostrare la velocità di backhaul cablato.
-* **👤 Selettore Profilo Utente nel Dettaglio Dispositivo (Issue #12 - Punto 4):**
+* **👤 Selettore Profilo Utente nel Dettaglio Dispositivo:**
   * Aggiunto menu a tendina nel modale dettaglio client per assegnare, modificare o rimuovere un dispositivo dal rispettivo profilo utente Cloud eero direttamente dalla Dashboard.
-* **📶 Telemetria Segnale RSSI (dBm) & PHY Link Rate nel Modale (Issue #12 - Punto 6):**
+* **📶 Telemetria Segnale RSSI (dBm) & PHY Link Rate nel Modale:**
   * Integrata la visualizzazione avanzata della qualità del segnale in dBm e della velocità di modulazione PHY nel riquadro di connessione del modale.
-* **🌍 Rimozione Residui di Testo e Localizzazione Completa (Issue #12 - Punto 7):**
+* **🌍 Rimozione Residui di Testo e Localizzazione Completa:**
   * Localizzati integralmente in inglese e italiano tutti i messaggi di verifica conflitti IP statici, avvisi e notifiche Toast.
-
----
-
-## [1.03.00] - 2026-08-28
-
-### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
 * **Distribuzione Ufficiale Docker Hub Multi-Arch:**
   * Configurato workflow GitHub Actions per la compilazione e il push automatico su Docker Hub (`enricoflammini/eero-dashboard`).
   * Supporto nativo alle architetture `linux/amd64` (Server x86, PC, VM) e `linux/arm64` (Raspberry Pi 4/5, NAS Synology/QNAP/TrueNAS, Apple Silicon).
