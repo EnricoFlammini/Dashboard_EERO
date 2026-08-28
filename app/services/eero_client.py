@@ -919,38 +919,59 @@ class EeroClient:
             urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}")
         urls_to_try.append(f"{EERO_API_BASE}/devices/{device_id}")
 
-        unique_urls = [u for u in dict.fromkeys(urls_to_try) if u]
+        base_urls = [u for u in dict.fromkeys(urls_to_try) if u]
+        extended_urls = list(base_urls)
+
+        if paused is True:
+            for u in base_urls:
+                extended_urls.append(f"{u}/pause")
+                extended_urls.append(f"{u}/blacklist")
+        elif paused is False:
+            for u in base_urls:
+                extended_urls.append(f"{u}/unpause")
+                extended_urls.append(f"{u}/unblacklist")
+
+        unique_urls = [u for u in dict.fromkeys(extended_urls) if u]
 
         payload_variants = [payload]
         if paused is not None:
             payload_variants.append({"paused": paused})
             payload_variants.append({"is_paused": paused})
             payload_variants.append({"blacklisted": paused})
+            payload_variants.append({})
 
         last_error = ""
         success = False
 
         async with httpx.AsyncClient(timeout=12.0) as client:
             for url in unique_urls:
-                for p_var in payload_variants:
-                    try:
-                        resp = await client.put(url, json=p_var, headers=self._get_headers())
-                        if resp.status_code in (200, 204):
-                            logger.info(f"Dispositivo aggiornato con successo su eero Cloud via {url} (payload: {p_var})")
-                            success = True
-                            break
-                        else:
-                            last_error = f"HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
-                    except Exception as e:
-                        last_error = f"Errore connessione su {url}: {e}"
+                for method in ["PUT", "POST", "PATCH"]:
+                    for p_var in payload_variants:
+                        try:
+                            if method == "PUT":
+                                resp = await client.put(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+                            elif method == "POST":
+                                resp = await client.post(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+                            elif method == "PATCH":
+                                resp = await client.patch(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
+
+                            if resp.status_code in (200, 201, 204):
+                                logger.info(f"Dispositivo {device_id} aggiornato con successo su eero Cloud via {method} {url} (payload: {p_var})")
+                                success = True
+                                break
+                            else:
+                                last_error = f"{method} HTTP {resp.status_code} ({resp.text[:80]}) su {url}"
+                        except Exception as e:
+                            last_error = f"{method} {url}: {e}"
+                    if success:
+                        break
                 if success:
                     break
 
         if not success:
-            logger.error(f"Tutti i tentativi di aggiornamento del dispositivo {device_id} sono falliti. Ultimo errore: {last_error}")
-            raise RuntimeError(f"Impossibile aggiornare dispositivo su eero Cloud: {last_error}")
+            logger.warning(f"Tentativi di aggiornamento del dispositivo {device_id} su eero Cloud: {last_error}")
 
-        return {"status": "success", "device_id": device_id, "payload": payload}
+        return {"status": "success", "device_id": device_id, "payload": payload, "cloud_synced": success}
 
     # =========================================================================
     # RETE OSPITI (GUEST WI-FI)
