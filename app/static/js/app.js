@@ -5,6 +5,9 @@
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
+    // App Version
+    appVersion: '1.03.00',
+
     // i18n Multi-Language State
     currentLanguage: localStorage.getItem('eero_lang') || (navigator.language && navigator.language.startsWith('it') ? 'it' : 'en'),
     translations: {},
