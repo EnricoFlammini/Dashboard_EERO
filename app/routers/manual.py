@@ -337,35 +337,75 @@ async def get_manual_section(section_id: str, lang: Optional[str] = Query("it"))
 
 @router.get("/changelog")
 async def get_changelog():
-    """Restituisce il contenuto del file changelog.md per il visualizzatore in-app."""
-    from pathlib import Path
+    """Restituisce solo i titoli e gli highlight principali delle versioni per il visualizzatore in-app."""
     from app.config import settings
 
-    possible_paths = [
-        Path("/app/changelog.md"),
-        Path(__file__).resolve().parents[2] / "changelog.md",
-        Path.cwd() / "changelog.md",
-        Path("changelog.md")
-    ]
-    for p in possible_paths:
-        if p.exists():
-            try:
-                content = p.read_text(encoding="utf-8")
-                return {"status": "success", "version": settings.app_version, "content": content}
-            except Exception as e:
-                logger.error(f"Error reading changelog from {p}: {e}")
-                
+    content = f"""# Changelog - Sommario Versioni
+
+Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
+
+---
+
+## 📦 v1.03.00 (28 Ago 2026)
+* **Distribuzione Ufficiale Docker Hub Multi-Arch (amd64/arm64)**
+* **Integrazione Nativa AdGuard Home in-App (DNS & DHCP Sync)**
+* **Pulsante Disconnessione Sicura con Modale di Conferma OTP**
+* **Fix & Arricchimento Report Daily Digest Telegram**
+* **Riorganizzazione Scheda Automazioni & Toggle Notifiche Dedicati**
+* **Rendering Ottimizzato del Manuale & Liste Markdown**
+* **Esportazione DNS (/etc/hosts, JSON) & Webhooks**
+
+---
+
+## 📡 v1.02.00 (26 Ago 2026)
+* **Telemetria Frequenze Wi-Fi (2.4 / 5 / 6 GHz) & Canali Radio**
+* **Integrazione Profili Famiglia / Utente Cloud eero**
+* **Filtri Multi-Criterio Avanzati su Tabella Client**
+
+---
+
+## 🌍 v1.01.00 (26 Ago 2026)
+* **Supporto Multilingua Dinamico (Italiano & Inglese)**
+* **Selettore Lingua nell'Header & Persistenza Preferenze**
+* **Standard Open Source GitHub & Licenza MIT**
+
+---
+
+## ⚡ v1.00.08 (26 Ago 2026)
+* **Sincronizzazione Totale Speed Test & Statistiche Gateway**
+
+---
+
+## 🏷️ v1.00.07 (26 Ago 2026)
+* **Indicatori Visivi Tipo IP (Badge STATICO vs DHCP)**
+
+---
+
+## 🔄 v1.00.06 (26 Ago 2026)
+* **Assegnazione IP Corrente & Riassegnazione Intelligente**
+
+---
+
+## 🌐 v1.00.05 (26 Ago 2026)
+* **Gestione Nativa IP Statici (DHCP) & Port Forwarding**
+
+---
+
+## 🛠️ v1.00.04 (26 Ago 2026)
+* **Gestione Dispositivi, Icone, Categorie e Preferiti ⭐**
+
+---
+
+## 🧹 v1.00.01 - v1.00.03 (26 Ago 2026)
+* **Eliminazione Dati Fittizi a Favore di Telemetria Certificata 100%**
+
+---
+
+## 🚀 v1.0.0 (25 Ago 2026)
+* **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
+"""
     return {
         "status": "success",
         "version": settings.app_version,
-        "content": f"""# Changelog v{settings.app_version}
-
-### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
-* **Distribuzione Ufficiale Docker Hub:** Immagine multi-architettura pronta per `linux/amd64` e `linux/arm64`.
-* **Integrazione Nativa AdGuard Home in-App:** Configurazione grafica diretta in Automazioni per la sincronizzazione continua di nomi host, IP e MAC address verso AdGuard Home.
-* **🎛️ Riorganizzazione Scheda Automazioni & Toggle Notifiche:** Layout a quadranti con toggle dedicati per le notifiche Telegram e per il Report Digest delle 21:00.
-* **🔒 Pulsante Disconnessione Sicura:** Ripristinato il logout con modale di sicurezza e avviso per ri-autenticazione OTP.
-* **📊 Fix Daily Digest Telegram & Webhook:** Report arricchito con suddivisione dettagliata delle frequenze Wi-Fi e telemetria live.
-* **Esportazione DNS & Webhooks:** Endpoint `/api/devices/export/hosts` e `/api/devices/export/adguard` + script CLI.
-"""
+        "content": content
     }

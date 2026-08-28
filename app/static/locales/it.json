@@ -277,6 +277,7 @@
   },
   "changelog_modal": {
     "title": "Changelog & Note di Rilascio",
+    "view_on_github": "Changelog Completo su GitHub",
     "close": "Chiudi"
   },
   "toasts": {

@@ -1761,8 +1761,9 @@ document.addEventListener('alpine:init', () => {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-      // Inline styles first: bold, italic, code, horizontal rules
+      // Inline styles first: links, bold, italic, code, horizontal rules
       text = text
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline font-medium">$1</a>')
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-sky-300 font-semibold">$1</strong>')
         .replace(/\*(.*?)\*/g, '<em class="text-slate-300">$1</em>')
         .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[11px]">$1</code>')
