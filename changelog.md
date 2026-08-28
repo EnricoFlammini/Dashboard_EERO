@@ -38,6 +38,9 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **❤️ Modale About, Dedica & Informazioni Open Source:**
   * Aggiunto pulsante dedicato *"About"* nella barra superiore accanto al badge di versione.
   * Include dedica alla community homelab & self-hosted (*Crafted with ❤️ by Enrico Flammini*), collegamenti rapidi a repository GitHub (codice e issues), licenza MIT, immagine Docker Hub e sezione Fun Notes.
+* **🔀 Ordinamento Dispositivi & Barra dei Titoli Bloccata (Sticky Header):**
+  * Introdotta la possibilità di ordinare la tabella dei dispositivi cliccando direttamente su ciascuna intestazione di colonna (Dispositivo/Host, Indirizzo IP numerico IPv4, Profilo, Nodo Mesh, Banda, Segnale RSSI e Stato).
+  * La barra dei titoli della tabella rimane ora bloccata in alto (`sticky`) durante lo scorrimento, garantendo visibilità e orientamento costante anche con centinaia di client connessi.
 * **Esportazione DNS & Webhooks:**
   * Endpoint `GET /api/devices/export/hosts` (standard `/etc/hosts` / `dnsmasq`) e `GET /api/devices/export/adguard` (JSON provisioning).
   * Script standalone CLI [`scripts/adguard_sync.py`](scripts/adguard_sync.py).

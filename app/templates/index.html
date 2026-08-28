@@ -483,19 +483,98 @@
       </div>
 
       <!-- Devices Table -->
-      <div class="glass-panel rounded-2xl overflow-hidden">
-        <div class="overflow-x-auto">
+      <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+        <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
           <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 bg-slate-900/80 text-slate-400 uppercase tracking-wider font-semibold">
-                <th class="py-3.5 px-4" x-text="t('devices.col_device')"></th>
-                <th class="py-3.5 px-4" x-text="t('devices.col_ip_mac')"></th>
-                <th class="py-3.5 px-4" x-text="t('devices.col_profile')"></th>
-                <th class="py-3.5 px-4" x-text="t('devices.col_node')"></th>
-                <th class="py-3.5 px-4" x-text="t('devices.col_band')"></th>
-                <th class="py-3.5 px-4" x-text="t('devices.col_signal')"></th>
-                <th class="py-3.5 px-4 text-center" x-text="t('devices.col_status')"></th>
-                <th class="py-3.5 px-4 text-right" x-text="t('devices.col_actions')"></th>
+            <thead class="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm">
+              <tr class="text-slate-400 uppercase tracking-wider font-semibold">
+                
+                <!-- Col: Device / Name -->
+                <th @click="toggleDeviceSort('name')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_device')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'name' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'name'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: IP / MAC -->
+                <th @click="toggleDeviceSort('ip')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_ip_mac')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'ip' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'ip'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Profile / User -->
+                <th @click="toggleDeviceSort('profile')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_profile')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'profile' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'profile'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Node -->
+                <th @click="toggleDeviceSort('node')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_node')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'node' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'node'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Band -->
+                <th @click="toggleDeviceSort('band')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_band')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'band' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'band'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Signal -->
+                <th @click="toggleDeviceSort('signal')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_signal')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'signal' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'signal'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Status -->
+                <th @click="toggleDeviceSort('status')" class="py-3.5 px-4 text-center cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center justify-center space-x-1.5">
+                    <span x-text="t('devices.col_status')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'status'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Actions -->
+                <th class="py-3.5 px-4 text-right sticky top-0 bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">

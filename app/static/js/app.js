@@ -60,6 +60,8 @@ document.addEventListener('alpine:init', () => {
     selectedProfileFilter: 'all',
     selectedIpTypeFilter: 'all',
     showConnectedOnly: false,
+    deviceSortField: 'name',
+    deviceSortDirection: 'asc',
 
     // Profiles & Cloud Users State
     profiles: [],
@@ -753,11 +755,17 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    // =========================================================================
-    // DEVICE MANAGEMENT & DETAILS
-    // =========================================================================
+    toggleDeviceSort(field) {
+      if (this.deviceSortField === field) {
+        this.deviceSortDirection = this.deviceSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.deviceSortField = field;
+        this.deviceSortDirection = (field === 'signal' || field === 'status') ? 'desc' : 'asc';
+      }
+    },
+
     get filteredDevices() {
-      return this.devices.filter(d => {
+      const list = this.devices.filter(d => {
         // Filtro online
         if (this.showConnectedOnly && !d.connected) return false;
         
@@ -821,6 +829,81 @@ document.addEventListener('alpine:init', () => {
 
         return true;
       });
+
+      // Ordinamento dinamico dei dispositivi
+      const field = this.deviceSortField || 'name';
+      const isAsc = this.deviceSortDirection === 'asc';
+
+      const ipToInt = (ip) => {
+        if (!ip) return 0;
+        const parts = ip.split('.').map(Number);
+        if (parts.length !== 4 || parts.some(isNaN)) return 0;
+        return ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+      };
+
+      list.sort((a, b) => {
+        let res = 0;
+        switch (field) {
+          case 'name': {
+            const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
+            const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
+            res = nameA.localeCompare(nameB);
+            break;
+          }
+          case 'ip': {
+            const numA = ipToInt(a.ip);
+            const numB = ipToInt(b.ip);
+            res = numA - numB;
+            if (res === 0) {
+              res = (a.mac || '').localeCompare(b.mac || '');
+            }
+            break;
+          }
+          case 'profile': {
+            const profA = (a.profile_name || '').toLowerCase();
+            const profB = (b.profile_name || '').toLowerCase();
+            res = profA.localeCompare(profB);
+            break;
+          }
+          case 'node': {
+            const nodeA = (a.connected_eero_name || 'Gateway').toLowerCase();
+            const nodeB = (b.connected_eero_name || 'Gateway').toLowerCase();
+            res = nodeA.localeCompare(nodeB);
+            break;
+          }
+          case 'band': {
+            const getBandRank = (d) => {
+              if (d.connection_type === 'wired' || !d.wireless || d.frequency_band === 'Cablato') return '1_Ethernet';
+              if (d.wireless_band === '6GHz' || d.frequency_band === '6 GHz') return '2_6GHz';
+              if (d.wireless_band === '5GHz' || d.frequency_band === '5 GHz') return '3_5GHz';
+              return '4_2.4GHz';
+            };
+            res = getBandRank(a).localeCompare(getBandRank(b));
+            break;
+          }
+          case 'signal': {
+            const sigA = (a.signal_rssi !== undefined && a.signal_rssi !== null) ? Number(a.signal_rssi) : -999;
+            const sigB = (b.signal_rssi !== undefined && b.signal_rssi !== null) ? Number(b.signal_rssi) : -999;
+            res = sigA - sigB;
+            break;
+          }
+          case 'status': {
+            const getStatusScore = (d) => {
+              if (d.paused) return 1;
+              if (d.connected) return 3;
+              return 2; // offline
+            };
+            res = getStatusScore(a) - getStatusScore(b);
+            break;
+          }
+          default:
+            res = 0;
+        }
+
+        return isAsc ? res : -res;
+      });
+
+      return list;
     },
 
     get ipConflictInfo() {
