@@ -896,25 +896,29 @@ class EeroClient:
                     return {"status": "success", "device": dev, "cloud_synced": True, "mode": "demo"}
             return {"status": "warning", "device_id": device_id, "updated": payload, "cloud_synced": False, "last_error": "Modalità Demo o Sessione eero non autenticata"}
 
-        # Raccolta URL candidati da testare in sequenza
+        # Raccolta URL candidati da testare in sequenza con massima priorità all'URL nativo del dispositivo
         urls_to_try = []
-        clean_target_url = None
-        if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
-            clean_target_url = f"https://api-user.e2ro.com/{device_id.lstrip('/')}"
-        elif "/" in device_id:
-            clean_target_url = f"{EERO_API_BASE}/{device_id.lstrip('/')}"
 
-        if clean_target_url:
-            urls_to_try.append(clean_target_url)
-
+        # 1. URL canonico eero del dispositivo dal cloud (massima priorità)
         if found_dev and found_dev.get("url"):
-            dev_u = found_dev["url"].lstrip("/")
+            dev_u = str(found_dev["url"]).lstrip("/")
             urls_to_try.append(f"https://api-user.e2ro.com/{dev_u}" if dev_u.startswith("2.2/") else f"{EERO_API_BASE}/{dev_u}")
+
+        # 2. Se device_id è già un URL completo eero
+        if device_id.startswith("/2.2/") or device_id.startswith("2.2/"):
+            urls_to_try.append(f"https://api-user.e2ro.com/{device_id.lstrip('/')}")
+        elif "/" in device_id and ":" not in device_id:
+            urls_to_try.append(f"{EERO_API_BASE}/{device_id.lstrip('/')}")
+
+        # 3. ID autentico (non-MAC)
         if found_dev and found_dev.get("id"):
             fid = str(found_dev["id"]).split("/")[-1]
-            if self.current_network_id:
-                urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{fid}")
-            urls_to_try.append(f"{EERO_API_BASE}/devices/{fid}")
+            if ":" not in fid:
+                if self.current_network_id:
+                    urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{fid}")
+                urls_to_try.append(f"{EERO_API_BASE}/devices/{fid}")
+
+        # 4. Fallback su network/devices
         if self.current_network_id:
             urls_to_try.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{device_id}")
         urls_to_try.append(f"{EERO_API_BASE}/devices/{device_id}")

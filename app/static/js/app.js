@@ -1226,7 +1226,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async toggleDevicePause(device) {
-      const devId = encodeURIComponent(device.id || device.mac);
+      const devId = encodeURIComponent(device.url || device.id || device.mac);
       const targetState = !device.paused;
       try {
         const res = await fetch(`/api/devices/${devId}/pause`, {
