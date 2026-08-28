@@ -123,17 +123,25 @@ class BackgroundPoller:
                 cloud_reservations = {}
 
             # Costruzione mappa dispositivi -> profili per arricchimento immediato
+            # Costruzione mappa dispositivi -> profili per arricchimento immediato
             device_to_profile: Dict[str, Dict[str, Any]] = {}
             for prof in profiles:
-                p_id = prof.get("id")
+                p_id = str(prof.get("id") or "")
                 p_name = prof.get("name")
                 for p_dev in prof.get("devices", []):
-                    p_mac = (p_dev.get("mac") or "").lower()
-                    p_dev_id = str(p_dev.get("id") or "")
-                    if p_mac:
-                        device_to_profile[p_mac] = {"profile_id": p_id, "profile_name": p_name}
-                    if p_dev_id:
-                        device_to_profile[p_dev_id] = {"profile_id": p_id, "profile_name": p_name}
+                    if isinstance(p_dev, dict):
+                        p_mac = (p_dev.get("mac") or p_dev.get("mac_address") or "").lower()
+                        p_dev_id = str(p_dev.get("id") or "")
+                        p_dev_url = str(p_dev.get("url") or "")
+                        if p_mac:
+                            device_to_profile[p_mac] = {"profile_id": p_id, "profile_name": p_name}
+                        if p_dev_id:
+                            device_to_profile[p_dev_id] = {"profile_id": p_id, "profile_name": p_name}
+                        if p_dev_url:
+                            device_to_profile[p_dev_url] = {"profile_id": p_id, "profile_name": p_name}
+                    elif isinstance(p_dev, str):
+                        device_to_profile[p_dev] = {"profile_id": p_id, "profile_name": p_name}
+                        device_to_profile[p_dev.split("/")[-1]] = {"profile_id": p_id, "profile_name": p_name}
 
             # 2. Arricchimento dispositivi con metadati locali e profilo utente cloud
             metadata_map = await db_service.get_all_device_metadata()
@@ -155,13 +163,20 @@ class BackgroundPoller:
             for dev in devices:
                 mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
                 dev_id_str = str(dev.get("id") or "")
+                dev_url_str = str(dev.get("url") or "")
                 meta = metadata_map.get(mac, {})
                 cloud_res_ip = cloud_reservations.get(mac)
                 static_ip_val = cloud_res_ip or meta.get("static_ip", "")
                 is_static = bool(cloud_res_ip or meta.get("static_ip") or dev.get("is_static"))
                 
-                # Profilo utente associato
-                prof_info = device_to_profile.get(mac) or device_to_profile.get(dev_id_str) or {}
+                # Profilo utente associato (da mappa profiles o dal campo diretto del dispositivo)
+                prof_info = device_to_profile.get(mac) or device_to_profile.get(dev_id_str) or device_to_profile.get(dev_url_str) or {}
+                if not prof_info and isinstance(dev.get("profile"), dict):
+                    d_prof = dev["profile"]
+                    prof_info = {
+                        "profile_id": str(d_prof.get("id") or (d_prof.get("url", "").split("/")[-1] if d_prof.get("url") else "")),
+                        "profile_name": d_prof.get("name")
+                    }
                 
                 # Controllo eventuale override profilo dal database locale
                 meta_pid = meta.get("profile_id")

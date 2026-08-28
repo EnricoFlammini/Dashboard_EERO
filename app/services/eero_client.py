@@ -1225,28 +1225,43 @@ class EeroClient:
 
     async def get_profiles(self) -> List[Dict[str, Any]]:
         """Recupera l'elenco dei profili utente configurati nel Cloud eero e sincronizzati con il DB locale."""
-        if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+        if settings.demo_mode or not self.is_authenticated or (self.user_token and self.user_token.startswith("demo_")):
             profiles = self._get_demo_profiles()
         else:
             if not self.current_network_id:
                 await self.fetch_account_info()
 
             if not self.current_network_id:
-                profiles = self._get_demo_profiles()
+                profiles = []
             else:
+                raw_list = []
                 async with httpx.AsyncClient(timeout=15.0) as client:
-                    resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles", headers=self._get_headers())
-                    if resp.status_code != 200:
-                        logger.warning(f"Error fetching profiles ({resp.status_code}): {resp.text}")
-                        profiles = self._get_demo_profiles()
-                    else:
-                        raw_list = resp.json().get("data", [])
-                        profiles = []
-                        for p in raw_list:
-                            try:
+                    for endpoint in [
+                        f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles",
+                        f"https://api-user.e2ro.com/2.2/networks/{self.current_network_id}/profiles",
+                        f"{EERO_API_BASE}/profiles",
+                        f"https://api-user.e2ro.com/2.2/profiles"
+                    ]:
+                        try:
+                            resp = await client.get(endpoint, headers=self._get_headers(), cookies=self._get_cookies())
+                            if resp.status_code == 200:
+                                res_json = resp.json()
+                                raw_list = res_json.get("data", res_json) if isinstance(res_json, dict) else res_json
+                                if isinstance(raw_list, list) and raw_list:
+                                    break
+                            else:
+                                logger.warning(f"Error fetching profiles from {endpoint} ({resp.status_code}): {resp.text}")
+                        except Exception as e:
+                            logger.warning(f"Failed to fetch profiles from {endpoint}: {e}")
+
+                profiles = []
+                if isinstance(raw_list, list):
+                    for p in raw_list:
+                        try:
+                            if isinstance(p, dict):
                                 profiles.append(self._normalize_profile(p))
-                            except Exception as ex:
-                                logger.error(f"Error normalizing profile item: {ex}")
+                        except Exception as ex:
+                            logger.error(f"Error normalizing profile item: {ex}")
 
         all_devs = []
         try:
