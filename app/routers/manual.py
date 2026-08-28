@@ -330,13 +330,13 @@ async def get_manual_section(section_id: str, lang: Optional[str] = Query("it"))
 @router.get("/changelog")
 async def get_changelog():
     """Restituisce il contenuto del file changelog.md per il visualizzatore in-app."""
-    import os
     from pathlib import Path
     from app.config import settings
 
     possible_paths = [
         Path("/app/changelog.md"),
-        Path(__file__).resolve().parent.parent.parent / "changelog.md",
+        Path(__file__).resolve().parents[2] / "changelog.md",
+        Path.cwd() / "changelog.md",
         Path("changelog.md")
     ]
     for p in possible_paths:
@@ -350,6 +350,12 @@ async def get_changelog():
     return {
         "status": "success",
         "version": settings.app_version,
-        "content": f"# Changelog v{settings.app_version}\n\n- Full multi-language support (Italian & English) with real-time selector.\n- Frequency band badges (2.4 GHz, 5 GHz, 6 GHz, Ethernet).\n- eero Cloud user profile integration in client table."
+        "content": f"""# Changelog v{settings.app_version}
+
+### 📦 Docker Hub Multi-Arch (amd64/arm64) & 🛡️ Sincronizzazione Nativa AdGuard Home in-App
+* **Distribuzione Ufficiale Docker Hub:** Immagine multi-architettura pronta per `linux/amd64` e `linux/arm64`.
+* **Integrazione Nativa AdGuard Home in-App:** Configurazione grafica diretta in Automazioni per la sincronizzazione continua di nomi host, IP e MAC address verso AdGuard Home.
+* **Esportazione DNS & Webhooks:** Endpoint `/api/devices/export/hosts` e `/api/devices/export/adguard` + script CLI.
+"""
     }
 

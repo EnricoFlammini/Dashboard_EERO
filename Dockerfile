@@ -21,8 +21,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copia il codice sorgente
+# Copia il codice sorgente e la documentazione
 COPY app/ /app/app/
+COPY changelog.md /app/changelog.md
+COPY README.md /app/README.md
 
 # Crea la directory dati per la persistenza di database e sessione
 RUN mkdir -p /app/data
