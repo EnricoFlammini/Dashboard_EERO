@@ -301,15 +301,25 @@ async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
     return res
 
 
+class AdGuardSyncRequest(BaseModel):
+    url: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
 @router.post("/adguard/sync")
-async def sync_adguard_devices():
+async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     """Forza la sincronizzazione immediata di tutti i dispositivi correnti verso AdGuard Home."""
     cached = background_poller.get_cached_state()
     devices = cached.get("devices", [])
     if not devices:
         raise HTTPException(status_code=400, detail="Nessun dispositivo disponibile nella cache per la sincronizzazione.")
     
-    res = await adguard_service.sync_devices(devices)
+    url = payload.url if payload else None
+    username = payload.username if payload else None
+    password = payload.password if payload else None
+    
+    res = await adguard_service.sync_devices(devices, url=url, username=username, password=password)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
         

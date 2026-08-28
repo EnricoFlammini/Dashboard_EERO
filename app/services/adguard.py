@@ -130,8 +130,15 @@ class AdGuardService:
         target_user = username if username is not None else settings.get("username", "")
         
         target_pass = password
-        if target_pass is None or target_pass == "":
+        if target_pass is not None and target_pass != "":
+            await db_service.set_setting("adguard_password", target_pass.strip())
+        else:
             target_pass = await db_service.get_setting("adguard_password", "")
+
+        if raw_url:
+            await db_service.set_setting("adguard_url", target_url)
+        if username is not None:
+            await db_service.set_setting("adguard_username", target_user.strip())
 
         if not target_url:
             return {"success": False, "message": "URL di AdGuard Home non impostato."}
@@ -155,7 +162,7 @@ class AdGuardService:
                                 if cid:
                                     existing_clients_by_id[str(cid).strip().lower()] = c
                 elif resp.status_code in (401, 403):
-                    return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica le credenziali."}
+                    return {"success": False, "message": "Autenticazione AdGuard non valida (401/403). Verifica Username e Password."}
         except Exception as e:
             logger.warning(f"Impossibile recuperare i client esistenti da AdGuard ({e}), si tenterà l'inserimento diretto.")
 
@@ -163,6 +170,7 @@ class AdGuardService:
         added_count = 0
         updated_count = 0
         failed_count = 0
+        last_error_sample = ""
 
         async with httpx.AsyncClient(timeout=6.0, verify=False, follow_redirects=True) as client:
             for dev in devices:
@@ -232,9 +240,12 @@ class AdGuardService:
                             if r_upd.status_code in (200, 201, 204):
                                 updated_count += 1
                                 continue
-                        logger.warning(f"Errore sincronizzazione client '{name}' su AdGuard (HTTP {r.status_code}): {r.text[:120]}")
+                        err_text = r.text.strip()[:100]
+                        last_error_sample = f"{name}: HTTP {r.status_code} ({err_text})"
+                        logger.warning(f"Errore sincronizzazione client '{name}' su AdGuard: {last_error_sample}")
                         failed_count += 1
                 except Exception as e:
+                    last_error_sample = f"{name}: {str(e)}"
                     logger.error(f"Eccezione durante la sincronizzazione di '{name}' su AdGuard: {e}")
                     failed_count += 1
 
@@ -250,6 +261,15 @@ class AdGuardService:
         await db_service.set_setting("adguard_last_sync_status", status_text)
 
         logger.info(f"AdGuard Sync completato: {status_text}")
+        if total_synced == 0 and failed_count > 0:
+            return {
+                "success": False,
+                "total_synced": 0,
+                "failed_count": failed_count,
+                "message": f"Sincronizzazione fallita per tutti i {failed_count} client. {last_error_sample}",
+                "last_sync_time": now_iso,
+            }
+
         return {
             "success": True,
             "total_synced": total_synced,

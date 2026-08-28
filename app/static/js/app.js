@@ -1764,7 +1764,16 @@ document.addEventListener('alpine:init', () => {
     async syncAdGuardNow() {
       this.adguardSyncing = true;
       try {
-        const res = await fetch('/api/automations/adguard/sync', { method: 'POST' });
+        const payload = {
+          url: this.adguardSettings.url,
+          username: this.adguardSettings.username,
+          password: this.adguardSettings.password
+        };
+        const res = await fetch('/api/automations/adguard/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
         const json = await res.json();
         if (res.ok && json.status === 'success') {
           this.showToast("Sincronizzazione Completata", json.message, "success");
