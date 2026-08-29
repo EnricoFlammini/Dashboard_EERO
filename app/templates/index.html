@@ -1063,18 +1063,21 @@
       
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <!-- Smart Guest Wi-Fi & Dynamic QR Code -->
+        <!-- 1. Smart Guest Wi-Fi & Dynamic QR Code (Top-Left) -->
         <div class="glass-panel rounded-2xl p-6 space-y-5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <h3 class="text-base font-bold text-white" x-text="t('controls.guest_title')"></h3>
-              <button @click="openContextHelp('automations')" class="text-slate-500 hover:text-sky-400" :title="t('header.quick_help')">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </button>
+          <div class="flex items-center justify-between border-b border-white/5 pb-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.guest_title')"></h3>
+                <p class="text-xs text-slate-400 mt-0.5" x-text="t('controls.qr_desc')"></p>
+              </div>
             </div>
             <button 
               @click="toggleGuestNetwork()"
-              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400'"
+              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-800 text-slate-400'"
               class="px-3 py-1 rounded-full text-xs font-bold transition">
               <span x-text="guestNetwork.enabled ? t('controls.enabled') : t('controls.disabled')"></span>
             </button>
@@ -1120,35 +1123,41 @@
         <!-- 2. AdGuard Home DNS Integration Card (Top-Right) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
-              <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                </div>
-                <div>
-                  <h3 class="text-base font-bold text-white" x-text="t('controls.adguard_title')"></h3>
-                  <p class="text-xs text-slate-400" x-text="t('controls.adguard_subtitle')"></p>
+            <div class="space-y-3 border-b border-white/5 pb-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.adguard_title')"></h3>
+                    <p class="text-xs text-slate-400 mt-0.5" x-text="t('controls.adguard_subtitle')"></p>
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center space-x-2 shrink-0">
+
+              <!-- Action Toolbar -->
+              <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
                 <button 
                   @click="addAdGuardInstance()"
-                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1">
+                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5 cursor-pointer">
                   <span>➕</span>
-                  <span x-text="t('controls.adguard_add_instance')"></span>
+                  <span x-text="t('controls.adguard_add_instance') || '+ Aggiungi Istanza DNS'"></span>
                 </button>
                 <button 
                   @click="testAdGuardConnection()"
                   :disabled="adguardTesting"
-                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5">
+                  class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">
                   <span x-show="adguardTesting" class="animate-spin text-[10px]">⏳</span>
+                  <span x-show="!adguardTesting">⚡</span>
                   <span x-text="t('controls.adguard_test_btn')"></span>
                 </button>
                 <button 
                   @click="syncAdGuardNow()"
                   :disabled="adguardSyncing"
-                  class="px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-xs font-semibold border border-sky-500/30 transition flex items-center space-x-1.5">
+                  class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold border border-sky-500/30 transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">
                   <span x-show="adguardSyncing" class="animate-spin text-[10px]">🔄</span>
+                  <span x-show="!adguardSyncing">🔄</span>
                   <span x-text="t('controls.adguard_sync_btn')"></span>
                 </button>
               </div>
@@ -1202,20 +1211,14 @@
                 </div>
               </template>
             </div>
-          </div>
+            
+            <!-- Continuous Sync Toggle & Save Button -->
+            <div class="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="adguardSettings.auto_sync" class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-200" x-text="t('controls.adguard_auto_sync')"></span>
+              </label>
 
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
-            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
-              <input type="checkbox" x-model="adguardSettings.enabled" class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-800 w-4 h-4">
-              <span x-text="t('controls.adguard_enable_toggle')"></span>
-            </label>
-            <div class="flex items-center space-x-3">
-              <template x-if="adguardSettings.last_sync_status">
-                <div class="text-[11px] text-slate-400 flex items-center space-x-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span x-text="adguardSettings.last_sync_status"></span>
-                </div>
-              </template>
               <button 
                 @click="saveAdGuardSettings()"
                 class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
@@ -1229,8 +1232,16 @@
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-3 text-xs">
             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-              <h3 class="text-base font-bold text-white" x-text="t('controls.notifications_title')"></h3>
-              <button @click="testNotifications()" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30 transition" x-text="t('controls.send_test')">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.notifications_title')"></h3>
+                  <p class="text-xs text-slate-400 mt-0.5">Avvisi immediati su disconnessioni e nuovi client</p>
+                </div>
+              </div>
+              <button @click="testNotifications()" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition" x-text="t('controls.send_test')">
               </button>
             </div>
 
@@ -1270,8 +1281,15 @@
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-3">
             <div class="flex items-center justify-between border-b border-white/5 pb-3">
-              <h3 class="text-base font-bold text-white" x-text="t('controls.digest_title')"></h3>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold" x-text="currentLanguage === 'it' ? 'Ore 21:00' : '9:00 PM (21:00)'"></span>
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.digest_title')"></h3>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold inline-block mt-0.5" x-text="currentLanguage === 'it' ? 'Ore 21:00' : '9:00 PM (21:00)'"></span>
+                </div>
+              </div>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
 
