@@ -6,6 +6,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
 [![i18n](https://img.shields.io/badge/i18n-IT%20%7C%20EN-purple.svg)](#)
+[![AI-Assisted](https://img.shields.io/badge/AI--Assisted-Open%20Source-8A2BE2.svg)](#-acknowledgements--ai-assistance)
 
 > **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
 
@@ -241,9 +242,10 @@ python scripts/adguard_sync.py \
 
 ---
 
-## 🙏 Acknowledgements & Prior Art
+## 🤖 Acknowledgements & AI Assistance
 
-This project stands on the shoulders of the open-source networking and home automation community:
+This project stands on the shoulders of the open-source networking community and modern development tools:
+* **AI-Assisted Development:** Designed and built with the assistance of advanced AI coding tools (Google DeepMind / Antigravity Agentic AI) for rapid prototyping, architecture refinement, UI design, and bilingual localization, curated and maintained by **Enrico Flammini**.
 * **[`343max/eero-client`](https://github.com/343max/eero-client):** The foundational pioneer library for reverse-engineering and exploring the private eero cloud REST API.
 * **[Home Assistant Community](https://github.com/home-assistant/core):** For valuable historical insights into eero authentication flows, device tracker models, and API stability.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** For inspiring clean local DNS resolution and client discovery patterns.
@@ -405,9 +407,10 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
 
 ---
 
-## 🙏 Fonti & Riconoscimenti (Acknowledgements)
+## 🤖 Fonti, Riconoscimenti & Sviluppo Assistito da AI
 
 Questo progetto si basa e si ispira al lavoro pionieristico della community open-source e dell'home automation:
+* **Sviluppo Assistito da AI:** Progettato e realizzato con l'ausilio di strumenti avanzati di intelligenza artificiale (Google DeepMind / Antigravity) per l'ingegneria del software, il design dell'interfaccia e la localizzazione bilingue, curato e mantenuto da **Enrico Flammini**.
 * **[`343max/eero-client`](https://github.com/343max/eero-client):** La libreria di riferimento originaria per il reverse-engineering e l'esplorazione delle REST API private del cloud eero.
 * **[Home Assistant Community](https://github.com/home-assistant/core):** Per gli studi approfonditi sui flussi di autenticazione 2FA e la stabilità delle chiamate di telemetria.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** Per gli standard e l'ispirazione nella gestione della risoluzione DNS locale e mappatura host.
