@@ -1795,7 +1795,7 @@ document.addEventListener('alpine:init', () => {
     async fetchAdGuardSettings() {
       try {
         const res = await fetch('/api/automations/adguard');
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (json.status === 'success') {
           this.adguardSettings = {
             enabled: Boolean(json.enabled),
@@ -1834,14 +1834,14 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (res.ok) {
           const msg = json.message || (this.currentLanguage === 'it' ? "Impostazioni salvate con successo." : "Settings saved successfully.");
           this.showToast("AdGuard Home", msg, "success");
           await this.fetchAdGuardSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
-          const msg = json.detail || (this.currentLanguage === 'it' ? "Impossibile salvare le impostazioni." : "Could not save settings.");
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? `Impossibile salvare le impostazioni (HTTP ${res.status}).` : `Could not save settings (HTTP ${res.status}).`);
           this.showToast(title, msg, "error");
         }
       } catch (err) {
@@ -1871,8 +1871,8 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const json = await res.json();
-        if (json.success) {
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
           if (json.normalized_url) {
             this.adguardSettings.url = json.normalized_url;
           }
@@ -1880,7 +1880,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(title, json.message, "success");
         } else {
           const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          const msg = json.message || (this.currentLanguage === 'it' ? "Impossibile connettersi ad AdGuard Home" : "Could not connect to AdGuard Home");
+          const msg = json.message || json.detail || (this.currentLanguage === 'it' ? `Impossibile connettersi ad AdGuard Home (HTTP ${res.status})` : `Could not connect to AdGuard Home (HTTP ${res.status})`);
           this.showToast(title, msg, "error");
         }
       } catch (err) {
@@ -1904,14 +1904,14 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
           const title = this.currentLanguage === 'it' ? "Sincronizzazione Completata" : "Sync Completed";
           this.showToast(title, json.message, "success");
           await this.fetchAdGuardSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Sincronizzazione non riuscita." : "Synchronization failed.");
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? `Sincronizzazione non riuscita (HTTP ${res.status}).` : `Synchronization failed (HTTP ${res.status}).`);
           this.showToast(title, msg, "error");
         }
       } catch (err) {

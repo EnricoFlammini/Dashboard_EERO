@@ -301,7 +301,7 @@ class AdGuardService:
             prepared_clients.append({
                 "name": unique_name,
                 "ids": ids,
-                "tags": get_adguard_tags(d.get("category"), d.get("custom_icon")),
+                "tags": get_adguard_tags(dev.get("category"), dev.get("custom_icon")),
                 "upstreams": [],
                 "blocked_services": [],
                 "use_global_blocked_services": True,
