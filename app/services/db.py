@@ -130,17 +130,25 @@ class DBService:
             except Exception:
                 pass
 
-            # Purge mock demo devices from live signal history table
+            # Purge all mock demo devices from live signal history table
             await db.execute("""
                 DELETE FROM device_signal_history 
-                WHERE mac_address IN (
+                WHERE LOWER(mac_address) IN (
+                    'b4:2e:99:a1:01:10', '00:11:32:9f:88:44', 'f4:f5:db:33:44:55',
+                    '28:70:4e:88:99:aa', 'a8:5e:45:12:34:56', '48:e7:da:99:88:77',
                     '18:b4:30:11:22:33', 'e0:4f:43:aa:bb:cc', 'dc:a6:32:88:77:66',
-                    'f4:f5:db:11:22:33', 'b8:27:eb:44:55:66', '70:ee:50:66:77:88',
-                    'a4:c3:f0:12:34:56', '3c:22:fb:99:88:77', '94:b9:7e:11:22:33',
-                    'aa:bb:cc:dd:ee:01', 'aa:bb:cc:dd:ee:02'
+                    '7c:49:eb:12:34:78', '3c:22:fb:99:88:77', '70:ee:50:66:77:88',
+                    'a4:c3:f0:12:34:56', '94:b9:7e:11:22:33', 'aa:bb:cc:dd:ee:01',
+                    'aa:bb:cc:dd:ee:02', '00:1a:2b:3c:4d:5e'
                 ) OR hostname IN (
-                    'Termostato Soggiorno', 'iPad Cucina / Ricette', 'Telecamera Giardino', 
-                    'iPhone Personale', 'iPhone Test'
+                    'MacBook Pro Lavoro', 'Home NAS & Media Server', 'iPhone Personale',
+                    'Smart TV OLED 65"', 'PS5 Pro Console', 'Shelly Domotica Quadro',
+                    'Termostato Soggiorno', 'iPad Cucina / Ricette', 'Home Assistant Server',
+                    'Sonos Speaker Salone', 'MacBook-Pro-M3', 'Synology-DS920Plus',
+                    'iPhone-15-Pro', 'Sony-Bravia-OLED-4K', 'PlayStation-5',
+                    'Shelly-Pro-4PM', 'Nest-Thermostat-E', 'Apple-iPad-Air',
+                    'RaspberryPi-HomeAssistant', 'Sonos-Era-300-L', 'Telecamera Giardino',
+                    'iPhone Test', 'Demo Device'
                 ) OR is_demo = 1;
             """)
 
