@@ -845,10 +845,12 @@
           <div class="text-[11px] text-slate-500 text-center" x-text="t('speedtest.schedule_info')"></div>
         </div>
 
+      </div>
+
       <!-- =================================================================== -->
       <!-- WI-FI SIGNAL QUALITY & MESH COVERAGE (v1.04.00) -->
       <!-- =================================================================== -->
-      <div class="space-y-6 pt-4 border-t border-slate-800">
+      <div class="space-y-6 pt-6 border-t border-slate-800/80 w-full">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 class="text-lg font-bold text-white flex items-center space-x-2">
@@ -868,10 +870,11 @@
         <!-- KPI & Distribution Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Average RSSI -->
-          <div class="glass-panel rounded-2xl p-5 border border-sky-500/20 flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-4 border border-sky-500/20 flex flex-col justify-between">
             <span class="text-slate-400 text-xs font-medium" x-text="t('speedtest.signal_avg_kpi')"></span>
-            <div class="flex items-baseline space-x-2 my-2">
-              <span class="text-2xl font-bold font-mono text-white" x-text="signalOverview.average_rssi ? signalOverview.average_rssi + ' dBm' : '---'"></span>
+            <div class="flex items-baseline space-x-1.5 my-2">
+              <span class="text-2xl font-bold font-mono text-white" x-text="signalOverview.average_rssi ? signalOverview.average_rssi : '---'"></span>
+              <span class="text-xs text-slate-400 font-mono" x-show="signalOverview.average_rssi">dBm</span>
             </div>
             <span 
               class="inline-block px-2 py-0.5 rounded text-[10px] font-bold text-center"
@@ -886,60 +889,68 @@
           </div>
 
           <!-- Excellent -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
-            <div class="flex justify-between items-center text-xs mb-1">
-              <span class="text-emerald-400 font-semibold flex items-center space-x-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span x-text="t('speedtest.signal_excellent')"></span>
-              </span>
-              <span class="text-slate-400 font-mono" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-emerald-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span x-text="t('speedtest.signal_excellent')"></span>
+                </span>
+                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
+              </div>
+              <div class="text-[10px] text-slate-500 mb-2">≥ -50 dBm</div>
             </div>
-            <div class="text-[10px] text-slate-500 mb-2">≥ -50 dBm</div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-emerald-500 h-1.5 rounded-full" :style="`width: ${signalOverview.excellent_pct}%`"></div>
             </div>
           </div>
 
           <!-- Good -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
-            <div class="flex justify-between items-center text-xs mb-1">
-              <span class="text-sky-400 font-semibold flex items-center space-x-1">
-                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
-                <span x-text="t('speedtest.signal_good')"></span>
-              </span>
-              <span class="text-slate-400 font-mono" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-sky-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                  <span x-text="t('speedtest.signal_good')"></span>
+                </span>
+                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
+              </div>
+              <div class="text-[10px] text-slate-500 mb-2">-51 a -65 dBm</div>
             </div>
-            <div class="text-[10px] text-slate-500 mb-2">-51 a -65 dBm</div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-sky-500 h-1.5 rounded-full" :style="`width: ${signalOverview.good_pct}%`"></div>
             </div>
           </div>
 
           <!-- Fair -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
-            <div class="flex justify-between items-center text-xs mb-1">
-              <span class="text-amber-400 font-semibold flex items-center space-x-1">
-                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                <span x-text="t('speedtest.signal_fair')"></span>
-              </span>
-              <span class="text-slate-400 font-mono" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-amber-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                  <span x-text="t('speedtest.signal_fair')"></span>
+                </span>
+                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
+              </div>
+              <div class="text-[10px] text-slate-500 mb-2">-66 a -75 dBm</div>
             </div>
-            <div class="text-[10px] text-slate-500 mb-2">-66 a -75 dBm</div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-amber-500 h-1.5 rounded-full" :style="`width: ${signalOverview.fair_pct}%`"></div>
             </div>
           </div>
 
           <!-- Weak / Critical -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
-            <div class="flex justify-between items-center text-xs mb-1">
-              <span class="text-rose-400 font-semibold flex items-center space-x-1">
-                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
-                <span x-text="t('speedtest.signal_weak')"></span>
-              </span>
-              <span class="text-slate-400 font-mono" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-rose-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                  <span x-text="t('speedtest.signal_weak')"></span>
+                </span>
+                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
+              </div>
+              <div class="text-[10px] text-slate-500 mb-2">&lt; -75 dBm</div>
             </div>
-            <div class="text-[10px] text-slate-500 mb-2">&lt; -75 dBm</div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-rose-500 h-1.5 rounded-full" :style="`width: ${signalOverview.weak_pct}%`"></div>
             </div>
@@ -947,9 +958,9 @@
         </div>
 
         <!-- Historical Signal Chart by Device -->
-        <div class="glass-panel rounded-2xl p-6 space-y-4">
+        <div class="glass-panel rounded-2xl p-6 space-y-4 w-full">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
+            <div class="min-w-[200px]">
               <h4 class="text-base font-bold text-white" x-text="t('speedtest.signal_chart_title')"></h4>
               <p class="text-xs text-slate-400">Analisi temporale della potenza del segnale per singolo apparato Wi-Fi</p>
             </div>
@@ -959,13 +970,13 @@
               <select 
                 x-model="selectedSignalDeviceMac" 
                 @change="loadDeviceSignalHistory()"
-                class="glass-input px-3 py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                class="glass-input px-3 py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-xs">
                 <template x-for="d in (signalOverview.devices || [])" :key="d.mac_address">
                   <option :value="d.mac_address" x-text="(d.hostname || d.mac_address) + ' (' + (d.signal_rssi ? d.signal_rssi + ' dBm' : '') + ')'"></option>
                 </template>
               </select>
 
-              <div class="flex rounded-xl bg-slate-900/80 p-0.5 border border-slate-800 text-xs">
+              <div class="flex rounded-xl bg-slate-900/80 p-0.5 border border-slate-800 text-xs shrink-0">
                 <button 
                   @click="signalHistoryHours = 24; loadDeviceSignalHistory()" 
                   :class="signalHistoryHours === 24 ? 'bg-sky-500/20 text-sky-400 font-bold' : 'text-slate-400 hover:text-slate-200'"
@@ -986,7 +997,7 @@
         </div>
 
         <!-- Weak Signal Watchlist Table -->
-        <div class="glass-panel rounded-2xl p-6 space-y-4">
+        <div class="glass-panel rounded-2xl p-6 space-y-4 w-full">
           <div>
             <h4 class="text-base font-bold text-white flex items-center space-x-2">
               <span>⚠️</span>

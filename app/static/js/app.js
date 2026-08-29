@@ -6,7 +6,7 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version
-    appVersion: '1.03.02',
+    appVersion: '1.04.00',
 
     // i18n Multi-Language State
     currentLanguage: localStorage.getItem('eero_lang') || 'en',
@@ -238,6 +238,15 @@ document.addEventListener('alpine:init', () => {
       this.$watch('currentTab', (tab) => {
         if (tab === 'speedtest') {
           this.loadSpeedtestData();
+          setTimeout(() => {
+            this.loadSignalOverview();
+          }, 50);
+        } else if (tab === 'automations' || tab === 'controls') {
+          this.fetchNightMode();
+          this.fetchNotificationSettings();
+          this.fetchDigestSettings();
+          this.fetchAdGuardSettings();
+          this.fetchAlerts();
         }
       });
     },
@@ -319,10 +328,11 @@ document.addEventListener('alpine:init', () => {
       if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
+          await this.loadSignalOverview();
         }, 50);
       } else if (tab === 'devices') {
         await this.fetchDevices();
-      } else if (tab === 'controls') {
+      } else if (tab === 'automations' || tab === 'controls') {
         await this.fetchNightMode();
         await this.fetchNotificationSettings();
         await this.fetchDigestSettings();
