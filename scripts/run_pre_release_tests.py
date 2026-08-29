@@ -173,7 +173,7 @@ async def run_all_tests():
         runner.assert_true(normalized == "http://192.168.1.100:8085", f"Normalizzazione URL corretta: '{test_url_raw}' -> '{normalized}'")
 
         print("\n⚡ [7/7] TEST NORMALIZZAZIONE VELOCITÀ ETHERNET E SEGNALE WIRELESS (Issue #14)")
-        # Test nodo cablato con porte P2500 e P1000 (es. Bedroom da Issue #14)
+        # Test 1: Nodo cablato con porte multiple (Bedroom da Issue #14): Interface 0 WAN P2500 + Interface 1 P1000 + Wi-Fi 5GHz
         node_bedroom_raw = {
             "name": "Bedroom",
             "model": "eero Pro 6E",
@@ -182,16 +182,19 @@ async def run_all_tests():
             "connected": True,
             "ethernet_status": {
                 "statuses": [
-                    {"port": 1, "speed": "P2500", "has_carrier": True},
-                    {"port": 2, "speed": "P1000", "has_carrier": True}
+                    {"interface_number": 0, "speed": "P2500", "hasCarrier": True, "isWanPort": True, "neighbour": "Living Room"},
+                    {"interface_number": 1, "speed": "P1000", "hasCarrier": True}
                 ]
-            }
+            },
+            "interface": {"speed": "5GHz"},
+            "connectivity": {"frequency": "5 GHz"}
         }
         bedroom_norm = eero_client._normalize_eero_node(node_bedroom_raw)
-        runner.assert_true(bedroom_norm["backhaul_type"] == "Ethernet (2.5 Gbps)", f"Bedroom ethernet_status P2500 rileva 'Ethernet (2.5 Gbps)' (ottenuto: {bedroom_norm['backhaul_type']})")
+        runner.assert_true(bedroom_norm["backhaul_type"] == "Ethernet (2.5 Gbps)", f"Bedroom porta WAN P2500 rileva 'Ethernet (2.5 Gbps)' (ottenuto: {bedroom_norm['backhaul_type']})")
         runner.assert_true(bedroom_norm["wired"] is True, "Bedroom marcato correttamente come wired")
+        runner.assert_true("5.0 Gbps" not in bedroom_norm["backhaul_type"], "Bedroom non viene scambiato erroneamente per 5.0 Gbps")
 
-        # Test nodo cablato con porte P1000 (es. Toilet da Issue #14)
+        # Test 2: Nodo cablato con porte P1000 (Toilet da Issue #14)
         node_toilet_raw = {
             "name": "Toilet",
             "model": "eero 6+",
@@ -208,7 +211,42 @@ async def run_all_tests():
         toilet_norm = eero_client._normalize_eero_node(node_toilet_raw)
         runner.assert_true(toilet_norm["backhaul_type"] == "Ethernet (1.0 Gbps)", f"Toilet ethernet_status P1000 rileva 'Ethernet (1.0 Gbps)' (ottenuto: {toilet_norm['backhaul_type']})")
 
-        # Test nodo wireless mesh (wired: false) che ha un PC collegato via cavo (es. Camera di Filippo e Enea)
+        # Test 3: Dispositivo client cablato con connectivity.ethernet_status (cameraui da Issue #14)
+        device_cameraui_raw = {
+            "id": "cameraui_dev_1",
+            "hostname": "cameraui",
+            "ip": "192.168.4.39",
+            "connected": True,
+            "connectivity": {
+                "connected": True,
+                "ethernet_status": {
+                    "has_carrier": True,
+                    "interface_number": 1,
+                    "speed": "P2500",
+                    "port_name": "2"
+                }
+            }
+        }
+        cameraui_norm = eero_client._normalize_device(device_cameraui_raw)
+        runner.assert_true(cameraui_norm["wireless"] is False, "Client cameraui con ethernet_status marcato wireless=False")
+        runner.assert_true(cameraui_norm["connection_type"] == "wired", f"Client cameraui connection_type è 'wired' (ottenuto: {cameraui_norm['connection_type']})")
+        runner.assert_true(cameraui_norm["ethernet_speed"] == "2.5 Gbps", f"Client cameraui ethernet_speed estratto come '2.5 Gbps' (ottenuto: {cameraui_norm['ethernet_speed']})")
+
+        # Test 4: Dispositivo client cablato 1 Gbps standard
+        device_pc_raw = {
+            "id": "pc_gigabit",
+            "hostname": "Workstation",
+            "ip": "192.168.4.50",
+            "connected": True,
+            "ethernet_status": {
+                "speed": "P1000",
+                "has_carrier": True
+            }
+        }
+        pc_norm = eero_client._normalize_device(device_pc_raw)
+        runner.assert_true(pc_norm["ethernet_speed"] == "1.0 Gbps", f"Client PC ethernet_speed estratto come '1.0 Gbps' (ottenuto: {pc_norm['ethernet_speed']})")
+
+        # Test 5: Nodo wireless mesh (wired: false) che ha un PC collegato via cavo (Camera di Filippo e Enea)
         node_wireless_with_pc = {
             "name": "Camera di Filippo e Enea",
             "model": "eero",
@@ -229,7 +267,7 @@ async def run_all_tests():
         runner.assert_true(filippo_norm["wired"] is False, "Nodo wireless con PC collegato marcato wired=False")
         runner.assert_true(filippo_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -62 dBm)", f"Nodo wireless con PC rileva 'Wireless Mesh (5 GHz / -62 dBm)' (ottenuto: {filippo_norm['backhaul_type']})")
 
-        # Test nodo wireless mesh con RSSI in dBm
+        # Test 6: Nodo wireless mesh con segnale come dizionario (signal: {rx_rssi: -58})
         node_wireless_raw = {
             "name": "Living Room Beacon",
             "model": "eero 6",
@@ -238,13 +276,13 @@ async def run_all_tests():
             "connected": True,
             "wireless_band": "5 GHz",
             "connectivity": {
-                "signal": -58,
+                "signal": {"rx_rssi": -58},
                 "frequency": "5 GHz"
             }
         }
         wireless_norm = eero_client._normalize_eero_node(node_wireless_raw)
-        runner.assert_true(wireless_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -58 dBm)", f"Beacon wireless rileva 'Wireless Mesh (5 GHz / -58 dBm)' (ottenuto: {wireless_norm['backhaul_type']})")
-        runner.assert_true(wireless_norm["signal_rssi"] == -58, "Beacon wireless signal_rssi estratto come -58")
+        runner.assert_true(wireless_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -58 dBm)", f"Beacon wireless con dict signal rileva 'Wireless Mesh (5 GHz / -58 dBm)' (ottenuto: {wireless_norm['backhaul_type']})")
+        runner.assert_true(wireless_norm["signal_rssi"] == -58, f"Beacon wireless signal_rssi estratto come -58 (ottenuto: {wireless_norm['signal_rssi']})")
 
         # Switch back to Live
         res = await client.post("/api/auth/mode", json={"demo": False})
