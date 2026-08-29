@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
+## [1.03.01] - 2026-08-29
+
+### ⚡ Fix Negoziazione Porte Ethernet Nodi Mesh & Telemetria Dispositivi (#14)
+* **⚡ Rilevamento Dinamico Velocità Porte Nodi eero (Issue #14):**
+  * Introdotto il parsing avanzato dell'oggetto `ethernet_status.statuses[].speed` con decodifica dei prefissi `P` (`P2500` ➔ 2.5 Gbps, `P1000` ➔ 1.0 Gbps, `P10000` ➔ 10 Gbps, `P5000` ➔ 5.0 Gbps, `P100` ➔ 100 Mbps).
+  * Ora i nodi mesh cablati su modelli avanzati (es. eero Pro 6E, eero 6+, eero Max 7) mostrano esattamente la velocità di negoziazione massima rilevata sulla porta di uplink (`Ethernet (2.5 Gbps)`, `Ethernet (1.0 Gbps)`).
+* **📡 Distinzione Rigorosa Backhaul Mesh Wi-Fi vs Apparati Cablati Locali:**
+  * Corretta la logica di determinazione del backhaul: un nodo satellite che comunica con la mesh via Wi-Fi (`wired: false`) viene sempre classificato fedelmente come `Wireless Mesh (5 GHz)` (o 6 GHz/2.4 GHz), anche quando alla sua porta fisica Ethernet locale è collegato un PC, una smart TV o un apparato client.
+* **🖥️ Velocità Ethernet Dispositivi & Zero Hardcoding:**
+  * Rimosso qualsiasi valore hardcoded di fallback (`1.0 Gbps`). La tabella dispositivi e il modale di dettaglio mostrano la reale velocità negoziata fornita dall'eero (`2.5 Gbps`, `1.0 Gbps`, `100 Mbps`) oppure l'indicatore pulito e trasparente `Ethernet (Wired)`.
+* **📶 Telemetria RSSI dBm sui Nodi Satellite Wireless:**
+  * Espansa l'estrazione della potenza di segnale Wi-Fi inter-nodo (`connectivity.signal`, `wireless_details.rssi`) per visualizzare il livello effettivo in dBm nei badge dei nodi satellite (es. `Wireless Mesh (5 GHz / -58 dBm)`).
+
+---
+
 ## [1.03.00] - 2026-08-28
 
 ### 📦 Docker Hub Multi-Arch, Sincronizzazione AdGuard Home & Ottimizzazioni Mesh (#12)

@@ -350,6 +350,14 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
+## v1.03.01
+* **Fix Rilevamento Velocità Porte Ethernet Nodi Mesh (Issue #14)**
+* **Distinzione Rigorosa Backhaul Wi-Fi vs Client Cablati su Nodi Satellite**
+* **Velocità Link Ethernet Dispositivi Reale (Zero Hardcoding)**
+* **Estrazione Avanzata Segnale Wireless RSSI (dBm) sui Beacon**
+
+---
+
 ## v1.03.00
 * **Risoluzione Universale Nodi e Client Mesh Multi-Generazione (Pro 7 / 6E / 6+)**
 * **Switch Istantaneo Modalità Demo / Rete Live senza perdita Token**
@@ -420,6 +428,14 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+---
+
+## v1.03.01
+* **Fix Mesh Node Ethernet Port Negotiation Speeds (Issue #14)**
+* **Strict Separation of Wireless Mesh Backhaul vs Local Wired Client Devices**
+* **Authentic Device Ethernet Speeds (Zero Hardcoding)**
+* **Expanded Wireless Node RSSI (dBm) Signal Telemetry on Beacons**
 
 ---
 
