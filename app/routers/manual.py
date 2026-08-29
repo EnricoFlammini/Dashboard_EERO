@@ -246,7 +246,6 @@ This web application is a full-featured, self-hosted management and monitoring p
   - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
   - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
   - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
-  - **Pause Internet Access:** One-click toggle to block or restore internet access for individual devices.
         """
     },
     {
@@ -306,7 +305,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 ### Troubleshooting & FAQ
 
 * **Which client metrics come directly from eero hardware?**
-  - The dashboard reads client connection state (Online/Offline/Paused), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
+  - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
 * **How do I configure the AdGuard Home integration?**
   - Under the *Automations & Controls* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
 * **What should I do if my session expires?**

@@ -1357,50 +1357,6 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    async toggleDevicePause(device) {
-      const devId = encodeURIComponent(device.url || device.id || device.mac);
-      const targetState = !device.paused;
-      try {
-        const res = await fetch(`/api/devices/${devId}/pause`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paused: targetState })
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(json.detail || json.message || "Impossibile aggiornare la pausa sul cloud eero");
-        }
-        device.paused = targetState;
-        device.is_paused = targetState;
-        const title = targetState 
-          ? (this.currentLanguage === 'it' ? "Accesso in Pausa" : "Internet Paused") 
-          : (this.currentLanguage === 'it' ? "Accesso Riabilitato" : "Internet Restored");
-        const devName = device.custom_name || device.nickname || device.hostname;
-        let msg = this.currentLanguage === 'it'
-          ? `Dispositivo '${devName}' ${targetState ? 'messo in pausa' : 'riattivato'}.`
-          : `Device '${devName}' ${targetState ? 'paused' : 'restored'}.`;
-        
-        const cResp = json.cloud_response || {};
-        if (cResp.url_used) {
-          const shortUrl = cResp.url_used.replace("https://api-user.e2ro.com/", "");
-          msg += ` [Cloud OK: ${cResp.method_used} ${shortUrl}]`;
-          this.showToast(title, msg, "success");
-        } else if (cResp.last_error || json.warning) {
-          const errDetail = cResp.last_error || json.warning;
-          msg += ` [Cloud: ${errDetail}]`;
-          this.showToast(title, msg, "warning");
-        } else if (json.cloud_synced === false) {
-          msg += ` [Cloud non sincronizzato]`;
-          this.showToast(title, msg, "warning");
-        } else {
-          this.showToast(title, msg, targetState ? "warning" : "success");
-        }
-      } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Pausa" : "Pause Error";
-        this.showToast(title, err.message, "error");
-      }
-    },
-
     // =========================================================================
     // CLOUD PROFILES & USERS MANAGEMENT ACTIONS
     // =========================================================================
@@ -1487,34 +1443,6 @@ document.addEventListener('alpine:init', () => {
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Eliminazione" : "Deletion Error";
-        this.showToast(title, err.message, "error");
-      }
-    },
-
-    async toggleProfilePause(profile) {
-      const targetState = !profile.paused;
-      try {
-        const res = await fetch(`/api/profiles/${profile.id}/pause`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paused: targetState })
-        });
-        const data = await res.json();
-        if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile modificare la pausa del profilo' : 'Unable to toggle profile pause'));
-        }
-
-        profile.paused = targetState;
-        const title = targetState 
-          ? (this.currentLanguage === 'it' ? "Profilo in Pausa" : "Profile Paused")
-          : (this.currentLanguage === 'it' ? "Profilo Riattivato" : "Profile Restored");
-        const msg = this.currentLanguage === 'it'
-          ? `Accesso Internet per il profilo '${profile.name}' ${targetState ? 'sospeso' : 'ripristinato'}.`
-          : `Internet access for profile '${profile.name}' ${targetState ? 'paused' : 'restored'}.`;
-        this.showToast(title, msg, targetState ? "warning" : "success");
-        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
-      } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Pausa Profilo" : "Profile Pause Error";
         this.showToast(title, err.message, "error");
       }
     },

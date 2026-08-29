@@ -18,12 +18,7 @@ class CreateProfileRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=60, description="Nuovo nome del profilo")
-    paused: Optional[bool] = Field(None, description="Stato di pausa internet cumulativa per il profilo")
     device_ids: Optional[List[str]] = Field(None, description="Nuova lista completa di dispositivi associati")
-
-
-class ProfilePauseRequest(BaseModel):
-    paused: bool = Field(..., description="True per mettere in pausa tutti i dispositivi dell'utente, False per riattivare")
 
 
 class AssignDevicesRequest(BaseModel):
@@ -75,12 +70,11 @@ async def create_profile(req: CreateProfileRequest):
 
 @router.put("/{profile_id}")
 async def update_profile(profile_id: str, req: UpdateProfileRequest):
-    """Aggiorna il nome, lo stato di pausa o i dispositivi di un profilo."""
+    """Aggiorna il nome o i dispositivi di un profilo."""
     try:
         res = await eero_client.update_profile(
             profile_id=profile_id,
             name=req.name,
-            paused=req.paused,
             device_ids=req.device_ids
         )
         cached_p = await eero_client.get_profiles()
@@ -109,24 +103,6 @@ async def delete_profile(profile_id: str):
         }
     except Exception as e:
         logger.error(f"Errore eliminazione profilo {profile_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/{profile_id}/pause")
-async def toggle_profile_pause(profile_id: str, req: ProfilePauseRequest):
-    """Mette in pausa o riattiva la connessione per tutti i dispositivi dell'utente."""
-    try:
-        res = await eero_client.set_profile_paused(profile_id=profile_id, paused=req.paused)
-        cached_p = await eero_client.get_profiles()
-        background_poller.update_cached_profiles(cached_p)
-        action_str = "messo in pausa" if req.paused else "riattivato"
-        return {
-            "status": "success",
-            "message": f"Accesso Internet per il profilo {action_str} con successo.",
-            "profile": res.get("profile")
-        }
-    except Exception as e:
-        logger.error(f"Errore toggle pausa profilo {profile_id}: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
 
 
