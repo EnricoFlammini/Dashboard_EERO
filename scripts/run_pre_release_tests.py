@@ -178,6 +178,7 @@ async def run_all_tests():
             "name": "Bedroom",
             "model": "eero Pro 6E",
             "gateway": False,
+            "wired": True,
             "connected": True,
             "ethernet_status": {
                 "statuses": [
@@ -195,6 +196,7 @@ async def run_all_tests():
             "name": "Toilet",
             "model": "eero 6+",
             "gateway": False,
+            "wired": True,
             "connected": True,
             "ethernet_status": {
                 "statuses": [
@@ -205,6 +207,27 @@ async def run_all_tests():
         }
         toilet_norm = eero_client._normalize_eero_node(node_toilet_raw)
         runner.assert_true(toilet_norm["backhaul_type"] == "Ethernet (1.0 Gbps)", f"Toilet ethernet_status P1000 rileva 'Ethernet (1.0 Gbps)' (ottenuto: {toilet_norm['backhaul_type']})")
+
+        # Test nodo wireless mesh (wired: false) che ha un PC collegato via cavo (es. Camera di Filippo e Enea)
+        node_wireless_with_pc = {
+            "name": "Camera di Filippo e Enea",
+            "model": "eero",
+            "gateway": False,
+            "wired": False,
+            "connected": True,
+            "ethernet_status": {
+                "statuses": [
+                    {"port": 1, "speed": "P1000", "has_carrier": True}
+                ]
+            },
+            "connectivity": {
+                "signal": -62,
+                "frequency": "5 GHz"
+            }
+        }
+        filippo_norm = eero_client._normalize_eero_node(node_wireless_with_pc)
+        runner.assert_true(filippo_norm["wired"] is False, "Nodo wireless con PC collegato marcato wired=False")
+        runner.assert_true(filippo_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -62 dBm)", f"Nodo wireless con PC rileva 'Wireless Mesh (5 GHz / -62 dBm)' (ottenuto: {filippo_norm['backhaul_type']})")
 
         # Test nodo wireless mesh con RSSI in dBm
         node_wireless_raw = {

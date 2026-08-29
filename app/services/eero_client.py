@@ -395,17 +395,21 @@ class EeroClient:
                 signal_str = f" / {cleaned_rssi}"
                 node["signal_rssi"] = cleaned_rssi
 
-        # In eero API, wireless nodes have wired == False (or wireless == True / connection_type == "wireless").
-        # Note: Do NOT check ethernet_addresses because all physical eero units list their port MACs!
-        is_wireless = bool(node.get("wireless") is True or node.get("connection_type") == "wireless")
+        # In eero API:
+        # - node.get("gateway") is True for the primary router connected to modem/WAN
+        # - node.get("wired") is True for beacon nodes connected via Ethernet backhaul cable to the gateway
+        # - node.get("wired") is False for wireless mesh nodes (even if a client PC or switch is plugged into their LAN port!)
+        is_gateway = bool(node.get("gateway") or node.get("is_gateway", False))
         raw_wired = node.get("wired")
         
-        if raw_wired is not None:
-            is_wired = bool(raw_wired)
-        elif is_wireless:
+        if is_gateway:
+            is_wired = True
+        elif raw_wired is False or node.get("wireless") is True or node.get("connection_type") == "wireless":
             is_wired = False
+        elif raw_wired is True or node.get("connection_type") == "wired":
+            is_wired = True
         else:
-            is_wired = (node.get("connection_type") == "wired")
+            is_wired = False
 
         # Check node ports for ethernet backhaul speed (Point 5 & Issue #14)
         active_port_speeds = []
@@ -482,11 +486,7 @@ class EeroClient:
             if mbps > max_speed_mbps:
                 max_speed_mbps = mbps
 
-        # If active port speeds are detected, consider node wired unless explicitly marked wireless
-        if max_speed_mbps > 0 and not is_wireless:
-            is_wired = True
-
-        if node["is_gateway"]:
+        if is_gateway:
             node["wired"] = True
             node["backhaul_type"] = "Gateway (WAN)"
         elif is_wired:
