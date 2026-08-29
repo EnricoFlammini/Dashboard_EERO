@@ -131,8 +131,8 @@ def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] =
     if any(k in t for k in ("speaker", "smart_speaker", "echo", "alexa", "sonos", "homepod", "soundbar", "audio")) or \
        any(k in n for k in ("echo", "alexa", "sonos", "homepod", "speaker", "soundbar")):
         return ("Smart Home", "speaker")
-    if any(k in t for k in ("iot", "smart_plug", "plug", "socket", "vacuum", "thermostat", "bulb", "light", "switch", "sensor", "hub", "appliance", "home_automation", "shelly", "sonoff", "tuya", "tasmota")) or \
-       any(k in n for k in ("shelly", "sonoff", "tuya", "smartplug", "plug", "vacuum", "roomba", "roborock", "dreame", "thermostat", "hue")):
+    if any(k in t for k in ("iot", "smart_plug", "plug", "socket", "vacuum", "thermostat", "bulb", "light", "switch", "sensor", "hub", "appliance", "home_automation", "shelly", "sonoff", "tuya", "tasmota", "air_conditioner", "air conditioner", "clima", "condizionatore", "hvac", "ac")) or \
+       any(k in n for k in ("shelly", "sonoff", "tuya", "smartplug", "plug", "vacuum", "roomba", "roborock", "dreame", "thermostat", "hue", "air conditioner", "air_conditioner", "clima", "climatizzatore", "condizionatore", "hvac", "purifier", "dehumidifier")):
         return ("Smart Home", "iot")
 
     return ("Altro", "device")
@@ -143,25 +143,27 @@ def get_adguard_tags(category: Optional[str], icon: Optional[str] = None) -> Lis
     cat_lower = str(category or "").strip().lower()
     icon_lower = str(icon or "").strip().lower()
 
-    tags = []
     if icon_lower == "laptop":
-        tags.append("device_laptop")
-    elif cat_lower == "computer" or icon_lower in ("printer", "device"):
-        tags.append("device_pc")
-    elif icon_lower == "tablet":
-        tags.append("device_tablet")
-    elif cat_lower == "mobile" or icon_lower == "smartphone":
-        tags.append("device_phone")
-    elif cat_lower == "intrattenimento" or icon_lower == "tv":
-        tags.append("device_tv")
-    elif cat_lower == "gaming" or icon_lower == "gamepad":
-        tags.append("device_gameconsole")
-    elif cat_lower == "server/rete" or icon_lower == "server":
-        tags.append("device_nas")
-    elif cat_lower == "smart home" or icon_lower in ("iot", "camera", "speaker"):
-        tags.append("device_other")
+        return ["device_laptop"]
+    if icon_lower == "tablet":
+        return ["device_tablet"]
+    if icon_lower in ("smartphone", "phone") or cat_lower == "mobile":
+        return ["device_phone"]
+    if icon_lower == "tv" or cat_lower == "intrattenimento":
+        return ["device_tv"]
+    if icon_lower == "gamepad" or cat_lower == "gaming":
+        return ["device_gameconsole"]
+    if icon_lower == "server" or cat_lower == "server/rete":
+        return ["device_nas"]
+    if icon_lower == "printer":
+        return ["device_pc"]
+    if cat_lower == "computer":
+        return ["device_pc"]
+    if cat_lower == "smart home" or icon_lower in ("iot", "camera", "speaker"):
+        return ["device_other"]
 
-    return tags if tags else ["device_other"]
+    # Default per categoria 'Altro', icona 'device' o dispositivi non mappati
+    return ["device_other"]
 
 
 class EeroClient:
