@@ -365,10 +365,35 @@ class EeroClient:
 
         # Signal / RSSI
         signal_str = ""
-        raw_rssi = node.get("signal_rssi") or node.get("rssi") or conn_info.get("signal")
-        if raw_rssi:
-            rssi_val = str(raw_rssi).replace("dBm", "").strip()
-            signal_str = f" / {rssi_val} dBm"
+        raw_rssi = (
+            node.get("signal_rssi") or 
+            node.get("rssi") or 
+            conn_info.get("signal") or 
+            conn_info.get("rssi") or 
+            conn_info.get("signal_strength") or 
+            conn_info.get("signal_rssi") or 
+            conn_info.get("bars") or
+            conn_info.get("score") or
+            iface_info.get("rssi") or 
+            iface_info.get("signal") or 
+            node.get("signal") or
+            node.get("mesh_rssi") or
+            node.get("mesh_quality") or
+            (node.get("wireless_details") if isinstance(node.get("wireless_details"), dict) else {}).get("rssi")
+        )
+        if raw_rssi is not None:
+            cleaned_rssi = str(raw_rssi).replace("dBm", "").replace("dbm", "").strip()
+            if cleaned_rssi.startswith("-") or cleaned_rssi.lstrip("-").isdigit():
+                try:
+                    rssi_num = int(cleaned_rssi)
+                    signal_str = f" / {rssi_num} dBm"
+                    node["signal_rssi"] = rssi_num
+                except Exception:
+                    signal_str = f" / {cleaned_rssi} dBm"
+                    node["signal_rssi"] = cleaned_rssi
+            elif cleaned_rssi:
+                signal_str = f" / {cleaned_rssi}"
+                node["signal_rssi"] = cleaned_rssi
 
         # In eero API, wireless nodes have wired == False (or wireless == True / connection_type == "wireless").
         # Note: Do NOT check ethernet_addresses because all physical eero units list their port MACs!
@@ -382,40 +407,99 @@ class EeroClient:
         else:
             is_wired = (node.get("connection_type") == "wired")
 
-        # Check node ports for ethernet backhaul speed (Point 5)
-        ports_list = node.get("ethernet_ports") or node.get("ports") or node.get("interfaces")
+        # Check node ports for ethernet backhaul speed (Point 5 & Issue #14)
         active_port_speeds = []
+        port_details = []
+
+        # 1. Parse ethernet_status object (e.g. ethernet_status.statuses[].speed)
+        eth_status = node.get("ethernet_status")
+        if isinstance(eth_status, dict):
+            statuses = eth_status.get("statuses") or eth_status.get("status") or eth_status.get("ports") or []
+            if isinstance(statuses, list):
+                for st in statuses:
+                    if isinstance(st, dict):
+                        p_speed = str(st.get("speed") or st.get("rate") or st.get("link_speed") or st.get("negotiated_speed") or "").strip()
+                        p_carrier = st.get("has_carrier") if st.get("has_carrier") is not None else (st.get("connected") if st.get("connected") is not None else st.get("carrier"))
+                        p_num = st.get("port") or st.get("port_number") or st.get("index")
+                        if p_speed and (p_carrier is True or p_carrier is None or p_carrier == "up"):
+                            active_port_speeds.append(p_speed)
+                            if p_num is not None:
+                                port_details.append(f"Port {p_num}: {p_speed}")
+                    elif isinstance(st, (str, int)):
+                        active_port_speeds.append(str(st))
+        elif isinstance(eth_status, list):
+            for st in eth_status:
+                if isinstance(st, dict):
+                    p_speed = str(st.get("speed") or st.get("rate") or st.get("link_speed") or "").strip()
+                    p_carrier = st.get("has_carrier") if st.get("has_carrier") is not None else st.get("connected")
+                    if p_speed and (p_carrier is True or p_carrier is None):
+                        active_port_speeds.append(p_speed)
+                elif isinstance(st, (str, int)):
+                    active_port_speeds.append(str(st))
+
+        # 2. Parse ethernet_ports / ports / interfaces
+        ports_list = node.get("ethernet_ports") or node.get("ports") or node.get("interfaces") or (conn_info.get("ports") if isinstance(conn_info, dict) else None)
         if isinstance(ports_list, list):
             for p in ports_list:
                 if isinstance(p, dict):
-                    p_speed = str(p.get("speed") or p.get("negotiated_speed") or p.get("rate") or p.get("link_speed") or "").lower()
+                    p_speed = str(p.get("speed") or p.get("negotiated_speed") or p.get("rate") or p.get("link_speed") or "").strip()
                     p_conn = p.get("connected") if p.get("connected") is not None else (p.get("carrier") if p.get("carrier") is not None else p.get("link"))
                     if p_speed and (p_conn is True or p_conn is None or p_conn == "up"):
                         active_port_speeds.append(p_speed)
                 elif isinstance(p, (str, int)):
-                    active_port_speeds.append(str(p).lower())
+                    active_port_speeds.append(str(p))
 
-        eth_speed = " ".join([
+        if port_details:
+            node["ethernet_ports_details"] = port_details
+
+        def _parse_speed_mbps(val: Any) -> int:
+            s = str(val or "").lower().replace("gbps", "g").replace("mbps", "m").replace("gbe", "1000").strip()
+            # Handle P-prefix from eero API (e.g. P10000, P5000, P2500, P1000, P100)
+            if s.startswith("p") and s[1:].isdigit():
+                return int(s[1:])
+            if s.isdigit():
+                return int(s)
+            if "10g" in s or "10000" in s:
+                return 10000
+            if "5g" in s or "5.0g" in s or "5000" in s:
+                return 5000
+            if "2.5g" in s or "2.5" in s or "2500" in s:
+                return 2500
+            if "1g" in s or "1.0g" in s or "1000" in s:
+                return 1000
+            if "100m" in s or "100" in s or "fe" in s or "fast" in s:
+                return 100
+            return 0
+
+        max_speed_mbps = 0
+        all_speed_tokens = active_port_speeds + [
             str(node.get("ethernet_speed") or ""),
             str(iface_info.get("speed") or ""),
-            str(conn_info.get("speed") or ""),
-            " ".join(active_port_speeds)
-        ]).lower()
+            str(conn_info.get("speed") or "")
+        ]
+        for token in all_speed_tokens:
+            mbps = _parse_speed_mbps(token)
+            if mbps > max_speed_mbps:
+                max_speed_mbps = mbps
+
+        # If active port speeds are detected, consider node wired unless explicitly marked wireless
+        if max_speed_mbps > 0 and not is_wireless:
+            is_wired = True
 
         if node["is_gateway"]:
             node["wired"] = True
             node["backhaul_type"] = "Gateway (WAN)"
         elif is_wired:
             node["wired"] = True
-            if "10000" in eth_speed or "10g" in eth_speed or "10 gbps" in eth_speed:
+            if max_speed_mbps >= 10000:
                 node["backhaul_type"] = "Ethernet (10 Gbps)"
-            elif "5000" in eth_speed or "5g" in eth_speed or "5 gbps" in eth_speed:
+            elif max_speed_mbps >= 5000:
                 node["backhaul_type"] = "Ethernet (5.0 Gbps)"
-            elif "2.5" in eth_speed or "2500" in eth_speed or "2.5g" in eth_speed:
+            elif max_speed_mbps >= 2500:
                 node["backhaul_type"] = "Ethernet (2.5 Gbps)"
-            elif "1000" in eth_speed or "1.0" in eth_speed or "1g" in eth_speed or "1 gbps" in eth_speed or "gbe" in eth_speed:
+            elif max_speed_mbps >= 1000:
                 node["backhaul_type"] = "Ethernet (1.0 Gbps)"
-            elif "100" in eth_speed or "fe" in eth_speed or "fast" in eth_speed:
+            elif max_speed_mbps >= 100:
                 node["backhaul_type"] = "Ethernet (100 Mbps)"
             else:
                 node["backhaul_type"] = "Ethernet (Cablato)"

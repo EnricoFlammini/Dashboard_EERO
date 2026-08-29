@@ -172,6 +172,57 @@ async def run_all_tests():
         normalized = normalize_adguard_url(test_url_raw)
         runner.assert_true(normalized == "http://192.168.1.100:8085", f"Normalizzazione URL corretta: '{test_url_raw}' -> '{normalized}'")
 
+        print("\n⚡ [7/7] TEST NORMALIZZAZIONE VELOCITÀ ETHERNET E SEGNALE WIRELESS (Issue #14)")
+        # Test nodo cablato con porte P2500 e P1000 (es. Bedroom da Issue #14)
+        node_bedroom_raw = {
+            "name": "Bedroom",
+            "model": "eero Pro 6E",
+            "gateway": False,
+            "connected": True,
+            "ethernet_status": {
+                "statuses": [
+                    {"port": 1, "speed": "P2500", "has_carrier": True},
+                    {"port": 2, "speed": "P1000", "has_carrier": True}
+                ]
+            }
+        }
+        bedroom_norm = eero_client._normalize_eero_node(node_bedroom_raw)
+        runner.assert_true(bedroom_norm["backhaul_type"] == "Ethernet (2.5 Gbps)", f"Bedroom ethernet_status P2500 rileva 'Ethernet (2.5 Gbps)' (ottenuto: {bedroom_norm['backhaul_type']})")
+        runner.assert_true(bedroom_norm["wired"] is True, "Bedroom marcato correttamente come wired")
+
+        # Test nodo cablato con porte P1000 (es. Toilet da Issue #14)
+        node_toilet_raw = {
+            "name": "Toilet",
+            "model": "eero 6+",
+            "gateway": False,
+            "connected": True,
+            "ethernet_status": {
+                "statuses": [
+                    {"port": 1, "speed": "P1000", "has_carrier": True},
+                    {"port": 2, "speed": "P1000", "has_carrier": True}
+                ]
+            }
+        }
+        toilet_norm = eero_client._normalize_eero_node(node_toilet_raw)
+        runner.assert_true(toilet_norm["backhaul_type"] == "Ethernet (1.0 Gbps)", f"Toilet ethernet_status P1000 rileva 'Ethernet (1.0 Gbps)' (ottenuto: {toilet_norm['backhaul_type']})")
+
+        # Test nodo wireless mesh con RSSI in dBm
+        node_wireless_raw = {
+            "name": "Living Room Beacon",
+            "model": "eero 6",
+            "gateway": False,
+            "wireless": True,
+            "connected": True,
+            "wireless_band": "5 GHz",
+            "connectivity": {
+                "signal": -58,
+                "frequency": "5 GHz"
+            }
+        }
+        wireless_norm = eero_client._normalize_eero_node(node_wireless_raw)
+        runner.assert_true(wireless_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -58 dBm)", f"Beacon wireless rileva 'Wireless Mesh (5 GHz / -58 dBm)' (ottenuto: {wireless_norm['backhaul_type']})")
+        runner.assert_true(wireless_norm["signal_rssi"] == -58, "Beacon wireless signal_rssi estratto come -58")
+
         # Switch back to Live
         res = await client.post("/api/auth/mode", json={"demo": False})
         runner.assert_true(res.status_code == 200, "Ritorno a Live Mode risponde HTTP 200")

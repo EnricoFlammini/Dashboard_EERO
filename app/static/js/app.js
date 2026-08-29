@@ -226,12 +226,14 @@ document.addEventListener('alpine:init', () => {
       const bh = String(eero.backhaul_type || '').trim();
       const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
       if (isWired) {
-        if (bh.includes('2.5')) return 'Ethernet (2.5 Gbps)';
-        if (bh.includes('10')) return 'Ethernet (10 Gbps)';
-        if (bh.includes('1.0') || bh.includes('1 Gbps')) return 'Ethernet (1.0 Gbps)';
+        if (bh.includes('10 Gbps') || bh.includes('10G') || bh.includes('10000')) return 'Ethernet (10 Gbps)';
+        if (bh.includes('5.0 Gbps') || bh.includes('5 Gbps') || bh.includes('5000')) return 'Ethernet (5.0 Gbps)';
+        if (bh.includes('2.5 Gbps') || bh.includes('2.5G') || bh.includes('2500')) return 'Ethernet (2.5 Gbps)';
+        if (bh.includes('1.0 Gbps') || bh.includes('1 Gbps') || bh.includes('1Gbps') || bh.includes('1000')) return 'Ethernet (1.0 Gbps)';
+        if (bh.includes('100 Mbps') || bh.includes('100M') || bh.includes('100')) return 'Ethernet (100 Mbps)';
         return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
       }
-      if (bh && !bh.includes('5/6')) {
+      if (bh) {
         return bh;
       }
       return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5 GHz)';
