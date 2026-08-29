@@ -471,6 +471,9 @@ async def run_all_tests():
         trigger_data = trigger_res.json()
         runner.assert_true("method" in trigger_data, "Metodo di aggiornamento specificato nella risposta")
 
+        # Switch to Live mode for DB signal tracking test
+        await client.post("/api/auth/mode", json={"demo": False})
+
         # 3. Test Salvataggio Campioni Segnale RSSI su SQLite
         signal_samples = [
             {

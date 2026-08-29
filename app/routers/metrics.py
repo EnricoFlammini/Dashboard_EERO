@@ -1,10 +1,12 @@
 import logging
-from datetime import datetime
+import random
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Query
 
 from app.services.db import db_service
 from app.services.poller import background_poller
+from app.services.eero_client import eero_client
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +175,41 @@ async def get_top_bandwidth_hogs(
 async def get_signal_overview():
     """Restituisce le statistiche aggregate di copertura mesh e qualità del segnale RSSI."""
     try:
-        overview = await db_service.get_signal_overview()
+        is_demo = getattr(eero_client, "is_demo_mode", False)
+        if is_demo:
+            devs = [
+                {"mac_address": "3C:22:FB:99:88:77", "hostname": "iPhone Demo", "signal_rssi": -45, "frequency_band": "6 GHz", "channel": 69, "connected_eero_name": "Studio"},
+                {"mac_address": "E0:4F:43:AA:BB:CC", "hostname": "iPad Cucina", "signal_rssi": -55, "frequency_band": "5 GHz", "channel": 36, "connected_eero_name": "Gateway Soggiorno"},
+                {"mac_address": "70:EE:50:66:77:88", "hostname": "Sonos Salone", "signal_rssi": -58, "frequency_band": "5 GHz", "channel": 40, "connected_eero_name": "Gateway Soggiorno"},
+                {"mac_address": "18:B4:30:11:22:33", "hostname": "Termostato Soggiorno", "signal_rssi": -68, "frequency_band": "2.4 GHz", "channel": 11, "connected_eero_name": "Gateway Soggiorno"},
+                {"mac_address": "DC:A6:32:88:77:66", "hostname": "Telecamera Giardino", "signal_rssi": -78, "frequency_band": "2.4 GHz", "channel": 6, "connected_eero_name": "Camera da Letto"}
+            ]
+            total = len(devs)
+            total_rssi = sum(d["signal_rssi"] for d in devs)
+            avg_rssi = round(total_rssi / total, 1)
+            excellent = [d for d in devs if d["signal_rssi"] >= -50]
+            good = [d for d in devs if -65 <= d["signal_rssi"] < -50]
+            fair = [d for d in devs if -75 <= d["signal_rssi"] < -65]
+            weak = [d for d in devs if d["signal_rssi"] < -75]
+            return {
+                "status": "success",
+                "overview": {
+                    "total_wireless_devices": total,
+                    "average_rssi": avg_rssi,
+                    "excellent_count": len(excellent),
+                    "good_count": len(good),
+                    "fair_count": len(fair),
+                    "weak_count": len(weak),
+                    "excellent_pct": round((len(excellent) / total) * 100, 1),
+                    "good_pct": round((len(good) / total) * 100, 1),
+                    "fair_pct": round((len(fair) / total) * 100, 1),
+                    "weak_pct": round((len(weak) / total) * 100, 1),
+                    "weak_devices": weak,
+                    "devices": devs
+                }
+            }
+
+        overview = await db_service.get_signal_overview(is_demo=0)
         return {
             "status": "success",
             "overview": overview
@@ -207,7 +243,34 @@ async def get_device_signal_history(
 ):
     """Restituisce la serie temporale dei campioni RSSI per il dispositivo specificato."""
     try:
-        history = await db_service.get_device_signal_history(mac_address=mac, range_hours=hours)
+        is_demo = getattr(eero_client, "is_demo_mode", False)
+        if is_demo:
+            now = datetime.now(timezone.utc)
+            base_rssi = -45 if "3C" in mac.upper() else (-55 if "E0" in mac.upper() else (-78 if "DC" in mac.upper() else -62))
+            history = []
+            steps = min(hours * 3, 36)
+            interval_mins = max(5, int((hours * 60) / max(steps, 1)))
+            for i in range(steps, -1, -1):
+                pt_time = (now - timedelta(minutes=i * interval_mins)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                fluct = random.choice([-1, 0, 1, 0, -2, 1])
+                history.append({
+                    "timestamp": pt_time,
+                    "mac_address": mac.upper(),
+                    "hostname": "Demo Device",
+                    "signal_rssi": base_rssi + fluct,
+                    "frequency_band": "5 GHz",
+                    "channel": 36,
+                    "connected_eero_name": "Gateway Soggiorno"
+                })
+            return {
+                "status": "success",
+                "mac_address": mac.upper(),
+                "hours": hours,
+                "points_count": len(history),
+                "history": history
+            }
+
+        history = await db_service.get_device_signal_history(mac_address=mac, range_hours=hours, is_demo=0)
         return {
             "status": "success",
             "mac_address": mac.upper(),

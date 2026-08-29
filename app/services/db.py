@@ -119,11 +119,30 @@ class DBService:
                     channel INTEGER,
                     connected_eero_name TEXT,
                     rx_bitrate REAL,
-                    tx_bitrate REAL
+                    tx_bitrate REAL,
+                    is_demo INTEGER DEFAULT 0
                 );
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_time ON device_signal_history(mac_address, timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_time ON device_signal_history(timestamp);")
+            try:
+                await db.execute("ALTER TABLE device_signal_history ADD COLUMN is_demo INTEGER DEFAULT 0;")
+            except Exception:
+                pass
+
+            # Purge mock demo devices from live signal history table
+            await db.execute("""
+                DELETE FROM device_signal_history 
+                WHERE mac_address IN (
+                    '18:b4:30:11:22:33', 'e0:4f:43:aa:bb:cc', 'dc:a6:32:88:77:66',
+                    'f4:f5:db:11:22:33', 'b8:27:eb:44:55:66', '70:ee:50:66:77:88',
+                    'a4:c3:f0:12:34:56', '3c:22:fb:99:88:77', '94:b9:7e:11:22:33',
+                    'aa:bb:cc:dd:ee:01', 'aa:bb:cc:dd:ee:02'
+                ) OR hostname IN (
+                    'Termostato Soggiorno', 'iPad Cucina / Ricette', 'Telecamera Giardino', 
+                    'iPhone Personale', 'iPhone Test'
+                ) OR is_demo = 1;
+            """)
 
             # Backfill known_devices from device_metadata
             await db.execute("""
@@ -448,11 +467,11 @@ class DBService:
             await db.commit()
 
     # ----------------- DEVICE SIGNAL HISTORY (v1.04.00) -----------------
-    async def record_device_signal_samples(self, samples: List[Dict[str, Any]]) -> int:
+    async def record_device_signal_samples(self, samples: List[Dict[str, Any]], is_demo: int = 0) -> int:
         """Salva in batch i campioni di segnale RSSI dei dispositivi wireless connessi."""
         if not samples:
             return 0
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         inserted = 0
         async with self.get_connection() as db:
             for s in samples:
@@ -479,37 +498,39 @@ class DBService:
                 await db.execute(
                     """
                     INSERT INTO device_signal_history 
-                    (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (now, mac, hostname, rssi_val, freq_band, chan_val, eero_name, rx_rate, tx_rate)
+                    (now, mac, hostname, rssi_val, freq_band, chan_val, eero_name, rx_rate, tx_rate, is_demo)
                 )
                 inserted += 1
             await db.commit()
         return inserted
 
-    async def get_device_signal_history(self, mac_address: str, range_hours: int = 24) -> List[Dict[str, Any]]:
+    async def get_device_signal_history(self, mac_address: str, range_hours: int = 24, is_demo: int = 0) -> List[Dict[str, Any]]:
         """Recupera la serie temporale del segnale RSSI di uno specifico dispositivo nelle ultime N ore."""
         mac = str(mac_address).lower().strip()
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff_z = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        cutoff_space = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%d %H:%M:%S")
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 SELECT timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate
                 FROM device_signal_history
-                WHERE mac_address = ? AND timestamp >= ?
+                WHERE mac_address = ? AND (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
                 ORDER BY timestamp ASC
                 """,
-                (mac, cutoff)
+                (mac, cutoff_z, cutoff_space, is_demo)
             )
             rows = await cursor.fetchall()
             return [dict(r) for r in rows]
 
-    async def get_signal_overview(self) -> Dict[str, Any]:
+    async def get_signal_overview(self, is_demo: int = 0) -> Dict[str, Any]:
         """Calcola le statistiche aggregate di copertura mesh e qualità del segnale RSSI di tutti i dispositivi."""
         async with self.get_connection() as db:
             # Prendi l'ultimo campione per ciascun MAC nelle ultime 6 ore
-            cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
+            cutoff_z = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            cutoff_space = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
             cursor = await db.execute(
                 """
                 SELECT h.mac_address, h.hostname, h.signal_rssi, h.frequency_band, h.channel, h.connected_eero_name, h.timestamp
@@ -517,12 +538,13 @@ class DBService:
                 INNER JOIN (
                     SELECT mac_address, MAX(timestamp) AS max_time
                     FROM device_signal_history
-                    WHERE timestamp >= ?
+                    WHERE (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
                     GROUP BY mac_address
                 ) latest ON h.mac_address = latest.mac_address AND h.timestamp = latest.max_time
-                ORDER BY h.signal_rssi ASC
+                WHERE h.is_demo = ?
+                ORDER BY h.hostname COLLATE NOCASE ASC
                 """,
-                (cutoff,)
+                (cutoff_z, cutoff_space, is_demo, is_demo)
             )
             rows = await cursor.fetchall()
             devices = [dict(r) for r in rows]

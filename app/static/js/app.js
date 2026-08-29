@@ -1772,6 +1772,24 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    formatLocalDateTime(isoStr, includeDate = false) {
+      if (!isoStr) return '--';
+      let clean = String(isoStr).trim();
+      if (clean && !clean.endsWith('Z') && !clean.includes('+')) {
+        clean = clean.replace(' ', 'T') + 'Z';
+      }
+      try {
+        const d = new Date(clean);
+        if (isNaN(d.getTime())) return isoStr;
+        if (includeDate) {
+          return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return isoStr;
+      }
+    },
+
     renderSignalChart(history) {
       const canvas = document.getElementById('deviceSignalChart');
       if (!canvas) return;
@@ -1786,10 +1804,7 @@ document.addEventListener('alpine:init', () => {
         canvas.height = p.clientHeight || 260;
       }
 
-      const labels = (history || []).map(pt => {
-        const d = new Date(pt.timestamp);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      });
+      const labels = (history || []).map(pt => this.formatLocalDateTime(pt.timestamp, false));
       const rssiValues = (history || []).map(pt => pt.signal_rssi);
 
       const ctx = canvas.getContext('2d');
@@ -1834,7 +1849,12 @@ document.addEventListener('alpine:init', () => {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: (ctx) => `Segnale: ${ctx.parsed.y} dBm`
+                title: (items) => {
+                  if (!items || items.length === 0) return '';
+                  const pt = (history || [])[items[0].dataIndex];
+                  return pt ? this.formatLocalDateTime(pt.timestamp, true) : '';
+                },
+                label: (ctx) => ` Segnale RSSI: ${ctx.parsed.y} dBm`
               }
             }
           }

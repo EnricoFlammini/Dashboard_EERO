@@ -880,12 +880,12 @@
             <span 
               class="inline-block px-2 py-0.5 rounded text-[10px] font-bold text-center"
               :class="{
-                'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': signalOverview.average_rssi >= -60,
-                'bg-sky-500/20 text-sky-400 border border-sky-500/30': signalOverview.average_rssi < -60 && signalOverview.average_rssi >= -70,
-                'bg-amber-500/20 text-amber-400 border border-amber-500/30': signalOverview.average_rssi < -70 && signalOverview.average_rssi >= -75,
+                'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': signalOverview.average_rssi >= -50,
+                'bg-sky-500/20 text-sky-400 border border-sky-500/30': signalOverview.average_rssi < -50 && signalOverview.average_rssi >= -65,
+                'bg-amber-500/20 text-amber-400 border border-amber-500/30': signalOverview.average_rssi < -65 && signalOverview.average_rssi >= -75,
                 'bg-rose-500/20 text-rose-400 border border-rose-500/30': signalOverview.average_rssi < -75
               }"
-              x-text="signalOverview.average_rssi >= -60 ? t('speedtest.signal_excellent') : (signalOverview.average_rssi >= -70 ? t('speedtest.signal_good') : (signalOverview.average_rssi >= -75 ? t('speedtest.signal_fair') : t('speedtest.signal_weak')))">
+              x-text="signalOverview.average_rssi >= -50 ? t('speedtest.signal_excellent') : (signalOverview.average_rssi >= -65 ? t('speedtest.signal_good') : (signalOverview.average_rssi >= -75 ? t('speedtest.signal_fair') : t('speedtest.signal_weak')))">
             </span>
           </div>
 
