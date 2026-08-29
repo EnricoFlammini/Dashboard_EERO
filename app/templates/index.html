@@ -681,14 +681,24 @@
 
                   <!-- Signal & PHY Link Speed (Real Eero API data) -->
                   <td class="py-3 px-4 font-mono text-xs">
-                    <template x-if="dev.signal_rssi">
-                      <div class="text-slate-300 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
+                    <template x-if="dev.wireless">
+                      <div>
+                        <template x-if="dev.signal_rssi">
+                          <div class="text-slate-200 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
+                        </template>
+                        <template x-if="dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)">
+                          <div class="text-[10px] text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
+                        </template>
+                        <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
+                          <div class="text-[10px] text-slate-400" x-text="dev.connected ? 'Wi-Fi' : 'Offline'"></div>
+                        </template>
+                      </div>
                     </template>
-                    <template x-if="dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)">
-                      <div class="text-[10px] text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
-                    </template>
-                    <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
-                      <div class="text-[10px] text-slate-400" x-text="dev.wireless ? 'Wi-Fi' : (dev.ethernet_speed || 'Ethernet')"></div>
+                    <template x-if="!dev.wireless">
+                      <div>
+                        <div class="text-emerald-400 font-semibold" x-text="dev.ethernet_speed || '1.0 Gbps'"></div>
+                        <div class="text-[10px] text-slate-500">Ethernet</div>
+                      </div>
                     </template>
                   </td>
 
@@ -1203,7 +1213,7 @@
             </div>
             <div>
               <span class="text-slate-500 block text-[11px]" x-text="t('devices.col_signal')"></span>
-              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed || 'Ethernet')) : '---'"></span>
+              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : ((selectedDevice.ethernet_speed || '1.0 Gbps') + ' • Ethernet')) : '---'"></span>
             </div>
           </div>
 
