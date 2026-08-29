@@ -286,6 +286,42 @@ async def run_all_tests():
         runner.assert_true(wireless_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -58 dBm)", f"Beacon wireless con dict signal rileva 'Wireless Mesh (5 GHz / -58 dBm)' (ottenuto: {wireless_norm['backhaul_type']})")
         runner.assert_true(wireless_norm["signal_rssi"] == -58, f"Beacon wireless signal_rssi estratto come -58 (ottenuto: {wireless_norm['signal_rssi']})")
 
+        # Test 7: Dispositivo Wi-Fi 6 GHz (Steve iPhone 17 da Issue #14: frequency=6295, channel=69, phy_type=EHT)
+        iphone17_raw = {
+            "id": "dev_iphone17",
+            "hostname": "Steve iPhone 17",
+            "connected": True,
+            "connectivity": {
+                "connected": True,
+                "frequency": 6295,
+                "channel": 69,
+                "phy_type": "EHT",
+                "channel_width": "WIDTH_160MHz"
+            }
+        }
+        iphone17_norm = eero_client._normalize_device(iphone17_raw)
+        runner.assert_true(iphone17_norm["frequency_band"] == "6 GHz", f"iPhone 17 frequency 6295 rileva '6 GHz' (ottenuto: {iphone17_norm['frequency_band']})")
+        runner.assert_true(iphone17_norm["wireless_band"] == "6GHz", f"iPhone 17 wireless_band è '6GHz' (ottenuto: {iphone17_norm['wireless_band']})")
+        runner.assert_true(iphone17_norm["channel"] == 69, f"iPhone 17 channel estratto come 69 (ottenuto: {iphone17_norm['channel']})")
+
+        # Test 8: Dispositivo Wi-Fi 7 6 GHz 320MHz (Steve PC wifi da Issue #14)
+        steve_pc_raw = {
+            "id": "dev_steve_pc",
+            "hostname": "Steve PC wifi",
+            "connected": True,
+            "connectivity": {
+                "connected": True,
+                "frequency": 6295,
+                "channel": 69,
+                "phy_type": "EHT",
+                "channel_width": "WIDTH_320MHz",
+                "rx_bitrate": 2882.6
+            }
+        }
+        steve_pc_norm = eero_client._normalize_device(steve_pc_raw)
+        runner.assert_true(steve_pc_norm["frequency_band"] == "6 GHz", f"Steve PC wifi rileva '6 GHz' (ottenuto: {steve_pc_norm['frequency_band']})")
+        runner.assert_true(steve_pc_norm["wireless_band"] == "6GHz", f"Steve PC wifi wireless_band è '6GHz' (ottenuto: {steve_pc_norm['wireless_band']})")
+
         print("\n🏷️ [8/8] TEST MAPPING CATEGORIE NATIVE EERO, TAG ADGUARD E SALVATAGGIO METADATI (Issue #13)")
         from app.services.eero_client import map_eero_device_type, get_adguard_tags
 

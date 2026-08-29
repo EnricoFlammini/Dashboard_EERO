@@ -227,11 +227,12 @@ document.addEventListener('alpine:init', () => {
       const bh = String(eero.backhaul_type || '').trim();
       const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
       if (isWired) {
-        if (bh.includes('10 Gbps') || bh.includes('10G') || bh.includes('10000')) return 'Ethernet (10 Gbps)';
-        if (bh.includes('5.0 Gbps') || bh.includes('5 Gbps') || bh.includes('5000')) return 'Ethernet (5.0 Gbps)';
-        if (bh.includes('2.5 Gbps') || bh.includes('2.5G') || bh.includes('2500')) return 'Ethernet (2.5 Gbps)';
-        if (bh.includes('1.0 Gbps') || bh.includes('1 Gbps') || bh.includes('1Gbps') || bh.includes('1000')) return 'Ethernet (1.0 Gbps)';
-        if (bh.includes('100 Mbps') || bh.includes('100M') || bh.includes('100')) return 'Ethernet (100 Mbps)';
+        if (/\b10\s*Gbps\b/i.test(bh) || bh.includes('10000')) return 'Ethernet (10 Gbps)';
+        if (/\b2\.5\s*Gbps\b/i.test(bh) || bh.includes('2500') || bh.includes('2.5G')) return 'Ethernet (2.5 Gbps)';
+        if (/\b5(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('5000') || bh.includes('5.0G')) return 'Ethernet (5.0 Gbps)';
+        if (/\b1(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('1000') || bh.includes('1Gbps')) return 'Ethernet (1.0 Gbps)';
+        if (/\b100\s*Mbps\b/i.test(bh) || bh.includes('100M')) return 'Ethernet (100 Mbps)';
+        if (bh.includes('(') && bh.includes(')')) return bh;
         return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
       }
       if (bh) {
@@ -853,12 +854,16 @@ document.addEventListener('alpine:init', () => {
           if (this.selectedBandFilter === 'wired') {
             if (d.connection_type !== 'wired' && d.wireless && d.frequency_band !== 'Cablato') return false;
           } else {
-            const b = this.selectedBandFilter;
-            const match = (d.wireless_band === b) ||
-                          (d.frequency_band && d.frequency_band.replace(' ', '') === b) ||
-                          (b === '6GHz' && (d.frequency_band === '6 GHz' || d.wireless_band === '6GHz')) ||
-                          (b === '5GHz' && (d.frequency_band === '5 GHz' || d.wireless_band === '5GHz' || (d.channel >= 32 && d.channel <= 177))) ||
-                          (b === '2.4GHz' && (d.frequency_band === '2.4 GHz' || d.wireless_band === '2.4GHz' || (d.channel >= 1 && d.channel <= 14)));
+            const is6G = Boolean(d.wireless_band === '6GHz' || d.frequency_band === '6 GHz' || d.frequency_band === '6GHz' || (d.channel > 177));
+            const is24G = Boolean(d.wireless_band === '2.4GHz' || d.frequency_band === '2.4 GHz' || d.frequency_band === '2.4GHz' || (d.channel >= 1 && d.channel <= 14 && !is6G));
+            const is5G = Boolean(!is6G && !is24G && (d.wireless_band === '5GHz' || d.frequency_band === '5 GHz' || d.frequency_band === '5GHz' || (d.channel >= 32 && d.channel <= 177)));
+            
+            let match = false;
+            if (b === '6GHz') match = is6G;
+            else if (b === '5GHz') match = is5G;
+            else if (b === '2.4GHz') match = is24G;
+            else match = (d.wireless_band === b) || (d.frequency_band && d.frequency_band.replace(' ', '') === b);
+            
             if (!match) return false;
           }
         }
