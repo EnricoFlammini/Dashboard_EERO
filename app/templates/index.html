@@ -666,12 +666,12 @@
                       <span 
                         class="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
                         :class="{
-                          'bg-sky-500/20 text-sky-400 border border-sky-500/30': dev.wireless_band === '6GHz' || dev.frequency_band === '6 GHz',
-                          'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30': dev.wireless_band === '5GHz' || dev.frequency_band === '5 GHz' || (dev.channel && dev.channel >= 32),
-                          'bg-amber-500/20 text-amber-400 border border-amber-500/30': dev.wireless_band === '2.4GHz' || dev.frequency_band === '2.4 GHz' || (dev.channel && dev.channel >= 1 && dev.channel <= 14),
-                          'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': dev.connection_type === 'wired' || !dev.wireless || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired'
+                          'bg-sky-500/20 text-sky-400 border border-sky-500/30': (dev.wireless_band === '6GHz' || dev.frequency_band === '6 GHz' || dev.frequency_band === '6GHz'),
+                          'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30': (dev.wireless_band === '5GHz' || dev.frequency_band === '5 GHz' || dev.frequency_band === '5GHz' || (dev.channel && dev.channel >= 32)),
+                          'bg-amber-500/20 text-amber-400 border border-amber-500/30': (dev.wireless_band === '2.4GHz' || dev.frequency_band === '2.4 GHz' || dev.frequency_band === '2.4GHz' || (dev.channel && dev.channel >= 1 && dev.channel <= 14)),
+                          'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': (dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired')
                         }"
-                        x-text="(dev.connection_type === 'wired' || !dev.wireless || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? 'Ethernet' : (dev.frequency_band && dev.frequency_band !== 'Cablato' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : '5 GHz')))">
+                        x-text="(dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? 'Ethernet' : (dev.frequency_band && dev.frequency_band !== 'Cablato' && dev.frequency_band !== 'Ethernet' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : '5 GHz')))">
                       </span>
                       <template x-if="dev.channel">
                         <span class="text-[10px] font-mono text-slate-400">CH <span x-text="dev.channel"></span></span>
