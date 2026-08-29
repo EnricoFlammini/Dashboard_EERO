@@ -185,30 +185,23 @@ async def update_night_mode_settings(payload: NightModeSettingsRequest):
 @router.get("/notifications")
 async def get_notification_settings():
     """Restituisce la configurazione dei canali di allarme (Telegram & Webhook)."""
-    settings_dict = await db_service.get_all_settings()
+    settings_dict = await notification_service.get_settings()
     return {
         "status": "success",
-        "telegram_enabled": settings_dict.get("telegram_alerts_enabled", "false").lower() == "true",
-        "telegram_bot_token": settings_dict.get("telegram_bot_token", ""),
-        "telegram_chat_id": settings_dict.get("telegram_chat_id", ""),
-        "webhook_enabled": settings_dict.get("webhook_alerts_enabled", "false").lower() == "true",
-        "webhook_url": settings_dict.get("webhook_url", ""),
+        **settings_dict
     }
 
 
 @router.post("/notifications")
 async def update_notification_settings(payload: NotificationSettingsRequest):
     """Salva le credenziali e i toggle per Telegram e Webhook."""
-    await db_service.set_setting("telegram_alerts_enabled", "true" if payload.telegram_enabled else "false")
-    if payload.telegram_bot_token is not None:
-        await db_service.set_setting("telegram_bot_token", payload.telegram_bot_token.strip())
-    if payload.telegram_chat_id is not None:
-        await db_service.set_setting("telegram_chat_id", payload.telegram_chat_id.strip())
-
-    await db_service.set_setting("webhook_alerts_enabled", "true" if payload.webhook_enabled else "false")
-    if payload.webhook_url is not None:
-        await db_service.set_setting("webhook_url", payload.webhook_url.strip())
-
+    await notification_service.save_settings(
+        telegram_enabled=payload.telegram_enabled,
+        telegram_bot_token=payload.telegram_bot_token,
+        telegram_chat_id=payload.telegram_chat_id,
+        webhook_enabled=payload.webhook_enabled,
+        webhook_url=payload.webhook_url
+    )
     return {"status": "success", "message": "Impostazioni di notifica salvate."}
 
 

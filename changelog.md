@@ -14,6 +14,9 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Risolto il bug per cui i dispositivi su nodi beacon potevano risultare tutti associati al Gateway in presenza di payload cloud privi del campo `location`.
 * **✨ Switch Istantaneo Modalità Demo / Rete Live (senza perdita di Token):**
   * Aggiunto pulsante interattivo nella barra superiore per passare istantaneamente alla **Modalità Demo** a scopo di test/anteprima e ritornare alla **Rete Live** preservando sempre il token di sessione autenticato senza dover reinserire l'OTP.
+* **🛡️ Isolamento e Dati Fittizi per AdGuard e Telegram in Ambiente Demo:**
+  * Configurate credenziali e dati fittizi completi (URL `http://192.168.1.50:80`, utente `demo_admin`, token Telegram e webhook demo) per l'ambiente Demo.
+  * Inibito l'invio di chiamate di rete reali e notifiche verso server AdGuard o canali Telegram quando la modalità Demo è attiva, prevenendo la trasmissione accidentale di dati simulati.
 * **🌡️ Armonizzazione Stato Termico Nodi:**
   * Ottimizzato il rendering dello stato termico e operativo dei nodi mesh, riflettendo accuratamente lo stato di salute reale fornito dalle API ufficiali eero (`thermal_status`: Normale / Nominale).
 * **⚡ Velocità Negoziata Ethernet Dispositivi & Backhaul Mesh:**

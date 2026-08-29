@@ -25,8 +25,32 @@ def normalize_adguard_url(url: str) -> str:
 class AdGuardService:
     """Service to handle communication and client synchronization with AdGuard Home."""
 
+    def __init__(self):
+        self._demo_settings: Dict[str, Any] = {
+            "enabled": True,
+            "url": "http://192.168.1.50:80",
+            "username": "demo_admin",
+            "password": "demo_password",
+            "has_password": True,
+            "last_sync_time": "2026-08-29T10:00:00Z",
+            "last_sync_count": 18,
+            "last_sync_status": "Completato: 18 sincronizzati (18 aggiunti, 0 aggiornati) [Simulazione Demo]",
+        }
+
     async def get_settings(self) -> Dict[str, Any]:
-        """Recupera le impostazioni correnti di AdGuard Home salvate nel database."""
+        """Recupera le impostazioni correnti di AdGuard Home salvate nel database o fittizie in ambiente demo."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            return {
+                "enabled": bool(self._demo_settings.get("enabled", True)),
+                "url": self._demo_settings.get("url", "http://192.168.1.50:80"),
+                "username": self._demo_settings.get("username", "demo_admin"),
+                "has_password": bool(self._demo_settings.get("has_password", True)),
+                "last_sync_time": self._demo_settings.get("last_sync_time", "2026-08-29T10:00:00Z"),
+                "last_sync_count": int(self._demo_settings.get("last_sync_count", 18)),
+                "last_sync_status": self._demo_settings.get("last_sync_status", "Completato: 18 sincronizzati (18 aggiunti, 0 aggiornati) [Simulazione Demo]"),
+            }
+
         all_s = await db_service.get_all_settings()
         return {
             "enabled": all_s.get("adguard_sync_enabled", "false").lower() == "true",
@@ -45,8 +69,19 @@ class AdGuardService:
         username: Optional[str] = None,
         password: Optional[str] = None
     ) -> None:
-        """Salva le impostazioni di AdGuard Home nel database SQLite."""
+        """Salva le impostazioni di AdGuard Home nel database SQLite (o in memoria in Demo Mode)."""
         clean_url = normalize_adguard_url(url)
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            self._demo_settings["enabled"] = enabled
+            self._demo_settings["url"] = clean_url
+            if username is not None:
+                self._demo_settings["username"] = username.strip()
+            if password is not None and password != "":
+                self._demo_settings["password"] = password.strip()
+                self._demo_settings["has_password"] = True
+            return
+
         await db_service.set_setting("adguard_sync_enabled", "true" if enabled else "false")
         await db_service.set_setting("adguard_url", clean_url)
         if username is not None:
@@ -61,6 +96,17 @@ class AdGuardService:
         password: Optional[str] = None
     ) -> Dict[str, Any]:
         """Testa la connessione e l'autenticazione verso un'istanza AdGuard Home."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            target_url = normalize_adguard_url(url if url is not None and url.strip() != "" else self._demo_settings.get("url", "http://192.168.1.50:80"))
+            return {
+                "success": True,
+                "status_code": 200,
+                "normalized_url": target_url,
+                "message": "Connessione riuscita! (Ambiente Demo Simulato - 18 client rilevati su AdGuard Home)",
+                "existing_clients_count": 18,
+            }
+
         settings = await self.get_settings()
         raw_url = url if url is not None and url.strip() != "" else settings.get("url", "")
         target_url = normalize_adguard_url(raw_url)
@@ -124,6 +170,27 @@ class AdGuardService:
         password: Optional[str] = None
     ) -> Dict[str, Any]:
         """Sincronizza l'elenco dei dispositivi verso AdGuard Home (/control/clients)."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            total_count = len(devices)
+            now_iso = datetime.now(timezone.utc).isoformat()
+            status_text = f"Completato: {total_count} sincronizzati ({total_count} aggiunti, 0 aggiornati) [Simulazione Demo]"
+            self._demo_settings["last_sync_time"] = now_iso
+            self._demo_settings["last_sync_count"] = total_count
+            self._demo_settings["last_sync_status"] = status_text
+            if url:
+                self._demo_settings["url"] = normalize_adguard_url(url)
+            if username:
+                self._demo_settings["username"] = username.strip()
+            return {
+                "success": True,
+                "total_synced": total_count,
+                "added_count": total_count,
+                "updated_count": 0,
+                "failed_count": 0,
+                "message": status_text,
+                "last_sync_time": now_iso,
+            }
         settings = await self.get_settings()
         raw_url = url if url is not None and url.strip() != "" else settings.get("url", "")
         target_url = normalize_adguard_url(raw_url)
@@ -360,6 +427,12 @@ class AdGuardService:
     async def auto_sync_if_enabled(self, devices: List[Dict[str, Any]]) -> None:
         """Esegue la sincronizzazione silenziosa se il toggle adguard_sync_enabled è attivo."""
         try:
+            from app.services.eero_client import eero_client
+            if eero_client.is_demo_mode:
+                if self._demo_settings.get("enabled"):
+                    await self.sync_devices(devices)
+                return
+
             settings = await self.get_settings()
             if not settings.get("enabled"):
                 return

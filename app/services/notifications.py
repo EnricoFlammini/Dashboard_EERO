@@ -10,7 +10,69 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     """Dispatches event alerts and reports via Telegram Bot and custom Webhook."""
 
+    def __init__(self):
+        self._demo_settings: Dict[str, Any] = {
+            "telegram_enabled": True,
+            "telegram_bot_token": "123456789:AAFakeDemoTelegramBotToken_Example",
+            "telegram_chat_id": "-1001234567890",
+            "webhook_enabled": True,
+            "webhook_url": "https://demo-webhook.lan/events",
+        }
+
+    async def get_settings(self) -> Dict[str, Any]:
+        """Recupera le impostazioni correnti di notifica salvate nel database o fittizie in ambiente demo."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            return dict(self._demo_settings)
+
+        all_s = await db_service.get_all_settings()
+        return {
+            "telegram_enabled": all_s.get("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false").lower() == "true",
+            "telegram_bot_token": all_s.get("telegram_bot_token", settings.telegram_bot_token),
+            "telegram_chat_id": all_s.get("telegram_chat_id", settings.telegram_chat_id),
+            "webhook_enabled": all_s.get("webhook_alerts_enabled", "true" if settings.webhook_url else "false").lower() == "true",
+            "webhook_url": all_s.get("webhook_url", settings.webhook_url),
+        }
+
+    async def save_settings(
+        self,
+        telegram_enabled: bool,
+        telegram_bot_token: Optional[str] = None,
+        telegram_chat_id: Optional[str] = None,
+        webhook_enabled: bool = False,
+        webhook_url: Optional[str] = None
+    ) -> None:
+        """Salva le impostazioni di notifica (in memoria in Demo Mode, su SQLite in Live Mode)."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            self._demo_settings["telegram_enabled"] = telegram_enabled
+            if telegram_bot_token is not None:
+                self._demo_settings["telegram_bot_token"] = telegram_bot_token.strip()
+            if telegram_chat_id is not None:
+                self._demo_settings["telegram_chat_id"] = telegram_chat_id.strip()
+            self._demo_settings["webhook_enabled"] = webhook_enabled
+            if webhook_url is not None:
+                self._demo_settings["webhook_url"] = webhook_url.strip()
+            return
+
+        await db_service.set_setting("telegram_alerts_enabled", "true" if telegram_enabled else "false")
+        if telegram_bot_token is not None:
+            await db_service.set_setting("telegram_bot_token", telegram_bot_token.strip())
+        if telegram_chat_id is not None:
+            await db_service.set_setting("telegram_chat_id", telegram_chat_id.strip())
+        await db_service.set_setting("webhook_alerts_enabled", "true" if webhook_enabled else "false")
+        if webhook_url is not None:
+            await db_service.set_setting("webhook_url", webhook_url.strip())
+
     async def send_telegram_message(self, message: str, ignore_enabled: bool = False) -> bool:
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            if not ignore_enabled and not self._demo_settings.get("telegram_enabled", True):
+                logger.debug("[Demo Mode] Notifiche Telegram disabilitate nelle impostazioni demo.")
+                return False
+            logger.info(f"[Demo Mode] Simulazione invio notifica Telegram riuscita (messaggio: {message[:80]}...)")
+            return True
+
         if not ignore_enabled:
             enabled = await db_service.get_setting("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false")
             if enabled.lower() != "true":
@@ -45,6 +107,14 @@ class NotificationService:
             return False
 
     async def send_webhook(self, event_type: str, data: Dict[str, Any]) -> bool:
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            if not self._demo_settings.get("webhook_enabled", True):
+                logger.debug(f"[Demo Mode] Webhook disabilitato nelle impostazioni demo ({event_type}).")
+                return False
+            logger.info(f"[Demo Mode] Simulazione invio notifica Webhook riuscita (evento: {event_type})")
+            return True
+
         webhook_url = await db_service.get_setting("webhook_url", settings.webhook_url)
         if not webhook_url:
             return False
