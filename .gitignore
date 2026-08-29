@@ -66,4 +66,7 @@ logs/
 
 # Local Planning & Notes
 ROADMAP.md
+GIT_WORKFLOW.md
+BRANCHING_STRATEGY.md
+LOCAL_*.md
 *.docx
