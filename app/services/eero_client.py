@@ -730,7 +730,7 @@ class EeroClient:
                             eth_speed_str = str(s).strip()
                             break
 
-            dev["ethernet_speed"] = eth_speed_str if eth_speed_str else ("1.0 Gbps" if is_wired else "")
+            dev["ethernet_speed"] = eth_speed_str if eth_speed_str else ""
 
             # Wireless PHY Link Rate extraction (Point 6)
             phy_rate = dev.get("rx_bitrate") or dev.get("tx_bitrate") or dev.get("bitrate") or conn_dict.get("rx_bitrate") or conn_dict.get("tx_bitrate") or conn_dict.get("bitrate") or conn_dict.get("rate") or iface_dict.get("bitrate")

@@ -696,8 +696,8 @@
                     </template>
                     <template x-if="!dev.wireless">
                       <div>
-                        <div class="text-emerald-400 font-semibold" x-text="dev.ethernet_speed || '1.0 Gbps'"></div>
-                        <div class="text-[10px] text-slate-500">Ethernet</div>
+                        <div class="text-emerald-400 font-semibold" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired') || 'Ethernet'"></div>
+                        <div class="text-[10px] text-slate-500" x-show="dev.ethernet_speed" x-text="t('dashboard.backhaul_wired') || 'Ethernet'"></div>
                       </div>
                     </template>
                   </td>
@@ -1213,7 +1213,7 @@
             </div>
             <div>
               <span class="text-slate-500 block text-[11px]" x-text="t('devices.col_signal')"></span>
-              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : ((selectedDevice.ethernet_speed || '1.0 Gbps') + ' • Ethernet')) : '---'"></span>
+              <span class="font-mono text-slate-200 font-medium" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed ? selectedDevice.ethernet_speed + ' • Ethernet' : 'Ethernet')) : '---'"></span>
             </div>
           </div>
 
