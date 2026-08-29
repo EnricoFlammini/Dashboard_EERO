@@ -4,6 +4,29 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.04.00] - 2026-08-29
+
+### 🔄 1-Click Docker Auto-Update & Version Checker
+* **🔄 Motore di Auto-Update Docker in-App:**
+  * Controllo automatico periodico e manuale di nuove release su Docker Hub (`/v2/repositories/enricoflammini/eero-dashboard/tags`) e GitHub Releases (`/releases/latest`).
+  * Badge animato di notifica nell'header per aggiornamenti disponibili.
+  * Modale interattivo con visualizzazione changelog e supporto a 3 modalità di installazione:
+    1. **Docker Socket (`/var/run/docker.sock`)**: Pull dell'immagine `latest` e ricreazione del container automatica in 1 clic.
+    2. **Watchtower Webhook**: Invio del trigger di aggiornamento all'istanza Watchtower configurata.
+    3. **Modalità Assistita / CLI**: Visualizzazione e copia a un clic del comando `docker compose pull && docker compose up -d`.
+  * Overlay con barra di avanzamento del download e polling di riconnessione automatica (`/api/health`) al riavvio del container.
+
+### 📶 Storicizzazione Segnale RSSI & Sezione Qualità Wi-Fi
+* **📶 Storicizzazione Continua Segnale su Database SQLite (`device_signal_history`):**
+  * Campionamento continuo nel poller dei valori RSSI (dBm), canali, frequenze e bitrate di tutti i dispositivi wireless attivi.
+  * Retention automatica a 14 giorni per garantire elevate prestazioni e dimensioni contenute del database.
+* **📊 Sezione Qualità Wi-Fi & Copertura Mesh (Tab Speed Test):**
+  * KPI con Segnale Medio RSSI dell'intera abitazione e distribuzione percentuale per fasce di qualità: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico/Debole* (< -75 dBm).
+  * Grafico temporale interattivo (Chart.js) con selettore dispositivo e zoom su 24h o 7 giorni.
+  * Tabella *Weak Signal Watchlist* con elenco dei dispositivi a segnale critico e suggerimenti di riposizionamento mesh.
+
+---
+
 ## [1.03.02] - 2026-08-29
 
 ### ⚡ Fix Formattazione Velocità Backhaul & Rilevamento Frequenze Wi-Fi 6 GHz (#14)

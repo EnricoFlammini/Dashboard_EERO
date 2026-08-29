@@ -319,6 +319,14 @@ class BackgroundPoller:
                 ]
                 node["connected_clients_count"] = len(matched_clients)
 
+            # 3.5 Campionamento continuo Segnale RSSI dispositivi wireless (v1.04.00)
+            wireless_samples = [
+                d for d in enriched_devices
+                if d.get("connected") and d.get("wireless") and d.get("signal_rssi") is not None
+            ]
+            if wireless_samples:
+                asyncio.create_task(db_service.record_device_signal_samples(wireless_samples))
+
             # Rilevamento nodi eero offline
             for node in eeros:
                 node_id = str(node.get("id") or node.get("serial"))

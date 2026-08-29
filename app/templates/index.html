@@ -81,9 +81,21 @@
               @click="openChangelogModal()" 
               class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 hover:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer" 
               :title="t('header.changelog_title') + ' v' + appVersion">
-              <span x-text="'v' + appVersion">v1.03.02</span>
+              <span x-text="'v' + appVersion">v1.04.00</span>
               <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
+
+            <!-- Auto-Update Notification Badge (v1.04.00) -->
+            <template x-if="updateInfo && updateInfo.update_available">
+              <button 
+                @click="openUpdateModal()" 
+                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-amber-500/10" 
+                :title="t('header.update_btn_title')">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span x-text="'v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
+                <svg class="w-3 h-3 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              </button>
+            </template>
 
             <!-- About & Dedication Button -->
             <button 
@@ -833,6 +845,201 @@
           <div class="text-[11px] text-slate-500 text-center" x-text="t('speedtest.schedule_info')"></div>
         </div>
 
+      <!-- =================================================================== -->
+      <!-- WI-FI SIGNAL QUALITY & MESH COVERAGE (v1.04.00) -->
+      <!-- =================================================================== -->
+      <div class="space-y-6 pt-4 border-t border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span>📶</span>
+              <span x-text="t('speedtest.signal_section_title')"></span>
+            </h3>
+            <p class="text-xs text-slate-400" x-text="t('speedtest.signal_section_subtitle')"></p>
+          </div>
+          <button 
+            @click="loadSignalOverview()" 
+            class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center space-x-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span x-text="t('header.refresh')"></span>
+          </button>
+        </div>
+
+        <!-- KPI & Distribution Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Average RSSI -->
+          <div class="glass-panel rounded-2xl p-5 border border-sky-500/20 flex flex-col justify-between">
+            <span class="text-slate-400 text-xs font-medium" x-text="t('speedtest.signal_avg_kpi')"></span>
+            <div class="flex items-baseline space-x-2 my-2">
+              <span class="text-2xl font-bold font-mono text-white" x-text="signalOverview.average_rssi ? signalOverview.average_rssi + ' dBm' : '---'"></span>
+            </div>
+            <span 
+              class="inline-block px-2 py-0.5 rounded text-[10px] font-bold text-center"
+              :class="{
+                'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30': signalOverview.average_rssi >= -60,
+                'bg-sky-500/20 text-sky-400 border border-sky-500/30': signalOverview.average_rssi < -60 && signalOverview.average_rssi >= -70,
+                'bg-amber-500/20 text-amber-400 border border-amber-500/30': signalOverview.average_rssi < -70 && signalOverview.average_rssi >= -75,
+                'bg-rose-500/20 text-rose-400 border border-rose-500/30': signalOverview.average_rssi < -75
+              }"
+              x-text="signalOverview.average_rssi >= -60 ? t('speedtest.signal_excellent') : (signalOverview.average_rssi >= -70 ? t('speedtest.signal_good') : (signalOverview.average_rssi >= -75 ? t('speedtest.signal_fair') : t('speedtest.signal_weak')))">
+            </span>
+          </div>
+
+          <!-- Excellent -->
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="text-emerald-400 font-semibold flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span x-text="t('speedtest.signal_excellent')"></span>
+              </span>
+              <span class="text-slate-400 font-mono" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
+            </div>
+            <div class="text-[10px] text-slate-500 mb-2">≥ -50 dBm</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-emerald-500 h-1.5 rounded-full" :style="`width: ${signalOverview.excellent_pct}%`"></div>
+            </div>
+          </div>
+
+          <!-- Good -->
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="text-sky-400 font-semibold flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span x-text="t('speedtest.signal_good')"></span>
+              </span>
+              <span class="text-slate-400 font-mono" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
+            </div>
+            <div class="text-[10px] text-slate-500 mb-2">-51 a -65 dBm</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-sky-500 h-1.5 rounded-full" :style="`width: ${signalOverview.good_pct}%`"></div>
+            </div>
+          </div>
+
+          <!-- Fair -->
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="text-amber-400 font-semibold flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span x-text="t('speedtest.signal_fair')"></span>
+              </span>
+              <span class="text-slate-400 font-mono" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
+            </div>
+            <div class="text-[10px] text-slate-500 mb-2">-66 a -75 dBm</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-amber-500 h-1.5 rounded-full" :style="`width: ${signalOverview.fair_pct}%`"></div>
+            </div>
+          </div>
+
+          <!-- Weak / Critical -->
+          <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="text-rose-400 font-semibold flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                <span x-text="t('speedtest.signal_weak')"></span>
+              </span>
+              <span class="text-slate-400 font-mono" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
+            </div>
+            <div class="text-[10px] text-slate-500 mb-2">&lt; -75 dBm</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-rose-500 h-1.5 rounded-full" :style="`width: ${signalOverview.weak_pct}%`"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Signal Chart by Device -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h4 class="text-base font-bold text-white" x-text="t('speedtest.signal_chart_title')"></h4>
+              <p class="text-xs text-slate-400">Analisi temporale della potenza del segnale per singolo apparato Wi-Fi</p>
+            </div>
+
+            <!-- Controls: Device selector & Time range -->
+            <div class="flex flex-wrap items-center gap-2">
+              <select 
+                x-model="selectedSignalDeviceMac" 
+                @change="loadDeviceSignalHistory()"
+                class="glass-input px-3 py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                <template x-for="d in (signalOverview.devices || [])" :key="d.mac_address">
+                  <option :value="d.mac_address" x-text="(d.hostname || d.mac_address) + ' (' + (d.signal_rssi ? d.signal_rssi + ' dBm' : '') + ')'"></option>
+                </template>
+              </select>
+
+              <div class="flex rounded-xl bg-slate-900/80 p-0.5 border border-slate-800 text-xs">
+                <button 
+                  @click="signalHistoryHours = 24; loadDeviceSignalHistory()" 
+                  :class="signalHistoryHours === 24 ? 'bg-sky-500/20 text-sky-400 font-bold' : 'text-slate-400 hover:text-slate-200'"
+                  class="px-2.5 py-1 rounded-lg transition" x-text="t('speedtest.time_range_24h')">
+                </button>
+                <button 
+                  @click="signalHistoryHours = 168; loadDeviceSignalHistory()" 
+                  :class="signalHistoryHours === 168 ? 'bg-sky-500/20 text-sky-400 font-bold' : 'text-slate-400 hover:text-slate-200'"
+                  class="px-2.5 py-1 rounded-lg transition" x-text="t('speedtest.time_range_7d')">
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="position: relative; height: 260px; width: 100%; min-height: 260px;">
+            <canvas id="deviceSignalChart" style="width: 100%; height: 100%; display: block;"></canvas>
+          </div>
+        </div>
+
+        <!-- Weak Signal Watchlist Table -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4">
+          <div>
+            <h4 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>⚠️</span>
+              <span x-text="t('speedtest.weak_watchlist_title')"></span>
+            </h4>
+            <p class="text-xs text-slate-400" x-text="t('speedtest.weak_watchlist_desc')"></p>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-3 px-4" x-text="t('speedtest.col_device')"></th>
+                  <th class="py-3 px-4" x-text="t('speedtest.col_eero_node')"></th>
+                  <th class="py-3 px-4" x-text="t('speedtest.col_band_channel')"></th>
+                  <th class="py-3 px-4 text-center" x-text="t('speedtest.col_rssi_signal')"></th>
+                  <th class="py-3 px-4" x-text="t('speedtest.col_recommendation')"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60">
+                <template x-for="wd in (signalOverview.weak_devices || [])" :key="wd.mac_address">
+                  <tr class="hover:bg-slate-800/30 transition">
+                    <td class="py-3 px-4 font-semibold text-slate-200">
+                      <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span x-text="wd.hostname || wd.mac_address"></span>
+                      </div>
+                      <span class="text-[10px] text-slate-500 font-mono block mt-0.5" x-text="wd.mac_address"></span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300" x-text="wd.connected_eero_name || 'Gateway'"></td>
+                    <td class="py-3 px-4">
+                      <span class="font-mono text-slate-300" x-text="(wd.frequency_band || 'Wi-Fi') + (wd.channel ? ' • CH ' + wd.channel : '')"></span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                      <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" x-text="wd.signal_rssi + ' dBm'"></span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-400 italic" x-text="t('speedtest.rec_move_closer')"></td>
+                  </tr>
+                </template>
+                <template x-if="!signalOverview.weak_devices || signalOverview.weak_devices.length === 0">
+                  <tr>
+                    <td colspan="5" class="py-8 px-4 text-center text-slate-400 font-medium">
+                      <div class="flex items-center justify-center space-x-2 text-emerald-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span x-text="t('speedtest.no_weak_devices')"></span>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1819,6 +2026,153 @@
           <span x-text="t('logout_modal.confirm')"></span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: AUTO-UPDATE (1-CLICK & TERMINAL GUIDE - v1.04.00) -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showUpdateModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+    style="display: none;"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 scale-100"
+    x-transition:leave-end="opacity-0 scale-95">
+    
+    <div @click.away="!isTriggeringUpdate && (showUpdateModal = false)" class="glass-panel-elevated w-full max-w-xl rounded-2xl p-6 space-y-5 border border-amber-500/30 shadow-2xl shadow-amber-950/30 flex flex-col relative overflow-hidden">
+      
+      <!-- Live Progress Overlay during Update -->
+      <div 
+        x-show="isTriggeringUpdate" 
+        class="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4"
+        style="display: none;">
+        <div class="relative flex items-center justify-center">
+          <div class="w-16 h-16 rounded-full border-4 border-amber-500/20 border-t-amber-400 animate-spin"></div>
+          <span class="absolute text-2xl">⚡</span>
+        </div>
+        <div>
+          <h4 class="text-base font-bold text-white mb-1" x-text="t('update_modal.updating_title')"></h4>
+          <p class="text-xs text-amber-300/90 font-mono" x-text="updateProgressMsg"></p>
+        </div>
+        <p class="text-[11px] text-slate-400 max-w-sm" x-text="t('update_modal.updating_desc')"></p>
+      </div>
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+            🚀
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <span x-text="t('update_modal.title')"></span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.04.00')"></span>
+            </h3>
+            <p class="text-xs text-slate-400" x-text="t('update_modal.subtitle')"></p>
+          </div>
+        </div>
+        <button 
+          @click="showUpdateModal = false" 
+          :disabled="isTriggeringUpdate"
+          class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition disabled:opacity-30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Version Diff Box -->
+      <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+        <div>
+          <span class="text-slate-500 block text-[11px]" x-text="t('update_modal.current_version')"></span>
+          <span class="font-mono text-slate-300 font-bold text-sm" x-text="'v' + appVersion"></span>
+        </div>
+        <div>
+          <span class="text-slate-500 block text-[11px]" x-text="t('update_modal.new_version')"></span>
+          <span class="font-mono text-amber-400 font-bold text-sm" x-text="'v' + (updateInfo.latest_version || '---')"></span>
+        </div>
+      </div>
+
+      <!-- Release Notes Box -->
+      <template x-if="updateInfo.release_notes || updateInfo.release_title">
+        <div class="space-y-1.5">
+          <label class="block text-slate-400 text-xs font-semibold" x-text="t('update_modal.release_notes')"></label>
+          <div class="max-h-36 overflow-y-auto p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed" x-text="updateInfo.release_notes || updateInfo.release_title"></div>
+        </div>
+      </template>
+
+      <!-- Supported Methods & Environment Detection -->
+      <div class="space-y-3 pt-2 border-t border-slate-800">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400" x-text="t('update_modal.methods_title')"></h4>
+
+        <!-- Method 1: Docker Socket Detected -->
+        <template x-if="updateInfo.docker_socket_available">
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+            <span class="text-emerald-400 text-base">🟢</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-emerald-300" x-text="t('update_modal.socket_detected')"></span>
+              <p class="text-slate-400 leading-relaxed" x-text="t('update_modal.socket_desc')"></p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Method 2: Watchtower Configured -->
+        <template x-if="updateInfo.watchtower_configured && !updateInfo.docker_socket_available">
+          <div class="flex items-start space-x-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30">
+            <span class="text-sky-400 text-base">🛰️</span>
+            <div class="text-xs space-y-0.5">
+              <span class="font-bold text-sky-300" x-text="t('update_modal.watchtower_detected')"></span>
+              <p class="text-slate-400 leading-relaxed" x-text="t('update_modal.watchtower_desc')"></p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Method 3: Manual Terminal Command -->
+        <div class="space-y-1.5">
+          <span class="text-[11px] text-slate-400 font-medium" x-text="t('update_modal.manual_title')"></span>
+          <div class="flex items-center space-x-2">
+            <code class="flex-1 bg-slate-900 border border-slate-800 text-amber-300 px-3 py-2 rounded-xl font-mono text-xs select-all overflow-x-auto" x-text="updateInfo.cli_command || 'docker compose pull && docker compose up -d'"></code>
+            <button 
+              @click="copyCliCommand()" 
+              class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center space-x-1 shrink-0"
+              :class="copiedCliCommand ? 'text-emerald-400' : ''">
+              <span x-text="copiedCliCommand ? '✓ ' + t('update_modal.copied') : t('update_modal.copy_command')"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+        <a 
+          :href="updateInfo.release_url || 'https://github.com/EnricoFlammini/Dashboard_EERO/releases'" 
+          target="_blank" 
+          rel="noopener" 
+          class="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1">
+          <span>GitHub Releases</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
+
+        <div class="flex items-center space-x-3">
+          <button 
+            @click="showUpdateModal = false" 
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+            x-text="t('update_modal.cancel')">
+          </button>
+
+          <template x-if="updateInfo.can_auto_install">
+            <button 
+              @click="triggerAutoUpdate()" 
+              :disabled="isTriggeringUpdate"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-50 cursor-pointer">
+              <span x-text="t('update_modal.install_now_btn')"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
     </div>
   </div>
 

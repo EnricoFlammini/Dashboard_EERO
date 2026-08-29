@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.03.02)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.04.00)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation
@@ -451,6 +451,68 @@ async def run_all_tests():
         sync_adg_res = await client.post("/api/automations/adguard/sync", json={"instances": adg_instances_payload["instances"]})
         runner.assert_true(sync_adg_res.status_code == 200, "Sync multi-istanza AdGuard risponde HTTP 200")
         runner.assert_true(sync_adg_res.json().get("success") is True, "Sync multi-istanza completato con successo")
+
+        # =====================================================================
+        # 10. TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)
+        # =====================================================================
+        print("\n🔄 [10/10] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)")
+
+        # 1. Test Endpoint /api/system/update/check
+        check_res = await client.get("/api/system/update/check?force=true")
+        runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
+        check_data = check_res.json()
+        runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
+        runner.assert_true(check_data.get("current_version") == "1.04.00", f"Versione corrente rilevata è 1.04.00 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
+
+        # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
+        trigger_res = await client.post("/api/system/update/trigger")
+        runner.assert_true(trigger_res.status_code == 200, "Endpoint POST /api/system/update/trigger risponde HTTP 200")
+        trigger_data = trigger_res.json()
+        runner.assert_true("method" in trigger_data, "Metodo di aggiornamento specificato nella risposta")
+
+        # 3. Test Salvataggio Campioni Segnale RSSI su SQLite
+        signal_samples = [
+            {
+                "mac_address": "AA:BB:CC:DD:EE:01",
+                "hostname": "iPhone Test Soggiorno",
+                "signal_rssi": -45,
+                "frequency_band": "6 GHz",
+                "channel": 69,
+                "connected_eero_name": "Living Room",
+                "rx_bitrate": 1800.0,
+                "tx_bitrate": 1200.0
+            },
+            {
+                "mac_address": "AA:BB:CC:DD:EE:02",
+                "hostname": "Telecamera Giardino",
+                "signal_rssi": -82,
+                "frequency_band": "2.4 GHz",
+                "channel": 6,
+                "connected_eero_name": "Garage Beacon",
+                "rx_bitrate": 54.0,
+                "tx_bitrate": 54.0
+            }
+        ]
+        inserted = await db_service.record_device_signal_samples(signal_samples)
+        runner.assert_true(inserted == 2, f"Salvati 2 campioni di segnale su SQLite (inseriti: {inserted})")
+
+        # 4. Test Endpoint /api/metrics/signal/overview
+        overview_res = await client.get("/api/metrics/signal/overview")
+        runner.assert_true(overview_res.status_code == 200, "Endpoint GET /api/metrics/signal/overview risponde HTTP 200")
+        overview_data = overview_res.json().get("overview", {})
+        runner.assert_true(overview_data.get("total_wireless_devices", 0) >= 2, "Overview riporta almeno 2 dispositivi wireless campionati")
+        runner.assert_true("average_rssi" in overview_data, "Segnale medio RSSI presente nell'overview")
+        runner.assert_true(overview_data.get("weak_count", 0) >= 1, "Rilevato almeno 1 dispositivo con segnale debole (Telecamera Giardino)")
+        weak_devs = overview_data.get("weak_devices", [])
+        runner.assert_true(any(d.get("mac_address") == "aa:bb:cc:dd:ee:02" for d in weak_devs), "Telecamera Giardino inclusa nella Weak Signal Watchlist")
+
+        # 5. Test Endpoint /api/metrics/signal/history
+        history_res = await client.get("/api/metrics/signal/history?mac=AA:BB:CC:DD:EE:01&hours=24")
+        runner.assert_true(history_res.status_code == 200, "Endpoint GET /api/metrics/signal/history risponde HTTP 200")
+        hist_data = history_res.json()
+        runner.assert_true(hist_data.get("points_count", 0) >= 1, "Cronologia segnale per iPhone Test riporta campioni storici")
+        runner.assert_true(hist_data["history"][0]["signal_rssi"] == -45, "Valore RSSI -45 dBm verificato nei punti storici")
 
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})

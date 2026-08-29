@@ -178,6 +178,44 @@ document.addEventListener('alpine:init', () => {
     // About Modal State
     showAboutModal: false,
 
+    // Auto-Update State (v1.04.00)
+    updateInfo: {
+      update_available: false,
+      current_version: '1.04.00',
+      latest_version: '1.04.00',
+      release_title: '',
+      release_notes: '',
+      docker_socket_available: false,
+      watchtower_configured: false,
+      can_auto_install: false,
+      cli_command: 'docker compose pull && docker compose up -d'
+    },
+    isCheckingUpdate: false,
+    isTriggeringUpdate: false,
+    showUpdateModal: false,
+    updateProgressMsg: '',
+    copiedCliCommand: false,
+
+    // Signal Quality & Coverage State (v1.04.00)
+    signalOverview: {
+      total_wireless_devices: 0,
+      average_rssi: 0,
+      excellent_count: 0,
+      good_count: 0,
+      fair_count: 0,
+      weak_count: 0,
+      excellent_pct: 0,
+      good_pct: 0,
+      fair_pct: 0,
+      weak_pct: 0,
+      weak_devices: [],
+      devices: []
+    },
+    selectedSignalDeviceMac: '',
+    signalHistoryHours: 24,
+    signalChartInstance: null,
+    signalLoading: false,
+
     // Toast Notification System
     toasts: [],
 
@@ -193,11 +231,14 @@ document.addEventListener('alpine:init', () => {
       if (this.isAuthenticated) {
         await this.refreshAllData();
         this.startPolling();
+        this.checkForUpdates(false);
       }
 
       // Reattività cambio tab con rendering forzato e resize automatico
       this.$watch('currentTab', (tab) => {
-        this.setTab(tab);
+        if (tab === 'speedtest') {
+          this.loadSpeedtestData();
+        }
       });
     },
 
@@ -1587,9 +1628,205 @@ document.addEventListener('alpine:init', () => {
         if (jsonStats.status === 'success') {
           this.speedtestStats = jsonStats.stats || {};
         }
+        await this.loadSignalOverview();
       } catch (err) {
         console.error("Load speedtest data error:", err);
       }
+    },
+
+    // =========================================================================
+    // AUTO-UPDATE ENGINE (v1.04.00)
+    // =========================================================================
+    async checkForUpdates(force = false) {
+      this.isCheckingUpdate = true;
+      try {
+        const res = await fetch(`/api/system/update/check?force=${force}`);
+        if (res.ok) {
+          const data = await res.json();
+          this.updateInfo = data;
+        }
+      } catch (err) {
+        console.warn("Update check failed:", err);
+      } finally {
+        this.isCheckingUpdate = false;
+      }
+    },
+
+    openUpdateModal() {
+      this.showUpdateModal = true;
+      this.copiedCliCommand = false;
+    },
+
+    async triggerAutoUpdate() {
+      this.isTriggeringUpdate = true;
+      this.updateProgressMsg = this.currentLanguage === 'it' 
+        ? 'Download nuova immagine Docker in corso...' 
+        : 'Pulling new Docker image...';
+      try {
+        const res = await fetch('/api/system/update/trigger', { method: 'POST' });
+        const data = await res.json();
+        if (!data.success && data.method === 'manual') {
+          this.isTriggeringUpdate = false;
+          return;
+        }
+        
+        this.updateProgressMsg = this.currentLanguage === 'it'
+          ? 'Riavvio del container in corso... Riconnessione automatica...'
+          : 'Restarting container... Auto-reconnecting...';
+        
+        this.pollForHealthAndReload();
+      } catch (err) {
+        console.error("Auto-update trigger error:", err);
+        this.pollForHealthAndReload();
+      }
+    },
+
+    pollForHealthAndReload() {
+      let attempts = 0;
+      const maxAttempts = 40;
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const res = await fetch('/api/health', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'healthy') {
+              clearInterval(interval);
+              this.updateProgressMsg = this.currentLanguage === 'it'
+                ? 'Aggiornamento completato! Ricaricamento interfaccia...'
+                : 'Update completed! Reloading dashboard...';
+              setTimeout(() => {
+                window.location.reload(true);
+              }, 1200);
+            }
+          }
+        } catch (e) {
+          // Attesa normale del riavvio container
+        }
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          window.location.reload(true);
+        }
+      }, 2000);
+    },
+
+    copyCliCommand() {
+      if (this.updateInfo.cli_command) {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(this.updateInfo.cli_command);
+        }
+        this.copiedCliCommand = true;
+        setTimeout(() => { this.copiedCliCommand = false; }, 3000);
+      }
+    },
+
+    // =========================================================================
+    // SIGNAL QUALITY & MESH COVERAGE (v1.04.00)
+    // =========================================================================
+    async loadSignalOverview() {
+      try {
+        const res = await fetch('/api/metrics/signal/overview');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success' && data.overview) {
+            this.signalOverview = data.overview;
+            if (!this.selectedSignalDeviceMac && this.signalOverview.devices && this.signalOverview.devices.length > 0) {
+              this.selectedSignalDeviceMac = this.signalOverview.devices[0].mac_address;
+              await this.loadDeviceSignalHistory();
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Load signal overview error:", err);
+      }
+    },
+
+    async loadDeviceSignalHistory() {
+      if (!this.selectedSignalDeviceMac) return;
+      this.signalLoading = true;
+      try {
+        const res = await fetch(`/api/metrics/signal/history?mac=${encodeURIComponent(this.selectedSignalDeviceMac)}&hours=${this.signalHistoryHours}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success' && data.history) {
+            this.renderSignalChart(data.history);
+          }
+        }
+      } catch (err) {
+        console.error("Load device signal history error:", err);
+      } finally {
+        this.signalLoading = false;
+      }
+    },
+
+    renderSignalChart(history) {
+      const canvas = document.getElementById('deviceSignalChart');
+      if (!canvas) return;
+      if (this.signalChartInstance) {
+        this.signalChartInstance.destroy();
+        this.signalChartInstance = null;
+      }
+
+      const p = canvas.parentElement;
+      if (p) {
+        canvas.width = p.clientWidth || 500;
+        canvas.height = p.clientHeight || 260;
+      }
+
+      const labels = (history || []).map(pt => {
+        const d = new Date(pt.timestamp);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      });
+      const rssiValues = (history || []).map(pt => pt.signal_rssi);
+
+      const ctx = canvas.getContext('2d');
+      this.signalChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels.length > 0 ? labels : ['--'],
+          datasets: [
+            {
+              label: 'Segnale RSSI (dBm)',
+              data: rssiValues.length > 0 ? rssiValues : [null],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true,
+              pointRadius: labels.length > 30 ? 1 : 3,
+              pointHoverRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            y: {
+              min: -90,
+              max: -30,
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#94a3b8',
+                callback: (v) => `${v} dBm`
+              }
+            },
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', maxTicksLimit: 10 }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Segnale: ${ctx.parsed.y} dBm`
+              }
+            }
+          }
+        }
+      });
     },
 
     async runSpeedtest() {

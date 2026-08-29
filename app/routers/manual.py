@@ -350,6 +350,15 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
+## v1.04.00
+* **Motore di Auto-Update Docker in-App a 1-Clic (/api/system/update)**
+* **Rilevamento Automatico Nuove Versioni Docker Hub & GitHub Releases**
+* **Storicizzazione Continua Segnale RSSI Dispositivi Wireless (SQLite)**
+* **Nuova Sezione Qualità Wi-Fi & Copertura Mesh con Grafici Interattivi**
+* **Watchlist Dispositivi con Segnale Critico & Suggerimenti Ottimizzazione**
+
+---
+
 ## v1.03.02
 * **Fix Formattazione Velocità Backhaul 2.5 Gbps su Card Nodi Mesh (Issue #14)**
 * **Riconoscimento Frequenze e Canali Wi-Fi 6E & Wi-Fi 7 a 6 GHz (5900-7200 MHz, EHT 320MHz)**
@@ -438,6 +447,15 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+---
+
+## v1.04.00
+* **In-App 1-Click Docker Auto-Update Engine (/api/system/update)**
+* **Automated New Release Detection via Docker Hub & GitHub Releases**
+* **Continuous Wireless Client RSSI Signal Storicization in SQLite**
+* **New Wi-Fi Signal Quality & Mesh Coverage Suite with Chart.js Graphs**
+* **Weak Signal Watchlist & Proactive Node Repositioning Recommendations**
 
 ---
 

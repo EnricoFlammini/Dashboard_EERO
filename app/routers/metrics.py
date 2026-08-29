@@ -164,3 +164,66 @@ async def get_top_bandwidth_hogs(
         "hogs": formatted[:limit]
     }
 
+
+# =========================================================================
+# SIGNAL QUALITY & MESH COVERAGE HISTORIAN (v1.04.00)
+# =========================================================================
+
+@router.get("/signal/overview")
+async def get_signal_overview():
+    """Restituisce le statistiche aggregate di copertura mesh e qualità del segnale RSSI."""
+    try:
+        overview = await db_service.get_signal_overview()
+        return {
+            "status": "success",
+            "overview": overview
+        }
+    except Exception as e:
+        logger.error(f"Errore recupero signal overview: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "overview": {
+                "total_wireless_devices": 0,
+                "average_rssi": 0,
+                "excellent_count": 0,
+                "good_count": 0,
+                "fair_count": 0,
+                "weak_count": 0,
+                "excellent_pct": 0,
+                "good_pct": 0,
+                "fair_pct": 0,
+                "weak_pct": 0,
+                "weak_devices": [],
+                "devices": []
+            }
+        }
+
+
+@router.get("/signal/history")
+async def get_device_signal_history(
+    mac: str = Query(..., description="Indirizzo MAC del dispositivo da interrogare"),
+    hours: int = Query(24, ge=1, le=336, description="Intervallo orario storico (es. 24h, 168h = 7d)")
+):
+    """Restituisce la serie temporale dei campioni RSSI per il dispositivo specificato."""
+    try:
+        history = await db_service.get_device_signal_history(mac_address=mac, range_hours=hours)
+        return {
+            "status": "success",
+            "mac_address": mac.upper(),
+            "hours": hours,
+            "points_count": len(history),
+            "history": history
+        }
+    except Exception as e:
+        logger.error(f"Errore recupero signal history per {mac}: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "mac_address": mac.upper(),
+            "hours": hours,
+            "points_count": 0,
+            "history": []
+        }
+
+

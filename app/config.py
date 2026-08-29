@@ -7,7 +7,7 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = "1.03.02"
+        app_version: str = "1.04.00"
         debug: bool = False
         
         # Path configuration
@@ -25,10 +25,15 @@ try:
         eero_user_token: str = os.getenv("EERO_USER_TOKEN", "")
         eero_network_id: str = os.getenv("EERO_NETWORK_ID", "")
 
-        # Notifications
+        # Notifications & Webhooks
         telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
         telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
         webhook_url: str = os.getenv("WEBHOOK_URL", "")
+
+        # Auto-Update & Docker Integration
+        docker_socket_path: str = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
+        watchtower_url: str = os.getenv("WATCHTOWER_URL", "")
+        update_check_interval_hours: int = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
 
         model_config = SettingsConfigDict(
             env_file=".env",
@@ -55,7 +60,7 @@ except ImportError:
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = "1.03.02"
+            self.app_version = "1.04.00"
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
             self.poll_interval = int(os.getenv("POLL_INTERVAL", "30"))
@@ -63,6 +68,11 @@ except ImportError:
             self.speedtest_interval_hours = int(os.getenv("SPEEDTEST_INTERVAL_HOURS", "12"))
             self.demo_mode = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
             self.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+            self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+            self.webhook_url = os.getenv("WEBHOOK_URL", "")
+            self.docker_socket_path = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
+            self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
+            self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")
 

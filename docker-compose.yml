@@ -14,6 +14,8 @@ services:
       - "${HOST_PORT:-8085}:8000"
     volumes:
       - ./data:/app/data
+      # Opzionale: de-commentare per abilitare l'Auto-Update del container a 1-Clic dalla Dashboard
+      # - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - TZ=${TZ:-Europe/Rome}
       - DATA_DIR=/app/data
@@ -26,6 +28,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
       - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - WATCHTOWER_URL=${WATCHTOWER_URL:-}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
       interval: 30s

@@ -107,6 +107,24 @@ class DBService:
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_known_devices_mac ON known_devices(mac_address);")
 
+            # 8. Device Signal History (RSSI, Band, Channel, Bitrate & Node Storicization - v1.04.00)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_signal_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    mac_address TEXT NOT NULL,
+                    hostname TEXT,
+                    signal_rssi INTEGER NOT NULL,
+                    frequency_band TEXT,
+                    channel INTEGER,
+                    connected_eero_name TEXT,
+                    rx_bitrate REAL,
+                    tx_bitrate REAL
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_time ON device_signal_history(mac_address, timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_time ON device_signal_history(timestamp);")
+
             # Backfill known_devices from device_metadata
             await db.execute("""
                 INSERT OR IGNORE INTO known_devices (mac_address, first_seen, hostname, ip, notified)
@@ -429,6 +447,126 @@ class DBService:
             await db.execute("UPDATE alert_history SET read = 1 WHERE read = 0")
             await db.commit()
 
+    # ----------------- DEVICE SIGNAL HISTORY (v1.04.00) -----------------
+    async def record_device_signal_samples(self, samples: List[Dict[str, Any]]) -> int:
+        """Salva in batch i campioni di segnale RSSI dei dispositivi wireless connessi."""
+        if not samples:
+            return 0
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        inserted = 0
+        async with self.get_connection() as db:
+            for s in samples:
+                mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
+                rssi = s.get("signal_rssi") or s.get("signal")
+                if not mac or rssi is None:
+                    continue
+                try:
+                    rssi_val = int(rssi)
+                except Exception:
+                    continue
+                
+                hostname = s.get("hostname") or s.get("custom_name") or s.get("nickname") or mac
+                freq_band = s.get("frequency_band") or s.get("wireless_band") or ""
+                channel = s.get("channel")
+                try:
+                    chan_val = int(channel) if channel is not None else None
+                except Exception:
+                    chan_val = None
+                eero_name = s.get("connected_eero_name") or s.get("eero_name") or ""
+                rx_rate = s.get("rx_bitrate")
+                tx_rate = s.get("tx_bitrate")
+
+                await db.execute(
+                    """
+                    INSERT INTO device_signal_history 
+                    (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (now, mac, hostname, rssi_val, freq_band, chan_val, eero_name, rx_rate, tx_rate)
+                )
+                inserted += 1
+            await db.commit()
+        return inserted
+
+    async def get_device_signal_history(self, mac_address: str, range_hours: int = 24) -> List[Dict[str, Any]]:
+        """Recupera la serie temporale del segnale RSSI di uno specifico dispositivo nelle ultime N ore."""
+        mac = str(mac_address).lower().strip()
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%d %H:%M:%S")
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                """
+                SELECT timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate
+                FROM device_signal_history
+                WHERE mac_address = ? AND timestamp >= ?
+                ORDER BY timestamp ASC
+                """,
+                (mac, cutoff)
+            )
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
+
+    async def get_signal_overview(self) -> Dict[str, Any]:
+        """Calcola le statistiche aggregate di copertura mesh e qualità del segnale RSSI di tutti i dispositivi."""
+        async with self.get_connection() as db:
+            # Prendi l'ultimo campione per ciascun MAC nelle ultime 6 ore
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
+            cursor = await db.execute(
+                """
+                SELECT h.mac_address, h.hostname, h.signal_rssi, h.frequency_band, h.channel, h.connected_eero_name, h.timestamp
+                FROM device_signal_history h
+                INNER JOIN (
+                    SELECT mac_address, MAX(timestamp) AS max_time
+                    FROM device_signal_history
+                    WHERE timestamp >= ?
+                    GROUP BY mac_address
+                ) latest ON h.mac_address = latest.mac_address AND h.timestamp = latest.max_time
+                ORDER BY h.signal_rssi ASC
+                """,
+                (cutoff,)
+            )
+            rows = await cursor.fetchall()
+            devices = [dict(r) for r in rows]
+
+        total = len(devices)
+        if total == 0:
+            return {
+                "total_wireless_devices": 0,
+                "average_rssi": 0,
+                "excellent_count": 0,
+                "good_count": 0,
+                "fair_count": 0,
+                "weak_count": 0,
+                "excellent_pct": 0,
+                "good_pct": 0,
+                "fair_pct": 0,
+                "weak_pct": 0,
+                "weak_devices": [],
+                "devices": []
+            }
+
+        total_rssi = sum(d["signal_rssi"] for d in devices)
+        avg_rssi = round(total_rssi / total, 1)
+
+        excellent = [d for d in devices if d["signal_rssi"] >= -50]
+        good = [d for d in devices if -65 <= d["signal_rssi"] < -50]
+        fair = [d for d in devices if -75 <= d["signal_rssi"] < -65]
+        weak = [d for d in devices if d["signal_rssi"] < -75]
+
+        return {
+            "total_wireless_devices": total,
+            "average_rssi": avg_rssi,
+            "excellent_count": len(excellent),
+            "good_count": len(good),
+            "fair_count": len(fair),
+            "weak_count": len(weak),
+            "excellent_pct": round((len(excellent) / total) * 100, 1),
+            "good_pct": round((len(good) / total) * 100, 1),
+            "fair_pct": round((len(fair) / total) * 100, 1),
+            "weak_pct": round((len(weak) / total) * 100, 1),
+            "weak_devices": weak,
+            "devices": devices
+        }
+
     # ----------------- RETENTION CLEANUP -----------------
     async def cleanup_old_data(self, retention_days: Optional[int] = None) -> Dict[str, int]:
         days = retention_days or settings.history_retention_days
@@ -440,6 +578,9 @@ class DBService:
 
             c4 = await db.execute("DELETE FROM alert_history WHERE timestamp < ?", (cutoff,))
             deleted_counts["alert_history"] = c4.rowcount
+
+            c5 = await db.execute("DELETE FROM device_signal_history WHERE timestamp < ?", (cutoff,))
+            deleted_counts["device_signal_history"] = c5.rowcount
 
             await db.commit()
             logger.info(f"Data retention cleanup executed (cutoff: {cutoff}): {deleted_counts}")
