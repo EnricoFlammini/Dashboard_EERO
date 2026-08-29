@@ -27,6 +27,15 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiornati gli endpoint `/api/devices/{device_id_or_mac}/metadata` per consentire la ricerca per MAC address, ID eero univoco, URL o indirizzo IP.
   * Inserito controllo preventivo `res.ok` e safe JSON parsing in `app.js` per eliminare l'errore `json parse unexpected character line 1 column 1` in caso di risposte HTTP non riuscite.
 
+### 🛡️ Supporto a Istanze Multiple AdGuard Home & Cache-Busting Asset (#17)
+* **🛡️ Sincronizzazione DNS Multi-Server (Issue #17):**
+  * Introdotto il supporto per la configurazione e sincronizzazione verso **molteplici istanze target AdGuard Home** (es. DNS Primario, Secondario o failover).
+  * Nuova interfaccia grafica nella card AdGuard con gestione dinamica delle istanze (aggiunta `+`, rimozione, toggle abilitazione individuale, stato e ora dell'ultimo sync per ciascuna istanza).
+  * Endpoint di test e sync aggiornati per verificare e riconciliare tutti i server contemporaneamente in modo parallelo/sequenziale.
+* **🔄 Cache-Busting Automatico & Nota Aggiornamento Browser (Issue #17):**
+  * Aggiunto parametro di versione `?v={{ app_version }}` ai link degli asset CSS e JavaScript in `index.html` per forzare l'aggiornamento automatico della cache del browser ad ogni rilascio.
+  * Documentato nel file `README.md` (sia in inglese che in italiano) il comportamento della cache del browser e le istruzioni per l'hard reload (`Ctrl + F5` / `Cmd + Shift + R`) all'aggiornamento del container.
+
 ---
 
 ## [1.03.00] - 2026-08-28

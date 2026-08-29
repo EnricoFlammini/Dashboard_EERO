@@ -249,7 +249,12 @@
     "adguard_test_btn": "Test Connessione",
     "adguard_sync_btn": "Sincronizza Ora Tutti i Client",
     "adguard_save_btn": "Salva Impostazioni AdGuard",
-    "adguard_last_sync": "Ultima Sincronizzazione:"
+    "adguard_last_sync": "Ultima Sincronizzazione:",
+    "adguard_add_instance": "+ Aggiungi Istanza DNS",
+    "adguard_remove_instance": "Rimuovi Istanza",
+    "adguard_active": "Attiva",
+    "adguard_inactive": "Disattiva",
+    "adguard_instance_name": "Nome Server DNS"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",

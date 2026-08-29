@@ -43,7 +43,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 * **📊 Mesh Topology & Health Score:** Live overview with Network Health Score (1-100), WAN public IP, gateway status, DNS servers, ISP information, and individual eero nodes (Gateway & Beacons) with backhaul type (`Ethernet (Wired)` vs `Wireless Mesh`).
 * **🖥️ Certified Hardware Telemetry & Interactive Sorting:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, **Static IP vs Dynamic DHCP indicators**, **interactive column sorting (Name, IPv4, Node, Band, Signal, Status)**, and a **locked sticky header bar**.
-* **🛡️ Native In-App AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, and static/dynamic IP leases directly to your **AdGuard Home** DNS server with automatic background synchronization.
+* **🛡️ Native In-App Multi-Instance AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, official tags (`device_laptop`, `device_phone`, `device_pc`, `device_tv`, etc.), and static/dynamic IP leases directly to **one or multiple AdGuard Home DNS servers** (e.g. Primary and Secondary DNS) with automatic background synchronization.
 * **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
 * **🌍 Real-Time Multi-Language (i18n):** Native bilingual interface (**English 🇬🇧 default / Italian 🇮🇹**) with instant live switcher and permanent preference persistence.
 * **⚡ Speed Test & Performance Analytics:** Manual and scheduled automated speed tests (e.g. every 12 hours) with historical charts (Download, Upload, Ping/Latency) and aggregate statistics.
@@ -95,6 +95,10 @@ docker compose up -d
 
 Access the dashboard in your browser:
 👉 **`http://localhost:8085`** (or your server's IP, e.g. `http://192.168.1.100:8085`).
+
+> [!TIP]
+> **🔄 Container Update & Browser Cache Notice:**
+> When updating your container to a newer image version, static assets include cache-busting version strings (`?v=...`). If your browser has cached older JavaScript or CSS files, perform a hard reload (`Ctrl + F5` on Windows/Linux or `Cmd + Shift + R` on macOS) or clear your browser cache to ensure all new interface features load properly.
 
 ---
 
@@ -283,7 +287,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con tipo di backhaul (`Ethernet (Cablato)` vs `Wireless Mesh (5/6 GHz)`).
 * **🖥️ Telemetria Hardware & Ordinamento Interattivo:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY, **indicatori visivi IP Statico vs DHCP**, **ordinamento interattivo per colonna (Nome, IPv4, Profilo, Nodo, Banda, Segnale, Stato)** e **barra dei titoli bloccata (Sticky Header)**.
-* **🛡️ Sincronizzazione Nativa AdGuard Home in-App:** Pannello di configurazione visuale dedicato per sincronizzare in automatico e in modo continuo i nomi dei dispositivi, MAC e IP verso il server DNS **AdGuard Home** con supporto alla sincronizzazione silenziosa in background.
+* **🛡️ Sincronizzazione Nativa AdGuard Home Multi-Istanza:** Pannello di configurazione visuale dedicato per sincronizzare in automatico e in modo continuo i nomi dei dispositivi, MAC, tag ufficiali AdGuard (`device_laptop`, `device_phone`, `device_pc`, ecc.) e IP verso **uno o molteplici server DNS AdGuard Home** (es. DNS Primario e Secondario) con supporto alla sincronizzazione silenziosa in background.
 * **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
 * **🌍 Supporto Multilingua (i18n):** Interfaccia bilingue (**Inglese 🇬🇧 default / Italiano 🇮🇹**) con selettore istantaneo nella barra superiore e salvataggio permanente delle preferenze.
 * **⚡ Speed Test & Diagnostica Prestazioni:** Esecuzione test manuali e schedulati (es. ogni 12h) con storico completo di Download, Upload, Ping (Latenza) e calcolo delle medie e dei picchi massimi.
@@ -335,6 +339,10 @@ docker compose up -d
 
 Accedi alla dashboard dal browser:
 👉 **`http://localhost:8085`** (o l'IP del tuo server Linux/NAS, es. `http://192.168.1.100:8085`).
+
+> [!TIP]
+> **🔄 Nota sull'Aggiornamento del Container & Cache Browser:**
+> Quando aggiorni il container a una nuova versione dell'immagine, i file statici includono automaticamente query string di versione (`?v=...`) per il cache-busting. Tuttavia, se il tuo browser mantiene file JavaScript o CSS memorizzati nella cache locale precedente, esegui un ricaricamento forzato (`Ctrl + F5` su Windows/Linux o `Cmd + Shift + R` su macOS) oppure svuota la cache del browser per assicurarti che tutte le nuove funzionalità grafiche vengano caricate correttamente.
 
 ---
 

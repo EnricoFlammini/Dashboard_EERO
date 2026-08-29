@@ -47,7 +47,7 @@
   </script>
   
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}">
 
   <!-- Chart.js CDN & Alpine.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -57,7 +57,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- App Logic -->
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v={{ app_version }}"></script>
 </head>
 <body class="bg-[#0b0f17] text-slate-100 min-h-screen antialiased flex flex-col" x-data="eeroApp">
 
@@ -913,6 +913,12 @@
               </div>
               <div class="flex items-center space-x-2 shrink-0">
                 <button 
+                  @click="addAdGuardInstance()"
+                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1">
+                  <span>➕</span>
+                  <span x-text="t('controls.adguard_add_instance')"></span>
+                </button>
+                <button 
                   @click="testAdGuardConnection()"
                   :disabled="adguardTesting"
                   class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5">
@@ -929,21 +935,53 @@
               </div>
             </div>
 
-            <div class="space-y-3 text-xs">
-              <div>
-                <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_url')"></label>
-                <input type="text" x-model="adguardSettings.url" placeholder="http://192.168.4.2:80" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_username')"></label>
-                  <input type="text" x-model="adguardSettings.username" placeholder="admin" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            <!-- Instances List -->
+            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              <template x-for="(inst, idx) in adguardSettings.instances" :key="inst.id || idx">
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <span class="w-2 h-2 rounded-full" :class="inst.enabled !== false ? 'bg-emerald-400' : 'bg-slate-600'"></span>
+                      <input type="text" x-model="inst.name" :placeholder="'DNS Server ' + (idx + 1)" class="bg-transparent text-xs font-semibold text-white border-b border-transparent focus:border-emerald-500/50 outline-none px-1 py-0.5 w-36 sm:w-48">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <label class="flex items-center space-x-1.5 text-[11px] text-slate-400 cursor-pointer">
+                        <input type="checkbox" x-model="inst.enabled" class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-800 w-3.5 h-3.5">
+                        <span x-text="inst.enabled !== false ? t('controls.adguard_active') : t('controls.adguard_inactive')"></span>
+                      </label>
+                      <button 
+                        x-show="adguardSettings.instances && adguardSettings.instances.length > 1"
+                        @click="removeAdGuardInstance(idx)" 
+                        class="p-1 text-slate-500 hover:text-rose-400 transition rounded hover:bg-rose-500/10" 
+                        :title="t('controls.adguard_remove_instance')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                    <div class="sm:col-span-6">
+                      <label class="block text-[11px] text-slate-400 mb-0.5" x-text="t('controls.adguard_url')"></label>
+                      <input type="text" x-model="inst.url" placeholder="http://192.168.4.2:80" class="glass-input w-full px-2.5 py-1 rounded-lg font-mono text-xs">
+                    </div>
+                    <div class="sm:col-span-3">
+                      <label class="block text-[11px] text-slate-400 mb-0.5" x-text="t('controls.adguard_username')"></label>
+                      <input type="text" x-model="inst.username" placeholder="admin" class="glass-input w-full px-2.5 py-1 rounded-lg font-mono text-xs">
+                    </div>
+                    <div class="sm:col-span-3">
+                      <label class="block text-[11px] text-slate-400 mb-0.5" x-text="t('controls.adguard_password')"></label>
+                      <input type="password" x-model="inst.password" :placeholder="inst.has_password ? '••••••••' : 'Password'" class="glass-input w-full px-2.5 py-1 rounded-lg font-mono text-xs">
+                    </div>
+                  </div>
+
+                  <template x-if="inst.last_sync_status">
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-white/5">
+                      <span class="truncate" x-text="inst.last_sync_status"></span>
+                      <span class="text-slate-500 shrink-0 ml-2" x-text="formatDate(inst.last_sync_time)"></span>
+                    </div>
+                  </template>
                 </div>
-                <div>
-                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_password')"></label>
-                  <input type="password" x-model="adguardSettings.password" :placeholder="adguardSettings.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-                </div>
-              </div>
+              </template>
             </div>
           </div>
 

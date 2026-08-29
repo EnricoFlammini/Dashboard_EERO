@@ -37,17 +37,35 @@ class DigestSettingsRequest(BaseModel):
     enabled: bool
 
 
+class AdGuardInstanceModel(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = "DNS Server"
+    url: str
+    username: Optional[str] = ""
+    password: Optional[str] = None
+    enabled: Optional[bool] = True
+
+
 class AdGuardSettingsRequest(BaseModel):
-    enabled: bool
-    url: str = Field(..., description="URL di base dell'istanza AdGuard Home (es. http://192.168.4.2:80)")
+    enabled: bool = Field(False, description="Abilita la sincronizzazione automatica periodica")
+    url: Optional[str] = Field(None, description="URL per compatibilità istanza singola (es. http://192.168.4.2:80)")
     username: Optional[str] = None
     password: Optional[str] = None
+    instances: Optional[List[AdGuardInstanceModel]] = Field(None, description="Elenco istanze AdGuard multiple")
 
 
 class AdGuardTestRequest(BaseModel):
     url: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
+    instances: Optional[List[AdGuardInstanceModel]] = None
+
+
+class AdGuardSyncRequest(BaseModel):
+    url: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    instances: Optional[List[AdGuardInstanceModel]] = None
 
 
 @router.get("/focus-mode")
@@ -274,9 +292,11 @@ async def get_adguard_settings():
 
 @router.post("/adguard")
 async def update_adguard_settings(payload: AdGuardSettingsRequest):
-    """Salva le impostazioni di connessione verso AdGuard Home."""
+    """Salva le impostazioni di connessione verso AdGuard Home (singola o multiple istanze)."""
+    insts = [i.dict() for i in payload.instances] if payload.instances is not None else None
     await adguard_service.save_settings(
         enabled=payload.enabled,
+        instances=insts,
         url=payload.url,
         username=payload.username,
         password=payload.password
@@ -286,18 +306,13 @@ async def update_adguard_settings(payload: AdGuardSettingsRequest):
 
 @router.post("/adguard/test")
 async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
-    """Verifica la connessione e l'autenticazione con l'istanza AdGuard Home."""
+    """Verifica la connessione e l'autenticazione con l'istanza o le istanze AdGuard Home."""
     url = payload.url if payload else None
     username = payload.username if payload else None
     password = payload.password if payload else None
-    res = await adguard_service.test_connection(url=url, username=username, password=password)
+    instances = [i.dict() for i in payload.instances] if payload and payload.instances is not None else None
+    res = await adguard_service.test_connection(url=url, username=username, password=password, instances=instances)
     return res
-
-
-class AdGuardSyncRequest(BaseModel):
-    url: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
 
 
 @router.post("/adguard/sync")
@@ -311,8 +326,9 @@ async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     url = payload.url if payload else None
     username = payload.username if payload else None
     password = payload.password if payload else None
+    instances = [i.dict() for i in payload.instances] if payload and payload.instances is not None else None
     
-    res = await adguard_service.sync_devices(devices, url=url, username=username, password=password)
+    res = await adguard_service.sync_devices(devices, url=url, username=username, password=password, instances=instances)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
         
