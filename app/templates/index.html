@@ -86,17 +86,17 @@
               <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
 
-            <!-- Auto-Update & Version Check Button (Always Visible) -->
-            <button 
-              @click="openUpdateModal(true)" 
-              class="text-[10px] font-mono px-2.5 py-0.5 rounded-full transition flex items-center space-x-1.5 cursor-pointer shadow-sm" 
-              :class="updateInfo && updateInfo.update_available 
-                ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse font-bold shadow-amber-500/10' 
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:text-white'"
-              :title="t('header.update_btn_title') || 'Controlla aggiornamenti Docker Hub'">
-              <span class="w-1.5 h-1.5 rounded-full" :class="updateInfo && updateInfo.update_available ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'"></span>
-              <span x-text="updateInfo && updateInfo.update_available ? ('v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')) : (currentLanguage === 'it' ? '🔄 Aggiorna' : '🔄 Update')"></span>
-            </button>
+            <!-- Auto-Update Notification Pill Badge (Appears ONLY when update is available) -->
+            <template x-if="updateInfo && updateInfo.update_available">
+              <button 
+                @click="openUpdateModal()" 
+                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-amber-500/10" 
+                :title="t('header.update_btn_title')">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span x-text="'🎉 v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
+                <svg class="w-3 h-3 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              </button>
+            </template>
 
             <!-- About & Dedication Button -->
             <button 
