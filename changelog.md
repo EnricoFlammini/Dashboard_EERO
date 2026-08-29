@@ -17,6 +17,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **📶 Telemetria RSSI dBm su Nodi Mesh Wireless:**
   * Supportata l'estrazione di valori di segnale anche quando strutturati come dizionari (`signal.rx_rssi`, `signal_dbm`, `mesh_quality`), garantendo la corretta visualizzazione del badge (es. `Wireless Mesh (5 GHz / -58 dBm)`).
 
+### 🏷️ Mapping Automatico Categorie Dispositivi, Tag AdGuard Home & Metadati (#13)
+* **🏷️ Categorizzazione Nativa eero Intelligente (Issue #13):**
+  * Implementata la funzione `map_eero_device_type` per interpretare automaticamente il campo nativo `device_type` del cloud eero (`laptop`, `phone`, `tv`, `gaming_console`, `camera`, `nas`, `smart_plug`, `printer`, `speaker`) assegnando categoria e icona corrette senza forzare tutto su `"Altro"`.
+  * Gerarchia di fallback corretta: Priorità alle personalizzazioni utente salvate nel DB locale SQLite > Categoria/Icona nativa eero > Fallback `"Altro"`.
+* **🛡️ Mappatura Tag Ufficiali AdGuard Home:**
+  * Integrata la conversione delle categorie e icone nei tag client standard di AdGuard Home (`device_laptop`, `device_pc`, `device_phone`, `device_tablet`, `device_tv`, `device_gameconsole`, `device_nas`, `device_other`) nell'endpoint di esportazione `/api/devices/export/adguard` e nel motore di sincronizzazione automatica.
+* **🔧 Risoluzione Robusta Salvataggio Metadati & JSON Error Handling:**
+  * Aggiornati gli endpoint `/api/devices/{device_id_or_mac}/metadata` per consentire la ricerca per MAC address, ID eero univoco, URL o indirizzo IP.
+  * Inserito controllo preventivo `res.ok` e safe JSON parsing in `app.js` per eliminare l'errore `json parse unexpected character line 1 column 1` in caso di risposte HTTP non riuscite.
+
 ---
 
 ## [1.03.00] - 2026-08-28

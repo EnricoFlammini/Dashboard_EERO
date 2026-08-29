@@ -1083,8 +1083,8 @@ document.addEventListener('alpine:init', () => {
       
       this.deviceMetadataForm = {
         custom_name: device.custom_name || device.nickname || device.hostname || '',
-        custom_icon: device.custom_icon || 'device',
-        category: device.category || 'Altro',
+        custom_icon: device.custom_icon || device.default_icon || 'device',
+        category: device.category || device.default_category || 'Altro',
         custom_notes: device.custom_notes || '',
         is_favorite: Boolean(device.is_favorite),
         is_low_latency_target: Boolean(device.is_low_latency_target)
@@ -1249,20 +1249,28 @@ document.addEventListener('alpine:init', () => {
 
     async saveDeviceMetadata() {
       if (!this.selectedDevice) return;
-      const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
+      const targetId = (this.selectedDevice.mac || this.selectedDevice.id || this.selectedDevice.mac_address || '').toLowerCase();
+      if (!targetId) {
+        this.showToast(this.currentLanguage === 'it' ? "Errore" : "Error", "Identificatore dispositivo non trovato", "error");
+        return;
+      }
       try {
-        const res = await fetch(`/api/devices/${mac}/metadata`, {
+        const res = await fetch(`/api/devices/${encodeURIComponent(targetId)}/metadata`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.deviceMetadataForm)
         });
-        const data = await res.json();
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || errData.message || `HTTP ${res.status}`);
+        }
+        const data = await res.json().catch(() => ({}));
         
         // Se il nome è cambiato, sincronizza anche il nickname con eero
         if (this.deviceMetadataForm.custom_name && this.deviceMetadataForm.custom_name !== this.selectedDevice.nickname) {
-          const devId = this.selectedDevice.id || mac;
+          const devId = this.selectedDevice.id || targetId;
           try {
-            await fetch(`/api/devices/${devId}/rename`, {
+            await fetch(`/api/devices/${encodeURIComponent(devId)}/rename`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ nickname: this.deviceMetadataForm.custom_name })

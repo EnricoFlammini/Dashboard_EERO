@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from app.services.db import db_service
+from app.services.eero_client import get_adguard_tags
 
 logger = logging.getLogger(__name__)
 
@@ -300,7 +301,7 @@ class AdGuardService:
             prepared_clients.append({
                 "name": unique_name,
                 "ids": ids,
-                "tags": [],
+                "tags": get_adguard_tags(d.get("category"), d.get("custom_icon")),
                 "upstreams": [],
                 "blocked_services": [],
                 "use_global_blocked_services": True,

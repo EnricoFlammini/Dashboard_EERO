@@ -83,6 +83,87 @@ def format_speed_mbps(mbps: int) -> str:
     return ""
 
 
+def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] = None) -> Tuple[str, str]:
+    """Maps native eero device_type and model/name to (Category, Icon).
+    
+    Categories: Computer, Mobile, Intrattenimento, Gaming, Smart Home, Server/Rete, Altro
+    Icons: laptop, smartphone, tablet, tv, gamepad, iot, camera, speaker, server, printer, device
+    """
+    t = str(raw_type or "").strip().lower()
+    n = str(model_or_name or "").strip().lower()
+
+    # 1. Computer & Printers
+    if any(k in t for k in ("laptop", "desktop", "computer", "pc", "macbook", "imac", "workstation")) or \
+       any(k in n for k in ("macbook", "imac", "thinkpad", "desktop", "laptop", "pc-")):
+        if "printer" in t or "printer" in n or "stampante" in n:
+            return ("Computer", "printer")
+        return ("Computer", "laptop")
+
+    if "printer" in t or "printer" in n or "stampante" in n:
+        return ("Computer", "printer")
+
+    # 2. Mobile (Phones & Tablets)
+    if "tablet" in t or "ipad" in t or "tablet" in n or "ipad" in n:
+        return ("Mobile", "tablet")
+    if any(k in t for k in ("phone", "smartphone", "iphone", "android", "mobile", "handset")) or \
+       any(k in n for k in ("iphone", "galaxy", "pixel", "redmi", "xiaomi", "huawei")):
+        return ("Mobile", "smartphone")
+
+    # 3. Entertainment (TV & Media streamers)
+    if any(k in t for k in ("tv", "television", "media_streamer", "streamer", "apple_tv", "appletv", "fire_tv", "firetv", "firestick", "roku", "chromecast", "smart_tv", "display")) or \
+       any(k in n for k in ("tv", "bravia", "oled", "qled", "firetv", "chromecast", "appletv", "roku")):
+        return ("Intrattenimento", "tv")
+
+    # 4. Gaming (Consoles)
+    if any(k in t for k in ("game_console", "gaming_console", "console", "playstation", "ps4", "ps5", "xbox", "nintendo", "switch")) or \
+       any(k in n for k in ("playstation", "ps4", "ps5", "xbox", "nintendo", "switch")):
+        return ("Gaming", "gamepad")
+
+    # 5. Server & NAS / Network Infrastructure
+    if any(k in t for k in ("server", "nas", "synology", "qnap", "truenas", "unraid", "router", "switch_device", "access_point")) or \
+       any(k in n for k in ("synology", "qnap", "nas", "server", "proxmox", "truenas")):
+        return ("Server/Rete", "server")
+
+    # 6. Smart Home & IoT
+    if any(k in t for k in ("camera", "security_camera", "doorbell", "webcam", "cctv")) or \
+       any(k in n for k in ("camera", "cam", "doorbell", "ring", "nest", "eufy", "ezviz")):
+        return ("Smart Home", "camera")
+    if any(k in t for k in ("speaker", "smart_speaker", "echo", "alexa", "sonos", "homepod", "soundbar", "audio")) or \
+       any(k in n for k in ("echo", "alexa", "sonos", "homepod", "speaker", "soundbar")):
+        return ("Smart Home", "speaker")
+    if any(k in t for k in ("iot", "smart_plug", "plug", "socket", "vacuum", "thermostat", "bulb", "light", "switch", "sensor", "hub", "appliance", "home_automation", "shelly", "sonoff", "tuya", "tasmota")) or \
+       any(k in n for k in ("shelly", "sonoff", "tuya", "smartplug", "plug", "vacuum", "roomba", "roborock", "dreame", "thermostat", "hue")):
+        return ("Smart Home", "iot")
+
+    return ("Altro", "device")
+
+
+def get_adguard_tags(category: Optional[str], icon: Optional[str] = None) -> List[str]:
+    """Returns official AdGuard Home client tags enum based on device category/icon."""
+    cat_lower = str(category or "").strip().lower()
+    icon_lower = str(icon or "").strip().lower()
+
+    tags = []
+    if icon_lower == "laptop":
+        tags.append("device_laptop")
+    elif cat_lower == "computer" or icon_lower in ("printer", "device"):
+        tags.append("device_pc")
+    elif icon_lower == "tablet":
+        tags.append("device_tablet")
+    elif cat_lower == "mobile" or icon_lower == "smartphone":
+        tags.append("device_phone")
+    elif cat_lower == "intrattenimento" or icon_lower == "tv":
+        tags.append("device_tv")
+    elif cat_lower == "gaming" or icon_lower == "gamepad":
+        tags.append("device_gameconsole")
+    elif cat_lower == "server/rete" or icon_lower == "server":
+        tags.append("device_nas")
+    elif cat_lower == "smart home" or icon_lower in ("iot", "camera", "speaker"):
+        tags.append("device_other")
+
+    return tags if tags else ["device_other"]
+
+
 class EeroClient:
     """Async Client for eero REST API 2.2 with local persistence and Demo Mode simulator."""
 
@@ -887,6 +968,25 @@ class EeroClient:
                     dev["phy_rate"] = phy_str
             else:
                 dev["phy_rate"] = None
+
+            # Device Type, Category & Default Icon mapping (Issue #13)
+            raw_dev_type = (
+                dev.get("device_type") or 
+                dev.get("device_type_custom") or 
+                dev.get("custom_device_type") or 
+                dev.get("type") or 
+                dev.get("category") or 
+                dev.get("device_category") or 
+                dev.get("icon") or 
+                (conn_dict.get("device_type") if isinstance(conn_dict, dict) else None) or
+                ""
+            )
+            def_cat, def_icon = map_eero_device_type(raw_dev_type, dev.get("model") or dev.get("model_name") or dev.get("hostname") or dev.get("nickname"))
+            dev["device_type"] = raw_dev_type
+            dev["default_category"] = def_cat
+            dev["default_icon"] = def_icon
+            dev["category"] = def_cat
+            dev["custom_icon"] = def_icon
 
             # Source / Connected eero (Robust multi-source resolution across all eero models and firmware versions)
             c_id = ""

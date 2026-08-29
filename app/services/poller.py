@@ -200,8 +200,20 @@ class BackgroundPoller:
                 dev_copy["profile_id"] = final_prof_id
                 dev_copy["profile_name"] = final_prof_name
                 dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
-                dev_copy["custom_icon"] = meta.get("custom_icon", "device")
-                dev_copy["category"] = meta.get("category", "Altro")
+                
+                # Categoria & Icona (Issue #13): priorità personalizzazione utente > categoria nativa eero > fallback
+                meta_cat = meta.get("category")
+                if meta_cat and str(meta_cat).strip() and str(meta_cat).strip() != "Altro":
+                    dev_copy["category"] = str(meta_cat).strip()
+                else:
+                    dev_copy["category"] = dev.get("default_category") or dev.get("category") or "Altro"
+
+                meta_icon = meta.get("custom_icon")
+                if meta_icon and str(meta_icon).strip() and str(meta_icon).strip() != "device":
+                    dev_copy["custom_icon"] = str(meta_icon).strip()
+                else:
+                    dev_copy["custom_icon"] = dev.get("default_icon") or dev.get("custom_icon") or "device"
+
                 dev_copy["custom_notes"] = meta.get("custom_notes", "")
                 dev_copy["static_ip"] = static_ip_val
                 dev_copy["is_static"] = is_static

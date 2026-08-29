@@ -67,6 +67,8 @@ class TestRunner:
 
 async def run_all_tests():
     runner = TestRunner()
+    # Inizializza schema database SQLite
+    await db_service.init_db()
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -283,6 +285,63 @@ async def run_all_tests():
         wireless_norm = eero_client._normalize_eero_node(node_wireless_raw)
         runner.assert_true(wireless_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -58 dBm)", f"Beacon wireless con dict signal rileva 'Wireless Mesh (5 GHz / -58 dBm)' (ottenuto: {wireless_norm['backhaul_type']})")
         runner.assert_true(wireless_norm["signal_rssi"] == -58, f"Beacon wireless signal_rssi estratto come -58 (ottenuto: {wireless_norm['signal_rssi']})")
+
+        print("\n🏷️ [8/8] TEST MAPPING CATEGORIE NATIVE EERO, TAG ADGUARD E SALVATAGGIO METADATI (Issue #13)")
+        from app.services.eero_client import map_eero_device_type, get_adguard_tags
+
+        # Test mapping tipi nativi eero
+        cat_laptop, icon_laptop = map_eero_device_type("laptop", "MacBook Pro")
+        runner.assert_true(cat_laptop == "Computer" and icon_laptop == "laptop", f"Mapping laptop: {cat_laptop}, {icon_laptop}")
+
+        cat_phone, icon_phone = map_eero_device_type("phone", "iPhone 15 Pro")
+        runner.assert_true(cat_phone == "Mobile" and icon_phone == "smartphone", f"Mapping phone: {cat_phone}, {icon_phone}")
+
+        cat_console, icon_console = map_eero_device_type("gaming_console", "PlayStation 5")
+        runner.assert_true(cat_console == "Gaming" and icon_console == "gamepad", f"Mapping gaming_console: {cat_console}, {icon_console}")
+
+        cat_plug, icon_plug = map_eero_device_type("smart_plug", "Shelly Plug S")
+        runner.assert_true(cat_plug == "Smart Home" and icon_plug == "iot", f"Mapping smart_plug: {cat_plug}, {icon_plug}")
+
+        cat_nas, icon_nas = map_eero_device_type("nas", "Synology DS920+")
+        runner.assert_true(cat_nas == "Server/Rete" and icon_nas == "server", f"Mapping nas: {cat_nas}, {icon_nas}")
+
+        cat_tv, icon_tv = map_eero_device_type("tv", "Samsung Smart TV")
+        runner.assert_true(cat_tv == "Intrattenimento" and icon_tv == "tv", f"Mapping tv: {cat_tv}, {icon_tv}")
+
+        # Test normalizzazione e categorizzazione dispositivo
+        dev_ps5_raw = {
+            "id": "ps5_client_test",
+            "mac": "00:1A:2B:3C:4D:5E",
+            "hostname": "PS5-LivingRoom",
+            "device_type": "gaming_console",
+            "connected": True
+        }
+        ps5_norm = eero_client._normalize_device(dev_ps5_raw)
+        runner.assert_true(ps5_norm["default_category"] == "Gaming", f"PS5 default_category è Gaming (ottenuto: {ps5_norm['default_category']})")
+        runner.assert_true(ps5_norm["default_icon"] == "gamepad", f"PS5 default_icon è gamepad (ottenuto: {ps5_norm['default_icon']})")
+        runner.assert_true(ps5_norm["category"] == "Gaming", f"PS5 category è Gaming (ottenuto: {ps5_norm['category']})")
+
+        # Test generazione tag AdGuard
+        runner.assert_true(get_adguard_tags("Computer", "laptop") == ["device_laptop"], "Tag AdGuard per laptop è ['device_laptop']")
+        runner.assert_true(get_adguard_tags("Mobile", "smartphone") == ["device_phone"], "Tag AdGuard per smartphone è ['device_phone']")
+        runner.assert_true(get_adguard_tags("Intrattenimento", "tv") == ["device_tv"], "Tag AdGuard per tv è ['device_tv']")
+        runner.assert_true(get_adguard_tags("Gaming", "gamepad") == ["device_gameconsole"], "Tag AdGuard per gaming è ['device_gameconsole']")
+        runner.assert_true(get_adguard_tags("Server/Rete", "server") == ["device_nas"], "Tag AdGuard per server è ['device_nas']")
+        runner.assert_true(get_adguard_tags("Smart Home", "iot") == ["device_other"], "Tag AdGuard per iot è ['device_other']")
+
+        # Test salvataggio metadati via API
+        save_res = await client.post("/api/devices/00:1a:2b:3c:4d:5e/metadata", json={
+            "custom_name": "PlayStation 5 Pro",
+            "category": "Gaming",
+            "custom_icon": "gamepad",
+            "is_favorite": True
+        })
+        runner.assert_true(save_res.status_code == 200, "Salvataggio metadati dispositivo risponde HTTP 200")
+        detail_res = await client.get("/api/devices/00:1a:2b:3c:4d:5e")
+        runner.assert_true(detail_res.status_code == 200, "Dettaglio metadati dispositivo risponde HTTP 200")
+        meta_saved = detail_res.json().get("metadata") or {}
+        runner.assert_true(meta_saved.get("custom_name") == "PlayStation 5 Pro", "Nome personalizzato salvato con successo")
+        runner.assert_true(meta_saved.get("category") == "Gaming", "Categoria salvata con successo")
 
         # Switch back to Live
         res = await client.post("/api/auth/mode", json={"demo": False})

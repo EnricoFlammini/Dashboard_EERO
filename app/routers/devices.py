@@ -6,7 +6,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.services.db import db_service
-from app.services.eero_client import eero_client
+from app.services.eero_client import eero_client, get_adguard_tags
 from app.services.poller import background_poller
 
 logger = logging.getLogger(__name__)
@@ -187,11 +187,13 @@ async def export_adguard(
             continue
 
         name = d.get("nickname") or d.get("hostname") or d.get("device_name") or f"eero-client-{ip or mac}"
+        cat = d.get("category", "")
+        icon = d.get("custom_icon", "")
 
         clients.append({
             "name": name,
             "ids": ids,
-            "tags": [],
+            "tags": get_adguard_tags(cat, icon),
             "upstreams": [],
             "blocked_services": [],
             "use_global_blocked_services": True,
@@ -209,14 +211,20 @@ async def export_adguard(
     }
 
 
-@router.get("/{mac_address}")
-async def get_device_detail(mac_address: str):
+@router.get("/{device_id_or_mac:path}")
+async def get_device_detail(device_id_or_mac: str):
     """Restituisce la scheda completa del dispositivo: stato live e metadati locali."""
-    mac_clean = mac_address.lower()
+    clean_target = device_id_or_mac.strip().lower()
     cached = background_poller.get_cached_state()
-    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
+    devices = cached.get("devices", [])
     
-    metadata = await db_service.get_device_metadata(mac_clean)
+    live_device = next(
+        (d for d in devices if (d.get("mac") or "").lower() == clean_target or str(d.get("id", "")).lower() == clean_target or str(d.get("url", "")).lower().endswith(clean_target) or str(d.get("ip", "")).lower() == clean_target),
+        None
+    )
+    
+    target_mac = (live_device.get("mac") if live_device else (clean_target if ":" in clean_target else None)) or clean_target
+    metadata = await db_service.get_device_metadata(target_mac.lower())
 
     return {
         "status": "success",
@@ -225,12 +233,22 @@ async def get_device_detail(mac_address: str):
     }
 
 
-@router.post("/{mac_address}/metadata")
-async def save_device_metadata(mac_address: str, payload: DeviceMetadataRequest):
+@router.post("/{device_id_or_mac:path}/metadata")
+async def save_device_metadata(device_id_or_mac: str, payload: DeviceMetadataRequest):
     """Salva nel database SQLite locale note, categoria, icona personalizzata e preferiti per il dispositivo."""
-    mac_clean = mac_address.lower()
+    clean_target = device_id_or_mac.strip().lower()
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+    
+    target_dev = next(
+        (d for d in devices if (d.get("mac") or "").lower() == clean_target or str(d.get("id", "")).lower() == clean_target or str(d.get("url", "")).lower().endswith(clean_target) or str(d.get("ip", "")).lower() == clean_target),
+        None
+    )
+    
+    target_mac = (target_dev.get("mac") if target_dev else (clean_target if ":" in clean_target else None)) or clean_target
+    
     updated = await db_service.upsert_device_metadata(
-        mac_address=mac_clean,
+        mac_address=target_mac.lower(),
         **payload.model_dump(exclude_unset=True)
     )
     return {"status": "success", "metadata": updated}
