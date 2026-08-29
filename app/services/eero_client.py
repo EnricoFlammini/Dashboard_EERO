@@ -379,7 +379,7 @@ class EeroClient:
             return {"status": "success", "account": account}
 
     async def fetch_account_info(self) -> Dict[str, Any]:
-        """Recupera le informazioni dell'account e l'ID della prima rete attiva."""
+        """Recupera le informazioni dell'account e l'ID della prima rete attiva, supportando proprietari e admin invitati."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             return self._get_demo_account()
 
@@ -395,14 +395,31 @@ class EeroClient:
             data = resp.json().get("data", {})
             self.account_info = data
             
-            # Parsing flessibile delle reti
-            networks_field = data.get("networks")
+            # 1. Parsing delle reti da account/user (supporta reti proprietarie, condivise e admin)
             networks = []
-            if isinstance(networks_field, dict):
-                networks = networks_field.get("data", [])
-            elif isinstance(networks_field, list):
-                networks = networks_field
+            for net_key in ("networks", "shared_networks", "guest_networks", "admin_networks"):
+                net_val = data.get(net_key)
+                if isinstance(net_val, dict):
+                    cand = net_val.get("data", [])
+                    if isinstance(cand, list):
+                        networks.extend(cand)
+                elif isinstance(net_val, list):
+                    networks.extend(net_val)
 
+            # 2. Fallback per account con sole reti condivise/admin: endpoint /2.2/networks
+            if not networks:
+                try:
+                    net_resp = await client.get(f"{EERO_API_BASE}/networks", headers=self._get_headers())
+                    if net_resp.status_code == 200:
+                        net_data = net_resp.json().get("data", [])
+                        if isinstance(net_data, list):
+                            networks.extend(net_data)
+                        elif isinstance(net_data, dict):
+                            networks.extend(net_data.get("data", []))
+                except Exception as e:
+                    logger.warning(f"Fallback fetch /networks failed: {e}")
+
+            # 3. Risoluzione network ID
             if networks:
                 first_net = networks[0]
                 if isinstance(first_net, dict):

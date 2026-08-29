@@ -36,6 +36,11 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiunto parametro di versione `?v={{ app_version }}` ai link degli asset CSS e JavaScript in `index.html` per forzare l'aggiornamento automatico della cache del browser ad ogni rilascio.
   * Documentato nel file `README.md` (sia in inglese che in italiano) il comportamento della cache del browser e le istruzioni per l'hard reload (`Ctrl + F5` / `Cmd + Shift + R`) all'aggiornamento del container.
 
+### 👥 Supporto Utenti Amministratori Invitati e Reti Condivise (Amazon Workaround)
+* **🔑 Risoluzione Flessibile Topologia per Account Multi-Rete e Admin Invitati:**
+  * Potenziato il metodo `fetch_account_info` in `eero_client.py` per identificare e mappare le reti mesh non solo da `account.networks`, ma anche dalle strutture `shared_networks`, `guest_networks`, `admin_networks` e tramite fallback automatico sull'endpoint `/2.2/networks`.
+  * Garantito il pieno supporto agli utenti con account proprietario Amazon SSO che invitano un account amministratore secondario dall'app mobile eero per accedere alla Dashboard con 2FA OTP.
+
 ---
 
 ## [1.03.00] - 2026-08-28
