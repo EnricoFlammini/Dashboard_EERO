@@ -1,0 +1,37 @@
+services:
+  eero-dashboard-dev:
+    image: enricoflammini/eero-dashboard:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eero_custom_dashboard_dev
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+      - 9.9.9.9
+    ports:
+      - "${HOST_PORT:-8084}:8000"
+    volumes:
+      - ./data:/app/data
+      # Opzionale: de-commentare per abilitare l'Auto-Update del container a 1-Clic dalla Dashboard
+      # - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ:-Europe/Rome}
+      - DATA_DIR=/app/data
+      - EERO_USER_TOKEN=${EERO_USER_TOKEN:-}
+      - EERO_NETWORK_ID=${EERO_NETWORK_ID:-}
+      - POLL_INTERVAL=${POLL_INTERVAL:-30}
+      - HISTORY_RETENTION_DAYS=${HISTORY_RETENTION_DAYS:-30}
+      - SPEEDTEST_INTERVAL_HOURS=${SPEEDTEST_INTERVAL_HOURS:-12}
+      - DEMO_MODE=${DEMO_MODE:-false}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - WATCHTOWER_URL=${WATCHTOWER_URL:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
