@@ -1662,9 +1662,12 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    openUpdateModal() {
+    openUpdateModal(force = false) {
       this.showUpdateModal = true;
       this.copiedCliCommand = false;
+      if (force || !this.updateInfo.latest_version) {
+        this.checkForUpdates(true);
+      }
     },
 
     async triggerAutoUpdate() {
