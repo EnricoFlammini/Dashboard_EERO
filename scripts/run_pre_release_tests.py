@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.03.01)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.03.02)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation

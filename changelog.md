@@ -4,6 +4,15 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.03.02] - 2026-08-29
+
+### ⚡ Fix Formattazione Velocità Backhaul & Rilevamento Frequenze Wi-Fi 6 GHz (#14)
+* **⚡ Fix Formattazione Velocità Backhaul 2.5 Gbps:**
+  * Risolto il bug di parsing stringa in frontend (`formatBackhaul`) in cui il controllo generico `.includes('5 Gbps')` intercettava la parte terminale di `2.5 Gbps` restituendo erroneamente `Ethernet (5.0 Gbps)`. Sostituito con regex strict con boundary di parola (`/\b2\.5\s*Gbps\b/i`).
+* **📶 Supporto e Rilevamento Dinamico Frequenze Wi-Fi 6E & Wi-Fi 7 a 6 GHz:**
+  * Esteso il parser `_normalize_device` per interpretare i valori di frequenza numerica espressi in MHz (`5900 MHz - 7200 MHz`), mappando correttamente i dispositivi Wi-Fi 6E/7 (es. iPhone 17 a 6295 MHz e PC Wi-Fi 7 EHT su canale 69 con ampiezza 320 MHz) su **`6 GHz`** / **`6GHz`**.
+  * Aggiornato il frontend con classi CSS esclusive e indipendenti (`bg-sky-500/20 text-sky-400`) per evidenziare i dispositivi a 6 GHz ed evitare sovrapposizioni visive con la banda a 5 GHz.
+
 ---
 
 ## [1.03.01] - 2026-08-29
