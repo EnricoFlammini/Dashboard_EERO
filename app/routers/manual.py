@@ -90,22 +90,26 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
   - **Note & Documentazione Locale:** Campo note libero per salvare credenziali locali, ubicazione o porte di servizio.
   - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo con verifica automatica dei conflitti.
   - **Port Forwarding Integrato:** Aggiungi e rimuovi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
-  - **Pausa Connessione:** Interruttore per bloccare o consentire l'accesso a Internet del singolo dispositivo.
         """
     },
     {
         "id": "speedtest",
-        "title": "6. Speed Test & Diagnostica Prestazioni",
+        "title": "6. Speed Test, Diagnostica & Qualità Segnale Wi-Fi",
         "icon": "gauge",
-        "summary": "Esecuzione test di velocità, storico delle misurazioni e analisi della latenza.",
+        "summary": "Esecuzione test di velocità, storico misurazioni, analisi del segnale RSSI e copertura mesh.",
         "content": """
-### Diagnostica di Velocità
+### Diagnostica di Velocità & Copertura Wi-Fi
 
-* **Test Manuale:** Clicca sul pulsante **"Avvia Speed Test"** per lanciare una misurazione in tempo reale di Download, Upload, Latenza (Ping) e Jitter direttamente dal Gateway eero.
+* **Test Manuale di Velocità:** Clicca sul pulsante **"Avvia Speed Test"** per lanciare una misurazione in tempo reale di Download, Upload, Latenza (Ping) e Jitter direttamente dal Gateway eero.
 * **Test Automatici Pianificati:** Il sistema monitora e storicizza periodicamente i test eseguiti dall'infrastruttura mesh per valutare la costanza della linea FTTH/VDSL.
 * **Grafico Storico & Statistiche:**
   - Grafico dell'andamento di velocità e stabilità della linea nel corso dei giorni.
   - Calcolo automatico di velocità media, picco massimo e latenza minima.
+* **Qualità Wi-Fi & Copertura Mesh (v1.04.00):**
+  - **Storicizzazione Continua Segnale (dBm):** Il poller registra in automatico i livelli RSSI, frequenze e bitrate di tutti i dispositivi wireless attivi nel database SQLite locale (`device_signal_history`).
+  - **Segnale Medio & Fasce di Qualità:** KPI con livello medio dell'intera abitazione e ripartizione per fasce: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico* (< -75 dBm).
+  - **Grafico Temporale Interattivo:** Seleziona qualunque client wireless per visualizzare il grafico temporale Chart.js delle ultime 24 ore o 7 giorni con valori attuali, minimi, massimi e medi.
+  - **Weak Signal Watchlist:** Elenco degli apparati con segnale debole e consigli di riposizionamento dei nodi mesh.
         """
     },
     {
@@ -143,20 +147,24 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
     },
     {
         "id": "troubleshooting",
-        "title": "8. Risoluzione Problemi & Domande Frequenti (FAQ)",
+        "title": "8. Risoluzione Problemi, Aggiornamenti & FAQ",
         "icon": "wrench",
-        "summary": "FAQ su telemetria autentica, gestione sessione, AdGuard Home, backup e manutenzione.",
+        "summary": "FAQ su telemetria, motore di auto-aggiornamento Docker, AdGuard Home, backup e manutenzione.",
         "content": """
 ### Domande Frequenti & Troubleshooting
 
+* **Come funziona il motore di Auto-Update Docker in-App (v1.04.00)?**
+  - La dashboard controlla periodicamente la presenza di nuove versioni su Docker Hub e GitHub Releases.
+  - Se è montato il Docker Socket (`/var/run/docker.sock`), puoi aggiornare il container in 1 clic: l'applicazione scaricherà la nuova immagine, ricreerà il container preservando la cartella dati `./data` e ricaricherà automaticamente la pagina.
+  - In alternativa sono supportati trigger via **Watchtower Webhook** e modalità assistita da riga di comando.
 * **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
-  - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline/Pausa), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
+  - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
 * **Come configurare l'integrazione con AdGuard Home?**
   - Nel tab *Automazioni & Controlli*, inserisci l'URL della tua istanza (es. `http://192.168.4.100:8085` o semplicemente `192.168.4.100:8085`), il tuo username e la password. Clicca su **Test Connessione** per verificare il collegamento e poi su **Salva Impostazioni AdGuard**. La password viene salvata in modo sicuro nel database SQLite locale e non viene mai esposta in chiaro.
 * **Cosa fare se la sessione scade?**
   - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
 * **Come effettuare il backup delle configurazioni e metadati locali?**
-  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
+  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche, storico segnale e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
 * **Protezione da Rate Limiting:**
   - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
         """
@@ -250,17 +258,22 @@ This web application is a full-featured, self-hosted management and monitoring p
     },
     {
         "id": "speedtest",
-        "title": "6. Speed Test & Performance Diagnostics",
+        "title": "6. Speed Test, Performance Diagnostics & Wi-Fi Signal Quality",
         "icon": "gauge",
-        "summary": "On-demand speed testing, historical performance tracking, and latency analytics.",
+        "summary": "On-demand speed testing, historical performance tracking, RSSI signal analytics, and mesh coverage.",
         "content": """
-### Performance & Bandwidth Diagnostics
+### Performance Diagnostics & Wi-Fi Coverage
 
 * **Manual Speed Test:** Click **"Start Speedtest"** to trigger a real-time measurement of Download, Upload, Ping/Latency, and Jitter.
 * **Automated Scheduled Testing:** The system can be scheduled to run automated background tests (e.g., every 12 hours) to track line consistency over time.
 * **Historical Charts & Statistics:**
   - Visual time-series graph of speeds and latency over days and weeks.
   - Aggregate statistics including average download/upload, maximum peak speeds, and average ping.
+* **Wi-Fi Signal Quality & Mesh Coverage (v1.04.00):**
+  - **Continuous RSSI Storicization (dBm):** The background poller continuously samples wireless signal levels, frequencies, and link rates into local SQLite (`device_signal_history`).
+  - **Household Average Signal & Quality Bands:** High-level KPI and percentage breakdown across *Excellent* (≥ -50 dBm), *Good* (-51 to -65 dBm), *Fair* (-66 to -75 dBm), and *Critical* (< -75 dBm).
+  - **Interactive Chart.js Time-Series:** Select any client to analyze signal trends over the past 24 hours or 7 days with current, min, max, and average RSSI.
+  - **Weak Signal Watchlist:** Filtered table of devices with marginal signal along with actionable mesh node repositioning suggestions.
         """
     },
     {
@@ -298,12 +311,16 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
     },
     {
         "id": "troubleshooting",
-        "title": "8. Troubleshooting & Frequently Asked Questions (FAQ)",
+        "title": "8. Troubleshooting, Docker Updates & FAQ",
         "icon": "wrench",
-        "summary": "Frequently asked questions regarding telemetry, session handling, AdGuard sync, backups, and maintenance.",
+        "summary": "Frequently asked questions regarding telemetry, in-app Docker auto-updates, AdGuard sync, backups, and maintenance.",
         "content": """
-### Troubleshooting & FAQ
+### Troubleshooting, Docker Updates & FAQ
 
+* **How does In-App 1-Click Docker Auto-Update work (v1.04.00)?**
+  - The dashboard automatically checks for new releases on Docker Hub and GitHub Releases.
+  - If the Docker Socket is mounted (`/var/run/docker.sock`), clicking "Update Container Now" pulls the latest image, recreates the container preserving your `./data` volume, and reloads the browser once the new version is healthy.
+  - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
 * **Which client metrics come directly from eero hardware?**
   - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
 * **How do I configure the AdGuard Home integration?**
@@ -311,7 +328,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 * **What should I do if my session expires?**
   - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
 * **How do I back up local configurations and custom metadata?**
-  - All custom device names, categories, notes, notification settings, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
+  - All custom device names, categories, notes, notification settings, signal history, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
 * **Rate Limiting Protection:**
   - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.
         """

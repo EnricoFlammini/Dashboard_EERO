@@ -42,6 +42,8 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 ## 🌟 Key Features
 
 * **📊 Mesh Topology & Health Score:** Live overview with Network Health Score (1-100), WAN public IP, gateway status, DNS servers, ISP information, and individual eero nodes (Gateway & Beacons) with backhaul type (`Ethernet (Wired)` vs `Wireless Mesh`).
+* **🔄 1-Click Docker In-App Auto-Update & Version Checker (v1.04.00):** Continuous background and manual version checking against Docker Hub and GitHub Releases, animated update alert badge in the header, and 1-click in-app container recreation via Docker socket (`/var/run/docker.sock`), Watchtower webhooks, or assisted terminal commands.
+* **📶 Wi-Fi Signal Quality & Mesh Coverage Analytics (v1.04.00):** Continuous SQLite storicization (`device_signal_history`) of client RSSI levels (dBm), frequencies and PHY rates, household average signal score, interactive Chart.js time-series analysis (24h/7d), and a Weak Signal Watchlist with mesh repositioning suggestions.
 * **🖥️ Certified Hardware Telemetry & Interactive Sorting:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, **Static IP vs Dynamic DHCP indicators**, **interactive column sorting (Name, IPv4, Node, Band, Signal, Status)**, and a **locked sticky header bar**.
 * **🛡️ Native In-App Multi-Instance AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, official tags (`device_laptop`, `device_phone`, `device_pc`, `device_tv`, etc.), and static/dynamic IP leases directly to **one or multiple AdGuard Home DNS servers** (e.g. Primary and Secondary DNS) with automatic background synchronization.
 * **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
@@ -118,15 +120,33 @@ Access the dashboard in your browser:
 
 | Variable | Default | Description |
 |---|---|---|
-| `HOST_PORT` | `8085` | Port exposed on host machine |
-| `DATA_DIR` | `/app/data` | Directory for SQLite DB and session storage |
-| `POLL_INTERVAL` | `30` | eero API sampling interval (seconds) |
-| `HISTORY_RETENTION_DAYS` | `30` | Number of days to retain historical records |
-| `SPEEDTEST_INTERVAL_HOURS` | `12` | Scheduled speed test interval in hours (0 to disable) |
-| `DEMO_MODE` | `false` | Enable simulated mesh network environment |
-| `TELEGRAM_BOT_TOKEN` | *(optional)* | Telegram Bot Token for alerts & daily digest |
-| `TELEGRAM_CHAT_ID` | *(optional)* | Destination Telegram Chat ID |
-| `WEBHOOK_URL` | *(optional)* | HTTP POST endpoint for JSON event forwarding |
+| `PORT` | `8000` | Internal container port (mapped to 8085 externally in compose) |
+| `TZ` | `UTC` | Timezone for timestamps and daily digests (e.g. `Europe/Rome`) |
+| `DATA_DIR` | `/app/data` | Path to persistent storage volume (SQLite DB & session) |
+| `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
+| `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
+| `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
+
+---
+
+## 📡 Webhook Payload & Event Schema
+
+When notifications are enabled, the dashboard sends structured HTTP POST JSON payloads to your configured webhook URL:
+
+```json
+{
+  "event": "new_device",
+  "timestamp": "2026-08-30T18:00:00+02:00",
+  "data": {
+    "hostname": "iPhone-17-Pro",
+    "ip_address": "192.168.4.105",
+    "mac_address": "AA:BB:CC:11:22:33",
+    "connected_eero": "Living Room (Gateway)",
+    "frequency_band": "6 GHz",
+    "channel": 69
+  }
+}
+```
 
 ---
 
@@ -286,6 +306,8 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 ## 🌟 Caratteristiche Principali
 
 * **📊 Dashboard Mesh & Health Score:** Panoramica con Network Health Score (1-100), IP pubblico, DNS, ISP, Speed Test Gateway e stato dei singoli nodi eero (Gateway e Beacon) con tipo di backhaul (`Ethernet (Cablato)` vs `Wireless Mesh (5/6 GHz)`).
+* **🔄 Auto-Update Docker in-App a 1-Clic & Controllo Versioni (v1.04.00):** Verifica automatica e manuale di nuove release su Docker Hub e GitHub, badge di notifica animato nell'header e aggiornamento istantaneo del container in 1 clic tramite Docker socket (`/var/run/docker.sock`), webhook Watchtower o comando assistito per terminale.
+* **📶 Qualità Segnale Wi-Fi & Copertura Mesh (v1.04.00):** Storicizzazione continua su database SQLite (`device_signal_history`) dei valori RSSI (dBm), bande e bitrate dei dispositivi wireless, KPI del segnale medio di casa, grafico temporale Chart.js interattivo (24h/7g) e Weak Signal Watchlist con suggerimenti di posizionamento nodi mesh.
 * **🖥️ Telemetria Hardware & Ordinamento Interattivo:** Tabella completa con badge cromatici per frequenza (**2.4 GHz, 5 GHz, 6 GHz, Cablato Ethernet**), canali Wi-Fi (`CH 11`, `CH 36`, ecc.), integrazione profilo utente eero (`👤 [Nome Profilo]`), nodo di attestazione, potenza segnale RSSI (dBm), velocità di link PHY, **indicatori visivi IP Statico vs DHCP**, **ordinamento interattivo per colonna (Nome, IPv4, Profilo, Nodo, Banda, Segnale, Stato)** e **barra dei titoli bloccata (Sticky Header)**.
 * **🛡️ Sincronizzazione Nativa AdGuard Home Multi-Istanza:** Pannello di configurazione visuale dedicato per sincronizzare in automatico e in modo continuo i nomi dei dispositivi, MAC, tag ufficiali AdGuard (`device_laptop`, `device_phone`, `device_pc`, ecc.) e IP verso **uno o molteplici server DNS AdGuard Home** (es. DNS Primario e Secondario) con supporto alla sincronizzazione silenziosa in background.
 * **⚙️ Prenotazioni DHCP & Port Forwarding:** Scheda dettaglio dispositivo con sincronizzazione nomi sul cloud eero, categorie, note locali, preferiti (⭐), **prenotazione IP statico con rilevamento intelligente dei conflitti** e **gestione regole di apertura porte (Port Forwarding)**.
