@@ -354,7 +354,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Fix Formattazione Velocità Backhaul 2.5 Gbps su Card Nodi Mesh (Issue #14)**
 * **Riconoscimento Frequenze e Canali Wi-Fi 6E & Wi-Fi 7 a 6 GHz (5900-7200 MHz, EHT 320MHz)**
 * **Isolamento Grafico Badge 6 GHz e Prevenzione Sovrapposizione con 5 GHz**
-* **Sincronizzazione DNS Multi-Server AdGuard Home & Cache-Busting Asset (Issue #17)**
+* **Cache-Busting Automatico Asset Statici (Issue #17)**
 * **Supporto Account Amministratori Invitati e Reti Condivise (Amazon Workaround)**
 * **Mapping Categorie Native eero e Tag Ufficiali AdGuard (Issue #13)**
 
@@ -445,7 +445,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Fix 2.5 Gbps Backhaul Speed Formatting on Mesh Node Cards (Issue #14)**
 * **Wi-Fi 6E & Wi-Fi 7 6 GHz Frequency Detection (5900-7200 MHz, EHT 320MHz)**
 * **Isolated 6 GHz Sky-Blue Badging & Styling De-confliction with 5 GHz**
-* **Multi-Target AdGuard Home DNS Synchronization & Cache Busting (Issue #17)**
+* **Automatic Cache-Busting Versioning on Static Assets (Issue #17)**
 * **Invited Administrator Accounts & Shared Networks Resolution Support**
 * **Native eero Category Mapping & Official AdGuard Client Tags (Issue #13)**
 

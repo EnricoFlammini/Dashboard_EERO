@@ -393,9 +393,9 @@ async def run_all_tests():
         runner.assert_true(eero_client.user_token == "live_secret_user_token_sample", "Token Live originale ripristinato intatto")
 
         # =====================================================================
-        # 9. TEST MULTI-ISTANZA ADGUARD HOME & CACHE BUSTING (Issue #17)
+        # 9. TEST CACHE BUSTING ASSET & ADGUARD HOME SYNC (v1.03.02)
         # =====================================================================
-        print("\n🛡️ [9/9] TEST MULTI-ISTANZA ADGUARD HOME & CACHE BUSTING (Issue #17)")
+        print("\n🛡️ [9/9] TEST CACHE BUSTING ASSET & ADGUARD HOME SYNC (v1.03.02)")
         
         # Test cache busting su pagina index
         page_res = await client.get("/")
@@ -404,53 +404,36 @@ async def run_all_tests():
         runner.assert_true("styles.css?v=" in page_html, "styles.css include parametro versione cache-busting (?v=)")
         runner.assert_true("app.js?v=" in page_html, "app.js include parametro versione cache-busting (?v=)")
 
-        # Test salvataggio istanze multiple AdGuard
-        adg_instances_payload = {
+        # Test salvataggio impostazioni AdGuard singola istanza
+        adg_payload = {
             "enabled": True,
-            "instances": [
-                {
-                    "id": "inst-1",
-                    "name": "Primary DNS Server",
-                    "url": "http://192.168.4.104:8085",
-                    "username": "admin1",
-                    "password": "test_pass_primary",
-                    "enabled": True
-                },
-                {
-                    "id": "inst-2",
-                    "name": "Secondary DNS Server",
-                    "url": "http://192.168.4.105:8085",
-                    "username": "admin2",
-                    "password": "test_pass_secondary",
-                    "enabled": True
-                }
-            ]
+            "url": "http://192.168.4.104:8085",
+            "username": "admin",
+            "password": "test_password_123"
         }
-        save_adg_res = await client.post("/api/automations/adguard", json=adg_instances_payload)
-        runner.assert_true(save_adg_res.status_code == 200, "Salvataggio istanze multiple AdGuard risponde HTTP 200")
+        save_adg_res = await client.post("/api/automations/adguard", json=adg_payload)
+        runner.assert_true(save_adg_res.status_code == 200, "Salvataggio impostazioni AdGuard risponde HTTP 200")
 
-        # Verifica lettura impostazioni multi-istanza
+        # Verifica lettura impostazioni
         get_adg_res = await client.get("/api/automations/adguard")
         runner.assert_true(get_adg_res.status_code == 200, "Lettura impostazioni AdGuard risponde HTTP 200")
         adg_data = get_adg_res.json()
-        runner.assert_true(len(adg_data.get("instances", [])) == 2, f"Rilevate 2 istanze AdGuard configurate (ottenute: {len(adg_data.get('instances', []))})")
-        runner.assert_true(adg_data["instances"][0]["name"] == "Primary DNS Server", "Nome prima istanza preservato")
-        runner.assert_true(adg_data["instances"][1]["name"] == "Secondary DNS Server", "Nome seconda istanza preservato")
-        runner.assert_true(adg_data["instances"][0]["has_password"] is True, "Password prima istanza preservata")
-        runner.assert_true(adg_data["instances"][1]["has_password"] is True, "Password seconda istanza preservata")
+        runner.assert_true(adg_data.get("url") == "http://192.168.4.104:8085", "URL AdGuard preservato correttamente")
+        runner.assert_true(adg_data.get("username") == "admin", "Username AdGuard preservato")
+        runner.assert_true(adg_data.get("has_password") is True, "Password AdGuard presente e protetta")
 
         # Attiva demo mode per simulazione test e sync senza socket reali
         await client.post("/api/auth/mode", json={"demo": True})
         
-        # Test connessione multi-istanza
-        test_adg_res = await client.post("/api/automations/adguard/test", json={"instances": adg_instances_payload["instances"]})
-        runner.assert_true(test_adg_res.status_code == 200, "Test connessione multi-istanza risponde HTTP 200")
-        runner.assert_true(test_adg_res.json().get("success") is True, "Test connessione multi-istanza simulato con successo")
+        # Test connessione
+        test_adg_res = await client.post("/api/automations/adguard/test", json=adg_payload)
+        runner.assert_true(test_adg_res.status_code == 200, "Test connessione AdGuard risponde HTTP 200")
+        runner.assert_true(test_adg_res.json().get("success") is True, "Test connessione AdGuard simulato con successo")
 
-        # Test sync in demo mode verso multiple istanze
-        sync_adg_res = await client.post("/api/automations/adguard/sync", json={"instances": adg_instances_payload["instances"]})
-        runner.assert_true(sync_adg_res.status_code == 200, "Sync multi-istanza AdGuard risponde HTTP 200")
-        runner.assert_true(sync_adg_res.json().get("success") is True, "Sync multi-istanza completato con successo")
+        # Test sync in demo mode
+        sync_adg_res = await client.post("/api/automations/adguard/sync", json=adg_payload)
+        runner.assert_true(sync_adg_res.status_code == 200, "Sync AdGuard risponde HTTP 200")
+        runner.assert_true(sync_adg_res.json().get("success") is True, "Sync AdGuard completato con successo")
 
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
