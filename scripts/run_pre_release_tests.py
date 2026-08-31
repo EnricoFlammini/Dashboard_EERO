@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.03.02)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.03.03)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation
@@ -435,6 +435,49 @@ async def run_all_tests():
         runner.assert_true(sync_adg_res.status_code == 200, "Sync AdGuard risponde HTTP 200")
         runner.assert_true(sync_adg_res.json().get("success") is True, "Sync AdGuard completato con successo")
 
+        # =====================================================================
+        # 10. TEST RISOLUZIONE ACCURATA PRIMARY GATEWAY (Issue #19)
+        # =====================================================================
+        print("\n🌐 [10/10] TEST RISOLUZIONE ACCURATA PRIMARY GATEWAY (Issue #19)")
+        
+        # Test 1: Topologia Bridge Mode reale Issue #19 (phutmacher) con gateway string URL
+        phutmacher_nodes_raw = [
+            {"id": "101", "url": "/2.2/eeros/101", "name": "Bedroom", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.189"},
+            {"id": "102", "url": "/2.2/eeros/102", "name": "Office", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.190"},
+            {"id": "103", "url": "/2.2/eeros/103", "name": "Office 2", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.191"},
+            {"id": "104", "url": "/2.2/eeros/104", "name": "Wiring Closet", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.188"}
+        ]
+        
+        norm_nodes = [eero_client._normalize_eero_node(n) for n in phutmacher_nodes_raw]
+        
+        bedroom_res = next(n for n in norm_nodes if n["name"] == "Bedroom")
+        office_res = next(n for n in norm_nodes if n["name"] == "Office")
+        office2_res = next(n for n in norm_nodes if n["name"] == "Office 2")
+        closet_res = next(n for n in norm_nodes if n["name"] == "Wiring Closet")
+        
+        runner.assert_true(bedroom_res["is_gateway"] is False, "Bedroom marcato is_gateway=False (non è gateway)")
+        runner.assert_true(bedroom_res["backhaul_type"] == "Ethernet (Cablato)", f"Bedroom backhaul è 'Ethernet (Cablato)' (ottenuto: {bedroom_res['backhaul_type']})")
+        runner.assert_true(office_res["is_gateway"] is False, "Office marcato is_gateway=False")
+        runner.assert_true(office2_res["is_gateway"] is False, "Office 2 marcato is_gateway=False")
+        runner.assert_true(closet_res["is_gateway"] is True, "Wiring Closet marcato is_gateway=True (Primary Gateway univoco)")
+        runner.assert_true(closet_res["backhaul_type"] == "Gateway (WAN)", f"Wiring Closet backhaul è 'Gateway (WAN)' (ottenuto: {closet_res['backhaul_type']})")
+
+        # Test 2: Subnet Gateway IP string in Bridge Mode (es. "192.168.1.1" upstream Peplink)
+        bridge_node_leaf = {"id": "201", "url": "/2.2/eeros/201", "name": "Salotto", "gateway": "192.168.1.1", "ip": "192.168.1.55"}
+        bridge_leaf_norm = eero_client._normalize_eero_node(bridge_node_leaf)
+        runner.assert_true(bridge_leaf_norm["is_gateway"] is False, "Nodo con gateway IP subnet differente marcato is_gateway=False")
+
+        # Test 3: Normalizzazione dettagli rete con metadati gateway
+        net_raw = {
+            "name": "Home Network",
+            "gateway": "/2.2/eeros/104",
+            "gateway_name": "Wiring Closet",
+            "gateway_ip": "192.168.1.188"
+        }
+        net_norm = eero_client._normalize_network_details(net_raw)
+        runner.assert_true(net_norm.get("gateway_eero_id") == "104", f"Network details estrae gateway_eero_id='104' (ottenuto: {net_norm.get('gateway_eero_id')})")
+        runner.assert_true(net_norm.get("gateway_name") == "Wiring Closet", f"Network details estrae gateway_name='Wiring Closet' (ottenuto: {net_norm.get('gateway_name')})")
+
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
 
@@ -443,3 +486,4 @@ async def run_all_tests():
 
 if __name__ == "__main__":
     asyncio.run(run_all_tests())
+

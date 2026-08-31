@@ -4,6 +4,16 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.03.03] - 2026-08-31
+
+### 🌐 Fix Risoluzione Primary Gateway Mesh in Bridge & Routed Mode (#19)
+* **🌐 Risoluzione Accurata del Nodo Gateway Principale (Issue #19):**
+  * Risolto il bug di casting booleano indiscriminato in cui i campi stringa URL/ID (es. `"/2.2/eeros/104"`) restituiti dall'API eero come puntatore al nodo root venivano valutati come `True` per tutti i beacon/nodi foglia della rete, forzando tutti i nodi su `Gateway (WAN)` ed eleggendo erroneamente il primo nodo alfabetico (es. *Bedroom* al posto di *Wiring Closet*).
+  * Introdotto il metodo `_is_gateway_node` in `eero_client.py` per confrontare le chiavi URL, ID, serial e IP locali con il puntatore gateway effettivo, supportando in modo trasparente reti in **Bridge Mode** (con router/DHCP esterno come Peplink, pfSense o modem operatore) e reti standard in **Routed Mode**.
+  * Implementato algoritmo di riconciliazione univoca in `get_eeros` per garantire l'elezione di un singolo Primary Gateway certificato anche in caso di ambiguità nei payload cloud.
+
+---
+
 ## [1.03.02] - 2026-08-30
 
 ### ⚡ Fix Formattazione Velocità Backhaul & Rilevamento Frequenze Wi-Fi 6 GHz (#14)

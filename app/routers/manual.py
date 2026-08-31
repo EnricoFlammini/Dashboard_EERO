@@ -350,6 +350,13 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
+## v1.03.03
+* **Fix Risoluzione Accurata Primary Gateway Mesh in Bridge & Routed Mode (Issue #19)**
+* **Eliminazione Falsi Positivi Gateway su Nodi Satellite da Stringhe URL API eero**
+* **Riconciliazione Univoca del Nodo Gateway Principale della Rete**
+
+---
+
 ## v1.03.02
 * **Fix Formattazione Velocità Backhaul 2.5 Gbps su Card Nodi Mesh (Issue #14)**
 * **Riconoscimento Frequenze e Canali Wi-Fi 6E & Wi-Fi 7 a 6 GHz (5900-7200 MHz, EHT 320MHz)**
@@ -438,6 +445,13 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+---
+
+## v1.03.03
+* **Fix Mesh Primary Gateway Resolution in Bridge & Routed Modes (Issue #19)**
+* **Eliminate False-Positive Gateway Flags from eero Cloud API URL Strings**
+* **Guaranteed Certified Single Primary Gateway Resolution & Backhaul Badging**
 
 ---
 

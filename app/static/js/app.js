@@ -6,7 +6,7 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version
-    appVersion: '1.03.02',
+    appVersion: '1.03.03',
 
     // i18n Multi-Language State
     currentLanguage: localStorage.getItem('eero_lang') || 'en',
@@ -171,7 +171,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.03.02',
+    changelogVersion: '1.03.03',
     changelogLoading: false,
 
     // About Modal State
@@ -2052,7 +2052,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.03.02';
+          this.changelogVersion = json.version || '1.03.03';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         }
       } catch (err) {
