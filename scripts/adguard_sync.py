@@ -65,27 +65,29 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
         sys.exit(1)
 
     clients = data.get("clients") or []
-    # AdGuard Home only accepts predefined enum tags. Custom freeform tags cause HTTP 400.
-    for c in clients:
-        c["tags"] = []
     print(f"✅ Found {len(clients)} active eero clients.")
 
     if dry_run:
         print("\n🔍 [DRY RUN] Showing devices to sync:")
         for c in clients:
-            print(f"  • {c['name']} -> IDs: {c['ids']}")
+            print(f"  • {c['name']} -> IDs: {c['ids']} (Tags: {c.get('tags', [])})")
         return
 
-    # Check AdGuard Home existing clients to determine ADD vs UPDATE
+    # Check AdGuard Home existing clients to determine ADD vs UPDATE and preserve custom rules
     print(f"🔍 Inspecting existing clients on AdGuard Home: {adguard_url}/control/clients ...")
-    existing_names = set()
+    existing_by_name = {}
+    existing_by_id = {}
     try:
         status, body = http_request(f"{adguard_url}/control/clients", user=user, password=password)
         if status == 200:
             existing_data = json.loads(body) if body else {}
             for ec in (existing_data.get("clients") or []):
-                if isinstance(ec, dict) and ec.get("name"):
-                    existing_names.add(ec.get("name"))
+                if isinstance(ec, dict):
+                    if ec.get("name"):
+                        existing_by_name[ec.get("name").lower()] = ec
+                    for cid in (ec.get("ids") or []):
+                        if cid:
+                            existing_by_id[str(cid).strip().lower()] = ec
         elif status == 401:
             print("❌ AdGuard Home returned 401 Unauthorized. Check your username and password.")
             sys.exit(1)
@@ -95,21 +97,45 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
     success_count = 0
     for client in clients:
         name = client["name"]
-        client["tags"] = []
-        is_update = name in existing_names
+        ids = client.get("ids") or []
+
+        matched_client = None
+        for cid in ids:
+            matched_client = existing_by_id.get(str(cid).lower())
+            if matched_client:
+                break
+        if not matched_client:
+            matched_client = existing_by_name.get(name.lower())
+
+        is_update = matched_client is not None
         endpoint = f"{adguard_url}/control/clients/update" if is_update else f"{adguard_url}/control/clients/add"
 
-        payload = client
         if is_update:
+            # Preserve 100% of user's rules, upstreams, and blocked services
+            merged_data = dict(matched_client)
+            merged_data["name"] = name
+            existing_ids = [str(x).strip() for x in (matched_client.get("ids") or []) if str(x).strip()]
+            merged_ids = list(existing_ids)
+            existing_ids_lower = {x.lower() for x in existing_ids}
+            for i_id in ids:
+                if str(i_id).lower() not in existing_ids_lower:
+                    merged_ids.append(str(i_id).strip())
+                    existing_ids_lower.add(str(i_id).lower())
+            merged_data["ids"] = merged_ids
+            if not matched_client.get("tags") and client.get("tags"):
+                merged_data["tags"] = client["tags"]
+
             payload = {
-                "name": name,
-                "data": client
+                "name": matched_client.get("name") or name,
+                "data": merged_data
             }
+        else:
+            payload = client
 
         try:
             status, res_text = http_request(endpoint, method="POST", data=payload, user=user, password=password)
             if status in (200, 201, 204):
-                print(f"  ✅ {'Updated' if is_update else 'Added'} client '{name}' -> {client['ids']}")
+                print(f"  ✅ {'Updated (rules preserved)' if is_update else 'Added'} client '{name}' -> {client['ids']}")
                 success_count += 1
             else:
                 print(f"  ⚠️ Warning for '{name}' (HTTP {status}): {res_text.strip()}")

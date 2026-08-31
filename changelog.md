@@ -12,6 +12,14 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Introdotto il metodo `_is_gateway_node` in `eero_client.py` per confrontare le chiavi URL, ID, serial e IP locali con il puntatore gateway effettivo, supportando in modo trasparente reti in **Bridge Mode** (con router/DHCP esterno come Peplink, pfSense o modem operatore) e reti standard in **Routed Mode**.
   * Implementato algoritmo di riconciliazione univoca in `get_eeros` per garantire l'elezione di un singolo Primary Gateway certificato anche in caso di ambiguità nei payload cloud.
 
+### 🛡️ Preservazione Regole AdGuard Home & Distinzione Tag Desktop/Laptop (#21)
+* **🛡️ Preservazione Integrale Regole e Filtri Client su AdGuard Home (Issue #21):**
+  * Risolto il bug di sincronizzazione per cui le chiamate `POST /control/clients/update` verso AdGuard Home azzeravano i parametri custom impostati dall'utente.
+  * Implementato il metodo `_merge_adguard_client_data` per ereditare e mantenere al 100% tutte le regole attive: server DNS personalizzati (`upstreams`), servizi bloccati (`blocked_services`), pianificazioni (`blocked_services_schedule`), `parental_enabled`, `safebrowsing_enabled`, `safesearch_enabled`, `use_global_settings`, filtri querylog e tag personalizzati.
+  * Unito l'elenco degli identificatori (`ids`) preservando eventuali IP, alias o MAC aggiunti manualmente in AdGuard senza sovrascriverli.
+* **🖥️ Distinzione Accurata Tag Desktop / PC vs Laptop (`device_pc` / `device_laptop`):**
+  * Perfezionato `map_eero_device_type` e `get_adguard_tags` per distinguere i PC fissi/workstation/tower (assegnando icona `pc` e tag `device_pc`) dai portatili (assegnando icona `laptop` e tag `device_laptop`).
+
 ---
 
 ## [1.03.02] - 2026-08-30

@@ -94,14 +94,19 @@ def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] =
     n = str(model_or_name or "").strip().lower()
 
     # 1. Computer & Printers
-    if any(k in t for k in ("laptop", "desktop", "computer", "pc", "macbook", "imac", "workstation")) or \
-       any(k in n for k in ("macbook", "imac", "thinkpad", "desktop", "laptop", "pc-")):
-        if "printer" in t or "printer" in n or "stampante" in n:
-            return ("Computer", "printer")
-        return ("Computer", "laptop")
-
     if "printer" in t or "printer" in n or "stampante" in n:
         return ("Computer", "printer")
+
+    if any(k in t for k in ("laptop", "notebook", "macbook")) or \
+       any(k in n for k in ("macbook", "thinkpad", "laptop", "notebook")):
+        return ("Computer", "laptop")
+
+    if any(k in t for k in ("desktop", "computer", "pc", "imac", "workstation", "tower", "mac_mini", "macmini", "mac_studio", "macstudio", "mac_pro", "macpro")) or \
+       any(k in n for k in ("imac", "desktop", "pc-", "-pc", "pc_", "_pc", "workstation", "tower", "mac mini", "macmini", "mac studio", "mac pro")):
+        return ("Computer", "pc")
+
+    if t in ("computer", "pc") or "computer" in n or "pc" in n:
+        return ("Computer", "pc")
 
     # 2. Mobile (Phones & Tablets)
     if "tablet" in t or "ipad" in t or "tablet" in n or "ipad" in n:
@@ -144,7 +149,9 @@ def get_adguard_tags(category: Optional[str], icon: Optional[str] = None) -> Lis
     cat_lower = str(category or "").strip().lower()
     icon_lower = str(icon or "").strip().lower()
 
-    if icon_lower == "laptop":
+    if icon_lower in ("pc", "desktop"):
+        return ["device_pc"]
+    if icon_lower in ("laptop", "macbook"):
         return ["device_laptop"]
     if icon_lower == "tablet":
         return ["device_tablet"]

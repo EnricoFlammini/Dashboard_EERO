@@ -352,6 +352,8 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ## v1.03.03
 * **Fix Risoluzione Accurata Primary Gateway Mesh in Bridge & Routed Mode (Issue #19)**
+* **Preservazione Integrale Regole, Filtri, Upstreams e Blacklist AdGuard Home su Sync (Issue #21)**
+* **Distinzione Accurata Tag Desktop / PC vs Laptop (`device_pc` / `device_laptop`)**
 * **Eliminazione Falsi Positivi Gateway su Nodi Satellite da Stringhe URL API eero**
 * **Riconciliazione Univoca del Nodo Gateway Principale della Rete**
 
@@ -450,6 +452,8 @@ Below is a summary of the main release highlights. The complete changelog with a
 
 ## v1.03.03
 * **Fix Mesh Primary Gateway Resolution in Bridge & Routed Modes (Issue #19)**
+* **Preserve AdGuard Home Custom Rules, Upstreams, Blocked Services & Tags on Sync (Issue #21)**
+* **Accurate Desktop / PC vs Laptop Tag Mapping (`device_pc` / `device_laptop`)**
 * **Eliminate False-Positive Gateway Flags from eero Cloud API URL Strings**
 * **Guaranteed Certified Single Primary Gateway Resolution & Backhaul Badging**
 

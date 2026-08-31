@@ -269,13 +269,41 @@ class AdGuardService:
 
         return prepared_clients
 
+    def _merge_adguard_client_data(self, existing: Dict[str, Any], incoming: Dict[str, Any]) -> Dict[str, Any]:
+        """Preserva al 100% tutte le regole personalizzate, filtri, upstreams e blacklist di AdGuard Home (Issue #21)."""
+        merged = dict(existing)
+
+        # 1. Aggiorna nome con quello formattato da eero
+        merged["name"] = incoming.get("name") or existing.get("name")
+
+        # 2. Merge degli identificatori (IP, IPv6, MAC) preservando ID custom aggiunti dall'utente in AdGuard
+        existing_ids = [str(x).strip() for x in (existing.get("ids") or []) if str(x).strip()]
+        incoming_ids = [str(x).strip() for x in (incoming.get("ids") or []) if str(x).strip()]
+        
+        merged_ids = list(existing_ids)
+        existing_ids_lower = {x.lower() for x in existing_ids}
+        for i_id in incoming_ids:
+            if i_id.lower() not in existing_ids_lower:
+                merged_ids.append(i_id)
+                existing_ids_lower.add(i_id.lower())
+        merged["ids"] = merged_ids
+
+        # 3. Tags: se l'utente ha già impostato tag custom su AdGuard, li preserva; altrimenti applica quelli di eero
+        if not existing.get("tags") and incoming.get("tags"):
+            merged["tags"] = incoming["tags"]
+
+        # 4. Tutti i campi di regole e configurazione (upstreams, blocked_services, filtering_enabled,
+        # parental_enabled, safebrowsing_enabled, safesearch_enabled, use_global_settings, ecc.)
+        # vengono ereditati e preservati integralmente dall'oggetto existing.
+        return merged
+
     async def _sync_single_target(
         self,
         target_url: str,
         auth: Optional[tuple],
         prepared_clients: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Sincronizza i client verso una singola istanza AdGuard Home."""
+        """Sincronizza i client verso una singola istanza AdGuard Home preservando le regole esistenti."""
         existing_clients_by_name: Dict[str, Dict[str, Any]] = {}
         existing_clients_by_id: Dict[str, Dict[str, Any]] = {}
 
@@ -333,12 +361,15 @@ class AdGuardService:
                 if matched_client:
                     orig_name = matched_client.get("name") or name
                     endpoint = f"{target_url}/control/clients/update"
-                    body_data = {"name": orig_name, "data": payload}
+                    update_data = self._merge_adguard_client_data(matched_client, payload)
+                    body_data = {"name": orig_name, "data": update_data}
                     is_update = True
+                    client_record = update_data
                 else:
                     endpoint = f"{target_url}/control/clients/add"
                     body_data = payload
                     is_update = False
+                    client_record = payload
 
                 try:
                     r = await client.post(endpoint, json=body_data, auth=auth)
@@ -347,9 +378,9 @@ class AdGuardService:
                             updated_count += 1
                         else:
                             added_count += 1
-                        existing_clients_by_name[name.lower()] = payload
-                        for cid in ids:
-                            existing_clients_by_id[str(cid).lower()] = payload
+                        existing_clients_by_name[name.lower()] = client_record
+                        for cid in client_record.get("ids", ids):
+                            existing_clients_by_id[str(cid).lower()] = client_record
                     else:
                         if not is_update:
                             await _fetch_adguard_clients(client)
@@ -363,16 +394,17 @@ class AdGuardService:
 
                             if rematched:
                                 target_orig = rematched.get("name") or name
+                                upd_data = self._merge_adguard_client_data(rematched, payload)
                                 r_upd = await client.post(
                                     f"{target_url}/control/clients/update",
-                                    json={"name": target_orig, "data": payload},
+                                    json={"name": target_orig, "data": upd_data},
                                     auth=auth
                                 )
                                 if r_upd.status_code in (200, 201, 204):
                                     updated_count += 1
-                                    existing_clients_by_name[name.lower()] = payload
-                                    for cid in ids:
-                                        existing_clients_by_id[str(cid).lower()] = payload
+                                    existing_clients_by_name[name.lower()] = upd_data
+                                    for cid in upd_data.get("ids", ids):
+                                        existing_clients_by_id[str(cid).lower()] = upd_data
                                     continue
 
                         err_text = r.text.strip()[:90]
