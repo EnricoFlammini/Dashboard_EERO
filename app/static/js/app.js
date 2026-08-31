@@ -147,7 +147,6 @@ document.addEventListener('alpine:init', () => {
     // AdGuard Home DNS Integration State
     adguardSettings: {
       enabled: false,
-      instances: [],
       url: '',
       username: '',
       password: '',
@@ -172,7 +171,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.03.02',
+    changelogVersion: '1.03.03',
     changelogLoading: false,
 
     // About Modal State
@@ -1996,63 +1995,17 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // ADGUARD HOME DNS & DHCP CLIENT SYNC
     // =========================================================================
+    // ADGUARD HOME DNS & DHCP CLIENT SYNC
     // =========================================================================
-    // ADGUARD HOME MULTI-INSTANCE DNS INTEGRATION
-    // =========================================================================
-    addAdGuardInstance() {
-      if (!this.adguardSettings.instances) {
-        this.adguardSettings.instances = [];
-      }
-      const nextIdx = this.adguardSettings.instances.length + 1;
-      this.adguardSettings.instances.push({
-        id: 'inst-' + Date.now(),
-        name: (this.currentLanguage === 'it' ? 'DNS Server ' : 'DNS Server ') + nextIdx,
-        url: '',
-        username: '',
-        password: '',
-        has_password: false,
-        enabled: true,
-        last_sync_status: '',
-        last_sync_time: ''
-      });
-    },
-
-    removeAdGuardInstance(idx) {
-      if (this.adguardSettings.instances && this.adguardSettings.instances.length > 1) {
-        this.adguardSettings.instances.splice(idx, 1);
-      }
-    },
-
     async fetchAdGuardSettings() {
       try {
         const res = await fetch('/api/automations/adguard');
         const json = await res.json().catch(() => ({}));
         if (json.status === 'success') {
-          let insts = Array.isArray(json.instances) && json.instances.length > 0 ? json.instances : [];
-          if (insts.length === 0) {
-            insts = [{
-              id: 'inst-1',
-              name: this.currentLanguage === 'it' ? 'DNS Primario' : 'Primary DNS',
-              url: json.url || '',
-              username: json.username || '',
-              password: '',
-              has_password: Boolean(json.has_password),
-              enabled: true,
-              last_sync_time: json.last_sync_time || '',
-              last_sync_status: json.last_sync_status || ''
-            }];
-          } else {
-            insts = insts.map(i => ({
-              ...i,
-              password: ''
-            }));
-          }
-
           this.adguardSettings = {
             enabled: Boolean(json.enabled),
-            instances: insts,
-            url: json.url || (insts[0] ? insts[0].url : ''),
-            username: json.username || (insts[0] ? insts[0].username : ''),
+            url: json.url || '',
+            username: json.username || '',
             password: '',
             has_password: Boolean(json.has_password),
             last_sync_time: json.last_sync_time || '',
@@ -2067,27 +2020,19 @@ document.addEventListener('alpine:init', () => {
 
     async saveAdGuardSettings() {
       try {
-        const cleanedInstances = (this.adguardSettings.instances || []).map(inst => {
-          let cUrl = (inst.url || '').trim();
-          if (cUrl.includes('#')) cUrl = cUrl.split('#')[0];
-          cUrl = cUrl.replace(/\/+$/, '');
-          if (cUrl && !cUrl.startsWith('http://') && !cUrl.startsWith('https://')) {
-            cUrl = 'http://' + cUrl;
-          }
-          inst.url = cUrl;
-          return {
-            id: inst.id,
-            name: inst.name || 'DNS Server',
-            url: cUrl,
-            username: inst.username || '',
-            password: inst.password || undefined,
-            enabled: inst.enabled !== false
-          };
-        });
+        let cleanUrl = (this.adguardSettings.url || '').trim();
+        if (cleanUrl.includes('#')) cleanUrl = cleanUrl.split('#')[0];
+        cleanUrl = cleanUrl.replace(/\/+$/, '');
+        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+          cleanUrl = 'http://' + cleanUrl;
+        }
+        this.adguardSettings.url = cleanUrl;
 
         const payload = {
           enabled: Boolean(this.adguardSettings.enabled),
-          instances: cleanedInstances
+          url: cleanUrl,
+          username: this.adguardSettings.username || '',
+          password: this.adguardSettings.password || undefined
         };
         const res = await fetch('/api/automations/adguard', {
           method: 'POST',
@@ -2101,7 +2046,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchAdGuardSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? `Impossibile salvare le impostazioni (HTTP ${res.status}).` : `Could not save settings (HTTP ${res.status}).`);
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile salvare le impostazioni." : "Could not save settings.");
           this.showToast(title, msg, "error");
         }
       } catch (err) {
@@ -2113,24 +2058,18 @@ document.addEventListener('alpine:init', () => {
     async testAdGuardConnection() {
       this.adguardTesting = true;
       try {
-        const instancesToTest = (this.adguardSettings.instances || []).map(inst => {
-          let cUrl = (inst.url || '').trim();
-          if (cUrl.includes('#')) cUrl = cUrl.split('#')[0];
-          cUrl = cUrl.replace(/\/+$/, '');
-          if (cUrl && !cUrl.startsWith('http://') && !cUrl.startsWith('https://')) {
-            cUrl = 'http://' + cUrl;
-          }
-          return {
-            id: inst.id,
-            name: inst.name,
-            url: cUrl,
-            username: inst.username,
-            password: inst.password || undefined
-          };
-        });
+        let cleanUrl = (this.adguardSettings.url || '').trim();
+        if (cleanUrl.includes('#')) cleanUrl = cleanUrl.split('#')[0];
+        cleanUrl = cleanUrl.replace(/\/+$/, '');
+        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+          cleanUrl = 'http://' + cleanUrl;
+        }
+        this.adguardSettings.url = cleanUrl;
 
         const payload = {
-          instances: instancesToTest
+          url: cleanUrl,
+          username: this.adguardSettings.username,
+          password: this.adguardSettings.password || undefined
         };
         const res = await fetch('/api/automations/adguard/test', {
           method: 'POST',
@@ -2139,11 +2078,14 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
+          if (json.normalized_url) {
+            this.adguardSettings.url = json.normalized_url;
+          }
           const title = this.currentLanguage === 'it' ? "Test Connessione Riuscito" : "Connection Test Succeeded";
           this.showToast(title, json.message, "success");
         } else {
           const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          const msg = json.message || json.detail || (this.currentLanguage === 'it' ? `Impossibile connettersi ad AdGuard Home (HTTP ${res.status})` : `Could not connect to AdGuard Home (HTTP ${res.status})`);
+          const msg = json.message || json.detail || (this.currentLanguage === 'it' ? "Impossibile connettersi ad AdGuard Home" : "Could not connect to AdGuard Home");
           this.showToast(title, msg, "error");
         }
       } catch (err) {
@@ -2157,17 +2099,10 @@ document.addEventListener('alpine:init', () => {
     async syncAdGuardNow() {
       this.adguardSyncing = true;
       try {
-        const instancesToSync = (this.adguardSettings.instances || []).map(inst => ({
-          id: inst.id,
-          name: inst.name,
-          url: inst.url,
-          username: inst.username,
-          password: inst.password || undefined,
-          enabled: inst.enabled !== false
-        }));
-
         const payload = {
-          instances: instancesToSync
+          url: this.adguardSettings.url,
+          username: this.adguardSettings.username,
+          password: this.adguardSettings.password || undefined
         };
         const res = await fetch('/api/automations/adguard/sync', {
           method: 'POST',
@@ -2181,7 +2116,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchAdGuardSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? `Sincronizzazione non riuscita (HTTP ${res.status}).` : `Synchronization failed (HTTP ${res.status}).`);
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Sincronizzazione non riuscita." : "Synchronization failed.");
           this.showToast(title, msg, "error");
         }
       } catch (err) {
@@ -2315,7 +2250,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.03.02';
+          this.changelogVersion = json.version || '1.03.03';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         }
       } catch (err) {

@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -93,14 +94,19 @@ def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] =
     n = str(model_or_name or "").strip().lower()
 
     # 1. Computer & Printers
-    if any(k in t for k in ("laptop", "desktop", "computer", "pc", "macbook", "imac", "workstation")) or \
-       any(k in n for k in ("macbook", "imac", "thinkpad", "desktop", "laptop", "pc-")):
-        if "printer" in t or "printer" in n or "stampante" in n:
-            return ("Computer", "printer")
-        return ("Computer", "laptop")
-
     if "printer" in t or "printer" in n or "stampante" in n:
         return ("Computer", "printer")
+
+    if any(k in t for k in ("laptop", "notebook", "macbook")) or \
+       any(k in n for k in ("macbook", "thinkpad", "laptop", "notebook")):
+        return ("Computer", "laptop")
+
+    if any(k in t for k in ("desktop", "computer", "pc", "imac", "workstation", "tower", "mac_mini", "macmini", "mac_studio", "macstudio", "mac_pro", "macpro")) or \
+       any(k in n for k in ("imac", "desktop", "pc-", "-pc", "pc_", "_pc", "workstation", "tower", "mac mini", "macmini", "mac studio", "mac pro")):
+        return ("Computer", "pc")
+
+    if t in ("computer", "pc") or "computer" in n or "pc" in n:
+        return ("Computer", "pc")
 
     # 2. Mobile (Phones & Tablets)
     if "tablet" in t or "ipad" in t or "tablet" in n or "ipad" in n:
@@ -143,7 +149,9 @@ def get_adguard_tags(category: Optional[str], icon: Optional[str] = None) -> Lis
     cat_lower = str(category or "").strip().lower()
     icon_lower = str(icon or "").strip().lower()
 
-    if icon_lower == "laptop":
+    if icon_lower in ("pc", "desktop"):
+        return ["device_pc"]
+    if icon_lower in ("laptop", "macbook"):
         return ["device_laptop"]
     if icon_lower == "tablet":
         return ["device_tablet"]
@@ -448,12 +456,38 @@ class EeroClient:
         )
         data["public_ip"] = pub_ip if pub_ip else "0.0.0.0"
 
-        # Gateway IP
+        # Gateway IP & Gateway Network Metadata
         data["gateway_ip"] = (
             data.get("gateway_ip") or 
             (data.get("ip_settings") or {}).get("ip") or 
             "192.168.4.1"
         )
+
+        gw_raw = raw.get("gateway")
+        gw_id = ""
+        gw_url = ""
+        gw_name = raw.get("gateway_name") or ""
+        
+        if isinstance(gw_raw, dict):
+            gw_url = str(gw_raw.get("url") or "")
+            gw_id = str(gw_raw.get("id") or (gw_url.split("/")[-1] if "/" in gw_url else ""))
+            gw_name = gw_name or gw_raw.get("name") or gw_raw.get("location") or ""
+        elif isinstance(gw_raw, str):
+            gw_str = gw_raw.strip()
+            if "/" in gw_str:
+                gw_url = gw_str
+                gw_id = gw_str.split("/")[-1]
+            elif gw_str.isdigit() or len(gw_str) >= 6:
+                gw_id = gw_str
+            elif gw_str and not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", gw_str):
+                gw_name = gw_name or gw_str
+        
+        if gw_id:
+            data["gateway_eero_id"] = gw_id
+        if gw_url:
+            data["gateway_eero_url"] = gw_url
+        if gw_name:
+            data["gateway_name"] = gw_name
 
         # ISP
         data["isp"] = (
@@ -496,6 +530,64 @@ class EeroClient:
             }
         return data
 
+    def _is_gateway_node(self, node: Dict[str, Any]) -> bool:
+        """Verifica accuratamente se un nodo è il Primary Gateway escludendo falsi positivi da stringhe URL/IP (Issue #19)."""
+        if node.get("is_gateway") is True:
+            return True
+        if node.get("is_gateway") is False and "gateway" not in node:
+            return False
+
+        raw_gw = node.get("gateway")
+        
+        # 1. Booleano diretto
+        if isinstance(raw_gw, bool):
+            return raw_gw
+            
+        node_url = str(node.get("url") or "").strip()
+        node_id = str(node.get("id") or "").strip()
+        node_serial = str(node.get("serial") or "").strip()
+        node_ip = str(node.get("ip_address") or node.get("ip") or "").strip()
+
+        # 2. Stringa (URL risorsa, ID numerico, stringa booleana o IP)
+        if isinstance(raw_gw, str):
+            gw_s = raw_gw.strip()
+            if gw_s.lower() in ("true", "1", "yes"):
+                return True
+            if gw_s.lower() in ("false", "0", "no", "none", "null", ""):
+                return False
+            
+            # Se la stringa corrisponde esattamente agli identificatori di QUESTO nodo
+            if node_url and (gw_s == node_url or gw_s.endswith(node_url) or node_url.endswith(gw_s)):
+                return True
+            if node_id and (gw_s == node_id or gw_s.split("/")[-1] == node_id):
+                return True
+            if node_serial and gw_s.lower() == node_serial.lower():
+                return True
+            
+            # Se gw_s è un URL o ID che punta a un ALTRO nodo (es. "/2.2/eeros/104" su nodo 101), questo nodo è un beacon foglia
+            if "/eeros/" in gw_s or (node_id and gw_s != node_id and (gw_s.isdigit() or len(gw_s) >= 6)):
+                return False
+            
+            # Se gw_s è un indirizzo IP (es. gateway router di subnet "192.168.1.1")
+            if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", gw_s):
+                if node_ip and node_ip == gw_s:
+                    return True
+                return False
+
+        # 3. Dizionario (es. {"url": "/2.2/eeros/104"})
+        if isinstance(raw_gw, dict):
+            gw_u = str(raw_gw.get("url") or raw_gw.get("id") or "").strip()
+            if gw_u and (gw_u == node_url or gw_u == node_id or (node_url and gw_u.endswith(node_url))):
+                return True
+            return False
+
+        # 4. Controllo esplicito su ruolo/tipo nodo
+        role = str(node.get("role") or node.get("type") or node.get("node_type") or "").lower()
+        if role in ("gateway", "primary", "root", "router"):
+            return True
+
+        return False
+
     def _normalize_eero_node(self, n: Dict[str, Any]) -> Dict[str, Any]:
         node = dict(n)
         node["status"] = "online" if bool(node.get("connected", True) or node.get("status") == "online") else "offline"
@@ -513,8 +605,8 @@ class EeroClient:
             ""
         )
 
-        # Gateway
-        node["is_gateway"] = bool(node.get("gateway") or node.get("is_gateway", False))
+        # Gateway (Issue #19 fix: non fare casting booleano indiscriminato su stringhe URL)
+        node["is_gateway"] = self._is_gateway_node(node)
 
         # Backhaul & Inter-node Link
         conn_info = node.get("connectivity") if isinstance(node.get("connectivity"), dict) else {}
@@ -582,7 +674,7 @@ class EeroClient:
         # - node.get("gateway") is True for the primary router connected to modem/WAN
         # - node.get("wired") is True for beacon nodes connected via Ethernet backhaul cable to the gateway
         # - node.get("wired") is False for wireless mesh nodes (even if a client PC or switch is plugged into their LAN port!)
-        is_gateway = bool(node.get("gateway") or node.get("is_gateway", False))
+        is_gateway = node["is_gateway"]
         raw_wired = node.get("wired")
         
         if is_gateway:
@@ -1241,6 +1333,31 @@ class EeroClient:
                     nodes.append(self._normalize_eero_node(n))
                 except Exception as ex:
                     logger.error(f"Error normalizing eero node: {ex}")
+
+            # Reconciliazione Primary Gateway: garantisce l'elezione di un unico nodo Gateway univoco
+            if nodes:
+                gw_nodes = [n for n in nodes if n.get("is_gateway")]
+                if len(gw_nodes) == 0:
+                    # Se nessun nodo ha il flag gateway (es. Bridge mode con soli IP privati locali),
+                    # cerca il nodo con porta WAN o fallback sul primo nodo
+                    wan_node = next((n for n in nodes if any("wan" in str(p).lower() for p in n.get("ethernet_ports_details", []))), None)
+                    if wan_node:
+                        wan_node["is_gateway"] = True
+                        wan_node["backhaul_type"] = "Gateway (WAN)"
+                        wan_node["wired"] = True
+                    else:
+                        nodes[0]["is_gateway"] = True
+                        nodes[0]["backhaul_type"] = "Gateway (WAN)"
+                        nodes[0]["wired"] = True
+                elif len(gw_nodes) > 1:
+                    # In caso di ambiguità con nodi multipli marcati gateway, elegge il nodo con porta WAN reale
+                    primary_gw = next((n for n in gw_nodes if any("wan" in str(p).lower() for p in n.get("ethernet_ports_details", []))), gw_nodes[0])
+                    for n in nodes:
+                        if n is not primary_gw and n.get("is_gateway"):
+                            n["is_gateway"] = False
+                            if n.get("backhaul_type") == "Gateway (WAN)":
+                                n["backhaul_type"] = "Ethernet (Cablato)" if n.get("wired") else "Wireless Mesh (5 GHz)"
+
             return nodes
 
     async def get_devices(self) -> List[Dict[str, Any]]:

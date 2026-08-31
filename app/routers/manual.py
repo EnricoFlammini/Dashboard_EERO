@@ -375,11 +375,20 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
+## v1.03.03
+* **Fix Risoluzione Accurata Primary Gateway Mesh in Bridge & Routed Mode (Issue #19)**
+* **Preservazione Integrale Regole, Filtri, Upstreams e Blacklist AdGuard Home su Sync (Issue #21)**
+* **Distinzione Accurata Tag Desktop / PC vs Laptop (`device_pc` / `device_laptop`)**
+* **Eliminazione Falsi Positivi Gateway su Nodi Satellite da Stringhe URL API eero**
+* **Riconciliazione Univoca del Nodo Gateway Principale della Rete**
+
+---
+
 ## v1.03.02
 * **Fix Formattazione Velocità Backhaul 2.5 Gbps su Card Nodi Mesh (Issue #14)**
 * **Riconoscimento Frequenze e Canali Wi-Fi 6E & Wi-Fi 7 a 6 GHz (5900-7200 MHz, EHT 320MHz)**
 * **Isolamento Grafico Badge 6 GHz e Prevenzione Sovrapposizione con 5 GHz**
-* **Sincronizzazione DNS Multi-Server AdGuard Home & Cache-Busting Asset (Issue #17)**
+* **Cache-Busting Automatico Asset Statici (Issue #17)**
 * **Supporto Account Amministratori Invitati e Reti Condivise (Amazon Workaround)**
 * **Mapping Categorie Native eero e Tag Ufficiali AdGuard (Issue #13)**
 
@@ -475,11 +484,20 @@ Below is a summary of the main release highlights. The complete changelog with a
 
 ---
 
+## v1.03.03
+* **Fix Mesh Primary Gateway Resolution in Bridge & Routed Modes (Issue #19)**
+* **Preserve AdGuard Home Custom Rules, Upstreams, Blocked Services & Tags on Sync (Issue #21)**
+* **Accurate Desktop / PC vs Laptop Tag Mapping (`device_pc` / `device_laptop`)**
+* **Eliminate False-Positive Gateway Flags from eero Cloud API URL Strings**
+* **Guaranteed Certified Single Primary Gateway Resolution & Backhaul Badging**
+
+---
+
 ## v1.03.02
 * **Fix 2.5 Gbps Backhaul Speed Formatting on Mesh Node Cards (Issue #14)**
 * **Wi-Fi 6E & Wi-Fi 7 6 GHz Frequency Detection (5900-7200 MHz, EHT 320MHz)**
 * **Isolated 6 GHz Sky-Blue Badging & Styling De-confliction with 5 GHz**
-* **Multi-Target AdGuard Home DNS Synchronization & Cache Busting (Issue #17)**
+* **Automatic Cache-Busting Versioning on Static Assets (Issue #17)**
 * **Invited Administrator Accounts & Shared Networks Resolution Support**
 * **Native eero Category Mapping & Official AdGuard Client Tags (Issue #13)**
 

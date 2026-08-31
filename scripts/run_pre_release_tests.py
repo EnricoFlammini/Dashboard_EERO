@@ -393,9 +393,9 @@ async def run_all_tests():
         runner.assert_true(eero_client.user_token == "live_secret_user_token_sample", "Token Live originale ripristinato intatto")
 
         # =====================================================================
-        # 9. TEST MULTI-ISTANZA ADGUARD HOME & CACHE BUSTING (Issue #17)
+        # 9. TEST CACHE BUSTING ASSET & ADGUARD HOME SYNC (v1.03.02)
         # =====================================================================
-        print("\n🛡️ [9/9] TEST MULTI-ISTANZA ADGUARD HOME & CACHE BUSTING (Issue #17)")
+        print("\n🛡️ [9/9] TEST CACHE BUSTING ASSET & ADGUARD HOME SYNC (v1.03.02)")
         
         # Test cache busting su pagina index
         page_res = await client.get("/")
@@ -404,58 +404,143 @@ async def run_all_tests():
         runner.assert_true("styles.css?v=" in page_html, "styles.css include parametro versione cache-busting (?v=)")
         runner.assert_true("app.js?v=" in page_html, "app.js include parametro versione cache-busting (?v=)")
 
-        # Test salvataggio istanze multiple AdGuard
-        adg_instances_payload = {
+        # Test salvataggio impostazioni AdGuard singola istanza
+        adg_payload = {
             "enabled": True,
-            "instances": [
-                {
-                    "id": "inst-1",
-                    "name": "Primary DNS Server",
-                    "url": "http://192.168.4.104:8085",
-                    "username": "admin1",
-                    "password": "test_pass_primary",
-                    "enabled": True
-                },
-                {
-                    "id": "inst-2",
-                    "name": "Secondary DNS Server",
-                    "url": "http://192.168.4.105:8085",
-                    "username": "admin2",
-                    "password": "test_pass_secondary",
-                    "enabled": True
-                }
-            ]
+            "url": "http://192.168.4.104:8085",
+            "username": "admin",
+            "password": "test_password_123"
         }
-        save_adg_res = await client.post("/api/automations/adguard", json=adg_instances_payload)
-        runner.assert_true(save_adg_res.status_code == 200, "Salvataggio istanze multiple AdGuard risponde HTTP 200")
+        save_adg_res = await client.post("/api/automations/adguard", json=adg_payload)
+        runner.assert_true(save_adg_res.status_code == 200, "Salvataggio impostazioni AdGuard risponde HTTP 200")
 
-        # Verifica lettura impostazioni multi-istanza
+        # Verifica lettura impostazioni
         get_adg_res = await client.get("/api/automations/adguard")
         runner.assert_true(get_adg_res.status_code == 200, "Lettura impostazioni AdGuard risponde HTTP 200")
         adg_data = get_adg_res.json()
-        runner.assert_true(len(adg_data.get("instances", [])) == 2, f"Rilevate 2 istanze AdGuard configurate (ottenute: {len(adg_data.get('instances', []))})")
-        runner.assert_true(adg_data["instances"][0]["name"] == "Primary DNS Server", "Nome prima istanza preservato")
-        runner.assert_true(adg_data["instances"][1]["name"] == "Secondary DNS Server", "Nome seconda istanza preservato")
-        runner.assert_true(adg_data["instances"][0]["has_password"] is True, "Password prima istanza preservata")
-        runner.assert_true(adg_data["instances"][1]["has_password"] is True, "Password seconda istanza preservata")
+        runner.assert_true(adg_data.get("url") == "http://192.168.4.104:8085", "URL AdGuard preservato correttamente")
+        runner.assert_true(adg_data.get("username") == "admin", "Username AdGuard preservato")
+        runner.assert_true(adg_data.get("has_password") is True, "Password AdGuard presente e protetta")
 
         # Attiva demo mode per simulazione test e sync senza socket reali
         await client.post("/api/auth/mode", json={"demo": True})
         
-        # Test connessione multi-istanza
-        test_adg_res = await client.post("/api/automations/adguard/test", json={"instances": adg_instances_payload["instances"]})
-        runner.assert_true(test_adg_res.status_code == 200, "Test connessione multi-istanza risponde HTTP 200")
-        runner.assert_true(test_adg_res.json().get("success") is True, "Test connessione multi-istanza simulato con successo")
+        # Test connessione
+        test_adg_res = await client.post("/api/automations/adguard/test", json=adg_payload)
+        runner.assert_true(test_adg_res.status_code == 200, "Test connessione AdGuard risponde HTTP 200")
+        runner.assert_true(test_adg_res.json().get("success") is True, "Test connessione AdGuard simulato con successo")
 
-        # Test sync in demo mode verso multiple istanze
-        sync_adg_res = await client.post("/api/automations/adguard/sync", json={"instances": adg_instances_payload["instances"]})
-        runner.assert_true(sync_adg_res.status_code == 200, "Sync multi-istanza AdGuard risponde HTTP 200")
-        runner.assert_true(sync_adg_res.json().get("success") is True, "Sync multi-istanza completato con successo")
+        # Test sync in demo mode
+        sync_adg_res = await client.post("/api/automations/adguard/sync", json=adg_payload)
+        runner.assert_true(sync_adg_res.status_code == 200, "Sync AdGuard risponde HTTP 200")
+        runner.assert_true(sync_adg_res.json().get("success") is True, "Sync AdGuard completato con successo")
 
         # =====================================================================
-        # 10. TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)
+        # 10. TEST RISOLUZIONE ACCURATA PRIMARY GATEWAY (Issue #19)
         # =====================================================================
-        print("\n🔄 [10/10] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)")
+        print("\n🌐 [10/12] TEST RISOLUZIONE ACCURATA PRIMARY GATEWAY (Issue #19)")
+        
+        # Test 1: Topologia Bridge Mode reale Issue #19 (phutmacher) con gateway string URL
+        phutmacher_nodes_raw = [
+            {"id": "101", "url": "/2.2/eeros/101", "name": "Bedroom", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.189"},
+            {"id": "102", "url": "/2.2/eeros/102", "name": "Office", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.190"},
+            {"id": "103", "url": "/2.2/eeros/103", "name": "Office 2", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.191"},
+            {"id": "104", "url": "/2.2/eeros/104", "name": "Wiring Closet", "gateway": "/2.2/eeros/104", "wired": True, "ip": "192.168.1.188"}
+        ]
+        
+        norm_nodes = [eero_client._normalize_eero_node(n) for n in phutmacher_nodes_raw]
+        
+        bedroom_res = next(n for n in norm_nodes if n["name"] == "Bedroom")
+        office_res = next(n for n in norm_nodes if n["name"] == "Office")
+        office2_res = next(n for n in norm_nodes if n["name"] == "Office 2")
+        closet_res = next(n for n in norm_nodes if n["name"] == "Wiring Closet")
+        
+        runner.assert_true(bedroom_res["is_gateway"] is False, "Bedroom marcato is_gateway=False (non è gateway)")
+        runner.assert_true(bedroom_res["backhaul_type"] == "Ethernet (Cablato)", f"Bedroom backhaul è 'Ethernet (Cablato)' (ottenuto: {bedroom_res['backhaul_type']})")
+        runner.assert_true(office_res["is_gateway"] is False, "Office marcato is_gateway=False")
+        runner.assert_true(office2_res["is_gateway"] is False, "Office 2 marcato is_gateway=False")
+        runner.assert_true(closet_res["is_gateway"] is True, "Wiring Closet marcato is_gateway=True (Primary Gateway univoco)")
+        runner.assert_true(closet_res["backhaul_type"] == "Gateway (WAN)", f"Wiring Closet backhaul è 'Gateway (WAN)' (ottenuto: {closet_res['backhaul_type']})")
+
+        # Test 2: Subnet Gateway IP string in Bridge Mode (es. "192.168.1.1" upstream Peplink)
+        bridge_node_leaf = {"id": "201", "url": "/2.2/eeros/201", "name": "Salotto", "gateway": "192.168.1.1", "ip": "192.168.1.55"}
+        bridge_leaf_norm = eero_client._normalize_eero_node(bridge_node_leaf)
+        runner.assert_true(bridge_leaf_norm["is_gateway"] is False, "Nodo con gateway IP subnet differente marcato is_gateway=False")
+
+        # Test 3: Normalizzazione dettagli rete con metadati gateway
+        net_raw = {
+            "name": "Home Network",
+            "gateway": "/2.2/eeros/104",
+            "gateway_name": "Wiring Closet",
+            "gateway_ip": "192.168.1.188"
+        }
+        net_norm = eero_client._normalize_network_details(net_raw)
+        runner.assert_true(net_norm.get("gateway_eero_id") == "104", f"Network details estrae gateway_eero_id='104' (ottenuto: {net_norm.get('gateway_eero_id')})")
+        runner.assert_true(net_norm.get("gateway_name") == "Wiring Closet", f"Network details estrae gateway_name='Wiring Closet' (ottenuto: {net_norm.get('gateway_name')})")
+
+        # =====================================================================
+        # 11. TEST PRESERVAZIONE REGOLE ADGUARD HOME & MAPPING DESKTOP (Issue #21)
+        # =====================================================================
+        print("\n🛡️ [11/12] TEST PRESERVAZIONE REGOLE ADGUARD HOME & MAPPING DESKTOP (Issue #21)")
+        
+        # Test 1: Mappatura corretta Desktop vs Laptop e tag AdGuard
+        cat_dt, icon_dt = map_eero_device_type("desktop", "Josh_desktop")
+        runner.assert_true(cat_dt == "Computer" and icon_dt == "pc", f"Josh_desktop device_type desktop mappato come Computer/pc (ottenuto: {cat_dt}/{icon_dt})")
+        runner.assert_true(get_adguard_tags(cat_dt, icon_dt) == ["device_pc"], "Tag AdGuard per desktop è ['device_pc']")
+
+        cat_lt, icon_lt = map_eero_device_type("laptop", "MacBook Pro M3")
+        runner.assert_true(cat_lt == "Computer" and icon_lt == "laptop", f"MacBook Pro mappato come Computer/laptop (ottenuto: {cat_lt}/{icon_lt})")
+        runner.assert_true(get_adguard_tags(cat_lt, icon_lt) == ["device_laptop"], "Tag AdGuard per laptop è ['device_laptop']")
+
+        cat_tower, icon_tower = map_eero_device_type("computer", "Workstation Tower PC")
+        runner.assert_true(cat_tower == "Computer" and icon_tower == "pc", f"Workstation Tower mappato come Computer/pc (ottenuto: {cat_tower}/{icon_tower})")
+        runner.assert_true(get_adguard_tags(cat_tower, icon_tower) == ["device_pc"], "Tag AdGuard per tower è ['device_pc']")
+
+        # Test 2: Preservazione integrale regole, upstreams e blacklist custom su update AdGuard
+        existing_ag_client = {
+            "name": "Josh_desktop",
+            "ids": ["192.168.1.100", "00:11:22:33:44:55", "custom-alias.lan"],
+            "tags": ["user_custom_tag"],
+            "upstreams": ["https://dns.quad9.net/dns-query", "9.9.9.9"],
+            "blocked_services": ["youtube", "tiktok", "steam"],
+            "blocked_services_schedule": {"time_zone": "UTC"},
+            "use_global_blocked_services": False,
+            "use_global_settings": False,
+            "filtering_enabled": True,
+            "parental_enabled": True,
+            "safebrowsing_enabled": True,
+            "safesearch_enabled": True,
+        }
+
+        incoming_eero_payload = {
+            "name": "Josh_desktop",
+            "ids": ["192.168.1.100", "00:11:22:33:44:55", "2001:db8::1"],
+            "tags": ["device_pc"],
+            "upstreams": [],
+            "blocked_services": [],
+            "use_global_blocked_services": True,
+            "use_global_settings": True,
+            "filtering_enabled": True,
+            "parental_enabled": False,
+            "safebrowsing_enabled": True,
+            "safesearch_enabled": False,
+        }
+
+        merged_client = adguard_service._merge_adguard_client_data(existing_ag_client, incoming_eero_payload)
+        
+        runner.assert_true(merged_client["upstreams"] == ["https://dns.quad9.net/dns-query", "9.9.9.9"], "Upstreams DNS personalizzati preservati al 100%")
+        runner.assert_true(merged_client["blocked_services"] == ["youtube", "tiktok", "steam"], "Servizi bloccati (blocked_services) preservati al 100%")
+        runner.assert_true(merged_client["parental_enabled"] is True, "Parental Control abilitato preservato (parental_enabled=True)")
+        runner.assert_true(merged_client["safesearch_enabled"] is True, "SafeSearch abilitato preservato (safesearch_enabled=True)")
+        runner.assert_true(merged_client["use_global_settings"] is False, "use_global_settings=False preservato")
+        runner.assert_true(merged_client["use_global_blocked_services"] is False, "use_global_blocked_services=False preservato")
+        runner.assert_true(merged_client["tags"] == ["user_custom_tag"], "Tag personalizzato utente preservato")
+        runner.assert_true("custom-alias.lan" in merged_client["ids"] and "2001:db8::1" in merged_client["ids"], "IDs uniti correttamente senza perdere ID custom utente")
+
+        # =====================================================================
+        # 12. TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)
+        # =====================================================================
+        print("\n🔄 [12/12] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)")
 
         # 1. Test Endpoint /api/system/update/check
         check_res = await client.get("/api/system/update/check?force=true")
@@ -525,3 +610,4 @@ async def run_all_tests():
 
 if __name__ == "__main__":
     asyncio.run(run_all_tests())
+

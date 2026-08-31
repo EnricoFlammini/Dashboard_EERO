@@ -27,7 +27,25 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ---
 
-## [1.03.02] - 2026-08-29
+## [1.03.03] - 2026-08-31
+
+### 🌐 Fix Risoluzione Primary Gateway Mesh in Bridge & Routed Mode (#19)
+* **🌐 Risoluzione Accurata del Nodo Gateway Principale (Issue #19):**
+  * Risolto il bug di casting booleano indiscriminato in cui i campi stringa URL/ID (es. `"/2.2/eeros/104"`) restituiti dall'API eero come puntatore al nodo root venivano valutati come `True` per tutti i beacon/nodi foglia della rete, forzando tutti i nodi su `Gateway (WAN)` ed eleggendo erroneamente il primo nodo alfabetico (es. *Bedroom* al posto di *Wiring Closet*).
+  * Introdotto il metodo `_is_gateway_node` in `eero_client.py` per confrontare le chiavi URL, ID, serial e IP locali con il puntatore gateway effettivo, supportando in modo trasparente reti in **Bridge Mode** (con router/DHCP esterno come Peplink, pfSense o modem operatore) e reti standard in **Routed Mode**.
+  * Implementato algoritmo di riconciliazione univoca in `get_eeros` per garantire l'elezione di un singolo Primary Gateway certificato anche in caso di ambiguità nei payload cloud.
+
+### 🛡️ Preservazione Regole AdGuard Home & Distinzione Tag Desktop/Laptop (#21)
+* **🛡️ Preservazione Integrale Regole e Filtri Client su AdGuard Home (Issue #21):**
+  * Risolto il bug di sincronizzazione per cui le chiamate `POST /control/clients/update` verso AdGuard Home azzeravano i parametri custom impostati dall'utente.
+  * Implementato il metodo `_merge_adguard_client_data` per ereditare e mantenere al 100% tutte le regole attive: server DNS personalizzati (`upstreams`), servizi bloccati (`blocked_services`), pianificazioni (`blocked_services_schedule`), `parental_enabled`, `safebrowsing_enabled`, `safesearch_enabled`, `use_global_settings`, filtri querylog e tag personalizzati.
+  * Unito l'elenco degli identificatori (`ids`) preservando eventuali IP, alias o MAC aggiunti manualmente in AdGuard senza sovrascriverli.
+* **🖥️ Distinzione Accurata Tag Desktop / PC vs Laptop (`device_pc` / `device_laptop`):**
+  * Perfezionato `map_eero_device_type` e `get_adguard_tags` per distinguere i PC fissi/workstation/tower (assegnando icona `pc` e tag `device_pc`) dai portatili (assegnando icona `laptop` e tag `device_laptop`).
+
+---
+
+## [1.03.02] - 2026-08-30
 
 ### ⚡ Fix Formattazione Velocità Backhaul & Rilevamento Frequenze Wi-Fi 6 GHz (#14)
 * **⚡ Fix Formattazione Velocità Backhaul 2.5 Gbps:**
@@ -35,6 +53,8 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **📶 Supporto e Rilevamento Dinamico Frequenze Wi-Fi 6E & Wi-Fi 7 a 6 GHz:**
   * Esteso il parser `_normalize_device` per interpretare i valori di frequenza numerica espressi in MHz (`5900 MHz - 7200 MHz`), mappando correttamente i dispositivi Wi-Fi 6E/7 (es. iPhone 17 a 6295 MHz e PC Wi-Fi 7 EHT su canale 69 con ampiezza 320 MHz) su **`6 GHz`** / **`6GHz`**.
   * Aggiornato il frontend con classi CSS esclusive e indipendenti (`bg-sky-500/20 text-sky-400`) per evidenziare i dispositivi a 6 GHz ed evitare sovrapposizioni visive con la banda a 5 GHz.
+* **🔄 Cache-Busting Automatico Asset Statici (#17):**
+  * Aggiunto parametro di versione `?v={{ app_version }}` agli asset CSS e JS in `index.html` per garantire l'aggiornamento automatico della cache del browser ad ogni rilascio.
 
 ---
 

@@ -66,61 +66,26 @@ class AdGuardService:
         """Recupera le impostazioni correnti di AdGuard Home salvate nel database o fittizie in ambiente demo."""
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
-            insts = self._demo_settings.get("instances", [])
-            primary = insts[0] if insts else {}
             return {
                 "enabled": bool(self._demo_settings.get("enabled", True)),
-                "instances": insts,
-                "url": primary.get("url", "http://192.168.1.50:80"),
-                "username": primary.get("username", "demo_admin"),
-                "has_password": bool(primary.get("has_password", True)),
+                "url": self._demo_settings.get("url", "http://192.168.1.50:80"),
+                "username": self._demo_settings.get("username", "demo_admin"),
+                "has_password": bool(self._demo_settings.get("has_password", True)),
                 "last_sync_time": self._demo_settings.get("last_sync_time", "2026-08-29T10:00:00Z"),
                 "last_sync_count": int(self._demo_settings.get("last_sync_count", 18)),
                 "last_sync_status": self._demo_settings.get("last_sync_status", "Completato: 18 sincronizzati [Simulazione Demo]"),
             }
 
         all_s = await db_service.get_all_settings()
-        inst_json = all_s.get("adguard_instances_json", "")
-        instances = []
-        if inst_json:
-            try:
-                instances = json.loads(inst_json)
-            except Exception:
-                instances = []
+        url = all_s.get("adguard_url", "")
+        username = all_s.get("adguard_username", "")
+        has_pwd = bool(all_s.get("adguard_password", ""))
 
-        # Se non ci sono istanze salvate in JSON, migra/usa i vecchi campi adguard_url
-        if not instances:
-            legacy_url = all_s.get("adguard_url", "")
-            if legacy_url:
-                instances = [{
-                    "id": "inst-1",
-                    "name": "DNS Primario",
-                    "url": legacy_url,
-                    "username": all_s.get("adguard_username", ""),
-                    "has_password": bool(all_s.get("adguard_password", "")),
-                    "enabled": True,
-                    "last_sync_time": all_s.get("adguard_last_sync_time", ""),
-                    "last_sync_status": all_s.get("adguard_last_sync_status", "")
-                }]
-            else:
-                instances = [{
-                    "id": "inst-1",
-                    "name": "DNS Primario",
-                    "url": "",
-                    "username": "",
-                    "has_password": False,
-                    "enabled": True,
-                    "last_sync_time": "",
-                    "last_sync_status": ""
-                }]
-
-        primary = instances[0] if instances else {}
         return {
             "enabled": all_s.get("adguard_sync_enabled", "false").lower() == "true",
-            "instances": instances,
-            "url": primary.get("url", ""),
-            "username": primary.get("username", ""),
-            "has_password": bool(primary.get("has_password", False)),
+            "url": url,
+            "username": username,
+            "has_password": has_pwd,
             "last_sync_time": all_s.get("adguard_last_sync_time", ""),
             "last_sync_count": int(all_s.get("adguard_last_sync_count", "0") or 0),
             "last_sync_status": all_s.get("adguard_last_sync_status", ""),
@@ -138,62 +103,23 @@ class AdGuardService:
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
             self._demo_settings["enabled"] = enabled
-            if instances is not None:
-                self._demo_settings["instances"] = instances
-            elif url is not None:
+            if url is not None:
                 self._demo_settings["url"] = normalize_adguard_url(url)
+            if username is not None:
+                self._demo_settings["username"] = username.strip()
+            if password is not None and password != "":
+                self._demo_settings["password"] = password.strip()
+                self._demo_settings["has_password"] = True
             return
 
         await db_service.set_setting("adguard_sync_enabled", "true" if enabled else "false")
-
-        if instances is not None:
-            # Recupera istanze correnti per preservare password invariate
-            current_settings = await self.get_settings()
-            current_map = {inst.get("id", str(i)): inst for i, inst in enumerate(current_settings.get("instances", []))}
-
-            cleaned_instances = []
-            for i, inst in enumerate(instances):
-                inst_id = inst.get("id") or f"inst-{i+1}"
-                old_inst = current_map.get(inst_id, {})
-                c_url = normalize_adguard_url(inst.get("url", ""))
-                c_user = (inst.get("username") or "").strip()
-                new_pass = inst.get("password")
-
-                if new_pass and str(new_pass).strip() != "":
-                    final_pass = str(new_pass).strip()
-                    has_pwd = True
-                else:
-                    final_pass = old_inst.get("password", "")
-                    has_pwd = bool(final_pass) or bool(old_inst.get("has_password", False))
-
-                cleaned_instances.append({
-                    "id": inst_id,
-                    "name": (inst.get("name") or f"DNS {i+1}").strip(),
-                    "url": c_url,
-                    "username": c_user,
-                    "password": final_pass,
-                    "has_password": has_pwd,
-                    "enabled": bool(inst.get("enabled", True)),
-                    "last_sync_time": inst.get("last_sync_time") or old_inst.get("last_sync_time", ""),
-                    "last_sync_status": inst.get("last_sync_status") or old_inst.get("last_sync_status", "")
-                })
-
-            await db_service.set_setting("adguard_instances_json", json.dumps(cleaned_instances))
-
-            # Sincronizza anche campi legacy per retrocompatibilità
-            if cleaned_instances:
-                primary = cleaned_instances[0]
-                await db_service.set_setting("adguard_url", primary.get("url", ""))
-                await db_service.set_setting("adguard_username", primary.get("username", ""))
-                if primary.get("password"):
-                    await db_service.set_setting("adguard_password", primary.get("password"))
-        elif url is not None:
+        if url is not None:
             clean_url = normalize_adguard_url(url)
             await db_service.set_setting("adguard_url", clean_url)
-            if username is not None:
-                await db_service.set_setting("adguard_username", username.strip())
-            if password is not None and password != "":
-                await db_service.set_setting("adguard_password", password.strip())
+        if username is not None:
+            await db_service.set_setting("adguard_username", username.strip())
+        if password is not None and password != "":
+            await db_service.set_setting("adguard_password", password.strip())
 
     async def test_single_instance(
         self,
@@ -261,48 +187,16 @@ class AdGuardService:
         password: Optional[str] = None,
         instances: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
-        """Testa una o tutte le istanze AdGuard Home configurate."""
-        if instances:
-            from app.services.eero_client import eero_client
-            results = []
-            all_ok = True
-            for inst in instances:
-                i_url = inst.get("url", "")
-                i_user = inst.get("username", "")
-                i_pass = inst.get("password")
-                if (i_pass is None or i_pass == "") and inst.get("has_password"):
-                    # Recupera password salvata
-                    cur_settings = await self.get_settings()
-                    match = next((x for x in cur_settings.get("instances", []) if x.get("id") == inst.get("id")), None)
-                    if match:
-                        i_pass = match.get("password")
+        """Testa la connessione verso l'istanza AdGuard Home."""
+        from app.services.eero_client import eero_client
+        cur = await self.get_settings()
+        target_url = url or cur.get("url")
+        target_user = username if username is not None else cur.get("username")
+        target_pass = password
+        if (target_pass is None or target_pass == "") and cur.get("has_password"):
+            target_pass = (await db_service.get_setting("adguard_password", "")) or (self._demo_settings.get("password") if eero_client.is_demo_mode else "")
 
-                res = await self.test_single_instance(i_url, i_user, i_pass)
-                results.append({
-                    "name": inst.get("name") or i_url,
-                    "url": i_url,
-                    "success": res.get("success", False),
-                    "message": res.get("message", "")
-                })
-                if not res.get("success"):
-                    all_ok = False
-
-            succ_count = sum(1 for r in results if r["success"])
-            demo_suffix = " (Ambiente Demo Simulato)" if eero_client.is_demo_mode else ""
-            return {
-                "success": all_ok,
-                "message": f"Test completato: {succ_count}/{len(results)} istanze raggiungibili.{demo_suffix}",
-                "results": results
-            }
-
-        # Test singola istanza (fallback)
-        if not url:
-            cur = await self.get_settings()
-            inst_list = cur.get("instances", [])
-            if inst_list:
-                return await self.test_connection(instances=inst_list)
-
-        return await self.test_single_instance(url or "", username or "", password or "")
+        return await self.test_single_instance(target_url or "", target_user or "", target_pass or "")
 
     def _prepare_clients(self, devices: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Prepara e disambigua l'elenco dei client per il payload AdGuard Home."""
@@ -375,13 +269,41 @@ class AdGuardService:
 
         return prepared_clients
 
+    def _merge_adguard_client_data(self, existing: Dict[str, Any], incoming: Dict[str, Any]) -> Dict[str, Any]:
+        """Preserva al 100% tutte le regole personalizzate, filtri, upstreams e blacklist di AdGuard Home (Issue #21)."""
+        merged = dict(existing)
+
+        # 1. Aggiorna nome con quello formattato da eero
+        merged["name"] = incoming.get("name") or existing.get("name")
+
+        # 2. Merge degli identificatori (IP, IPv6, MAC) preservando ID custom aggiunti dall'utente in AdGuard
+        existing_ids = [str(x).strip() for x in (existing.get("ids") or []) if str(x).strip()]
+        incoming_ids = [str(x).strip() for x in (incoming.get("ids") or []) if str(x).strip()]
+        
+        merged_ids = list(existing_ids)
+        existing_ids_lower = {x.lower() for x in existing_ids}
+        for i_id in incoming_ids:
+            if i_id.lower() not in existing_ids_lower:
+                merged_ids.append(i_id)
+                existing_ids_lower.add(i_id.lower())
+        merged["ids"] = merged_ids
+
+        # 3. Tags: se l'utente ha già impostato tag custom su AdGuard, li preserva; altrimenti applica quelli di eero
+        if not existing.get("tags") and incoming.get("tags"):
+            merged["tags"] = incoming["tags"]
+
+        # 4. Tutti i campi di regole e configurazione (upstreams, blocked_services, filtering_enabled,
+        # parental_enabled, safebrowsing_enabled, safesearch_enabled, use_global_settings, ecc.)
+        # vengono ereditati e preservati integralmente dall'oggetto existing.
+        return merged
+
     async def _sync_single_target(
         self,
         target_url: str,
         auth: Optional[tuple],
         prepared_clients: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """Sincronizza i client verso una singola istanza AdGuard Home."""
+        """Sincronizza i client verso una singola istanza AdGuard Home preservando le regole esistenti."""
         existing_clients_by_name: Dict[str, Dict[str, Any]] = {}
         existing_clients_by_id: Dict[str, Dict[str, Any]] = {}
 
@@ -439,12 +361,15 @@ class AdGuardService:
                 if matched_client:
                     orig_name = matched_client.get("name") or name
                     endpoint = f"{target_url}/control/clients/update"
-                    body_data = {"name": orig_name, "data": payload}
+                    update_data = self._merge_adguard_client_data(matched_client, payload)
+                    body_data = {"name": orig_name, "data": update_data}
                     is_update = True
+                    client_record = update_data
                 else:
                     endpoint = f"{target_url}/control/clients/add"
                     body_data = payload
                     is_update = False
+                    client_record = payload
 
                 try:
                     r = await client.post(endpoint, json=body_data, auth=auth)
@@ -453,9 +378,9 @@ class AdGuardService:
                             updated_count += 1
                         else:
                             added_count += 1
-                        existing_clients_by_name[name.lower()] = payload
-                        for cid in ids:
-                            existing_clients_by_id[str(cid).lower()] = payload
+                        existing_clients_by_name[name.lower()] = client_record
+                        for cid in client_record.get("ids", ids):
+                            existing_clients_by_id[str(cid).lower()] = client_record
                     else:
                         if not is_update:
                             await _fetch_adguard_clients(client)
@@ -469,16 +394,17 @@ class AdGuardService:
 
                             if rematched:
                                 target_orig = rematched.get("name") or name
+                                upd_data = self._merge_adguard_client_data(rematched, payload)
                                 r_upd = await client.post(
                                     f"{target_url}/control/clients/update",
-                                    json={"name": target_orig, "data": payload},
+                                    json={"name": target_orig, "data": upd_data},
                                     auth=auth
                                 )
                                 if r_upd.status_code in (200, 201, 204):
                                     updated_count += 1
-                                    existing_clients_by_name[name.lower()] = payload
-                                    for cid in ids:
-                                        existing_clients_by_id[str(cid).lower()] = payload
+                                    existing_clients_by_name[name.lower()] = upd_data
+                                    for cid in upd_data.get("ids", ids):
+                                        existing_clients_by_id[str(cid).lower()] = upd_data
                                     continue
 
                         err_text = r.text.strip()[:90]
@@ -525,101 +451,41 @@ class AdGuardService:
                 "last_sync_time": now_iso,
             }
 
-        # Risolvi elenco target istanze
-        target_instances = []
-        if instances:
-            target_instances = [inst for inst in instances if inst.get("enabled", True) and inst.get("url")]
-        else:
-            cur = await self.get_settings()
-            target_instances = [inst for inst in cur.get("instances", []) if inst.get("enabled", True) and inst.get("url")]
-            if not target_instances and (url or cur.get("url")):
-                target_instances = [{
-                    "id": "inst-1",
-                    "name": "DNS Primario",
-                    "url": url or cur.get("url"),
-                    "username": username if username is not None else cur.get("username", ""),
-                    "password": password,
-                    "has_password": cur.get("has_password", False),
-                    "enabled": True
-                }]
+        cur = await self.get_settings()
+        target_url = normalize_adguard_url(url or cur.get("url", ""))
+        target_user = username if username is not None else cur.get("username", "")
+        target_pass = password
+        if (target_pass is None or target_pass == "") and cur.get("has_password"):
+            target_pass = await db_service.get_setting("adguard_password", "")
 
-        if not target_instances:
-            return {"success": False, "message": "Nessuna istanza AdGuard Home configurata o abilitata."}
+        if not target_url:
+            return {"success": False, "message": "Nessun URL AdGuard Home configurato."}
 
         prepared_clients = self._prepare_clients(devices)
         if not prepared_clients:
             return {"success": False, "message": "Nessun client valido trovato da sincronizzare."}
 
-        instance_results = []
-        total_added = 0
-        total_updated = 0
-        total_failed = 0
+        auth = (target_user.strip(), target_pass.strip()) if target_user and target_pass else None
+        res = await self._sync_single_target(target_url, auth, prepared_clients)
+
         now_iso = datetime.now(timezone.utc).isoformat()
+        status_text = f"Completato: {res.get('total_synced', 0)} client ({res.get('added', 0)} aggiunti, {res.get('updated', 0)} aggiornati)"
+        if res.get("failed", 0) > 0:
+            status_text += f", {res.get('failed')} falliti"
 
-        for inst in target_instances:
-            t_url = normalize_adguard_url(inst.get("url", ""))
-            t_user = inst.get("username", "")
-            t_pass = inst.get("password")
-            if (t_pass is None or t_pass == "") and inst.get("has_password"):
-                cur_settings = await self.get_settings()
-                match = next((x for x in cur_settings.get("instances", []) if x.get("id") == inst.get("id")), None)
-                if match:
-                    t_pass = match.get("password")
-
-            auth = (t_user.strip(), t_pass.strip()) if t_user and t_pass else None
-            res = await self._sync_single_target(t_url, auth, prepared_clients)
-            
-            inst_status = f"{res.get('total_synced', 0)} sincronizzati ({res.get('added', 0)} agg, {res.get('updated', 0)} mod)"
-            if res.get("failed", 0) > 0:
-                inst_status += f", {res.get('failed')} falliti"
-
-            inst["last_sync_status"] = inst_status
-            inst["last_sync_time"] = now_iso
-
-            total_added += res.get("added", 0)
-            total_updated += res.get("updated", 0)
-            total_failed += res.get("failed", 0)
-
-            instance_results.append({
-                "name": inst.get("name") or t_url,
-                "url": t_url,
-                "success": res.get("success", False),
-                "added": res.get("added", 0),
-                "updated": res.get("updated", 0),
-                "failed": res.get("failed", 0),
-                "message": inst_status
-            })
-
-        overall_synced = len(prepared_clients)
-        summary_status = f"Completato: {overall_synced} dispositivi sincronizzati su {len(target_instances)} istanze AdGuard"
-        if total_failed > 0:
-            summary_status += f" ({total_failed} errori totali)"
-
-        # Aggiorna statistiche globali su SQLite
         await db_service.set_setting("adguard_last_sync_time", now_iso)
-        await db_service.set_setting("adguard_last_sync_count", str(overall_synced))
-        await db_service.set_setting("adguard_last_sync_status", summary_status)
-
-        # Salva stato aggiornato istanze se presenti
-        cur_all = await self.get_settings()
-        saved_insts = cur_all.get("instances", [])
-        if saved_insts:
-            for s_inst in saved_insts:
-                matching = next((x for x in target_instances if x.get("id") == s_inst.get("id")), None)
-                if matching:
-                    s_inst["last_sync_status"] = matching.get("last_sync_status", "")
-                    s_inst["last_sync_time"] = now_iso
-            await db_service.set_setting("adguard_instances_json", json.dumps(saved_insts))
+        await db_service.set_setting("adguard_last_sync_count", str(res.get("total_synced", 0)))
+        await db_service.set_setting("adguard_last_sync_status", status_text)
 
         return {
-            "success": any(r["success"] for r in instance_results),
-            "total_synced": overall_synced,
-            "added_count": total_added,
-            "updated_count": total_updated,
-            "failed_count": total_failed,
-            "message": summary_status,
-            "results": instance_results,
-            "last_sync_time": now_iso
+            "success": res.get("success", False),
+            "total_synced": res.get("total_synced", 0),
+            "added_count": res.get("added", 0),
+            "updated_count": res.get("updated", 0),
+            "failed_count": res.get("failed", 0),
+            "message": status_text,
+            "last_sync_time": now_iso,
+            "errors": res.get("errors", [])
         }
 
     async def auto_sync_if_enabled(self, devices: List[Dict[str, Any]]) -> None:
