@@ -277,9 +277,9 @@
     "adguard_instance_name": "DNS Server Name",
     "dns_title": "Multi-Engine DNS Synchronizer",
     "dns_subtitle": "Automatically sync hostnames to AdGuard Home, Pi-hole, and Technitium DNS",
-    "dns_add_instance": "+ Add DNS Instance",
-    "dns_test_all": "⚡ Test All",
-    "dns_sync_all": "🔄 Sync All",
+    "dns_add_instance": "Add DNS Instance",
+    "dns_test_all": "Test All",
+    "dns_sync_all": "Sync All",
     "dns_auto_sync": "Continuous automatic background sync for new and active devices",
     "dns_save_btn": "Save DNS Configurations",
     "dns_engine": "DNS Engine:",
@@ -292,7 +292,7 @@
     "dns_remove_instance": "Delete Instance",
     "dns_test_single": "Test",
     "dns_sync_single": "Sync",
-    "dns_no_instances": "No DNS instances configured. Click '+ Add DNS Instance' to start."
+    "dns_no_instances": "No DNS instances configured. Click 'Add DNS Instance' to start."
   },
   "manual": {
     "title": "User Manual & Interactive Guide",

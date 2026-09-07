@@ -1174,16 +1174,14 @@
                 <div class="flex flex-wrap items-center gap-2">
                   <button 
                     @click="addDnsInstance()"
-                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-500/30 transition flex items-center space-x-1 cursor-pointer">
-                    <span>➕</span>
-                    <span x-text="t('controls.dns_add_instance') || '+ Aggiungi Istanza'"></span>
+                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-500/30 transition flex items-center cursor-pointer">
+                    <span x-text="t('controls.dns_add_instance') || 'Aggiungi Istanza DNS'"></span>
                   </button>
                   <button 
                     @click="testAllDns()"
                     :disabled="dnsTesting"
                     class="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                     <span x-show="dnsTesting && dnsTestingId === 'all'" class="animate-spin text-[10px]">⏳</span>
-                    <span x-show="!(dnsTesting && dnsTestingId === 'all')">⚡</span>
                     <span x-text="t('controls.dns_test_all') || 'Testa Tutti'"></span>
                   </button>
                   <button 
@@ -1191,7 +1189,6 @@
                     :disabled="dnsSyncing"
                     class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 hover:bg-[#0067c0]/20 dark:bg-sky-500/20 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 text-xs font-semibold border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                     <span x-show="dnsSyncing && dnsSyncingId === 'all'" class="animate-spin text-[10px]">🔄</span>
-                    <span x-show="!(dnsSyncing && dnsSyncingId === 'all')">🔄</span>
                     <span x-text="t('controls.dns_sync_all') || 'Sincronizza Tutti'"></span>
                   </button>
                 </div>
@@ -1320,17 +1317,15 @@
                       <button 
                         @click="testDnsInstance(inst)"
                         :disabled="dnsTesting && dnsTestingId === inst.id"
-                        class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        class="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                         <span x-show="dnsTesting && dnsTestingId === inst.id" class="animate-spin text-[10px]">⏳</span>
-                        <span x-show="!(dnsTesting && dnsTestingId === inst.id)">⚡</span>
                         <span x-text="t('controls.dns_test_single') || 'Test'"></span>
                       </button>
                       <button 
                         @click="syncDnsInstance(inst)"
                         :disabled="dnsSyncing && dnsSyncingId === inst.id"
-                        class="px-2 py-1 rounded bg-[#0067c0]/10 dark:bg-sky-500/20 hover:bg-[#0067c0]/20 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        class="px-2.5 py-1 rounded bg-[#0067c0]/10 dark:bg-sky-500/20 hover:bg-[#0067c0]/20 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                         <span x-show="dnsSyncing && dnsSyncingId === inst.id" class="animate-spin text-[10px]">🔄</span>
-                        <span x-show="!(dnsSyncing && dnsSyncingId === inst.id)">🔄</span>
                         <span x-text="t('controls.dns_sync_single') || 'Sync'"></span>
                       </button>
                     </div>
@@ -1341,11 +1336,8 @@
 
               <!-- Empty State -->
               <template x-if="!dnsSettings.instances || dnsSettings.instances.length === 0">
-                <div class="p-4 rounded-xl border border-dashed border-slate-300 dark:border-white/[0.1] text-center text-xs text-slate-600 dark:text-slate-400 space-y-2">
-                  <p x-text="t('controls.dns_no_instances') || 'Nessuna istanza DNS configurata.'"></p>
-                  <button @click="addDnsInstance()" class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 font-semibold border border-[#0067c0]/20 text-xs cursor-pointer">
-                    + Aggiungi Istanza DNS
-                  </button>
+                <div class="p-4 rounded-xl border border-dashed border-slate-300 dark:border-white/[0.1] text-center text-xs text-slate-600 dark:text-slate-400">
+                  <p x-text="t('controls.dns_no_instances') || 'Nessuna istanza DNS configurata. Clicca su \'Aggiungi Istanza DNS\' per iniziare.'"></p>
                 </div>
               </template>
             </div>
