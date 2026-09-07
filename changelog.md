@@ -36,14 +36,25 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
     3. **Modalità Assistita / CLI**: Visualizzazione e copia a un clic del comando `docker compose pull && docker compose up -d`.
   * Overlay con barra di avanzamento del download e polling di riconnessione automatica (`/api/health`) al riavvio del container.
 
-### 📶 Storicizzazione Segnale RSSI & Sezione Qualità Wi-Fi
-* **📶 Storicizzazione Continua Segnale su Database SQLite (`device_signal_history`):**
-  * Campionamento continuo nel poller dei valori RSSI (dBm), canali, frequenze e bitrate di tutti i dispositivi wireless attivi.
-  * Retention automatica a 14 giorni per garantire elevate prestazioni e dimensioni contenute del database.
-* **📊 Sezione Qualità Wi-Fi & Copertura Mesh (Tab Speed Test):**
-  * KPI con Segnale Medio RSSI dell'intera abitazione e distribuzione percentuale per fasce di qualità: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico/Debole* (< -75 dBm).
-  * Grafico temporale interattivo (Chart.js) con selettore dispositivo e zoom su 24h o 7 giorni.
-  * Tabella *Weak Signal Watchlist* con elenco dei dispositivi a segnale critico e suggerimenti di riposizionamento mesh.
+### 📱 QR Code Wi-Fi Ospiti Dual-Theme & UI Contrast Refinements
+* **📱 QR Code Wi-Fi Dinamico Dual-Theme:**
+  * Supporto per rendering dinamico con sfondo bianco puro `(255, 255, 255)` e moduli blu Windows 11 Fluent `(0, 103, 192)` in Light Mode, per una scansione nitida e istantanea con qualsiasi fotocamera smartphone.
+  * Mantenuto lo sfondo scuro ardesia `(15, 23, 42)` con moduli azzurro cielo `(56, 189, 248)` in Dark Mode.
+  * Switch automatico reattivo (Alpine.js) ad ogni variazione del selettore del tema (Chiaro / Scuro / Sistema).
+  * Contenitore visivo del QR in `index.html` allineato con sfondo bianco e bordi coordinati senza riquadri grigi residui.
+* **🎨 Ottimizzazione Contrasto e Leggibilità Light Mode:**
+  * Calibrazione ad alto contrasto di tutti i badge della tabella Dispositivi:
+    * **Profilo Utente:** `text-sky-950` su `bg-sky-100` con bordo `border-sky-400`.
+    * **STATICO:** `text-emerald-950` su `bg-emerald-100` con bordo `border-emerald-400` e indicatore verde scuro.
+    * **DHCP:** `text-slate-900` su `bg-slate-200` con bordo `border-slate-400`.
+    * **Bande Wi-Fi:** Badge ad alto contrasto per 5 GHz (`indigo-950`/`indigo-100`), 2.4 GHz (`amber-950`/`amber-100`), 6 GHz (`cyan-950`/`cyan-100`) ed Ethernet (`emerald-950`/`emerald-100`).
+    * **Stato Online/Offline:** Verde e grigio ad alta visibilità.
+  * Riquadro informativo di conferma prenotazione IP nel modale del Dispositivo ottimizzato con `bg-emerald-100` e testo in grassetto `text-emerald-950`.
+  * Header superiore, badge versione e modale About affinati con contrasto ottimale.
+* **🛠️ Ripristino Griglia Automazioni & Pulizia Toolbar DNS:**
+  * Risolto il layout della pagina *Controlli & QR Ospiti*, ripristinando la corretta griglia responsive a due colonne affiancate.
+  * Rimozione di icone duplicate ed emoji statiche dai pulsanti Multi-Engine DNS (`Aggiungi Istanza DNS`, `Testa Tutti`, `Sincronizza Tutti`) e dai pulsanti delle singole istanze (`Test`, `Sync`).
+  * Rimosso il pulsante duplicato di aggiunta istanza nel contenitore vuoto.
 
 ---
 

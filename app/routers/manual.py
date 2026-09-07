@@ -122,14 +122,14 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 
 La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4 comodi quadranti:
 
-1. **Smart Guest Wi-Fi con QR Code Dinamico (In alto a sinistra):**
-   - Genera all'istante un QR Code ad alta risoluzione pronto per essere inquadrato da ospiti e smartphone.
+1. **Smart Guest Wi-Fi con QR Code Dinamico & Dual-Theme (In alto a sinistra):**
+   - Genera all'istante un QR Code ad alta risoluzione con sfondo bianco puro per il tema Chiaro e sfondo ardesia scuro per il tema Scuro, sincronizzato in tempo reale con il selettore del tema.
    - Toggle per abilitare/disabilitare la rete ospiti con un clic.
    - Generatore integrato di password sicure e aggiornamento credenziali senza accedere all'app mobile.
-2. **Integrazione Nativa AdGuard Home (In alto a destra):**
-   - **Sincronizzazione Nomi Dispositivi:** Associa i nickname personalizzati e gli indirizzi IP/MAC dei client eero direttamente nella lista dei client persistenti di AdGuard Home (`/control/clients`).
-   - **Auto-Sync Continuo:** Il poller di background aggiorna automaticamente AdGuard Home all'accesso di ogni nuovo dispositivo o a intervalli regolari.
-   - **Pulsante "Sincronizza Ora":** Forza l'allineamento istantaneo di tutta la tabella host verso AdGuard Home.
+2. **Multi-Engine DNS Synchronizer (In alto a destra):**
+   - **Supporto Multi-Engine Eterogeneo:** Gestione simultanea di molteplici istanze di AdGuard Home, Pi-hole (v5 & v6) e Technitium DNS (record diretti A e Reverse PTR).
+   - **Auto-Sync Continuo:** Il poller di background allinea automaticamente i server DNS configurati all'accesso di nuovi dispositivi.
+   - **Pulsanti "Test" e "Sincronizza":** Verifica rapida della singola istanza o globale, con trigger di sincronizzazione immediata con un solo clic.
    - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
 3. **Notifiche Telegram & Webhook (In basso a sinistra):**
    - **Registro Persistente Dispositivi Noti:** Tabella SQLite `known_devices` per memorizzare gli apparati già visti ed evitare qualsiasi invio di notifiche duplicate al riavvio o all'aggiornamento del container.
@@ -286,14 +286,14 @@ This web application is a full-featured, self-hosted management and monitoring p
 
 The **Automations & Controls** tab organizes your network tools into a clean 2x2 grid:
 
-1. **Smart Guest Wi-Fi with Dynamic QR Code (Top-Left):**
-   - Instantly renders a printable, scannable QR Code for guests to connect without typing credentials.
+1. **Smart Guest Wi-Fi with Dual-Theme Dynamic QR Code (Top-Left):**
+   - Instantly renders a printable, scannable QR Code with pure white background for Light Mode and dark slate for Dark Mode, automatically synchronized with the active theme.
    - One-click toggle to enable or disable the guest network at any time.
    - Built-in secure password generator and credentials updater.
-2. **Native AdGuard Home DNS & Client Sync (Top-Right):**
-   - **Client Nickname Synchronization:** Push eero custom device nicknames, IP leases, and MAC addresses directly into AdGuard Home persistent client registry (`/control/clients`).
-   - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into AdGuard Home.
-   - **One-Click "Sync Now":** Instantly reconciles all network clients against AdGuard Home.
+2. **Multi-Engine DNS Synchronizer (Top-Right):**
+   - **Heterogeneous Multi-Engine Support:** Simultaneous management of multiple instances across AdGuard Home, Pi-hole (v5 & v6 REST API), and Technitium DNS (direct A and Reverse PTR records).
+   - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into all active DNS servers.
+   - **Individual & Global Test and Sync:** Quickly test individual or all instances, with instant 1-click manual synchronization.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
 3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
    - **Persistent Known Devices Registry:** SQLite `known_devices` table tracking previously discovered MACs to prevent duplicate alerts on container restarts.
