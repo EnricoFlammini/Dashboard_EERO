@@ -518,10 +518,8 @@ html:not(.dark) button.bg-indigo-600,
 html:not(.dark) button.bg-emerald-600,
 html:not(.dark) button[class*="bg-gradient-"],
 html:not(.dark) button[class*="from-"],
-html:not(.dark) button.rounded-full,
 html:not(.dark) button[class*="bg-gradient-"] *,
 html:not(.dark) button[class*="from-"] *,
-html:not(.dark) button.rounded-full *,
 html:not(.dark) .bg-rose-500 .text-white,
 html:not(.dark) .bg-rose-600 .text-white,
 html:not(.dark) .bg-sky-500 .text-white,
@@ -534,6 +532,34 @@ html:not(.dark) .btn-accent,
 html:not(.dark) .btn-primary *,
 html:not(.dark) .btn-accent * {
   color: #ffffff !important;
+}
+
+/* Header Pills Contrast (Version & About) */
+html:not(.dark) .header-pill-version {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+}
+html:not(.dark) .header-pill-version:hover {
+  background-color: #bae6fd !important;
+  color: #075985 !important;
+  border-color: #38bdf8 !important;
+}
+html:not(.dark) .header-pill-version * {
+  color: #0369a1 !important;
+}
+html:not(.dark) .header-pill-about {
+  background-color: #ede9fe !important;
+  color: #5b21b6 !important;
+  border: 1px solid #c4b5fd !important;
+}
+html:not(.dark) .header-pill-about:hover {
+  background-color: #ddd6fe !important;
+  color: #4c1d95 !important;
+  border-color: #a78bfa !important;
+}
+html:not(.dark) .header-pill-about * {
+  color: #5b21b6 !important;
 }
 
 

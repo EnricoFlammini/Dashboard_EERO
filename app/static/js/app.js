@@ -414,6 +414,35 @@ document.addEventListener('alpine:init', () => {
       return `${statusLabel} • ${healthLabel}`;
     },
 
+    formatDnsServers(dns) {
+      if (!dns) return '192.168.4.104, 1.1.1.1';
+      const cleanIps = [];
+      const extract = (val) => {
+        if (!val) return;
+        if (Array.isArray(val)) {
+          val.forEach(extract);
+        } else if (typeof val === 'object') {
+          if (val.ips) extract(val.ips);
+          else if (val.nameservers) extract(val.nameservers);
+          else if (val.custom) extract(val.custom);
+          else Object.values(val).forEach(extract);
+        } else if (typeof val === 'string') {
+          const matches = val.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g);
+          if (matches) {
+            matches.forEach(ip => cleanIps.push(ip));
+          } else {
+            const trimmed = val.trim();
+            if (trimmed && !trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+              cleanIps.push(trimmed);
+            }
+          }
+        }
+      };
+      extract(dns);
+      const unique = [...new Set(cleanIps)];
+      return unique.length > 0 ? unique.join(', ') : '192.168.4.104, 1.1.1.1';
+    },
+
     t(path, params = {}) {
       if (!path) return '';
       const keys = path.split('.');

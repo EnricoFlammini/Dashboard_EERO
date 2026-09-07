@@ -501,20 +501,52 @@ class EeroClient:
         # Stato Connessione WAN: SEMPRE online quando la rete risponde
         data["status"] = "online"
 
-        # DNS Servers (Supporta sia array che dizionario {'ips': [...]})
-        dns_raw = data.get("dns")
-        dns_list = []
-        if isinstance(dns_raw, dict):
-            dns_list = dns_raw.get("ips") or dns_raw.get("nameservers") or dns_raw.get("custom") or []
-        elif isinstance(dns_raw, list):
-            dns_list = dns_raw
-        elif data.get("dns_nameservers"):
-            dns_list = data.get("dns_nameservers")
+        # DNS Servers (Supporta array, dizionario {'ips': [...]}, stringhe e liste annidate)
+        dns_candidates = []
+        for candidate in [data.get("dns"), data.get("dns_servers"), data.get("dns_nameservers")]:
+            if candidate:
+                dns_candidates.append(candidate)
 
-        if not dns_list:
-            dns_list = ["192.168.4.104", "1.1.1.1"]
+        extracted_ips = []
+        for raw in dns_candidates:
+            if isinstance(raw, dict):
+                ips = raw.get("ips") or raw.get("nameservers") or raw.get("custom") or []
+                if isinstance(ips, list):
+                    extracted_ips.extend(ips)
+                elif isinstance(ips, str):
+                    extracted_ips.append(ips)
+            elif isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, dict):
+                        ips = item.get("ips") or item.get("nameservers") or []
+                        if isinstance(ips, list):
+                            extracted_ips.extend(ips)
+                        elif isinstance(ips, str):
+                            extracted_ips.append(ips)
+                    elif isinstance(item, str):
+                        found_ips = re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", item)
+                        if found_ips:
+                            extracted_ips.extend(found_ips)
+                        else:
+                            extracted_ips.append(item)
+            elif isinstance(raw, str):
+                found_ips = re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", raw)
+                if found_ips:
+                    extracted_ips.extend(found_ips)
+                else:
+                    extracted_ips.append(raw)
 
-        data["dns_servers"] = [str(d) for d in dns_list] if isinstance(dns_list, list) else [str(dns_list)]
+        clean_dns = []
+        for ip_str in extracted_ips:
+            ip_clean = str(ip_str).strip().strip("'\"")
+            if ip_clean and re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip_clean):
+                if ip_clean not in clean_dns:
+                    clean_dns.append(ip_clean)
+
+        if not clean_dns:
+            clean_dns = ["192.168.4.104", "1.1.1.1"]
+
+        data["dns_servers"] = clean_dns
 
         # Speed test
         if "speed" in data and isinstance(data["speed"], dict):
