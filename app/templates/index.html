@@ -319,55 +319,55 @@
         <!-- WAN Card -->
         <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.wan_status')"></span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.wan_status')"></span>
             <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
           </div>
-          <div class="text-2xl font-bold text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
-          <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
+          <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
+          <div class="mt-2 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center space-x-1">
             <span x-text="t('dashboard.wan_ip')"></span>
-            <span class="text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
+            <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
           </div>
-          <div class="mt-1 text-[11px] text-slate-500 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
+          <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
         </div>
 
         <!-- Gateway Node Card -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.node_gateway')"></span>
-            <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.node_gateway')"></span>
+            <svg class="w-4 h-4 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
           </div>
-          <div class="text-xl font-bold text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).name || t('dashboard.node_gateway')"></div>
-          <div class="mt-2 text-xs font-mono text-slate-400 flex items-center space-x-1">
+          <div class="text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).name || t('dashboard.node_gateway')"></div>
+          <div class="mt-2 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center space-x-1">
             <span x-text="t('dashboard.lan_ip')"></span>
-            <span class="text-slate-200" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).ip || network.gateway_ip || '192.168.4.1'"></span>
+            <span class="text-slate-900 dark:text-slate-200 font-semibold" x-text="(eeros.find(e => e.is_gateway) || eeros[0] || {}).ip || network.gateway_ip || '192.168.4.1'"></span>
           </div>
-          <div class="mt-1 text-[11px] text-slate-500">DNS: <span x-text="Array.isArray(network.dns_servers) ? network.dns_servers.join(', ') : (typeof network.dns_servers === 'object' && network.dns_servers !== null && network.dns_servers.ips ? network.dns_servers.ips.join(', ') : (network.dns_servers || '192.168.4.104, 1.1.1.1'))"></span></div>
+          <div class="mt-1 text-[11px] text-slate-600 dark:text-slate-400">DNS: <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="Array.isArray(network.dns_servers) ? network.dns_servers.join(', ') : (typeof network.dns_servers === 'object' && network.dns_servers !== null && network.dns_servers.ips ? network.dns_servers.ips.join(', ') : (network.dns_servers || '192.168.4.104, 1.1.1.1'))"></span></div>
         </div>
 
         <!-- Connected Clients Count -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.connected_devices')"></span>
-            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.connected_devices')"></span>
+            <svg class="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           </div>
-          <div class="text-3xl font-extrabold text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
-          <div class="mt-2 text-xs text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
+          <div class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
+          <div class="mt-2 text-xs text-slate-600 dark:text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
         </div>
 
         <!-- Last Speedtest Preview -->
         <div class="glass-panel rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
-            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
+            <svg class="w-4 h-4 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
           <div class="flex items-baseline space-x-2">
-            <span class="text-2xl font-bold text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(0)"></span>
-            <span class="text-xs text-slate-400">↓ Mbps</span>
-            <span class="text-slate-600">/</span>
-            <span class="text-lg font-bold text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(0)"></span>
-            <span class="text-xs text-slate-400">↑ Mbps</span>
+            <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(0)"></span>
+            <span class="text-xs text-slate-600 dark:text-slate-400">↓ Mbps</span>
+            <span class="text-slate-400">/</span>
+            <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(0)"></span>
+            <span class="text-xs text-slate-600 dark:text-slate-400">↑ Mbps</span>
           </div>
-          <div class="mt-2 text-xs text-slate-400">Ping: <span class="text-amber-400 font-semibold" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></span></div>
+          <div class="mt-2 text-xs text-slate-600 dark:text-slate-400">Ping: <span class="text-amber-600 dark:text-amber-400 font-semibold" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></span></div>
         </div>
 
       </div>
@@ -375,8 +375,8 @@
       <!-- Quick Actions Header & Topology -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
         <div class="flex items-center space-x-2">
-          <h2 class="text-lg font-bold text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
-          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-500 hover:text-sky-400" :title="t('dashboard.mesh_topology_sub')">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
+          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition" :title="t('dashboard.mesh_topology_sub')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </button>
         </div>
@@ -385,7 +385,7 @@
         <div class="flex items-center space-x-3">
           <button 
             @click="rebootNetwork()"
-            class="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-xs font-semibold text-rose-400 border border-rose-500/30 transition flex items-center space-x-1.5">
+            class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 border border-rose-300 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:text-rose-400 dark:border-rose-500/30 transition flex items-center space-x-1.5 shadow-sm dark:shadow-none cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span x-text="t('dashboard.restart_network_btn')"></span>
           </button>
@@ -395,62 +395,62 @@
       <!-- Mesh Nodes Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <template x-for="eero in eeros" :key="eero.id || eero.serial">
-          <div class="glass-panel rounded-2xl p-5 border border-slate-800 hover-glow transition-all flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
             <div>
               <!-- Node Header -->
               <div class="flex items-start justify-between">
                 <div>
                   <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : 'bg-rose-500'"></span>
-                    <h3 class="font-bold text-white text-base" x-text="eero.name"></h3>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-base" x-text="eero.name"></h3>
                   </div>
-                  <p class="text-xs text-slate-400 mt-0.5" x-show="eero.model" x-text="eero.model"></p>
+                  <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-show="eero.model" x-text="eero.model"></p>
                 </div>
                 <template x-if="eero.is_gateway">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30 uppercase tracking-wider">Gateway</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider">Gateway</span>
                 </template>
               </div>
 
               <!-- Node Specs & Info -->
-              <div class="mt-4 space-y-2 border-t border-b border-slate-800/80 py-3 text-xs">
+              <div class="mt-4 space-y-2 border-t border-b border-slate-200 dark:border-slate-800/80 py-3 text-xs">
                 <!-- IP Address -->
-                <div class="flex justify-between text-slate-400" x-show="eero.ip || eero.is_gateway">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.ip || eero.is_gateway">
                   <span x-text="t('dashboard.ip_address')"></span>
-                  <span class="font-mono text-slate-200" x-text="eero.ip || 'DHCP'"></span>
+                  <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="eero.ip || 'DHCP'"></span>
                 </div>
                 <!-- Backhaul (hide if single gateway node and no mesh backhaul) -->
-                <div class="flex justify-between text-slate-400" x-show="!eero.is_gateway || eero.backhaul_type || eeros.length > 1">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="!eero.is_gateway || eero.backhaul_type || eeros.length > 1">
                   <span x-text="t('dashboard.backhaul')"></span>
-                  <span class="font-semibold text-emerald-400" x-text="formatBackhaul(eero)"></span>
+                  <span class="font-semibold text-emerald-600 dark:text-emerald-400" x-text="formatBackhaul(eero)"></span>
                 </div>
                 <!-- Connected Clients Count -->
-                <div class="flex justify-between text-slate-400">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400">
                   <span x-text="t('dashboard.connected_clients')"></span>
-                  <span class="font-bold text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
+                  <span class="font-bold text-slate-900 dark:text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
                 </div>
                 <!-- Operating Status -->
-                <div class="flex justify-between text-slate-400" x-show="eero.status">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.status">
                   <span x-text="t('dashboard.status')"></span>
-                  <span class="text-emerald-400 font-medium" x-text="formatNodeStatus(eero)"></span>
+                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold" x-text="formatNodeStatus(eero)"></span>
                 </div>
                 <!-- Firmware OS Version -->
-                <div class="flex justify-between text-slate-400" x-show="eero.os_version">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.os_version">
                   <span x-text="t('dashboard.firmware')"></span>
-                  <span class="font-mono text-slate-300 text-[11px]" x-text="eero.os_version || t('dashboard.updated')"></span>
+                  <span class="font-mono text-slate-800 dark:text-slate-300 text-[11px] font-medium" x-text="eero.os_version || t('dashboard.updated')"></span>
                 </div>
               </div>
             </div>
 
             <!-- Node Controls -->
             <div class="mt-4 flex items-center justify-between pt-2">
-              <span class="text-[11px] text-slate-500 flex items-center space-x-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span class="text-[11px] text-slate-600 dark:text-slate-500 flex items-center space-x-1 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
                 <span x-text="t('dashboard.mesh_active')"></span>
               </span>
 
               <button 
                 @click="rebootEero(eero)"
-                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/40 text-xs font-semibold text-slate-400 hover:text-rose-400 border border-slate-700 transition flex items-center space-x-1">
+                class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-600 border border-slate-300 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 dark:border-slate-700 transition flex items-center space-x-1 shadow-sm dark:shadow-none cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 <span x-text="t('dashboard.restart_node_btn')"></span>
               </button>
@@ -531,8 +531,8 @@
             </select>
 
             <!-- Connected Only Toggle -->
-            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
-              <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
+            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+              <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sky-600 focus:ring-0">
               <span x-text="t('devices.filter_connected_only')"></span>
             </label>
 
@@ -540,7 +540,7 @@
             <button 
               @click="manualRefresh()"
               :disabled="isRefreshing"
-              class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition"
+              class="p-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 border border-slate-300 dark:border-slate-700 transition shadow-sm dark:shadow-none cursor-pointer"
               :title="t('devices.refresh_title')">
               <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -553,17 +553,17 @@
       </div>
 
       <!-- Devices Table -->
-      <div class="glass-panel rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+      <div class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
         <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
           <table class="w-full text-left border-collapse text-xs">
-            <thead class="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-sm">
-              <tr class="text-slate-400 uppercase tracking-wider font-semibold">
+            <thead class="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+              <tr class="text-slate-700 dark:text-slate-400 uppercase tracking-wider font-semibold">
                 
                 <!-- Col: Device / Name -->
-                <th @click="toggleDeviceSort('name')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('name')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_device')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'name' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'name' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'name'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -572,10 +572,10 @@
                 </th>
 
                 <!-- Col: IP / MAC -->
-                <th @click="toggleDeviceSort('ip')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('ip')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_ip_mac')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'ip' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'ip' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'ip'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -584,10 +584,10 @@
                 </th>
 
                 <!-- Col: Profile / User -->
-                <th @click="toggleDeviceSort('profile')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('profile')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_profile')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'profile' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'profile' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'profile'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -596,10 +596,10 @@
                 </th>
 
                 <!-- Col: Node -->
-                <th @click="toggleDeviceSort('node')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('node')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_node')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'node' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'node' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'node'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -608,10 +608,10 @@
                 </th>
 
                 <!-- Col: Band -->
-                <th @click="toggleDeviceSort('band')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('band')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_band')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'band' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'band' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'band'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -620,10 +620,10 @@
                 </th>
 
                 <!-- Col: Signal -->
-                <th @click="toggleDeviceSort('signal')" class="py-3.5 px-4 cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('signal')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_signal')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'signal' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'signal' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'signal'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -632,10 +632,10 @@
                 </th>
 
                 <!-- Col: Status -->
-                <th @click="toggleDeviceSort('status')" class="py-3.5 px-4 text-center cursor-pointer select-none hover:text-white transition group sticky top-0 bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('status')" class="py-3.5 px-4 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center justify-center space-x-1.5">
                     <span x-text="t('devices.col_status')"></span>
-                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-400' : 'text-slate-600 group-hover:text-slate-400'">
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
                       <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                       <svg x-show="deviceSortField !== 'status'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
@@ -644,30 +644,30 @@
                 </th>
 
                 <!-- Col: Actions -->
-                <th class="py-3.5 px-4 text-right sticky top-0 bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
+                <th class="py-3.5 px-4 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800/60">
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
               <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
-                <tr class="hover:bg-slate-800/30 transition-colors">
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                   
                   <!-- Name & Icon -->
                   <td class="py-3 px-4">
                     <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sky-400">
+                      <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       </div>
                       <div>
                         <div class="flex items-center space-x-1.5">
-                          <div class="font-bold text-white text-sm" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                          <div class="font-bold text-slate-900 dark:text-white text-sm" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
                           <template x-if="dev.is_favorite">
-                            <span class="text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
+                            <span class="text-amber-500 dark:text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
                           </template>
                           <template x-if="dev.is_low_latency_target">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
                           </template>
                         </div>
-                        <div class="text-[11px] text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
+                        <div class="text-[11px] text-slate-600 dark:text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
                       </div>
                     </div>
                   </td>
@@ -675,36 +675,36 @@
                   <!-- IP & MAC with Static / DHCP badge -->
                   <td class="py-3 px-4 font-mono">
                     <div class="flex items-center space-x-2">
-                      <span class="text-slate-200 font-semibold text-xs" x-text="dev.ip || '---'"></span>
+                      <span class="text-slate-900 dark:text-slate-200 font-semibold text-xs" x-text="dev.ip || '---'"></span>
                       <template x-if="dev.is_static">
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider inline-flex items-center" :title="t('devices.badge_static')">
-                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span><span x-text="t('devices.badge_static')"></span>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 tracking-wider inline-flex items-center" :title="t('devices.badge_static')">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block mr-1"></span><span x-text="t('devices.badge_static')"></span>
                         </span>
                       </template>
                       <template x-if="!dev.is_static">
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800/90 text-slate-400 border border-slate-700/80 tracking-wider inline-flex items-center" :title="t('devices.badge_dhcp')">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 dark:bg-slate-800/90 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700/80 tracking-wider inline-flex items-center" :title="t('devices.badge_dhcp')">
                           <span class="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block mr-1"></span><span x-text="t('devices.badge_dhcp')"></span>
                         </span>
                       </template>
                     </div>
-                    <div class="text-[10px] text-slate-500 mt-0.5" x-text="dev.mac || dev.mac_address"></div>
+                    <div class="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5" x-text="dev.mac || dev.mac_address"></div>
                   </td>
 
                   <!-- Profile / User -->
                   <td class="py-3 px-4 whitespace-nowrap">
                     <template x-if="dev.profile_name">
-                      <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                      <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20">
                         <span>👤</span>
                         <span x-text="dev.profile_name"></span>
                       </span>
                     </template>
                     <template x-if="!dev.profile_name">
-                      <span class="text-[11px] text-slate-500 italic" x-text="t('profiles.total_unassigned')"></span>
+                      <span class="text-[11px] text-slate-500 dark:text-slate-500 italic" x-text="t('profiles.total_unassigned')"></span>
                     </template>
                   </td>
 
                   <!-- Connected eero -->
-                  <td class="py-3 px-4 text-slate-300">
+                  <td class="py-3 px-4 text-slate-800 dark:text-slate-300">
                     <span class="font-medium" x-text="dev.connected_eero_name || 'Gateway'"></span>
                   </td>
 
@@ -722,7 +722,7 @@
                         x-text="(dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? 'Ethernet' : (dev.frequency_band && dev.frequency_band !== 'Cablato' && dev.frequency_band !== 'Ethernet' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : (dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz'))))">
                       </span>
                       <template x-if="dev.channel">
-                        <span class="text-[10px] font-mono text-slate-400">CH <span x-text="dev.channel"></span></span>
+                        <span class="text-[10px] font-mono text-slate-600 dark:text-slate-400">CH <span x-text="dev.channel"></span></span>
                       </template>
                     </div>
                   </td>
@@ -732,20 +732,20 @@
                     <template x-if="dev.wireless">
                       <div>
                         <template x-if="dev.signal_rssi">
-                          <div class="text-slate-200 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
+                          <div class="text-slate-900 dark:text-slate-200 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
                         </template>
                         <template x-if="dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)">
-                          <div class="text-[10px] text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
+                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
                         </template>
                         <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
-                          <div class="text-[10px] text-slate-400" x-text="dev.connected ? 'Wi-Fi' : 'Offline'"></div>
+                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="dev.connected ? 'Wi-Fi' : 'Offline'"></div>
                         </template>
                       </div>
                     </template>
                     <template x-if="!dev.wireless">
                       <div>
-                        <div class="text-emerald-400 font-semibold" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired') || 'Ethernet'"></div>
-                        <div class="text-[10px] text-slate-500" x-show="dev.ethernet_speed" x-text="t('dashboard.backhaul_wired') || 'Ethernet'"></div>
+                        <div class="text-emerald-600 dark:text-emerald-400 font-semibold" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired') || 'Ethernet'"></div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-500" x-show="dev.ethernet_speed" x-text="t('dashboard.backhaul_wired') || 'Ethernet'"></div>
                       </div>
                     </template>
                   </td>
@@ -753,10 +753,10 @@
                   <!-- Status (Online/Offline) -->
                   <td class="py-3 px-4 text-center">
                     <template x-if="dev.connected">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" x-text="t('devices.status_online')"></span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30" x-text="t('devices.status_online')"></span>
                     </template>
                     <template x-if="!dev.connected">
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-500 border border-slate-700" x-text="t('devices.status_offline')"></span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-500 border border-slate-300 dark:border-slate-700" x-text="t('devices.status_offline')"></span>
                     </template>
                   </td>
 
@@ -802,8 +802,8 @@
       <div class="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
         <div class="max-w-md w-full">
           
-          <h2 class="text-xl font-bold text-white mb-1" x-text="t('speedtest.title')"></h2>
-          <p class="text-xs text-slate-400 mb-6" x-text="t('speedtest.subtitle')"></p>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1" x-text="t('speedtest.title')"></h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-6" x-text="t('speedtest.subtitle')"></p>
 
           <!-- Action Button / Progress -->
           <div class="flex flex-col items-center">
@@ -816,24 +816,24 @@
             </button>
 
             <!-- Progress Bar -->
-            <div x-show="speedtestRunning" class="w-full bg-slate-800 rounded-full h-2 mt-6 overflow-hidden">
+            <div x-show="speedtestRunning" class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-6 overflow-hidden">
               <div class="bg-gradient-to-r from-sky-400 to-emerald-400 h-2 transition-all duration-300" :style="`width: ${speedtestProgress}%`"></div>
             </div>
           </div>
 
           <!-- Latest Result Badge -->
-          <div class="mt-8 grid grid-cols-3 gap-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="mt-8 grid grid-cols-3 gap-4 p-4 rounded-xl bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.download')"></div>
-              <div class="text-lg font-bold text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(1) + ' Mbps'"></div>
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('speedtest.download')"></div>
+              <div class="text-lg font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(1) + ' Mbps'"></div>
             </div>
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.upload')"></div>
-              <div class="text-lg font-bold text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(1) + ' Mbps'"></div>
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('speedtest.upload')"></div>
+              <div class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(1) + ' Mbps'"></div>
             </div>
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold" x-text="t('speedtest.ping_latency')"></div>
-              <div class="text-lg font-bold text-amber-400 font-mono" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></div>
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('speedtest.ping_latency')"></div>
+              <div class="text-lg font-bold text-amber-600 dark:text-amber-400 font-mono" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></div>
             </div>
           </div>
 
@@ -845,7 +845,7 @@
         
         <!-- Chart -->
         <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
-          <h3 class="text-base font-bold text-white mb-4" x-text="t('speedtest.chart_title')"></h3>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4" x-text="t('speedtest.chart_title')"></h3>
           <div style="position: relative; height: 280px; width: 100%; min-height: 280px;">
             <canvas id="speedtestHistoryChart" style="width: 100%; height: 100%; display: block;"></canvas>
           </div>
@@ -853,32 +853,32 @@
 
         <!-- Performance Stats Cards -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
-          <h3 class="text-base font-bold text-white" x-text="t('speedtest.stats_title')"></h3>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('speedtest.stats_title')"></h3>
           
           <div class="space-y-3 text-xs">
-            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400" x-text="t('speedtest.avg_download')"></span>
-              <span class="font-bold text-sky-400 font-mono" x-text="(speedtestStats.avg_download || 0) + ' Mbps'"></span>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.avg_download')"></span>
+              <span class="font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="(speedtestStats.avg_download || 0) + ' Mbps'"></span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400" x-text="t('speedtest.max_download')"></span>
-              <span class="font-bold text-sky-300 font-mono" x-text="(speedtestStats.max_download || 0) + ' Mbps'"></span>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.max_download')"></span>
+              <span class="font-bold text-sky-700 dark:text-sky-300 font-mono" x-text="(speedtestStats.max_download || 0) + ' Mbps'"></span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400" x-text="t('speedtest.avg_upload')"></span>
-              <span class="font-bold text-emerald-400 font-mono" x-text="(speedtestStats.avg_upload || 0) + ' Mbps'"></span>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.avg_upload')"></span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="(speedtestStats.avg_upload || 0) + ' Mbps'"></span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400" x-text="t('speedtest.avg_ping')"></span>
-              <span class="font-bold text-amber-400 font-mono" x-text="(speedtestStats.avg_ping || 0) + ' ms'"></span>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.avg_ping')"></span>
+              <span class="font-bold text-amber-600 dark:text-amber-400 font-mono" x-text="(speedtestStats.avg_ping || 0) + ' ms'"></span>
             </div>
-            <div class="flex justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <span class="text-slate-400" x-text="t('speedtest.total_tests')"></span>
-              <span class="font-bold text-white font-mono" x-text="speedtestStats.total_tests || 0"></span>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.total_tests')"></span>
+              <span class="font-bold text-slate-900 dark:text-white font-mono" x-text="speedtestStats.total_tests || 0"></span>
             </div>
           </div>
 
-          <div class="text-[11px] text-slate-500 text-center" x-text="t('speedtest.schedule_info')"></div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 text-center" x-text="t('speedtest.schedule_info')"></div>
         </div>
 
       </div>
@@ -886,18 +886,18 @@
       <!-- =================================================================== -->
       <!-- WI-FI SIGNAL QUALITY & MESH COVERAGE (v1.04.00) -->
       <!-- =================================================================== -->
-      <div class="space-y-6 pt-6 border-t border-slate-800/80 w-full">
+      <div class="space-y-6 pt-6 border-t border-slate-200 dark:border-slate-800/80 w-full">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
               <span>📶</span>
               <span x-text="t('speedtest.signal_section_title')"></span>
             </h3>
-            <p class="text-xs text-slate-400" x-text="t('speedtest.signal_section_subtitle')"></p>
+            <p class="text-xs text-slate-600 dark:text-slate-400" x-text="t('speedtest.signal_section_subtitle')"></p>
           </div>
           <button 
             @click="loadSignalOverview()" 
-            class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center space-x-1.5 transition">
+            class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm dark:shadow-none cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span x-text="t('header.refresh')"></span>
           </button>
@@ -906,11 +906,11 @@
         <!-- KPI & Distribution Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Average RSSI -->
-          <div class="glass-panel rounded-2xl p-4 border border-sky-500/20 flex flex-col justify-between">
-            <span class="text-slate-400 text-xs font-medium" x-text="t('speedtest.signal_avg_kpi')"></span>
+          <div class="glass-panel rounded-2xl p-4 border border-sky-300 dark:border-sky-500/20 flex flex-col justify-between">
+            <span class="text-slate-600 dark:text-slate-400 text-xs font-medium" x-text="t('speedtest.signal_avg_kpi')"></span>
             <div class="flex items-baseline space-x-1.5 my-2">
-              <span class="text-2xl font-bold font-mono text-white" x-text="signalOverview.average_rssi ? signalOverview.average_rssi : '---'"></span>
-              <span class="text-xs text-slate-400 font-mono" x-show="signalOverview.average_rssi">dBm</span>
+              <span class="text-2xl font-bold font-mono text-slate-900 dark:text-white" x-text="signalOverview.average_rssi ? signalOverview.average_rssi : '---'"></span>
+              <span class="text-xs text-slate-600 dark:text-slate-400 font-mono" x-show="signalOverview.average_rssi">dBm</span>
             </div>
             <span 
               class="inline-block px-2 py-0.5 rounded text-[10px] font-bold text-center"
@@ -925,69 +925,69 @@
           </div>
 
           <!-- Excellent -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs mb-1">
-                <span class="text-emerald-400 font-semibold flex items-center space-x-1">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
                   <span x-text="t('speedtest.signal_excellent')"></span>
                 </span>
-                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
+                <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 mb-2">≥ -50 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">≥ -50 dBm</div>
             </div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-emerald-500 h-1.5 rounded-full" :style="`width: ${signalOverview.excellent_pct}%`"></div>
             </div>
           </div>
 
           <!-- Good -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs mb-1">
-                <span class="text-sky-400 font-semibold flex items-center space-x-1">
-                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span class="text-sky-600 dark:text-sky-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400"></span>
                   <span x-text="t('speedtest.signal_good')"></span>
                 </span>
-                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
+                <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 mb-2">-51 a -65 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">-51 a -65 dBm</div>
             </div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-sky-500 h-1.5 rounded-full" :style="`width: ${signalOverview.good_pct}%`"></div>
             </div>
           </div>
 
           <!-- Fair -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs mb-1">
-                <span class="text-amber-400 font-semibold flex items-center space-x-1">
-                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span class="text-amber-600 dark:text-amber-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></span>
                   <span x-text="t('speedtest.signal_fair')"></span>
                 </span>
-                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
+                <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 mb-2">-66 a -75 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">-66 a -75 dBm</div>
             </div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-amber-500 h-1.5 rounded-full" :style="`width: ${signalOverview.fair_pct}%`"></div>
             </div>
           </div>
 
           <!-- Weak / Critical -->
-          <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div class="glass-panel rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs mb-1">
-                <span class="text-rose-400 font-semibold flex items-center space-x-1">
-                  <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                <span class="text-rose-600 dark:text-rose-400 font-semibold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-rose-500 dark:bg-rose-400"></span>
                   <span x-text="t('speedtest.signal_weak')"></span>
                 </span>
-                <span class="text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
+                <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 mb-2">&lt; -75 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">&lt; -75 dBm</div>
             </div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-rose-500 h-1.5 rounded-full" :style="`width: ${signalOverview.weak_pct}%`"></div>
             </div>
           </div>
@@ -997,8 +997,8 @@
         <div class="glass-panel rounded-2xl p-6 space-y-4 w-full">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="min-w-[200px]">
-              <h4 class="text-base font-bold text-white" x-text="t('speedtest.signal_chart_title')"></h4>
-              <p class="text-xs text-slate-400">Analisi temporale della potenza del segnale per singolo apparato Wi-Fi</p>
+              <h4 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('speedtest.signal_chart_title')"></h4>
+              <p class="text-xs text-slate-600 dark:text-slate-400">Analisi temporale della potenza del segnale per singolo apparato Wi-Fi</p>
             </div>
 
             <!-- Controls: Device selector & Time range -->
@@ -1006,22 +1006,22 @@
               <select 
                 x-model="selectedSignalDeviceMac" 
                 @change="loadDeviceSignalHistory()"
-                class="glass-input px-3 py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-xs">
+                class="glass-input px-3 py-1.5 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-xs">
                 <template x-for="d in (signalOverview.devices || [])" :key="d.mac_address">
                   <option :value="d.mac_address" x-text="(d.hostname || d.mac_address) + ' (' + (d.signal_rssi ? d.signal_rssi + ' dBm' : '') + ')'"></option>
                 </template>
               </select>
 
-              <div class="flex rounded-xl bg-slate-900/80 p-0.5 border border-slate-800 text-xs shrink-0">
+              <div class="flex rounded-xl bg-slate-100 dark:bg-slate-900/80 p-0.5 border border-slate-200 dark:border-slate-800 text-xs shrink-0">
                 <button 
                   @click="signalHistoryHours = 24; loadDeviceSignalHistory()" 
-                  :class="signalHistoryHours === 24 ? 'bg-sky-500/20 text-sky-400 font-bold' : 'text-slate-400 hover:text-slate-200'"
-                  class="px-2.5 py-1 rounded-lg transition" x-text="t('speedtest.time_range_24h')">
+                  :class="signalHistoryHours === 24 ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+                  class="px-2.5 py-1 rounded-lg transition cursor-pointer" x-text="t('speedtest.time_range_24h')">
                 </button>
                 <button 
                   @click="signalHistoryHours = 168; loadDeviceSignalHistory()" 
-                  :class="signalHistoryHours === 168 ? 'bg-sky-500/20 text-sky-400 font-bold' : 'text-slate-400 hover:text-slate-200'"
-                  class="px-2.5 py-1 rounded-lg transition" x-text="t('speedtest.time_range_7d')">
+                  :class="signalHistoryHours === 168 ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'"
+                  class="px-2.5 py-1 rounded-lg transition cursor-pointer" x-text="t('speedtest.time_range_7d')">
                 </button>
               </div>
             </div>
@@ -1042,9 +1042,9 @@
             <p class="text-xs text-slate-400" x-text="t('speedtest.weak_watchlist_desc')"></p>
           </div>
 
-          <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-800">
+              <thead class="bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th class="py-3 px-4" x-text="t('speedtest.col_device')"></th>
                   <th class="py-3 px-4" x-text="t('speedtest.col_eero_node')"></th>
@@ -1053,24 +1053,24 @@
                   <th class="py-3 px-4" x-text="t('speedtest.col_recommendation')"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/60">
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
                 <template x-for="wd in (signalOverview.weak_devices || [])" :key="wd.mac_address">
-                  <tr class="hover:bg-slate-800/30 transition">
-                    <td class="py-3 px-4 font-semibold text-slate-200">
+                  <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
                       <div class="flex items-center space-x-2">
                         <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
                         <span x-text="wd.hostname || wd.mac_address"></span>
                       </div>
                       <span class="text-[10px] text-slate-500 font-mono block mt-0.5" x-text="wd.mac_address"></span>
                     </td>
-                    <td class="py-3 px-4 text-slate-300" x-text="wd.connected_eero_name || 'Gateway'"></td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300" x-text="wd.connected_eero_name || 'Gateway'"></td>
                     <td class="py-3 px-4">
-                      <span class="font-mono text-slate-300" x-text="(wd.frequency_band || 'Wi-Fi') + (wd.channel ? ' • CH ' + wd.channel : '')"></span>
+                      <span class="font-mono text-slate-700 dark:text-slate-300" x-text="(wd.frequency_band || 'Wi-Fi') + (wd.channel ? ' • CH ' + wd.channel : '')"></span>
                     </td>
                     <td class="py-3 px-4 text-center">
-                      <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30" x-text="wd.signal_rssi + ' dBm'"></span>
+                      <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30" x-text="wd.signal_rssi + ' dBm'"></span>
                     </td>
-                    <td class="py-3 px-4 text-slate-400 italic" x-text="t('speedtest.rec_move_closer')"></td>
+                    <td class="py-3 px-4 text-slate-600 dark:text-slate-400 italic" x-text="t('speedtest.rec_move_closer')"></td>
                   </tr>
                 </template>
                 <template x-if="!signalOverview.weak_devices || signalOverview.weak_devices.length === 0">
@@ -1101,54 +1101,55 @@
         <!-- 1. Smart Guest Wi-Fi & Dynamic QR Code (Top-Left) -->
         <div class="glass-panel rounded-2xl p-6 space-y-5">
           <div class="flex items-center justify-between border-b border-white/5 pb-3">
+          <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+              <div class="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
               </div>
               <div>
-                <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.guest_title')"></h3>
-                <p class="text-xs text-slate-400 mt-0.5" x-text="t('controls.qr_desc')"></p>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.guest_title')"></h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('controls.qr_desc')"></p>
               </div>
             </div>
             <button 
               @click="toggleGuestNetwork()"
-              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-800 text-slate-400'"
-              class="px-3 py-1 rounded-full text-xs font-bold transition">
+              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'"
+              class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer">
               <span x-text="guestNetwork.enabled ? t('controls.enabled') : t('controls.disabled')"></span>
             </button>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <!-- QR Code Display -->
-            <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
               <template x-if="guestQrCodeUrl">
-                <img :src="guestQrCodeUrl" alt="WiFi QR Code" class="w-44 h-44 rounded-lg shadow-md border border-slate-700">
+                <img :src="guestQrCodeUrl" alt="WiFi QR Code" class="w-44 h-44 rounded-lg shadow-md border border-slate-300 dark:border-slate-700">
               </template>
               <template x-if="!guestQrCodeUrl">
-                <div class="w-44 h-44 rounded-lg bg-slate-800 flex items-center justify-center text-xs text-slate-500 text-center p-2" x-text="t('controls.qr_disabled')">
+                <div class="w-44 h-44 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400 text-center p-2" x-text="t('controls.qr_disabled')">
                 </div>
               </template>
-              <span class="text-[11px] text-slate-400 mt-2" x-text="t('controls.qr_desc')"></span>
+              <span class="text-[11px] text-slate-600 dark:text-slate-400 mt-2 font-medium" x-text="t('controls.qr_desc')"></span>
             </div>
 
             <!-- Guest Network Credentials Form -->
             <div class="space-y-3 text-xs">
               <div>
-                <label class="block text-slate-400 mb-1" x-text="t('controls.guest_name')"></label>
+                <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.guest_name')"></label>
                 <input type="text" x-model="guestNetwork.name" class="glass-input w-full px-3 py-1.5 rounded-lg font-semibold">
               </div>
               <div>
-                <label class="block text-slate-400 mb-1" x-text="t('controls.guest_password')"></label>
+                <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.guest_password')"></label>
                 <div class="flex space-x-1">
                   <input type="text" x-model="guestNetwork.password" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400" :title="t('controls.generate_password')">
+                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" :title="t('controls.generate_password')">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   </button>
                 </div>
               </div>
               <button 
                 @click="saveGuestSettings()"
-                class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition"
+                class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition cursor-pointer shadow-sm"
                 x-text="t('controls.save_guest_btn')">
               </button>
             </div>
@@ -1161,12 +1162,12 @@
             <div class="space-y-3 border-b border-black/[0.06] dark:border-white/5 pb-3">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                   </div>
                   <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.dns_title') || 'Multi-Engine DNS Synchronizer'"></h3>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="t('controls.dns_subtitle') || 'Sincronizza automaticamente i nomi host su AdGuard Home, Pi-hole e Technitium DNS'"></p>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('controls.dns_subtitle') || 'Sincronizza automaticamente i nomi host su AdGuard Home, Pi-hole e Technitium DNS'"></p>
                   </div>
                 </div>
 
@@ -1174,14 +1175,14 @@
                 <div class="flex flex-wrap items-center gap-2">
                   <button 
                     @click="addDnsInstance()"
-                    class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1 cursor-pointer">
+                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-500/30 transition flex items-center space-x-1 cursor-pointer">
                     <span>➕</span>
                     <span x-text="t('controls.dns_add_instance') || '+ Aggiungi Istanza'"></span>
                   </button>
                   <button 
                     @click="testAllDns()"
                     :disabled="dnsTesting"
-                    class="px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-slate-800 hover:bg-black/[0.08] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-black/[0.08] dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                    class="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                     <span x-show="dnsTesting && dnsTestingId === 'all'" class="animate-spin text-[10px]">⏳</span>
                     <span x-show="!(dnsTesting && dnsTestingId === 'all')">⚡</span>
                     <span x-text="t('controls.dns_test_all') || 'Testa Tutti'"></span>
@@ -1189,7 +1190,7 @@
                   <button 
                     @click="syncAllDns()"
                     :disabled="dnsSyncing"
-                    class="px-3 py-1.5 rounded-lg bg-[#0067c0]/15 dark:bg-sky-500/20 hover:bg-[#0067c0]/25 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 text-xs font-semibold border border-[#0067c0]/30 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                    class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 hover:bg-[#0067c0]/20 dark:bg-sky-500/20 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 text-xs font-semibold border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                     <span x-show="dnsSyncing && dnsSyncingId === 'all'" class="animate-spin text-[10px]">🔄</span>
                     <span x-show="!(dnsSyncing && dnsSyncingId === 'all')">🔄</span>
                     <span x-text="t('controls.dns_sync_all') || 'Sincronizza Tutti'"></span>
@@ -1198,10 +1199,10 @@
               </div>
             </div>
 
-            <!-- List of Configured DNS Instances (Multiple Simultaneous Support) -->
+            <!-- DNS Instances List Container -->
             <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
               <template x-for="(inst, idx) in dnsSettings.instances" :key="inst.id">
-                <div class="p-3.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] space-y-3 transition">
+                <div class="p-3.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.03] space-y-3 transition">
                   
                   <!-- Instance Header Bar -->
                   <div class="flex items-center justify-between gap-2">
@@ -1209,9 +1210,9 @@
                       <!-- Engine Type Pill -->
                       <span 
                         :class="{
-                          'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30': inst.engine === 'adguard',
-                          'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30': inst.engine === 'pihole',
-                          'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30': inst.engine === 'technitium'
+                          'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30': inst.engine === 'adguard',
+                          'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 border-rose-200 dark:border-rose-500/30': inst.engine === 'pihole',
+                          'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/30': inst.engine === 'technitium'
                         }"
                         class="px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center space-x-1 shrink-0">
                         <span x-text="inst.engine === 'adguard' ? '🛡️ AdGuard' : (inst.engine === 'pihole' ? '🕳️ Pi-hole' : '⚡ Technitium')"></span>
@@ -1227,13 +1228,13 @@
 
                     <!-- Toggle & Remove -->
                     <div class="flex items-center space-x-2 shrink-0">
-                      <label class="flex items-center space-x-1.5 text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                        <input type="checkbox" x-model="inst.enabled" class="rounded border-slate-400 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-3.5 h-3.5">
+                      <label class="flex items-center space-x-1.5 text-[11px] text-slate-700 dark:text-slate-400 cursor-pointer select-none">
+                        <input type="checkbox" x-model="inst.enabled" class="rounded border-slate-300 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-3.5 h-3.5">
                         <span x-text="inst.enabled ? (t('controls.adguard_active') || 'Attiva') : (t('controls.adguard_inactive') || 'Disattiva')"></span>
                       </label>
                       <button 
                         @click="removeDnsInstance(inst.id)"
-                        class="text-slate-400 hover:text-rose-500 p-1 rounded transition" 
+                        class="text-slate-400 hover:text-rose-600 p-1 rounded transition" 
                         :title="t('controls.dns_remove_instance') || 'Elimina Istanza'">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -1244,7 +1245,7 @@
                   <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
                     <!-- Engine Selection -->
                     <div class="sm:col-span-4">
-                      <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_engine') || 'Motore DNS:'"></label>
+                      <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_engine') || 'Motore DNS:'"></label>
                       <select x-model="inst.engine" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-medium text-xs">
                         <option value="adguard">🛡️ AdGuard Home</option>
                         <option value="pihole">🕳️ Pi-hole (v5 & v6)</option>
@@ -1254,7 +1255,7 @@
 
                     <!-- Server URL -->
                     <div class="sm:col-span-8">
-                      <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_url') || 'URL Server:'"></label>
+                      <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_url') || 'URL Server:'"></label>
                       <input type="text" x-model="inst.url" placeholder="http://192.168.1.50:80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                     </div>
 
@@ -1263,11 +1264,11 @@
                     <template x-if="inst.engine === 'adguard'">
                       <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username:'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username:'"></label>
                           <input type="text" x-model="inst.username" placeholder="admin" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div>
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_password') || 'Password:'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_password') || 'Password:'"></label>
                           <input type="password" x-model="inst.password" :placeholder="inst.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                       </div>
@@ -1277,11 +1278,11 @@
                     <template x-if="inst.engine === 'pihole'">
                       <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <div class="sm:col-span-8">
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / WebPassword:'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / WebPassword:'"></label>
                           <input type="password" x-model="inst.token" :placeholder="inst.has_password ? '•••••••••••• (Invariato)' : 'Token WEBPASSWORD / Session SID'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona (es. lan):'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona (es. lan):'"></label>
                           <input type="text" x-model="inst.zone" placeholder="lan" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                       </div>
@@ -1291,15 +1292,15 @@
                     <template x-if="inst.engine === 'technitium'">
                       <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <div class="sm:col-span-4">
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username (opz.):'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username (opz.):'"></label>
                           <input type="text" x-model="inst.username" placeholder="admin" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / Password:'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / Password:'"></label>
                           <input type="password" x-model="inst.token" :placeholder="inst.has_password ? '•••••••••••• (Invariato)' : 'Token API o Password'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
-                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona PTR (es. lan):'"></label>
+                          <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona PTR (es. lan):'"></label>
                           <input type="text" x-model="inst.zone" placeholder="lan" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                       </div>
@@ -1308,7 +1309,7 @@
 
                   <!-- Footer per Istanza: Last Sync info + Test/Sync individuali -->
                   <div class="pt-2 border-t border-black/[0.04] dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                    <div class="text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                    <div class="text-slate-600 dark:text-slate-400 flex items-center space-x-1.5">
                       <span class="w-1.5 h-1.5 rounded-full" :class="inst.last_sync_time ? 'bg-emerald-500' : 'bg-slate-400'"></span>
                       <span x-text="inst.last_sync_time ? ('Ultimo sync: ' + formatLocalDateTime(inst.last_sync_time, true)) : 'Mai sincronizzato'"></span>
                       <template x-if="inst.last_sync_count > 0">
@@ -1320,7 +1321,7 @@
                       <button 
                         @click="testDnsInstance(inst)"
                         :disabled="dnsTesting && dnsTestingId === inst.id"
-                        class="px-2 py-1 rounded bg-black/[0.04] dark:bg-slate-800 hover:bg-black/[0.08] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-black/[0.08] dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                         <span x-show="dnsTesting && dnsTestingId === inst.id" class="animate-spin text-[10px]">⏳</span>
                         <span x-show="!(dnsTesting && dnsTestingId === inst.id)">⚡</span>
                         <span x-text="t('controls.dns_test_single') || 'Test'"></span>
@@ -1328,7 +1329,7 @@
                       <button 
                         @click="syncDnsInstance(inst)"
                         :disabled="dnsSyncing && dnsSyncingId === inst.id"
-                        class="px-2 py-1 rounded bg-[#0067c0]/15 dark:bg-sky-500/20 hover:bg-[#0067c0]/25 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 border border-[#0067c0]/30 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        class="px-2 py-1 rounded bg-[#0067c0]/10 dark:bg-sky-500/20 hover:bg-[#0067c0]/20 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
                         <span x-show="dnsSyncing && dnsSyncingId === inst.id" class="animate-spin text-[10px]">🔄</span>
                         <span x-show="!(dnsSyncing && dnsSyncingId === inst.id)">🔄</span>
                         <span x-text="t('controls.dns_sync_single') || 'Sync'"></span>
@@ -1341,9 +1342,9 @@
 
               <!-- Empty State -->
               <template x-if="!dnsSettings.instances || dnsSettings.instances.length === 0">
-                <div class="p-4 rounded-xl border border-dashed border-black/[0.1] dark:border-white/[0.1] text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+                <div class="p-4 rounded-xl border border-dashed border-slate-300 dark:border-white/[0.1] text-center text-xs text-slate-600 dark:text-slate-400 space-y-2">
                   <p x-text="t('controls.dns_no_instances') || 'Nessuna istanza DNS configurata.'"></p>
-                  <button @click="addDnsInstance()" class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 font-semibold border border-[#0067c0]/30 text-xs cursor-pointer">
+                  <button @click="addDnsInstance()" class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 font-semibold border border-[#0067c0]/20 text-xs cursor-pointer">
                     + Aggiungi Istanza DNS
                   </button>
                 </div>
@@ -1353,7 +1354,7 @@
             <!-- Global Periodic Sync Toggle & Global Save Button -->
             <div class="pt-2 border-t border-black/[0.06] dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                <input type="checkbox" x-model="dnsSettings.enabled" class="rounded border-slate-400 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-4 h-4">
+                <input type="checkbox" x-model="dnsSettings.enabled" class="rounded border-slate-300 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-4 h-4">
                 <span class="font-medium" x-text="t('controls.dns_auto_sync') || 'Sincronizzazione automatica continua in background'"></span>
               </label>
 
@@ -1369,47 +1370,47 @@
         <!-- 3. Telegram & Webhook Alert Configuration (Bottom-Left) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-3 text-xs">
-            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+            <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
               <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50/90 dark:bg-indigo-500/15 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center text-indigo-700 dark:text-indigo-400 shrink-0">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.notifications_title')"></h3>
-                  <p class="text-xs text-slate-400 mt-0.5">Avvisi immediati su disconnessioni e nuovi client</p>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.notifications_title')"></h3>
+                  <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Avvisi immediati su disconnessioni e nuovi client</p>
                 </div>
               </div>
-              <button @click="testNotifications()" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition" x-text="t('controls.send_test')">
+              <button @click="testNotifications()" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300 dark:border-indigo-500/30 text-xs font-semibold transition cursor-pointer" x-text="t('controls.send_test')">
               </button>
             </div>
 
             <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_token')"></label>
+              <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.telegram_token')"></label>
               <input type="password" x-model="notificationSettings.telegram_bot_token" placeholder="123456789:ABCDefGHIjk..." class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
             <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.telegram_chat_id')"></label>
+              <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.telegram_chat_id')"></label>
               <input type="text" x-model="notificationSettings.telegram_chat_id" :placeholder="t('controls.telegram_chat_id_placeholder')" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
 
             <!-- Toggle Abilitazione Notifiche Telegram -->
             <div class="py-1">
-              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
-                <input type="checkbox" x-model="notificationSettings.telegram_enabled" class="rounded border-slate-700 text-sky-500 focus:ring-sky-500/30 bg-slate-800 w-4 h-4">
-                <span class="font-medium text-slate-200" x-text="t('controls.telegram_enable_toggle')"></span>
+              <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="notificationSettings.telegram_enabled" class="rounded border-slate-300 dark:border-slate-700 text-sky-600 focus:ring-sky-500/30 bg-white dark:bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-800 dark:text-slate-200" x-text="t('controls.telegram_enable_toggle')"></span>
               </label>
             </div>
 
             <div>
-              <label class="block text-slate-400 mb-1" x-text="t('controls.webhook_url')"></label>
+              <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.webhook_url')"></label>
               <input type="text" x-model="notificationSettings.webhook_url" placeholder="https://your-domain.com/webhook" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
             </div>
           </div>
 
-          <div class="pt-2 border-t border-white/5">
+          <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
             <button 
               @click="saveNotificationSettings()"
-              class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition shadow-lg shadow-sky-600/20 text-xs"
+              class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition shadow-lg shadow-sky-600/20 text-xs cursor-pointer"
               x-text="t('controls.save_notifications')">
             </button>
           </div>
@@ -1418,49 +1419,49 @@
         <!-- 4. Automated Daily Digest Report (Bottom-Right) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-3">
-            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+            <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
               <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                <div class="w-9 h-9 rounded-xl bg-purple-50/90 dark:bg-purple-500/15 border border-purple-200 dark:border-purple-500/30 flex items-center justify-center text-purple-700 dark:text-purple-400 shrink-0">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.digest_title')"></h3>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold inline-block mt-0.5" x-text="currentLanguage === 'it' ? 'Ore 21:00' : '9:00 PM (21:00)'"></span>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.digest_title')"></h3>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-semibold inline-block mt-0.5" x-text="currentLanguage === 'it' ? 'Ore 21:00' : '9:00 PM (21:00)'"></span>
                 </div>
               </div>
             </div>
-            <p class="text-xs text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
 
             <!-- Toggle Abilitazione Invio Automatico Daily Digest -->
             <div class="pt-2">
-              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
-                <input type="checkbox" x-model="digestSettings.enabled" @change="saveDigestSettings()" class="rounded border-slate-700 text-indigo-500 focus:ring-indigo-500/30 bg-slate-800 w-4 h-4">
-                <span class="font-medium text-slate-200" x-text="t('controls.digest_enable_toggle')"></span>
+              <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="digestSettings.enabled" @change="saveDigestSettings()" class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500/30 bg-white dark:bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-800 dark:text-slate-200" x-text="t('controls.digest_enable_toggle')"></span>
               </label>
             </div>
           </div>
-          <div class="pt-2 border-t border-white/5">
+          <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
             <button 
               @click="triggerDigest()" 
-              class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition" 
+              class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition cursor-pointer" 
               x-text="t('controls.digest_btn')">
             </button>
           </div>
         </div>
 
         <!-- 5. Docker Container Maintenance & 1-Click Update Engine -->
-        <div class="lg:col-span-2 glass-panel rounded-2xl p-6 space-y-4 border border-amber-500/20 bg-gradient-to-r from-slate-900/90 to-amber-950/20">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-white/5 pb-3">
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-6 space-y-4 border border-amber-500/20 bg-amber-500/[0.04] dark:bg-gradient-to-r dark:from-slate-900/90 dark:to-amber-950/20">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-black/[0.06] dark:border-white/5 pb-3">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg">
                 🐳
               </div>
               <div>
-                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                   <span>Aggiornamenti Container & Manutenzione Docker</span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold" x-text="'v' + appVersion"></span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/20 font-bold" x-text="'v' + appVersion"></span>
                 </h3>
-                <p class="text-xs text-slate-400">Verifica automatica release su Docker Hub e aggiornamento a 1-clic</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400">Verifica automatica release su Docker Hub e aggiornamento a 1-clic</p>
               </div>
             </div>
 
@@ -1473,17 +1474,17 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-              <span class="text-slate-500 block text-[11px]">Versione Installata</span>
-              <span class="font-bold text-white font-mono" x-text="'v' + appVersion"></span>
+            <div class="p-3 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+              <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium">Versione Installata</span>
+              <span class="font-bold text-slate-900 dark:text-white font-mono" x-text="'v' + appVersion"></span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-              <span class="text-slate-500 block text-[11px]">Stato Docker Socket</span>
-              <span class="font-bold font-mono" :class="updateInfo.docker_socket_available ? 'text-emerald-400' : 'text-slate-400'" x-text="updateInfo.docker_socket_available ? '🟢 /var/run/docker.sock Rilevato' : '⚪ Non montato (Modalità CLI)'"></span>
+            <div class="p-3 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+              <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium">Stato Docker Socket</span>
+              <span class="font-bold font-mono" :class="updateInfo.docker_socket_available ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'" x-text="updateInfo.docker_socket_available ? '🟢 /var/run/docker.sock Rilevato' : '⚪ Non montato (Modalità CLI)'"></span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-              <span class="text-slate-500 block text-[11px]">Ultima Release Rilevata</span>
-              <span class="font-bold text-amber-400 font-mono" x-text="updateInfo.latest_version ? 'v' + updateInfo.latest_version : '---'"></span>
+            <div class="p-3 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+              <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium">Ultima Release Rilevata</span>
+              <span class="font-bold text-amber-600 dark:text-amber-400 font-mono" x-text="updateInfo.latest_version ? 'v' + updateInfo.latest_version : '---'"></span>
             </div>
           </div>
         </div>
@@ -1517,13 +1518,13 @@
         
         <!-- Left Sidebar: Chapter List -->
         <div class="glass-panel rounded-2xl p-4 space-y-1">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 py-2" x-text="t('manual.chapters_title')"></h3>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 py-2" x-text="t('manual.chapters_title')"></h3>
           <div class="space-y-1">
             <template x-for="section in filteredManualSections" :key="section.id">
               <button 
                 @click="selectedManualSection = section"
-                :class="selectedManualSection && selectedManualSection.id === section.id ? 'bg-sky-500/15 text-sky-400 border-sky-500/30' : 'text-slate-300 hover:bg-slate-800/60 border-transparent'"
-                class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-between">
+                :class="selectedManualSection && selectedManualSection.id === section.id ? 'bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-300 dark:border-sky-500/30' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60 border-transparent'"
+                class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold border transition flex items-center justify-between cursor-pointer">
                 <span x-text="section.title"></span>
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
               </button>
@@ -1535,9 +1536,9 @@
         <div class="lg:col-span-2 glass-panel rounded-2xl p-8">
           <template x-if="selectedManualSection">
             <div>
-              <div class="border-b border-slate-800 pb-4 mb-6">
-                <h2 class="text-2xl font-bold text-white" x-text="selectedManualSection.title"></h2>
-                <p class="text-xs text-sky-400 mt-1" x-text="selectedManualSection.summary"></p>
+              <div class="border-b border-slate-200 dark:border-slate-800 pb-4 mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white" x-text="selectedManualSection.title"></h2>
+                <p class="text-xs text-sky-600 dark:text-sky-400 mt-1" x-text="selectedManualSection.summary"></p>
               </div>
               <div class="manual-content text-sm" x-html="renderSimpleMarkdown(selectedManualSection.content)"></div>
             </div>
@@ -1586,7 +1587,7 @@
             </div>
           </div>
         </div>
-        <button @click="showDeviceModal = false" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+        <button @click="showDeviceModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -1807,7 +1808,7 @@
           <div class="rounded-xl border border-slate-800 overflow-hidden bg-slate-900/40">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="bg-slate-900/80 text-slate-400 border-b border-slate-800 text-[11px] uppercase font-semibold">
+                <tr class="bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase font-semibold">
                   <th class="py-2.5 px-3" x-text="t('device_modal.col_desc')"></th>
                   <th class="py-2.5 px-3" x-text="t('device_modal.col_wan_port')"></th>
                   <th class="py-2.5 px-3" x-text="t('device_modal.col_lan_port')"></th>
@@ -1815,19 +1816,19 @@
                   <th class="py-2.5 px-3 text-right" x-text="t('device_modal.col_action')"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
                 <template x-for="fwd in deviceForwards" :key="fwd.id">
-                  <tr class="hover:bg-slate-800/30">
-                    <td class="py-2.5 px-3 font-sans text-slate-200" x-text="fwd.description || 'Custom'"></td>
-                    <td class="py-2.5 px-3 text-sky-400 font-bold" x-text="fwd.port_from"></td>
-                    <td class="py-2.5 px-3 text-slate-300" x-text="fwd.port_to"></td>
+                  <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || 'Custom'"></td>
+                    <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from"></td>
+                    <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to"></td>
                     <td class="py-2.5 px-3">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-800 text-indigo-400 border border-indigo-500/20" x-text="fwd.protocol || 'tcp'"></span>
+                      <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-slate-800 dark:text-indigo-400 dark:border-indigo-500/20" x-text="fwd.protocol || 'tcp'"></span>
                     </td>
                     <td class="py-2.5 px-3 text-right font-sans">
                       <button 
                         @click="deleteDevicePortForward(fwd.id)"
-                        class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 transition"
+                        class="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                         :title="t('device_modal.delete_forward_title')">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                       </button>
@@ -1881,10 +1882,10 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
-        <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300" x-text="t('device_modal.close_btn')"></button>
+      <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('device_modal.close_btn')"></button>
         <template x-if="deviceDetailTab === 'general'">
-          <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30" x-text="t('device_modal.save_metadata_btn')"></button>
+          <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30 transition cursor-pointer" x-text="t('device_modal.save_metadata_btn')"></button>
         </template>
       </div>
 
@@ -1903,15 +1904,15 @@
     x-transition:enter-end="opacity-100 scale-100">
     
     <div @click.away="showHelpModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[85vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-base font-bold text-sky-400" x-text="helpModalTitle"></h3>
-        <button @click="showHelpModal = false" class="text-slate-400 hover:text-white">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-sky-600 dark:text-sky-400" x-text="helpModalTitle"></h3>
+        <button @click="showHelpModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
       <div class="overflow-y-auto manual-content text-xs pr-2" x-html="helpModalContent"></div>
-      <div class="pt-3 border-t border-slate-800 flex justify-end">
-        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300" x-text="t('manual.close_guide')"></button>
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('manual.close_guide')"></button>
       </div>
     </div>
   </div>
@@ -1928,14 +1929,14 @@
         </div>
 
         <div>
-          <h2 class="text-xl font-bold text-white" x-text="t('auth.title')"></h2>
-          <p class="text-xs text-slate-400 mt-1" x-text="t('auth.subtitle')"></p>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white" x-text="t('auth.title')"></h2>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-1" x-text="t('auth.subtitle')"></p>
         </div>
 
         <!-- Step 1: Email/Phone Input -->
         <div x-show="!otpSent" class="space-y-4 text-left">
           <div>
-            <label class="block text-xs text-slate-400 mb-1" x-text="t('auth.identifier_label')"></label>
+            <label class="block text-xs font-medium text-slate-700 dark:text-slate-400 mb-1" x-text="t('auth.identifier_label')"></label>
             <input 
               type="text" 
               x-model="loginIdentifier" 
@@ -1945,7 +1946,7 @@
           <button 
             @click="requestOtp()"
             :disabled="authLoading || !loginIdentifier"
-            class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition disabled:opacity-50">
+            class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition disabled:opacity-50 cursor-pointer">
             <span x-text="authLoading ? t('auth.sending_otp') : t('auth.send_otp')"></span>
           </button>
         </div>
@@ -1953,7 +1954,7 @@
         <!-- Step 2: OTP Verification Input -->
         <div x-show="otpSent" class="space-y-4 text-left" style="display: none;">
           <div>
-            <label class="block text-xs text-slate-400 mb-1" x-text="t('auth.otp_label')"></label>
+            <label class="block text-xs font-medium text-slate-700 dark:text-slate-400 mb-1" x-text="t('auth.otp_label')"></label>
             <input 
               type="text" 
               x-model="otpCode" 
@@ -1964,17 +1965,17 @@
           <button 
             @click="verifyOtp()"
             :disabled="authLoading || !otpCode"
-            class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition disabled:opacity-50">
+            class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition disabled:opacity-50 cursor-pointer">
             <span x-text="authLoading ? t('auth.verifying_otp') : t('auth.verify_otp')"></span>
           </button>
-          <button @click="otpSent = false" class="w-full text-center text-xs text-slate-400 hover:text-white" x-text="t('auth.change_identifier')"></button>
+          <button @click="otpSent = false" class="w-full text-center text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer" x-text="t('auth.change_identifier')"></button>
         </div>
 
         <!-- Demo Mode Quick Start Button -->
-        <div class="pt-4 border-t border-slate-800">
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
           <button 
             @click="startDemoSession()"
-            class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-400 border border-amber-500/20 transition">
+            class="w-full py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-400 dark:border-amber-500/20 text-xs font-semibold shadow-sm dark:shadow-none transition cursor-pointer">
             ✨ <span x-text="t('demo_mode')"></span>
           </button>
         </div>
@@ -2026,24 +2027,24 @@
             <span class="text-[11px] text-slate-400">Release Notes & Version History</span>
           </div>
         </div>
-        <button @click="showChangelogModal = false" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+        <button @click="showChangelogModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
       
-      <div x-show="changelogLoading" class="py-12 text-center text-slate-400">
-        <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+      <div x-show="changelogLoading" class="py-12 text-center text-slate-500 dark:text-slate-400">
+        <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
         Loading...
       </div>
 
       <div x-show="!changelogLoading" class="overflow-y-auto manual-content text-xs pr-2 space-y-2 select-text" x-html="changelogContent"></div>
       
-      <div class="pt-3 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3">
         <a 
           href="https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/changelog.md" 
           target="_blank" 
           rel="noopener noreferrer" 
-          class="flex items-center space-x-1.5 text-xs text-sky-400 hover:text-sky-300 font-medium transition hover:underline">
+          class="flex items-center space-x-1.5 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-medium transition hover:underline">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
           <span x-text="t('changelog_modal.view_on_github') || 'Changelog Completo su GitHub'"></span>
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -2051,11 +2052,11 @@
         <div class="flex items-center space-x-3">
           <button 
             @click="showChangelogModal = false; openUpdateModal(true)" 
-            class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
+            class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
             <span>🚀</span>
             <span x-text="currentLanguage === 'it' ? 'Verifica Aggiornamenti' : 'Check for Updates'"></span>
           </button>
-          <button @click="showChangelogModal = false" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition" x-text="t('changelog_modal.close')"></button>
+          <button @click="showChangelogModal = false" class="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('changelog_modal.close')"></button>
         </div>
       </div>
     </div>
@@ -2083,11 +2084,11 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-base font-bold text-white" x-text="t('about_modal.title')">About & Crediti</h3>
-            <span class="text-[11px] text-slate-400" x-text="t('about_modal.subtitle')">Informazioni sul progetto</span>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('about_modal.title')">About & Crediti</h3>
+            <span class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.subtitle')">Informazioni sul progetto</span>
           </div>
         </div>
-        <button @click="showAboutModal = false" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+        <button @click="showAboutModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
@@ -2096,15 +2097,15 @@
       <div class="overflow-y-auto pr-1 space-y-4 text-xs select-text">
         
         <!-- Dedication Box -->
-        <div class="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 to-purple-950/40 border border-indigo-500/30 text-center space-y-1 shadow-inner">
-          <p class="text-sm font-semibold text-white leading-relaxed">
-            Crafted with ❤️ by <strong class="text-sky-300">Enrico Flammini</strong> for the <span class="text-indigo-300 font-medium">homelab & self-hosted</span> community.
+        <div class="p-4 rounded-xl bg-indigo-50/70 dark:bg-gradient-to-br dark:from-indigo-950/60 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-500/30 text-center space-y-1 shadow-inner">
+          <p class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+            Crafted with ❤️ by <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> for the <span class="text-indigo-700 dark:text-indigo-300 font-medium">homelab & self-hosted</span> community.
           </p>
         </div>
 
         <!-- Useful Links & Open Source Section -->
         <div class="space-y-2">
-          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center space-x-1.5">
             <span x-text="t('about_modal.links_title')">Link Utili & Open Source</span>
           </h4>
           <div class="space-y-2">
@@ -2113,54 +2114,54 @@
             <a 
               href="https://github.com/EnricoFlammini/Dashboard_EERO" 
               target="_blank" 
-              rel="noopener noreferrer"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-sky-500/40 transition group">
+              rel="noopener noreferrer" 
+              class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-sky-500/40 transition group">
               <div class="flex items-center space-x-3">
-                <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:bg-sky-500/20 transition">
+                <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 group-hover:bg-sky-500/20 transition">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-200 group-hover:text-sky-400 transition" x-text="t('about_modal.source_code')">Source Code: GitHub Repository</div>
-                  <div class="text-[11px] text-slate-400" x-text="t('about_modal.source_code_desc')">Consulta il codice sorgente, proponi PR o apri issues</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition" x-text="t('about_modal.source_code')">Source Code: GitHub Repository</div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.source_code_desc')">Consulta il codice sorgente, proponi PR o apri issues</div>
                 </div>
               </div>
-              <svg class="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
 
             <!-- License Link -->
             <a 
               href="https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/LICENSE" 
               target="_blank" 
-              rel="noopener noreferrer"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-indigo-500/40 transition group">
+              rel="noopener noreferrer" 
+              class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 transition group">
               <div class="flex items-center space-x-3">
-                <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500/20 transition">
+                <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500/20 transition">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-200 group-hover:text-indigo-400 transition" x-text="t('about_modal.license')">License: MIT License</div>
-                  <div class="text-[11px] text-slate-400" x-text="t('about_modal.license_desc')">Open Source & 100% Free to use</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" x-text="t('about_modal.license')">License: MIT License</div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.license_desc')">Open Source & 100% Free to use</div>
                 </div>
               </div>
-              <svg class="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
 
             <!-- Deployment Link -->
             <a 
               href="https://hub.docker.com/r/enricoflammini/eero-dashboard" 
               target="_blank" 
-              rel="noopener noreferrer"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-emerald-500/40 transition group">
+              rel="noopener noreferrer" 
+              class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 transition group">
               <div class="flex items-center space-x-3">
-                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/20 transition">
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500/20 transition">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-200 group-hover:text-emerald-400 transition" x-text="t('about_modal.deployment')">Deployment: Docker Container</div>
-                  <div class="text-[11px] text-slate-400" x-text="t('about_modal.deployment_desc')">Docker Hub Multi-Arch Container</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" x-text="t('about_modal.deployment')">Deployment: Docker Container</div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.deployment_desc')">Docker Hub Multi-Arch Container</div>
                 </div>
               </div>
-              <svg class="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
 
           </div>
@@ -2168,16 +2169,16 @@
 
         <!-- Fun Notes Section -->
         <div class="space-y-2">
-          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center space-x-1.5">
             <span x-text="t('about_modal.fun_notes_title')">Fun Notes</span>
           </h4>
-          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-slate-300">
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2 text-slate-700 dark:text-slate-300">
             <div class="flex items-start space-x-2">
-              <span class="text-sky-400 font-bold">•</span>
+              <span class="text-sky-500 font-bold">•</span>
               <p class="leading-relaxed" x-text="t('about_modal.coffee_note')">Powered by coffee, late-night packet sniffing, and private eero APIs.</p>
             </div>
             <div class="flex items-start space-x-2">
-              <span class="text-sky-400 font-bold">•</span>
+              <span class="text-sky-500 font-bold">•</span>
               <p class="leading-relaxed" x-text="t('about_modal.telemetry_note')">Zero Cloud Telemetry: Your data lives strictly in your local volume.</p>
             </div>
           </div>
@@ -2186,9 +2187,9 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
-        <span class="text-[11px] text-slate-500">eero Dashboard <strong class="text-sky-400 font-mono" x-text="'v' + appVersion"></strong></span>
-        <button @click="showAboutModal = false" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition" x-text="t('about_modal.close') || 'Chiudi'"></button>
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">eero Dashboard <strong class="text-sky-600 dark:text-sky-400 font-mono" x-text="'v' + appVersion"></strong></span>
+        <button @click="showAboutModal = false" class="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('about_modal.close') || 'Chiudi'"></button>
       </div>
 
     </div>
@@ -2207,34 +2208,34 @@
     
     <div @click.away="showLogoutModal = false" class="glass-panel-elevated w-full max-w-md rounded-2xl p-6 space-y-4 border border-rose-500/30 shadow-2xl shadow-rose-950/40">
       <div class="flex items-center space-x-3">
-        <div class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+        <div class="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 dark:text-rose-400">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
           </svg>
         </div>
         <div>
-          <h3 class="text-base font-bold text-white" x-text="t('logout_modal.title')"></h3>
-          <p class="text-xs text-slate-400" x-text="t('logout_modal.subtitle')"></p>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('logout_modal.title')"></h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('logout_modal.subtitle')"></p>
         </div>
       </div>
       
-      <div class="rounded-xl bg-slate-900/80 p-3.5 border border-slate-800 text-xs text-slate-300 space-y-2">
-        <p class="font-medium text-amber-300 flex items-center space-x-1.5">
-          <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <div class="rounded-xl bg-amber-50 dark:bg-slate-900/80 p-3.5 border border-amber-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+        <p class="font-medium text-amber-700 dark:text-amber-300 flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <span x-text="t('logout_modal.warning_title')"></span>
         </p>
-        <p class="text-slate-400 leading-relaxed" x-text="t('logout_modal.warning_desc')"></p>
+        <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('logout_modal.warning_desc')"></p>
       </div>
 
       <div class="pt-2 flex items-center justify-end space-x-3">
         <button 
           @click="showLogoutModal = false" 
-          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+          class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent shadow-sm dark:shadow-none transition cursor-pointer"
           x-text="t('logout_modal.cancel')">
         </button>
         <button 
           @click="showLogoutModal = false; logout()" 
-          class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-xs font-bold text-white shadow-lg shadow-rose-500/20 transition flex items-center space-x-1.5">
+          class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-xs font-bold text-white shadow-lg shadow-rose-500/20 transition flex items-center space-x-1.5 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           <span x-text="t('logout_modal.confirm')"></span>
         </button>
@@ -2275,32 +2276,32 @@
       </div>
 
       <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 text-lg">
             🚀
           </div>
           <div>
-            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
               <span x-text="t('update_modal.title')"></span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.4.0')"></span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.4.0')"></span>
             </h3>
-            <p class="text-xs text-slate-400" x-text="t('update_modal.subtitle')"></p>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('update_modal.subtitle')"></p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
           <button 
             @click="checkForUpdates(true)" 
             :disabled="isCheckingUpdate || isTriggeringUpdate"
-            class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center space-x-1 transition disabled:opacity-40"
+            class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent text-xs font-semibold flex items-center space-x-1 shadow-sm dark:shadow-none transition disabled:opacity-40 cursor-pointer"
             :title="currentLanguage === 'it' ? 'Verifica subito release su Docker Hub e GitHub' : 'Check Docker Hub and GitHub releases now'">
-            <svg class="w-3.5 h-3.5" :class="isCheckingUpdate ? 'animate-spin text-amber-400' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <svg class="w-3.5 h-3.5" :class="isCheckingUpdate ? 'animate-spin text-amber-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             <span x-text="isCheckingUpdate ? (currentLanguage === 'it' ? 'Verifica...' : 'Checking...') : (currentLanguage === 'it' ? 'Ricontrolla' : 'Recheck')"></span>
           </button>
           <button 
             @click="showUpdateModal = false" 
             :disabled="isTriggeringUpdate"
-            class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition disabled:opacity-30">
+            class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-30 cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
@@ -2309,45 +2310,45 @@
       <!-- Up to Date Status Banner (when no newer version is needed) -->
       <template x-if="!updateInfo.update_available">
         <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center space-x-3">
-          <span class="text-emerald-400 text-xl">✅</span>
+          <span class="text-emerald-500 dark:text-emerald-400 text-xl">✅</span>
           <div class="space-y-0.5">
-            <span class="font-bold text-emerald-300 block" x-text="currentLanguage === 'it' ? 'Dashboard Aggiornata' : 'Dashboard Up to Date'"></span>
-            <p class="text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione corrente (v' + appVersion + ') è allineata con l\'ultima release disponibile su Docker Hub / GitHub.' : 'Installed version (v' + appVersion + ') matches the latest release on Docker Hub / GitHub.'"></p>
+            <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="currentLanguage === 'it' ? 'Dashboard Aggiornata' : 'Dashboard Up to Date'"></span>
+            <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione corrente (v' + appVersion + ') è allineata con l\'ultima release disponibile su Docker Hub / GitHub.' : 'Installed version (v' + appVersion + ') matches the latest release on Docker Hub / GitHub.'"></p>
           </div>
         </div>
       </template>
 
       <!-- Version Diff Box -->
-      <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+      <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs">
         <div>
-          <span class="text-slate-500 block text-[11px]" x-text="t('update_modal.current_version')"></span>
-          <span class="font-mono text-slate-300 font-bold text-sm" x-text="'v' + appVersion"></span>
+          <span class="text-slate-500 dark:text-slate-400 block text-[11px]" x-text="t('update_modal.current_version')"></span>
+          <span class="font-mono text-slate-900 dark:text-slate-300 font-bold text-sm" x-text="'v' + appVersion"></span>
         </div>
         <div>
-          <span class="text-slate-500 block text-[11px]" x-text="t('update_modal.new_version')"></span>
-          <span class="font-mono text-amber-400 font-bold text-sm" x-text="'v' + (updateInfo.latest_version || appVersion)"></span>
+          <span class="text-slate-500 dark:text-slate-400 block text-[11px]" x-text="t('update_modal.new_version')"></span>
+          <span class="font-mono text-amber-600 dark:text-amber-400 font-bold text-sm" x-text="'v' + (updateInfo.latest_version || appVersion)"></span>
         </div>
       </div>
 
       <!-- Release Notes Box -->
       <template x-if="updateInfo.release_notes || updateInfo.release_title">
         <div class="space-y-1.5">
-          <label class="block text-slate-400 text-xs font-semibold" x-text="t('update_modal.release_notes')"></label>
-          <div class="max-h-36 overflow-y-auto p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed" x-text="updateInfo.release_notes || updateInfo.release_title"></div>
+          <label class="block text-slate-700 dark:text-slate-400 text-xs font-semibold" x-text="t('update_modal.release_notes')"></label>
+          <div class="max-h-36 overflow-y-auto p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-300 font-mono whitespace-pre-wrap leading-relaxed" x-text="updateInfo.release_notes || updateInfo.release_title"></div>
         </div>
       </template>
 
       <!-- Supported Methods & Environment Detection -->
-      <div class="space-y-3 pt-2 border-t border-slate-800">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400" x-text="t('update_modal.methods_title')"></h4>
+      <div class="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400" x-text="t('update_modal.methods_title')"></h4>
 
         <!-- Method 1: Docker Socket Detected -->
         <template x-if="updateInfo.docker_socket_available">
           <div class="flex items-start space-x-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-            <span class="text-emerald-400 text-base">🟢</span>
+            <span class="text-emerald-500 dark:text-emerald-400 text-base">🟢</span>
             <div class="text-xs space-y-0.5">
-              <span class="font-bold text-emerald-300" x-text="t('update_modal.socket_detected')"></span>
-              <p class="text-slate-400 leading-relaxed" x-text="t('update_modal.socket_desc')"></p>
+              <span class="font-bold text-emerald-800 dark:text-emerald-300" x-text="t('update_modal.socket_detected')"></span>
+              <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.socket_desc')"></p>
             </div>
           </div>
         </template>
@@ -2355,23 +2356,23 @@
         <!-- Method 2: Watchtower Configured -->
         <template x-if="updateInfo.watchtower_configured && !updateInfo.docker_socket_available">
           <div class="flex items-start space-x-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/30">
-            <span class="text-sky-400 text-base">🛰️</span>
+            <span class="text-sky-500 dark:text-sky-400 text-base">🛰️</span>
             <div class="text-xs space-y-0.5">
-              <span class="font-bold text-sky-300" x-text="t('update_modal.watchtower_detected')"></span>
-              <p class="text-slate-400 leading-relaxed" x-text="t('update_modal.watchtower_desc')"></p>
+              <span class="font-bold text-sky-800 dark:text-sky-300" x-text="t('update_modal.watchtower_detected')"></span>
+              <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.watchtower_desc')"></p>
             </div>
           </div>
         </template>
 
         <!-- Method 3: Manual Terminal Command -->
         <div class="space-y-1.5">
-          <span class="text-[11px] text-slate-400 font-medium" x-text="t('update_modal.manual_title')"></span>
+          <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" x-text="t('update_modal.manual_title')"></span>
           <div class="flex items-center space-x-2">
-            <code class="flex-1 bg-slate-900 border border-slate-800 text-amber-300 px-3 py-2 rounded-xl font-mono text-xs select-all overflow-x-auto" x-text="updateInfo.cli_command || 'docker compose pull && docker compose up -d'"></code>
+            <code class="flex-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-800 dark:text-amber-300 px-3 py-2 rounded-xl font-mono text-xs select-all overflow-x-auto" x-text="updateInfo.cli_command || 'docker compose pull && docker compose up -d'"></code>
             <button 
               @click="copyCliCommand()" 
-              class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center space-x-1 shrink-0"
-              :class="copiedCliCommand ? 'text-emerald-400' : ''">
+              class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-transparent shadow-sm dark:shadow-none text-xs font-semibold transition flex items-center space-x-1 shrink-0 cursor-pointer"
+              :class="copiedCliCommand ? 'text-emerald-600 dark:text-emerald-400' : ''">
               <span x-text="copiedCliCommand ? '✓ ' + t('update_modal.copied') : t('update_modal.copy_command')"></span>
             </button>
           </div>
@@ -2379,12 +2380,12 @@
       </div>
 
       <!-- Modal Actions -->
-      <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <a 
           :href="updateInfo.release_url || 'https://github.com/EnricoFlammini/Dashboard_EERO/releases'" 
           target="_blank" 
           rel="noopener" 
-          class="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center space-x-1">
+          class="text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-medium flex items-center space-x-1">
           <span>GitHub Releases</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
         </a>
@@ -2392,7 +2393,7 @@
         <div class="flex items-center space-x-3">
           <button 
             @click="showUpdateModal = false" 
-            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+            class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent shadow-sm dark:shadow-none transition cursor-pointer"
             x-text="t('update_modal.cancel')">
           </button>
 
@@ -2411,8 +2412,8 @@
   </div>
 
   <!-- Footer -->
-  <footer class="mt-auto border-t border-slate-800/80 py-4 px-4 bg-[#0b0f17]/80 text-center">
-    <div class="max-w-7xl mx-auto text-[11px] text-slate-500 font-medium" x-text="t('footer.text')"></div>
+  <footer class="mt-auto border-t border-slate-200 dark:border-slate-800/80 py-4 px-4 bg-slate-100/90 dark:bg-[#0b0f17]/80 text-center">
+    <div class="max-w-7xl mx-auto text-[11px] text-slate-600 dark:text-slate-500 font-medium" x-text="t('footer.text')"></div>
   </footer>
 
 </body>

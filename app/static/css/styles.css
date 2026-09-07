@@ -330,7 +330,7 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 }
 
 /* ====================================================================
-   9. ADAPTIVE LIGHT MODE CONTRAST & TYPOGRAPHY
+   9. ADAPTIVE LIGHT MODE CONTRAST & TYPOGRAPHY (WINDOWS 11 FLUENT)
    ==================================================================== */
 html:not(.dark) {
   color-scheme: light;
@@ -342,37 +342,198 @@ html.dark {
 html:not(.dark) h1,
 html:not(.dark) h2,
 html:not(.dark) h3,
-html:not(.dark) h4,
-html:not(.dark) th {
-  color: var(--text-primary);
+html:not(.dark) h4 {
+  color: #0f172a;
 }
 
-/* Ensure headings/text inside glass panels and cards in light mode adapt cleanly */
-html:not(.dark) .glass-panel .text-white,
-html:not(.dark) .fluent-card .text-white,
-html:not(.dark) .glass-panel-elevated .text-white,
-html:not(.dark) main .text-white {
-  color: var(--text-primary);
+/* Headings and primary text inside glass panels and cards in light mode (excluding buttons & colored chips) */
+html:not(.dark) h1.text-white,
+html:not(.dark) h2.text-white,
+html:not(.dark) h3.text-white,
+html:not(.dark) h4.text-white,
+html:not(.dark) .glass-panel > div > h1,
+html:not(.dark) .glass-panel > div > h2,
+html:not(.dark) .glass-panel > div > h3,
+html:not(.dark) .glass-panel-elevated h2.text-white,
+html:not(.dark) .glass-panel-elevated h3.text-white,
+html:not(.dark) p.text-white,
+html:not(.dark) span.text-white:not([class*="bg-"]):not(button *),
+html:not(.dark) div.text-white:not([class*="bg-"]):not(button *) {
+  color: #0f172a;
+}
+
+/* High-Contrast Typography Overrides for Light Mode */
+html:not(.dark) .text-slate-400 {
+  color: #334155 !important; /* Slate 700: high contrast readable label text (9.5:1 ratio) */
+}
+html:not(.dark) .text-slate-300 {
+  color: #1e293b !important; /* Slate 800: crisp body text (13:1 ratio) */
+}
+html:not(.dark) .text-slate-200 {
+  color: #0f172a !important; /* Slate 900: sharp legible primary values/IPs */
+}
+html:not(.dark) .text-slate-100 {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-slate-500 {
+  color: #475569 !important; /* Slate 600: legible secondary text */
+}
+
+/* Windows 11 Fluent Light Buttons (replaces dark slate blocks with elegant light buttons) */
+html:not(.dark) button.bg-slate-800,
+html:not(.dark) button.bg-slate-900,
+html:not(.dark) .btn-slate {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+html:not(.dark) button.bg-slate-800:hover,
+html:not(.dark) button.bg-slate-900:hover {
+  background-color: #f8fafc !important;
+  color: #0067c0 !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Light mode hover for restart/danger action buttons */
+html:not(.dark) button.hover\:bg-rose-950\/40:hover {
+  background-color: #fef2f2 !important;
+  color: #e11d48 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Restart Network Button in Light Mode */
+html:not(.dark) .bg-rose-600\/20 {
+  background-color: #fff1f2 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+html:not(.dark) .bg-rose-600\/20:hover {
+  background-color: #ffe4e6 !important;
+  color: #9f1239 !important;
+}
+
+/* Test Notification Button & Soft Accent Badges */
+html:not(.dark) .bg-indigo-500\/20 {
+  background-color: #eef2ff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+}
+html:not(.dark) .bg-indigo-500\/20:hover {
+  background-color: #e0e7ff !important;
+  color: #3730a3 !important;
+}
+html:not(.dark) .bg-sky-500\/10,
+html:not(.dark) .bg-sky-500\/20 {
+  background-color: #f0f9ff !important;
+  color: #0284c7 !important;
+  border-color: #bae6fd !important;
+}
+html:not(.dark) .bg-emerald-500\/20 {
+  background-color: #f0fdf4 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
+}
+html:not(.dark) .bg-amber-500\/15,
+html:not(.dark) .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+html:not(.dark) .bg-purple-500\/20 {
+  background-color: #faf5ff !important;
+  color: #7e22ce !important;
+  border-color: #e9d5ff !important;
+}
+
+/* Inner Panels & Dark Metric Boxes in Light Mode */
+html:not(.dark) .bg-slate-900\/95,
+html:not(.dark) .bg-slate-900\/90,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-900\/60,
+html:not(.dark) .bg-slate-900\/40,
+html:not(.dark) .bg-slate-800\/90,
+html:not(.dark) .bg-slate-800\/80,
+html:not(.dark) .bg-slate-800\/60 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Sticky Table Header in Light Mode (removes harsh black header bar) */
+html:not(.dark) table thead,
+html:not(.dark) table thead tr,
+html:not(.dark) table thead th {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) table thead th:hover {
+  color: #0f172a !important;
+}
+
+/* Table Row and Borders in Light Mode */
+html:not(.dark) tbody tr:hover,
+html:not(.dark) tr.hover\:bg-slate-800\/30:hover {
+  background-color: rgba(0, 103, 192, 0.04) !important;
+}
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-800\/80,
+html:not(.dark) .border-slate-800\/60,
+html:not(.dark) .border-slate-700,
+html:not(.dark) .border-slate-700\/80,
+html:not(.dark) .border-slate-700\/60,
+html:not(.dark) .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Inputs, Selects & Forms in Light Mode */
+html:not(.dark) .glass-input,
+html:not(.dark) select,
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]) {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html:not(.dark) input::placeholder,
+html:not(.dark) .glass-input::placeholder {
+  color: #64748b !important;
+}
+html:not(.dark) input[type="checkbox"] {
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Docker Maintenance Card in Light Mode */
+html:not(.dark) .from-slate-900\/90.to-amber-950\/20 {
+  background: linear-gradient(to right, #fffdf8, #fffbeb) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
 }
 
 /* Preserve bright white text for solid badges and action buttons */
 html:not(.dark) button.bg-rose-500,
+html:not(.dark) button.bg-rose-600,
 html:not(.dark) button.bg-sky-500,
+html:not(.dark) button.bg-sky-600,
 html:not(.dark) button.bg-indigo-600,
 html:not(.dark) button.bg-emerald-600,
+html:not(.dark) button[class*="bg-gradient-"],
+html:not(.dark) button[class*="from-"],
+html:not(.dark) button.rounded-full,
+html:not(.dark) button[class*="bg-gradient-"] *,
+html:not(.dark) button[class*="from-"] *,
+html:not(.dark) button.rounded-full *,
 html:not(.dark) .bg-rose-500 .text-white,
+html:not(.dark) .bg-rose-600 .text-white,
 html:not(.dark) .bg-sky-500 .text-white,
+html:not(.dark) .bg-sky-600 .text-white,
 html:not(.dark) .bg-indigo-600 .text-white,
 html:not(.dark) .bg-emerald-600 .text-white,
-html:not(.dark) [class*="bg-gradient-"] .text-white {
+html:not(.dark) [class*="bg-gradient-"] .text-white,
+html:not(.dark) .btn-primary,
+html:not(.dark) .btn-accent,
+html:not(.dark) .btn-primary *,
+html:not(.dark) .btn-accent * {
   color: #ffffff !important;
 }
 
-/* Light mode table and card adaptivity */
-html:not(.dark) table thead {
-  background-color: rgba(0, 0, 0, 0.03);
-}
-html:not(.dark) tr:hover {
-  background-color: rgba(0, 0, 0, 0.02) !important;
-}
 
