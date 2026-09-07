@@ -32,7 +32,11 @@
     "live_login_btn": "Login Live",
     "demo_switch_title": "Passa alla Modalità Demo (il token reale rimarrà memorizzato)",
     "live_switch_title": "Torna alla rete eero reale Live",
-    "live_login_title": "Accedi con le tue credenziali eero"
+    "live_login_title": "Accedi con le tue credenziali eero",
+    "theme_toggle_title": "Cambia Tema (Chiaro / Scuro / Sistema)",
+    "theme_light": "Chiaro",
+    "theme_dark": "Scuro",
+    "theme_system": "Sistema"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -270,7 +274,25 @@
     "adguard_remove_instance": "Rimuovi Istanza",
     "adguard_active": "Attiva",
     "adguard_inactive": "Disattiva",
-    "adguard_instance_name": "Nome Server DNS"
+    "adguard_instance_name": "Nome Server DNS",
+    "dns_title": "Multi-Engine DNS Synchronizer",
+    "dns_subtitle": "Sincronizza automaticamente i nomi host su AdGuard Home, Pi-hole e Technitium DNS",
+    "dns_add_instance": "+ Aggiungi Istanza DNS",
+    "dns_test_all": "⚡ Testa Tutti",
+    "dns_sync_all": "🔄 Sincronizza Tutti",
+    "dns_auto_sync": "Sincronizzazione automatica periodica e su nuovi client",
+    "dns_save_btn": "Salva Configurazioni DNS",
+    "dns_engine": "Motore DNS:",
+    "dns_instance_name": "Nome Server:",
+    "dns_url": "URL Server (es. http://192.168.1.50:80):",
+    "dns_username": "Username (se richiesto):",
+    "dns_password": "Password (se richiesta):",
+    "dns_token": "API Token / WebPassword:",
+    "dns_zone": "Zona / Dominio (es. lan):",
+    "dns_remove_instance": "Elimina Istanza",
+    "dns_test_single": "Test",
+    "dns_sync_single": "Sync",
+    "dns_no_instances": "Nessuna istanza DNS configurata. Clicca su '+ Aggiungi Istanza DNS' per iniziare."
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",

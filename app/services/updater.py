@@ -16,7 +16,7 @@ DOCKER_IMAGE = "enricoflammini/eero-dashboard"
 
 
 def parse_semver(v: str) -> Tuple[int, int, int]:
-    """Estrae la tupla (major, minor, patch) da stringhe di versione come 'v1.04.00', '1.3.1', '1.04.00-dev'."""
+    """Estrae la tupla (major, minor, patch) da stringhe di versione come 'v1.4.0', '1.3.1', '1.4.0-dev'."""
     clean = re.sub(r'^[vV]', '', str(v).strip())
     parts = re.split(r'[-+.]', clean)
     numbers = []

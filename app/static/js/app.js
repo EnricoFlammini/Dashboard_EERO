@@ -6,7 +6,10 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version
-    appVersion: '1.04.00',
+    appVersion: '1.4.0',
+
+    // Windows 11 Dual Theme Engine State
+    currentTheme: localStorage.getItem('eero_theme') || 'system',
 
     // i18n Multi-Language State
     currentLanguage: localStorage.getItem('eero_lang') || 'en',
@@ -144,7 +147,17 @@ document.addEventListener('alpine:init', () => {
       enabled: true
     },
     
-    // AdGuard Home DNS Integration State
+    // Multi-Engine DNS Integration State (AdGuard Home, Pi-hole, Technitium)
+    dnsSettings: {
+      enabled: false,
+      instances: []
+    },
+    dnsTesting: false,
+    dnsSyncing: false,
+    dnsTestingId: null,
+    dnsSyncingId: null,
+    
+    // AdGuard Home DNS Integration State (Retrocompatibilità)
     adguardSettings: {
       enabled: false,
       url: '',
@@ -177,11 +190,11 @@ document.addEventListener('alpine:init', () => {
     // About Modal State
     showAboutModal: false,
 
-    // Auto-Update State (v1.04.00)
+    // Auto-Update State (v1.4.0)
     updateInfo: {
       update_available: false,
-      current_version: '1.04.00',
-      latest_version: '1.04.00',
+      current_version: '1.4.0',
+      latest_version: '1.4.0',
       release_title: '',
       release_notes: '',
       docker_socket_available: false,
@@ -223,6 +236,7 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
+      this.initTheme();
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
       await this.loadManualSections();
@@ -244,6 +258,7 @@ document.addEventListener('alpine:init', () => {
           this.fetchNightMode();
           this.fetchNotificationSettings();
           this.fetchDigestSettings();
+          this.fetchDnsSettings();
           this.fetchAdGuardSettings();
           this.fetchAlerts();
         }
@@ -266,6 +281,105 @@ document.addEventListener('alpine:init', () => {
       if (this.showChangelogModal) {
         await this.openChangelogModal();
       }
+    },
+
+    // =========================================================================
+    // DUAL THEME ENGINE (WINDOWS 11 FLUENT DESIGN)
+    // =========================================================================
+    initTheme() {
+      this.applyTheme(this.currentTheme);
+      try {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        mediaQuery.addEventListener('change', () => {
+          if (this.currentTheme === 'system') {
+            this.applyTheme('system');
+          }
+        });
+      } catch (e) {
+        console.warn('prefers-color-scheme listener not supported:', e);
+      }
+    },
+
+    setTheme(mode) {
+      this.currentTheme = mode;
+      localStorage.setItem('eero_theme', mode);
+      this.applyTheme(mode);
+      const title = this.currentLanguage === 'it' ? "Tema Aggiornato" : "Theme Updated";
+      const modeLabel = mode === 'light' ? (this.currentLanguage === 'it' ? "Chiaro" : "Light")
+        : mode === 'dark' ? (this.currentLanguage === 'it' ? "Scuro" : "Dark")
+        : (this.currentLanguage === 'it' ? "Sistema" : "System");
+      this.showToast(title, `${title}: ${modeLabel}`, "info");
+    },
+
+    applyTheme(mode) {
+      const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      setTimeout(() => {
+        this.updateAllChartsTheme();
+      }, 50);
+    },
+
+    getChartThemeColors() {
+      const isDark = document.documentElement.classList.contains('dark');
+      return {
+        isDark,
+        fontFamily: "'Segoe UI Variable', 'Segoe UI', 'Inter', -apple-system, sans-serif",
+        gridColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+        ticksColor: isDark ? '#9e9e9e' : '#5c5c5c',
+        titleColor: isDark ? '#d1d1d1' : '#1c1c1c',
+        tooltipBg: isDark ? 'rgba(32, 32, 32, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+        tooltipTitle: isDark ? '#60cdff' : '#0067c0',
+        tooltipBody: isDark ? '#ffffff' : '#1c1c1c',
+        tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.10)'
+      };
+    },
+
+    updateAllChartsTheme() {
+      const colors = this.getChartThemeColors();
+      const charts = [
+        this.wanChartInstance,
+        this.hogsChartInstance,
+        this.speedtestChartInstance,
+        this.signalChartInstance
+      ];
+
+      charts.forEach(chart => {
+        if (!chart) return;
+        try {
+          if (chart.options?.scales) {
+            Object.values(chart.options.scales).forEach(scale => {
+              if (scale.grid) scale.grid.color = colors.gridColor;
+              if (scale.ticks) {
+                scale.ticks.color = colors.ticksColor;
+                if (!scale.ticks.font) scale.ticks.font = {};
+                scale.ticks.font.family = colors.fontFamily;
+              }
+              if (scale.title) {
+                scale.title.color = colors.titleColor;
+                if (!scale.title.font) scale.title.font = {};
+                scale.title.font.family = colors.fontFamily;
+              }
+            });
+          }
+          if (chart.options?.plugins?.tooltip) {
+            chart.options.plugins.tooltip.backgroundColor = colors.tooltipBg;
+            chart.options.plugins.tooltip.titleColor = colors.tooltipTitle;
+            chart.options.plugins.tooltip.bodyColor = colors.tooltipBody;
+            chart.options.plugins.tooltip.borderColor = colors.tooltipBorder;
+          }
+          if (chart.options?.plugins?.legend?.labels) {
+            chart.options.plugins.legend.labels.color = colors.ticksColor;
+            chart.options.plugins.legend.labels.font = { family: colors.fontFamily, size: 12 };
+          }
+          chart.update('none');
+        } catch (err) {
+          console.warn('Error updating chart theme:', err);
+        }
+      });
     },
 
     formatBackhaul(eero) {
@@ -687,6 +801,7 @@ document.addEventListener('alpine:init', () => {
         canvas.height = p.clientHeight || 320;
       }
 
+      const colors = this.getChartThemeColors();
       const ctx = canvas.getContext('2d');
       this.wanChartInstance = new Chart(ctx, {
         type: 'line',
@@ -696,8 +811,8 @@ document.addEventListener('alpine:init', () => {
             {
               label: 'Download (Mbps)',
               data: dlData,
-              borderColor: '#38bdf8',
-              backgroundColor: 'rgba(56, 189, 248, 0.15)',
+              borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
+              backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(0, 103, 192, 0.12)',
               borderWidth: 2,
               fill: true,
               tension: 0.35,
@@ -707,8 +822,8 @@ document.addEventListener('alpine:init', () => {
             {
               label: 'Upload (Mbps)',
               data: ulData,
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.10)',
+              borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
+              backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.10)' : 'rgba(15, 123, 15, 0.10)',
               borderWidth: 2,
               fill: true,
               tension: 0.35,
@@ -727,25 +842,25 @@ document.addEventListener('alpine:init', () => {
           },
           plugins: {
             legend: {
-              labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+              labels: { color: colors.ticksColor, font: { family: colors.fontFamily, size: 12 } }
             },
             tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#38bdf8',
-              bodyColor: '#f8fafc',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: colors.tooltipBg,
+              titleColor: colors.tooltipTitle,
+              bodyColor: colors.tooltipBody,
+              borderColor: colors.tooltipBorder,
               borderWidth: 1,
               padding: 10
             }
           },
           scales: {
             x: {
-              ticks: { color: '#64748b', maxTicksLimit: 8 },
-              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              ticks: { color: colors.ticksColor, maxTicksLimit: 8, font: { family: colors.fontFamily } },
+              grid: { color: colors.gridColor }
             },
             y: {
-              ticks: { color: '#64748b' },
-              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } },
+              grid: { color: colors.gridColor }
             }
           }
         }
@@ -754,12 +869,8 @@ document.addEventListener('alpine:init', () => {
 
     formatLocalTime(ts) {
       if (!ts) return '';
-      let str = String(ts).trim();
-      if (!str.endsWith('Z') && !str.includes('+')) {
-        str = str.replace(' ', 'T') + 'Z';
-      }
-      const dt = new Date(str);
-      return dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const d = new Date(ts.replace(' ', 'T'));
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
 
     formatLocalDateTime(ts) {
@@ -808,6 +919,7 @@ document.addEventListener('alpine:init', () => {
       }
 
       const unit = isMb ? 'MB' : 'GB';
+      const colors = this.getChartThemeColors();
       const ctx = canvas.getContext('2d');
       this.hogsChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -817,7 +929,7 @@ document.addEventListener('alpine:init', () => {
             label: `Consumo Dati (${unit})`,
             data: data,
             backgroundColor: [
-              'rgba(56, 189, 248, 0.85)',
+              'rgba(0, 103, 192, 0.85)',
               'rgba(99, 102, 241, 0.85)',
               'rgba(16, 185, 129, 0.85)',
               'rgba(245, 158, 11, 0.85)',
@@ -838,9 +950,11 @@ document.addEventListener('alpine:init', () => {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#38bdf8',
-              bodyColor: '#f8fafc',
+              backgroundColor: colors.tooltipBg,
+              titleColor: colors.tooltipTitle,
+              bodyColor: colors.tooltipBody,
+              borderColor: colors.tooltipBorder,
+              borderWidth: 1,
               callbacks: {
                 label: function(context) {
                   return `Consumo: ${context.parsed.x} ${unit}`;
@@ -850,11 +964,11 @@ document.addEventListener('alpine:init', () => {
           },
           scales: {
             x: {
-              ticks: { color: '#64748b' },
-              grid: { color: 'rgba(255, 255, 255, 0.05)' }
+              ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } },
+              grid: { color: colors.gridColor }
             },
             y: {
-              ticks: { color: '#e2e8f0', font: { family: 'Inter', size: 12 } },
+              ticks: { color: colors.isDark ? '#e2e8f0' : '#1c1c1c', font: { family: colors.fontFamily, size: 12 } },
               grid: { display: false }
             }
           }
@@ -1493,6 +1607,7 @@ document.addEventListener('alpine:init', () => {
         canvas.height = p.clientHeight || 280;
       }
 
+      const colors = this.getChartThemeColors();
       const ctx = canvas.getContext('2d');
       this.speedtestChartInstance = new Chart(ctx, {
         type: 'line',
@@ -1502,23 +1617,23 @@ document.addEventListener('alpine:init', () => {
             {
               label: 'Download (Mbps)',
               data: dl,
-              borderColor: '#38bdf8',
-              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
+              backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(0, 103, 192, 0.1)',
               borderWidth: 2,
               tension: 0.3
             },
             {
               label: 'Upload (Mbps)',
               data: ul,
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
+              backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 123, 15, 0.1)',
               borderWidth: 2,
               tension: 0.3
             },
             {
               label: 'Ping (ms)',
               data: ping,
-              borderColor: '#f59e0b',
+              borderColor: colors.isDark ? '#f59e0b' : '#d97706',
               borderDash: [5, 5],
               borderWidth: 1.5,
               yAxisID: 'y1',
@@ -1530,10 +1645,22 @@ document.addEventListener('alpine:init', () => {
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
+          plugins: {
+            tooltip: {
+              backgroundColor: colors.tooltipBg,
+              titleColor: colors.tooltipTitle,
+              bodyColor: colors.tooltipBody,
+              borderColor: colors.tooltipBorder,
+              borderWidth: 1
+            },
+            legend: {
+              labels: { color: colors.ticksColor, font: { family: colors.fontFamily, size: 12 } }
+            }
+          },
           scales: {
-            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
-            y: { title: { display: true, text: 'Mbps', color: '#64748b' }, ticks: { color: '#64748b' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
-            y1: { position: 'right', title: { display: true, text: 'Ping ms', color: '#f59e0b' }, ticks: { color: '#f59e0b' }, grid: { display: false } }
+            x: { ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } }, grid: { color: colors.gridColor } },
+            y: { title: { display: true, text: 'Mbps', color: colors.titleColor, font: { family: colors.fontFamily } }, ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } }, grid: { color: colors.gridColor } },
+            y1: { position: 'right', title: { display: true, text: 'Ping ms', color: colors.isDark ? '#f59e0b' : '#d97706', font: { family: colors.fontFamily } }, ticks: { color: colors.isDark ? '#f59e0b' : '#d97706', font: { family: colors.fontFamily } }, grid: { display: false } }
           }
         }
       });
@@ -1734,6 +1861,7 @@ document.addEventListener('alpine:init', () => {
       const labels = (history || []).map(pt => this.formatLocalDateTime(pt.timestamp, false));
       const rssiValues = (history || []).map(pt => pt.signal_rssi);
 
+      const colors = this.getChartThemeColors();
       const ctx = canvas.getContext('2d');
       this.signalChartInstance = new Chart(ctx, {
         type: 'line',
@@ -1743,8 +1871,8 @@ document.addEventListener('alpine:init', () => {
             {
               label: 'Segnale RSSI (dBm)',
               data: rssiValues.length > 0 ? rssiValues : [null],
-              borderColor: '#38bdf8',
-              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
+              backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(0, 103, 192, 0.10)',
               borderWidth: 2.5,
               tension: 0.3,
               fill: true,
@@ -1761,20 +1889,26 @@ document.addEventListener('alpine:init', () => {
             y: {
               min: -90,
               max: -30,
-              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              grid: { color: colors.gridColor },
               ticks: {
-                color: '#94a3b8',
+                color: colors.ticksColor,
+                font: { family: colors.fontFamily },
                 callback: (v) => `${v} dBm`
               }
             },
             x: {
-              grid: { color: 'rgba(255, 255, 255, 0.05)' },
-              ticks: { color: '#94a3b8', maxTicksLimit: 10 }
+              grid: { color: colors.gridColor },
+              ticks: { color: colors.ticksColor, font: { family: colors.fontFamily }, maxTicksLimit: 10 }
             }
           },
           plugins: {
             legend: { display: false },
             tooltip: {
+              backgroundColor: colors.tooltipBg,
+              titleColor: colors.tooltipTitle,
+              bodyColor: colors.tooltipBody,
+              borderColor: colors.tooltipBorder,
+              borderWidth: 1,
               callbacks: {
                 title: (items) => {
                   if (!items || items.length === 0) return '';
@@ -1993,9 +2127,245 @@ document.addEventListener('alpine:init', () => {
     },
 
     // =========================================================================
-    // ADGUARD HOME DNS & DHCP CLIENT SYNC
+    // MULTI-ENGINE DNS SYNCHRONIZER (AdGuard, Pi-hole, Technitium)
     // =========================================================================
-    // ADGUARD HOME DNS & DHCP CLIENT SYNC
+    async fetchDnsSettings() {
+      try {
+        const res = await fetch('/api/automations/dns');
+        const json = await res.json().catch(() => ({}));
+        if (json.status === 'success') {
+          this.dnsSettings = {
+            enabled: Boolean(json.enabled),
+            instances: (json.instances || []).map(i => ({
+              id: i.id || ('inst-' + Math.random().toString(36).substr(2, 9)),
+              name: i.name || 'DNS Server',
+              engine: i.engine || 'adguard',
+              url: i.url || '',
+              username: i.username || '',
+              password: '',
+              token: i.token || '',
+              zone: i.zone || 'lan',
+              has_password: Boolean(i.has_password),
+              enabled: i.enabled !== false,
+              last_sync_time: i.last_sync_time || '',
+              last_sync_status: i.last_sync_status || '',
+              last_sync_count: i.last_sync_count || 0
+            }))
+          };
+          // Sync retrocompatibilità con adguardSettings
+          const firstAdg = this.dnsSettings.instances.find(x => x.engine === 'adguard');
+          if (firstAdg) {
+            this.adguardSettings = {
+              enabled: this.dnsSettings.enabled && firstAdg.enabled,
+              url: firstAdg.url,
+              username: firstAdg.username,
+              password: '',
+              has_password: firstAdg.has_password,
+              last_sync_time: firstAdg.last_sync_time,
+              last_sync_count: firstAdg.last_sync_count,
+              last_sync_status: firstAdg.last_sync_status
+            };
+          }
+        }
+      } catch (err) {
+        console.error("Fetch DNS settings error:", err);
+      }
+    },
+
+    addDnsInstance() {
+      const newInst = {
+        id: 'inst-' + Date.now(),
+        name: 'DNS Server ' + (this.dnsSettings.instances.length + 1),
+        engine: 'adguard',
+        url: 'http://192.168.1.50:80',
+        username: '',
+        password: '',
+        token: '',
+        zone: 'lan',
+        has_password: false,
+        enabled: true,
+        last_sync_time: '',
+        last_sync_status: '',
+        last_sync_count: 0
+      };
+      this.dnsSettings.instances.push(newInst);
+      const title = this.currentLanguage === 'it' ? "Nuova Istanza Aggiunta" : "New Instance Added";
+      this.showToast(title, newInst.name, "info");
+    },
+
+    removeDnsInstance(instId) {
+      const idx = this.dnsSettings.instances.findIndex(x => x.id === instId);
+      if (idx >= 0) {
+        const inst = this.dnsSettings.instances[idx];
+        const confirmMsg = this.currentLanguage === 'it' 
+          ? `Sei sicuro di voler rimuovere l'istanza '${inst.name}'?` 
+          : `Are you sure you want to remove instance '${inst.name}'?`;
+        if (confirm(confirmMsg)) {
+          this.dnsSettings.instances.splice(idx, 1);
+          const title = this.currentLanguage === 'it' ? "Istanza Rimossa" : "Instance Removed";
+          this.showToast(title, inst.name, "info");
+        }
+      }
+    },
+
+    async saveDnsSettings() {
+      try {
+        const payload = {
+          enabled: Boolean(this.dnsSettings.enabled),
+          instances: this.dnsSettings.instances.map(inst => ({
+            id: inst.id,
+            name: inst.name,
+            engine: inst.engine,
+            url: inst.url,
+            username: inst.username,
+            password: inst.password || undefined,
+            token: inst.token || undefined,
+            zone: inst.zone,
+            enabled: inst.enabled
+          }))
+        };
+        const res = await fetch('/api/automations/dns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          const title = this.currentLanguage === 'it' ? "Multi-DNS" : "Multi-DNS";
+          const msg = json.message || (this.currentLanguage === 'it' ? "Configurazioni salvate con successo." : "Settings saved successfully.");
+          this.showToast(title, msg, "success");
+          await this.fetchDnsSettings();
+        } else {
+          throw new Error(json.detail || json.message || "Errore salvataggio DNS");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Salvataggio" : "Save Error";
+        this.showToast(title, err.message, "error");
+      }
+    },
+
+    async testDnsInstance(inst) {
+      this.dnsTesting = true;
+      this.dnsTestingId = inst.id;
+      try {
+        const payload = {
+          instance: {
+            id: inst.id,
+            name: inst.name,
+            engine: inst.engine,
+            url: inst.url,
+            username: inst.username,
+            password: inst.password || undefined,
+            token: inst.token || undefined,
+            zone: inst.zone,
+            enabled: inst.enabled
+          }
+        };
+        const res = await fetch('/api/automations/dns/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
+          if (json.normalized_url) inst.url = json.normalized_url;
+          const title = this.currentLanguage === 'it' ? "Test Connessione Riuscito" : "Connection Test Succeeded";
+          this.showToast(title, `${inst.name}: ${json.message}`, "success");
+        } else {
+          const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
+          this.showToast(title, `${inst.name}: ${json.message || 'Connessione non riuscita'}`, "error");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        this.showToast(title, `${inst.name}: ${err.message}`, "error");
+      } finally {
+        this.dnsTesting = false;
+        this.dnsTestingId = null;
+      }
+    },
+
+    async testAllDns() {
+      this.dnsTesting = true;
+      this.dnsTestingId = 'all';
+      try {
+        const res = await fetch('/api/automations/dns/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success) {
+          const title = this.currentLanguage === 'it' ? "Test Globale Riuscito" : "All Tests Succeeded";
+          this.showToast(title, `Tutte le ${json.total_tested} istanze DNS sono operative!`, "success");
+        } else {
+          const title = this.currentLanguage === 'it' ? "Verifica Parziale o Fallita" : "Some Tests Failed";
+          this.showToast(title, json.message || "Una o più istanze DNS non rispondono.", "warning");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Test Globale" : "Global Test Error";
+        this.showToast(title, err.message, "error");
+      } finally {
+        this.dnsTesting = false;
+        this.dnsTestingId = null;
+      }
+    },
+
+    async syncDnsInstance(inst) {
+      this.dnsSyncing = true;
+      this.dnsSyncingId = inst.id;
+      try {
+        const res = await fetch('/api/automations/dns/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instance_id: inst.id })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.status === 'success') {
+          const title = this.currentLanguage === 'it' ? "Sincronizzazione Riuscita" : "Sync Succeeded";
+          this.showToast(title, `${inst.name}: ${json.message}`, "success");
+          await this.fetchDnsSettings();
+        } else {
+          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+          this.showToast(title, `${inst.name}: ${json.detail || json.message || 'Sincronizzazione fallita'}`, "error");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        this.showToast(title, `${inst.name}: ${err.message}`, "error");
+      } finally {
+        this.dnsSyncing = false;
+        this.dnsSyncingId = null;
+      }
+    },
+
+    async syncAllDns() {
+      this.dnsSyncing = true;
+      this.dnsSyncingId = 'all';
+      try {
+        const res = await fetch('/api/automations/dns/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.status === 'success') {
+          const title = this.currentLanguage === 'it' ? "Sincronizzazione Globale Completata" : "Global Sync Completed";
+          this.showToast(title, json.message, "success");
+          await this.fetchDnsSettings();
+        } else {
+          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+          this.showToast(title, json.detail || json.message || "Sincronizzazione fallita.", "error");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        this.showToast(title, err.message, "error");
+      } finally {
+        this.dnsSyncing = false;
+        this.dnsSyncingId = null;
+      }
+    },
+
+    // =========================================================================
+    // ADGUARD HOME DNS & DHCP CLIENT SYNC (Retrocompatibilità)
     // =========================================================================
     async fetchAdGuardSettings() {
       try {

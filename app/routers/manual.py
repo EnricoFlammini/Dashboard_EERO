@@ -105,7 +105,7 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 * **Grafico Storico & Statistiche:**
   - Grafico dell'andamento di velocità e stabilità della linea nel corso dei giorni.
   - Calcolo automatico di velocità media, picco massimo e latenza minima.
-* **Qualità Wi-Fi & Copertura Mesh (v1.04.00):**
+* **Qualità Wi-Fi & Copertura Mesh (v1.4.0):**
   - **Storicizzazione Continua Segnale (dBm):** Il poller registra in automatico i livelli RSSI, frequenze e bitrate di tutti i dispositivi wireless attivi nel database SQLite locale (`device_signal_history`).
   - **Segnale Medio & Fasce di Qualità:** KPI con livello medio dell'intera abitazione e ripartizione per fasce: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico* (< -75 dBm).
   - **Grafico Temporale Interattivo:** Seleziona qualunque client wireless per visualizzare il grafico temporale Chart.js delle ultime 24 ore o 7 giorni con valori attuali, minimi, massimi e medi.
@@ -153,7 +153,7 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
         "content": """
 ### Domande Frequenti & Troubleshooting
 
-* **Come funziona il motore di Auto-Update Docker in-App (v1.04.00)?**
+* **Come funziona il motore di Auto-Update Docker in-App (v1.4.0)?**
   - La dashboard controlla periodicamente la presenza di nuove versioni su Docker Hub e GitHub Releases.
   - Se è montato il Docker Socket (`/var/run/docker.sock`), puoi aggiornare il container in 1 clic: l'applicazione scaricherà la nuova immagine, ricreerà il container preservando la cartella dati `./data` e ricaricherà automaticamente la pagina.
   - In alternativa sono supportati trigger via **Watchtower Webhook** e modalità assistita da riga di comando.
@@ -269,7 +269,7 @@ This web application is a full-featured, self-hosted management and monitoring p
 * **Historical Charts & Statistics:**
   - Visual time-series graph of speeds and latency over days and weeks.
   - Aggregate statistics including average download/upload, maximum peak speeds, and average ping.
-* **Wi-Fi Signal Quality & Mesh Coverage (v1.04.00):**
+* **Wi-Fi Signal Quality & Mesh Coverage (v1.4.0):**
   - **Continuous RSSI Storicization (dBm):** The background poller continuously samples wireless signal levels, frequencies, and link rates into local SQLite (`device_signal_history`).
   - **Household Average Signal & Quality Bands:** High-level KPI and percentage breakdown across *Excellent* (≥ -50 dBm), *Good* (-51 to -65 dBm), *Fair* (-66 to -75 dBm), and *Critical* (< -75 dBm).
   - **Interactive Chart.js Time-Series:** Select any client to analyze signal trends over the past 24 hours or 7 days with current, min, max, and average RSSI.
@@ -317,7 +317,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
         "content": """
 ### Troubleshooting, Docker Updates & FAQ
 
-* **How does In-App 1-Click Docker Auto-Update work (v1.04.00)?**
+* **How does In-App 1-Click Docker Auto-Update work (v1.4.0)?**
   - The dashboard automatically checks for new releases on Docker Hub and GitHub Releases.
   - If the Docker Socket is mounted (`/var/run/docker.sock`), clicking "Update Container Now" pulls the latest image, recreates the container preserving your `./data` volume, and reloads the browser once the new version is healthy.
   - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
@@ -366,7 +366,9 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ---
 
-## v1.04.00
+## v1.4.0
+* **Restyling Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)**
+* **Multi-Engine DNS Synchronizer (Istanze Multiple Simultanee: AdGuard, Pi-hole, Technitium)**
 * **Motore di Auto-Update Docker in-App a 1-Clic (/api/system/update)**
 * **Rilevamento Automatico Nuove Versioni Docker Hub & GitHub Releases**
 * **Storicizzazione Continua Segnale RSSI Dispositivi Wireless (SQLite)**
@@ -475,7 +477,9 @@ Below is a summary of the main release highlights. The complete changelog with a
 
 ---
 
-## v1.04.00
+## v1.4.0
+* **Windows 11 Fluent Design Restyling & Dual Theme Engine (Dark & Light Mode)**
+* **Multi-Engine DNS Synchronizer Suite (Simultaneous Instances: AdGuard, Pi-hole, Technitium)**
 * **In-App 1-Click Docker Auto-Update Engine (/api/system/update)**
 * **Automated New Release Detection via Docker Hub & GitHub Releases**
 * **Continuous Wireless Client RSSI Signal Storicization in SQLite**

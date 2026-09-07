@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.services.adguard import adguard_service
 from app.services.db import db_service
+from app.services.dns_manager import dns_manager
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
 from app.services.poller import background_poller
@@ -37,6 +38,37 @@ class DigestSettingsRequest(BaseModel):
     enabled: bool
 
 
+class DNSInstanceModel(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = "DNS Server"
+    engine: Optional[str] = "adguard"  # "adguard" | "pihole" | "technitium"
+    url: str
+    username: Optional[str] = ""
+    password: Optional[str] = None
+    token: Optional[str] = None
+    zone: Optional[str] = "lan"
+    enabled: Optional[bool] = True
+    has_password: Optional[bool] = False
+    last_sync_time: Optional[str] = ""
+    last_sync_status: Optional[str] = ""
+    last_sync_count: Optional[int] = 0
+
+
+class DNSSettingsRequest(BaseModel):
+    enabled: bool = Field(False, description="Abilita la sincronizzazione automatica periodica Multi-DNS")
+    instances: List[DNSInstanceModel] = Field(default_factory=list, description="Elenco istanze DNS multiple (AdGuard, Pi-hole, Technitium)")
+
+
+class DNSTestRequest(BaseModel):
+    instance_id: Optional[str] = None
+    instance: Optional[DNSInstanceModel] = None
+
+
+class DNSSyncRequest(BaseModel):
+    instance_id: Optional[str] = None
+
+
+# Modelli retrocompatibili per chiamate preesistenti AdGuard
 class AdGuardInstanceModel(BaseModel):
     id: Optional[str] = None
     name: Optional[str] = "DNS Server"
@@ -277,7 +309,68 @@ async def generate_immediate_digest():
 
 
 # =========================================================================
-# ADGUARD HOME DNS INTEGRATION
+# MULTI-ENGINE DNS SYNCHRONIZER (AdGuard, Pi-hole, Technitium)
+# =========================================================================
+
+@router.get("/dns")
+async def get_multi_dns_settings():
+    """Restituisce lo stato globale e l'elenco delle istanze DNS configurate."""
+    settings = await dns_manager.get_settings()
+    return {
+        "status": "success",
+        **settings
+    }
+
+
+@router.post("/dns")
+async def update_multi_dns_settings(payload: DNSSettingsRequest):
+    """Salva la configurazione globale e l'elenco delle istanze DNS."""
+    inst_dicts = [i.dict() for i in payload.instances]
+    await dns_manager.save_settings(enabled=payload.enabled, instances=inst_dicts)
+    return {
+        "status": "success",
+        "message": "Impostazioni Multi-DNS salvate con successo.",
+        "instances": inst_dicts
+    }
+
+
+@router.post("/dns/test")
+async def test_dns_instance(payload: Optional[DNSTestRequest] = None):
+    """Testa la connettività di una specifica istanza DNS o di tutte le istanze contemporaneamente."""
+    if payload and payload.instance:
+        res = await dns_manager.test_instance(payload.instance.dict())
+    elif payload and payload.instance_id:
+        settings = await dns_manager.get_settings()
+        target = next((i for i in settings.get("instances", []) if i.get("id") == payload.instance_id), None)
+        if not target:
+            raise HTTPException(status_code=404, detail="Istanza DNS non trovata.")
+        res = await dns_manager.test_instance(target)
+    else:
+        res = await dns_manager.test_all_instances()
+    return {"status": "success" if res.get("success") else "error", **res}
+
+
+@router.post("/dns/sync")
+async def sync_dns_devices(payload: Optional[DNSSyncRequest] = None):
+    """Sincronizza l'elenco dei dispositivi verso tutte le istanze DNS abilitate (o una specifica)."""
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+    if not devices:
+        raise HTTPException(status_code=400, detail="Nessun dispositivo disponibile nella cache per la sincronizzazione.")
+
+    inst_id = payload.instance_id if payload else None
+    res = await dns_manager.sync_devices(devices, instance_id=inst_id)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
+
+    return {
+        "status": "success",
+        **res
+    }
+
+
+# =========================================================================
+# ADGUARD HOME DNS INTEGRATION (Retrocompatibilità)
 # =========================================================================
 
 @router.get("/adguard")

@@ -1,79 +1,231 @@
 /* ====================================================================
-   eero Custom Dashboard - Premium Dark Glassmorphism Design System
+   eero Custom Dashboard - Windows 11 Fluent Design System
+   Dual Theme Engine (Dark & Light Mode) with Acrylic & Mica Materials
    ==================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/* ====================================================================
+   1. DESIGN TOKENS (LIGHT MODE DEFAULT)
+   ==================================================================== */
 :root {
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Segoe UI Variable', 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', monospace;
   
-  --bg-primary: #0b0f17;
-  --bg-surface: #111827;
-  --bg-surface-elevated: #1e293b;
-  --glass-bg: rgba(17, 24, 39, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  
-  --accent-cyan: #38bdf8;
-  --accent-indigo: #6366f1;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  /* Windows 11 Light Materials & Palette */
+  --bg-canvas: #f3f3f3;
+  --bg-surface: #ffffff;
+  --bg-acrylic: rgba(255, 255, 255, 0.85);
+  --bg-card: rgba(255, 255, 255, 0.90);
+  --bg-elevated: #ffffff;
+  --bg-subtle: rgba(0, 0, 0, 0.03);
+  --bg-hover: rgba(0, 0, 0, 0.05);
+
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-card: rgba(0, 0, 0, 0.08);
+  --border-divider: rgba(0, 0, 0, 0.06);
+
+  --text-primary: #1c1c1c;
+  --text-secondary: #5c5c5c;
+  --text-tertiary: #767676;
+  --text-muted: #8c8c8c;
+
+  /* Windows 11 Accent Blue */
+  --win-accent: #0067c0;
+  --win-accent-hover: #1975c5;
+  --win-accent-active: #005a9e;
+  --win-accent-subtle: rgba(0, 103, 192, 0.08);
+  --win-accent-border: rgba(0, 103, 192, 0.25);
+  --win-accent-text: #0067c0;
+
+  /* Status Colors (Light Fluent) */
+  --accent-cyan: #0067c0;
+  --accent-indigo: #5c2d91;
+  --accent-emerald: #0f7b0f;
+  --accent-amber: #9d5d00;
+  --accent-rose: #c42b1c;
+
+  /* Shadows */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --card-shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --popover-shadow: 0 16px 36px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  /* Inputs */
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-border: rgba(0, 0, 0, 0.15);
+  --input-text: #1c1c1c;
+  --input-placeholder: #8c8c8c;
+
+  /* Glass/Card legacy aliases */
+  --bg-primary: var(--bg-canvas);
+  --glass-bg: var(--bg-card);
+  --glass-border: var(--border-card);
 }
 
+/* ====================================================================
+   2. DESIGN TOKENS (DARK MODE FLUENT)
+   ==================================================================== */
+html.dark {
+  /* Windows 11 Dark Materials & Palette */
+  --bg-canvas: #202020;
+  --bg-surface: #2b2b2b;
+  --bg-acrylic: rgba(43, 43, 43, 0.85);
+  --bg-card: rgba(43, 43, 43, 0.90);
+  --bg-elevated: #323232;
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --bg-hover: rgba(255, 255, 255, 0.07);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-card: rgba(255, 255, 255, 0.09);
+  --border-divider: rgba(255, 255, 255, 0.06);
+
+  --text-primary: #ffffff;
+  --text-secondary: #d1d1d1;
+  --text-tertiary: #9e9e9e;
+  --text-muted: #767676;
+
+  /* Windows 11 Dark Accent Blue */
+  --win-accent: #60cdff;
+  --win-accent-hover: #72d4ff;
+  --win-accent-active: #4cc2ff;
+  --win-accent-subtle: rgba(96, 205, 255, 0.12);
+  --win-accent-border: rgba(96, 205, 255, 0.3);
+  --win-accent-text: #60cdff;
+
+  /* Status Colors (Dark Fluent) */
+  --accent-cyan: #60cdff;
+  --accent-indigo: #a78bfa;
+  --accent-emerald: #6ccb5f;
+  --accent-amber: #fce100;
+  --accent-rose: #ff99a4;
+
+  /* Shadows */
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --card-shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --popover-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  /* Inputs */
+  --input-bg: rgba(32, 32, 32, 0.85);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-text: #ffffff;
+  --input-placeholder: #767676;
+
+  /* Glass/Card legacy aliases */
+  --bg-primary: var(--bg-canvas);
+  --glass-bg: var(--bg-card);
+  --glass-border: var(--border-card);
+}
+
+/* ====================================================================
+   3. BASE STYLING
+   ==================================================================== */
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
-  color: #f3f4f6;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  letter-spacing: -0.01em;
 }
 
-/* Custom Scrollbars */
+/* Windows 11 Fluent Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5);
+  background: rgba(140, 140, 140, 0.3);
   border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.8);
+  background: rgba(140, 140, 140, 0.6);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
-/* Glassmorphism Classes */
+/* ====================================================================
+   4. FLUENT CARD & MATERIAL CLASSES
+   ==================================================================== */
+.fluent-card,
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-}
-
-.glass-panel-elevated {
-  background: rgba(30, 41, 59, 0.8);
+  background: var(--bg-card);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.glass-input {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
-  transition: all 0.2s ease-in-out;
+.fluent-elevated,
+.glass-panel-elevated {
+  background: var(--bg-elevated);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-card);
+  box-shadow: var(--card-shadow-elevated);
+  border-radius: 12px;
 }
+
+/* Windows 11 Fluent Inputs */
+.fluent-input,
+.glass-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+  border-radius: 6px;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fluent-input::placeholder,
+.glass-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.fluent-input:focus,
 .glass-input:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+  border-color: var(--win-accent);
+  box-shadow: 0 0 0 2px var(--win-accent-subtle);
   outline: none;
 }
 
-/* Status Indicators */
+/* Card hover glow / lift (Windows 11 Subtle) */
+.hover-glow:hover {
+  border-color: var(--win-accent-border);
+  box-shadow: var(--card-shadow-elevated);
+  transform: translateY(-1px);
+}
+
+/* ====================================================================
+   5. NAVIGATION SEGMENTED TABS (WINDOWS 11 STYLE)
+   ==================================================================== */
+.win11-tab-btn {
+  position: relative;
+  transition: all 0.15s ease;
+}
+.win11-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background-color: var(--win-accent);
+  box-shadow: 0 0 8px var(--win-accent);
+}
+
+/* ====================================================================
+   6. PULSES & INDICATORS
+   ==================================================================== */
 .status-dot-pulse {
   position: relative;
 }
@@ -103,9 +255,9 @@ body {
 }
 .rssi-bar span {
   width: 3px;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--border-divider);
   border-radius: 1px;
-  transition: height 0.3s ease;
+  transition: height 0.3s ease, background-color 0.3s ease;
 }
 
 /* Speed Gauge Radial Animation */
@@ -114,66 +266,113 @@ body {
   transform-origin: 50% 50%;
 }
 .gauge-circle-bg {
-  stroke: rgba(255, 255, 255, 0.08);
+  stroke: var(--border-subtle);
 }
 .gauge-circle-progress {
   stroke-linecap: round;
   transition: stroke-dashoffset 1s ease-in-out;
 }
 
-/* Animations */
+/* ====================================================================
+   7. ANIMATIONS
+   ==================================================================== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Code and Markdown Styling in Manual */
+/* ====================================================================
+   8. MANUAL CONTENT & MARKDOWN (ADAPTIVE LIGHT & DARK)
+   ==================================================================== */
 .manual-content h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #38bdf8;
+  color: var(--win-accent);
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
 }
 .manual-content h4 {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #818cf8;
+  color: var(--accent-indigo);
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
 }
 .manual-content p {
-  color: #cbd5e1;
+  color: var(--text-secondary);
   line-height: 1.65;
   margin-bottom: 1rem;
 }
 .manual-content ul, .manual-content ol {
   margin-left: 1.5rem;
   margin-bottom: 1rem;
-  color: #cbd5e1;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 .manual-content li {
   margin-bottom: 0.4rem;
 }
 .manual-content strong {
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 .manual-content code {
   font-family: var(--font-mono);
-  background-color: rgba(30, 41, 59, 0.8);
-  color: #38bdf8;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--win-accent);
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   font-size: 0.875rem;
 }
 
-/* Card hover glow */
-.hover-glow:hover {
-  border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 0 25px -5px rgba(56, 189, 248, 0.15);
+/* ====================================================================
+   9. ADAPTIVE LIGHT MODE CONTRAST & TYPOGRAPHY
+   ==================================================================== */
+html:not(.dark) {
+  color-scheme: light;
 }
+html.dark {
+  color-scheme: dark;
+}
+
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) h4,
+html:not(.dark) th {
+  color: var(--text-primary);
+}
+
+/* Ensure headings/text inside glass panels and cards in light mode adapt cleanly */
+html:not(.dark) .glass-panel .text-white,
+html:not(.dark) .fluent-card .text-white,
+html:not(.dark) .glass-panel-elevated .text-white,
+html:not(.dark) main .text-white {
+  color: var(--text-primary);
+}
+
+/* Preserve bright white text for solid badges and action buttons */
+html:not(.dark) button.bg-rose-500,
+html:not(.dark) button.bg-sky-500,
+html:not(.dark) button.bg-indigo-600,
+html:not(.dark) button.bg-emerald-600,
+html:not(.dark) .bg-rose-500 .text-white,
+html:not(.dark) .bg-sky-500 .text-white,
+html:not(.dark) .bg-indigo-600 .text-white,
+html:not(.dark) .bg-emerald-600 .text-white,
+html:not(.dark) [class*="bg-gradient-"] .text-white {
+  color: #ffffff !important;
+}
+
+/* Light mode table and card adaptivity */
+html:not(.dark) table thead {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+html:not(.dark) tr:hover {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+

@@ -1,14 +1,29 @@
 <!DOCTYPE html>
-<html lang="it" class="dark">
+<html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>eero Custom Dashboard & Management Suite</title>
   
+  <!-- Headless Script Anti-FOUC (Zero Flashing al Caricamento del Tema) -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('eero_theme') || 'system';
+        var d = t === 'dark' || (t === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (d) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Favicon / SVG Icon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12.55a11 11 0 0 1 14.08 0'/><path d='M1.42 9a16 16 0 0 1 21.16 0'/><path d='M8.53 16.11a6 6 0 0 1 6.95 0'/><line x1='12' y1='20' x2='12.01' y2='20'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230067c0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12.55a11 11 0 0 1 14.08 0'/><path d='M1.42 9a16 16 0 0 1 21.16 0'/><path d='M8.53 16.11a6 6 0 0 1 6.95 0'/><line x1='12' y1='20' x2='12.01' y2='20'/></svg>">
   
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <!-- Google Fonts: Inter & JetBrains Mono (Fallback per Segoe UI Variable) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,8 +36,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['Segoe UI Variable', 'Segoe UI', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Cascadia Code', 'monospace'],
           },
           colors: {
             brand: {
@@ -33,12 +48,6 @@
               600: '#0284c7',
               700: '#0369a1',
               900: '#0c4a6e',
-            },
-            dark: {
-              900: '#0b0f17',
-              800: '#111827',
-              700: '#1e293b',
-              600: '#334155',
             }
           }
         }
@@ -46,7 +55,7 @@
     }
   </script>
   
-  <!-- Custom Stylesheet -->
+  <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
   <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}">
 
   <!-- Chart.js CDN & Alpine.js CDN -->
@@ -59,69 +68,96 @@
   <!-- App Logic -->
   <script src="/static/js/app.js?v={{ app_version }}"></script>
 </head>
-<body class="bg-[#0b0f17] text-slate-100 min-h-screen antialiased flex flex-col" x-data="eeroApp">
+<body class="bg-[#f3f3f3] dark:bg-[#202020] text-[#1c1c1c] dark:text-[#ffffff] min-h-screen antialiased flex flex-col transition-colors duration-200" x-data="eeroApp">
 
   <!-- ===================================================================== -->
-  <!-- TOP APP BAR -->
+  <!-- TOP APP BAR (WINDOWS 11 FLUENT HEADER) -->
   <!-- ===================================================================== -->
-  <header class="sticky top-0 z-40 bg-[#111827]/80 backdrop-blur-xl border-b border-slate-800">
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#2b2b2b]/85 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.08] shadow-sm transition-colors duration-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
       <!-- Brand Logo -->
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0067c0] to-indigo-600 dark:from-[#38bdf8] dark:to-indigo-500 flex items-center justify-center shadow-md shadow-sky-500/20">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
           </svg>
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 class="text-lg font-bold tracking-tight text-white">eero <span class="text-sky-400 font-medium">Dashboard</span></h1>
+            <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">eero <span class="text-[#0067c0] dark:text-[#60cdff] font-semibold">Dashboard</span></h1>
             <!-- Version Button (Opens Changelog) -->
             <button 
               @click="openChangelogModal()" 
-              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 hover:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer" 
+              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#0067c0]/10 hover:bg-[#0067c0]/20 text-[#0067c0] dark:bg-sky-500/15 dark:hover:bg-sky-500/25 dark:text-sky-300 border border-[#0067c0]/20 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer" 
               :title="t('header.changelog_title') + ' v' + appVersion">
-              <span x-text="'v' + appVersion">v1.04.00</span>
-              <svg class="w-3 h-3 text-sky-400/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span x-text="'v' + appVersion">v1.4.0</span>
+              <svg class="w-3 h-3 text-[#0067c0]/80 dark:text-sky-300/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
 
             <!-- Auto-Update Notification Pill Badge (Appears ONLY when update is available) -->
             <template x-if="updateInfo && updateInfo.update_available">
               <button 
                 @click="openUpdateModal()" 
-                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-amber-500/10" 
+                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-sm" 
                 :title="t('header.update_btn_title')">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
                 <span x-text="'🎉 v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
-                <svg class="w-3 h-3 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <svg class="w-3 h-3 text-amber-600 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
               </button>
             </template>
 
             <!-- About & Dedication Button -->
             <button 
               @click="showAboutModal = true" 
-              class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 hover:border-indigo-500/40 transition flex items-center space-x-1 cursor-pointer" 
+              class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:border-indigo-500/40 transition flex items-center space-x-1 cursor-pointer" 
               :title="t('about_modal.title')">
-              <svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
               </svg>
               <span>About</span>
             </button>
+
+            <!-- Windows 11 Theme Switcher (☀️ Chiaro / 🌙 Scuro / 💻 Sistema) -->
+            <div class="relative flex items-center">
+              <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08]" :title="t('header.theme_toggle_title') || 'Cambia Tema (Chiaro / Scuro / Sistema)'">
+                <button 
+                  @click="setTheme('light')" 
+                  :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
+                  :title="t('header.theme_light') || 'Tema Chiaro'">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </button>
+                <button 
+                  @click="setTheme('dark')" 
+                  :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
+                  :title="t('header.theme_dark') || 'Tema Scuro'">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+                <button 
+                  @click="setTheme('system')" 
+                  :class="currentTheme === 'system' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
+                  :title="t('header.theme_system') || 'Tema di Sistema'">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </button>
+              </div>
+            </div>
 
             <!-- Language Selector (i18n) -->
             <div class="relative flex items-center">
               <select 
                 x-model="currentLanguage" 
                 @change="setLanguage($event.target.value)"
-                class="text-[11px] font-medium bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700/80 hover:border-slate-600 rounded-xl px-2 py-0.5 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500"
+                class="text-[11px] font-medium bg-white/90 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-0.5 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#0067c0] dark:focus:ring-sky-500"
                 title="Select Language / Seleziona Lingua">
                 <option value="en">🇬🇧 EN</option>
                 <option value="it">🇮🇹 IT</option>
               </select>
             </div>
           </div>
-          <p class="text-xs text-slate-400 font-medium" x-text="network.name || t('mesh_infra')"></p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium" x-text="network.name || t('mesh_infra')"></p>
         </div>
       </div>
 
@@ -177,7 +213,7 @@
         <template x-if="!isDemoMode && isAuthenticated">
           <button 
             @click="toggleDemoMode(true)"
-            class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/15 text-slate-400 hover:text-amber-400 border border-slate-700 hover:border-amber-500/30 transition-all active:scale-95"
+            class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-amber-500/15 dark:bg-slate-800 dark:hover:bg-amber-500/15 text-slate-600 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 transition-all active:scale-95"
             :title="t('header.demo_switch_title')">
             <span>✨</span>
             <span x-text="t('header.switch_to_demo')"></span>
@@ -187,7 +223,7 @@
         <!-- Focus Mode One-Click Button -->
         <button 
           @click="toggleFocusMode()"
-          :class="focusModeActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'"
+          :class="focusModeActive ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'"
           class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
           :title="t('header.gaming_tooltip')">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -197,7 +233,7 @@
         <!-- Context Help Trigger -->
         <button 
           @click="openContextHelp('intro')"
-          class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-sky-400 transition"
+          class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 hover:text-[#0067c0] dark:text-slate-300 dark:hover:text-sky-400 border border-slate-200 dark:border-slate-700/60 transition"
           :title="t('header.quick_help')">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </button>
@@ -205,7 +241,7 @@
         <!-- Disconnect / Logout Trigger -->
         <button 
           @click="showLogoutModal = true"
-          class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-transparent hover:border-rose-500/30 transition"
+          class="p-2 rounded-lg bg-slate-100 hover:bg-rose-500/15 dark:bg-slate-800 dark:hover:bg-rose-500/20 text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-transparent hover:border-rose-500/30 transition"
           :title="t('header.logout')">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -219,13 +255,13 @@
   <!-- ===================================================================== -->
   <!-- NAVIGATION TABS -->
   <!-- ===================================================================== -->
-  <nav class="bg-[#111827]/50 border-b border-slate-800/80 sticky top-16 z-30 backdrop-blur-md">
+  <nav class="bg-white/75 dark:bg-[#202020]/75 border-b border-black/[0.06] dark:border-white/[0.08] sticky top-16 z-30 backdrop-blur-md transition-colors duration-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2.5 no-scrollbar">
         
         <button 
           @click="setTab('overview')"
-          :class="currentTab === 'overview' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          :class="currentTab === 'overview' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 border-[#0067c0]/30 dark:border-sky-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           <span x-text="t('nav.dashboard')"></span>
@@ -233,16 +269,15 @@
 
         <button 
           @click="setTab('devices')"
-          :class="currentTab === 'devices' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          :class="currentTab === 'devices' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 border-[#0067c0]/30 dark:border-sky-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
           <span><span x-text="t('nav.devices')"></span> (<span x-text="devices.length"></span>)</span>
         </button>
 
-
         <button 
           @click="setTab('speedtest')"
-          :class="currentTab === 'speedtest' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          :class="currentTab === 'speedtest' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 border-[#0067c0]/30 dark:border-sky-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           <span x-text="t('nav.speedtest')"></span>
@@ -250,7 +285,7 @@
 
         <button 
           @click="setTab('automations')"
-          :class="currentTab === 'automations' ? 'bg-sky-500/10 text-sky-400 border-sky-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          :class="currentTab === 'automations' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 border-[#0067c0]/30 dark:border-sky-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
           <span x-text="t('nav.controls')"></span>
@@ -258,7 +293,7 @@
 
         <button 
           @click="setTab('manual')"
-          :class="currentTab === 'manual' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border-transparent'"
+          :class="currentTab === 'manual' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
           class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
           <span x-text="t('nav.manual')"></span>
@@ -1120,80 +1155,212 @@
           </div>
         </div>
 
-        <!-- 2. AdGuard Home DNS Integration Card (Top-Right) -->
+        <!-- 2. Multi-Engine DNS Synchronizer Card (Top-Right) -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-4">
-            <div class="space-y-3 border-b border-white/5 pb-3">
-              <div class="flex items-center justify-between gap-3">
+            <div class="space-y-3 border-b border-black/[0.06] dark:border-white/5 pb-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center space-x-3">
-                  <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                   </div>
                   <div>
-                    <h3 class="text-base font-bold text-white leading-tight" x-text="t('controls.adguard_title')"></h3>
-                    <p class="text-xs text-slate-400 mt-0.5" x-text="t('controls.adguard_subtitle')"></p>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.dns_title') || 'Multi-Engine DNS Synchronizer'"></h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="t('controls.dns_subtitle') || 'Sincronizza automaticamente i nomi host su AdGuard Home, Pi-hole e Technitium DNS'"></p>
                   </div>
                 </div>
-              </div>
 
-              <!-- Action Toolbar -->
-              <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
-                <button 
-<<<<<<< HEAD
-                  @click="addAdGuardInstance()"
-                  class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1.5 cursor-pointer">
-                  <span>➕</span>
-                  <span x-text="t('controls.adguard_add_instance') || '+ Aggiungi Istanza DNS'"></span>
-                </button>
-                <button 
-=======
->>>>>>> main
-                  @click="testAdGuardConnection()"
-                  :disabled="adguardTesting"
-                  class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">
-                  <span x-show="adguardTesting" class="animate-spin text-[10px]">⏳</span>
-                  <span x-show="!adguardTesting">⚡</span>
-                  <span x-text="t('controls.adguard_test_btn')"></span>
-                </button>
-                <button 
-                  @click="syncAdGuardNow()"
-                  :disabled="adguardSyncing"
-                  class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs font-semibold border border-sky-500/30 transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">
-                  <span x-show="adguardSyncing" class="animate-spin text-[10px]">🔄</span>
-                  <span x-show="!adguardSyncing">🔄</span>
-                  <span x-text="t('controls.adguard_sync_btn')"></span>
-                </button>
+                <!-- Action Toolbar: Add Instance, Test All, Sync All -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <button 
+                    @click="addDnsInstance()"
+                    class="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center space-x-1 cursor-pointer">
+                    <span>➕</span>
+                    <span x-text="t('controls.dns_add_instance') || '+ Aggiungi Istanza'"></span>
+                  </button>
+                  <button 
+                    @click="testAllDns()"
+                    :disabled="dnsTesting"
+                    class="px-2.5 py-1.5 rounded-lg bg-black/[0.04] dark:bg-slate-800 hover:bg-black/[0.08] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-black/[0.08] dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                    <span x-show="dnsTesting && dnsTestingId === 'all'" class="animate-spin text-[10px]">⏳</span>
+                    <span x-show="!(dnsTesting && dnsTestingId === 'all')">⚡</span>
+                    <span x-text="t('controls.dns_test_all') || 'Testa Tutti'"></span>
+                  </button>
+                  <button 
+                    @click="syncAllDns()"
+                    :disabled="dnsSyncing"
+                    class="px-3 py-1.5 rounded-lg bg-[#0067c0]/15 dark:bg-sky-500/20 hover:bg-[#0067c0]/25 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 text-xs font-semibold border border-[#0067c0]/30 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                    <span x-show="dnsSyncing && dnsSyncingId === 'all'" class="animate-spin text-[10px]">🔄</span>
+                    <span x-show="!(dnsSyncing && dnsSyncingId === 'all')">🔄</span>
+                    <span x-text="t('controls.dns_sync_all') || 'Sincronizza Tutti'"></span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="space-y-3 text-xs">
-              <div>
-                <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_url')"></label>
-                <input type="text" x-model="adguardSettings.url" placeholder="http://192.168.4.2:80" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_username')"></label>
-                  <input type="text" x-model="adguardSettings.username" placeholder="admin" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+            <!-- List of Configured DNS Instances (Multiple Simultaneous Support) -->
+            <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+              <template x-for="(inst, idx) in dnsSettings.instances" :key="inst.id">
+                <div class="p-3.5 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] space-y-3 transition">
+                  
+                  <!-- Instance Header Bar -->
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2 flex-1 min-w-0">
+                      <!-- Engine Type Pill -->
+                      <span 
+                        :class="{
+                          'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30': inst.engine === 'adguard',
+                          'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30': inst.engine === 'pihole',
+                          'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30': inst.engine === 'technitium'
+                        }"
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center space-x-1 shrink-0">
+                        <span x-text="inst.engine === 'adguard' ? '🛡️ AdGuard' : (inst.engine === 'pihole' ? '🕳️ Pi-hole' : '⚡ Technitium')"></span>
+                      </span>
+
+                      <!-- Editable Friendly Name -->
+                      <input 
+                        type="text" 
+                        x-model="inst.name" 
+                        placeholder="Nome Server"
+                        class="glass-input px-2 py-0.5 rounded text-xs font-semibold flex-1 min-w-0">
+                    </div>
+
+                    <!-- Toggle & Remove -->
+                    <div class="flex items-center space-x-2 shrink-0">
+                      <label class="flex items-center space-x-1.5 text-[11px] text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                        <input type="checkbox" x-model="inst.enabled" class="rounded border-slate-400 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-3.5 h-3.5">
+                        <span x-text="inst.enabled ? (t('controls.adguard_active') || 'Attiva') : (t('controls.adguard_inactive') || 'Disattiva')"></span>
+                      </label>
+                      <button 
+                        @click="removeDnsInstance(inst.id)"
+                        class="text-slate-400 hover:text-rose-500 p-1 rounded transition" 
+                        :title="t('controls.dns_remove_instance') || 'Elimina Istanza'">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Form Fields for this Instance -->
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                    <!-- Engine Selection -->
+                    <div class="sm:col-span-4">
+                      <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_engine') || 'Motore DNS:'"></label>
+                      <select x-model="inst.engine" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-medium text-xs">
+                        <option value="adguard">🛡️ AdGuard Home</option>
+                        <option value="pihole">🕳️ Pi-hole (v5 & v6)</option>
+                        <option value="technitium">⚡ Technitium DNS (PTR)</option>
+                      </select>
+                    </div>
+
+                    <!-- Server URL -->
+                    <div class="sm:col-span-8">
+                      <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_url') || 'URL Server:'"></label>
+                      <input type="text" x-model="inst.url" placeholder="http://192.168.1.50:80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                    </div>
+
+                    <!-- Contextual Authentication / Parameters -->
+                    <!-- 1. AdGuard: Username + Password -->
+                    <template x-if="inst.engine === 'adguard'">
+                      <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username:'"></label>
+                          <input type="text" x-model="inst.username" placeholder="admin" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                        <div>
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_password') || 'Password:'"></label>
+                          <input type="password" x-model="inst.password" :placeholder="inst.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- 2. Pi-hole: API Token + Local Zone -->
+                    <template x-if="inst.engine === 'pihole'">
+                      <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <div class="sm:col-span-8">
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / WebPassword:'"></label>
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_password ? '•••••••••••• (Invariato)' : 'Token WEBPASSWORD / Session SID'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                        <div class="sm:col-span-4">
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona (es. lan):'"></label>
+                          <input type="text" x-model="inst.zone" placeholder="lan" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                      </div>
+                    </template>
+
+                    <!-- 3. Technitium: Token/Pass + Zone Domain -->
+                    <template x-if="inst.engine === 'technitium'">
+                      <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <div class="sm:col-span-4">
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_username') || 'Username (opz.):'"></label>
+                          <input type="text" x-model="inst.username" placeholder="admin" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                        <div class="sm:col-span-4">
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / Password:'"></label>
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_password ? '•••••••••••• (Invariato)' : 'Token API o Password'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                        <div class="sm:col-span-4">
+                          <label class="block text-slate-500 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona PTR (es. lan):'"></label>
+                          <input type="text" x-model="inst.zone" placeholder="lan" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Footer per Istanza: Last Sync info + Test/Sync individuali -->
+                  <div class="pt-2 border-t border-black/[0.04] dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <div class="text-slate-500 dark:text-slate-400 flex items-center space-x-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full" :class="inst.last_sync_time ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                      <span x-text="inst.last_sync_time ? ('Ultimo sync: ' + formatLocalDateTime(inst.last_sync_time, true)) : 'Mai sincronizzato'"></span>
+                      <template x-if="inst.last_sync_count > 0">
+                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-black/[0.05] dark:bg-white/[0.05]" x-text="inst.last_sync_count + ' host'"></span>
+                      </template>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                      <button 
+                        @click="testDnsInstance(inst)"
+                        :disabled="dnsTesting && dnsTestingId === inst.id"
+                        class="px-2 py-1 rounded bg-black/[0.04] dark:bg-slate-800 hover:bg-black/[0.08] dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-black/[0.08] dark:border-slate-700 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        <span x-show="dnsTesting && dnsTestingId === inst.id" class="animate-spin text-[10px]">⏳</span>
+                        <span x-show="!(dnsTesting && dnsTestingId === inst.id)">⚡</span>
+                        <span x-text="t('controls.dns_test_single') || 'Test'"></span>
+                      </button>
+                      <button 
+                        @click="syncDnsInstance(inst)"
+                        :disabled="dnsSyncing && dnsSyncingId === inst.id"
+                        class="px-2 py-1 rounded bg-[#0067c0]/15 dark:bg-sky-500/20 hover:bg-[#0067c0]/25 dark:hover:bg-sky-500/30 text-[#0067c0] dark:text-sky-300 border border-[#0067c0]/30 dark:border-sky-500/30 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50">
+                        <span x-show="dnsSyncing && dnsSyncingId === inst.id" class="animate-spin text-[10px]">🔄</span>
+                        <span x-show="!(dnsSyncing && dnsSyncingId === inst.id)">🔄</span>
+                        <span x-text="t('controls.dns_sync_single') || 'Sync'"></span>
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
-                <div>
-                  <label class="block text-slate-400 mb-1" x-text="t('controls.adguard_password')"></label>
-                  <input type="password" x-model="adguardSettings.password" :placeholder="adguardSettings.has_password ? '•••••••••••• (Invariata)' : 'Password AdGuard'" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
+              </template>
+
+              <!-- Empty State -->
+              <template x-if="!dnsSettings.instances || dnsSettings.instances.length === 0">
+                <div class="p-4 rounded-xl border border-dashed border-black/[0.1] dark:border-white/[0.1] text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+                  <p x-text="t('controls.dns_no_instances') || 'Nessuna istanza DNS configurata.'"></p>
+                  <button @click="addDnsInstance()" class="px-3 py-1.5 rounded-lg bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 font-semibold border border-[#0067c0]/30 text-xs cursor-pointer">
+                    + Aggiungi Istanza DNS
+                  </button>
                 </div>
-              </div>
+              </template>
             </div>
             
-            <!-- Continuous Sync Toggle & Save Button -->
-            <div class="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
-                <input type="checkbox" x-model="adguardSettings.auto_sync" class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500/30 bg-slate-800 w-4 h-4">
-                <span class="font-medium text-slate-200" x-text="t('controls.adguard_auto_sync')"></span>
+            <!-- Global Periodic Sync Toggle & Global Save Button -->
+            <div class="pt-2 border-t border-black/[0.06] dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="dnsSettings.enabled" class="rounded border-slate-400 dark:border-slate-700 text-[#0067c0] dark:text-emerald-500 focus:ring-0 w-4 h-4">
+                <span class="font-medium" x-text="t('controls.dns_auto_sync') || 'Sincronizzazione automatica continua in background'"></span>
               </label>
 
               <button 
-                @click="saveAdGuardSettings()"
-                class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
-                x-text="t('controls.adguard_save_btn')">
+                @click="saveDnsSettings()"
+                class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#0067c0] to-indigo-600 hover:from-[#1975c5] hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition cursor-pointer"
+                x-text="t('controls.dns_save_btn') || 'Salva Configurazioni DNS'">
               </button>
             </div>
           </div>
@@ -2116,7 +2283,7 @@
           <div>
             <h3 class="text-base font-bold text-white flex items-center space-x-2">
               <span x-text="t('update_modal.title')"></span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.04.00')"></span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.4.0')"></span>
             </h3>
             <p class="text-xs text-slate-400" x-text="t('update_modal.subtitle')"></p>
           </div>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.04.00)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.4.0)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation
@@ -37,6 +37,7 @@ from app.services.adguard import adguard_service, normalize_adguard_url
 from app.services.notifications import notification_service
 from app.services.db import db_service
 from app.services.poller import background_poller
+from app.services.dns_manager import dns_service
 
 
 class TestRunner:
@@ -538,16 +539,16 @@ async def run_all_tests():
         runner.assert_true("custom-alias.lan" in merged_client["ids"] and "2001:db8::1" in merged_client["ids"], "IDs uniti correttamente senza perdere ID custom utente")
 
         # =====================================================================
-        # 12. TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)
+        # 12. TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.4.0)
         # =====================================================================
-        print("\n🔄 [12/12] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.04.00)")
+        print("\n🔄 [12/12] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.4.0)")
 
         # 1. Test Endpoint /api/system/update/check
         check_res = await client.get("/api/system/update/check?force=true")
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
         check_data = check_res.json()
         runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
-        runner.assert_true(check_data.get("current_version") == "1.04.00", f"Versione corrente rilevata è 1.04.00 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true(check_data.get("current_version") == "1.4.0", f"Versione corrente rilevata è 1.4.0 (ottenuta: {check_data.get('current_version')})")
         runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
 
         # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
@@ -601,6 +602,103 @@ async def run_all_tests():
         hist_data = history_res.json()
         runner.assert_true(hist_data.get("points_count", 0) >= 1, "Cronologia segnale per iPhone Test riporta campioni storici")
         runner.assert_true(hist_data["history"][0]["signal_rssi"] == -45, "Valore RSSI -45 dBm verificato nei punti storici")
+
+        # =====================================================================
+        # 13. TEST MULTI-ENGINE DNS SYNCHRONIZER (AdGuard, Pi-hole, Technitium) (v1.4.0)
+        # =====================================================================
+        print("\n🌐 [13/13] TEST MULTI-ENGINE DNS SYNCHRONIZER (v1.4.0)")
+
+        # Switch to Demo mode to ensure total network isolation
+        await client.post("/api/auth/mode", json={"demo": True})
+
+        # 1. Test Endpoint GET /api/automations/dns
+        dns_get_res = await client.get("/api/automations/dns")
+        runner.assert_true(dns_get_res.status_code == 200, "Endpoint GET /api/automations/dns risponde HTTP 200")
+        dns_get_data = dns_get_res.json()
+        runner.assert_true("instances" in dns_get_data, "Payload GET /api/automations/dns contiene 'instances'")
+
+        # 2. Configura 3 istanze simultanee eterogenee (2 AdGuard Home + 1 Pi-hole)
+        test_dns_payload = {
+            "instances": [
+                {
+                    "id": "ag_soggiorno",
+                    "name": "AdGuard Primario Soggiorno",
+                    "engine": "adguard",
+                    "url": "http://192.168.1.2:80",
+                    "username": "admin",
+                    "password": "secretpassword",
+                    "enabled": True,
+                    "sync_reverse_dns": True,
+                    "preserve_custom_settings": True,
+                },
+                {
+                    "id": "ag_studio",
+                    "name": "AdGuard Backup Studio",
+                    "engine": "adguard",
+                    "url": "http://192.168.1.3:80",
+                    "username": "admin",
+                    "password": "secretpassword2",
+                    "enabled": True,
+                    "sync_reverse_dns": True,
+                    "preserve_custom_settings": True,
+                },
+                {
+                    "id": "pihole_iot",
+                    "name": "Pi-hole IoT Dedicated",
+                    "engine": "pihole",
+                    "url": "http://192.168.1.4:80",
+                    "api_token": "mock_pihole_token_12345",
+                    "enabled": True,
+                    "sync_reverse_dns": True,
+                    "preserve_custom_settings": False,
+                }
+            ],
+            "auto_sync_enabled": True,
+            "sync_schedule_minutes": 30
+        }
+
+        dns_post_res = await client.post("/api/automations/dns", json=test_dns_payload)
+        runner.assert_true(dns_post_res.status_code == 200, "Endpoint POST /api/automations/dns salva configurazione con HTTP 200")
+        dns_saved = dns_post_res.json()
+        runner.assert_true(dns_saved.get("status") == "success", "Salvataggio Multi-DNS restituisce status 'success'")
+        runner.assert_true(len(dns_saved.get("instances", [])) == 3, "Salvate correttamente 3 istanze simultanee (2 AdGuard + 1 Pi-hole)")
+
+        # 3. Test connessione singola istanza (Pi-hole)
+        test_pihole_res = await client.post("/api/automations/dns/test", json={"instance_id": "pihole_iot"})
+        runner.assert_true(test_pihole_res.status_code == 200, "Endpoint POST /api/automations/dns/test per Pi-hole risponde HTTP 200")
+        pihole_res_data = test_pihole_res.json()
+        runner.assert_true(pihole_res_data.get("status") == "success", "Test connettività Pi-hole in isolamento Demo ha status 'success'")
+
+        # 4. Test connettività globale simultanea di tutte le istanze (2 AdGuard + 1 Pi-hole)
+        test_all_res = await client.post("/api/automations/dns/test", json={})
+        runner.assert_true(test_all_res.status_code == 200, "Endpoint POST /api/automations/dns/test globale risponde HTTP 200")
+        all_res_data = test_all_res.json()
+        runner.assert_true(all_res_data.get("status") == "success", "Test globale di tutte le istanze ha status 'success'")
+        results_list = all_res_data.get("results", [])
+        runner.assert_true(len(results_list) == 3, f"Ricevuti esiti di test per tutte e 3 le istanze (ricevuti: {len(results_list)})")
+        runner.assert_true(all(r.get("success") is True for r in results_list), "Tutte e 3 le istanze simultanee risultano connesse con successo in Demo Mode")
+
+        # 5. Sincronizzazione massiva di tutte le istanze DNS
+        sync_all_res = await client.post("/api/automations/dns/sync", json={})
+        runner.assert_true(sync_all_res.status_code == 200, "Endpoint POST /api/automations/dns/sync risponde HTTP 200")
+        sync_data = sync_all_res.json()
+        runner.assert_true(sync_data.get("status") == "success", "Sincronizzazione massiva Multi-DNS ha status 'success'")
+        runner.assert_true(len(sync_data.get("results", [])) == 3, "Sincronizzate con successo tutte e 3 le istanze (2 AdGuard + 1 Pi-hole)")
+
+        # 6. Verifica Backward Compatibility Endpoint Legacy /api/automations/adguard*
+        legacy_get = await client.get("/api/automations/adguard")
+        runner.assert_true(legacy_get.status_code == 200, "Endpoint legacy GET /api/automations/adguard risponde HTTP 200")
+        legacy_get_data = legacy_get.json()
+        runner.assert_true("url" in legacy_get_data, "Payload legacy contiene chiave 'url'")
+        runner.assert_true(legacy_get_data.get("url") == "http://192.168.1.2:80", "Endpoint legacy espone URL della prima istanza AdGuard")
+
+        legacy_test = await client.post("/api/automations/adguard/test", json={"url": "http://192.168.1.2:80", "username": "admin", "password": "secretpassword"})
+        runner.assert_true(legacy_test.status_code == 200, "Endpoint legacy POST /api/automations/adguard/test risponde HTTP 200")
+        runner.assert_true(legacy_test.json().get("status") == "success", "Test connettività legacy AdGuard ha status 'success'")
+
+        legacy_sync = await client.post("/api/automations/adguard/sync")
+        runner.assert_true(legacy_sync.status_code == 200, "Endpoint legacy POST /api/automations/adguard/sync risponde HTTP 200")
+        runner.assert_true(legacy_sync.json().get("status") == "success", "Sync legacy AdGuard ha status 'success'")
 
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})

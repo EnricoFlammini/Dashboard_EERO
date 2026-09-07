@@ -4,7 +4,27 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.04.00] - 2026-08-29
+## [1.4.0] - 2026-08-29
+
+### 🎨 Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)
+* **🎨 Restyling Completo Windows 11 Fluent Design:**
+  * Implementato il design system di Windows 11 con Segoe UI Variable font stack, Mica/Acrylic material effects, bordi sottili multistrato (`rgba(0,0,0,0.08)` / `rgba(255,255,255,0.08)`) e ombre morbide stratificate.
+  * Palette cromatica calibrata per la massima leggibilità e contrasto in entrambe le modalità:
+    * **Tema Chiaro (Light Mode):** Sfondo canvas `#f3f3f3`, pannelli in vetro acrilico bianco opaco (`rgba(255, 255, 255, 0.82)`), testi ad alto contrasto (`#1c1c1c`) e accento blu Fluent `#0067c0`.
+    * **Tema Scuro (Dark Mode):** Sfondo canvas `#202020`, card `#2b2b2b`, testi `#ffffff` e accento azzurro Fluent `#60cdff`.
+* **☀️ Selettore a 3 Stati & Zero FOUC:**
+  * Toggle ergonomico posizionato nell'header con 3 modalità: ☀️ Chiaro, 🌙 Scuro, 💻 Sistema (Auto).
+  * Script headless inline anti-flicker e sincronizzazione istantanea in `localStorage` e con le preferenze del sistema operativo (`prefers-color-scheme`).
+  * Palette adattiva dinamica per tutti i grafici Chart.js (WAN, Top Hogs, Speedtest, Segnale RSSI) con aggiornamento in tempo reale senza ricaricare la pagina.
+
+### 🛡️ Multi-Engine DNS Synchronizer Suite (AdGuard, Pi-hole & Technitium)
+* **🛡️ Sincronizzazione Multi-Engine e Multi-Istanza Simultanea:**
+  * Architettura modulare unificata in `DNSManager` (`app/services/dns_manager.py`) capace di gestire $N$ istanze contemporanee eterogenee (es. **2 istanze AdGuard Home + 1 Pi-hole** o Technitium).
+  * **Supporto Pi-hole (v5 & v6 REST API):** Sincronizzazione automatica dei record DNS locali (`/api/config/dns/hosts` e `/admin/api.php?customdns`) con associazione istantanea IP-hostname.
+  * **Supporto Technitium DNS Server:** Allineamento record diretti A/AAAA nella zona locale e generazione automatica dei record PTR nelle zone inverse `in-addr.arpa` per Reverse DNS lookup.
+  * **Test Connettività & Sincronizzazione Flessibile:** Pulsanti per il test della singola istanza o di tutte le istanze simultaneamente, con sincronizzazione massiva globale o mirata.
+  * **Isolamento Completo Demo Mode:** Esecuzione completamente sicura e simulata in Demo Mode con zero chiamate di rete esterne.
+  * **Piena Retrocompatibilità:** Preservazione trasparente di tutti gli endpoint preesistenti `/api/automations/adguard*` e delle strutture dati.
 
 ### 🔄 1-Click Docker Auto-Update & Version Checker
 * **🔄 Motore di Auto-Update Docker in-App:**
