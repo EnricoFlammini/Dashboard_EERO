@@ -180,13 +180,19 @@ async def get_guest_network():
         password = guest.get("password", "")
         
         qr_data_url = ""
+        qr_data_url_light = ""
+        qr_data_url_dark = ""
         if guest.get("enabled", False) and ssid and password:
-            qr_data_url = generate_wifi_qr_code(ssid=ssid, password=password)
+            qr_data_url_light = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=False)
+            qr_data_url_dark = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=True)
+            qr_data_url = qr_data_url_light
 
         return {
             "status": "success",
             "guest_network": guest,
             "qr_code_data_url": qr_data_url,
+            "qr_code_data_url_light": qr_data_url_light,
+            "qr_code_data_url_dark": qr_data_url_dark,
         }
     except Exception as e:
         logger.error(f"Error fetching guest network: {e}")
@@ -204,14 +210,20 @@ async def update_guest_network(payload: GuestNetworkRequest):
         )
         # Rigenera il QR Code aggiornato
         qr_code = ""
+        qr_code_light = ""
+        qr_code_dark = ""
         if payload.enabled and payload.password:
             ssid = payload.name or "eero Guest"
-            qr_code = generate_wifi_qr_code(ssid=ssid, password=payload.password)
+            qr_code_light = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=False)
+            qr_code_dark = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=True)
+            qr_code = qr_code_light
 
         return {
             "status": "success",
             "guest_network": res,
-            "qr_code_data_url": qr_code
+            "qr_code_data_url": qr_code,
+            "qr_code_data_url_light": qr_code_light,
+            "qr_code_data_url_dark": qr_code_dark,
         }
     except Exception as e:
         logger.error(f"Failed to update guest network: {e}")

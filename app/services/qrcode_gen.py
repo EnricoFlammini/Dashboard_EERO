@@ -9,12 +9,15 @@ def generate_wifi_qr_code(
     ssid: str,
     password: str,
     auth_type: str = "WPA",
-    hidden: bool = False
+    hidden: bool = False,
+    dark_mode: bool = False
 ) -> str:
     """
     Genera un QR Code formattato secondo lo standard Wi-Fi universale:
     WIFI:S:<SSID>;T:<AUTH_TYPE>;P:<PASSWORD>;H:<HIDDEN>;;
     Ritorna una stringa data URL in formato PNG Base64 (data:image/png;base64,...).
+    - Light Mode (dark_mode=False): Sfondo bianco puro (255, 255, 255) e moduli blu Windows 11 (0, 103, 192).
+    - Dark Mode (dark_mode=True): Sfondo ardesia scuro (15, 23, 42) e moduli azzurro cielo (56, 189, 248).
     """
     # Escaping dei caratteri speciali standard Wi-Fi
     escaped_ssid = ssid.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
@@ -32,9 +35,14 @@ def generate_wifi_qr_code(
     qr.add_data(wifi_string)
     qr.make(fit=True)
 
+    if dark_mode:
+        color_mask = SolidFillColorMask(back_color=(15, 23, 42), front_color=(56, 189, 248))
+    else:
+        color_mask = SolidFillColorMask(back_color=(255, 255, 255), front_color=(0, 103, 192))
+
     img = qr.make_image(
         image_factory=StyledPilImage,
-        color_mask=SolidFillColorMask(back_color=(15, 23, 42), front_color=(56, 189, 248))  # Dark slate background + Sky blue foreground
+        color_mask=color_mask
     )
 
     buffer = io.BytesIO()

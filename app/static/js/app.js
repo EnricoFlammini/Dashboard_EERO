@@ -126,6 +126,8 @@ document.addEventListener('alpine:init', () => {
       password: ''
     },
     guestQrCodeUrl: '',
+    guestQrCodeUrlLight: '',
+    guestQrCodeUrlDark: '',
     focusModeActive: false,
     focusModeTargetCount: 0,
     
@@ -318,9 +320,21 @@ document.addEventListener('alpine:init', () => {
       } else {
         document.documentElement.classList.remove('dark');
       }
+      this.updateActiveQrCode();
       setTimeout(() => {
         this.updateAllChartsTheme();
       }, 50);
+    },
+
+    updateActiveQrCode() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark && this.guestQrCodeUrlDark) {
+        this.guestQrCodeUrl = this.guestQrCodeUrlDark;
+      } else if (!isDark && this.guestQrCodeUrlLight) {
+        this.guestQrCodeUrl = this.guestQrCodeUrlLight;
+      } else if (this.guestQrCodeUrlLight || this.guestQrCodeUrlDark) {
+        this.guestQrCodeUrl = isDark ? (this.guestQrCodeUrlDark || this.guestQrCodeUrlLight) : (this.guestQrCodeUrlLight || this.guestQrCodeUrlDark);
+      }
     },
 
     getChartThemeColors() {
@@ -1994,7 +2008,9 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'success') {
           this.guestNetwork = json.guest_network || {};
-          this.guestQrCodeUrl = json.qr_code_data_url || '';
+          this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
+          this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
+          this.updateActiveQrCode();
         }
       } catch (err) {
         console.error("Fetch guest network error:", err);
@@ -2015,7 +2031,9 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         this.guestNetwork = json.guest_network;
-        this.guestQrCodeUrl = json.qr_code_data_url;
+        this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
+        this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
+        this.updateActiveQrCode();
         this.showToast("Rete Ospiti", `Rete Ospiti ${targetState ? 'Attivata' : 'Disattivata'}.`, "info");
       } catch (err) {
         this.showToast("Errore Rete Ospiti", err.message, "error");
@@ -2041,7 +2059,9 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify(this.guestNetwork)
         });
         const json = await res.json();
-        this.guestQrCodeUrl = json.qr_code_data_url;
+        this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
+        this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
+        this.updateActiveQrCode();
         this.showToast("Rete Ospiti Aggiornata", "Credenziali e QR Code salvati.", "success");
       } catch (err) {
         this.showToast("Errore", err.message, "error");
