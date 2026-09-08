@@ -2291,15 +2291,18 @@
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 text-lg">
-            🚀
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition"
+               :class="updateInfo.update_available ? 'bg-amber-500/20 border border-amber-500/30 text-amber-500 dark:text-amber-400' : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 dark:text-emerald-400'">
+            <span x-text="updateInfo.update_available ? '🚀' : '✨'"></span>
           </div>
           <div>
             <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-              <span x-text="t('update_modal.title')"></span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 font-mono" x-text="'v' + (updateInfo.latest_version || '1.4.0')"></span>
+              <span x-text="updateInfo.update_available ? t('update_modal.title') : t('update_modal.title_up_to_date')"></span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono transition"
+                    :class="updateInfo.update_available ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'"
+                    x-text="'v' + (updateInfo.update_available ? (updateInfo.latest_version || appVersion) : appVersion)"></span>
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('update_modal.subtitle')"></p>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="updateInfo.update_available ? t('update_modal.subtitle') : t('update_modal.subtitle_up_to_date')"></p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -2326,7 +2329,7 @@
           <span class="text-emerald-500 dark:text-emerald-400 text-xl">✅</span>
           <div class="space-y-0.5">
             <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="currentLanguage === 'it' ? 'Dashboard Aggiornata' : 'Dashboard Up to Date'"></span>
-            <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione corrente (v' + appVersion + ') è allineata con l\'ultima release disponibile su Docker Hub / GitHub.' : 'Installed version (v' + appVersion + ') matches the latest release on Docker Hub / GitHub.'"></p>
+            <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione installata (v' + appVersion + ') è allineata o più recente rispetto alle release pubbliche su Docker Hub / GitHub (v' + (updateInfo.latest_version || appVersion) + ').' : 'Installed version (v' + appVersion + ') matches or is ahead of public releases on Docker Hub / GitHub (v' + (updateInfo.latest_version || appVersion) + ').'"></p>
           </div>
         </div>
       </template>
@@ -2338,15 +2341,17 @@
           <span class="font-mono text-slate-900 dark:text-slate-300 font-bold text-sm" x-text="'v' + appVersion"></span>
         </div>
         <div>
-          <span class="text-slate-500 dark:text-slate-400 block text-[11px]" x-text="t('update_modal.new_version')"></span>
-          <span class="font-mono text-amber-600 dark:text-amber-400 font-bold text-sm" x-text="'v' + (updateInfo.latest_version || appVersion)"></span>
+          <span class="text-slate-500 dark:text-slate-400 block text-[11px]" x-text="updateInfo.update_available ? t('update_modal.new_version') : t('update_modal.latest_release')"></span>
+          <span class="font-mono font-bold text-sm"
+                :class="updateInfo.update_available ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'"
+                x-text="'v' + (updateInfo.latest_version || appVersion)"></span>
         </div>
       </div>
 
       <!-- Release Notes Box -->
       <template x-if="updateInfo.release_notes || updateInfo.release_title">
         <div class="space-y-1.5">
-          <label class="block text-slate-700 dark:text-slate-400 text-xs font-semibold" x-text="t('update_modal.release_notes')"></label>
+          <label class="block text-slate-700 dark:text-slate-400 text-xs font-semibold" x-text="updateInfo.update_available ? t('update_modal.release_notes') : t('update_modal.latest_notes_title')"></label>
           <div class="max-h-36 overflow-y-auto p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-300 font-mono whitespace-pre-wrap leading-relaxed" x-text="updateInfo.release_notes || updateInfo.release_title"></div>
         </div>
       </template>

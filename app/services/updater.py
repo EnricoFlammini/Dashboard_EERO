@@ -35,6 +35,27 @@ def is_newer_version(current: str, remote: str) -> bool:
     return parse_semver(remote) > parse_semver(current)
 
 
+def extract_release_notes_from_changelog(version: str) -> str:
+    """Estrae le note di rilascio dal changelog se disponibili."""
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent / "changelog.md",
+        Path("/app/changelog.md"),
+        Path("changelog.md")
+    ]
+    clean = version.lstrip("vV")
+    pattern = rf"##\s*\[?v?{re.escape(clean)}\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##|\Z)"
+    for p in candidates:
+        if p.exists():
+            try:
+                content = p.read_text(encoding="utf-8")
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    return match.group(1).strip()
+            except Exception:
+                pass
+    return ""
+
+
 class UpdaterService:
     """Gestisce il rilevamento e l'installazione automatica delle nuove release dell'applicazione."""
 
@@ -89,21 +110,28 @@ class UpdaterService:
         except Exception as e:
             logger.warning(f"Error checking GitHub Releases: {e}")
 
-        # 2. Fallback: Se GitHub non ha risposto, prova Docker Hub Tags API
-        if latest_ver == current_ver:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.get(f"https://hub.docker.com/v2/repositories/{DOCKER_IMAGE}/tags?page_size=10")
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        for tag_obj in data.get("results", []):
-                            t_name = tag_obj.get("name", "")
-                            if t_name and t_name != "latest" and t_name[0].isdigit():
-                                if is_newer_version(latest_ver, t_name):
-                                    latest_ver = t_name.lstrip("vV")
-                                    published_at = tag_obj.get("last_updated", "")
-            except Exception as e:
-                logger.warning(f"Error checking Docker Hub: {e}")
+        # 2. Interroga sempre anche Docker Hub Tags API per identificare l'effettiva immagine Docker più recente
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"https://hub.docker.com/v2/repositories/{DOCKER_IMAGE}/tags?page_size=25")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for tag_obj in data.get("results", []):
+                        t_name = tag_obj.get("name", "")
+                        clean_t_name = t_name.lstrip("vV")
+                        if clean_t_name and clean_t_name != "latest" and clean_t_name[0].isdigit():
+                            if is_newer_version(latest_ver, clean_t_name):
+                                latest_ver = clean_t_name
+                                published_at = tag_obj.get("last_updated", "")
+                                release_title = f"v{clean_t_name}"
+                                # Cerca se ci sono note nel changelog locale per questa versione
+                                local_notes = extract_release_notes_from_changelog(clean_t_name)
+                                if local_notes:
+                                    release_notes = local_notes
+                                else:
+                                    release_notes = f"Release v{clean_t_name} pubblicata su Docker Hub ({DOCKER_IMAGE}:{clean_t_name})."
+        except Exception as e:
+            logger.warning(f"Error checking Docker Hub: {e}")
 
         update_avail = is_newer_version(current_ver, latest_ver)
         docker_sock = self.is_docker_socket_available
