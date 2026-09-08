@@ -31,6 +31,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * **Analisi Puntuale delle Penalità (Active Factors):** Visualizzazione chiara dei fattori attivi che riducono il punteggio con badge d'impatto numerico (es. `-2 pt`, `-20 pt`) ed elenco dei nodi o client coinvolti.
   * **Raccomandazioni Intelligenti Contestuali:** Consigli pratici personalizzati generati dinamicamente per ottimizzare la copertura e le prestazioni della rete.
   * **Nuovo Endpoint REST:** Esposto `GET /api/network/health-breakdown` e arricchita la risposta cache zero-latency `GET /api/network/overview` con il payload `health_details`.
+  * **Localizzazione Bilingue Completa (i18n):** Supporto bilingue integrato (IT/EN) nativo per tutti i 4 pilastri, penalità calcolate e raccomandazioni intelligenti con cambio lingua istantaneo.
 
 ### 🎨 Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)
 * **🎨 Restyling Completo Windows 11 Fluent Design:**
