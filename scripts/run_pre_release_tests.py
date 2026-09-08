@@ -150,6 +150,29 @@ async def run_all_tests():
         runner.assert_true("clients" in ag_export, "Struttura JSON client AdGuard valida")
         runner.assert_true(len(ag_export["clients"]) > 0, f"Client trovati per export AdGuard: {len(ag_export['clients'])}")
 
+        # Test export AdGuard with include_ipv6=false (Issue #23)
+        res_no_v6 = await client.get("/api/devices/export/adguard?include_ipv6=false")
+        runner.assert_true(res_no_v6.status_code == 200, "Endpoint GET /api/devices/export/adguard?include_ipv6=false risponde HTTP 200")
+        ag_no_v6 = res_no_v6.json()
+        runner.assert_true("clients" in ag_no_v6, "Payload include_ipv6=false contiene 'clients'")
+
+        from scripts.adguard_sync import is_ipv6_address
+        # Verifica che is_ipv6_address distingua correttamente IPv6 da IPv4 e MAC address
+        runner.assert_true(is_ipv6_address("2001:db8::1") is True, "is_ipv6_address riconosce IPv6 standard")
+        runner.assert_true(is_ipv6_address("fe80::1ff:fe00:1") is True, "is_ipv6_address riconosce link-local IPv6")
+        runner.assert_true(is_ipv6_address("192.168.4.55") is False, "is_ipv6_address esclude IPv4")
+        runner.assert_true(is_ipv6_address("AA:BB:CC:DD:EE:FF") is False, "is_ipv6_address non scambia un MAC address per IPv6")
+        runner.assert_true(is_ipv6_address("hostname-device") is False, "is_ipv6_address esclude hostname generici")
+
+        # Verifica che nessun client contenga IPv6 tra gli IDs quando include_ipv6=false
+        has_v6_in_no_v6_export = False
+        for c in ag_no_v6["clients"]:
+            for cid in c.get("ids", []):
+                if is_ipv6_address(str(cid)):
+                    has_v6_in_no_v6_export = True
+                    break
+        runner.assert_true(not has_v6_in_no_v6_export, "Nessun indirizzo IPv6 presente negli IDs esportati quando include_ipv6=false")
+
         print("\n🎮 [5/6] TEST CONTROLLI AUTOMAZIONI (Focus Mode & Night Mode)")
         # Test Gaming / Focus Mode toggle
         res = await client.post("/api/automations/focus-mode", json={"active": True})

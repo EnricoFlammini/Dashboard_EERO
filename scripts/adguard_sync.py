@@ -6,16 +6,18 @@ This script automatically pulls all active DHCP/wireless/wired clients
 from your local eero Dashboard instance and registers/updates them in
 AdGuard Home via its HTTP REST API (`/control/clients/add` or `/control/clients/update`).
 
-Zero external dependencies: uses standard library (urllib, json, argparse).
+Zero external dependencies: uses standard library (urllib, json, argparse, ipaddress).
 
 Usage:
   python adguard_sync.py --eero http://localhost:8085 --adguard http://192.168.4.2:80 --user admin --pass secret
+  python adguard_sync.py --drop-ipv6
 
 Or configure via environment variables:
   EERO_DASHBOARD_URL=http://localhost:8085
   ADGUARD_URL=http://192.168.4.2:80
   ADGUARD_USER=admin
   ADGUARD_PASSWORD=secret
+  EERO_DROP_IPV6=true
 """
 
 import os
@@ -23,8 +25,20 @@ import sys
 import json
 import base64
 import argparse
+import ipaddress
 import urllib.request
 import urllib.error
+
+
+def is_ipv6_address(val: str) -> bool:
+    """Checks if a string is a valid IPv6 address (distinguishing from MAC addresses or hostnames)."""
+    if not val or not isinstance(val, str) or ":" not in val:
+        return False
+    try:
+        clean = val.strip().split("%")[0]
+        return ipaddress.ip_address(clean).version == 6
+    except ValueError:
+        return False
 
 
 def http_request(url: str, method: str = "GET", data: dict = None, user: str = None, password: str = None, timeout: int = 10):
@@ -49,13 +63,20 @@ def http_request(url: str, method: str = "GET", data: dict = None, user: str = N
         raise e
 
 
-def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: str = None, dry_run: bool = False):
+def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: str = None, dry_run: bool = False, drop_ipv6: bool = False):
     eero_url = eero_url.rstrip("/")
     adguard_url = adguard_url.rstrip("/")
 
-    print(f"📡 Fetching client list from eero Dashboard: {eero_url}/api/devices/export/adguard ...")
+    export_url = f"{eero_url}/api/devices/export/adguard"
+    if drop_ipv6:
+        export_url += "?include_ipv6=false"
+
+    print(f"📡 Fetching client list from eero Dashboard: {export_url} ...")
+    if drop_ipv6:
+        print("ℹ️ IPv6 exclusion enabled (--drop-ipv6). IPv6 addresses will be omitted and pruned.")
+
     try:
-        status, body = http_request(f"{eero_url}/api/devices/export/adguard")
+        status, body = http_request(export_url)
         if status != 200:
             print(f"❌ eero Dashboard returned HTTP {status}: {body}")
             sys.exit(1)
@@ -65,6 +86,11 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
         sys.exit(1)
 
     clients = data.get("clients") or []
+    if drop_ipv6:
+        for c in clients:
+            if "ids" in c and isinstance(c["ids"], list):
+                c["ids"] = [cid for cid in c["ids"] if not is_ipv6_address(cid)]
+
     print(f"✅ Found {len(clients)} active eero clients.")
 
     if dry_run:
@@ -115,12 +141,21 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
             merged_data = dict(matched_client)
             merged_data["name"] = name
             existing_ids = [str(x).strip() for x in (matched_client.get("ids") or []) if str(x).strip()]
+            if drop_ipv6:
+                existing_ids = [x for x in existing_ids if not is_ipv6_address(x)]
+
             merged_ids = list(existing_ids)
             existing_ids_lower = {x.lower() for x in existing_ids}
             for i_id in ids:
+                if drop_ipv6 and is_ipv6_address(i_id):
+                    continue
                 if str(i_id).lower() not in existing_ids_lower:
                     merged_ids.append(str(i_id).strip())
                     existing_ids_lower.add(str(i_id).lower())
+
+            if drop_ipv6:
+                merged_ids = [x for x in merged_ids if not is_ipv6_address(x)]
+
             merged_data["ids"] = merged_ids
             if not matched_client.get("tags") and client.get("tags"):
                 merged_data["tags"] = client["tags"]
@@ -130,12 +165,17 @@ def sync_clients(eero_url: str, adguard_url: str, user: str = None, password: st
                 "data": merged_data
             }
         else:
-            payload = client
+            if drop_ipv6:
+                client_copy = dict(client)
+                client_copy["ids"] = [x for x in client.get("ids", []) if not is_ipv6_address(x)]
+                payload = client_copy
+            else:
+                payload = client
 
         try:
             status, res_text = http_request(endpoint, method="POST", data=payload, user=user, password=password)
             if status in (200, 201, 204):
-                print(f"  ✅ {'Updated (rules preserved)' if is_update else 'Added'} client '{name}' -> {client['ids']}")
+                print(f"  ✅ {'Updated (rules preserved)' if is_update else 'Added'} client '{name}' -> {payload['data']['ids'] if is_update else payload['ids']}")
                 success_count += 1
             else:
                 print(f"  ⚠️ Warning for '{name}' (HTTP {status}): {res_text.strip()}")
@@ -152,6 +192,14 @@ def main():
     parser.add_argument("--user", default=os.getenv("ADGUARD_USER", ""), help="AdGuard Home username")
     parser.add_argument("--pass", dest="password", default=os.getenv("ADGUARD_PASSWORD", ""), help="AdGuard Home password")
     parser.add_argument("--dry-run", action="store_true", help="Print devices without pushing to AdGuard")
+    parser.add_argument(
+        "--drop-ipv6",
+        "--no-ipv6",
+        dest="drop_ipv6",
+        action="store_true",
+        default=os.getenv("EERO_DROP_IPV6", "false").lower() in ("1", "true", "yes"),
+        help="Exclude/drop IPv6 addresses from synced AdGuard client IDs and prune existing IPv6 from AdGuard"
+    )
 
     args = parser.parse_args()
     sync_clients(
@@ -159,7 +207,8 @@ def main():
         adguard_url=args.adguard,
         user=args.user,
         password=args.password,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        drop_ipv6=args.drop_ipv6
     )
 
 

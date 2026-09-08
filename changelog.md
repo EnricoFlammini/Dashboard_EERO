@@ -6,6 +6,12 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.4.0] - 2026-08-29
 
+### 🛡️ Opzione Drop IPv6 per Sincronizzazione AdGuard Home (Issue #23)
+* **Flag CLI `--drop-ipv6` / `--no-ipv6` e Variabile d'Ambiente `EERO_DROP_IPV6`:**
+  * Risolta la richiesta [Issue #23](https://github.com/EnricoFlammini/Dashboard_EERO/issues/23) consentendo di escludere gli indirizzi IPv6 temporanei/rotanti (SLAAC / Privacy Extensions RFC 4941) che possono creare anomalie, conflitti o record duplicati nei log di AdGuard Home.
+  * **Epurazione Retroattiva su AdGuard Home:** eseguendo `adguard_sync.py --drop-ipv6`, gli indirizzi IPv6 precedentemente registrati nei client AdGuard vengono automaticamente rimossi dagli identificatori `ids` preservando tutte le regole personalizzate, upstream e filtri.
+  * **Parametro Query API:** aggiunto `include_ipv6: bool = Query(True)` all'endpoint REST `GET /api/devices/export/adguard` per permettere l'esportazione selettiva (`?include_ipv6=false`).
+
 ### ❤️ Network Health Score Breakdown & Modale Diagnostico Interattivo (Issue #15)
 * **❤️ Finestra Modale Diagnostica Interattiva a 4 Pilastri:**
   * Risolta la richiesta [Issue #15](https://github.com/EnricoFlammini/Dashboard_EERO/issues/15) rendendo il badge circolare dello **Health Score** nell'header completamente cliccabile e interattivo in Windows 11 Fluent Design.

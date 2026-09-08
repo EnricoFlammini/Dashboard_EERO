@@ -251,6 +251,7 @@ curl -s "http://localhost:8085/api/devices/export/hosts?domain_suffix=lan"
 ### 2. AdGuard Home REST API Format (`/control/clients`)
 * **Endpoint:** `GET http://<dashboard-ip>:8085/api/devices/export/adguard`
 * Returns a structured JSON list ready for AdGuard Home client provisioning.
+* **Exclude IPv6 addresses:** Append `?include_ipv6=false` to omit IPv6 addresses from exported client IDs.
 
 ### 3. Automated AdGuard Home Sync Script
 A ready-to-use Python sync script is provided in [`scripts/adguard_sync.py`](scripts/adguard_sync.py).
@@ -262,6 +263,10 @@ python scripts/adguard_sync.py \
   --adguard http://192.168.4.2:80 \
   --user admin \
   --pass MySecretPassword
+
+# If you experience issues with rotating/temporary IPv6 privacy addresses, drop them:
+python scripts/adguard_sync.py --drop-ipv6
+# (or set environment variable EERO_DROP_IPV6=true)
 ```
 
 > 🛡️ **Native In-App AdGuard Home Integration:** You can also configure AdGuard Home directly from the **Automations & Controls** tab with one-click connection tests, continuous background synchronization, and instant "Sync Now" trigger!
@@ -430,11 +435,16 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    Restituisce l'elenco dei dispositivi attivi nel formato compatibile con file hosts e regole DNS personalizzate.
 2. **Export Formato JSON AdGuard Home (`/control/clients`):**  
    `GET http://<dashboard-ip>:8085/api/devices/export/adguard`  
-   Restituisce un array JSON strutturato per il provisioning diretto dei client in AdGuard.
+   Restituisce un array JSON strutturato per il provisioning diretto dei client in AdGuard.  
+   *(Aggiungi `?include_ipv6=false` per escludere gli indirizzi IPv6 dagli identificatori client).*
 3. **Script di Sincronizzazione Python Automatico:**  
    È disponibile lo script pronto all'uso [`scripts/adguard_sync.py`](scripts/adguard_sync.py) eseguibile manualmente o via cron:
    ```bash
    python scripts/adguard_sync.py --eero http://localhost:8085 --adguard http://192.168.4.2:80 --user admin --pass MiaPassword
+
+   # Se gli indirizzi temporanei IPv6 creano instabilità o duplicati nei log DNS, puoi escluderli:
+   python scripts/adguard_sync.py --drop-ipv6
+   # (oppure imposta la variabile d'ambiente EERO_DROP_IPV6=true)
    ```
 
 > 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!

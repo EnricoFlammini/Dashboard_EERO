@@ -151,7 +151,8 @@ async def export_hosts(
 
 @router.get("/export/adguard")
 async def export_adguard(
-    connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi")
+    connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi"),
+    include_ipv6: bool = Query(True, description="Includi indirizzi IPv6 negli identificatori del client")
 ):
     """Esporta i dispositivi in formato JSON conforme alla configurazione client di AdGuard Home (/control/clients)."""
     cached = background_poller.get_cached_state()
@@ -169,11 +170,12 @@ async def export_adguard(
         ids = []
         if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
             ids.append(ip.strip())
-        for v6 in (d.get("ipv6_addresses") or []):
-            if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
-                v6_clean = v6.strip()
-                if v6_clean and v6_clean not in ids:
-                    ids.append(v6_clean)
+        if include_ipv6:
+            for v6 in (d.get("ipv6_addresses") or []):
+                if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
+                    v6_clean = v6.strip()
+                    if v6_clean and v6_clean not in ids:
+                        ids.append(v6_clean)
         if mac and isinstance(mac, str) and len(mac) >= 12:
             mac_clean = mac.strip().upper()
             if mac_clean not in ids:
