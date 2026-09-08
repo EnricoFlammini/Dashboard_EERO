@@ -89,106 +89,178 @@ class BackgroundPoller:
         """Calcola la diagnostica a 4 pilastri, penalità attive e raccomandazioni (Issue #15)."""
         penalties = []
         recommendations = []
+        recommendations_i18n = []
 
         # 1. Mesh Topology & Nodes (Max 40 pt)
         mesh_max = 40
         mesh_score = mesh_max
         mesh_issues = []
+        mesh_issues_en = []
 
         offline_nodes = [e for e in eeros if e.get("status") not in ("online", "green")]
         if offline_nodes:
             deduction = len(offline_nodes) * 20
             mesh_score = max(0, mesh_score - deduction)
             names = [e.get("name") or e.get("location") or "Nodo eero" for e in offline_nodes]
+            names_en = [e.get("name") or e.get("location") or "eero node" for e in offline_nodes]
             mesh_issues.append(f"{len(offline_nodes)} nodi offline: {', '.join(names)}")
+            mesh_issues_en.append(f"{len(offline_nodes)} offline node(s): {', '.join(names_en)}")
             penalties.append({
                 "id": "offline_nodes",
                 "pillar": "mesh_topology",
                 "title": "Nodi Mesh Disconnessi",
+                "title_i18n": {
+                    "it": "Nodi Mesh Disconnessi",
+                    "en": "Disconnected Mesh Nodes"
+                },
                 "impact": -min(deduction, mesh_max),
                 "severity": "critical",
                 "description": f"{len(offline_nodes)} nodo/i eero risultano offline o non raggiungibili.",
+                "description_i18n": {
+                    "it": f"{len(offline_nodes)} nodo/i eero risultano offline o non raggiungibili.",
+                    "en": f"{len(offline_nodes)} eero node(s) are offline or unreachable."
+                },
                 "affected_items": names
             })
             recommendations.append(f"Verifica l'alimentazione e la connettività dei nodi disconnessi ({', '.join(names)}).")
+            recommendations_i18n.append({
+                "it": f"Verifica l'alimentazione e la connettività dei nodi disconnessi ({', '.join(names)}).",
+                "en": f"Check power and connectivity for disconnected nodes ({', '.join(names)})."
+            })
 
         # Verifica degradamento backhaul su nodi wireless o cablati
         degraded_backhaul_nodes = []
+        degraded_backhaul_nodes_en = []
         for e in eeros:
             if e.get("status") in ("online", "green") and not e.get("is_gateway"):
                 rssi = e.get("signal_rssi")
                 if isinstance(rssi, (int, float)) and rssi < -75:
                     degraded_backhaul_nodes.append(f"{e.get('name')} (Backhaul debole: {rssi} dBm)")
+                    degraded_backhaul_nodes_en.append(f"{e.get('name')} (Weak backhaul: {rssi} dBm)")
                 backhaul_str = str(e.get("backhaul_type") or "").lower()
                 if "100 mbps" in backhaul_str or "100m" in backhaul_str:
                     degraded_backhaul_nodes.append(f"{e.get('name')} (Cavo limitato a 100 Mbps)")
+                    degraded_backhaul_nodes_en.append(f"{e.get('name')} (Cable limited to 100 Mbps)")
 
         if degraded_backhaul_nodes and mesh_score > 5:
             backhaul_deduction = min(len(degraded_backhaul_nodes) * 5, 10)
             mesh_score = max(0, mesh_score - backhaul_deduction)
             mesh_issues.append(f"Backhaul degradato su {len(degraded_backhaul_nodes)} nodi")
+            mesh_issues_en.append(f"Degraded backhaul on {len(degraded_backhaul_nodes)} node(s)")
             penalties.append({
                 "id": "degraded_backhaul",
                 "pillar": "mesh_topology",
                 "title": "Collegamento Backhaul Degradato",
+                "title_i18n": {
+                    "it": "Collegamento Backhaul Degradato",
+                    "en": "Degraded Backhaul Link"
+                },
                 "impact": -backhaul_deduction,
                 "severity": "warning",
                 "description": "Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps.",
+                "description_i18n": {
+                    "it": "Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps.",
+                    "en": "Some mesh extender nodes have weak wireless backhaul or a link limited to 100 Mbps."
+                },
                 "affected_items": degraded_backhaul_nodes
             })
             recommendations.append("Per i nodi con segnale mesh debole, riduci la distanza dal Gateway. Per i collegamenti cablati a 100 Mbps, verifica l'integrità del cavo Ethernet Cat 5e/6.")
+            recommendations_i18n.append({
+                "it": "Per i nodi con segnale mesh debole, riduci la distanza dal Gateway. Per i collegamenti cablati a 100 Mbps, verifica l'integrità del cavo Ethernet Cat 5e/6.",
+                "en": "For nodes with weak mesh signal, reduce distance to Gateway. For 100 Mbps links, verify Ethernet Cat 5e/6 cable integrity."
+            })
 
         mesh_status = "optimal" if mesh_score >= 35 else ("warning" if mesh_score >= 20 else "critical")
         mesh_details_text = (
             f"{len(eeros) - len(offline_nodes)}/{len(eeros)} nodi operativi con backhaul eccellente."
             if not mesh_issues else "; ".join(mesh_issues)
         )
+        mesh_details_text_en = (
+            f"{len(eeros) - len(offline_nodes)}/{len(eeros)} operational nodes with excellent backhaul."
+            if not mesh_issues_en else "; ".join(mesh_issues_en)
+        )
 
         # 2. WAN & Gateway Connectivity (Max 30 pt)
         wan_max = 30
         wan_score = wan_max
         wan_issues = []
+        wan_issues_en = []
 
         is_wan_online = network_details.get("status") in ("online", "green")
         if not is_wan_online:
             wan_score = 0
             wan_issues.append("Connessione Internet non attiva o gateway offline")
+            wan_issues_en.append("Internet connection inactive or gateway offline")
             penalties.append({
                 "id": "wan_offline",
                 "pillar": "wan_gateway",
                 "title": "Internet WAN Non Raggiungibile",
+                "title_i18n": {
+                    "it": "Internet WAN Non Raggiungibile",
+                    "en": "WAN Internet Unreachable"
+                },
                 "impact": -wan_max,
                 "severity": "critical",
                 "description": "La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline.",
+                "description_i18n": {
+                    "it": "La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline.",
+                    "en": "eero network reports loss of Internet access from provider or gateway offline."
+                },
                 "affected_items": ["Gateway WAN"]
             })
             recommendations.append("Controlla il cavo tra il modem del provider (ONT/FTTH/DSL) e la porta WAN del gateway eero.")
+            recommendations_i18n.append({
+                "it": "Controlla il cavo tra il modem del provider (ONT/FTTH/DSL) e la porta WAN del gateway eero.",
+                "en": "Check the cable between your provider modem (ONT/FTTH/DSL) and the eero gateway WAN port."
+            })
         else:
             sp = network_details.get("speedtest") or {}
             ping_val = float(sp.get("ping_ms") or 0.0)
             if ping_val > 80.0:
                 wan_score = max(10, wan_score - 10)
                 wan_issues.append(f"Latenza elevata verso gateway/ISP ({ping_val:.1f} ms)")
+                wan_issues_en.append(f"High latency to gateway/ISP ({ping_val:.1f} ms)")
                 penalties.append({
                     "id": "high_wan_latency",
                     "pillar": "wan_gateway",
                     "title": "Latenza Internet Elevata",
+                    "title_i18n": {
+                        "it": "Latenza Internet Elevata",
+                        "en": "High Internet Latency"
+                    },
                     "impact": -10,
                     "severity": "warning",
                     "description": f"Il ping medio registrato dal Gateway verso la rete esterna è elevato ({ping_val:.1f} ms > 80 ms).",
+                    "description_i18n": {
+                        "it": f"Il ping medio registrato dal Gateway verso la rete esterna è elevato ({ping_val:.1f} ms > 80 ms).",
+                        "en": f"Average ping recorded from Gateway to external network is high ({ping_val:.1f} ms > 80 ms)."
+                    },
                     "affected_items": [f"Ping Gateway: {ping_val:.1f} ms"]
                 })
                 recommendations.append("Se la latenza rimane costantemente sopra 80 ms, esegui un test diretto o verifica congestioni sul modem/router del provider.")
+                recommendations_i18n.append({
+                    "it": "Se la latenza rimane costantemente sopra 80 ms, esegui un test diretto o verifica congestioni sul modem/router del provider.",
+                    "en": "If latency remains consistently above 80 ms, run a direct speed test or check provider modem/router congestion."
+                })
             elif ping_val > 45.0:
                 wan_score = max(20, wan_score - 5)
                 wan_issues.append(f"Latenza moderata ({ping_val:.1f} ms)")
+                wan_issues_en.append(f"Moderate latency ({ping_val:.1f} ms)")
                 penalties.append({
                     "id": "moderate_wan_latency",
                     "pillar": "wan_gateway",
                     "title": "Latenza Internet Moderata",
+                    "title_i18n": {
+                        "it": "Latenza Internet Moderata",
+                        "en": "Moderate Internet Latency"
+                    },
                     "impact": -5,
                     "severity": "info",
                     "description": f"Latenza WAN registrata di {ping_val:.1f} ms (sopra la soglia ideale di 45 ms).",
+                    "description_i18n": {
+                        "it": f"Latenza WAN registrata di {ping_val:.1f} ms (sopra la soglia ideale di 45 ms).",
+                        "en": f"Recorded WAN latency of {ping_val:.1f} ms (above ideal 45 ms threshold)."
+                    },
                     "affected_items": [f"Ping: {ping_val:.1f} ms"]
                 })
 
@@ -197,11 +269,16 @@ class BackgroundPoller:
             f"Gateway online, IP pubblico attivo ({network_details.get('public_ip', 'N/D')}), latenza ottimale."
             if not wan_issues else "; ".join(wan_issues)
         )
+        wan_details_text_en = (
+            f"Gateway online, active public IP ({network_details.get('public_ip', 'N/A')}), optimal latency."
+            if not wan_issues_en else "; ".join(wan_issues_en)
+        )
 
         # 3. Client Wi-Fi Signal Quality (Max 20 pt)
         client_max = 20
         client_score = client_max
         client_issues = []
+        client_issues_en = []
 
         connected_clients = [d for d in enriched_devices if d.get("connected")]
         wireless_connected = [d for d in connected_clients if d.get("wireless")]
@@ -226,27 +303,45 @@ class BackgroundPoller:
             client_score = max(2, client_score - deduction)
             all_affected = critical_devices + weak_devices
             client_issues.append(f"{total_degraded} dispositivi con segnale debole")
+            client_issues_en.append(f"{total_degraded} device(s) with weak signal")
             penalties.append({
                 "id": "weak_client_signal",
                 "pillar": "client_signal",
                 "title": "Client con Segnale Wi-Fi Degradato",
+                "title_i18n": {
+                    "it": "Client con Segnale Wi-Fi Degradato",
+                    "en": "Clients with Degraded Wi-Fi Signal"
+                },
                 "impact": -deduction,
                 "severity": "warning" if len(critical_devices) == 0 else "critical",
                 "description": f"{total_degraded} dispositivi wireless presentano un segnale RSSI degradato (< -75 dBm), che può causare perdita pacchetti o throughput ridotto.",
+                "description_i18n": {
+                    "it": f"{total_degraded} dispositivi wireless presentano un segnale RSSI degradato (< -75 dBm), che può causare perdita pacchetti o throughput ridotto.",
+                    "en": f"{total_degraded} wireless device(s) have degraded RSSI signal (< -75 dBm), which may cause packet loss or reduced throughput."
+                },
                 "affected_items": all_affected[:6]
             })
             recommendations.append(f"Avvicina i dispositivi ({', '.join(all_affected[:3])}) al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.")
+            recommendations_i18n.append({
+                "it": f"Avvicina i dispositivi ({', '.join(all_affected[:3])}) al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.",
+                "en": f"Move devices ({', '.join(all_affected[:3])}) closer to the nearest mesh node or consider repositioning to eliminate dead zones."
+            })
 
         client_status = "optimal" if client_score >= 18 else ("warning" if client_score >= 10 else "critical")
         client_details_text = (
             f"Tutti i {len(wireless_connected)} dispositivi wireless hanno segnale RSSI eccellente (>= -75 dBm)."
             if not client_issues else "; ".join(client_issues)
         )
+        client_details_text_en = (
+            f"All {len(wireless_connected)} wireless devices have excellent RSSI signal (>= -75 dBm)."
+            if not client_issues_en else "; ".join(client_issues_en)
+        )
 
         # 4. Channel Distribution & Density (Max 10 pt)
         channel_max = 10
         channel_score = channel_max
         channel_issues = []
+        channel_issues_en = []
 
         c_6g = sum(1 for d in wireless_connected if "6" in str(d.get("wireless_band", "")))
         c_5g = sum(1 for d in wireless_connected if "5" in str(d.get("wireless_band", "")))
@@ -256,16 +351,29 @@ class BackgroundPoller:
         if total_w >= 6 and (c_24g / total_w) > 0.70 and (c_5g + c_6g) > 0:
             channel_score = max(5, channel_score - 3)
             channel_issues.append("Sovraccarico frequenza 2.4 GHz (> 70% dei client)")
+            channel_issues_en.append("2.4 GHz band overload (> 70% of clients)")
             penalties.append({
                 "id": "band_24_crowding",
                 "pillar": "channel_density",
                 "title": "Affollamento Frequenza 2.4 GHz",
+                "title_i18n": {
+                    "it": "Affollamento Frequenza 2.4 GHz",
+                    "en": "2.4 GHz Band Crowding"
+                },
                 "impact": -3,
                 "severity": "info",
                 "description": f"{c_24g} su {total_w} client wireless sono connessi sui canali 2.4 GHz, con potenziale saturazione dello spettro.",
+                "description_i18n": {
+                    "it": f"{c_24g} su {total_w} client wireless sono connessi sui canali 2.4 GHz, con potenziale saturazione dello spettro.",
+                    "en": f"{c_24g} out of {total_w} wireless clients are connected on 2.4 GHz channels, potentially saturating the spectrum."
+                },
                 "affected_items": [f"2.4 GHz: {c_24g} client", f"5 GHz: {c_5g} client", f"6 GHz: {c_6g} client"]
             })
             recommendations.append("Attiva la funzione 'Band Steering' nelle impostazioni per instradare automaticamente i dispositivi compatibili sui 5 GHz o 6 GHz.")
+            recommendations_i18n.append({
+                "it": "Attiva la funzione 'Band Steering' nelle impostazioni per instradare automaticamente i dispositivi compatibili sui 5 GHz o 6 GHz.",
+                "en": "Enable 'Band Steering' in settings to automatically route compatible devices to 5 GHz or 6 GHz."
+            })
 
         if len(eeros) > 1 and total_w >= 8:
             for node in eeros:
@@ -274,13 +382,22 @@ class BackgroundPoller:
                     node_name = node.get("name") or "Nodo"
                     channel_score = max(4, channel_score - 3)
                     channel_issues.append(f"Carico client sbilanciato su {node_name} ({cnt} client)")
+                    channel_issues_en.append(f"Unbalanced client load on {node_name} ({cnt} clients)")
                     penalties.append({
                         "id": "node_overload",
                         "pillar": "channel_density",
                         "title": "Sbilanciamento Carico Nodi Mesh",
+                        "title_i18n": {
+                            "it": "Sbilanciamento Carico Nodi Mesh",
+                            "en": "Mesh Node Load Imbalance"
+                        },
                         "impact": -3,
                         "severity": "info",
                         "description": f"Il nodo '{node_name}' gestisce oltre l'80% di tutti i dispositivi connessi della casa.",
+                        "description_i18n": {
+                            "it": f"Il nodo '{node_name}' gestisce oltre l'80% di tutti i dispositivi connessi della casa.",
+                            "en": f"Node '{node_name}' handles more than 80% of all connected household devices."
+                        },
                         "affected_items": [f"{node_name}: {cnt} client"]
                     })
                     break
@@ -289,6 +406,10 @@ class BackgroundPoller:
         channel_details_text = (
             f"Distribuzione frequenze bilanciata: 6 GHz ({c_6g}), 5 GHz ({c_5g}), 2.4 GHz ({c_24g})."
             if not channel_issues else "; ".join(channel_issues)
+        )
+        channel_details_text_en = (
+            f"Balanced frequency distribution: 6 GHz ({c_6g}), 5 GHz ({c_5g}), 2.4 GHz ({c_24g})."
+            if not channel_issues_en else "; ".join(channel_issues_en)
         )
 
         # Calcolo Score Finale (1 - 100)
@@ -299,6 +420,10 @@ class BackgroundPoller:
 
         if not recommendations:
             recommendations.append("Tutti i parametri di stabilità della rete eero mesh sono ottimali. Nessuna azione correttiva necessaria.")
+            recommendations_i18n.append({
+                "it": "Tutti i parametri di stabilità della rete eero mesh sono ottimali. Nessuna azione correttiva necessaria.",
+                "en": "All eero mesh stability parameters are optimal. No corrective action needed."
+            })
 
         return {
             "score": final_score,
@@ -311,6 +436,10 @@ class BackgroundPoller:
                     "max_score": mesh_max,
                     "status": mesh_status,
                     "summary": mesh_details_text,
+                    "summary_i18n": {
+                        "it": mesh_details_text,
+                        "en": mesh_details_text_en
+                    }
                 },
                 "wan_gateway": {
                     "key": "wan_gateway",
@@ -318,6 +447,10 @@ class BackgroundPoller:
                     "max_score": wan_max,
                     "status": wan_status,
                     "summary": wan_details_text,
+                    "summary_i18n": {
+                        "it": wan_details_text,
+                        "en": wan_details_text_en
+                    }
                 },
                 "client_signal": {
                     "key": "client_signal",
@@ -325,6 +458,10 @@ class BackgroundPoller:
                     "max_score": client_max,
                     "status": client_status,
                     "summary": client_details_text,
+                    "summary_i18n": {
+                        "it": client_details_text,
+                        "en": client_details_text_en
+                    },
                     "weak_count": total_degraded,
                 },
                 "channel_density": {
@@ -333,6 +470,10 @@ class BackgroundPoller:
                     "max_score": channel_max,
                     "status": channel_status,
                     "summary": channel_details_text,
+                    "summary_i18n": {
+                        "it": channel_details_text,
+                        "en": channel_details_text_en
+                    },
                     "counts": {
                         "band_6ghz": c_6g,
                         "band_5ghz": c_5g,
@@ -342,6 +483,7 @@ class BackgroundPoller:
                 }
             },
             "recommendations": recommendations,
+            "recommendations_i18n": recommendations_i18n,
             "metrics": {
                 "total_nodes": len(eeros),
                 "online_nodes": len(eeros) - len(offline_nodes),

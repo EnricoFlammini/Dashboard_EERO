@@ -2694,6 +2694,131 @@ document.addEventListener('alpine:init', () => {
       await this.manualRefresh();
     },
 
+    getHealthPillarSummary(pillarKey) {
+      const pillar = this.healthDetails?.pillars?.[pillarKey];
+      if (!pillar) return '';
+      const lang = this.currentLanguage || 'en';
+      if (pillar.summary_i18n && pillar.summary_i18n[lang]) {
+        return pillar.summary_i18n[lang];
+      }
+      if (lang === 'en') {
+        return this.translatePillarSummaryEn(pillarKey, pillar);
+      }
+      return pillar.summary || '';
+    },
+
+    translatePillarSummaryEn(pillarKey, pillar) {
+      if (!pillar) return '';
+      const s = pillar.summary || '';
+      if (pillarKey === 'mesh_topology') {
+        const match = s.match(/(\d+)\/(\d+)\s+nodi operativi con backhaul eccellente/i);
+        if (match) return `${match[1]}/${match[2]} operational nodes with excellent backhaul.`;
+        return s
+          .replace(/(\d+)\s+nodi offline/gi, '$1 offline nodes')
+          .replace(/Backhaul degradato su (\d+) nodi/gi, 'Degraded backhaul on $1 node(s)');
+      }
+      if (pillarKey === 'wan_gateway') {
+        if (s.includes('Gateway online') && s.includes('latenza ottimale')) {
+          const ipMatch = s.match(/\(([^)]+)\)/);
+          const ip = ipMatch ? ipMatch[1] : 'Active';
+          return `Gateway online, active public IP (${ip}), optimal latency.`;
+        }
+        return s
+          .replace(/Connessione Internet non attiva o gateway offline/gi, 'Internet connection inactive or gateway offline')
+          .replace(/Latenza elevata verso gateway\/ISP/gi, 'High latency to gateway/ISP')
+          .replace(/Latenza moderata/gi, 'Moderate latency');
+      }
+      if (pillarKey === 'client_signal') {
+        const match = s.match(/Tutti i (\d+) dispositivi wireless hanno segnale RSSI eccellente/i);
+        if (match) return `All ${match[1]} wireless devices have excellent RSSI signal (>= -75 dBm).`;
+        return s.replace(/(\d+)\s+dispositivi con segnale debole/gi, '$1 device(s) with weak signal');
+      }
+      if (pillarKey === 'channel_density') {
+        const match = s.match(/Distribuzione frequenze bilanciata:\s*6\s*GHz\s*\(([^)]+)\),\s*5\s*GHz\s*\(([^)]+)\),\s*2\.4\s*GHz\s*\(([^)]+)\)/i);
+        if (match) return `Balanced frequency distribution: 6 GHz (${match[1]}), 5 GHz (${match[2]}), 2.4 GHz (${match[3]}).`;
+        return s
+          .replace(/Sovraccarico frequenza 2\.4 GHz \(> 70% dei client\)/gi, '2.4 GHz band overload (> 70% of clients)')
+          .replace(/Carico client sbilanciato su (.*?) \((\d+) client\)/gi, 'Unbalanced client load on $1 ($2 clients)');
+      }
+      return s;
+    },
+
+    getHealthPenaltyTitle(p) {
+      if (!p) return '';
+      const lang = this.currentLanguage || 'en';
+      if (p.title_i18n && p.title_i18n[lang]) return p.title_i18n[lang];
+      if (lang === 'en') {
+        const map = {
+          'offline_nodes': 'Disconnected Mesh Nodes',
+          'degraded_backhaul': 'Degraded Backhaul Link',
+          'wan_offline': 'WAN Internet Unreachable',
+          'high_wan_latency': 'High Internet Latency',
+          'moderate_wan_latency': 'Moderate Internet Latency',
+          'weak_client_signal': 'Clients with Degraded Wi-Fi Signal',
+          'band_24_crowding': '2.4 GHz Band Crowding',
+          'node_overload': 'Mesh Node Load Imbalance'
+        };
+        if (map[p.id]) return map[p.id];
+      }
+      return p.title || '';
+    },
+
+    getHealthPenaltyDesc(p) {
+      if (!p) return '';
+      const lang = this.currentLanguage || 'en';
+      if (p.description_i18n && p.description_i18n[lang]) return p.description_i18n[lang];
+      if (lang === 'en') {
+        let d = p.description || '';
+        return d
+          .replace(/(\d+)\s+nodo\/i eero risultano offline o non raggiungibili\./gi, '$1 eero node(s) are offline or unreachable.')
+          .replace(/Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps\./gi, 'Some mesh extender nodes have weak wireless backhaul or 100 Mbps Ethernet link.')
+          .replace(/La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline\./gi, 'eero network reports loss of Internet connection or gateway offline.')
+          .replace(/Il ping medio registrato dal Gateway verso la rete esterna è elevato/gi, 'Average ping recorded from Gateway to external network is high')
+          .replace(/Latenza WAN registrata di (.*?) \(sopra la soglia ideale di 45 ms\)\./gi, 'Recorded WAN latency of $1 (above ideal 45 ms threshold).')
+          .replace(/(\d+)\s+dispositivi wireless presentano un segnale RSSI degradato \(< -75 dBm\), che può causare perdita pacchetti o throughput ridotto\./gi, '$1 wireless devices have degraded RSSI signal (< -75 dBm), which may cause packet drops or reduced throughput.')
+          .replace(/(\d+)\s+su\s+(\d+)\s+client wireless sono connessi sui canali 2\.4 GHz, con potenziale saturazione dello spettro\./gi, '$1 of $2 wireless clients are connected on 2.4 GHz channels, causing potential spectrum saturation.')
+          .replace(/Il nodo '(.*?)' gestisce oltre l'80% di tutti i dispositivi connessi della casa\./gi, "Node '$1' manages over 80% of all connected household devices.");
+      }
+      return p.description || '';
+    },
+
+    getHealthRecommendationText(rec, idx) {
+      const lang = this.currentLanguage || 'en';
+      const recsI18n = this.healthDetails?.recommendations_i18n;
+      if (recsI18n && recsI18n[idx] && recsI18n[idx][lang]) {
+        return recsI18n[idx][lang];
+      }
+      if (typeof rec === 'object' && rec !== null && rec[lang]) {
+        return rec[lang];
+      }
+      if (lang === 'en' && typeof rec === 'string') {
+        if (rec.includes('Tutti i parametri di stabilità della rete eero mesh sono ottimali')) {
+          return 'All eero mesh stability parameters are optimal. No corrective action needed.';
+        }
+        if (rec.startsWith("Verifica l'alimentazione e la connettività dei nodi disconnessi")) {
+          return rec.replace("Verifica l'alimentazione e la connettività dei nodi disconnessi", "Check power and connectivity for disconnected nodes");
+        }
+        if (rec.includes("Per i nodi con segnale mesh debole")) {
+          return "Move wireless nodes closer to the Gateway. For 100 Mbps links, verify Ethernet Cat 5e/6 cable integrity.";
+        }
+        if (rec.includes("Controlla il cavo tra il modem del provider")) {
+          return "Check the cable between your provider modem (ONT/FTTH/DSL) and eero gateway WAN port.";
+        }
+        if (rec.includes("Se la latenza rimane costantemente sopra 80 ms")) {
+          return "If latency remains consistently above 80 ms, run a direct speed test or check modem congestion.";
+        }
+        if (rec.startsWith("Avvicina i dispositivi")) {
+          return rec
+            .replace("Avvicina i dispositivi", "Move devices")
+            .replace("al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.", "closer to the nearest mesh node or reposition beacons to eliminate blind spots.");
+        }
+        if (rec.includes("Attiva la funzione 'Band Steering'")) {
+          return "Enable 'Band Steering' in settings to automatically route compatible devices to 5 GHz or 6 GHz.";
+        }
+      }
+      return rec || '';
+    },
+
     renderSimpleMarkdown(md) {
       if (!md) return '';
       // Escape raw HTML entities to prevent XSS

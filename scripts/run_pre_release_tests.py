@@ -771,6 +771,19 @@ async def run_all_tests():
         has_offline_penalty = any(p["id"] == "offline_nodes" for p in deg_calc["penalties"])
         runner.assert_true(has_offline_penalty, "Penalità 'offline_nodes' correttamente rilevata per Nodo Cucina")
 
+        # Test bilingue i18n (Issue #15 / i18n fix)
+        for p_key in ["mesh_topology", "wan_gateway", "client_signal", "channel_density"]:
+            pillar_obj = deg_calc["pillars"].get(p_key, {})
+            runner.assert_true("summary_i18n" in pillar_obj, f"Pilastro '{p_key}' contiene 'summary_i18n'")
+            runner.assert_true("en" in pillar_obj.get("summary_i18n", {}), f"Pilastro '{p_key}' ha traduzione 'en'")
+            runner.assert_true("it" in pillar_obj.get("summary_i18n", {}), f"Pilastro '{p_key}' ha traduzione 'it'")
+
+        first_penalty = deg_calc["penalties"][0]
+        runner.assert_true("title_i18n" in first_penalty and "en" in first_penalty["title_i18n"], "Penalità include title_i18n con chiave 'en'")
+        runner.assert_true("description_i18n" in first_penalty and "en" in first_penalty["description_i18n"], "Penalità include description_i18n con chiave 'en'")
+        runner.assert_true("recommendations_i18n" in deg_calc and len(deg_calc["recommendations_i18n"]) > 0, "'recommendations_i18n' presente e popolato")
+        runner.assert_true("en" in deg_calc["recommendations_i18n"][0], "Prima raccomandazione include versione 'en'")
+
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
 

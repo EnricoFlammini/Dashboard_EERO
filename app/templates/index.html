@@ -2481,7 +2481,7 @@
                 </span>
               </div>
               <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1"
-                 x-text="(healthDetails && healthDetails.status === 'optimal' && (!healthDetails.penalties || healthDetails.penalties.length === 0)) ? t('health_modal.no_penalties_desc') : (currentLanguage === 'it' ? 'Di seguito sono riportati i dettagli diagnostici e le eventuali penalità attive che riducono il punteggio.' : 'Here is the detailed breakdown of diagnostic factors and active penalties impacting network score.')">
+                 x-text="(healthDetails && healthDetails.status === 'optimal' && (!healthDetails.penalties || healthDetails.penalties.length === 0)) ? t('health_modal.no_penalties_desc') : t('health_modal.penalties_active_desc')">
               </p>
             </div>
           </div>
@@ -2503,7 +2503,7 @@
               <span>⚠️</span>
               <span x-text="t('health_modal.penalties_title')">Fattori che Influenzano il Punteggio</span>
             </h4>
-            <span class="text-[10px] text-slate-500" x-text="healthDetails && healthDetails.penalties ? healthDetails.penalties.length + ' ' + (currentLanguage === 'it' ? 'rilevati' : 'detected') : '0'"></span>
+            <span class="text-[10px] text-slate-500" x-text="healthDetails && healthDetails.penalties ? healthDetails.penalties.length + ' ' + (t('health_modal.detected') || (currentLanguage === 'it' ? 'rilevati' : 'detected')) : '0'"></span>
           </div>
 
           <!-- If No Penalties -->
@@ -2527,14 +2527,14 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
                     <span class="text-sm" x-text="p.severity === 'critical' ? '🔴' : (p.severity === 'warning' ? '🟠' : 'ℹ️')"></span>
-                    <span class="font-bold text-xs" x-text="p.title"></span>
+                    <span class="font-bold text-xs" x-text="getHealthPenaltyTitle(p)"></span>
                   </div>
                   <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold"
                         :class="p.severity === 'critical' ? 'bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200' : (p.severity === 'warning' ? 'bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200' : 'bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200')"
                         x-text="p.impact + ' ' + t('health_modal.points')">
                   </span>
                 </div>
-                <div class="text-[11px] text-slate-700 dark:text-slate-300" x-text="p.description"></div>
+                <div class="text-[11px] text-slate-700 dark:text-slate-300" x-text="getHealthPenaltyDesc(p)"></div>
                 
                 <!-- Affected items tags -->
                 <template x-if="p.affected_items && p.affected_items.length > 0">
@@ -2572,7 +2572,7 @@
                      :class="(healthDetails?.pillars?.mesh_topology?.score || 40) >= 35 ? 'bg-emerald-500' : ((healthDetails?.pillars?.mesh_topology?.score || 40) >= 20 ? 'bg-amber-500' : 'bg-rose-500')"
                      :style="'width: ' + (((healthDetails?.pillars?.mesh_topology?.score ?? 40) / (healthDetails?.pillars?.mesh_topology?.max_score ?? 40)) * 100) + '%'"></div>
               </div>
-              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.mesh_topology?.summary || t('health_modal.pillar_mesh_desc')"></div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="getHealthPillarSummary('mesh_topology')"></div>
             </div>
 
             <!-- Pillar 2: WAN Gateway -->
@@ -2589,7 +2589,7 @@
                      :class="(healthDetails?.pillars?.wan_gateway?.score || 30) >= 25 ? 'bg-emerald-500' : ((healthDetails?.pillars?.wan_gateway?.score || 30) >= 15 ? 'bg-amber-500' : 'bg-rose-500')"
                      :style="'width: ' + (((healthDetails?.pillars?.wan_gateway?.score ?? 30) / (healthDetails?.pillars?.wan_gateway?.max_score ?? 30)) * 100) + '%'"></div>
               </div>
-              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.wan_gateway?.summary || t('health_modal.pillar_wan_desc')"></div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="getHealthPillarSummary('wan_gateway')"></div>
             </div>
 
             <!-- Pillar 3: Client Signal -->
@@ -2606,7 +2606,7 @@
                      :class="(healthDetails?.pillars?.client_signal?.score || 20) >= 18 ? 'bg-emerald-500' : ((healthDetails?.pillars?.client_signal?.score || 20) >= 10 ? 'bg-amber-500' : 'bg-rose-500')"
                      :style="'width: ' + (((healthDetails?.pillars?.client_signal?.score ?? 20) / (healthDetails?.pillars?.client_signal?.max_score ?? 20)) * 100) + '%'"></div>
               </div>
-              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.client_signal?.summary || t('health_modal.pillar_signal_desc')"></div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="getHealthPillarSummary('client_signal')"></div>
             </div>
 
             <!-- Pillar 4: Channels & Frequency -->
@@ -2623,7 +2623,7 @@
                      :class="(healthDetails?.pillars?.channel_density?.score || 10) >= 8 ? 'bg-emerald-500' : 'bg-amber-500'"
                      :style="'width: ' + (((healthDetails?.pillars?.channel_density?.score ?? 10) / (healthDetails?.pillars?.channel_density?.max_score ?? 10)) * 100) + '%'"></div>
               </div>
-              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.channel_density?.summary || t('health_modal.pillar_channels_desc')"></div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="getHealthPillarSummary('channel_density')"></div>
             </div>
 
           </div>
@@ -2639,7 +2639,7 @@
             <template x-for="(rec, idx) in (healthDetails?.recommendations || [])" :key="idx">
               <div class="flex items-start space-x-2 text-[11px] text-slate-700 dark:text-slate-300">
                 <span class="text-sky-500 font-bold shrink-0">•</span>
-                <span x-text="rec"></span>
+                <span x-text="getHealthRecommendationText(rec, idx)"></span>
               </div>
             </template>
           </div>
