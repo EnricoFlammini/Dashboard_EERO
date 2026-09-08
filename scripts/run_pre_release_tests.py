@@ -700,10 +700,59 @@ async def run_all_tests():
         runner.assert_true(legacy_sync.status_code == 200, "Endpoint legacy POST /api/automations/adguard/sync risponde HTTP 200")
         runner.assert_true(legacy_sync.json().get("status") == "success", "Sync legacy AdGuard ha status 'success'")
 
+        # =====================================================================
+        # 14. TEST HEALTH SCORE BREAKDOWN & DIAGNOSTICS (Issue #15)
+        # =====================================================================
+        print("\n❤️ [14/14] TEST HEALTH SCORE BREAKDOWN & DIAGNOSTICS (Issue #15)")
+        
+        # Test endpoint overview
+        ov_res = await client.get("/api/network/overview")
+        runner.assert_true(ov_res.status_code == 200, "Endpoint GET /api/network/overview risponde HTTP 200")
+        ov_data = ov_res.json().get("data", {})
+        runner.assert_true("health_details" in ov_data, "Payload overview contiene 'health_details'")
+        runner.assert_true("health_score" in ov_data, "Payload overview contiene 'health_score'")
+
+        # Test endpoint dedicato /api/network/health-breakdown
+        hb_res = await client.get("/api/network/health-breakdown")
+        runner.assert_true(hb_res.status_code == 200, "Endpoint GET /api/network/health-breakdown risponde HTTP 200")
+        hb_json = hb_res.json()
+        runner.assert_true(hb_json.get("status") == "success", "Endpoint health-breakdown restituisce status 'success'")
+        hb_data = hb_json.get("data", {})
+        runner.assert_true("health_score" in hb_data, "health-breakdown contiene 'health_score'")
+        runner.assert_true("health_details" in hb_data, "health-breakdown contiene 'health_details'")
+        
+        h_details = hb_data.get("health_details", {})
+        runner.assert_true("pillars" in h_details, "health_details contiene 'pillars'")
+        pillars = h_details.get("pillars", {})
+        runner.assert_true("mesh_topology" in pillars, "Pilastro 'mesh_topology' presente")
+        runner.assert_true("wan_gateway" in pillars, "Pilastro 'wan_gateway' presente")
+        runner.assert_true("client_signal" in pillars, "Pilastro 'client_signal' presente")
+        runner.assert_true("channel_density" in pillars, "Pilastro 'channel_density' presente")
+        runner.assert_true(isinstance(h_details.get("penalties"), list), "'penalties' è una lista")
+        runner.assert_true(isinstance(h_details.get("recommendations"), list), "'recommendations' è una lista")
+
+        # Test unitario calcolo diagnostico su scenario degradato
+        from app.services.poller import background_poller
+        deg_net = {"status": "online", "public_ip": "1.2.3.4", "speedtest": {"ping_ms": 85.0}}
+        deg_eeros = [
+            {"id": "gw", "name": "Gateway", "is_gateway": True, "status": "online", "connected_clients_count": 10},
+            {"id": "node2", "name": "Nodo Cucina", "is_gateway": False, "status": "offline", "connected_clients_count": 0}
+        ]
+        deg_devs = [
+            {"connected": True, "wireless": True, "wireless_band": "2.4GHz", "signal_rssi": -85, "custom_name": "Device 1"},
+            {"connected": True, "wireless": True, "wireless_band": "2.4GHz", "signal_rssi": -78, "custom_name": "Device 2"},
+        ]
+        deg_calc = background_poller.calculate_health_details(deg_net, deg_eeros, deg_devs)
+        runner.assert_true(deg_calc["score"] < 100, f"Scenario degradato calcola punteggio inferiore a 100 (ottenuto: {deg_calc['score']})")
+        runner.assert_true(len(deg_calc["penalties"]) >= 2, f"Scenario degradato rileva almeno 2 penalità (ottenute: {len(deg_calc['penalties'])})")
+        has_offline_penalty = any(p["id"] == "offline_nodes" for p in deg_calc["penalties"])
+        runner.assert_true(has_offline_penalty, "Penalità 'offline_nodes' correttamente rilevata per Nodo Cucina")
+
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
 
     runner.print_summary()
+
 
 
 if __name__ == "__main__":

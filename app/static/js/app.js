@@ -37,6 +37,8 @@ document.addEventListener('alpine:init', () => {
     eeros: [],
     devices: [],
     healthScore: 100,
+    healthDetails: null,
+    showHealthModal: false,
     realtimeMetrics: {
       current_download_mbps: 0,
       current_upload_mbps: 0,
@@ -698,6 +700,7 @@ document.addEventListener('alpine:init', () => {
           this.network = json.data.network || {};
           this.eeros = json.data.eeros || [];
           this.healthScore = json.data.health_score || 100;
+          this.healthDetails = json.data.health_details || null;
           this.lastPollTime = json.data.last_poll_time;
         }
       } catch (err) {
@@ -2678,6 +2681,17 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.changelogLoading = false;
       }
+    },
+
+    openHealthModal() {
+      if (!this.healthDetails && this.fetchOverview) {
+        this.fetchOverview();
+      }
+      this.showHealthModal = true;
+    },
+
+    async refreshHealthDiagnostics() {
+      await this.manualRefresh();
     },
 
     renderSimpleMarkdown(md) {

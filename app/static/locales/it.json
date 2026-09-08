@@ -382,8 +382,36 @@
     "gaming_disabled": "Gaming Mode Disattivata",
     "reboot_triggered": "Riavvio Avviato"
   },
+  "health_modal": {
+    "title": "Network Health Score & Diagnostica",
+    "subtitle": "Analisi in tempo reale dei fattori che determinano la qualità e la stabilità della rete eero",
+    "score_label": "Punteggio di Salute Rete",
+    "status_optimal": "Ottimale",
+    "status_good": "Buono",
+    "status_warning": "Attenzione",
+    "status_critical": "Critico",
+    "penalties_title": "Fattori che Influenzano il Punteggio",
+    "no_penalties_title": "Tutti i parametri al 100%",
+    "no_penalties_desc": "La rete opera a pieno regime: tutti i nodi mesh, la connettività WAN e il segnale dei client sono ottimali.",
+    "pillars_title": "Pilastri di Salute Rete",
+    "pillar_mesh": "Topologia Mesh & Nodi",
+    "pillar_mesh_desc": "Stato operativo dei nodi e qualità del backhaul inter-nodo",
+    "pillar_wan": "Gateway WAN & Internet",
+    "pillar_wan_desc": "Accesso a Internet, disponibilità del gateway e latenza ping",
+    "pillar_signal": "Qualità Segnale Wi-Fi Client",
+    "pillar_signal_desc": "Livello di potenza RSSI di tutti i dispositivi wireless connessi",
+    "pillar_channels": "Distribuzione Canali & Frequenze",
+    "pillar_channels_desc": "Bilanciamento del carico tra bande 6 GHz, 5 GHz e 2.4 GHz",
+    "recommendations_title": "Raccomandazioni & Suggerimenti",
+    "points": "pt",
+    "refresh_diagnostics": "Aggiorna Diagnostica",
+    "close": "Chiudi",
+    "view_health_report": "Diagnostica Salute Rete",
+    "health_tooltip": "Clicca per visualizzare la diagnostica dettagliata e i fattori di stabilità"
+  },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
     "changelog": "Changelog"
   }
 }
+

@@ -41,6 +41,19 @@ async def get_network_overview():
     }
 
 
+@router.get("/health-breakdown")
+async def get_health_breakdown():
+    """Restituisce il dettaglio diagnostico completo e i 4 pilastri dello Health Score (Issue #15)."""
+    cached = background_poller.get_cached_state()
+    return {
+        "status": "success",
+        "data": {
+            "health_score": cached.get("health_score", 100),
+            "health_details": cached.get("health_details") or {}
+        }
+    }
+
+
 @router.post("/refresh")
 async def force_network_refresh():
     """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""

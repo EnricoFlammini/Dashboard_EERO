@@ -6,6 +6,19 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.4.0] - 2026-08-29
 
+### ❤️ Network Health Score Breakdown & Modale Diagnostico Interattivo (Issue #15)
+* **❤️ Finestra Modale Diagnostica Interattiva a 4 Pilastri:**
+  * Risolta la richiesta [Issue #15](https://github.com/EnricoFlammini/Dashboard_EERO/issues/15) rendendo il badge circolare dello **Health Score** nell'header completamente cliccabile e interattivo in Windows 11 Fluent Design.
+  * Accessibilità ottimizzata anche per smartphone e schermi compatti grazie all'access point integrato nella card WAN della tab Overview.
+  * Suddivisione analitica dello stato di salute su 4 Pilastri Fondamentali (Totale 100 pt):
+    1. 🌐 **Topologia Mesh & Nodi (Max 40 pt):** Monitoraggio nodi mesh online/offline e integrità backhaul (1Gbps/cablato vs wireless mesh degradato).
+    2. ⚡ **Gateway WAN & Internet (Max 30 pt):** Raggiungibilità uplink provider, stato gateway e controllo latenza ping.
+    3. 📶 **Qualità Segnale Wi-Fi Client (Max 20 pt):** Identificazione precisa dei client con segnale RSSI degradato (< -75 dBm / < -82 dBm) e relative penalità.
+    4. 📡 **Distribuzione Canali & Frequenze (Max 10 pt):** Bilanciamento frequenze (6 GHz, 5 GHz, 2.4 GHz) e prevenzione affollamento canali/nodi.
+  * **Analisi Puntuale delle Penalità (Active Factors):** Visualizzazione chiara dei fattori attivi che riducono il punteggio con badge d'impatto numerico (es. `-2 pt`, `-20 pt`) ed elenco dei nodi o client coinvolti.
+  * **Raccomandazioni Intelligenti Contestuali:** Consigli pratici personalizzati generati dinamicamente per ottimizzare la copertura e le prestazioni della rete.
+  * **Nuovo Endpoint REST:** Esposto `GET /api/network/health-breakdown` e arricchita la risposta cache zero-latency `GET /api/network/overview` con il payload `health_details`.
+
 ### 🎨 Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)
 * **🎨 Restyling Completo Windows 11 Fluent Design:**
   * Implementato il design system di Windows 11 con Segoe UI Variable font stack, Mica/Acrylic material effects, bordi sottili multistrato (`rgba(0,0,0,0.08)` / `rgba(255,255,255,0.08)`) e ombre morbide stratificate.

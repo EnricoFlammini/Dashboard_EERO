@@ -161,22 +161,28 @@
         </div>
       </div>
 
-      <!-- Center Indicator: Health Score -->
+      <!-- Center Indicator: Health Score (Issue #15) -->
       <div class="hidden md:flex items-center space-x-6">
         <!-- Health Score Badge -->
-        <div class="flex items-center space-x-2">
+        <div 
+          @click="openHealthModal()"
+          class="flex items-center space-x-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-transparent hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all active:scale-95 group"
+          :title="t('health_modal.health_tooltip')">
           <div class="relative w-8 h-8 flex items-center justify-center">
             <svg class="w-8 h-8 -rotate-90">
-              <circle cx="16" cy="16" r="13" stroke="rgba(255,255,255,0.1)" stroke-width="3" fill="none"></circle>
-              <circle cx="16" cy="16" r="13" :stroke="healthScore > 80 ? '#10b981' : healthScore > 50 ? '#f59e0b' : '#f43f5e'" stroke-width="3" fill="none" :stroke-dasharray="81.68" :stroke-dashoffset="81.68 - (81.68 * healthScore / 100)" stroke-linecap="round"></circle>
+              <circle cx="16" cy="16" class="text-black/10 dark:text-white/10" stroke="currentColor" stroke-width="3" fill="none"></circle>
+              <circle cx="16" cy="16" r="13" :stroke="healthScore >= 90 ? '#10b981' : (healthScore >= 70 ? '#f59e0b' : '#f43f5e')" stroke-width="3" fill="none" :stroke-dasharray="81.68" :stroke-dashoffset="81.68 - (81.68 * healthScore / 100)" stroke-linecap="round"></circle>
             </svg>
-            <span class="absolute text-[10px] font-bold" x-text="healthScore"></span>
+            <span class="absolute text-[10px] font-bold text-slate-800 dark:text-slate-100" x-text="healthScore"></span>
           </div>
           <div class="text-left">
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold" x-text="t('dashboard.health_score')"></div>
-            <div class="text-xs font-bold text-emerald-400" x-show="healthScore >= 90" x-text="t('header.optimal')"></div>
-            <div class="text-xs font-bold text-amber-400" x-show="healthScore < 90 && healthScore >= 70" x-text="t('header.good')"></div>
-            <div class="text-xs font-bold text-rose-400" x-show="healthScore < 70" x-text="t('header.warning')"></div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold flex items-center space-x-1">
+              <span x-text="t('dashboard.health_score')"></span>
+              <svg class="w-2.5 h-2.5 text-slate-400 group-hover:text-sky-500 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400" x-show="healthScore >= 90" x-text="t('header.optimal')"></div>
+            <div class="text-xs font-bold text-amber-600 dark:text-amber-400" x-show="healthScore < 90 && healthScore >= 70" x-text="t('header.good')"></div>
+            <div class="text-xs font-bold text-rose-600 dark:text-rose-400" x-show="healthScore < 70" x-text="t('header.warning')"></div>
           </div>
         </div>
       </div>
@@ -320,7 +326,16 @@
         <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.wan_status')"></span>
-            <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
+            <div class="flex items-center space-x-2">
+              <button 
+                @click="openHealthModal()" 
+                class="md:hidden flex items-center space-x-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:border-sky-500 transition cursor-pointer"
+                :title="t('health_modal.health_tooltip')">
+                <span>❤️</span>
+                <span x-text="healthScore + '%'"></span>
+              </button>
+              <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
+            </div>
           </div>
           <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
           <div class="mt-2 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center space-x-1">
@@ -383,6 +398,13 @@
         
         <!-- Global Actions -->
         <div class="flex items-center space-x-3">
+          <button 
+            @click="openHealthModal()"
+            class="px-3 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-xs font-semibold text-sky-700 border border-sky-300 dark:bg-sky-600/20 dark:hover:bg-sky-600/30 dark:text-sky-400 dark:border-sky-500/30 transition flex items-center space-x-1.5 shadow-sm dark:shadow-none cursor-pointer"
+            :title="t('health_modal.health_tooltip')">
+            <span class="w-2 h-2 rounded-full" :class="healthScore >= 90 ? 'bg-emerald-500' : (healthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500')"></span>
+            <span x-text="t('health_modal.view_health_report')"></span>
+          </button>
           <button 
             @click="rebootNetwork()"
             class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 border border-rose-300 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:text-rose-400 dark:border-rose-500/30 transition flex items-center space-x-1.5 shadow-sm dark:shadow-none cursor-pointer">
@@ -2397,6 +2419,237 @@
             </button>
           </template>
         </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: HEALTH SCORE BREAKDOWN & DIAGNOSTICS (Issue #15) -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showHealthModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+    style="display: none;"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100">
+    
+    <div @click.away="showHealthModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-5 max-h-[90vh] flex flex-col border border-slate-300 dark:border-slate-700/80 shadow-2xl shadow-slate-950/40">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-xl text-white shadow-md"
+               :class="healthScore >= 90 ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 shadow-emerald-500/20' : (healthScore >= 70 ? 'bg-gradient-to-tr from-amber-600 to-yellow-500 shadow-amber-500/20' : 'bg-gradient-to-tr from-rose-600 to-red-500 shadow-rose-500/20')">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('health_modal.title')">Network Health Score & Diagnostica</h3>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="t('health_modal.subtitle')">Analisi in tempo reale dei fattori di stabilità della rete</span>
+          </div>
+        </div>
+        <button @click="showHealthModal = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="overflow-y-auto pr-1 space-y-5 text-xs select-text">
+        
+        <!-- Score Hero Card -->
+        <div class="p-4 rounded-2xl border flex flex-col sm:flex-row items-center sm:items-stretch justify-between gap-4"
+             :class="healthScore >= 90 ? 'bg-emerald-500/10 border-emerald-500/30' : (healthScore >= 70 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-rose-500/10 border-rose-500/30')">
+          <div class="flex items-center space-x-4">
+            <!-- Circular Gauge -->
+            <div class="relative w-16 h-16 flex items-center justify-center shrink-0">
+              <svg class="w-16 h-16 -rotate-90">
+                <circle cx="32" cy="32" r="26" class="text-slate-200 dark:text-slate-800" stroke="currentColor" stroke-width="5" fill="none"></circle>
+                <circle cx="32" cy="32" r="26" :stroke="healthScore >= 90 ? '#10b981' : (healthScore >= 70 ? '#f59e0b' : '#f43f5e')" stroke-width="5" fill="none" :stroke-dasharray="163.36" :stroke-dashoffset="163.36 - (163.36 * healthScore / 100)" stroke-linecap="round"></circle>
+              </svg>
+              <div class="absolute flex flex-col items-center justify-center">
+                <span class="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white" x-text="healthScore"></span>
+                <span class="text-[9px] font-bold uppercase text-slate-400 -mt-1">/100</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold text-slate-900 dark:text-white" x-text="t('health_modal.score_label')">Punteggio di Salute</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+                      :class="healthScore >= 90 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600' : (healthScore >= 70 ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-600' : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-600')"
+                      x-text="healthScore >= 90 ? t('health_modal.status_optimal') : (healthScore >= 70 ? t('health_modal.status_good') : (healthScore >= 50 ? t('health_modal.status_warning') : t('health_modal.status_critical')))">
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1"
+                 x-text="(healthDetails && healthDetails.status === 'optimal' && (!healthDetails.penalties || healthDetails.penalties.length === 0)) ? t('health_modal.no_penalties_desc') : (currentLanguage === 'it' ? 'Di seguito sono riportati i dettagli diagnostici e le eventuali penalità attive che riducono il punteggio.' : 'Here is the detailed breakdown of diagnostic factors and active penalties impacting network score.')">
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center sm:self-center">
+            <button 
+              @click="refreshHealthDiagnostics()"
+              :disabled="isRefreshing"
+              class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition flex items-center space-x-1.5 cursor-pointer shadow-sm">
+              <svg class="w-3.5 h-3.5" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span x-text="t('health_modal.refresh_diagnostics')">Aggiorna</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 1: Active Penalties / Impact Factors (Issue #15 Core) -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+              <span>⚠️</span>
+              <span x-text="t('health_modal.penalties_title')">Fattori che Influenzano il Punteggio</span>
+            </h4>
+            <span class="text-[10px] text-slate-500" x-text="healthDetails && healthDetails.penalties ? healthDetails.penalties.length + ' ' + (currentLanguage === 'it' ? 'rilevati' : 'detected') : '0'"></span>
+          </div>
+
+          <!-- If No Penalties -->
+          <template x-if="!healthDetails || !healthDetails.penalties || healthDetails.penalties.length === 0">
+            <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center space-x-3 text-emerald-800 dark:text-emerald-300">
+              <div class="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <div>
+                <div class="font-bold text-xs" x-text="t('health_modal.no_penalties_title')">Tutti i parametri al 100%</div>
+                <div class="text-[11px] opacity-80" x-text="t('health_modal.no_penalties_desc')">Nessun problema rilevato. Tutti i nodi sono online con ottimo segnale e bassa latenza.</div>
+              </div>
+            </div>
+          </template>
+
+          <!-- If Penalties Exist -->
+          <div class="space-y-2" x-show="healthDetails && healthDetails.penalties && healthDetails.penalties.length > 0">
+            <template x-for="p in (healthDetails?.penalties || [])" :key="p.id">
+              <div class="p-3.5 rounded-xl border flex flex-col space-y-2 transition"
+                   :class="p.severity === 'critical' ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700/50 text-rose-900 dark:text-rose-200' : (p.severity === 'warning' ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/50 text-amber-900 dark:text-amber-200' : 'bg-sky-50 dark:bg-sky-950/30 border-sky-300 dark:border-sky-700/50 text-sky-900 dark:text-sky-200')">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm" x-text="p.severity === 'critical' ? '🔴' : (p.severity === 'warning' ? '🟠' : 'ℹ️')"></span>
+                    <span class="font-bold text-xs" x-text="p.title"></span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold"
+                        :class="p.severity === 'critical' ? 'bg-rose-200 dark:bg-rose-900 text-rose-800 dark:text-rose-200' : (p.severity === 'warning' ? 'bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200' : 'bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200')"
+                        x-text="p.impact + ' ' + t('health_modal.points')">
+                  </span>
+                </div>
+                <div class="text-[11px] text-slate-700 dark:text-slate-300" x-text="p.description"></div>
+                
+                <!-- Affected items tags -->
+                <template x-if="p.affected_items && p.affected_items.length > 0">
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <template x-for="(item, idx) in p.affected_items" :key="idx">
+                      <span class="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 font-mono text-[10px] text-slate-800 dark:text-slate-200 border border-black/10 dark:border-white/10" x-text="item"></span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Section 2: Health Pillars (4 Pilastri) -->
+        <div class="space-y-2.5">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+            <span>📊</span>
+            <span x-text="t('health_modal.pillars_title')">Pilastri di Salute Rete</span>
+          </h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <!-- Pillar 1: Mesh Topology -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <span>🌐</span>
+                  <span x-text="t('health_modal.pillar_mesh')">Topologia Mesh & Nodi</span>
+                </span>
+                <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.mesh_topology?.score || 40) >= 35 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.mesh_topology?.score ?? 40) + ' / ' + (healthDetails?.pillars?.mesh_topology?.max_score ?? 40)"></span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-500"
+                     :class="(healthDetails?.pillars?.mesh_topology?.score || 40) >= 35 ? 'bg-emerald-500' : ((healthDetails?.pillars?.mesh_topology?.score || 40) >= 20 ? 'bg-amber-500' : 'bg-rose-500')"
+                     :style="'width: ' + (((healthDetails?.pillars?.mesh_topology?.score ?? 40) / (healthDetails?.pillars?.mesh_topology?.max_score ?? 40)) * 100) + '%'"></div>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.mesh_topology?.summary || t('health_modal.pillar_mesh_desc')"></div>
+            </div>
+
+            <!-- Pillar 2: WAN Gateway -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <span>⚡</span>
+                  <span x-text="t('health_modal.pillar_wan')">Gateway WAN & Internet</span>
+                </span>
+                <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.wan_gateway?.score || 30) >= 25 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.wan_gateway?.score ?? 30) + ' / ' + (healthDetails?.pillars?.wan_gateway?.max_score ?? 30)"></span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-500"
+                     :class="(healthDetails?.pillars?.wan_gateway?.score || 30) >= 25 ? 'bg-emerald-500' : ((healthDetails?.pillars?.wan_gateway?.score || 30) >= 15 ? 'bg-amber-500' : 'bg-rose-500')"
+                     :style="'width: ' + (((healthDetails?.pillars?.wan_gateway?.score ?? 30) / (healthDetails?.pillars?.wan_gateway?.max_score ?? 30)) * 100) + '%'"></div>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.wan_gateway?.summary || t('health_modal.pillar_wan_desc')"></div>
+            </div>
+
+            <!-- Pillar 3: Client Signal -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <span>📶</span>
+                  <span x-text="t('health_modal.pillar_signal')">Qualità Segnale Wi-Fi Client</span>
+                </span>
+                <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.client_signal?.score || 20) >= 18 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.client_signal?.score ?? 20) + ' / ' + (healthDetails?.pillars?.client_signal?.max_score ?? 20)"></span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-500"
+                     :class="(healthDetails?.pillars?.client_signal?.score || 20) >= 18 ? 'bg-emerald-500' : ((healthDetails?.pillars?.client_signal?.score || 20) >= 10 ? 'bg-amber-500' : 'bg-rose-500')"
+                     :style="'width: ' + (((healthDetails?.pillars?.client_signal?.score ?? 20) / (healthDetails?.pillars?.client_signal?.max_score ?? 20)) * 100) + '%'"></div>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.client_signal?.summary || t('health_modal.pillar_signal_desc')"></div>
+            </div>
+
+            <!-- Pillar 4: Channels & Frequency -->
+            <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <span>📡</span>
+                  <span x-text="t('health_modal.pillar_channels')">Distribuzione Frequenze & Canali</span>
+                </span>
+                <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.channel_density?.score || 10) >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.channel_density?.score ?? 10) + ' / ' + (healthDetails?.pillars?.channel_density?.max_score ?? 10)"></span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="h-2 rounded-full transition-all duration-500"
+                     :class="(healthDetails?.pillars?.channel_density?.score || 10) >= 8 ? 'bg-emerald-500' : 'bg-amber-500'"
+                     :style="'width: ' + (((healthDetails?.pillars?.channel_density?.score ?? 10) / (healthDetails?.pillars?.channel_density?.max_score ?? 10)) * 100) + '%'"></div>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="healthDetails?.pillars?.channel_density?.summary || t('health_modal.pillar_channels_desc')"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 3: Smart Recommendations -->
+        <div class="space-y-2" x-show="healthDetails && healthDetails.recommendations && healthDetails.recommendations.length > 0">
+          <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+            <span>💡</span>
+            <span x-text="t('health_modal.recommendations_title')">Raccomandazioni & Suggerimenti</span>
+          </h4>
+          <div class="p-3.5 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-500/20 space-y-1.5">
+            <template x-for="(rec, idx) in (healthDetails?.recommendations || [])" :key="idx">
+              <div class="flex items-start space-x-2 text-[11px] text-slate-700 dark:text-slate-300">
+                <span class="text-sky-500 font-bold shrink-0">•</span>
+                <span x-text="rec"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+        <button @click="showHealthModal = false" class="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('health_modal.close') || 'Chiudi'"></button>
       </div>
 
     </div>

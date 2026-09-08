@@ -382,8 +382,36 @@
     "gaming_disabled": "Gaming Mode Disabled",
     "reboot_triggered": "Restart Triggered"
   },
+  "health_modal": {
+    "title": "Network Health Score & Diagnostics",
+    "subtitle": "Real-time analysis of factors impacting eero mesh performance and stability",
+    "score_label": "Network Health Score",
+    "status_optimal": "Optimal",
+    "status_good": "Good",
+    "status_warning": "Warning",
+    "status_critical": "Critical",
+    "penalties_title": "Factors Impacting Health Score",
+    "no_penalties_title": "All systems operating at 100%",
+    "no_penalties_desc": "Network is operating flawlessly: all mesh nodes, WAN uplink, and client signal levels are optimal.",
+    "pillars_title": "Health Pillars Breakdown",
+    "pillar_mesh": "Mesh Topology & Nodes",
+    "pillar_mesh_desc": "Operational node status and backhaul link stability",
+    "pillar_wan": "WAN Gateway & Internet",
+    "pillar_wan_desc": "Internet connectivity, gateway availability, and ping latency",
+    "pillar_signal": "Client Wi-Fi Signal Quality",
+    "pillar_signal_desc": "RSSI signal strength across all active wireless devices",
+    "pillar_channels": "Channel Distribution & Density",
+    "pillar_channels_desc": "Load balance across 6 GHz, 5 GHz, and 2.4 GHz frequency bands",
+    "recommendations_title": "Smart Recommendations",
+    "points": "pts",
+    "refresh_diagnostics": "Refresh Diagnostics",
+    "close": "Close",
+    "view_health_report": "Network Health Diagnostics",
+    "health_tooltip": "Click to view detailed health diagnostics and stability factors"
+  },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
     "changelog": "Changelog"
   }
 }
+

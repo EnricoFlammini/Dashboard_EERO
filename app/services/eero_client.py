@@ -2630,7 +2630,7 @@ class EeroClient:
                     "wireless_band": "2.4GHz",
                     "frequency_band": "2.4 GHz",
                     "channel": 11,
-                    "signal_rssi": -68,
+                    "signal_rssi": -76,
                     "rx_bitrate": "54.0 MBit/s",
                     "phy_rate": "54.0 MBit/s",
                     "connected_eero_id": "eero_01_gateway",
