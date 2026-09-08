@@ -4,6 +4,7 @@ import os
 import random
 import re
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -186,10 +187,36 @@ class EeroClient:
         self.saved_live_network_id: Optional[str] = None
         self.saved_live_account_info: Optional[Dict[str, Any]] = None
         self._is_demo_active: bool = False
+        self._http_client: Optional[httpx.AsyncClient] = None
         self.load_session()
 
         # Simulated Demo State
         self._demo_state = self._init_demo_state()
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Restituisce il client HTTP condiviso persistente con connection pooling e keep-alive (Issue #24)."""
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.AsyncClient(
+                timeout=httpx.Timeout(15.0, connect=10.0),
+                limits=httpx.Limits(
+                    max_keepalive_connections=10,
+                    max_connections=20,
+                    keepalive_expiry=120.0
+                )
+            )
+        return self._http_client
+
+    @asynccontextmanager
+    async def _client_session(self, timeout: Optional[float] = None):
+        """Context manager per riutilizzare la sessione HTTP ed eliminare query DNS ridondanti."""
+        client = self._get_client()
+        yield client
+
+    async def close(self):
+        """Chiude il pool di connessioni HTTP persistenti su shutdown dell'applicazione."""
+        if self._http_client is not None and not self._http_client.is_closed:
+            await self._http_client.aclose()
+            self._http_client = None
 
     def load_session(self):
         """Carica il token di sessione e ID di rete dal file session.json o da .env."""
@@ -326,7 +353,7 @@ class EeroClient:
             self.user_token = "demo_temp_unverified_token"
             return {"status": "success", "message": "Demo OTP sent (Use 123456)", "login": identifier}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/login",
                 json={"login": identifier.strip()},
@@ -362,7 +389,7 @@ class EeroClient:
         if not self.user_token:
             raise ValueError("Nessuna richiesta di login attiva. Richiedi prima il codice OTP.")
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/login/verify",
                 json={"code": code.strip()},
@@ -391,7 +418,7 @@ class EeroClient:
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             return self._get_demo_account()
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.get(f"{EERO_API_BASE}/account", headers=self._get_headers())
             if resp.status_code != 200:
                 resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers())
@@ -1335,7 +1362,7 @@ class EeroClient:
         if not self.current_network_id:
             return self._get_demo_network_details()
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}", headers=self._get_headers())
             if resp.status_code != 200:
                 logger.error(f"Error fetching network details: {resp.status_code} {resp.text}")
@@ -1353,7 +1380,7 @@ class EeroClient:
         if not self.current_network_id:
             return self._get_demo_eeros()
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/eeros", headers=self._get_headers())
             if resp.status_code != 200:
                 logger.error(f"Error fetching eeros: {resp.status_code} {resp.text}")
@@ -1404,7 +1431,7 @@ class EeroClient:
             return self._get_demo_devices()
 
         raw_list = []
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             try:
                 resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/devices", headers=self._get_headers())
                 if resp.status_code == 200:
@@ -1458,7 +1485,7 @@ class EeroClient:
             logger.info("Demo: Riavvio intera rete mesh simulato.")
             return {"status": "success", "message": "Riavvio rete mesh avviato (Demo)"}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(f"{EERO_API_BASE}/networks/{self.current_network_id}/reboot", headers=self._get_headers())
             if resp.status_code not in (200, 202):
                 raise RuntimeError(f"Errore riavvio rete: {resp.text}")
@@ -1470,7 +1497,7 @@ class EeroClient:
             logger.info(f"Demo: Riavvio nodo eero {eero_id} simulato.")
             return {"status": "success", "message": f"Riavvio nodo {eero_id} avviato (Demo)"}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(f"{EERO_API_BASE}/eeros/{eero_id}/reboot", headers=self._get_headers())
             if resp.status_code not in (200, 202):
                 raise RuntimeError(f"Errore riavvio nodo {eero_id}: {resp.text}")
@@ -1507,7 +1534,7 @@ class EeroClient:
                 ("PUT", f"{EERO_API_BASE}/networks/{net_id}/eeros/{clean_id}", {"led_on": led_on}),
             ])
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             last_err = ""
             for method, url, payload in attempts:
                 try:
@@ -1648,7 +1675,7 @@ class EeroClient:
         last_error = ""
         success = False
 
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with self._client_session() as client:
             for url, method in action_calls:
                 for p_var in payload_variants:
                     try:
@@ -1707,7 +1734,7 @@ class EeroClient:
                 self._demo_state["guest_network"]["password"] = password
             return {"status": "success", "guest_network": self._demo_state["guest_network"]}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.put(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/guestnetwork",
                 json=payload,
@@ -1737,7 +1764,7 @@ class EeroClient:
             }
             return {"status": "success", "result": self._demo_state["speedtest"]}
 
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/speedtest",
                 headers=self._get_headers()
@@ -1757,7 +1784,7 @@ class EeroClient:
                 "forwards": self._demo_state.get("forwards", []),
             }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             res_reservations = await client.get(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
                 headers=self._get_headers()
@@ -1792,7 +1819,7 @@ class EeroClient:
             self._demo_state["reservations"].append(reservation)
             return {"status": "success", "reservation": reservation}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
                 json={"ip": ip, "mac": mac.lower(), "description": description or "Device"},
@@ -1818,7 +1845,7 @@ class EeroClient:
             ]
             return {"status": "success", "deleted": reservation_id}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.delete(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations/{reservation_id}",
                 headers=self._get_headers()
@@ -1847,7 +1874,7 @@ class EeroClient:
             self._demo_state["forwards"].append(rule)
             return {"status": "success", "forward": rule}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards",
                 json=rule,
@@ -1862,7 +1889,7 @@ class EeroClient:
             self._demo_state["forwards"] = [f for f in self._demo_state["forwards"] if f.get("id") != forward_id]
             return {"status": "success", "deleted": forward_id}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.delete(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards/{forward_id}",
                 headers=self._get_headers()
@@ -1925,7 +1952,7 @@ class EeroClient:
                 profiles = []
             else:
                 raw_list = []
-                async with httpx.AsyncClient(timeout=15.0) as client:
+                async with self._client_session() as client:
                     for endpoint in [
                         f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles",
                         f"https://api-user.e2ro.com/2.2/networks/{self.current_network_id}/profiles",
@@ -2068,7 +2095,7 @@ class EeroClient:
         formatted_devices = [f"/2.2/devices/{d}" if not d.startswith("/2.2/") else d for d in device_ids]
         payload = {"name": name, "devices": formatted_devices}
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             resp = await client.post(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles",
                 json=payload,
@@ -2170,7 +2197,7 @@ class EeroClient:
 
         methods = ["PUT", "POST", "PATCH"]
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             last_err = ""
             for url in endpoints:
                 for method in methods:
@@ -2215,7 +2242,7 @@ class EeroClient:
             endpoints.append(f"{EERO_API_BASE}/networks/{self.current_network_id}/profiles/{clean_id}")
         endpoints.append(f"{EERO_API_BASE}/profiles/{clean_id}")
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with self._client_session() as client:
             last_err = ""
             for url in endpoints:
                 try:
@@ -2369,7 +2396,7 @@ class EeroClient:
         # 2. Tenta la sincronizzazione diretta su eero Cloud (best effort)
         try:
             headers = self._get_headers()
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with self._client_session() as client:
                 if not clean_target_pid:
                     unassign_endpoints = [
                         (f"{EERO_API_BASE}/networks/{self.current_network_id}/devices/{clean_dev_id}/profile", "DELETE", None),

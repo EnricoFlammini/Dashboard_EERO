@@ -78,7 +78,7 @@ async def get_debug_raw():
         return {"status": "error", "message": "Non autenticato con eero"}
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with eero_client._client_session() as client:
             resp_dev = await client.get(
                 f"{EERO_API_BASE}/networks/{eero_client.current_network_id}/devices",
                 headers=eero_client._get_headers()

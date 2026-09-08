@@ -774,6 +774,41 @@ async def run_all_tests():
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
 
+        # =====================================================================
+        # 15. TEST CONNECTION POOLING & IN-MEMORY DNS CACHE (Issue #24)
+        # =====================================================================
+        print("\n⚡ [15/15] TEST CONNECTION POOLING & IN-MEMORY DNS CACHE (Issue #24)")
+        from app.services.dns_cache import enable_dns_cache, disable_dns_cache, get_dns_cache_stats, clear_dns_cache
+        import socket
+
+        # Test attivazione cache DNS
+        enable_dns_cache(ttl_seconds=300)
+        clear_dns_cache()
+        stats_init = get_dns_cache_stats()
+        runner.assert_true(stats_init["enabled"] is True, "DNS Cache risulta abilitata")
+        runner.assert_true(stats_init["ttl_seconds"] == 300, "TTL DNS Cache configurato a 300s")
+
+        # Prima query a dominio esterno -> cache miss
+        info1 = socket.getaddrinfo("api-user.e2ro.com", 443)
+        runner.assert_true(len(info1) > 0, "Risoluzione DNS di api-user.e2ro.com valida")
+        stats_after_first = get_dns_cache_stats()
+        runner.assert_true(stats_after_first["entries_count"] >= 1, "api-user.e2ro.com memorizzato in cache")
+
+        # Seconda query identica -> cache hit immediato a 0ms (zero query DNS verso l'upstream)
+        hits_before = stats_after_first["hits"]
+        info2 = socket.getaddrinfo("api-user.e2ro.com", 443)
+        stats_after_second = get_dns_cache_stats()
+        runner.assert_true(info1 == info2, "Risultato DNS da cache identico all'originale")
+        runner.assert_true(stats_after_second["hits"] == hits_before + 1, "Cache hit registrato con successo (zero chiamate DNS)")
+
+        # Test riutilizzo istanza client HTTP e connection pooling
+        async with eero_client._client_session() as c1:
+            client_id1 = id(c1)
+        async with eero_client._client_session() as c2:
+            client_id2 = id(c2)
+        runner.assert_true(client_id1 == client_id2, "Istanza httpx.AsyncClient riutilizzata nel pool (Keep-Alive attivo)")
+        runner.assert_true(not eero_client._http_client.is_closed, "Client HTTP aperto e pronto per nuove richieste nel pool")
+
     runner.print_summary()
 
 

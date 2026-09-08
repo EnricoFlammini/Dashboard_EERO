@@ -14,6 +14,7 @@ from app.routers import auth, automations, devices, manual, metrics, network, pr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
+from app.services.dns_cache import enable_dns_cache, disable_dns_cache
 
 # Configurazione Logging
 logging.basicConfig(
@@ -31,6 +32,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Data directory: {settings.data_path.resolve()}")
     logger.info("=" * 60)
 
+    # 0. Attivazione In-Memory DNS Caching (Issue #24)
+    enable_dns_cache(ttl_seconds=300)
+
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
 
@@ -45,6 +49,8 @@ async def lifespan(app: FastAPI):
     # Chiusura pulita dei processi in background
     logger.info("Chiusura in corso dei servizi in background...")
     await background_poller.stop()
+    await eero_client.close()
+    disable_dns_cache()
     logger.info("Applicazione terminata correttamente.")
 
 

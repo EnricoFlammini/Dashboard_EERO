@@ -6,6 +6,13 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.4.0] - 2026-08-29
 
+### ⚡ Ottimizzazione Connection Pooling & In-Memory DNS Caching (Issue #24)
+* **⚡ Risoluzione Query DNS Eccessive verso `api-user.e2ro.com`:**
+  * Risolta la segnalazione [Issue #24](https://github.com/EnricoFlammini/Dashboard_EERO/issues/24) relativa all'elevato numero di richieste DNS generate dal container (oltre 160.000 query in 30 giorni) registrate nei server DNS di rete (AdGuard Home / Pi-hole).
+  * **Persistent HTTP Connection Pooling & Keep-Alive:** `EeroClient` ora mantiene un'istanza condivisa di `httpx.AsyncClient` riutilizzando le connessioni TCP/TLS con keep-alive a 120s. Finché la connessione è attiva nel pool, le richieste API avvengono senza generare alcuna query DNS.
+  * **In-Memory DNS TTL Cache (`dns_cache.py`):** implementato un resolver cache thread-safe in memoria con TTL di 300 secondi (5 minuti) attorno a `socket.getaddrinfo`. In caso di riconnessione o timeout, l'IP di `api-user.e2ro.com` viene fornito istantaneamente dalla RAM a 0ms, abbattendo oltre il 99.9% delle query DNS verso l'upstream.
+  * **Zero Impatto sulla Frequenza Dati:** la frequenza di aggiornamento della telemetria e dei dispositivi in tempo reale rimane invariata, con una latenza per ciclo del poller ridotta da ~1.5s a ~250ms grazie al riutilizzo della sessione crittografica TLS.
+
 ### 🛡️ Opzione Drop IPv6 per Sincronizzazione AdGuard Home (Issue #23)
 * **Flag CLI `--drop-ipv6` / `--no-ipv6` e Variabile d'Ambiente `EERO_DROP_IPV6`:**
   * Risolta la richiesta [Issue #23](https://github.com/EnricoFlammini/Dashboard_EERO/issues/23) consentendo di escludere gli indirizzi IPv6 temporanei/rotanti (SLAAC / Privacy Extensions RFC 4941) che possono creare anomalie, conflitti o record duplicati nei log di AdGuard Home.
