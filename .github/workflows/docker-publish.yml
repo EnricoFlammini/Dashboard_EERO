@@ -4,10 +4,17 @@ on:
   push:
     branches:
       - main
+      - test
     tags:
       - 'v*'
       - '[0-9]+.*'
   workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: 'Tag Docker Hub da generare (es. test, 1.4.0-test, pre-release)'
+        required: false
+        default: 'test'
+        type: string
 
 env:
   IMAGE_NAME: enricoflammini/eero-dashboard
@@ -42,7 +49,10 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+            type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' && github.event_name == 'push' }}
+            type=raw,value=${{ inputs.custom_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.custom_tag != '' }}
+            type=ref,event=tag
             type=semver,pattern={{version}}
 
       - name: Build and push multi-arch Docker image
