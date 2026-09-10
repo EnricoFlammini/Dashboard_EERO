@@ -56,7 +56,7 @@
   </script>
   
   <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
-  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.sidebarv3">
 
   <!-- Chart.js CDN & Alpine.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -67,6 +67,49 @@
 
   <!-- App Logic -->
   <script src="/static/js/app.js?v={{ app_version }}"></script>
+
+  <!-- Critical Layout Fix: Sidebar Strict Width, Stacking & Centering -->
+  <style>
+    aside.sidebar-container {
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      will-change: width;
+    }
+    aside.sidebar-expanded {
+      width: 256px !important;
+      min-width: 256px !important;
+      max-width: 256px !important;
+    }
+    aside.sidebar-collapsed {
+      width: 68px !important;
+      min-width: 68px !important;
+      max-width: 68px !important;
+    }
+    .sidebar-nav-group {
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+    }
+    .sidebar-btn-collapsed {
+      width: 44px !important;
+      height: 44px !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 0.75rem !important;
+      position: relative !important;
+    }
+    .sidebar-btn-expanded {
+      width: 100% !important;
+      padding: 0.625rem 0.875rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      border-radius: 0.75rem !important;
+      position: relative !important;
+    }
+  </style>
 </head>
 <body class="bg-[#f3f3f3] dark:bg-[#202020] text-[#1c1c1c] dark:text-[#ffffff] min-h-screen antialiased flex flex-col transition-colors duration-200" x-data="eeroApp">
 
@@ -80,6 +123,7 @@
       <div class="flex items-center space-x-3">
         <!-- Sidebar Toggle Button (Collapse / Expand) -->
         <button 
+          id="btn-sidebar-toggle-header"
           @click="toggleSidebar()" 
           class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] transition active:scale-95 cursor-pointer focus:outline-none mr-0.5"
           :title="sidebarCollapsed ? (t('nav.expand_sidebar') || 'Espandi Menu') : (t('nav.collapse_sidebar') || 'Comprimi Menu')">
@@ -114,6 +158,18 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
                 <span x-text="'🎉 v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
                 <svg class="w-3 h-3 text-amber-600 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              </button>
+            </template>
+
+            <!-- Demo Active Notification Pill Badge in Header -->
+            <template x-if="isDemoMode">
+              <button 
+                @click="toggleDemoMode(false)" 
+                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 transition flex items-center space-x-1.5 cursor-pointer shadow-sm" 
+                :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>✨ DEMO</span>
+                <span class="text-[9px] opacity-80" x-text="hasSavedLiveToken ? '→ Live' : ''"></span>
               </button>
             </template>
 
@@ -241,11 +297,11 @@
     
     <!-- LEFT SIDEBAR -->
     <aside 
-      class="sticky top-16 h-[calc(100vh-4rem)] flex flex-col justify-between border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 transition-all duration-300 ease-in-out shrink-0 select-none overflow-y-auto overflow-x-hidden no-scrollbar shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
-      :class="sidebarCollapsed ? 'w-16 md:w-20' : 'w-64 md:w-72'">
+      class="sidebar-container sticky top-16 h-[calc(100vh-4rem)] flex flex-col justify-between border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 shrink-0 select-none overflow-y-auto overflow-x-hidden no-scrollbar shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
+      :class="sidebarCollapsed ? 'w-[68px] sidebar-collapsed' : 'w-64 sidebar-expanded'">
 
       <!-- Top Navigation Items -->
-      <div class="p-3 space-y-1.5">
+      <div class="p-3 sidebar-nav-group space-y-1.5 w-full">
 
         <!-- Collapse / Expand Quick Toggle Header in Sidebar -->
         <div class="flex items-center justify-between px-2 py-1 mb-2">
@@ -258,11 +314,15 @@
             x-text="t('nav.menu') || 'Navigazione'">
           </span>
           <button 
+            id="btn-sidebar-toggle-aside"
             @click="toggleSidebar()"
-            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer"
-            :class="sidebarCollapsed ? 'w-full flex justify-center' : ''"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer flex items-center justify-center"
+            :class="sidebarCollapsed ? 'w-10 h-8 mx-auto' : ''"
             :title="sidebarCollapsed ? (t('nav.expand_sidebar') || 'Espandi Menu') : (t('nav.collapse_sidebar') || 'Comprimi Menu')">
-            <svg class="w-4 h-4 transition-transform duration-300" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg x-show="sidebarCollapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+            </svg>
+            <svg x-show="!sidebarCollapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
             </svg>
           </button>
@@ -271,11 +331,17 @@
         <!-- 1. Dashboard & Mesh -->
         <button 
           @click="setTab('overview')"
-          :class="currentTab === 'overview' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/30 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group relative"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'overview'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="sidebarCollapsed ? t('nav.dashboard') : ''">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           </div>
           <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.dashboard')"></span>
@@ -284,11 +350,17 @@
         <!-- 2. Devices -->
         <button 
           @click="setTab('devices')"
-          :class="currentTab === 'devices' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/30 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group relative"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'devices'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="sidebarCollapsed ? (t('nav.devices') + ' (' + devices.length + ')') : ''">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
           </div>
           <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.devices')"></span>
@@ -299,7 +371,7 @@
           </span>
           <span 
             x-show="sidebarCollapsed && devices.length"
-            class="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-[#0067c0] dark:bg-sky-500 text-white" 
+            class="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-[#0067c0] dark:bg-sky-500 text-white shadow-sm" 
             x-text="devices.length">
           </span>
         </button>
@@ -307,11 +379,17 @@
         <!-- 3. Speed Test & Quality -->
         <button 
           @click="setTab('speedtest')"
-          :class="currentTab === 'speedtest' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/30 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group relative"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'speedtest'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="sidebarCollapsed ? t('nav.speedtest') : ''">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
           <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.speedtest')"></span>
@@ -320,11 +398,17 @@
         <!-- 4. Controls & Guest QR -->
         <button 
           @click="setTab('automations')"
-          :class="currentTab === 'automations' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/30 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group relative"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'automations'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="sidebarCollapsed ? t('nav.controls') : ''">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
           </div>
           <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.controls')"></span>
@@ -333,11 +417,17 @@
         <!-- 5. Guide & Docs -->
         <button 
           @click="setTab('manual')"
-          :class="currentTab === 'manual' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border-indigo-500/30 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group relative"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'manual'
+              ? 'bg-indigo-500/15 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 font-bold border-indigo-500/30 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="sidebarCollapsed ? t('nav.manual') : ''">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
           </div>
           <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.manual')"></span>
@@ -346,61 +436,76 @@
       </div>
 
       <!-- Bottom Quick Actions: Gaming Mode & Demo Mode -->
-      <div class="p-3 border-t border-black/[0.06] dark:border-white/[0.08] space-y-2 bg-black/[0.01] dark:bg-white/[0.02]">
+      <div class="p-3 border-t border-black/[0.06] dark:border-white/[0.08] sidebar-nav-group space-y-2 bg-black/[0.01] dark:bg-white/[0.02] w-full">
 
         <div x-show="!sidebarCollapsed" class="px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1" x-text="t('nav.quick_actions') || 'Controlli Rapidi'"></div>
 
         <!-- Gaming Focus Mode Button -->
         <button 
+          id="btn-gaming-mode"
           @click="toggleFocusMode()"
-          :class="focusModeActive 
-            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 border-rose-600' 
-            : 'bg-black/[0.03] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border-black/[0.06] dark:border-white/[0.08]'"
-          :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-          class="relative w-full flex items-center rounded-xl py-2.5 text-xs font-semibold border transition-all cursor-pointer group"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            focusModeActive 
+              ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 border-rose-600' 
+              : 'bg-black/[0.03] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border-black/[0.06] dark:border-white/[0.08]'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
           :title="t('header.gaming_tooltip')">
-          <div class="w-6 h-6 flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
           <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
             <div class="font-bold text-xs" x-text="t('nav.gaming_mode') || 'Gaming Mode'"></div>
             <div class="text-[10px] opacity-80" x-text="focusModeActive ? (t('nav.gaming_active') || 'Gaming Attivo') : (t('nav.gaming_disabled') || 'Disattivo')"></div>
           </div>
-          <span x-show="sidebarCollapsed && focusModeActive" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-white animate-ping"></span>
+          <span x-show="sidebarCollapsed && focusModeActive" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
         </button>
 
         <!-- Demo Mode Toggle Button -->
-        <!-- Case 1: In Demo Mode -> Switch back to Live -->
+        <!-- Case 1: In Demo Mode -> High-Visibility Emerald Active State -->
         <template x-if="isDemoMode">
           <button 
+            id="btn-demo-mode-active"
             @click="toggleDemoMode(false)"
-            :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-            class="relative w-full flex items-center rounded-xl py-2.5 text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer group"
+            :class="sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start'"
+            class="flex items-center rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 shadow-md shadow-emerald-600/30 transition-all cursor-pointer group relative"
             :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
-            <div class="w-6 h-6 flex items-center justify-center shrink-0 text-amber-500">
+            <div class="w-5 h-5 flex items-center justify-center shrink-0">
               <span class="text-base group-hover:scale-110 transition-transform">✨</span>
             </div>
             <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
-              <div class="font-bold text-xs">Demo Mode</div>
-              <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold" x-text="hasSavedLiveToken ? ('→ ' + t('header.switch_to_live')) : ('→ ' + t('header.live_login_btn'))"></div>
+              <div class="font-black text-xs text-white flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+                <span x-text="t('nav.demo_active') || 'DEMO ATTIVA'"></span>
+              </div>
+              <div class="text-[10px] text-emerald-100 font-semibold" x-text="hasSavedLiveToken ? ('→ ' + (t('header.switch_to_live') || 'Torna a Live')) : ('→ ' + (t('header.live_login_btn') || 'Accedi a Live'))"></div>
             </div>
-            <span x-show="sidebarCollapsed" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
+            <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626]"></span>
           </button>
         </template>
 
-        <!-- Case 2: In Live Mode -> Switch to Demo -->
+        <!-- Case 2: In Live Mode -> Subtle Inactive State to Activate Demo -->
         <template x-if="!isDemoMode">
           <button 
+            id="btn-demo-mode-inactive"
             @click="toggleDemoMode(true)"
-            :class="sidebarCollapsed ? 'justify-center px-0' : 'px-3'"
-            class="relative w-full flex items-center rounded-xl py-2.5 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/25 transition-all cursor-pointer group"
+            :class="sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start'"
+            class="flex items-center rounded-xl text-xs font-semibold bg-black/[0.03] hover:bg-amber-500/15 dark:bg-white/[0.05] dark:hover:bg-amber-500/15 text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] hover:border-amber-500/30 transition-all cursor-pointer group relative"
             :title="t('header.demo_switch_title')">
-            <div class="w-6 h-6 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+            <div class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
               <span class="text-base group-hover:scale-110 transition-transform">✨</span>
             </div>
             <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
-              <div class="font-bold text-xs" x-text="t('header.switch_to_demo') || 'Demo Mode'"></div>
-              <div class="text-[10px] opacity-75" x-text="t('nav.simulator') || 'Simulatore Rete'"></div>
+              <div class="font-bold text-xs" x-text="t('nav.demo_mode') || 'Modalità Demo'"></div>
+              <div class="text-[10px] opacity-75" x-text="t('nav.demo_activate') || 'Attiva Simulatore'"></div>
             </div>
           </button>
         </template>

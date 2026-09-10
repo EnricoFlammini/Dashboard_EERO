@@ -16,7 +16,10 @@
     "gaming_mode": "Gaming Mode",
     "gaming_active": "Gaming Attivo",
     "gaming_disabled": "Disattivata",
-    "simulator": "Simulatore Rete"
+    "simulator": "Simulatore Rete",
+    "demo_active": "DEMO ATTIVA",
+    "demo_mode": "Modalità Demo",
+    "demo_activate": "Attiva Simulatore"
   },
   "header": {
     "network_state": "Stato Rete",

@@ -16,7 +16,10 @@
     "gaming_mode": "Gaming Mode",
     "gaming_active": "Gaming Active",
     "gaming_disabled": "Disabled",
-    "simulator": "Network Simulator"
+    "simulator": "Network Simulator",
+    "demo_active": "DEMO ACTIVE",
+    "demo_mode": "Demo Mode",
+    "demo_activate": "Activate Simulator"
   },
   "header": {
     "network_state": "Network Status",
