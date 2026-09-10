@@ -41,7 +41,7 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
    - Il token verificato viene salvato in `/app/data/session.json`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
 4. **Modalità Demo & Switch Rapido:**
    - Se desideri esplorare l'applicazione senza inserire credenziali, puoi attivare la modalità dimostrativa con il pulsante dedicato o impostando `DEMO_MODE=true` nel file `.env`.
-   - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** nella barra superiore per visualizzare i dati demo senza perdere la sessione, e tornare all'istante alla rete live con **"⚡ Torna a Live"**.
+   - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** posizionato nella parte inferiore della barra laterale sinistra per visualizzare i dati demo senza perdere la sessione. Quando la modalità demo è attiva, il pulsante assume una vivace colorazione verde smeraldo con indicatore ad alta visibilità **"DEMO ATTIVA"** (e un badge di stato sincronizzato compare nell'header superiore); cliccando nuovamente si torna all'istante alla rete live con **"⚡ Torna a Live"**.
         """
     },
     {
@@ -204,8 +204,9 @@ This web application is a full-featured, self-hosted management and monitoring p
    - Enter the code into the verification input and confirm.
 3. **Session Persistence:**
    - The verified authentication token is saved to `/app/data/session.json`. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
-4. **Demo Mode:**
+4. **Demo Mode & Quick Switcher:**
    - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
+   - If authenticated, you can switch anytime using the **"✨ Demo Mode"** button in the lower left sidebar to inspect mock telemetry without losing your live session. When active, it displays a vibrant emerald green button with an explicit **"DEMO ATTIVA"** indicator (and a top header status pill); clicking it again returns immediately to your live network.
         """
     },
     {
@@ -368,6 +369,9 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ## v1.4.0
 * **Restyling Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)**
+* **Navigazione a Barra Laterale Collassabile (Stile Windows 11 Fluent) con Memoria di Stato**
+* **Riposizionamento Controlli Rapidi (Gaming Focus & Demo Mode) con Indicatore Verde Smeraldo ad Alta Visibilità**
+* **Network Health Score Breakdown & Modale Diagnostico Interattivo a 4 Pilastri (Issue #15)**
 * **Multi-Engine DNS Synchronizer (Istanze Multiple Simultanee: AdGuard, Pi-hole, Technitium)**
 * **Motore di Auto-Update Docker in-App a 1-Clic (/api/system/update)**
 * **Rilevamento Automatico Nuove Versioni Docker Hub & GitHub Releases**
@@ -479,6 +483,9 @@ Below is a summary of the main release highlights. The complete changelog with a
 
 ## v1.4.0
 * **Windows 11 Fluent Design Restyling & Dual Theme Engine (Dark & Light Mode)**
+* **Collapsible Left Sidebar Navigation (Windows 11 Fluent Style) with State Persistence**
+* **Relocated Quick Controls (Gaming Focus & Demo Mode) with High-Visibility Emerald Green Indicator**
+* **Network Health Score Breakdown & Interactive 4-Pillar Diagnostics Modal (Issue #15)**
 * **Multi-Engine DNS Synchronizer Suite (Simultaneous Instances: AdGuard, Pi-hole, Technitium)**
 * **In-App 1-Click Docker Auto-Update Engine (/api/system/update)**
 * **Automated New Release Detection via Docker Hub & GitHub Releases**

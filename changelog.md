@@ -83,6 +83,24 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Rimozione di icone duplicate ed emoji statiche dai pulsanti Multi-Engine DNS (`Aggiungi Istanza DNS`, `Testa Tutti`, `Sincronizza Tutti`) e dai pulsanti delle singole istanze (`Test`, `Sync`).
   * Rimosso il pulsante duplicato di aggiunta istanza nel contenitore vuoto.
 
+### 📐 Navigazione a Barra Laterale Collassabile (Sidebar UX) & Controlli Rapidi
+* **📐 Menu Laterale Verticale Collassabile (Windows 11 Fluent Design):**
+  * Riorganizzazione dell'architettura di navigazione dell'applicazione con passaggio dalla barra a schede orizzontale superiore ad una barra laterale verticale a scomparsa posizionata sulla sinistra (`#sidebarNav`).
+  * Supporto a due modalità operative: espanso (`256px` / `w-64`) con etichette descrittive complete ed etichette tasti, e compresso/collassato (`68px` / `w-[68px]`) in modalità compatta ad icone con tooltip nativi informativi al passaggio del mouse (`title`).
+  * Layout del contenuto principale dinamico e responsive con transizioni animate fluide (`transition-all duration-300`) che adatta il margine sinistro in base allo stato del menu (`ml-64` espanso, `ml-[68px]` compresso, `ml-0` su dispositivi mobili).
+  * Memorizzazione automatica e trasparente dello stato di apertura o chiusura in `localStorage` (`eero_sidebar_collapsed`), preservando l'assetto desiderato dell'utente tra ricaricamenti della pagina e sessioni successive.
+* **🎯 Centratura Geometrica delle Icone & Doppio Toggle:**
+  * Centratura rigorosa orizzontale e verticale di tutti i pulsanti e delle rispettive icone SVG in modalità collassata (`44x44px` / `w-11 h-11 justify-center mx-auto`), risolvendo ogni disallineamento visivo.
+  * Posizionamento intelligente del badge numerico dei dispositivi connessi: in modalità collassata si ancora come micro-pillola ad alto contrasto nell'angolo in alto a destra dell'icona (`top-1 right-1`).
+  * Pulsante dedicato per l'espansione e compressione nel footer della barra (`#btnToggleSidebarNav`) con freccia dinamica (`<<` / `>>`) ed etichetta testuale contestuale.
+  * Integrazione e sincronizzazione reattiva con il pulsante hamburger (`#btnToggleSidebarNavHeader`) posizionato nell'header superiore dell'interfaccia.
+* **🎮 Riposizionamento Controlli Rapidi & Indicatore Visivo Demo Mode ad Alta Visibilità:**
+  * Spostamento delle scorciatoie operative rapide **Gaming Focus Mode** (`#btnGamingMode`) e **Demo Mode** (`#btnDemoMode`) nella sezione inferiore della sidebar (`#sidebarControls`), rendendole sempre accessibili indipendentemente dalla pagina visualizzata.
+  * Nuova identità cromatica ad alto contrasto per lo stato della **Modalità Demo**:
+    * **Demo Attiva:** Il pulsante assume una colorazione verde smeraldo brillante (`bg-emerald-500/20 text-emerald-300 border-emerald-500/40`), animazione a punto pulsante luminoso (`animate-ping`) e dicitura esplicita *"DEMO ATTIVA"*, eliminando ogni dubbio sullo stato di simulazione.
+    * **Rete Live (Disattivata):** Stile neutro e discreto (`bg-slate-800/40 text-slate-400 border-slate-700/40`) con etichetta *"LIVE / NORMALE"*.
+  * Sincronizzazione dinamica con la pillola di stato interattiva nell'header (`#headerDemoPill`) che visualizza *"✨ DEMO"* in verde smeraldo con indicatore cliccabile per tornare istantaneamente alla rete live.
+
 ---
 
 ## [1.03.03] - 2026-08-31

@@ -193,7 +193,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.03.03',
+    changelogVersion: '1.4.0',
     changelogLoading: false,
 
     // About Modal State
@@ -2670,7 +2670,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'en'}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.03.03';
+          this.changelogVersion = json.version || '1.4.0';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         }
       } catch (err) {
