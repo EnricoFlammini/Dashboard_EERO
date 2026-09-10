@@ -16,8 +16,13 @@ document.addEventListener('alpine:init', () => {
     translations: {},
     translationsLoaded: false,
 
-    // Navigation State
+    // Navigation & Sidebar State
     currentTab: 'overview',
+    sidebarCollapsed: localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    toggleSidebar() {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+    },
     
     // Auth & Session State
     isAuthenticated: false,
@@ -607,13 +612,6 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.authLoading = false;
       }
-    },
-
-    async startDemoSession() {
-      this.authLoading = true;
-      this.loginIdentifier = "demo@eero.lan";
-      this.otpCode = "123456";
-      await this.verifyOtp();
     },
 
     async logout() {

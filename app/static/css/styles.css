@@ -562,4 +562,18 @@ html:not(.dark) .header-pill-about * {
   color: #5b21b6 !important;
 }
 
+/* ====================================================================
+   15. SIDEBAR & LAYOUT UTILITIES
+   ==================================================================== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
+/* Smooth transition for collapsible sidebar */
+aside {
+  will-change: width;
+}

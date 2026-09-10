@@ -8,7 +8,15 @@
     "profiles": "Profili & Utenti",
     "speedtest": "Speed Test & Qualità",
     "controls": "Controlli & QR Ospiti",
-    "manual": "Guida & Manuale"
+    "manual": "Guida & Manuale",
+    "menu": "Navigazione",
+    "collapse_sidebar": "Comprimi Menu",
+    "expand_sidebar": "Espandi Menu",
+    "quick_actions": "Controlli Rapidi",
+    "gaming_mode": "Gaming Mode",
+    "gaming_active": "Gaming Attivo",
+    "gaming_disabled": "Disattivata",
+    "simulator": "Simulatore Rete"
   },
   "header": {
     "network_state": "Stato Rete",
