@@ -380,6 +380,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Watchlist Dispositivi con Segnale Critico & Suggerimenti Ottimizzazione**
 * **Fix & Normalizzazione Prenotazioni DHCP Cloud ("Altre Prenotazioni Attive")**
 * **Fix & Normalizzazione Regole Port Forwarding Multi-Formato per Dispositivo**
+* **Supporto Nativo Pi-hole v6 REST API & Hostname Senza Dominio (Issue #25)**
 
 ---
 
@@ -496,6 +497,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Weak Signal Watchlist & Proactive Node Repositioning Recommendations**
 * **Fix & Cloud DHCP Reservations Normalization ("Other Active Reservations")**
 * **Fix & Multi-Format Port Forwarding Rules Normalization per Device**
+* **Native Pi-hole v6 REST API Sync & Bare Hostnames Support (Issue #25)**
 
 ---
 

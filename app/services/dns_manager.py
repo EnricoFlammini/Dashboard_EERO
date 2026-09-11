@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+import urllib.parse
 import httpx
 
 from app.services.db import db_service
@@ -197,7 +198,7 @@ class DNSManager:
                 "username": str(inst.get("username") or "").strip(),
                 "password": pwd or "",
                 "token": tok or "",
-                "zone": str(inst.get("zone") or "lan").strip().lower(),
+                "zone": str(inst.get("zone") if inst.get("zone") is not None else "lan").strip().lower().lstrip("."),
                 "has_password": bool(pwd or tok),
                 "enabled": bool(inst.get("enabled", True)),
                 "last_sync_time": old_inst.get("last_sync_time", ""),
@@ -296,11 +297,49 @@ class DNSManager:
             return {"success": False, "message": f"Errore di connessione AdGuard: {str(e)}"}
 
     async def _test_pihole(self, url: str, token: str) -> Dict[str, Any]:
-        # Prova prima Pi-hole v5 (admin/api.php) poi v6 (/api/)
+        # Prova prima Pi-hole v6 (/api/) poi v5 (admin/api.php)
         try:
             async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
-                # 1. Pi-hole v5 check
-                v5_url = f"{url}/admin/api.php?customdns&action=get&auth={token.strip()}"
+                # 1. Pi-hole v6 REST API check
+                v6_headers = {}
+                clean_token = token.strip()
+                if clean_token:
+                    v6_headers = {"sid": clean_token}
+
+                resp_v6 = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
+
+                # Se 401/403 e token fornito, prova autenticazione come password per creare sessione (SID)
+                if resp_v6.status_code in (401, 403) and clean_token:
+                    try:
+                        auth_res = await client.post(f"{url}/api/auth", json={"password": clean_token})
+                        if auth_res.status_code == 200:
+                            auth_data = auth_res.json() if isinstance(auth_res.json(), dict) else {}
+                            sid = auth_data.get("session", {}).get("sid")
+                            if sid:
+                                v6_headers = {"sid": sid}
+                                resp_v6 = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
+                    except Exception:
+                        pass
+
+                if resp_v6.status_code == 200:
+                    data = resp_v6.json() if isinstance(resp_v6.json(), dict) else {}
+                    existing = []
+                    if "config" in data and isinstance(data["config"], dict) and "dns" in data["config"]:
+                        existing = data["config"]["dns"].get("hosts") or []
+                    elif "hosts" in data and isinstance(data.get("hosts"), list):
+                        existing = data.get("hosts") or []
+                    return {
+                        "success": True,
+                        "status_code": 200,
+                        "normalized_url": url,
+                        "message": f"Connessione Pi-hole (v6 REST API) riuscita! Trovati {len(existing)} host configurati.",
+                        "existing_clients_count": len(existing)
+                    }
+                elif resp_v6.status_code in (401, 403):
+                    return {"success": False, "status_code": resp_v6.status_code, "message": "Autenticazione Pi-hole v6 fallita (401/403). Verifica Password o API Token."}
+
+                # 2. Pi-hole v5 check (legacy admin/api.php)
+                v5_url = f"{url}/admin/api.php?customdns&action=get&auth={clean_token}"
                 resp = await client.get(v5_url)
                 if resp.status_code == 200:
                     text = resp.text.strip()
@@ -312,21 +351,6 @@ class DNSManager:
                             "message": "Connessione Pi-hole (v5 API) riuscita! Record Local DNS accessibili.",
                             "existing_clients_count": 0
                         }
-
-                # 2. Pi-hole v6 REST API check
-                v6_headers = {"sid": token.strip()} if token else {}
-                resp_v6 = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
-                if resp_v6.status_code == 200:
-                    data = resp_v6.json() if isinstance(resp_v6.json(), dict) else {}
-                    return {
-                        "success": True,
-                        "status_code": 200,
-                        "normalized_url": url,
-                        "message": "Connessione Pi-hole (v6 REST API) riuscita!",
-                        "existing_clients_count": len(data.get("hosts", []))
-                    }
-                elif resp_v6.status_code in (401, 403):
-                    return {"success": False, "status_code": resp_v6.status_code, "message": "Autenticazione Pi-hole fallita (401/403). Verifica API Token o Password."}
 
                 return {
                     "success": True,
@@ -567,34 +591,138 @@ class DNSManager:
 
     async def _sync_single_pihole(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
-        token = inst.get("token") or inst.get("password") or ""
-        zone = inst.get("zone", "lan").lstrip(".")
+        token = (inst.get("token") or inst.get("password") or "").strip()
+        raw_zone = str(inst.get("zone") if inst.get("zone") is not None else "").strip().lstrip(".")
 
-        synced = 0
-        failed = 0
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=10.0, verify=False, follow_redirects=True) as client:
+                # -------------------------------------------------------------
+                # 1. RILEVAZIONE PI-HOLE v6 REST API (/api/config/dns/hosts)
+                # -------------------------------------------------------------
+                v6_headers = {}
+                if token:
+                    v6_headers = {"sid": token}
+
+                is_v6 = False
+                resp_v6 = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
+                if resp_v6.status_code == 200:
+                    is_v6 = True
+                elif resp_v6.status_code in (401, 403) and token:
+                    try:
+                        auth_res = await client.post(f"{url}/api/auth", json={"password": token})
+                        if auth_res.status_code == 200:
+                            auth_data = auth_res.json() if isinstance(auth_res.json(), dict) else {}
+                            sid = auth_data.get("session", {}).get("sid")
+                            if sid:
+                                v6_headers = {"sid": sid}
+                                recheck = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
+                                if recheck.status_code == 200:
+                                    is_v6 = True
+                                    resp_v6 = recheck
+                    except Exception:
+                        pass
+
+                # -------------------------------------------------------------
+                # 2. ESECUZIONE SINCRONIZZAZIONE PI-HOLE v6 REST API
+                # -------------------------------------------------------------
+                if is_v6:
+                    data = resp_v6.json() if isinstance(resp_v6.json(), dict) else {}
+                    existing_hosts: List[str] = []
+                    if "config" in data and isinstance(data["config"], dict) and "dns" in data["config"]:
+                        existing_hosts = data["config"]["dns"].get("hosts") or []
+                    elif "hosts" in data and isinstance(data.get("hosts"), list):
+                        existing_hosts = data.get("hosts") or []
+
+                    # Mappatura host esistenti: IP -> hostname
+                    host_map: Dict[str, str] = {}
+                    for entry in existing_hosts:
+                        if isinstance(entry, str) and " " in entry.strip():
+                            parts = entry.strip().split(None, 1)
+                            if len(parts) == 2:
+                                host_map[parts[0].lower()] = parts[1].strip()
+
+                    synced = 0
+                    for client_item in prepared_clients:
+                        ip = client_item.get("ip")
+                        hostname = client_item.get("hostname")
+                        if not ip or not hostname:
+                            continue
+                        target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+                        host_map[ip.lower().strip()] = target_name
+                        synced += 1
+
+                    new_hosts_list = [f"{ip_addr} {h_name}" for ip_addr, h_name in host_map.items()]
+
+                    # Tenta prima PATCH atomica (un'unica richiesta veloce senza restart multipli)
+                    patch_payload = {
+                        "config": {
+                            "dns": {
+                                "hosts": new_hosts_list
+                            }
+                        }
+                    }
+                    patch_res = await client.patch(f"{url}/api/config", json=patch_payload, headers=v6_headers)
+                    zone_label = f" in zona .{raw_zone}" if raw_zone else " (hostname diretti)"
+
+                    if patch_res.status_code in (200, 204):
+                        return {
+                            "success": True,
+                            "added": synced,
+                            "updated": 0,
+                            "failed": 0,
+                            "message": f"Pi-hole v6: {synced} record DNS sincronizzati con successo{zone_label}."
+                        }
+
+                    # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
+                    put_synced = 0
+                    put_failed = 0
+                    for client_item in prepared_clients:
+                        ip = client_item.get("ip")
+                        hostname = client_item.get("hostname")
+                        if not ip or not hostname:
+                            continue
+                        target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+                        val_quoted = urllib.parse.quote(f"{ip} {target_name}")
+                        put_res = await client.put(f"{url}/api/config/dns/hosts/{val_quoted}", headers=v6_headers)
+                        if put_res.status_code in (200, 201, 204) or (put_res.status_code == 400 and "already present" in put_res.text.lower()):
+                            put_synced += 1
+                        else:
+                            put_failed += 1
+
+                    return {
+                        "success": put_failed == 0,
+                        "added": put_synced,
+                        "updated": 0,
+                        "failed": put_failed,
+                        "message": f"Pi-hole v6: {put_synced} record sincronizzati{zone_label} ({put_failed} falliti)."
+                    }
+
+                # -------------------------------------------------------------
+                # 3. ESECUZIONE SINCRONIZZAZIONE PI-HOLE v5 (LEGACY admin/api.php)
+                # -------------------------------------------------------------
+                synced = 0
+                failed = 0
                 for client_item in prepared_clients:
                     ip = client_item.get("ip")
                     hostname = client_item.get("hostname")
                     if not ip or not hostname:
                         continue
-                    fqdn = f"{hostname}.{zone}"
+                    target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
 
-                    # v5 custom DNS call
-                    v5_url = f"{url}/admin/api.php?customdns&action=add&ip={ip}&domain={fqdn}&auth={token.strip()}"
+                    v5_url = f"{url}/admin/api.php?customdns&action=add&ip={ip}&domain={target_name}&auth={token}"
                     res = await client.get(v5_url)
                     if res.status_code == 200:
                         synced += 1
                     else:
                         failed += 1
 
+                zone_label = f" in zona .{raw_zone}" if raw_zone else " (hostname diretti)"
                 return {
                     "success": failed == 0,
                     "added": synced,
                     "updated": 0,
                     "failed": failed,
-                    "message": f"Pi-hole: {synced} record DNS sincronizzati in zona .{zone} ({failed} falliti)."
+                    "message": f"Pi-hole v5: {synced} record DNS sincronizzati{zone_label} ({failed} falliti)."
                 }
         except Exception as e:
             return {"success": False, "message": f"Errore durante sincronizzazione Pi-hole: {str(e)}"}

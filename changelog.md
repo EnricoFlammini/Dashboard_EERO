@@ -6,6 +6,16 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.4.0] - 2026-08-29
 
+### 🛡️ Supporto Nativo Pi-hole v6 REST API & Bare Hostnames (Issue #25)
+* **🛡️ Sincronizzazione Completa con Pi-hole v6 REST API:**
+  * Risolta la segnalazione [Issue #25](https://github.com/EnricoFlammini/Dashboard_EERO/issues/25) in cui i test di connessione su Pi-hole v6 avevano esito positivo ma la sincronizzazione restituiva errore HTTP 400 a causa dell'uso del vecchio endpoint v5 (`/admin/api.php?customdns`).
+  * Implementata la sincronizzazione nativa tramite la REST API di Pi-hole v6: recupero degli host configurati con `GET /api/config/dns/hosts` e aggiornamento batch atomico con `PATCH /api/config` (con fallback su `PUT /api/config/dns/hosts/{value}`).
+  * Supporto per istanze Pi-hole v6 senza password e gestione dell'autenticazione tramite sessione/SID (`POST /api/auth` e header `sid`).
+  * Mantenuta piena retrocompatibilità con Pi-hole v5 tramite fallback automatico.
+* **🏷️ Supporto Hostname Senza Dominio / Zona Opzionale (Bare Hostnames):**
+  * Rimossa la forzatura obbligatoria del suffisso `.lan`: il campo "Zona / Dominio" nel pannello Multi-DNS è ora opzionale.
+  * Se il campo è lasciato vuoto, l'applicazione sincronizza direttamente gli hostname puliti (es. `mypc`, `printer`, `nas`) senza aggiungere alcun suffisso di dominio.
+
 ### 🔧 Normalizzazione Prenotazioni DHCP & Regole Port Forwarding su Eero Cloud
 * **🔧 Risoluzione Visualizzazione Port Forwarding per Dispositivo:**
   * Risolto il disallineamento nei nomi di campo restituiti dall'API eero Cloud (`gateway_port`, `client_port`, `internal_ip`, associazione a `reservation`), garantendo il mapping bidirezionale con i campi dell'interfaccia (`port_from`, `port_to`, `ip`, `description`).

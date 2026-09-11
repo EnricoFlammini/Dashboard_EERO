@@ -2196,7 +2196,7 @@ document.addEventListener('alpine:init', () => {
               username: i.username || '',
               password: '',
               token: i.token || '',
-              zone: i.zone || 'lan',
+              zone: (i.zone !== undefined && i.zone !== null) ? i.zone : 'lan',
               has_password: Boolean(i.has_password),
               enabled: i.enabled !== false,
               last_sync_time: i.last_sync_time || '',

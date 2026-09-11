@@ -1503,7 +1503,7 @@
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona (es. lan):'"></label>
-                          <input type="text" x-model="inst.zone" placeholder="lan" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="text" x-model="inst.zone" :placeholder="t('controls.dns_zone_placeholder') || 'lan (opzionale)'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                       </div>
                     </template>
