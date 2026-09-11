@@ -6,6 +6,14 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.4.0] - 2026-08-29
 
+### 🔧 Normalizzazione Prenotazioni DHCP & Regole Port Forwarding su Eero Cloud
+* **🔧 Risoluzione Visualizzazione Port Forwarding per Dispositivo:**
+  * Risolto il disallineamento nei nomi di campo restituiti dall'API eero Cloud (`gateway_port`, `client_port`, `internal_ip`, associazione a `reservation`), garantendo il mapping bidirezionale con i campi dell'interfaccia (`port_from`, `port_to`, `ip`, `description`).
+  * Ottimizzato il matching delle regole di inoltro porte nella scheda del dispositivo (`/api/devices/{mac}/rules`) verificando sia l'IP attivo che l'IP riservato e il puntatore URL della prenotazione DHCP.
+* **📋 Normalizzazione Estrazione Prenotazioni DHCP ("Other Active Reservations"):**
+  * Risolto il bug per cui le prenotazioni DHCP attive non venivano elencate nella sezione "Altre prenotazioni attive" nel modale dettagli dispositivo a causa di payload eterogenei o incapsulati in dizionario (`{"reservations": [...]}` o dizionari indicizzati per ID) restituiti dal cloud eero.
+  * Introdotta la funzione `_extract_raw_list` e `_normalize_reservation` in `EeroClient` con gestione difensiva di `ip`/`ip_address` e `mac`/`mac_address`, prevenendo eccezioni HTTP 500 e allineando l'interfaccia sia per IP statico riservato che per la rilevazione dei conflitti.
+
 ### ⚡ Ottimizzazione Connection Pooling & In-Memory DNS Caching (Issue #24)
 * **⚡ Risoluzione Query DNS Eccessive verso `api-user.e2ro.com`:**
   * Risolta la segnalazione [Issue #24](https://github.com/EnricoFlammini/Dashboard_EERO/issues/24) relativa all'elevato numero di richieste DNS generate dal container (oltre 160.000 query in 30 giorni) registrate nei server DNS di rete (AdGuard Home / Pi-hole).

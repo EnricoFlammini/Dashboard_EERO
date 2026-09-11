@@ -378,6 +378,8 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Storicizzazione Continua Segnale RSSI Dispositivi Wireless (SQLite)**
 * **Nuova Sezione Qualità Wi-Fi & Copertura Mesh con Grafici Interattivi**
 * **Watchlist Dispositivi con Segnale Critico & Suggerimenti Ottimizzazione**
+* **Fix & Normalizzazione Prenotazioni DHCP Cloud ("Altre Prenotazioni Attive")**
+* **Fix & Normalizzazione Regole Port Forwarding Multi-Formato per Dispositivo**
 
 ---
 
@@ -492,6 +494,8 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Continuous Wireless Client RSSI Signal Storicization in SQLite**
 * **New Wi-Fi Signal Quality & Mesh Coverage Suite with Chart.js Graphs**
 * **Weak Signal Watchlist & Proactive Node Repositioning Recommendations**
+* **Fix & Cloud DHCP Reservations Normalization ("Other Active Reservations")**
+* **Fix & Multi-Format Port Forwarding Rules Normalization per Device**
 
 ---
 

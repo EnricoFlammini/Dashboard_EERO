@@ -1245,13 +1245,15 @@ document.addEventListener('alpine:init', () => {
 
       // 3. Riassegnazione da una prenotazione esistente (es. altra scheda di rete dello stesso PC o vecchio dispositivo)
       for (const res of (this.allReservations || [])) {
-        if (res.ip === targetIp && (res.mac || '').toLowerCase() !== currentMac) {
+        const resIp = res.ip || res.ip_address;
+        const resMac = (res.mac || res.mac_address || '').toLowerCase();
+        if (resIp === targetIp && resMac !== currentMac) {
           return { 
             hasConflict: false, 
             isReassign: true, 
             message: isIt 
-              ? `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.mac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
-              : `IP ${targetIp} is currently reserved for '${res.description || res.mac}'. Clicking 'Reserve' will reassign the reservation to this device.`
+              ? `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.name || resMac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
+              : `IP ${targetIp} is currently reserved for '${res.description || res.name || resMac}'. Clicking 'Reserve' will reassign the reservation to this device.`
           };
         }
       }
@@ -1324,7 +1326,7 @@ document.addEventListener('alpine:init', () => {
           this.allReservations = data.all_reservations || [];
           
           if (this.deviceReservation) {
-            this.deviceStaticIpInput = this.deviceReservation.ip;
+            this.deviceStaticIpInput = this.deviceReservation.ip || this.deviceReservation.ip_address || '';
           } else if (this.selectedDevice && this.selectedDevice.ip) {
             this.deviceStaticIpInput = this.selectedDevice.ip;
           }
@@ -1394,7 +1396,7 @@ document.addEventListener('alpine:init', () => {
 
     async addDevicePortForward() {
       if (!this.selectedDevice) return;
-      const targetIp = (this.deviceReservation ? this.deviceReservation.ip : (this.selectedDevice.ip || '')).trim();
+      const targetIp = (this.deviceReservation ? (this.deviceReservation.ip || this.deviceReservation.ip_address || '') : (this.selectedDevice.ip || '')).trim();
       if (!targetIp) {
         const title = this.currentLanguage === 'it' ? "IP Mancante" : "Missing IP";
         const msg = this.currentLanguage === 'it' ? "Il dispositivo deve avere un indirizzo IP valido per aprire porte." : "Device must have a valid IP address for port forwarding.";

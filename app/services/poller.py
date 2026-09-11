@@ -535,9 +535,9 @@ class BackgroundPoller:
             try:
                 forwards_res = await eero_client.get_forwards_and_reservations()
                 cloud_reservations = {
-                    (r.get("mac") or "").lower(): r.get("ip") 
+                    (r.get("mac") or r.get("mac_address") or "").lower().strip(): (r.get("ip") or r.get("ip_address") or "").strip() 
                     for r in forwards_res.get("reservations", [])
-                    if r.get("mac")
+                    if isinstance(r, dict) and (r.get("mac") or r.get("mac_address"))
                 }
             except Exception as e:
                 logger.warning(f"Failed to fetch cloud reservations in poller: {e}")

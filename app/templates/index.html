@@ -1992,13 +1992,13 @@
             <div class="pt-2">
               <div class="text-xs font-bold text-slate-800 dark:text-slate-300 mb-2"><span x-text="t('device_modal.other_reservations_title', {count: allReservations.length})"></span></div>
               <div class="max-h-32 overflow-y-auto space-y-1.5 pr-1 font-mono text-[11px]">
-                <template x-for="res in allReservations" :key="res.id || res.mac">
+                <template x-for="res in allReservations" :key="res.id || res.mac || res.ip">
                   <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-xs">
                     <div class="flex items-center space-x-2">
-                      <span class="text-sky-700 dark:text-sky-400 font-bold" x-text="res.ip"></span>
-                      <span class="text-slate-700 dark:text-slate-400 font-sans font-medium" x-text="res.description || 'Device'"></span>
+                      <span class="text-sky-700 dark:text-sky-400 font-bold" x-text="res.ip || res.ip_address"></span>
+                      <span class="text-slate-700 dark:text-slate-400 font-sans font-medium" x-text="res.description || res.name || res.nickname || 'Device'"></span>
                     </div>
-                    <span class="text-slate-500 text-[10px]" x-text="res.mac"></span>
+                    <span class="text-slate-500 text-[10px]" x-text="res.mac || res.mac_address"></span>
                   </div>
                 </template>
                 <template x-if="allReservations.length === 0">
@@ -2033,11 +2033,11 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
-                <template x-for="fwd in deviceForwards" :key="fwd.id">
+                <template x-for="fwd in deviceForwards" :key="fwd.id || fwd.url">
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || 'Custom'"></td>
-                    <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from"></td>
-                    <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to"></td>
+                    <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || fwd.name || 'Custom'"></td>
+                    <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from || fwd.gateway_port || fwd.external_port"></td>
+                    <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to || fwd.client_port || fwd.internal_port"></td>
                     <td class="py-2.5 px-3">
                       <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-slate-800 dark:text-indigo-400 dark:border-indigo-500/20" x-text="fwd.protocol || 'tcp'"></span>
                     </td>

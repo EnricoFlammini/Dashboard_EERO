@@ -1776,26 +1776,157 @@ class EeroClient:
     # =========================================================================
     # PRENOTAZIONI DHCP & PORT FORWARDING
     # =========================================================================
+    def _extract_raw_list(self, data: Any, key_name: str) -> List[Dict[str, Any]]:
+        """Estrae una lista di dizionari da risposte eero API eterogenee (liste, dizionari nidificati o dict indicizzati per ID)."""
+        if not data:
+            return []
+        if isinstance(data, list):
+            return [item for item in data if isinstance(item, dict)]
+        if isinstance(data, dict):
+            # 1. Chiave specifica presente
+            if key_name in data:
+                val = data[key_name]
+                if isinstance(val, list):
+                    return [item for item in val if isinstance(item, dict)]
+                if isinstance(val, dict):
+                    if "data" in val and isinstance(val["data"], list):
+                        return [item for item in val["data"] if isinstance(item, dict)]
+                    return [v for v in val.values() if isinstance(v, dict)]
+            # 2. Struttura {"data": [...]} o {"data": {"key": [...]}}
+            if "data" in data:
+                val = data["data"]
+                if isinstance(val, list):
+                    return [item for item in val if isinstance(item, dict)]
+                if isinstance(val, dict):
+                    if key_name in val:
+                        sub = val[key_name]
+                        if isinstance(sub, list):
+                            return [item for item in sub if isinstance(item, dict)]
+                        if isinstance(sub, dict) and "data" in sub and isinstance(sub["data"], list):
+                            return [item for item in sub["data"] if isinstance(item, dict)]
+                    return [v for v in val.values() if isinstance(v, dict)]
+            # 3. Dizionario indicizzato per ID (es. {"res_1": {...}, "res_2": {...}})
+            dict_items = [v for v in data.values() if isinstance(v, dict)]
+            if dict_items:
+                return dict_items
+        return []
+
+    def _normalize_reservation(self, r: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalizza una regola di prenotazione DHCP statica garantendo la compatibilità con tutti i firmware."""
+        res = dict(r)
+        raw_url = str(res.get("url") or "")
+        r_id = str(res.get("id") or (raw_url.split("/")[-1] if raw_url else "") or "")
+        mac_val = (res.get("mac") or res.get("mac_address") or "").lower().strip()
+        ip_val = str(res.get("ip") or res.get("ip_address") or "").strip()
+        desc = str(res.get("description") or res.get("name") or res.get("nickname") or "Device").strip()
+        url_val = raw_url or (f"/2.2/networks/{self.current_network_id}/reservations/{r_id}" if r_id else "")
+        device_val = str(res.get("device") or res.get("device_id") or "")
+
+        return {
+            "id": r_id,
+            "url": url_val,
+            "mac": mac_val,
+            "mac_address": mac_val,
+            "ip": ip_val,
+            "ip_address": ip_val,
+            "description": desc,
+            "name": desc,
+            "device": device_val,
+        }
+
+    def _normalize_forward(self, fwd: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalizza una regola di inoltro porte garantendo la coesistenza di nomi porta eero (gateway/client) e dashboard (from/to)."""
+        f = dict(fwd)
+        raw_url = str(f.get("url") or "")
+        f_id = str(f.get("id") or (raw_url.split("/")[-1] if raw_url else "") or "")
+        ip_val = str(f.get("ip") or f.get("internal_ip") or f.get("client_ip") or "").strip()
+        desc = str(f.get("description") or f.get("name") or f.get("service") or "Custom Rule").strip()
+        proto = str(f.get("protocol") or "tcp").lower().strip()
+
+        # Porte: supporta gateway_port/client_port (Cloud eero nativo) e port_from/port_to (Dashboard)
+        port_ext = f.get("port_from") or f.get("gateway_port") or f.get("external_port") or f.get("wan_port") or 0
+        port_int = f.get("port_to") or f.get("client_port") or f.get("internal_port") or f.get("lan_port") or port_ext or 0
+
+        try:
+            port_ext = int(port_ext)
+        except Exception:
+            port_ext = 0
+        try:
+            port_int = int(port_int)
+        except Exception:
+            port_int = port_ext
+
+        res_ref = str(f.get("reservation") or f.get("reservation_id") or "")
+        url_val = raw_url or (f"/2.2/networks/{self.current_network_id}/forwards/{f_id}" if f_id else "")
+
+        return {
+            "id": f_id,
+            "url": url_val,
+            "ip": ip_val,
+            "internal_ip": ip_val,
+            "port_from": port_ext,
+            "port_to": port_int,
+            "gateway_port": port_ext,
+            "client_port": port_int,
+            "external_port": port_ext,
+            "internal_port": port_int,
+            "protocol": proto,
+            "description": desc,
+            "name": desc,
+            "reservation": res_ref,
+            "enabled": bool(f.get("enabled", True)),
+        }
+
     async def get_forwards_and_reservations(self) -> Dict[str, Any]:
-        """Recupera le regole di inoltro porte e prenotazioni IP statico."""
+        """Recupera le regole di inoltro porte e prenotazioni IP statico con normalizzazione universale."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
+            raw_res = self._demo_state.get("reservations", [])
+            raw_fwd = self._demo_state.get("forwards", [])
             return {
-                "reservations": self._demo_state.get("reservations", []),
-                "forwards": self._demo_state.get("forwards", []),
+                "reservations": [self._normalize_reservation(r) for r in raw_res if isinstance(r, dict)],
+                "forwards": [self._normalize_forward(f) for f in raw_fwd if isinstance(f, dict)],
             }
 
         async with self._client_session() as client:
-            res_reservations = await client.get(
-                f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
-                headers=self._get_headers()
-            )
-            res_forwards = await client.get(
-                f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards",
-                headers=self._get_headers()
-            )
+            raw_res_payload = None
+            raw_fwd_payload = None
+
+            try:
+                res_reservations = await client.get(
+                    f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations",
+                    headers=self._get_headers()
+                )
+                if res_reservations.status_code == 200:
+                    raw_res_payload = res_reservations.json()
+                else:
+                    logger.warning(f"eero reservations response status {res_reservations.status_code}: {res_reservations.text}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch reservations from eero: {e}")
+
+            try:
+                res_forwards = await client.get(
+                    f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards",
+                    headers=self._get_headers()
+                )
+                if res_forwards.status_code == 200:
+                    raw_fwd_payload = res_forwards.json()
+                else:
+                    logger.warning(f"eero forwards response status {res_forwards.status_code}: {res_forwards.text}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch forwards from eero: {e}")
+
+            raw_res_data = raw_res_payload.get("data", raw_res_payload) if isinstance(raw_res_payload, dict) else (raw_res_payload or [])
+            raw_fwd_data = raw_fwd_payload.get("data", raw_fwd_payload) if isinstance(raw_fwd_payload, dict) else (raw_fwd_payload or [])
+
+            res_list = self._extract_raw_list(raw_res_data, "reservations")
+            fwd_list = self._extract_raw_list(raw_fwd_data, "forwards")
+
+            normalized_reservations = [self._normalize_reservation(r) for r in res_list]
+            normalized_forwards = [self._normalize_forward(f) for f in fwd_list]
+
             return {
-                "reservations": res_reservations.json().get("data", []) if res_reservations.status_code == 200 else [],
-                "forwards": res_forwards.json().get("data", []) if res_forwards.status_code == 200 else [],
+                "reservations": normalized_reservations,
+                "forwards": normalized_forwards,
             }
 
     async def add_reservation(
@@ -1817,7 +1948,7 @@ class EeroClient:
                 if (r.get("mac") or "").lower() != mac.lower() and r.get("ip") != ip
             ]
             self._demo_state["reservations"].append(reservation)
-            return {"status": "success", "reservation": reservation}
+            return {"status": "success", "reservation": self._normalize_reservation(reservation)}
 
         async with self._client_session() as client:
             resp = await client.post(
@@ -1833,26 +1964,29 @@ class EeroClient:
                 )
                 if resp_put.status_code not in (200, 201, 204):
                     raise RuntimeError(f"Errore prenotazione DHCP su eero: {resp.text}")
-                return resp_put.json().get("data", reservation)
-            return resp.json().get("data", reservation)
+                data_out = resp_put.json().get("data", reservation)
+                return {"status": "success", "reservation": self._normalize_reservation(data_out if isinstance(data_out, dict) else reservation)}
+            data_out = resp.json().get("data", reservation)
+            return {"status": "success", "reservation": self._normalize_reservation(data_out if isinstance(data_out, dict) else reservation)}
 
     async def delete_reservation(self, reservation_id: str) -> Dict[str, Any]:
         """Elimina una prenotazione IP statico dal Cloud eero."""
+        clean_id = str(reservation_id).split("/")[-1].strip()
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             self._demo_state["reservations"] = [
                 r for r in self._demo_state.get("reservations", [])
-                if r.get("id") != reservation_id and (r.get("mac") or "").lower() != reservation_id.lower() and r.get("ip") != reservation_id
+                if r.get("id") != clean_id and (r.get("mac") or "").lower() != clean_id.lower() and r.get("ip") != clean_id
             ]
-            return {"status": "success", "deleted": reservation_id}
+            return {"status": "success", "deleted": clean_id}
 
         async with self._client_session() as client:
             resp = await client.delete(
-                f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations/{reservation_id}",
+                f"{EERO_API_BASE}/networks/{self.current_network_id}/reservations/{clean_id}",
                 headers=self._get_headers()
             )
             if resp.status_code not in (200, 204):
                 raise RuntimeError(f"Errore eliminazione prenotazione DHCP: {resp.text}")
-            return {"status": "success", "deleted": reservation_id}
+            return {"status": "success", "deleted": clean_id}
 
     async def add_port_forward(
         self,
@@ -1862,41 +1996,69 @@ class EeroClient:
         protocol: str = "tcp",
         description: str = "Custom Rule"
     ) -> Dict[str, Any]:
-        rule = {
-            "id": f"fwd_{int(time.time())}",
+        """Aggiunge una regola di inoltro porte supportando sia la sintassi Cloud eero nativa sia i campi estesi."""
+        rule_payload = {
             "ip": ip,
             "port_from": port_from,
             "port_to": port_to,
+            "gateway_port": port_from,
+            "client_port": port_to,
             "protocol": protocol.lower(),
             "description": description,
+            "name": description,
+        }
+        rule_demo = {
+            "id": f"fwd_{int(time.time())}",
+            **rule_payload
         }
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
-            self._demo_state["forwards"].append(rule)
-            return {"status": "success", "forward": rule}
+            self._demo_state["forwards"].append(rule_demo)
+            return {"status": "success", "forward": self._normalize_forward(rule_demo)}
 
         async with self._client_session() as client:
+            # 1. Prova prima con il payload compatibile Cloud eero standard (gateway_port / client_port)
+            eero_payload = {
+                "ip": ip,
+                "gateway_port": port_from,
+                "client_port": port_to,
+                "protocol": protocol.lower(),
+                "description": description,
+            }
             resp = await client.post(
                 f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards",
-                json=rule,
+                json=eero_payload,
                 headers=self._get_headers()
             )
             if resp.status_code not in (200, 201):
-                raise RuntimeError(f"Errore aggiunta port forward: {resp.text}")
-            return resp.json().get("data", rule)
+                # Fallback con port_from / port_to
+                resp_fallback = await client.post(
+                    f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards",
+                    json=rule_payload,
+                    headers=self._get_headers()
+                )
+                if resp_fallback.status_code not in (200, 201):
+                    raise RuntimeError(f"Errore aggiunta port forward: {resp.text}")
+                data_out = resp_fallback.json().get("data", rule_demo)
+                return {"status": "success", "forward": self._normalize_forward(data_out if isinstance(data_out, dict) else rule_demo)}
+
+            data_out = resp.json().get("data", rule_demo)
+            return {"status": "success", "forward": self._normalize_forward(data_out if isinstance(data_out, dict) else rule_demo)}
 
     async def delete_port_forward(self, forward_id: str) -> Dict[str, Any]:
+        """Elimina una regola di inoltro porte."""
+        clean_id = str(forward_id).split("/")[-1].strip()
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
-            self._demo_state["forwards"] = [f for f in self._demo_state["forwards"] if f.get("id") != forward_id]
-            return {"status": "success", "deleted": forward_id}
+            self._demo_state["forwards"] = [f for f in self._demo_state["forwards"] if f.get("id") != clean_id]
+            return {"status": "success", "deleted": clean_id}
 
         async with self._client_session() as client:
             resp = await client.delete(
-                f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards/{forward_id}",
+                f"{EERO_API_BASE}/networks/{self.current_network_id}/forwards/{clean_id}",
                 headers=self._get_headers()
             )
             if resp.status_code not in (200, 204):
                 raise RuntimeError(f"Errore eliminazione port forward: {resp.text}")
-            return {"status": "success", "deleted": forward_id}
+            return {"status": "success", "deleted": clean_id}
 
     # =========================================================================
     # GESTIONE PROFILI UTENTE CLOUD (FAMILY PROFILES / USERS)

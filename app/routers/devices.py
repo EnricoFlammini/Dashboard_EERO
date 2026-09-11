@@ -265,45 +265,104 @@ async def rename_device(device_id: str, payload: DeviceRenameRequest):
 
 @router.get("/{mac_address}/rules")
 async def get_device_rules(mac_address: str):
-    """Restituisce la prenotazione DHCP attiva e tutte le regole di port forwarding per questo dispositivo."""
-    mac_clean = mac_address.lower()
-    cached = background_poller.get_cached_state()
-    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
-    
-    forwards_res = await eero_client.get_forwards_and_reservations()
-    all_reservations = forwards_res.get("reservations", [])
-    all_forwards = forwards_res.get("forwards", [])
-    
-    # Trova prenotazione per questo MAC o IP
-    dev_reservation = next((r for r in all_reservations if (r.get("mac") or "").lower() == mac_clean), None)
-    
-    # Determina l'IP effettivo o prenotato
-    dev_ip = dev_reservation.get("ip") if dev_reservation else (live_device.get("ip") if live_device else "")
-    dev_forwards = [f for f in all_forwards if f.get("ip") == dev_ip] if dev_ip else []
-    
-    return {
-        "status": "success",
-        "mac_address": mac_clean,
-        "current_ip": dev_ip or (live_device.get("ip") if live_device else None),
-        "reservation": dev_reservation,
-        "forwards": dev_forwards,
-        "all_reservations": all_reservations,
-        "all_forwards": all_forwards,
-    }
+    """Restituisce la prenotazione DHCP attiva e tutte le regole di port forwarding per questo dispositivo con associazione multi-chiave."""
+    try:
+        mac_clean = mac_address.lower().strip()
+        cached = background_poller.get_cached_state()
+        live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
+        live_ip = (live_device.get("ip") if live_device else "") or ""
+        live_id = str(live_device.get("id") or "") if live_device else ""
+        live_url = str(live_device.get("url") or "") if live_device else ""
+        
+        forwards_res = await eero_client.get_forwards_and_reservations()
+        all_reservations = forwards_res.get("reservations", [])
+        all_forwards = forwards_res.get("forwards", [])
+        
+        # 1. Trova prenotazione per questo MAC, IP o URL/ID device
+        dev_reservation = None
+        for r in all_reservations:
+            if not isinstance(r, dict):
+                continue
+            r_mac = (r.get("mac") or r.get("mac_address") or "").lower().strip()
+            r_ip = str(r.get("ip") or r.get("ip_address") or "").strip()
+            r_dev = str(r.get("device") or "")
+            
+            if r_mac and r_mac == mac_clean:
+                dev_reservation = r
+                break
+            if live_ip and r_ip and r_ip == live_ip:
+                dev_reservation = r
+                break
+            if live_id and r_dev and (live_id in r_dev or live_url == r_dev):
+                dev_reservation = r
+                break
+        
+        # Determina l'IP effettivo o prenotato
+        dev_ip = dev_reservation.get("ip") if dev_reservation else live_ip
+        res_url = str(dev_reservation.get("url") or "") if dev_reservation else ""
+        res_id = str(dev_reservation.get("id") or "") if dev_reservation else ""
+
+        # 2. Trova tutte le regole di port forward associate a questo dispositivo o alla sua prenotazione
+        dev_forwards = []
+        for f in all_forwards:
+            if not isinstance(f, dict):
+                continue
+            f_ip = str(f.get("ip") or f.get("internal_ip") or "").strip()
+            f_res = str(f.get("reservation") or "")
+            
+            # Match per IP target o live
+            if dev_ip and f_ip and f_ip == dev_ip:
+                dev_forwards.append(f)
+                continue
+            elif live_ip and f_ip and f_ip == live_ip:
+                dev_forwards.append(f)
+                continue
+            # Match per reservation URL o ID
+            if res_url and f_res and (f_res == res_url or res_id in f_res):
+                dev_forwards.append(f)
+                continue
+            elif res_id and f_res and res_id in f_res:
+                dev_forwards.append(f)
+                continue
+        
+        return {
+            "status": "success",
+            "mac_address": mac_clean,
+            "current_ip": dev_ip or live_ip or None,
+            "reservation": dev_reservation,
+            "forwards": dev_forwards,
+            "all_reservations": all_reservations,
+            "all_forwards": all_forwards,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching device rules for {mac_address}: {e}")
+        return {
+            "status": "success",
+            "mac_address": mac_address.lower(),
+            "current_ip": None,
+            "reservation": None,
+            "forwards": [],
+            "all_reservations": [],
+            "all_forwards": [],
+        }
 
 
 @router.post("/{mac_address}/reservation")
 async def set_device_reservation(mac_address: str, payload: ReservationRequest):
     """Riserva un IP statico DHCP per il dispositivo su Amazon eero, riassegnando se necessario."""
-    mac_clean = mac_address.lower()
+    mac_clean = mac_address.lower().strip()
     target_ip = payload.ip.strip()
     
     # Se l'IP era già prenotato per un vecchio MAC o un'altra interfaccia dello stesso host, elimina prima la vecchia prenotazione per evitare conflitti su eero
     forwards_res = await eero_client.get_forwards_and_reservations()
     for res in forwards_res.get("reservations", []):
-        if res.get("ip") == target_ip and (res.get("mac") or "").lower() != mac_clean:
-            old_res_id = res.get("id") or res.get("mac")
-            logger.info(f"Reassigning IP {target_ip} from {res.get('mac')} to {mac_clean}. Deleting old reservation {old_res_id}...")
+        if not isinstance(res, dict):
+            continue
+        res_ip = str(res.get("ip") or res.get("ip_address") or "").strip()
+        res_mac = (res.get("mac") or res.get("mac_address") or "").lower().strip()
+        if res_ip == target_ip and res_mac != mac_clean:
+            old_res_id = res.get("id") or res_mac
+            logger.info(f"Reassigning IP {target_ip} from {res_mac} to {mac_clean}. Deleting old reservation {old_res_id}...")
             try:
                 await eero_client.delete_reservation(old_res_id)
             except Exception as e:
@@ -326,9 +385,9 @@ async def set_device_reservation(mac_address: str, payload: ReservationRequest):
 @router.delete("/{mac_address}/reservation")
 async def delete_device_reservation(mac_address: str):
     """Rimuove la prenotazione IP statico dal router eero."""
-    mac_clean = mac_address.lower()
+    mac_clean = mac_address.lower().strip()
     forwards_res = await eero_client.get_forwards_and_reservations()
-    target_res = next((r for r in forwards_res.get("reservations", []) if (r.get("mac") or "").lower() == mac_clean), None)
+    target_res = next((r for r in forwards_res.get("reservations", []) if isinstance(r, dict) and (r.get("mac") or r.get("mac_address") or "").lower() == mac_clean), None)
     
     res_id = target_res.get("id") if target_res else mac_clean
     try:
