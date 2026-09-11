@@ -11,7 +11,7 @@
 > **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
 
 <p align="center">
-  <img src="docs/screenshots/dashboard_overview_en.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+  <img src="docs/screenshots/dashboard_overview.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </p>
 
 ---
@@ -27,11 +27,15 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 <div align="center">
 
-| Dashboard & Mesh Topology | Speed Test & Analytics |
+| Dashboard & Mesh Topology (v1.4.0 Fluent UI) | Devices Table, Filters & Telemetry |
 | :---: | :---: |
-| <img src="docs/screenshots/dashboard_overview_en.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Device Details & Static IP (DHCP) |
+| Speed Test, Analytics & Wi-Fi Signal Coverage (RSSI) | Multi-Engine DNS, Automations & Docker Maintenance |
+| :---: | :---: |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+
+| Device Details, Static IP (DHCP) & Port Forwarding |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
@@ -290,7 +294,7 @@ This project stands on the shoulders of the open-source networking community and
 Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon eero**. Offre telemetria autentica hardware, monitoraggio in tempo reale, prenotazioni IP statici DHCP con risoluzione automatica dei conflitti, gestione regole di port forwarding, storico misurazioni speed test, generazione dinamica di QR Code per rete ospiti, modalità gaming low-latency e manuale integrato.
 
 <p align="center">
-  <img src="docs/screenshots/dashboard_overview_it.png" alt="Panoramica eero Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+  <img src="docs/screenshots/dashboard_overview.png" alt="Panoramica eero Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
 </p>
 
 ---
@@ -299,11 +303,15 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 <div align="center">
 
-| Panoramica Dashboard & Topologia Mesh | Diagnostica Speed Test & Storico |
+| Panoramica Dashboard & Topologia Mesh (v1.4.0) | Tabella Dispositivi, Filtri & Telemetria |
 | :---: | :---: |
-| <img src="docs/screenshots/dashboard_overview_it.png" width="480" /> | <img src="docs/screenshots/speedtest_analytics.png" width="480" /> |
+| <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Dettaglio Dispositivo & Assegnazione IP Statico DHCP |
+| Speed Test, Statistiche & Qualità Segnale Wi-Fi (RSSI) | Multi-Engine DNS, Automazioni & Manutenzione Docker |
+| :---: | :---: |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+
+| Dettaglio Dispositivo, Prenotazione IP DHCP & Port Forwarding |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
