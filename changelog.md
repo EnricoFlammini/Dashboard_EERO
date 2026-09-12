@@ -4,7 +4,7 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.4.0] - 2026-08-29
+## [1.4.0] - 2026-09-12
 
 ### 🛡️ Supporto Nativo Pi-hole v6 REST API & Bare Hostnames (Issue #25)
 * **🛡️ Sincronizzazione Completa con Pi-hole v6 REST API:**
