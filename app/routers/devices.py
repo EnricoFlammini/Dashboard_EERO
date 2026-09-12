@@ -209,27 +209,6 @@ async def export_adguard(
     }
 
 
-@router.get("/{device_id_or_mac:path}")
-async def get_device_detail(device_id_or_mac: str):
-    """Restituisce la scheda completa del dispositivo: stato live e metadati locali."""
-    clean_target = device_id_or_mac.strip().lower()
-    cached = background_poller.get_cached_state()
-    devices = cached.get("devices", [])
-    
-    live_device = next(
-        (d for d in devices if (d.get("mac") or "").lower() == clean_target or str(d.get("id", "")).lower() == clean_target or str(d.get("url", "")).lower().endswith(clean_target) or str(d.get("ip", "")).lower() == clean_target),
-        None
-    )
-    
-    target_mac = (live_device.get("mac") if live_device else (clean_target if ":" in clean_target else None)) or clean_target
-    metadata = await db_service.get_device_metadata(target_mac.lower())
-
-    return {
-        "status": "success",
-        "device": live_device,
-        "metadata": metadata,
-    }
-
 
 @router.post("/{device_id_or_mac:path}/metadata")
 async def save_device_metadata(device_id_or_mac: str, payload: DeviceMetadataRequest):
@@ -485,3 +464,26 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
     except Exception as e:
         logger.error(f"Failed to assign profile for device {mac_address}: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{device_id_or_mac:path}")
+async def get_device_detail(device_id_or_mac: str):
+    """Restituisce la scheda completa del dispositivo: stato live e metadati locali (catch-all)."""
+    clean_target = device_id_or_mac.strip().lower()
+    cached = background_poller.get_cached_state()
+    devices = cached.get("devices", [])
+    
+    live_device = next(
+        (d for d in devices if (d.get("mac") or "").lower() == clean_target or str(d.get("id", "")).lower() == clean_target or str(d.get("url", "")).lower().endswith(clean_target) or str(d.get("ip", "")).lower() == clean_target),
+        None
+    )
+    
+    target_mac = (live_device.get("mac") if live_device else (clean_target if ":" in clean_target else None)) or clean_target
+    metadata = await db_service.get_device_metadata(target_mac.lower())
+
+    return {
+        "status": "success",
+        "device": live_device,
+        "metadata": metadata,
+    }
+
