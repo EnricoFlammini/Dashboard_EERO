@@ -1890,12 +1890,26 @@ class EeroClient:
             "device_id": device_id,
         }
 
-    def _normalize_forward(self, fwd: Dict[str, Any], res_map: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _normalize_forward(
+        self, 
+        fwd: Dict[str, Any], 
+        res_map: Optional[Dict[str, Any]] = None,
+        dev_map: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Normalizza una regola di inoltro porte garantendo la coesistenza di nomi porta eero (gateway/client) e dashboard (from/to)."""
         f = dict(fwd)
         raw_url = str(f.get("url") or "")
         f_id = str(f.get("id") or (raw_url.split("/")[-1] if raw_url else "") or "")
-        ip_val = str(f.get("ip") or f.get("internal_ip") or f.get("client_ip") or f.get("host") or "").strip()
+        ip_val = str(
+            f.get("ip") 
+            or f.get("ip_address") 
+            or f.get("internal_ip") 
+            or f.get("client_ip") 
+            or f.get("host") 
+            or f.get("target_ip") 
+            or f.get("lan_ip") 
+            or ""
+        ).strip()
         desc = str(f.get("description") or f.get("name") or f.get("service") or "Custom Rule").strip()
         proto = str(f.get("protocol") or "tcp").lower().strip()
 
@@ -1948,9 +1962,20 @@ class EeroClient:
             dev_id = str(raw_dev.get("id") or (dev_url.split("/")[-1] if dev_url else ""))
             if not mac_val:
                 mac_val = (raw_dev.get("mac") or raw_dev.get("mac_address") or "").lower().strip()
+            if not ip_val:
+                ip_val = str(raw_dev.get("ip") or raw_dev.get("ip_address") or "").strip()
         elif isinstance(raw_dev, str):
             dev_url = raw_dev
             dev_id = raw_dev.split("/")[-1] if "/" in raw_dev else raw_dev
+
+        # Se abbiamo dev_map, correlazione e arricchimento IP / MAC tramite device ID o URL
+        if dev_map:
+            matched_d = dev_map.get(dev_url) or dev_map.get(dev_id) or (dev_map.get(mac_val) if mac_val else None)
+            if matched_d:
+                if not ip_val:
+                    ip_val = str(matched_d.get("ip") or "").strip()
+                if not mac_val:
+                    mac_val = (matched_d.get("mac") or "").lower().strip()
 
         # Se manca l'IP o MAC ma abbiamo la reservation correlata, arricchimento da res_map
         if res_map and (res_url or res_id):
@@ -2025,8 +2050,23 @@ class EeroClient:
                 )
                 if res_forwards.status_code == 200:
                     raw_fwd_payload = res_forwards.json()
-                elif res_forwards.status_code == 404:
-                    # Fallback eventuale su /port_forwards
+                    raw_data_items = raw_fwd_payload.get("data", raw_fwd_payload) if isinstance(raw_fwd_payload, dict) else raw_fwd_payload
+                    # Se /forwards risponde 200 ma con lista vuota, controlla se esistono su /port_forwards
+                    if not raw_data_items:
+                        try:
+                            res_pf = await client.get(
+                                f"{EERO_API_BASE}/networks/{self.current_network_id}/port_forwards",
+                                headers=self._get_headers()
+                            )
+                            if res_pf.status_code == 200:
+                                pf_payload = res_pf.json()
+                                pf_items = pf_payload.get("data", pf_payload) if isinstance(pf_payload, dict) else pf_payload
+                                if pf_items:
+                                    raw_fwd_payload = pf_payload
+                        except Exception:
+                            pass
+                else:
+                    # Fallback su /port_forwards in caso di 404 o altro codice HTTP su /forwards
                     try:
                         res_pf = await client.get(
                             f"{EERO_API_BASE}/networks/{self.current_network_id}/port_forwards",
@@ -2036,8 +2076,6 @@ class EeroClient:
                             raw_fwd_payload = res_pf.json()
                     except Exception:
                         pass
-                else:
-                    logger.warning(f"eero forwards response status {res_forwards.status_code}: {res_forwards.text}")
             except Exception as e:
                 logger.warning(f"Failed to fetch forwards from eero: {e}")
 
@@ -2047,12 +2085,45 @@ class EeroClient:
             res_list = self._extract_raw_list(raw_res_data, "reservations")
             fwd_list = self._extract_raw_list(raw_fwd_data, "forwards")
 
+            if not fwd_list:
+                try:
+                    res_net = await client.get(
+                        f"{EERO_API_BASE}/networks/{self.current_network_id}",
+                        headers=self._get_headers()
+                    )
+                    if res_net.status_code == 200:
+                        net_data = res_net.json().get("data", {})
+                        net_fwds = net_data.get("forwards") or net_data.get("port_forwards") or []
+                        if isinstance(net_fwds, list):
+                            fwd_list.extend(net_fwds)
+                        elif isinstance(net_fwds, dict):
+                            fwd_list.extend(net_fwds.values())
+                except Exception:
+                    pass
+
             cached_devices = []
             try:
                 from app.services.poller import background_poller
                 cached_devices = background_poller.get_cached_state().get("devices", [])
             except Exception:
                 pass
+
+            dev_map = {}
+            for d in cached_devices:
+                if isinstance(d, dict):
+                    d_id = str(d.get("id") or "")
+                    d_url = str(d.get("url") or "")
+                    d_mac = (d.get("mac") or d.get("mac_address") or "").lower().strip()
+                    d_ip = str(d.get("ip") or "").strip()
+                    entry = {"id": d_id, "url": d_url, "mac": d_mac, "ip": d_ip}
+                    if d_id:
+                        dev_map[d_id] = entry
+                    if d_url:
+                        dev_map[d_url] = entry
+                    if d_mac:
+                        dev_map[d_mac] = entry
+                    if d_ip:
+                        dev_map[d_ip] = entry
 
             normalized_reservations = [self._normalize_reservation(r, cached_devices=cached_devices) for r in res_list]
 
@@ -2070,7 +2141,13 @@ class EeroClient:
             for r_raw, r_norm in zip(res_list, normalized_reservations):
                 nested_fwds = []
                 if isinstance(r_raw, dict):
-                    nested = r_raw.get("forwards") or r_raw.get("port_forwards") or r_raw.get("ports")
+                    nested = (
+                        r_raw.get("forwards") 
+                        or r_raw.get("port_forwards") 
+                        or r_raw.get("ports")
+                        or r_raw.get("port_forward_rules")
+                        or r_raw.get("rules")
+                    )
                     if isinstance(nested, list):
                         nested_fwds = [f for f in nested if isinstance(f, dict)]
                     elif isinstance(nested, dict):
@@ -2090,7 +2167,7 @@ class EeroClient:
             normalized_forwards = []
             seen_fwd_keys = set()
             for f in fwd_list:
-                norm_f = self._normalize_forward(f, res_map=res_map)
+                norm_f = self._normalize_forward(f, res_map=res_map, dev_map=dev_map)
                 f_key = norm_f.get("id") or f"{norm_f.get('ip')}_{norm_f.get('port_from')}_{norm_f.get('port_to')}_{norm_f.get('protocol')}"
                 if f_key not in seen_fwd_keys:
                     seen_fwd_keys.add(f_key)

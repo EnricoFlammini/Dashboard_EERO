@@ -310,7 +310,8 @@ async def get_device_rules(mac_address: str):
         for f in all_forwards:
             if not isinstance(f, dict):
                 continue
-            f_ip = str(f.get("ip") or f.get("internal_ip") or "").strip()
+            f_ip = str(f.get("ip") or f.get("internal_ip") or f.get("ip_address") or "").strip()
+            f_ip_clean = f_ip.split("/")[0].split(":")[0].strip()
             f_mac = (f.get("mac") or f.get("mac_address") or "").lower().strip()
             f_res = str(f.get("reservation") or f.get("reservation_id") or "")
             f_dev = str(f.get("device") or f.get("device_id") or "")
@@ -319,11 +320,9 @@ async def get_device_rules(mac_address: str):
             if f_mac and f_mac == mac_clean:
                 dev_forwards.append(f)
                 continue
-            # Match per IP target o live
-            if dev_ip and f_ip and f_ip == dev_ip:
-                dev_forwards.append(f)
-                continue
-            elif live_ip and f_ip and f_ip == live_ip:
+            # Match per IP target, live o prenotato
+            target_ips = {ip for ip in (dev_ip, live_ip, (dev_reservation.get("ip") if dev_reservation else None)) if ip}
+            if f_ip_clean and f_ip_clean in target_ips:
                 dev_forwards.append(f)
                 continue
             # Match per device ID o URL
