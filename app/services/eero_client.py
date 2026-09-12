@@ -1811,16 +1811,71 @@ class EeroClient:
                 return dict_items
         return []
 
-    def _normalize_reservation(self, r: Dict[str, Any]) -> Dict[str, Any]:
-        """Normalizza una regola di prenotazione DHCP statica garantendo la compatibilità con tutti i firmware."""
+    def _normalize_reservation(self, r: Dict[str, Any], cached_devices: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """Normalizza una regola di prenotazione DHCP statica garantendo la compatibilità con tutti i firmware ed estrazione ricorsiva di device."""
         res = dict(r)
         raw_url = str(res.get("url") or "")
         r_id = str(res.get("id") or (raw_url.split("/")[-1] if raw_url else "") or "")
-        mac_val = (res.get("mac") or res.get("mac_address") or "").lower().strip()
-        ip_val = str(res.get("ip") or res.get("ip_address") or "").strip()
-        desc = str(res.get("description") or res.get("name") or res.get("nickname") or "Device").strip()
+        
+        # Estrazione device object se presente come dict
+        device_obj = res.get("device") if isinstance(res.get("device"), dict) else {}
+        
+        mac_val = (
+            res.get("mac") 
+            or res.get("mac_address") 
+            or device_obj.get("mac") 
+            or device_obj.get("mac_address") 
+            or ""
+        ).lower().strip()
+        
+        ip_val = str(
+            res.get("ip") 
+            or res.get("ip_address") 
+            or device_obj.get("ip") 
+            or device_obj.get("ip_address") 
+            or ""
+        ).strip()
+        
+        desc = str(
+            res.get("description") 
+            or res.get("name") 
+            or res.get("nickname") 
+            or device_obj.get("nickname") 
+            or device_obj.get("custom_name") 
+            or device_obj.get("name") 
+            or device_obj.get("hostname") 
+            or "Device"
+        ).strip()
+        
+        # Gestione device identifier o URL
+        device_raw = res.get("device")
+        dev_url = ""
+        dev_id = ""
+        if isinstance(device_raw, dict):
+            dev_url = str(device_raw.get("url") or "")
+            dev_id = str(device_raw.get("id") or (dev_url.split("/")[-1] if dev_url else ""))
+        elif isinstance(device_raw, str):
+            dev_url = device_raw
+            dev_id = device_raw.split("/")[-1] if "/" in device_raw else device_raw
+        
+        device_id = str(res.get("device_id") or dev_id or "")
+
+        # Se il MAC è ancora vuoto, correlazione automatica con i dispositivi noti nella rete (per URL, device_id o IP)
+        if not mac_val and cached_devices:
+            for d in cached_devices:
+                if not isinstance(d, dict):
+                    continue
+                d_mac = (d.get("mac") or d.get("mac_address") or "").lower().strip()
+                d_url = str(d.get("url") or "")
+                d_id = str(d.get("id") or "")
+                d_ip = str(d.get("ip") or "").strip()
+                if (dev_url and dev_url == d_url) or (device_id and device_id == d_id) or (ip_val and ip_val == d_ip):
+                    mac_val = d_mac
+                    if desc == "Device":
+                        desc = str(d.get("custom_name") or d.get("nickname") or d.get("hostname") or "Device").strip()
+                    break
+
         url_val = raw_url or (f"/2.2/networks/{self.current_network_id}/reservations/{r_id}" if r_id else "")
-        device_val = str(res.get("device") or res.get("device_id") or "")
 
         return {
             "id": r_id,
@@ -1831,21 +1886,37 @@ class EeroClient:
             "ip_address": ip_val,
             "description": desc,
             "name": desc,
-            "device": device_val,
+            "device": dev_url or device_id,
+            "device_id": device_id,
         }
 
-    def _normalize_forward(self, fwd: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_forward(self, fwd: Dict[str, Any], res_map: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Normalizza una regola di inoltro porte garantendo la coesistenza di nomi porta eero (gateway/client) e dashboard (from/to)."""
         f = dict(fwd)
         raw_url = str(f.get("url") or "")
         f_id = str(f.get("id") or (raw_url.split("/")[-1] if raw_url else "") or "")
-        ip_val = str(f.get("ip") or f.get("internal_ip") or f.get("client_ip") or "").strip()
+        ip_val = str(f.get("ip") or f.get("internal_ip") or f.get("client_ip") or f.get("host") or "").strip()
         desc = str(f.get("description") or f.get("name") or f.get("service") or "Custom Rule").strip()
         proto = str(f.get("protocol") or "tcp").lower().strip()
 
-        # Porte: supporta gateway_port/client_port (Cloud eero nativo) e port_from/port_to (Dashboard)
-        port_ext = f.get("port_from") or f.get("gateway_port") or f.get("external_port") or f.get("wan_port") or 0
-        port_int = f.get("port_to") or f.get("client_port") or f.get("internal_port") or f.get("lan_port") or port_ext or 0
+        # Porte: supporta gateway_port/client_port (Cloud eero nativo), port_from/port_to (Dashboard) o port singola
+        port_ext = (
+            f.get("port_from") 
+            or f.get("gateway_port") 
+            or f.get("external_port") 
+            or f.get("wan_port") 
+            or f.get("port") 
+            or 0
+        )
+        port_int = (
+            f.get("port_to") 
+            or f.get("client_port") 
+            or f.get("internal_port") 
+            or f.get("lan_port") 
+            or f.get("port") 
+            or port_ext 
+            or 0
+        )
 
         try:
             port_ext = int(port_ext)
@@ -1856,14 +1927,51 @@ class EeroClient:
         except Exception:
             port_int = port_ext
 
-        res_ref = str(f.get("reservation") or f.get("reservation_id") or "")
-        url_val = raw_url or (f"/2.2/networks/{self.current_network_id}/forwards/{f_id}" if f_id else "")
+        # Estrazione riferimento reservation (dict o stringa)
+        raw_res = f.get("reservation") or f.get("reservation_id") or ""
+        res_url = ""
+        res_id = ""
+        if isinstance(raw_res, dict):
+            res_url = str(raw_res.get("url") or "")
+            res_id = str(raw_res.get("id") or (res_url.split("/")[-1] if res_url else ""))
+        elif isinstance(raw_res, str):
+            res_url = raw_res
+            res_id = raw_res.split("/")[-1] if "/" in raw_res else raw_res
+
+        # Estrazione riferimento device (dict o stringa)
+        raw_dev = f.get("device") or f.get("device_id") or ""
+        dev_url = ""
+        dev_id = ""
+        mac_val = (f.get("mac") or f.get("mac_address") or "").lower().strip()
+        if isinstance(raw_dev, dict):
+            dev_url = str(raw_dev.get("url") or "")
+            dev_id = str(raw_dev.get("id") or (dev_url.split("/")[-1] if dev_url else ""))
+            if not mac_val:
+                mac_val = (raw_dev.get("mac") or raw_dev.get("mac_address") or "").lower().strip()
+        elif isinstance(raw_dev, str):
+            dev_url = raw_dev
+            dev_id = raw_dev.split("/")[-1] if "/" in raw_dev else raw_dev
+
+        # Se manca l'IP o MAC ma abbiamo la reservation correlata, arricchimento da res_map
+        if res_map and (res_url or res_id):
+            matched_r = res_map.get(res_url) or res_map.get(res_id)
+            if matched_r:
+                if not ip_val:
+                    ip_val = str(matched_r.get("ip") or "").strip()
+                if not mac_val:
+                    mac_val = (matched_r.get("mac") or "").lower().strip()
+
+        url_val = raw_url if isinstance(raw_url, str) and raw_url.startswith("/") else (f"/2.2/networks/{self.current_network_id}/forwards/{f_id}" if f_id else "")
 
         return {
             "id": f_id,
             "url": url_val,
             "ip": ip_val,
             "internal_ip": ip_val,
+            "mac": mac_val,
+            "mac_address": mac_val,
+            "device": dev_url or dev_id,
+            "device_id": dev_id,
             "port_from": port_ext,
             "port_to": port_int,
             "gateway_port": port_ext,
@@ -1873,12 +1981,19 @@ class EeroClient:
             "protocol": proto,
             "description": desc,
             "name": desc,
-            "reservation": res_ref,
+            "reservation": res_url or res_id,
+            "reservation_id": res_id,
             "enabled": bool(f.get("enabled", True)),
         }
 
     async def get_forwards_and_reservations(self) -> Dict[str, Any]:
         """Recupera le regole di inoltro porte e prenotazioni IP statico con normalizzazione universale."""
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self._resolve_network_id()
+            except Exception as e:
+                logger.warning(f"Could not resolve network ID in get_forwards_and_reservations: {e}")
+
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             raw_res = self._demo_state.get("reservations", [])
             raw_fwd = self._demo_state.get("forwards", [])
@@ -1910,6 +2025,17 @@ class EeroClient:
                 )
                 if res_forwards.status_code == 200:
                     raw_fwd_payload = res_forwards.json()
+                elif res_forwards.status_code == 404:
+                    # Fallback eventuale su /port_forwards
+                    try:
+                        res_pf = await client.get(
+                            f"{EERO_API_BASE}/networks/{self.current_network_id}/port_forwards",
+                            headers=self._get_headers()
+                        )
+                        if res_pf.status_code == 200:
+                            raw_fwd_payload = res_pf.json()
+                    except Exception:
+                        pass
                 else:
                     logger.warning(f"eero forwards response status {res_forwards.status_code}: {res_forwards.text}")
             except Exception as e:
@@ -1921,8 +2047,54 @@ class EeroClient:
             res_list = self._extract_raw_list(raw_res_data, "reservations")
             fwd_list = self._extract_raw_list(raw_fwd_data, "forwards")
 
-            normalized_reservations = [self._normalize_reservation(r) for r in res_list]
-            normalized_forwards = [self._normalize_forward(f) for f in fwd_list]
+            cached_devices = []
+            try:
+                from app.services.poller import background_poller
+                cached_devices = background_poller.get_cached_state().get("devices", [])
+            except Exception:
+                pass
+
+            normalized_reservations = [self._normalize_reservation(r, cached_devices=cached_devices) for r in res_list]
+
+            # Mappa per correlazione reservation -> port forwarding
+            res_map = {}
+            for r in normalized_reservations:
+                if r.get("url"):
+                    res_map[r["url"]] = r
+                if r.get("id"):
+                    res_map[r["id"]] = r
+                if r.get("ip"):
+                    res_map[r["ip"]] = r
+
+            # Estrazione regole di port forwarding annidate direttamente dentro le prenotazioni
+            for r_raw, r_norm in zip(res_list, normalized_reservations):
+                nested_fwds = []
+                if isinstance(r_raw, dict):
+                    nested = r_raw.get("forwards") or r_raw.get("port_forwards") or r_raw.get("ports")
+                    if isinstance(nested, list):
+                        nested_fwds = [f for f in nested if isinstance(f, dict)]
+                    elif isinstance(nested, dict):
+                        nested_fwds = [f for f in nested.values() if isinstance(f, dict)]
+                
+                for nf in nested_fwds:
+                    enriched = dict(nf)
+                    if not enriched.get("ip") and r_norm.get("ip"):
+                        enriched["ip"] = r_norm["ip"]
+                    if not enriched.get("mac") and r_norm.get("mac"):
+                        enriched["mac"] = r_norm["mac"]
+                    if not enriched.get("reservation") and r_norm.get("url"):
+                        enriched["reservation"] = r_norm["url"]
+                    fwd_list.append(enriched)
+
+            # Normalizza e deduplica tutte le regole di port forward
+            normalized_forwards = []
+            seen_fwd_keys = set()
+            for f in fwd_list:
+                norm_f = self._normalize_forward(f, res_map=res_map)
+                f_key = norm_f.get("id") or f"{norm_f.get('ip')}_{norm_f.get('port_from')}_{norm_f.get('port_to')}_{norm_f.get('protocol')}"
+                if f_key not in seen_fwd_keys:
+                    seen_fwd_keys.add(f_key)
+                    normalized_forwards.append(norm_f)
 
             return {
                 "reservations": normalized_reservations,

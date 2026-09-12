@@ -16,13 +16,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Rimossa la forzatura obbligatoria del suffisso `.lan`: il campo "Zona / Dominio" nel pannello Multi-DNS è ora opzionale.
   * Se il campo è lasciato vuoto, l'applicazione sincronizza direttamente gli hostname puliti (es. `mypc`, `printer`, `nas`) senza aggiungere alcun suffisso di dominio.
 
-### 🔧 Normalizzazione Prenotazioni DHCP & Regole Port Forwarding su Eero Cloud
-* **🔧 Risoluzione Visualizzazione Port Forwarding per Dispositivo:**
-  * Risolto il disallineamento nei nomi di campo restituiti dall'API eero Cloud (`gateway_port`, `client_port`, `internal_ip`, associazione a `reservation`), garantendo il mapping bidirezionale con i campi dell'interfaccia (`port_from`, `port_to`, `ip`, `description`).
-  * Ottimizzato il matching delle regole di inoltro porte nella scheda del dispositivo (`/api/devices/{mac}/rules`) verificando sia l'IP attivo che l'IP riservato e il puntatore URL della prenotazione DHCP.
-* **📋 Normalizzazione Estrazione Prenotazioni DHCP ("Other Active Reservations"):**
-  * Risolto il bug per cui le prenotazioni DHCP attive non venivano elencate nella sezione "Altre prenotazioni attive" nel modale dettagli dispositivo a causa di payload eterogenei o incapsulati in dizionario (`{"reservations": [...]}` o dizionari indicizzati per ID) restituiti dal cloud eero.
-  * Introdotta la funzione `_extract_raw_list` e `_normalize_reservation` in `EeroClient` con gestione difensiva di `ip`/`ip_address` e `mac`/`mac_address`, prevenendo eccezioni HTTP 500 e allineando l'interfaccia sia per IP statico riservato che per la rilevazione dei conflitti.
+### 🔧 Normalizzazione Avanzata Prenotazioni DHCP & Regole Port Forwarding su Eero Cloud
+* **🔧 Risoluzione Completa Visualizzazione & Harvesting Port Forwarding:**
+  * Risolto il disallineamento nei nomi di campo restituiti dall'API eero Cloud (`gateway_port`, `client_port`, `port`, `internal_ip`, associazione a `reservation`), garantendo il mapping bidirezionale con i campi dell'interfaccia (`port_from`, `port_to`, `ip`, `description`).
+  * Implementato l'harvesting ricorsivo delle regole di inoltro porte sia da endpoint dedicati (`/forwards` e `/port_forwards`) sia annidate all'interno di ciascun oggetto prenotazione DHCP (`r["forwards"]` o `r["port_forwards"]`), con deduplicazione automatica e arricchimento IP/MAC tramite mappa delle prenotazioni.
+  * Ottimizzato il matching delle regole nella scheda del dispositivo (`/api/devices/{mac}/rules`) verificando correlazione multi-criterio: MAC address, IP attivo, IP riservato e puntatori risorsa eero.
+  * Aggiunto supporto nel frontend (`index.html`) per porte singole `fwd.port` ed estrazione sicura dell'ID di cancellazione dalle URL delle regole.
+* **📋 Risoluzione Ricorsiva Prenotazioni DHCP & Badge "STATIC" Globale:**
+  * Risolto il mancato rilevamento delle prenotazioni DHCP e il mancato aggiornamento del badge "STATIC" nella tabella principale dei dispositivi: l'API eero incapsula frequentemente i metadati del dispositivo all'interno di un oggetto o dizionario annidato `device` (es. `{"url": "...", "mac": "...", "nickname": "..."}`) o tramite riferimento URL.
+  * Introdotta l'estrazione ricorsiva in `_normalize_reservation` e la correlazione automatica con i dispositivi noti in cache RAM tramite ID e URL del dispositivo.
+  * Aggiunta la risoluzione automatica preventiva del `current_network_id` in `get_forwards_and_reservations` prima delle chiamate endpoint, prevenendo richieste HTTP 404/400 se l'ID di rete non è pre-popolato nelle variabili d'ambiente.
+  * Sincronizzata la mappa `cloud_reservations` nel poller in background (`poller.py`), assicurando che tutti i dispositivi con prenotazione attiva vengano contrassegnati con `is_static: True` ed evidenziati visivamente con il badge verde `STATIC` nella lista dispositivi.
 
 ### ⚡ Ottimizzazione Connection Pooling & In-Memory DNS Caching (Issue #24)
 * **⚡ Risoluzione Query DNS Eccessive verso `api-user.e2ro.com`:**

@@ -534,16 +534,36 @@ class BackgroundPoller:
 
             try:
                 forwards_res = await eero_client.get_forwards_and_reservations()
-                cloud_reservations = {
-                    (r.get("mac") or r.get("mac_address") or "").lower().strip(): (r.get("ip") or r.get("ip_address") or "").strip() 
-                    for r in forwards_res.get("reservations", [])
-                    if isinstance(r, dict) and (r.get("mac") or r.get("mac_address"))
-                }
+                cloud_reservations = {}
+                # Mappa di supporto per correlare MAC se la reservation contiene solo device URL o ID
+                dev_lookup = {}
+                for d in devices:
+                    if isinstance(d, dict):
+                        d_mac = (d.get("mac") or d.get("mac_address") or "").lower().strip()
+                        if d_mac:
+                            if d.get("id"):
+                                dev_lookup[str(d["id"])] = d_mac
+                            if d.get("url"):
+                                dev_lookup[str(d["url"])] = d_mac
+                            if d.get("ip"):
+                                dev_lookup[str(d["ip"])] = d_mac
+
+                for r in forwards_res.get("reservations", []):
+                    if not isinstance(r, dict):
+                        continue
+                    r_mac = (r.get("mac") or r.get("mac_address") or "").lower().strip()
+                    r_ip = (r.get("ip") or r.get("ip_address") or "").strip()
+                    r_dev = str(r.get("device") or r.get("device_id") or "")
+                    if not r_mac and r_dev:
+                        r_mac = dev_lookup.get(r_dev) or dev_lookup.get(r_dev.split("/")[-1]) or ""
+                    if not r_mac and r_ip:
+                        r_mac = dev_lookup.get(r_ip) or ""
+                    if r_mac and r_ip:
+                        cloud_reservations[r_mac] = r_ip
             except Exception as e:
                 logger.warning(f"Failed to fetch cloud reservations in poller: {e}")
                 cloud_reservations = {}
 
-            # Costruzione mappa dispositivi -> profili per arricchimento immediato
             # Costruzione mappa dispositivi -> profili per arricchimento immediato
             device_to_profile: Dict[str, Dict[str, Any]] = {}
             for prof in profiles:

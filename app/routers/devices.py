@@ -285,7 +285,7 @@ async def get_device_rules(mac_address: str):
                 continue
             r_mac = (r.get("mac") or r.get("mac_address") or "").lower().strip()
             r_ip = str(r.get("ip") or r.get("ip_address") or "").strip()
-            r_dev = str(r.get("device") or "")
+            r_dev = str(r.get("device") or r.get("device_id") or "")
             
             if r_mac and r_mac == mac_clean:
                 dev_reservation = r
@@ -293,7 +293,10 @@ async def get_device_rules(mac_address: str):
             if live_ip and r_ip and r_ip == live_ip:
                 dev_reservation = r
                 break
-            if live_id and r_dev and (live_id in r_dev or live_url == r_dev):
+            if live_id and r_dev and (live_id in r_dev or r_dev == live_id):
+                dev_reservation = r
+                break
+            if live_url and r_dev and (live_url in r_dev or r_dev == live_url):
                 dev_reservation = r
                 break
         
@@ -308,8 +311,14 @@ async def get_device_rules(mac_address: str):
             if not isinstance(f, dict):
                 continue
             f_ip = str(f.get("ip") or f.get("internal_ip") or "").strip()
-            f_res = str(f.get("reservation") or "")
+            f_mac = (f.get("mac") or f.get("mac_address") or "").lower().strip()
+            f_res = str(f.get("reservation") or f.get("reservation_id") or "")
+            f_dev = str(f.get("device") or f.get("device_id") or "")
             
+            # Match per MAC diretto
+            if f_mac and f_mac == mac_clean:
+                dev_forwards.append(f)
+                continue
             # Match per IP target o live
             if dev_ip and f_ip and f_ip == dev_ip:
                 dev_forwards.append(f)
@@ -317,8 +326,15 @@ async def get_device_rules(mac_address: str):
             elif live_ip and f_ip and f_ip == live_ip:
                 dev_forwards.append(f)
                 continue
+            # Match per device ID o URL
+            if live_id and f_dev and (live_id in f_dev or f_dev == live_id):
+                dev_forwards.append(f)
+                continue
+            elif live_url and f_dev and (live_url in f_dev or f_dev == live_url):
+                dev_forwards.append(f)
+                continue
             # Match per reservation URL o ID
-            if res_url and f_res and (f_res == res_url or res_id in f_res):
+            if res_url and f_res and (f_res == res_url or res_id in f_res or res_url in f_res):
                 dev_forwards.append(f)
                 continue
             elif res_id and f_res and res_id in f_res:
@@ -335,7 +351,7 @@ async def get_device_rules(mac_address: str):
             "all_forwards": all_forwards,
         }
     except Exception as e:
-        logger.error(f"Error fetching device rules for {mac_address}: {e}")
+        logger.error(f"Error fetching device rules for {mac_address}: {e}", exc_info=True)
         return {
             "status": "success",
             "mac_address": mac_address.lower(),
@@ -386,8 +402,18 @@ async def set_device_reservation(mac_address: str, payload: ReservationRequest):
 async def delete_device_reservation(mac_address: str):
     """Rimuove la prenotazione IP statico dal router eero."""
     mac_clean = mac_address.lower().strip()
+    cached = background_poller.get_cached_state()
+    live_device = next((d for d in cached.get("devices", []) if (d.get("mac") or "").lower() == mac_clean), None)
+    live_ip = (live_device.get("ip") if live_device else "") or ""
+
     forwards_res = await eero_client.get_forwards_and_reservations()
-    target_res = next((r for r in forwards_res.get("reservations", []) if isinstance(r, dict) and (r.get("mac") or r.get("mac_address") or "").lower() == mac_clean), None)
+    target_res = next((
+        r for r in forwards_res.get("reservations", []) 
+        if isinstance(r, dict) and (
+            (r.get("mac") or r.get("mac_address") or "").lower() == mac_clean
+            or (live_ip and (r.get("ip") or "") == live_ip)
+        )
+    ), None)
     
     res_id = target_res.get("id") if target_res else mac_clean
     try:

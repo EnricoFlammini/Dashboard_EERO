@@ -2036,14 +2036,14 @@
                 <template x-for="fwd in deviceForwards" :key="fwd.id || fwd.url">
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || fwd.name || 'Custom'"></td>
-                    <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from || fwd.gateway_port || fwd.external_port"></td>
-                    <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to || fwd.client_port || fwd.internal_port"></td>
+                    <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from || fwd.gateway_port || fwd.external_port || fwd.port || '-'"></td>
+                    <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to || fwd.client_port || fwd.internal_port || fwd.port || fwd.port_from || '-'"></td>
                     <td class="py-2.5 px-3">
                       <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-slate-800 dark:text-indigo-400 dark:border-indigo-500/20" x-text="fwd.protocol || 'tcp'"></span>
                     </td>
                     <td class="py-2.5 px-3 text-right font-sans">
                       <button 
-                        @click="deleteDevicePortForward(fwd.id)"
+                        @click="deleteDevicePortForward(fwd.id || (fwd.url ? fwd.url.split('/').pop() : ''))"
                         class="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                         :title="t('device_modal.delete_forward_title')">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
