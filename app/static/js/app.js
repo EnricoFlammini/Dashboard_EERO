@@ -18,10 +18,12 @@ document.addEventListener('alpine:init', () => {
 
     // Navigation & Sidebar State
     currentTab: 'overview',
-    sidebarCollapsed: localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    sidebarCollapsed: window.matchMedia('(max-width: 1199px)').matches || localStorage.getItem('eero_sidebar_collapsed') === 'true',
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
-      localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+      if (!window.matchMedia('(max-width: 767px)').matches) {
+        localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+      }
     },
     
     // Auth & Session State
@@ -245,6 +247,9 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
+      window.matchMedia('(max-width: 1199px)').addEventListener('change', ({ matches }) => {
+        this.sidebarCollapsed = matches || localStorage.getItem('eero_sidebar_collapsed') === 'true';
+      });
       this.initTheme();
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
@@ -488,6 +493,7 @@ document.addEventListener('alpine:init', () => {
 
     async setTab(tab) {
       this.currentTab = tab;
+      if (window.matchMedia('(max-width: 767px)').matches) this.sidebarCollapsed = true;
       if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
