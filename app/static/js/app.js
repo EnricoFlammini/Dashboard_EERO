@@ -1101,6 +1101,7 @@ document.addEventListener('alpine:init', () => {
               (d.frequency && d.frequency >= 5000 && d.frequency < 5900)
             ));
             
+            const b = this.selectedBandFilter;
             let match = false;
             if (b === '6GHz') match = is6G;
             else if (b === '5GHz') match = is5G;
