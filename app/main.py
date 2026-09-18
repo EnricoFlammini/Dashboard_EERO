@@ -106,6 +106,11 @@ async def healthcheck():
     }
 
 
+@app.get("/manual", response_class=HTMLResponse)
+@app.get("/automations", response_class=HTMLResponse)
+@app.get("/speedtest", response_class=HTMLResponse)
+@app.get("/devices", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Serve la Single Page Application (SPA) della Dashboard."""
