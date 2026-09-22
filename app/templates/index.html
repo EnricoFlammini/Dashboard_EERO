@@ -3018,7 +3018,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-white" x-text="t('changelog_modal.title')"></h3>
-            <span class="text-[11px] text-slate-400">Release Notes & Version History</span>
+            <span class="text-[11px] text-slate-400" x-text="t('changelog_modal.subtitle') || 'Release Notes & Version History'">Release Notes & Version History</span>
           </div>
         </div>
         <button @click="showChangelogModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
@@ -3048,7 +3048,7 @@
             @click="showChangelogModal = false; openUpdateModal(true)" 
             class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
             <span>🚀</span>
-            <span x-text="currentLanguage === 'it' ? 'Verifica Aggiornamenti' : 'Check for Updates'"></span>
+            <span x-text="t('changelog_modal.check_updates') || (currentLanguage === 'it' ? 'Verifica Aggiornamenti' : 'Check for Updates')"></span>
           </button>
           <button @click="showChangelogModal = false" class="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('changelog_modal.close')"></button>
         </div>

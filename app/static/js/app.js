@@ -2842,15 +2842,20 @@ document.addEventListener('alpine:init', () => {
       this.changelogLoading = true;
       this.showChangelogModal = true;
       try {
-        const res = await fetch(`/api/manual/changelog?lang=${this.currentLanguage || 'en'}`);
+        const lang = this.currentLanguage || 'en';
+        const res = await fetch(`/api/manual/changelog?lang=${lang}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
           this.changelogVersion = json.version || '1.5.0';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
+        } else {
+          throw new Error(json.message || "Failed to load");
         }
       } catch (err) {
         console.error("Open changelog error:", err);
-        this.changelogContent = '<p class="text-rose-400">Impossibile caricare il changelog.</p>';
+        const errMsg = this.t('changelog_modal.error_loading') || (this.currentLanguage === 'it' ? 'Impossibile caricare il changelog.' : 'Unable to load changelog.');
+        this.changelogContent = `<p class="text-rose-400 font-medium py-4">${errMsg}</p>`;
       } finally {
         this.changelogLoading = false;
       }
