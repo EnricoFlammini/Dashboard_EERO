@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 🤖 **AI Network Diagnostics, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Diagnostica intelligente in linguaggio naturale, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 🤖 **AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
 
 ---
 
@@ -42,13 +42,14 @@ gantt
     UI Statistiche Globali & Carico Nodi :done, v1_5c, after v1_5b, 3d
     Diagnostica SLA ISP & Export CSV/JSON :done, v1_5d, after v1_5c, 3d
     Tooltip Dispositivi Grafici Analytics :done, v1_5e, after v1_5d, 1d
-    section v1.6.0 - AI Diagnostics, Automations & Homelab Bridge
-    AI Natural Language Diagnostics & Roaming Advisor :active, v1_6a, 2026-09-24, 4d
-    Anomaly Detection Traffico Notturno IoT          :v1_6b, after v1_6a, 3d
-    Parental Scheduling & Speedtest Bufferbloat Engine:v1_6c, after v1_6b, 4d
-    Home Assistant MQTT Auto-Discovery & Prometheus   :v1_6d, after v1_6c, 5d
-    Multi-Notifier Dispatcher (Discord, Gotify, NTFY) :v1_6e, after v1_6d, 3d
-    Data Retention Worker, PWA & Backup Wizard        :v1_6f, after v1_6e, 4d
+    section v1.6.0 - AI Diagnostics, RBAC, Automations & Homelab
+    Local RBAC & User Management Engine               :active, v1_6a, 2026-09-24, 4d
+    AI Natural Language Diagnostics & Roaming Advisor :v1_6b, after v1_6a, 4d
+    Anomaly Detection Traffico Notturno IoT           :v1_6c, after v1_6b, 3d
+    Parental Scheduling & Speedtest Bufferbloat Engine :v1_6d, after v1_6c, 4d
+    Home Assistant MQTT Auto-Discovery & Prometheus    :v1_6e, after v1_6d, 5d
+    Multi-Notifier Dispatcher (Discord, Gotify, NTFY)  :v1_6f, after v1_6e, 3d
+    Data Retention Worker, PWA & Backup Wizard         :v1_6g, after v1_6f, 4d
 ```
 
 ---
@@ -267,9 +268,9 @@ gantt
 
 ---
 
-### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, Smart Automations & Homelab Bridge
+### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge
 
-> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un sistema avanzato di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
+> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
 
 #### 1. 🤖 AI Network Diagnostics & Intelligent Health Score
 * **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
@@ -283,7 +284,42 @@ gantt
   * Analizzatore statistico su serie storiche SQLite (`device_usage_history`) durante le ore notturne (01:00 - 06:00).
   * Rilevamento automatico di anomalie (outlier statistici) per download/upload anomali su telecamere IP, sensori domotici o smart TV, con notifica immediata di potenziale compromissione o loop di rete.
 
-#### 2. ⏱️ Smart Automations, Schedules & ISP Monitoring
+#### 2. 🔐 Local Role-Based Access Control (RBAC) & User Management
+* **Architettura a Sessione Cloud Unificata & Utenti Locali Indipendenti:**
+  * Mantenimento della connessione a monte verso eero Cloud imperniata sull'unico token principale già autenticato con 2FA dall'amministratore di rete (`session.json`).
+  * Nessuna necessità di distribuire credenziali Amazon/eero o codici OTP secondari a familiari, colleghi o ospiti.
+  * Gli utenti locali autenticano la loro sessione direttamente contro la dashboard mediante credenziali semplici e sicure (username e password memorizzate localmente).
+* **Schema Dati SQLite (`metrics.db`) & Bootstrap Trasparente:**
+  * Nuova tabella relazionale `local_users` (`id`, `username`, `password_hash`, `is_admin`, `permissions`, `created_at`, `last_login`).
+  * Hashing crittografico leggero e robusto standard Python (`hashlib.pbkdf2_hmac` con salt crittografico casuale, digest SHA-256 e 100.000 iterazioni, senza librerie binarie C o dipendenze esterne pesanti).
+  * Inizializzazione trasparente al primo avvio dell'utente `admin` predefinito, con possibilità di pre-configurazione o override tramite variabili d'ambiente opzionali `ADMIN_USER` e `ADMIN_PASSWORD`.
+* **Matrice dei Permessi Granulari (Read & Action Scopes):**
+  * **Ambiti di Visibilità (Read Scopes):**
+    * `view_topology`: Visualizzazione della mappa dei nodi mesh, stato operativo e tipologia di backhaul.
+    * `view_devices`: Accesso all'elenco dei dispositivi connessi/noti, indirizzi IP, MAC e frequenze radio.
+    * `view_rules`: Consultazione delle prenotazioni DHCP e delle regole di Port Forwarding attive.
+    * `view_guest_wifi`: Visualizzazione dello stato della rete Wi-Fi Ospiti e scansione del QR code.
+    * `view_speedtest`: Consultazione dello storico delle misurazioni WAN e dei grafici di prestazione SLA.
+    * `view_dns_sync`: Monitoraggio dello stato delle istanze Multi-Engine DNS e dei log di sincronizzazione.
+  * **Ambiti di Operatività & Modifica (Write/Action Scopes):**
+    * `action_reboot_nodes`: Autorizzazione al riavvio dell'intera rete mesh o di singoli beacon eero.
+    * `action_edit_devices`: Modifica di nomi personalizzati, categorie, note e preferiti (⭐).
+    * `action_manage_rules`: Creazione, modifica e cancellazione di prenotazioni IP statiche e regole di inoltro porte.
+    * `action_toggle_guest`: Abilitazione/disabilitazione della rete ospiti e rigenerazione della password.
+    * `action_run_speedtest`: Esecuzione di nuovi test di velocità on-demand sull'hardware del gateway.
+    * `action_sync_dns`: Esecuzione forzata manuale della sincronizzazione verso i server DNS locali.
+  * **Privilegi Superadmin Esclusivi:**
+    * Gestione completa (creazione, modifica permessi, reset password, eliminazione) degli account locali.
+    * Autorizzazione all'avvio dell'aggiornamento automatico del container Docker in-app (`/api/system/update/trigger`).
+* **Backend Security & Endpoints FastAPI:**
+  * Nuove rotte di autenticazione locale: `POST /api/auth/local/login`, `POST /api/auth/local/logout`, `GET /api/auth/local/me`.
+  * Endpoint CRUD di gestione utenti riservati al superadmin: `GET|POST|PUT|DELETE /api/users`.
+  * Dependency injection riutilizzabile `require_permission(perm_key)` su tutte le rotte operative per bloccare con `HTTP 403 Forbidden` qualsiasi tentativo di bypass o richiesta non autorizzata.
+* **Interfaccia Utente Reattiva (Alpine.js + Tailwind):**
+  * Modale dedicato *"Gestione Utenti & Permessi"* accessibile solo agli amministratori, con elenco utenti, badge di ruolo e switch a griglia (toggle interattivi iOS-style) per abilitare/disabilitare ciascun permesso.
+  * Condizionamento visuale dinamico dell'interfaccia con direttive Alpine `x-show` e `x-if` per nascondere o disabilitare sezioni della sidebar e pulsanti operativi (es. pulsanti di reboot, modifiche regole o toggle rete ospiti) in base ai claim autorizzativi restituiti dalla sessione.
+
+#### 3. ⏱️ Smart Automations, Schedules & ISP Monitoring
 * **Parental & Device Scheduling (Profili e Gruppi di Dispositivi):**
   * Creazione e gestione di gruppi logici (es. *"Bambini / Console"*, *"Smart TV"*, *"IoT Guest"*).
   * Motore di schedulazione temporale con regole ricorrenti (giorni feriali, fine settimana, orari notturni) per sospendere o ripristinare automaticamente l'accesso a internet dei client appartenenti al gruppo tramite le API cloud eero (`paused: true/false`).
@@ -296,7 +332,7 @@ gantt
   * Monitoraggio continuo dei tassi di errore pacchetti (drop rate) e dei tempi di attività (uptime) dei nodi mesh.
   * Opzione per abilitare il riavvio programmato facoltativo e sequenziale dei nodi o dell'intera rete durante fasce orarie notturne a impatto zero (es. ore 04:30), prevenendo memory leak o blocchi firmware.
 
-#### 3. 🏡 Espansione Ecosistema Homelab & Notifiche
+#### 4. 🏡 Espansione Ecosistema Homelab & Notifiche
 * **Integrazione Home Assistant & MQTT Auto-Discovery:**
   * Client MQTT asincrono integrato con pubblicazione automatica di topic e configurazioni Home Assistant Discovery (`homeassistant/binary_sensor/...`, `homeassistant/sensor/...`, `homeassistant/switch/...`).
   * Device Tracker di presenza in tempo reale per tutti i dispositivi noti (stato `home`/`not_home` sincronizzato con l'associazione fisica Wi-Fi/LAN).
@@ -313,7 +349,7 @@ gantt
   * Supporto all'ecosistema DNS homelab esteso oltre ad AdGuard, Pi-hole e Technitium.
   * Integrazione con **Blocky** (lightweight DNS proxy per Kubernetes/Docker) e **Unbound** (server ricorsivo per homelab avanzati con sincronizzazione automatica dei record A/PTR locali).
 
-#### 4. ⚡ Database Retention, Compattazione & Ottimizzazioni UX
+#### 5. ⚡ Database Retention, Compattazione & Ottimizzazioni UX
 * **Data Retention & Aggregation Worker:**
   * Worker asincrono in background per compattazione e aggregazione trasparente del database SQLite `metrics.db`.
   * Architettura di tiering temporale: campioni grezzi a granularità elevata (10s) conservati per 7 giorni; rollup orario per dati tra 8 e 30 giorni; aggregati giornalieri/mensili per analisi storiche a lungo termine (fino a 90 giorni).
@@ -328,7 +364,10 @@ gantt
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
 
-##### Modulo 1: Backend FastAPI & Engine Core
+##### Modulo 1: Backend FastAPI, Auth & Engine Core
+- [ ] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
+- [ ] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
+- [ ] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
 - [ ] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/ai_diagnostics.py`).
 - [ ] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini.
 - [ ] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
@@ -338,12 +377,17 @@ gantt
 - [ ] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
 
 ##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`)
+- [ ] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
+- [ ] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
 - [ ] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
 - [ ] Nuova tabella `traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
 - [ ] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
 - [ ] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
 ##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA
+- [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
+- [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato.
+- [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
 - [ ] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
 - [ ] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale.
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
@@ -356,7 +400,7 @@ gantt
 - [ ] Endpoint nativo OpenMetrics/Prometheus (`GET /metrics`) e template dashboard Grafana incluso in repository.
 - [ ] Dispatcher multi-canale di notifica con connettori nativi per Discord, Gotify, NTFY e Pushover.
 - [ ] Driver di sincronizzazione DNS per istanze Blocky e server ricorsivi Unbound in `DNSManager`.
-- [ ] Aggiornamento documentazione tecnica, manuale integrato (`app/routers/manual.py`) e test pre-release (370+ test previsti).
+- [ ] Aggiornamento documentazione tecnica, manuale integrato (`app/routers/manual.py`) e test pre-release (385+ test previsti).
 
 ---
 
