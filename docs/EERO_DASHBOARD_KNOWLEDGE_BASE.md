@@ -31,6 +31,8 @@
    * 4.14 [Speed Test & Analisi Prestazioni Gateway](#414-speed-test--analisi-prestazioni-gateway)
    * 4.15 [Modalità Demo (Simulatore Integrato Dual-Network)](#415-modalità-demo-simulatore-integrato-dual-network)
    * 4.16 [Statistiche & Analytics di Rete, SLA ISP & Data Export Center (v1.5.0)](#416-statistiche--analytics-di-rete-sla-isp--data-export-center-v150)
+   * 4.17 [Telemetria Switching Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42)](#417-telemetria-switching-hardware-layer-2--dispositivi-cablati-issue-40--42)
+   * 4.18 [Community Hall of Fame & Crediti Open Source](#418-community-hall-of-fame--crediti-open-source)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -238,6 +240,16 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
   * Esportazione istantanea con 1 clic in formato CSV RFC 4180 o JSON formattato UTF-8 con header HTTP `Content-Disposition: attachment`.
   * 4 Dataset esportabili: `devices` (anagrafica e dettagli tecnici client), `speedtest` (storico WAN), `signal` (serie temporale RSSI dBm), `usage` (volumi dati consumati).
 
+### 4.17 Telemetria Switching Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42)
+* **Architettura Switching ASIC Hardware:** Nei router ed extender eero, le porte Ethernet LAN/WAN commutano i frame a livello Layer 2 (Data Link) direttamente nei circuiti ASIC hardware. La commutazione non passa attraverso il demone software per-client o la CPU locale.
+* **Assenza di Contatori Realtime nel Kernel eero:** A differenza dei client Wi-Fi (dove il sottosistema wireless 802.11 traccia frame e byte per ciascuna associazione radio), il kernel Linux degli apparati eero non espone contatori di byte/secondo o throughput istantaneo per le interfacce cablate.
+* **Chiarimento Abbonamento eero Plus:** Nemmeno con una sottoscrizione eero Plus attiva sono disponibili contatori in tempo reale per apparati cablati nelle API del router (le statistiche mostrate dall'app ufficiale eero derivano da aggregazioni periodiche asincrone a blocchi temporali su server cloud AWS). Tutti i disclaimer fuorvianti che richiedevano l'abbonamento Plus sono stati rimossi.
+* **Rappresentazione Accurata nella UI:** La dashboard espone il valore trasparente `↓ — / ↑ — (Cablato)` (o `(Wired)` in inglese) e include tooltip e popover esplicativi sulla natura hardware della commutazione.
+
+### 4.18 Community Hall of Fame & Crediti Open Source
+* **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici.
+* **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -354,6 +366,9 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **GET** | `/api/analytics/export/{data_type}` | Esportazione dataset (devices, speedtest, signal, usage) in formato CSV o JSON (v1.5.0) | `?format=csv|json&limit=500` |
 | **GET** | `/api/manual/chapters` | Elenco capitoli e argomenti del manuale integrato | `?lang=it|en` |
 | **GET** | `/api/manual/chapter/{id}` | Contenuto HTML formattato di un capitolo del manuale | `?lang=it|en` |
+| **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.5.0) | `?lang=it|en` |
+| **GET** | `/api/system/language` | Restituisce la preferenza di lingua attiva e persistita su SQLite (v1.5.0) | Nessuno |
+| **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "en"\|"it"}` |
 
 ---
 
@@ -421,6 +436,21 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Causa Radice:** Nelle porte auto-sensing eero con switch upstream, i metadati locali delle porte possono includere stringhe `Port 1 (WAN)` o `has_wan_port`. La precedente logica di fallback considerava la presenza di porte WAN fisiche con precedenza superiore rispetto all'IP autoritativo di subnet (`gateway_ip = 192.168.4.1`) e al nome autoritativo registrato (`gateway_name = "Family Room"`).
 * **Risoluzione:** Riorganizzata la gerarchia di elezione in `get_eeros()` per dare precedenza assoluta ai metadati di rete eero Cloud (`current_gateway_id`, `current_gateway_name`, `current_gateway_ip = 192.168.4.1`). I nodi secondari cablati via switch vengono correttamente demotati ed etichettati come `Ethernet (1.0 Gbps)` o `Ethernet (Cablato)`.
 
+### Issue #40 & Issue #42 — Telemetria Switching Hardware Layer 2 & Disclaimer eero Plus
+* **Sintomo:** Utenti con abbonamento eero Plus attivo (`jpatchMC`) riscontravano la dicitura `↓ — / ↑ — (Wired)` sui dispositivi collegati via cavo Ethernet e chiedevano perché venisse mostrato il trattino o se fosse richiesto un abbonamento aggiuntivo.
+* **Causa Radice:** Nelle porte Ethernet degli apparati eero la commutazione avviene tramite switch ASIC hardware a livello Layer 2; il kernel Linux del router non emette stream di contatori pacchetti/byte software per le porte cablate. Nella UI precedente, un disclaimer informativo suggeriva erroneamente che l'abbonamento eero Plus potesse abilitare la telemetria cablata in tempo reale.
+* **Risoluzione:** Rimossa la dicitura fuorviante su eero Plus in `it.json`, `en.json` e `index.html`. Aggiornato il tooltip contestuale e il popover di trasparenza dati, spiegando tecnicamente la commutazione hardware Layer 2. Localizzati i badge in `(Cablato)` o `(Wired)` a seconda della lingua attiva.
+
+### Issue #41 — Collisione Nodi Mesh a Sottostringa & Localizzazione Vendor/Categorie in Analytics
+* **Sintomo:** Nel grafico *Carico per Nodo Mesh* della sezione Analytics, quando due nodi avevano nomi correlati da sottostringa (es. "Bedroom" e "Issac Bedroom"), tutti i dispositivi venivano attribuiti a "Bedroom", azzerando il conteggio client di "Issac Bedroom". Inoltre, la stringa "Altro" appariva hardcoded in italiano anche impostando la dashboard in lingua inglese (`Hatton920`).
+* **Causa Radice:** In `analytics.py` il matching tra nome nodo e dispositivo utilizzava l'operatore di contenimento `in` anziché l'uguaglianza rigorosa. Nelle funzioni di charting in `app.js`, la stringa `'Altro'` era fissata senza passare dal resolver di localizzazione.
+* **Risoluzione:** Introdotto algoritmo deterministico a più livelli in `analytics.py` (priorità assoluta a `node_id`, poi URL cloud univoco, seriale hardware e infine uguaglianza esatta `==` normalizzata). Introdotte in `app.js` le funzioni di formattazione reattive `formatCategoryName` e `formatVendorName` con fallback `'Other'` in inglese e `'Altro'` in italiano.
+
+### CI/CD & Docker Hub Release Isolation (Protezione Tag `latest`)
+* **Sintomo:** Il push di commit sui rami secondari di test (`test`, `dev`) causava l'aggiornamento automatico del puntatore `:latest` su Docker Hub, distribuendo immagini pre-rilascio instabili agli utenti di produzione (`u/djbills` su Reddit).
+* **Causa Radice:** L'action GitHub `docker/metadata-action` generava implicitamente la regola `latest=auto`, applicandola ai rami di sviluppo.
+* **Risoluzione:** Aggiunto `flavor: | latest=false` in `.github/workflows/docker-publish.yml`, garantendo che solo i tag semantici espliciti di release approvata possano aggiornare il puntatore `:latest` di produzione.
+
 ### Note Tecniche — Tooltip Interattivo Grafici Analytics (v1.5.0)
 * **Contesto:** I grafici di distribuzione di rete (frequenze, carico nodi, categorie, vendor) non mostravano il dettaglio dei dispositivi singoli al passaggio del mouse.
 * **Soluzione Backend:** L'endpoint `GET /api/analytics/distribution` ora include il campo `"devices": [...]` per ogni categoria/segmento. Il nome di ogni client viene risolto tramite `_get_device_display_name(dev)` con precedenza: alias personalizzato (`custom_name`) → nickname (`nickname`) → hostname → IP → MAC address.
@@ -461,3 +491,9 @@ R: La dashboard espone endpoint REST pronti all'uso:
 * `GET /api/devices`: Array JSON di tutti i client con IP, MAC, nodo collegato, banda e potenza RSSI.
 * `GET /api/network/top-hogs`: Statistiche di consumo dati in formato JSON.
 * I webhook automatici trasmettono payload completi con eventi `new_device`, `node_offline` e `daily_digest` contenente il campo `line_stability`.
+
+### D: Perché per i dispositivi connessi via cavo Ethernet vedo "↓ — / ↑ — (Cablato)" e non il consumo in tempo reale?
+R: Le porte Ethernet degli apparati eero funzionano come un normale switch hardware Layer 2: il traffico viaggia direttamente tra i circuiti integrati della porta fisica senza essere analizzato pacchetto per pacchetto dal sistema operativo Linux del router. Pertanto, il kernel eero non espone contatori di byte/secondo per apparati cablati nelle sue API (nemmeno per chi possiede l'abbonamento eero Plus). La dashboard adotta quindi il valore neutro `↓ — / ↑ — (Cablato)` per trasparenza tecnica e rigore scientifico, evitando di mostrare stime fittizie.
+
+### D: Perché nel grafico "Carico Nodi Mesh" alcuni nodi con nomi simili mostravano 0 dispositivi?
+R: Nelle versioni precedenti, il motore di matching utilizzava una ricerca per sottostringa. Se due nodi avevano nomi correlati (es. "Bedroom" e "Issac Bedroom"), i dispositivi venivano raggruppati sul primo nodo trovato. Dalla versione 1.5.0 (Issue #41), il matching è rigoroso ed esatto basandosi su ID univoco cloud, seriale hardware e uguaglianza esatta dei nomi.
