@@ -10,13 +10,23 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🏆 Nuova Sezione Riconoscimenti e Crediti Community:**
   * Inserita nel modale *About & Crediti* una nuova sezione con badge *Hall of Fame* dedicata agli utenti della community GitHub e Reddit che hanno reso possibile la costante evoluzione del progetto.
   * **Co-Designers & Sviluppi Implementati:**
-    * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40).
+    * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40, #42).
     * **[@Hatton920](https://github.com/Hatton920):** Network Health Score & Penalty Scoring Engine (#15), negoziazione velocità fisica link PHY (#14), distinzione stati rebooting vs offline per i nodi mesh (#34), isolamento e sanitizzazione speedtest (#35), fix collisione nomi nodi mesh (#41).
     * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore e promotore dell'architettura *Multi-Network Fleet Management* (#22) per account con più reti mesh eero.
     * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione completa in lingua inglese del Daily Digest Telegram (#38).
     * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive UI (#27, #28), persistenza stato navigazione e filtri frequenza radio (#29).
   * **Bug Hunters & Tester:**
     * Ringraziamenti a **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+
+### 🔌 Chiarimento Architetturale Telemetria Layer 2 & Dispositivi Cablati Ethernet (Issue #42)
+* **🔌 Spiegazione Tecnica Commutazione Hardware Ethernet & Rimozione Disclaimer Abbonamento:**
+  * Risolta la segnalazione [Issue #42](https://github.com/EnricoFlammini/Dashboard_EERO/issues/42) (`jpatchMC`): chiarito il comportamento dei dispositivi cablati via Ethernet in relazione agli abbonamenti eero Plus e alla telemetria nativa dell'hardware.
+  * **Analisi di Rete & Architettura Switch ASIC eero:**
+    * Nei dispositivi eero, le porte Ethernet operano a livello di switch ASIC hardware Layer 2. La commutazione dei pacchetti tra apparati cablati avviene direttamente nel silicio senza transitare come stream di pacchetti software per-client attraverso la CPU o il demone di telemetria locale del router.
+    * Di conseguenza, né il kernel locale eero né gli endpoint REST espongono contatori di throughput (Mbps) o volumi di traffico cumulativo (RX/TX bytes) in tempo reale per le porte cablate, anche per gli utenti con abbonamento **eero Plus** attivo (le statistiche mostrate dall'app ufficiale eero derivano da aggregazioni periodiche e asincrone elaborate a intervalli orari/giornalieri sui server cloud AWS).
+  * **Bonifica UI e Messaggi Informativi (`it.json`, `en.json`, `index.html`):**
+    * Rimossa la dicitura fuorviante che indicava la necessità dell'abbonamento eero Plus per sbloccare la telemetria in tempo reale dei dispositivi cablati.
+    * Aggiornato il tooltip contestuale `usage_ethernet_layer2_note` e il modale di trasparenza dati: viene ora chiaramente spiegato che l'indicatore `↓ — / ↑ — (Cablato)` (o `(Wired)`) riflette la commutazione trasparente Layer 2 hardware dello switch eero, prevenendo fraintendimenti per gli utenti dotati di licenza Plus.
 
 ### 🚀 CI/CD & Docker Hub Release Isolation
 * **🚀 Isolamento Deterministico del Tag `latest` su Docker Hub:**
