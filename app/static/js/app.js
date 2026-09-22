@@ -2344,6 +2344,8 @@ document.addEventListener('alpine:init', () => {
               zone: (i.zone !== undefined && i.zone !== null) ? i.zone : 'lan',
               has_password: Boolean(i.has_password),
               enabled: i.enabled !== false,
+              prune_stale_ips: i.prune_stale_ips !== undefined ? Boolean(i.prune_stale_ips) : true,
+              drop_ipv6: Boolean(i.drop_ipv6),
               last_sync_time: i.last_sync_time || '',
               last_sync_status: i.last_sync_status || '',
               last_sync_count: i.last_sync_count || 0
@@ -2420,7 +2422,9 @@ document.addEventListener('alpine:init', () => {
             password: inst.password || undefined,
             token: inst.token || undefined,
             zone: inst.zone,
-            enabled: inst.enabled
+            enabled: inst.enabled,
+            prune_stale_ips: inst.prune_stale_ips !== false,
+            drop_ipv6: Boolean(inst.drop_ipv6)
           }))
         };
         const res = await fetch('/api/automations/dns', {
