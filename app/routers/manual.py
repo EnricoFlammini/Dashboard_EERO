@@ -366,11 +366,17 @@ CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
 ## v1.5.0
+* **Statistiche & Analytics di Rete, Analisi SLA ISP & Data Export Center:** Nuova vista con grafici di ripartizione frequenze, carico nodi mesh, categorie, vendor e trend SLA con esportazione CSV/JSON.
+* **Device Data Usage Insights Suite:** Nuova scheda "Consumo Dati" con selettore temporale (Ultime 24h, 7 Giorni, 30 Giorni), curve Chart.js e widget Top Bandwidth Hogs.
 * **Multi-Network Fleet Management & Hot-Swap Dinamico (Issue #22):** Gestione di account multi-rete eero con switch immediato e conservazione della rete attiva nei cicli di polling.
 * **Intelligent Address Pruning & Esclusione IPv6 DNS (Issue #31 & #30):** Pruning automatico di IP obsoleti e lease SLAAC IPv6 scaduti su AdGuard Home e DNS multipli.
-* **Device Data Usage Insights Suite:** Nuova scheda "Consumo Dati" con selettore temporale (Ultime 24h, 7 Giorni, 30 Giorni) e grafici Chart.js per dispositivo.
-* **Widget Top Bandwidth Hogs:** Monitoraggio in tempo reale dei dispositivi che consumano più banda nella rete con accesso diretto ai dettagli.
-* **Simulatore Multi-Rete in Demo Mode:** Supporto dual-network per simulare reti multiple indipendenti (Casa Rossi Mesh 6E e Ufficio & Studio Pro Mesh).
+* **Localizzazione Multilingua Daily Digest Telegram & Scheda Controlli (Issue #38):** Supporto bilingue completo EN/IT per report giornalieri, allarmi e preferenze utente.
+* **Risoluzione Collisione Nodi Mesh & Localizzazione "Other/Altro" (Issue #41):** Match deterministico esatto per nomi a sottostringa e localizzazione dinamica di categorie e vendor.
+* **Correzione Primary Gateway in Topologie Multi-Ethernet (Issue #36):** Gerarchia di elezione rigorosa del gateway primario su switch e reti cablate.
+* **Chiarimento Telemetria Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42):** Eliminazione disclaimer fuorvianti e corretta spiegazione della commutazione hardware Ethernet.
+* **Isolamento Release CI/CD Docker Hub:** Build isolate per branch di test senza sovrascrittura accidentale del tag `latest` stabile.
+* **Community Hall of Fame & Crediti:** Sezione speciale nel modale About con ringraziamenti ai co-designer e ai tester della community.
+* **Simulatore Multi-Rete in Demo Mode:** Supporto dual-network indipendente (Casa Rossi Mesh 6E e Ufficio & Studio Pro Mesh).
 
 ---
 
@@ -499,17 +505,23 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ## v1.0.0
 * **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
-"""
+\"\"\"
 
-CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
+CHANGELOG_SUMMARY_EN = \"\"\"# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
 ## v1.5.0
+* **Network Statistics & Analytics, ISP SLA Analysis & Data Export Center:** New main view with frequency breakdown, mesh node load, device categories, vendors, and SLA trends with CSV/JSON export.
+* **Device Data Usage Insights Suite:** New "Data Usage" tab per device with time-range selector (Last 24h, 7 Days, 30 Days), Chart.js telemetry charts, and Top Bandwidth Hogs widget.
 * **Multi-Network Fleet Management & Dynamic Hot-Swap (Issue #22):** Multi-network eero account switching with instant active network persistence across polling cycles.
 * **Intelligent Address Pruning & IPv6 DNS Exclusions (Issue #31 & #30):** Automated pruning of obsolete IP addresses and expired SLAAC IPv6 leases on AdGuard Home and multi-DNS sync.
-* **Device Data Usage Insights Suite:** New "Data Usage" tab per device with time-range selector (Last 24h, 7 Days, 30 Days) and Chart.js telemetry charts.
-* **Top Bandwidth Hogs Widget:** Real-time ranking of top bandwidth-consuming clients with 1-click drill-down into device analytics.
+* **Bilingual Daily Digest Telegram & Controls Tab (Issue #38):** Full EN/IT bilingual support for daily digest reports, disconnections alerts, and user language synchronization.
+* **Mesh Node Collision Resolution & "Other/Altro" Localization (Issue #41):** Strict exact name matching for substring nodes and dynamic real-time localization of categories and vendors.
+* **Primary Gateway Reconciliation in Multi-Ethernet Topologies (Issue #36):** Strict election hierarchy for primary gateway identification across switches and leaf nodes.
+* **Layer 2 Hardware Switching Telemetry Clarification (Issue #40 & #42):** Clear technical explanation of Ethernet hardware switching and removal of misleading subscription disclaimers.
+* **CI/CD Docker Hub Release Isolation:** Test branch builds isolated to prevent accidental overwrite of production `latest` tag.
+* **Community Hall of Fame & Special Thanks:** Dedicated recognition section in About modal honoring co-designers and community testers.
 * **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Home Mesh 6E and Office & Studio Pro Mesh).
 
 ---
