@@ -396,7 +396,10 @@
   },
   "changelog_modal": {
     "title": "Changelog & Note di Rilascio",
+    "subtitle": "Note di Rilascio & Cronologia Versioni",
     "view_on_github": "Changelog Completo su GitHub",
+    "error_loading": "Impossibile caricare il changelog.",
+    "check_updates": "Verifica Aggiornamenti",
     "close": "Chiudi"
   },
   "about_modal": {

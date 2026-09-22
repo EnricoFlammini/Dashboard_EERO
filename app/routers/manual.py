@@ -505,9 +505,9 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 
 ## v1.0.0
 * **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
-\"\"\"
+"""
 
-CHANGELOG_SUMMARY_EN = \"\"\"# Changelog - Release Summary
+CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
