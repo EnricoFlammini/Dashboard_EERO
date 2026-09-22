@@ -375,7 +375,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Correzione Primary Gateway in Topologie Multi-Ethernet (Issue #36):** Gerarchia di elezione rigorosa del gateway primario su switch e reti cablate.
 * **Chiarimento Telemetria Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42):** Eliminazione disclaimer fuorvianti e corretta spiegazione della commutazione hardware Ethernet.
 * **Isolamento Release CI/CD Docker Hub:** Build isolate per branch di test senza sovrascrittura accidentale del tag `latest` stabile.
-* **Community Hall of Fame & Crediti:** Sezione speciale nel modale About con ringraziamenti ai co-designer e ai tester della community.
+* **Community Hall of Fame & Crediti:** Sezione speciale nel modale About con ringraziamenti ai contributori e ai tester della community.
 * **Simulatore Multi-Rete in Demo Mode:** Supporto dual-network indipendente (Casa Rossi Mesh 6E e Ufficio & Studio Pro Mesh).
 
 ---
@@ -521,7 +521,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Primary Gateway Reconciliation in Multi-Ethernet Topologies (Issue #36):** Strict election hierarchy for primary gateway identification across switches and leaf nodes.
 * **Layer 2 Hardware Switching Telemetry Clarification (Issue #40 & #42):** Clear technical explanation of Ethernet hardware switching and removal of misleading subscription disclaimers.
 * **CI/CD Docker Hub Release Isolation:** Test branch builds isolated to prevent accidental overwrite of production `latest` tag.
-* **Community Hall of Fame & Special Thanks:** Dedicated recognition section in About modal honoring co-designers and community testers.
+* **Community Hall of Fame & Special Thanks:** Dedicated recognition section in About modal honoring community contributors and testers.
 * **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Home Mesh 6E and Office & Studio Pro Mesh).
 
 ---
