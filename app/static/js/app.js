@@ -2434,8 +2434,8 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok) {
-          const title = this.currentLanguage === 'it' ? "Multi-DNS" : "Multi-DNS";
-          const msg = json.message || (this.currentLanguage === 'it' ? "Configurazioni salvate con successo." : "Settings saved successfully.");
+          const title = "Multi-DNS";
+          const msg = this.currentLanguage === 'it' ? "Configurazioni Multi-DNS salvate con successo." : "Multi-DNS settings saved successfully.";
           this.showToast(title, msg, "success");
           await this.fetchDnsSettings();
         } else {
@@ -2499,7 +2499,10 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
           const title = this.currentLanguage === 'it' ? "Test Globale Riuscito" : "All Tests Succeeded";
-          this.showToast(title, `Tutte le ${json.total_tested} istanze DNS sono operative!`, "success");
+          const msg = this.currentLanguage === 'it' 
+            ? `Tutte le ${json.total_tested} istanze DNS sono operative!` 
+            : `All ${json.total_tested} DNS instances are operational!`;
+          this.showToast(title, msg, "success");
         } else {
           const title = this.currentLanguage === 'it' ? "Verifica Parziale o Fallita" : "Some Tests Failed";
           this.showToast(title, json.message || "Una o più istanze DNS non rispondono.", "warning");
@@ -2525,7 +2528,10 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
           const title = this.currentLanguage === 'it' ? "Sincronizzazione Riuscita" : "Sync Succeeded";
-          this.showToast(title, `${inst.name}: ${json.message}`, "success");
+          const msg = this.currentLanguage === 'it' 
+            ? (json.message || "Sincronizzazione completata con successo.") 
+            : "Synchronization completed successfully.";
+          this.showToast(title, `${inst.name}: ${msg}`, "success");
           await this.fetchDnsSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
@@ -2552,7 +2558,10 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
           const title = this.currentLanguage === 'it' ? "Sincronizzazione Globale Completata" : "Global Sync Completed";
-          this.showToast(title, json.message, "success");
+          const msg = this.currentLanguage === 'it' 
+            ? (json.message || "Tutte le istanze DNS sono state sincronizzate.") 
+            : "All DNS instances synchronized successfully.";
+          this.showToast(title, msg, "success");
           await this.fetchDnsSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
@@ -2685,7 +2694,10 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
           const title = this.currentLanguage === 'it' ? "Sincronizzazione Completata" : "Sync Completed";
-          this.showToast(title, json.message, "success");
+          const msg = this.currentLanguage === 'it' 
+            ? (json.message || "Sincronizzazione AdGuard completata con successo.") 
+            : "AdGuard synchronization completed successfully.";
+          this.showToast(title, msg, "success");
           await this.fetchAdGuardSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";

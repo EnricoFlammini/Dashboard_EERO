@@ -178,9 +178,14 @@ async def get_network_distribution() -> Dict[str, Any]:
 
         # 2. Carico per Nodo Mesh (su client attivi)
         node_map: Dict[str, Dict[str, Any]] = {}
+        node_keys_map: Dict[str, set] = {}
         for e in eeros:
             e_name = e.get("name") or e.get("location") or "Nodo eero"
-            e_id = str(e.get("id") or "")
+            e_id = str(e.get("id") or "").strip()
+            e_serial = str(e.get("serial") or "").strip()
+            e_url = str(e.get("url") or "").strip()
+            e_url_tail = e_url.split("/")[-1] if e_url else ""
+
             node_map[e_name] = {
                 "id": e_id,
                 "name": e_name,
@@ -190,21 +195,33 @@ async def get_network_distribution() -> Dict[str, Any]:
                 "percentage": 0.0,
                 "devices": []
             }
+            node_keys_map[e_name] = {k for k in [e_id, e_serial, e_name.lower(), e_url, e_url_tail] if k}
 
         unassigned_devices: List[str] = []
         for d in active_devices:
             d_name = _get_device_display_name(d)
             src_name = (d.get("connected_eero_name") or d.get("source_name") or "").strip().lower()
             src_id = str(d.get("connected_eero_id") or "").strip()
+            src_url = str(d.get("connected_eero_url") or "").strip()
+            src_url_tail = src_url.split("/")[-1] if src_url else ""
 
             matched = False
+            # Matching esatto per ID, serial, URL o nome esatto (evita collisioni di sottostringa es. Bedroom vs Issac Bedroom)
             for n_name, n_info in node_map.items():
-                target_name = n_name.lower()
-                target_id = n_info["id"]
-                if (src_id and src_id == target_id) or (src_name and (src_name in target_name or target_name in src_name)):
+                ident_keys = node_keys_map[n_name]
+                if (src_id and src_id in ident_keys) or \
+                   (src_url and (src_url in ident_keys or src_url_tail in ident_keys)) or \
+                   (src_name and src_name == n_name.lower()):
                     n_info["devices"].append(d_name)
                     matched = True
                     break
+
+            if not matched and (not d.get("wireless") or d.get("connection_type") == "wired"):
+                gw_node = next((n for n in node_map.values() if n["is_gateway"]), None)
+                if gw_node:
+                    gw_node["devices"].append(d_name)
+                    matched = True
+
             if not matched:
                 unassigned_devices.append(d_name)
 

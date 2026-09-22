@@ -158,6 +158,8 @@
     "usage_estimated_badge": "Estimated Data",
     "usage_info_btn_title": "How is this data calculated?",
     "usage_info_btn": "How is this estimated?",
+    "usage_realtime_counters_hint": "Real-time data estimated from eero hardware counters",
+    "usage_more_info_btn": "More info (?)",
     "usage_info_modal_title": "How is Data Usage Calculated?",
     "usage_info_p1_title": "Real-Time Estimation (without eero Plus)",
     "usage_info_p1_desc": "Amazon eero does not provide exact byte totals from the cloud without an eero Plus paid subscription. The dashboard reads physical Wi-Fi hardware packet counters directly from the mesh nodes and estimates transfer volume every 30 seconds.",
