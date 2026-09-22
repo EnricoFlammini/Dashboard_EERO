@@ -358,6 +358,9 @@ document.addEventListener('alpine:init', () => {
       if (this.showChangelogModal) {
         await this.openChangelogModal();
       }
+      if (this.currentTab === 'analytics') {
+        this.renderAnalyticsCharts();
+      }
     },
 
     // =========================================================================
@@ -1203,6 +1206,9 @@ document.addEventListener('alpine:init', () => {
         if (this.selectedCategoryFilter !== 'all') {
           if (this.selectedCategoryFilter === 'favorites') {
             if (!d.is_favorite) return false;
+          } else if (this.selectedCategoryFilter === 'Altro' || this.selectedCategoryFilter === 'Other') {
+            const dc = (d.category || '').toLowerCase();
+            if (dc !== 'altro' && dc !== 'other' && dc !== '') return false;
           } else if (d.category !== this.selectedCategoryFilter) {
             return false;
           }
@@ -3391,6 +3397,45 @@ document.addEventListener('alpine:init', () => {
       return lines;
     },
 
+    formatCategoryName(category) {
+      if (!category) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      const cat = String(category).trim();
+      const isIt = this.currentLanguage === 'it';
+      
+      if (cat === 'Altro' || cat.toLowerCase() === 'other') {
+        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+      }
+      if (cat === 'Computer') {
+        return this.t('devices.cat_computer') || (isIt ? 'Computer & Laptop' : 'Computers & Laptops');
+      }
+      if (cat === 'Mobile') {
+        return this.t('devices.cat_mobile') || (isIt ? 'Smartphone & Tablet' : 'Smartphones & Tablets');
+      }
+      if (cat === 'Smart Home') {
+        return this.t('devices.cat_smarthome') || (isIt ? 'Smart Home & Domotica' : 'Smart Home & IoT');
+      }
+      if (cat === 'Intrattenimento' || cat.toLowerCase() === 'entertainment') {
+        return this.t('devices.cat_entertainment') || (isIt ? 'TV & Streaming' : 'Entertainment & TV');
+      }
+      if (cat === 'Gaming') {
+        return this.t('devices.cat_gaming') || (isIt ? 'Console Gaming' : 'Gaming Consoles');
+      }
+      if (cat === 'Server/Rete' || cat === 'Server/NAS' || cat.toLowerCase() === 'server') {
+        return this.t('devices.cat_server') || (isIt ? 'Server & NAS' : 'Servers & Network');
+      }
+      return cat;
+    },
+
+    formatVendorName(vendor) {
+      if (!vendor) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      const v = String(vendor).trim();
+      const isIt = this.currentLanguage === 'it';
+      if (v === 'Altro' || v.toLowerCase() === 'other') {
+        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+      }
+      return v;
+    },
+
     renderFrequenciesChart() {
       try {
         const canvas = document.getElementById('analyticsFrequenciesChart');
@@ -3573,7 +3618,7 @@ document.addEventListener('alpine:init', () => {
         const cats = (this.analyticsDistribution && this.analyticsDistribution.categories) ? this.analyticsDistribution.categories : [];
         if (cats.length === 0) return;
 
-        const labels = cats.map(c => c.category);
+        const labels = cats.map(c => this.formatCategoryName(c.category));
         const data = cats.map(c => c.count);
         const colors = this.getChartThemeColors();
         const isIt = this.currentLanguage === 'it';
@@ -3621,7 +3666,8 @@ document.addEventListener('alpine:init', () => {
                   label: (ctx) => {
                     const count = ctx.raw || 0;
                     const pct = cats[ctx.dataIndex]?.percentage || 0;
-                    return (isIt ? ' Dispositivi: ' : ' Devices: ') + `${count} (${pct}%)`;
+                    const catName = this.formatCategoryName(cats[ctx.dataIndex]?.category || '');
+                    return `${catName}: ${count} (${pct}%)`;
                   },
                   afterBody: (items) => {
                     if (!items || items.length === 0) return [];
@@ -3654,7 +3700,7 @@ document.addEventListener('alpine:init', () => {
         const vends = ((this.analyticsDistribution && this.analyticsDistribution.vendors) ? this.analyticsDistribution.vendors : []).slice(0, 6);
         if (vends.length === 0) return;
 
-        const labels = vends.map(v => v.vendor);
+        const labels = vends.map(v => this.formatVendorName(v.vendor));
         const data = vends.map(v => v.count);
         const colors = this.getChartThemeColors();
         const isIt = this.currentLanguage === 'it';
@@ -3694,7 +3740,8 @@ document.addEventListener('alpine:init', () => {
                   label: (ctx) => {
                     const val = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.raw;
                     const pct = vends[ctx.dataIndex]?.percentage || 0;
-                    return (isIt ? 'Dispositivi: ' : 'Devices: ') + `${val} (${pct}%)`;
+                    const vName = this.formatVendorName(vends[ctx.dataIndex]?.vendor || '');
+                    return `${vName}: ${val} (${pct}%)`;
                   },
                   afterBody: (items) => {
                     if (!items || items.length === 0) return [];

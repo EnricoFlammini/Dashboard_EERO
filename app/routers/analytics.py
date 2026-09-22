@@ -127,7 +127,7 @@ def _resolve_vendor_from_mac_and_name(mac: str, hostname: str) -> str:
     if mac_clean in intel_ouis:
         return "Intel"
 
-    return "Altro"
+    return "Other"
 
 
 @router.get("/distribution")
@@ -240,7 +240,8 @@ async def get_network_distribution() -> Dict[str, Any]:
         cat_map: Dict[str, List[str]] = {}
         for d in devices:
             d_name = _get_device_display_name(d)
-            cat = str(d.get("category") or d.get("device_category") or "Altro").strip()
+            raw_cat = str(d.get("category") or d.get("device_category") or "Other").strip()
+            cat = "Other" if raw_cat in ("Altro", "Other", "") else raw_cat
             if cat not in cat_map:
                 cat_map[cat] = []
             cat_map[cat].append(d_name)
@@ -255,10 +256,11 @@ async def get_network_distribution() -> Dict[str, Any]:
         vendor_map: Dict[str, List[str]] = {}
         for d in devices:
             d_name = _get_device_display_name(d)
-            v = _resolve_vendor_from_mac_and_name(
+            raw_v = _resolve_vendor_from_mac_and_name(
                 str(d.get("mac") or d.get("mac_address") or ""),
                 str(d.get("hostname") or d.get("nickname") or "")
             )
+            v = "Other" if raw_v in ("Altro", "Other") else raw_v
             if v not in vendor_map:
                 vendor_map[v] = []
             vendor_map[v].append(d_name)
