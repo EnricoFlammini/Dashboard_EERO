@@ -1159,12 +1159,12 @@
                       </div>
                     </template>
                     <template x-if="!(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05) && !dev.wireless">
-                      <div class="flex flex-col leading-tight cursor-help" title="eero Cloud non fornisce contatori hardware per porte Ethernet (Layer 2) senza abbonamento eero Plus.">
+                      <div class="flex flex-col leading-tight cursor-help" :title="t('devices.wired_traffic_tooltip') || 'eero Cloud non fornisce contatori hardware per porte Ethernet (Layer 2) senza abbonamento eero Plus.'">
                         <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">
                           ↓ —
                         </span>
                         <span class="text-[10px] text-slate-400 dark:text-slate-500">
-                          ↑ — <span class="text-[9px] text-slate-400/80 dark:text-slate-500/80 font-normal ml-0.5">(Cablato)</span>
+                          ↑ — <span class="text-[9px] text-slate-400/80 dark:text-slate-500/80 font-normal ml-0.5" x-text="'(' + (t('devices.wired_tag') || (currentLanguage === 'it' ? 'Cablato' : 'Wired')) + ')'"></span>
                         </span>
                       </div>
                     </template>
@@ -2800,7 +2800,7 @@
             <!-- Notice for Wired Devices without Hardware Packet Counters -->
             <div x-show="!deviceUsageLoading && deviceUsageData && (!deviceUsageData.summary || deviceUsageData.summary.total_bytes === 0) && activeDevice && !activeDevice.wireless" class="p-2.5 rounded-xl bg-sky-500/10 dark:bg-sky-950/30 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-[11px] flex items-start gap-2">
               <svg class="w-4 h-4 shrink-0 mt-0.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              <span><strong>Dispositivo Cablato Ethernet:</strong> Amazon eero commuta il traffico Ethernet tramite switch hardware Layer 2 e non trasmette contatori fisici sul cloud senza abbonamento eero Plus.</span>
+              <span><strong x-text="(t('devices.wired_modal_notice_title') || 'Dispositivo Cablato Ethernet:') + ' '"></strong><span x-text="t('devices.wired_modal_notice_desc') || 'Amazon eero commuta il traffico Ethernet tramite switch hardware Layer 2 e non trasmette contatori fisici sul cloud senza abbonamento eero Plus.'"></span></span>
             </div>
           </div>
         </div>
