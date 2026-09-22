@@ -413,6 +413,17 @@
     "fun_notes_title": "Fun Notes",
     "coffee_note": "Powered by coffee, late-night packet sniffing, and private eero APIs.",
     "telemetry_note": "Zero Cloud Telemetry: Your data lives strictly in your local volume.",
+    "credits_title": "Special Thanks & Community Hall of Fame",
+    "credits_badge": "Hall of Fame",
+    "credits_desc": "A sincere thank you to all community members who shaped and refined the dashboard through issues, testing, and feature proposals:",
+    "credits_features_subtitle": "Implemented Features & Co-Designers",
+    "credits_bugs_subtitle": "Bug Hunters & Valued Contributors",
+    "contrib_jpatchmc": "Multi-DNS Sync, Intelligent Address Pruning, AdGuard client rules preservation & Layer 2 switching",
+    "contrib_hatton920": "Health Score & Penalty Engine, PHY Link Speed, offline node detection & speedtest leak sanitization",
+    "contrib_jimcampbell100": "Inspiration for Multi-Network Fleet Management for multi-mesh eero accounts",
+    "contrib_stevehoek": "Telegram Daily Digest English localization & multi-network switching assistance",
+    "contrib_dannyfeliz": "Responsive UI optimizations, frequency filters & navigation state persistence",
+    "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @jonmacdonald (switch gateway reconciliation), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
     "close": "Close"
   },
   "update_modal": {

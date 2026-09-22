@@ -3067,7 +3067,7 @@
     x-transition:enter-start="opacity-0 scale-95"
     x-transition:enter-end="opacity-100 scale-100">
     
-    <div @click.away="showAboutModal = false" class="glass-panel-elevated w-full max-w-lg rounded-2xl p-6 space-y-5 max-h-[85vh] flex flex-col border border-indigo-500/30 shadow-2xl shadow-indigo-950/50">
+    <div @click.away="showAboutModal = false" class="glass-panel-elevated w-full max-w-xl rounded-2xl p-6 space-y-5 max-h-[85vh] flex flex-col border border-indigo-500/30 shadow-2xl shadow-indigo-950/50">
       
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -3095,6 +3095,108 @@
           <p class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
             Crafted with ❤️ by <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> for the <span class="text-indigo-700 dark:text-indigo-300 font-medium">homelab & self-hosted</span> community.
           </p>
+        </div>
+
+        <!-- Special Thanks & Community Hall of Fame Section -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center space-x-1.5">
+              <svg class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <span x-text="t('about_modal.credits_title')">Ringraziamenti Speciali & Community</span>
+            </h4>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+              <span x-text="t('about_modal.credits_badge')">Hall of Fame</span>
+            </span>
+          </div>
+
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('about_modal.credits_desc')">
+            Un ringraziamento sincero a tutti gli utenti che con issue, test e proposte hanno reso possibile l'evoluzione della dashboard:
+          </p>
+
+          <!-- Implemented Features & Co-Designers Subtitle -->
+          <div class="space-y-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block" x-text="t('about_modal.credits_features_subtitle')">
+              Proposte & Sviluppi Implementati
+            </span>
+
+            <div class="grid grid-cols-1 gap-2">
+              <!-- @jpatchMC -->
+              <a href="https://github.com/jpatchMC" target="_blank" rel="noopener noreferrer" 
+                 class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-amber-500/40 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition font-mono text-xs">@jpatchMC</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">Co-Designer</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal" x-text="t('about_modal.contrib_jpatchmc')"></p>
+              </a>
+
+              <!-- @Hatton920 -->
+              <a href="https://github.com/Hatton920" target="_blank" rel="noopener noreferrer" 
+                 class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition font-mono text-xs">@Hatton920</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">Co-Designer</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal" x-text="t('about_modal.contrib_hatton920')"></p>
+              </a>
+
+              <!-- @jimcampbell100 -->
+              <a href="https://github.com/jimcampbell100" target="_blank" rel="noopener noreferrer" 
+                 class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-sky-500/40 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition font-mono text-xs">@jimcampbell100</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">Contributor</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal" x-text="t('about_modal.contrib_jimcampbell100')"></p>
+              </a>
+
+              <!-- @stevehoek -->
+              <a href="https://github.com/stevehoek" target="_blank" rel="noopener noreferrer" 
+                 class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/40 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition font-mono text-xs">@stevehoek</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">Contributor</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal" x-text="t('about_modal.contrib_stevehoek')"></p>
+              </a>
+
+              <!-- @DannyFeliz -->
+              <a href="https://github.com/DannyFeliz" target="_blank" rel="noopener noreferrer" 
+                 class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 hover:border-purple-500/40 transition">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition font-mono text-xs">@DannyFeliz</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">Contributor</span>
+                  </div>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal" x-text="t('about_modal.contrib_dannyfeliz')"></p>
+              </a>
+            </div>
+          </div>
+
+          <!-- Bug Hunters & Testers Subtitle -->
+          <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block" x-text="t('about_modal.credits_bugs_subtitle')">
+              Bug Hunter & Contributori
+            </span>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('about_modal.contrib_bug_hunters_desc')">
+            </p>
+          </div>
         </div>
 
         <!-- Useful Links & Open Source Section -->

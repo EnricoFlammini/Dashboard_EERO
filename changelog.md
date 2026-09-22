@@ -4,7 +4,38 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.5.0] - 2026-09-19
+## [1.5.0] - 2026-09-22
+
+### 🏆 Community Hall of Fame & Special Thanks nel Modale About
+* **🏆 Nuova Sezione Riconoscimenti e Crediti Community:**
+  * Inserita nel modale *About & Crediti* una nuova sezione con badge *Hall of Fame* dedicata agli utenti della community GitHub e Reddit che hanno reso possibile la costante evoluzione del progetto.
+  * **Co-Designers & Sviluppi Implementati:**
+    * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40).
+    * **[@Hatton920](https://github.com/Hatton920):** Network Health Score & Penalty Scoring Engine (#15), negoziazione velocità fisica link PHY (#14), distinzione stati rebooting vs offline per i nodi mesh (#34), isolamento e sanitizzazione speedtest (#35), fix collisione nomi nodi mesh (#41).
+    * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore e promotore dell'architettura *Multi-Network Fleet Management* (#22) per account con più reti mesh eero.
+    * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione completa in lingua inglese del Daily Digest Telegram (#38).
+    * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive UI (#27, #28), persistenza stato navigazione e filtri frequenza radio (#29).
+  * **Bug Hunters & Tester:**
+    * Ringraziamenti a **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+
+### 🚀 CI/CD & Docker Hub Release Isolation
+* **🚀 Isolamento Deterministico del Tag `latest` su Docker Hub:**
+  * Risolto il problema critico per cui lo spostamento e il build su Docker Hub dei branch di test (`test`) aggiornava automaticamente il puntatore del tag `latest`, scaricando release candidate pre-rilascio (es. `1.5.00-rc1`) al posto della versione stabile di produzione.
+  * Aggiunto `flavor: | latest=false` al workflow GitHub Actions `.github/workflows/docker-publish.yml` su tutti i branch (`main`, `test`, `dev`), garantendo che il tag `:latest` non venga mai generato o sovrascritto implicitamente dai commit o push di rami secondari.
+  * Ripristinato il tag `latest` su Docker Hub puntandolo stabilmente all'immagine di produzione `1.4.01`.
+
+### 📊 Risoluzione Collisione Assegnazione Nodi Mesh in Analytics (Issue #41)
+* **📊 Match Deterministico ed Esatto per Nodi Mesh con Nomi a Sottostringa:**
+  * Risolta la segnalazione [Issue #41](https://github.com/EnricoFlammini/Dashboard_EERO/issues/41) (`Hatton920`): nel grafico *Carico per Nodo Mesh* della sezione Analytics, quando due nodi avevano nomi correlati da sottostringa (es. nodo *"Bedroom"* e nodo *"Issac Bedroom"*), l'operatore `in` assegnava erroneamente tutti i dispositivi del nodo più corto a quello più lungo, azzerando il conteggio client di quest'ultimo.
+  * **Algoritmo di Matching Rigoroso in `app/routers/analytics.py`:**
+    * Sostituito il matching a sottostringa con una sequenza di matching deterministica: priorità assoluta a `node_id`, poi URL cloud univoco dell'eero, poi numero seriale hardware, e infine confronto esatto di uguaglianza stringa (`==`) tra i nomi normalizzati in minuscolo.
+
+### 🌐 Raffinamento Bilingue UI, Badge Cablati & Fix Toggle AdGuard (Issue #40)
+* **🌐 Correzione Toggle AdGuard e Localizzazione Dispositivi Ethernet:**
+  * Risolta la segnalazione [Issue #40](https://github.com/EnricoFlammini/Dashboard_EERO/issues/40) (`jpatchMC`):
+    * Ripristinato il corretto two-way binding nei toggle di configurazione `prune_stale_ips` e `drop_ipv6` nel modale DNS in `app.js`.
+    * Localizzati i badge e i tooltip dei dispositivi cablati (*"Wired"* e spiegazione Layer 2 in inglese quando la lingua è `en`, *"Cablato"* in italiano).
+    * Tradotte tutte le stringhe residue segnalate nel modale dettaglio dispositivo (`usage_realtime_counters_hint` e `usage_more_info_btn`) e nei toast di salvataggio delle impostazioni DNS.
 
 ### 🌐 Localizzazione Multilingua Daily Digest Telegram & Scheda Controlli (Issue #38)
 * **🌐 Supporto Bilingue Completo (EN & IT) per Notifiche & Daily Digest Telegram:**
