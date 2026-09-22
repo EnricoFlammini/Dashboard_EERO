@@ -158,6 +158,8 @@
     "usage_estimated_badge": "Dati Stimati",
     "usage_info_btn_title": "Come vengono calcolati questi dati?",
     "usage_info_btn": "Come funziona la stima?",
+    "usage_realtime_counters_hint": "Dati stimati in tempo reale dai contatori fisici eero",
+    "usage_more_info_btn": "Maggiori info (?)",
     "usage_info_modal_title": "Come viene calcolato il Consumo Dati?",
     "usage_info_p1_title": "Stima in tempo reale (senza eero Plus)",
     "usage_info_p1_desc": "Amazon eero non fornisce i byte precisi dal cloud senza l'abbonamento a pagamento eero Plus. La dashboard legge direttamente i contatori dei pacchetti fisici scambiati dai nodi Wi-Fi e stima i Megabyte ogni 30 secondi.",

@@ -2791,9 +2791,9 @@
               <div class="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/60 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
                 <span class="flex items-center gap-1.5">
                   <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  <span>Dati stimati in tempo reale dai contatori fisici eero</span>
+                  <span x-text="t('device_modal.usage_realtime_counters_hint')">Dati stimati in tempo reale dai contatori fisici eero</span>
                 </span>
-                <button @click.stop="showUsageInfoModal = true" type="button" class="text-sky-500 dark:text-sky-400 hover:underline font-medium cursor-pointer" x-text="'Maggiori info (?)'"></button>
+                <button @click.stop="showUsageInfoModal = true" type="button" class="text-sky-500 dark:text-sky-400 hover:underline font-medium cursor-pointer" x-text="t('device_modal.usage_more_info_btn') || (currentLanguage === 'it' ? 'Maggiori info (?)' : 'More info (?)')"></button>
               </div>
             </div>
 
