@@ -9,7 +9,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 ### 🏆 Community Hall of Fame & Special Thanks nel Modale About
 * **🏆 Nuova Sezione Riconoscimenti e Crediti Community:**
   * Inserita nel modale *About & Crediti* una nuova sezione con badge *Hall of Fame* dedicata agli utenti della community GitHub e Reddit che hanno reso possibile la costante evoluzione del progetto.
-  * **Co-Designers & Sviluppi Implementati:**
+  * **Proposte di Feature & Feedback Community:**
     * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40, #42).
     * **[@Hatton920](https://github.com/Hatton920):** Network Health Score & Penalty Scoring Engine (#15), negoziazione velocità fisica link PHY (#14), distinzione stati rebooting vs offline per i nodi mesh (#34), isolamento e sanitizzazione speedtest (#35), fix collisione nomi nodi mesh (#41).
     * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore e promotore dell'architettura *Multi-Network Fleet Management* (#22) per account con più reti mesh eero.

@@ -416,7 +416,7 @@
     "credits_title": "Special Thanks & Community Hall of Fame",
     "credits_badge": "Hall of Fame",
     "credits_desc": "A sincere thank you to all community members who shaped and refined the dashboard through issues, testing, and feature proposals:",
-    "credits_features_subtitle": "Implemented Features & Co-Designers",
+    "credits_features_subtitle": "Community Feature Proposals & Feedback",
     "credits_bugs_subtitle": "Bug Hunters & Valued Contributors",
     "contrib_jpatchmc": "Multi-DNS Sync, Intelligent Address Pruning, AdGuard client rules preservation & Layer 2 switching",
     "contrib_hatton920": "Health Score & Penalty Engine, PHY Link Speed, offline node detection & speedtest leak sanitization",
