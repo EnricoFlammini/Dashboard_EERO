@@ -24,11 +24,14 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiunto `flavor: | latest=false` al workflow GitHub Actions `.github/workflows/docker-publish.yml` su tutti i branch (`main`, `test`, `dev`), garantendo che il tag `:latest` non venga mai generato o sovrascritto implicitamente dai commit o push di rami secondari.
   * Ripristinato il tag `latest` su Docker Hub puntandolo stabilmente all'immagine di produzione `1.4.01`.
 
-### 📊 Risoluzione Collisione Assegnazione Nodi Mesh in Analytics (Issue #41)
+### 📊 Risoluzione Collisione Nodi Mesh & Localizzazione "Other/Altro" in Analytics (Issue #41)
 * **📊 Match Deterministico ed Esatto per Nodi Mesh con Nomi a Sottostringa:**
   * Risolta la segnalazione [Issue #41](https://github.com/EnricoFlammini/Dashboard_EERO/issues/41) (`Hatton920`): nel grafico *Carico per Nodo Mesh* della sezione Analytics, quando due nodi avevano nomi correlati da sottostringa (es. nodo *"Bedroom"* e nodo *"Issac Bedroom"*), l'operatore `in` assegnava erroneamente tutti i dispositivi del nodo più corto a quello più lungo, azzerando il conteggio client di quest'ultimo.
   * **Algoritmo di Matching Rigoroso in `app/routers/analytics.py`:**
     * Sostituito il matching a sottostringa con una sequenza di matching deterministica: priorità assoluta a `node_id`, poi URL cloud univoco dell'eero, poi numero seriale hardware, e infine confronto esatto di uguaglianza stringa (`==`) tra i nomi normalizzati in minuscolo.
+* **🌐 Localizzazione Bilingue Vendor e Categorie ("Other" vs "Altro"):**
+  * Risolto l'hardcoding della stringa `"Altro"` nel grafico *Top Hardware Vendors* (segnalato da `Hatton920`), nel grafico a ciambella *Categorie di Dispositivi* e nella colonna categoria della tabella apparati.
+  * Nuovi formattatori reattivi `formatCategoryName()` e `formatVendorName()` in `app.js` che traducono dinamicamente le etichette delle barre, segmenti e tooltip in base alla lingua attiva dell'interfaccia (`"Other"` in inglese, `"Altro"` in italiano), sincronizzando istantaneamente i grafici al cambio lingua.
 
 ### 🌐 Raffinamento Bilingue UI, Badge Cablati & Fix Toggle AdGuard (Issue #40)
 * **🌐 Correzione Toggle AdGuard e Localizzazione Dispositivi Ethernet:**

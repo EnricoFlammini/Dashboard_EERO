@@ -1061,7 +1061,7 @@
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
                           </template>
                         </div>
-                        <div class="text-[11px] text-slate-600 dark:text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
+                        <div class="text-[11px] text-slate-600 dark:text-slate-500" x-text="formatCategoryName(dev.category)"></div>
                       </div>
                     </div>
                   </td>
