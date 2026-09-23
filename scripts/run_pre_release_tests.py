@@ -559,6 +559,49 @@ async def run_all_tests():
         runner.assert_true(net_norm.get("gateway_eero_id") == "104", f"Network details estrae gateway_eero_id='104' (ottenuto: {net_norm.get('gateway_eero_id')})")
         runner.assert_true(net_norm.get("gateway_name") == "Wiring Closet", f"Network details estrae gateway_name='Wiring Closet' (ottenuto: {net_norm.get('gateway_name')})")
 
+        # Test 3b: Elezione per ID esatto tramite get_eeros() reale (Issue #26): il gateway "10" non deve eleggere "/2.2/eeros/104"
+        import httpx
+        exact_id_nodes = [
+            {"url": "/2.2/eeros/104", "location": "Upstairs", "gateway": False, "ip_address": "192.168.4.31", "status": "green"},
+            {"url": "/2.2/eeros/10", "location": "Hallway", "gateway": False, "ip_address": "192.168.4.32", "status": "green"},
+        ]
+
+        def _exact_id_handler(request):
+            if request.url.path.endswith("/eeros"):
+                return httpx.Response(200, json={"data": exact_id_nodes})
+            return httpx.Response(200, json={"data": {"url": "/2.2/networks/network_gw_test", "gateway": {"url": "/2.2/eeros/10"}, "gateway_ip": "192.168.4.99"}})
+
+        saved_gw_state = (
+            eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client,
+            eero_client.current_gateway_id, eero_client.current_gateway_url, eero_client.current_gateway_name, eero_client.current_gateway_ip,
+            eero_client._last_network_details, eero_client._last_eeros,
+        )
+        try:
+            eero_client.user_token = "live_token_gateway_test"
+            eero_client.current_network_id = "network_gw_test"
+            eero_client._is_demo_active = False
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(_exact_id_handler))
+            await eero_client.get_network_details()
+            exact_nodes = await eero_client.get_eeros()
+            elected_ids = [n.get("id") for n in exact_nodes if n.get("is_gateway")]
+            runner.assert_true(elected_ids == ["10"], f"Gateway '10' eletto per ID esatto, non '/2.2/eeros/104' (ottenuto: {elected_ids})")
+        finally:
+            await eero_client._http_client.aclose()
+            (
+                eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client,
+                eero_client.current_gateway_id, eero_client.current_gateway_url, eero_client.current_gateway_name, eero_client.current_gateway_ip,
+                eero_client._last_network_details, eero_client._last_eeros,
+            ) = saved_gw_state
+
+        # Test 3c: Campo "gateway" del nodo con ID nudo: "10" identifica solo "/2.2/eeros/10", non "/2.2/eeros/110"
+        saved_gw_hint = (eero_client.current_gateway_id, eero_client.current_gateway_url, eero_client.current_gateway_ip)
+        eero_client.current_gateway_id = eero_client.current_gateway_url = eero_client.current_gateway_ip = None
+        node_110 = eero_client._normalize_eero_node({"url": "/2.2/eeros/110", "location": "Attic", "gateway": "10"})
+        node_10 = eero_client._normalize_eero_node({"url": "/2.2/eeros/10", "location": "Hallway", "gateway": "10"})
+        eero_client.current_gateway_id, eero_client.current_gateway_url, eero_client.current_gateway_ip = saved_gw_hint
+        runner.assert_true(node_110["is_gateway"] is False, "Nodo /2.2/eeros/110 non marcato gateway per gateway='10'")
+        runner.assert_true(node_10["is_gateway"] is True, "Nodo /2.2/eeros/10 marcato gateway per gateway='10'")
+
         # Test 4: Risoluzione Gateway con nodi PoE e nodi WAN misti (Issue #26 - jonmacdonald)
         outdoor_poe_node = {
             "id": "704",
@@ -600,7 +643,7 @@ async def run_all_tests():
         if gw_cached_id or gw_cached_url:
             primary_gw = next((n for n in raw_cluster if (
                 (gw_cached_id and str(n.get("id") or "") == str(gw_cached_id)) or
-                (gw_cached_id and gw_cached_id in str(n.get("url") or "")) or
+                (gw_cached_id and str(n.get("url") or "").rstrip("/").split("/")[-1] == str(gw_cached_id)) or
                 (gw_cached_url and str(n.get("url") or "") == str(gw_cached_url))
             )), None)
         if not primary_gw:

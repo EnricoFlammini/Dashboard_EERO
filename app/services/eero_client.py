@@ -652,7 +652,8 @@ class EeroClient:
                 return False
             
             # Se la stringa corrisponde esattamente agli identificatori di QUESTO nodo
-            if node_url and (gw_s == node_url or gw_s.endswith(node_url) or node_url.endswith(gw_s)):
+            # Confronto per segmento di percorso: il gateway "10" non corrisponde a "/2.2/eeros/110"
+            if node_url and (gw_s == node_url or gw_s.endswith(node_url) or node_url.endswith("/" + gw_s.lstrip("/"))):
                 return True
             if node_id and (gw_s == node_id or gw_s.split("/")[-1] == node_id):
                 return True
@@ -1590,7 +1591,8 @@ class EeroClient:
                 if gw_cached_id or gw_cached_url:
                     primary_gw = next((n for n in nodes if (
                         (gw_cached_id and str(n.get("id") or "") == str(gw_cached_id)) or
-                        (gw_cached_id and gw_cached_id in str(n.get("url") or "")) or
+                        # ID esatto in coda all'URL: il gateway "10" non deve eleggere "/2.2/eeros/104"
+                        (gw_cached_id and str(n.get("url") or "").rstrip("/").split("/")[-1] == str(gw_cached_id)) or
                         (gw_cached_url and str(n.get("url") or "") == str(gw_cached_url))
                     )), None)
 
