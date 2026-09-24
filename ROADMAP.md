@@ -266,6 +266,16 @@ gantt
 - [x] **Esportazione Dati (CSV / JSON):** Esportazione elenco dispositivi, storico speedtest, campionamento segnale RSSI e storico consumo dati per reporting esterno o integrazione Grafana/Home Assistant.
 - [x] **Tooltip Interattivo con Elenco Dispositivi (Grafici Analytics):** Al passaggio del mouse su barre, segmenti e slice dei 4 grafici di distribuzione, il tooltip scuro mostra l'elenco nominativo completo dei dispositivi che compongono quel dato (alias → hostname → IP → MAC), con intestazione conteggio, bullet points e troncamento automatico a 15.
 
+#### 4. 🛡️ Telemetria Rigorosa, Accuratezza RF & Stabilità Nodi (PR #47–#53 - @carbones73)
+*(Risolte da @carbones73 con PR #47, #48, #49, #50, #51, #52, #53 e test di regressione dedicati)*
+- [x] **Isolamento Sessione Live (PR #47):** Eliminato il fallback sui dispositivi demo simulati in `get_devices()` in assenza temporanea di ID rete risolto su sessioni reali autenticate.
+- [x] **Bonifica Speedtest Fittizio (PR #48):** Rimozione dei valori di fallback hardcoded 951/193 Mbps e timestamp `now()` su reti senza misurazioni WAN attive.
+- [x] **Elezione Deterministica Primary Gateway (Issue #26 / PR #49):** Confronto rigoroso per segmento di percorso URL (`split('/')[-1] == str(gw_id)`) evitando falsi positivi da sottostringa (es. ID `10` vs `104`/`210`).
+- [x] **Accuratezza Spettro RF 5 GHz UNII-3 vs 6 GHz (PR #50):** Corretta la classificazione dei canali dispari UNII-3 (149-165) a 5 GHz e disaccoppiato il flag Wi-Fi 7 EHT dalla frequenza 6 GHz.
+- [x] **Risoluzione Network ID Regole e Prenotazioni (Issue #33 / PR #51):** Chiamata al metodo corretto `fetch_account_info()` e salvaguardia chiamate `/networks/None`.
+- [x] **Trasparenza Segnale Senza Placeholder -55 dBm (PR #52):** Mantenimento di `signal_rssi = None` in assenza di lettura e pulizia dello storico RSSI e Health Score.
+- [x] **Stabilizzazione Tassi Simulati Demo Mode (PR #53):** Ancoraggio delle variazioni casuali alla base fissa iniziale (`_demo_base_rates`) prevenendo drift moltiplicativo esponenziale.
+
 ---
 
 ### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge

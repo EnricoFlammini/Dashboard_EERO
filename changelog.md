@@ -16,7 +16,32 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
     * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione completa in lingua inglese del Daily Digest Telegram (#38).
     * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive UI (#27, #28), persistenza stato navigazione e filtri frequenza radio (#29).
   * **Bug Hunters & Tester:**
-    * Ringraziamenti a **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+    * Ringraziamenti a **[@carbones73](https://github.com/carbones73)** (PR #47-#53: telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, de-drift simulatore ed elezione Primary Gateway), **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+
+### 🛡️ Telemetria Rigorosa, Accuratezza Radiofrequenza & Stabilità Nodi (PR #47–#53)
+* **🛡️ Isolamento Sessioni Live ed Eliminazione Leak Dispositivi Demo (PR #47):**
+  * Risolto il potenziale fallback in `get_devices()` che, in presenza di un account autenticato con ID rete temporaneamente non risolto, restituiva la lista dei 10 dispositivi demo simulati.
+  * In sessione reale, la chiamata restituisce ora una lista vuota `[]` in attesa della risoluzione della rete, prevenendo la generazione di falsi allarmi "Nuovo dispositivo", campionamenti fantasma nel database SQLite e registrazioni fittizie sui server DNS.
+* **⚡ Bonifica Dati Speedtest e Rimozione Misure Gigabit Fittizie (PR #48):**
+  * Rimossi i valori di default hardcoded (`951.0` Mbps down, `193.0` Mbps up, `9.0` ms ping e `now()`) usati quando la rete eero non ha mai eseguito un test di velocità WAN nativo.
+  * In assenza di misurazioni reali dal cloud eero, i valori rimangono a 0 e il timestamp `None`, impedendo al poller di salvare test inventati su SQLite e garantendo che il pulsante manuale di Speedtest Cloud attenda l'effettivo completamento del test hardware.
+* **🌐 Elezione Deterministica Primary Gateway per Segmento di Percorso (Issue #26 / PR #49):**
+  * Sostituito il matching a sottostringa (`id in url`) in `get_eeros()` e `_is_gateway_node()` con un confronto rigoroso sull'ultimo segmento di percorso dell'URL (es. `str(url).rstrip('/').split('/')[-1] == str(gw_id)`).
+  * Risolve l'anomalia per cui un nodo con ID breve (es. `10`) causava l'elezione errata di nodi con ID contenenti la stessa sequenza numerica (es. `104` o `210`).
+* **📶 Distinzione Canali 5 GHz UNII-3 (Dispari) vs 6 GHz e Disaccoppiamento Wi-Fi 7 EHT (PR #50):**
+  * Corretta la classificazione del backhaul mesh e dei client wireless:
+    * La banda 5 GHz UNII-3 impiega canali dispari (149, 153, 157, 161, 165); la logica radio precedente considerava tutti i canali dispari come 6 GHz, etichettando erroneamente i collegamenti 5 GHz.
+    * Il protocollo Wi-Fi 7 (PHY `EHT`) opera su 2.4 GHz, 5 GHz e 6 GHz: la presenza di `phy_type == "EHT"` non è più assunta come indice esclusivo di connessione a 6 GHz.
+  * Aggiunti 5 test di regressione dedicati che certificano la conformità spettrale delle frequenze e dei canali.
+* **🔧 Correzione Risoluzione Network ID per Regole Port Forwarding & Prenotazioni DHCP (Issue #33 / PR #51):**
+  * Risolto l'errore `AttributeError` in `get_forwards_and_reservations()` causato dall'invocazione del metodo inesistente `_resolve_network_id()`, sostituito con `fetch_account_info()`.
+  * Aggiunto controllo preventivo che evita chiamate HTTP 400/404 verso l'endpoint cloud `/2.2/networks/None/...` quando la rete non è ancora risolta.
+* **📶 Trasparenza Segnale Wireless e Rimozione Campione Fittizio -55 dBm (PR #52):**
+  * In `_normalize_device()`, i dispositivi wireless privi di misurazione RSSI nel payload cloud eero non ricevono più il valore di fallback sintetico `-55 dBm`, ma mantengono `signal_rssi = None`.
+  * Previene l'inquinamento dello storico campioni SQLite (`device_signal_history`), della Weak Signal Watchlist e del Network Health Score con misurazioni inventate.
+* **📈 Stabilizzazione Tassi di Trasmissione in Demo Mode (PR #53):**
+  * In `_get_demo_devices()`, memorizzato il throughput iniziale di ciascun apparato demo in `_demo_base_rates`.
+  * La variazione casuale $[0.85, 1.25]$ viene applicata alla base fissa anziché al valore del ciclo precedente, eliminando il moto browniano con drift positivo che causava la crescita esponenziale del traffico simulato verso terabit/s dopo sessioni prolungate.
 
 ### 🔌 Chiarimento Architetturale Telemetria Layer 2 & Dispositivi Cablati Ethernet (Issue #42)
 * **🔌 Spiegazione Tecnica Commutazione Hardware Ethernet & Rimozione Disclaimer Abbonamento:**

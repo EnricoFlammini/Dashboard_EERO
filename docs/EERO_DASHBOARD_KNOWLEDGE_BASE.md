@@ -247,7 +247,13 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
 * **Rappresentazione Accurata nella UI:** La dashboard espone il valore trasparente `↓ — / ↑ — (Cablato)` (o `(Wired)` in inglese) e include tooltip e popover esplicativi sulla natura hardware della commutazione.
 
 ### 4.18 Community Hall of Fame & Crediti Open Source
-* **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici.
+* **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici:
+  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42).
+  * `@Hatton920`: Health Score Breakdown, velocità link PHY, stato nodi rebooting vs offline, sanitizzazione speedtest (#14, #15, #34, #35, #41).
+  * `@jimcampbell100`: Multi-Network Fleet Management (#22).
+  * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38).
+  * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46).
+  * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53).
 * **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
 
 ---
@@ -456,6 +462,15 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Soluzione Backend:** L'endpoint `GET /api/analytics/distribution` ora include il campo `"devices": [...]` per ogni categoria/segmento. Il nome di ogni client viene risolto tramite `_get_device_display_name(dev)` con precedenza: alias personalizzato (`custom_name`) → nickname (`nickname`) → hostname → IP → MAC address.
 * **Soluzione Frontend:** La funzione `formatDevicesTooltipAfterBody(devicesList)` formatta la lista come array di stringhe restituite da `callbacks.afterBody` di Chart.js. Il tooltip è configurato con `backgroundColor: 'rgba(15, 23, 42, 0.96)'` e marcato con il flag privato `_customDark: true`. La funzione `updateAllChartsTheme()` controlla questo flag prima di sovrascrivere il colore di sfondo, preservando il tooltip scuro in tutti i temi UI.
 * **Troncamento:** La lista viene mostrata per intero fino a 15 dispositivi; oltre tale soglia viene aggiunta la riga `... e altri X` (o `... and X more` in inglese) per mantenere il tooltip compatto.
+
+### PR #47 a #53 — Telemetria Rigorosa, Radiofrequenza & Stabilità Nodi (@carbones73)
+* **PR #47 (Isolamento Sessioni Live):** In `get_devices()`, se l'ID rete non è ancora risolto (`not current_network_id`) in una sessione reale autenticata, restituisce `[]` anziché i 10 dispositivi demo, prevenendo allarmi fantasma e sincronizzazioni DNS fittizie.
+* **PR #48 (Bonifica Speedtest Fittizio):** In `_normalize_network_details()`, rimossi i valori inventati hardcoded (`951.0` Mbps down, `193.0` Mbps up, `9.0` ms ping e `now()`) su reti che non hanno mai condotto test di velocità WAN, azzerando le misurazioni e preservando l'integrità dello storico SQLite e dello speedtest cloud interattivo.
+* **PR #49 (Elezione Gateway Deterministica per Segmento URL):** In `get_eeros()` e `_is_gateway_node()`, la condizione di matching per l'ID gateway confronta l'ultimo segmento di percorso dell'URL (`str(url).rstrip('/').split('/')[-1] == str(gw_id)`), eliminando collisioni da sottostringa (es. ID `10` vs `104`/`210`).
+* **PR #50 (Spettro RF 5 GHz UNII-3 vs 6 GHz & Disaccoppiamento Wi-Fi 7 EHT):** La banda 5 GHz UNII-3 opera su canali dispari (149, 153, 157, 161, 165); la logica radio limita i canali dispari per 6 GHz a `15 <= channel < 149` e classifica esplicitamente come 5 GHz `36 <= channel <= 177 and (channel % 2 == 0 or channel >= 149)`. Rimosso `phy_type == "EHT"` come indicatore esclusivo di 6 GHz, poiché il Wi-Fi 7 opera anche a 5 GHz e 2.4 GHz.
+* **PR #51 (Risoluzione Network ID Regole & Prenotazioni):** Sostituita l'invocazione del metodo inesistente `_resolve_network_id()` con `fetch_account_info()` in `get_forwards_and_reservations()` e aggiunta protezione preventiva contro chiamate verso `/networks/None`.
+* **PR #52 (Eliminazione Segnale Fittizio -55 dBm):** In `_normalize_device()`, se la telemetria cloud eero non riporta il segnale RSSI, `signal_rssi` rimane `None` senza inventare `-55 dBm`, ripulendo la Weak Signal Watchlist e l'Health Score.
+* **PR #53 (Stabilizzazione Drift Tassi Demo Mode):** In `_get_demo_devices()`, il throughput simulato viene variato attorno a valori base fissi memorizzati (`_demo_base_rates`) anziché moltiplicare a cascata il valore del ciclo precedente, eliminando il moto browniano con drift positivo esponenziale.
 
 ---
 
