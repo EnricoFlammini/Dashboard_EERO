@@ -6,9 +6,9 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version) || '1.5.0',
-    buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber) || '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion) || '1.5.0 build 1',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.5.0',
+    buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.5.0 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
@@ -299,6 +299,18 @@ document.addEventListener('alpine:init', () => {
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
       this.initTheme();
+
+      // Sincronizza dinamicamente versione e build number con /api/health
+      try {
+        const healthRes = await fetch('/api/health');
+        if (healthRes.ok) {
+          const hData = await healthRes.json();
+          if (hData.full_version) this.fullVersion = hData.full_version;
+          if (hData.build_number) this.buildNumber = String(hData.build_number);
+          if (hData.version) this.appVersion = hData.version;
+        }
+      } catch (e) {}
+
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
       await this.loadManualSections();
