@@ -16,7 +16,22 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
     * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione completa in lingua inglese del Daily Digest Telegram (#38).
     * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive UI (#27, #28), persistenza stato navigazione e filtri frequenza radio (#29).
   * **Bug Hunters & Tester:**
-    * Ringraziamenti a **[@carbones73](https://github.com/carbones73)** (PR #47-#53: telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, de-drift simulatore ed elezione Primary Gateway), **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+    * Ringraziamenti speciali a **[@carbones73](https://github.com/carbones73)** (PR #47-#53: telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, de-drift simulatore ed elezione Primary Gateway; 4 Security Advisories GHSA: hardening CORS/CSRF, sanitizzazione password Wi-Fi, controllo API_DOCS Swagger e permessi 0600 per session.json), **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+
+### 🔒 Hardening di Sicurezza & Vulnerability Remediation (Security Advisories / @carbones73)
+* **🛑 Protezione Cross-Origin (CORS) & Middleware CSRF (GHSA-jgpm-8wqq-cchm):**
+  * Risolta la vulnerabilità per cui l'API veniva esposta con `allow_origins=["*"]` e `allow_credentials=True`, consentendo a pagine web malevole aperte nel browser sulla LAN di interrogare la dashboard o eseguire richieste cross-site di scrittura (reboot, guest Wi-Fi, port forwarding, DNS sync).
+  * CORS disabilitato di default a meno che non sia esplicitata la variabile d'ambiente `CORS_ORIGINS`.
+  * Introdotto middleware anti-CSRF che blocca con HTTP 403 Forbidden richieste mutanti (POST/PUT/PATCH/DELETE) prive di intestazione o con `Sec-Fetch-Site: cross-site`.
+* **🛡️ Bonifica Credenziali Wi-Fi dall'Overview Pubblico (GHSA-8fm4-wcq4-ch2p):**
+  * Sanitizzazione ricorsiva in memoria (`_without_wifi_passwords()`) di tutte le chiavi relative a password (`password`, `passphrase`, `psk`, `network_key`, `wpa_key`, `pppoe_password`) dai dettagli di rete memorizzati nella cache RAM del poller.
+  * Gli endpoint pubblici `GET /api/network/overview` e `POST /api/network/refresh` non espongono più le password della rete principale o ospiti in chiaro; l'endpoint dedicato `GET /api/network/guest` conserva la password per il QR code e i controlli dedicati.
+* **📑 Switch `API_DOCS` & Swagger/OpenAPI Disattivato di Default (GHSA-f9xp-vqq6-f6r4):**
+  * Disattivato di default il montaggio automatico della documentazione interattiva FastAPI (`/docs`, `/redoc`, `/openapi.json`) in contesti privi di autenticazione per evitare che funga da console di scrittura per visitatori non autorizzati sulla rete.
+  * Nuova opzione di configurazione `API_DOCS=true` indipendente da `DEBUG` (prevenendo il logging a livello DEBUG di parametri sensibili e token).
+* **🔐 Permessi Restrittivi `0600` su `session.json` (GHSA-pqh9-q8vm-x9mh):**
+  * Creazione del file del token di sessione eero con modalità `0o600` (lettura/scrittura solo per il proprietario del file) tramite `os.open` e `os.fchmod` preventivo al salvataggio e prima del `truncate`.
+  * Prevenuta l'esposizione del token di sessione 2FA ad altri account locali sull'host; documentato nei README l'accesso con `sudo` o `docker exec` in ambienti Linux con container root.
 
 ### 🛡️ Telemetria Rigorosa, Accuratezza Radiofrequenza & Stabilità Nodi (PR #47–#53)
 * **🛡️ Isolamento Sessioni Live ed Eliminazione Leak Dispositivi Demo (PR #47):**

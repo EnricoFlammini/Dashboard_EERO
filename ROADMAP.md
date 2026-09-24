@@ -276,6 +276,13 @@ gantt
 - [x] **Trasparenza Segnale Senza Placeholder -55 dBm (PR #52):** Mantenimento di `signal_rssi = None` in assenza di lettura e pulizia dello storico RSSI e Health Score.
 - [x] **Stabilizzazione Tassi Simulati Demo Mode (PR #53):** Ancoraggio delle variazioni casuali alla base fissa iniziale (`_demo_base_rates`) prevenendo drift moltiplicativo esponenziale.
 
+#### 5. 🔒 Hardening di Sicurezza & Vulnerability Remediation (Security Advisories - @carbones73)
+*(Patch di sicurezza fornite da @carbones73 per 4 GitHub Security Advisories con test di regressione inclusi)*
+- [x] **Protezione CORS & CSRF Middleware (GHSA-jgpm-8wqq-cchm):** Chiusura di `allow_origins=["*"]`, introduzione di `CORS_ORIGINS` e blocco preventivo richieste mutanti (POST/PUT/PATCH/DELETE) con `Sec-Fetch-Site: cross-site`.
+- [x] **Sanitizzazione Password Wi-Fi dall'Overview di Rete (GHSA-8fm4-wcq4-ch2p):** Rimozione ricorsiva preventiva di chiavi contenenti password (`password`, `passphrase`, `psk`, `network_key`, ecc.) dalla cache pubblica `/api/network/overview`.
+- [x] **Interactive API Docs Toggle `API_DOCS` (GHSA-f9xp-vqq6-f6r4):** Montaggio di `/docs`, `/redoc` e `/openapi.json` condizionato alla variabile `API_DOCS=true` (disattivato di default per proteggere endpoint di scrittura).
+- [x] **Permessi File Restrittivi `0600` per `session.json` (GHSA-pqh9-q8vm-x9mh):** Creazione atomica con `0o600` e `fchmod` prima del troncamento per proteggere il token cloud 2FA da altri utenti sull'host.
+
 ---
 
 ### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge
