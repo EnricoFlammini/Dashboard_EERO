@@ -1089,6 +1089,46 @@ async def run_all_tests():
             runner.assert_true(threw_exception, "speedtest_service solleva eccezione pulita su errore API anziché generare fallback sintetici")
             runner.assert_true(speedtest_service.is_running is False, "speedtest_service resetta il flag is_running a False")
 
+            # 4. Rete senza speed test eero (down/up nulli): nessun valore predefinito presentato come misura reale
+            no_speed_net = eero_client._normalize_network_details({"name": "No Speed Network", "speed": {"down": None, "up": None, "date": None}})
+            no_speed = no_speed_net.get("speedtest", {})
+            runner.assert_true(
+                no_speed.get("download_mbps") == 0.0 and no_speed.get("upload_mbps") == 0.0 and no_speed.get("ping_ms") == 0.0,
+                f"Speed test assente non sostituito da valori predefiniti (ottenuto: {no_speed.get('download_mbps')}/{no_speed.get('upload_mbps')} Mbps, {no_speed.get('ping_ms')} ms)"
+            )
+            runner.assert_true(no_speed.get("timestamp") is None, f"Speed test senza data eero non riceve un orario inventato (ottenuto: {no_speed.get('timestamp')})")
+
+            # 5. Poll reale (API eero simulata) di una rete senza speed test: nessun test 951/193 Mbps registrato nello storico
+            import httpx
+
+            def _no_speed_handler(request):
+                if request.url.path.endswith("/networks/net_nospeed_test"):
+                    return httpx.Response(200, json={"data": {"url": "/2.2/networks/net_nospeed_test", "name": "No Speed Network", "speed": {"down": None, "up": None, "date": None}}})
+                return httpx.Response(200, json={"data": []})
+
+            def _count_951(tests):
+                return sum(1 for t in tests if abs(float(t.get("download_mbps") or 0) - 951.0) < 0.05)
+
+            count_951_before = _count_951(await db_service.get_speedtests(limit=500))
+            saved_nospeed_http = eero_client._http_client
+            saved_nospeed_cache = (background_poller.cached_network, background_poller.cached_eeros, background_poller.cached_devices,
+                                   background_poller.cached_profiles, background_poller.cached_health_score, background_poller.cached_health_details)
+            eero_client.user_token = "live_token_nospeed_test"
+            eero_client.current_network_id = "net_nospeed_test"
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(_no_speed_handler))
+            try:
+                await background_poller._poll_and_cache()
+            finally:
+                await eero_client._http_client.aclose()
+                eero_client._http_client = saved_nospeed_http
+                (background_poller.cached_network, background_poller.cached_eeros, background_poller.cached_devices,
+                 background_poller.cached_profiles, background_poller.cached_health_score, background_poller.cached_health_details) = saved_nospeed_cache
+            count_951_after = _count_951(await db_service.get_speedtests(limit=500))
+            runner.assert_true(
+                count_951_after == count_951_before,
+                f"Nessuno speed test predefinito 951/193 Mbps salvato come misura eero_gateway (righe 951 prima/dopo il poll: {count_951_before}/{count_951_after})"
+            )
+
         finally:
             # Ripristina client eero
             eero_client.user_token = orig_token
