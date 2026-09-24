@@ -1819,15 +1819,6 @@ document.addEventListener('alpine:init', () => {
               backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 123, 15, 0.1)',
               borderWidth: 2,
               tension: 0.3
-            },
-            {
-              label: 'Ping (ms)',
-              data: ping,
-              borderColor: colors.isDark ? '#f59e0b' : '#d97706',
-              borderDash: [5, 5],
-              borderWidth: 1.5,
-              yAxisID: 'y1',
-              tension: 0.3
             }
           ]
         },
@@ -1849,8 +1840,7 @@ document.addEventListener('alpine:init', () => {
           },
           scales: {
             x: { ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } }, grid: { color: colors.gridColor } },
-            y: { title: { display: true, text: 'Mbps', color: colors.titleColor, font: { family: colors.fontFamily } }, ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } }, grid: { color: colors.gridColor } },
-            y1: { position: 'right', title: { display: true, text: 'Ping ms', color: colors.isDark ? '#f59e0b' : '#d97706', font: { family: colors.fontFamily } }, ticks: { color: colors.isDark ? '#f59e0b' : '#d97706', font: { family: colors.fontFamily } }, grid: { display: false } }
+            y: { title: { display: true, text: 'Mbps', color: colors.titleColor, font: { family: colors.fontFamily } }, ticks: { color: colors.ticksColor, font: { family: colors.fontFamily } }, grid: { color: colors.gridColor } }
           }
         }
       });

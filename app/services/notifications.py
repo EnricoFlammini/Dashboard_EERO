@@ -265,7 +265,6 @@ class NotificationService:
                 f"📱 <b>Client Attivi:</b> {active}\n"
                 f"📶 <b>Frequenze Wi-Fi:</b> {bands_str}\n"
                 f"⚡ <b>Speed Test Gateway:</b> ↓ {down} Mbps / ↑ {up} Mbps\n"
-                f"⏱️ <b>Latenza Ping:</b> {ping} ms\n"
             )
             db_msg = f"Report giornaliero inviato: {active} client connessi, {nodes_on}/{nodes_tot} nodi mesh attivi, ISP: {isp}."
         else:
@@ -277,7 +276,6 @@ class NotificationService:
                 f"📱 <b>Active Clients:</b> {active}\n"
                 f"📶 <b>Wi-Fi Frequencies:</b> {bands_str}\n"
                 f"⚡ <b>Gateway Speed Test:</b> ↓ {down} Mbps / ↑ {up} Mbps\n"
-                f"⏱️ <b>Ping Latency:</b> {ping} ms\n"
             )
             db_msg = f"Daily digest report sent: {active} connected clients, {nodes_on}/{nodes_tot} active mesh nodes, ISP: {isp}."
 
