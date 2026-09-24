@@ -56,60 +56,15 @@
   </script>
   
   <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
-  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.sidebarv3">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.filterv3">
 
   <!-- Chart.js CDN & Alpine.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
   <!-- App Logic -->
-  <script src="/static/js/app.js?v={{ app_version }}"></script>
+  <script src="/static/js/app.js?v={{ app_version }}.filterv3"></script>
 
-  <!-- Critical Layout Fix: Sidebar Strict Width, Stacking & Centering -->
-  <style>
-    aside.sidebar-container {
-      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-      will-change: width;
-    }
-    aside.sidebar-expanded {
-      width: 256px !important;
-      min-width: 256px !important;
-      max-width: 256px !important;
-    }
-    aside.sidebar-collapsed {
-      width: 68px !important;
-      min-width: 68px !important;
-      max-width: 68px !important;
-    }
-    .sidebar-nav-group {
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-    }
-    .sidebar-btn-collapsed {
-      width: 44px !important;
-      height: 44px !important;
-      margin: 0 auto !important;
-      padding: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      border-radius: 0.75rem !important;
-      position: relative !important;
-    }
-    .sidebar-btn-expanded {
-      width: 100% !important;
-      padding: 0.625rem 0.875rem !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-      border-radius: 0.75rem !important;
-      position: relative !important;
-    }
-  </style>
 </head>
 <body class="bg-[#f3f3f3] dark:bg-[#202020] text-[#1c1c1c] dark:text-[#ffffff] min-h-screen antialiased flex flex-col transition-colors duration-200" x-data="eeroApp">
 
@@ -117,14 +72,15 @@
   <!-- TOP APP BAR (WINDOWS 11 FLUENT HEADER) -->
   <!-- ===================================================================== -->
   <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#2b2b2b]/85 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.08] shadow-sm transition-colors duration-200">
-    <div class="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="app-header w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
       <!-- Brand Logo & Sidebar Toggle Button -->
-      <div class="flex items-center space-x-3">
+      <div class="app-brand flex items-center space-x-3 min-w-0">
         <!-- Sidebar Toggle Button (Collapse / Expand) -->
-        <button 
+        <button
           id="btn-sidebar-toggle-header"
           @click="toggleSidebar()" 
+          :aria-expanded="!sidebarCollapsed"
           class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] transition active:scale-95 cursor-pointer focus:outline-none mr-0.5"
           :title="sidebarCollapsed ? (t('nav.expand_sidebar') || 'Espandi Menu') : (t('nav.collapse_sidebar') || 'Comprimi Menu')">
           <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,98 +93,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
           </svg>
         </div>
-        <div>
-          <div class="flex items-center space-x-2">
+        <div class="app-brand-copy min-w-0">
+          <div class="app-brand-row flex items-center space-x-2">
             <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">eero <span class="text-[#0067c0] dark:text-[#60cdff] font-semibold">Dashboard</span></h1>
-            <!-- Version Button (Opens Changelog) -->
-            <button 
-              @click="openChangelogModal()" 
-              class="header-pill-version text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800 dark:bg-sky-500/20 dark:hover:bg-sky-500/30 dark:text-sky-300 border border-sky-300 dark:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer shadow-sm" 
-              :title="t('header.changelog_title') + ' v' + appVersion">
-              <span x-text="'v' + appVersion">v1.4.01</span>
-              <svg class="w-3.5 h-3.5 text-sky-700 dark:text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </button>
-
-            <!-- Auto-Update Notification Pill Badge (Appears ONLY when update is available) -->
-            <template x-if="updateInfo && updateInfo.update_available">
-              <button 
-                @click="openUpdateModal()" 
-                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-sm" 
-                :title="t('header.update_btn_title')">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
-                <span x-text="'🎉 v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
-                <svg class="w-3 h-3 text-amber-600 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-              </button>
-            </template>
-
-            <!-- Demo Active Notification Pill Badge in Header -->
-            <template x-if="isDemoMode">
-              <button 
-                @click="toggleDemoMode(false)" 
-                class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 transition flex items-center space-x-1.5 cursor-pointer shadow-sm" 
-                :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span>✨ DEMO</span>
-                <span class="text-[9px] opacity-80" x-text="hasSavedLiveToken ? '→ Live' : ''"></span>
-              </button>
-            </template>
-
-            <!-- About & Dedication Button -->
-            <button 
-              @click="showAboutModal = true" 
-              class="header-pill-about text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-900 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/40 transition flex items-center space-x-1 cursor-pointer shadow-sm" 
-              :title="t('about_modal.title')">
-              <svg class="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-              <span>About</span>
-            </button>
-
-            <!-- Windows 11 Theme Switcher (☀️ Chiaro / 🌙 Scuro / 💻 Sistema) -->
-            <div class="relative flex items-center">
-              <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08]" :title="t('header.theme_toggle_title') || 'Cambia Tema (Chiaro / Scuro / Sistema)'">
-                <button 
-                  @click="setTheme('light')" 
-                  :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
-                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
-                  :title="t('header.theme_light') || 'Tema Chiaro'">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </button>
-                <button 
-                  @click="setTheme('dark')" 
-                  :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
-                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
-                  :title="t('header.theme_dark') || 'Tema Scuro'">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                </button>
-                <button 
-                  @click="setTheme('system')" 
-                  :class="currentTheme === 'system' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
-                  class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer" 
-                  :title="t('header.theme_system') || 'Tema di Sistema'">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Language Selector (i18n) -->
-            <div class="relative flex items-center">
-              <select 
-                x-model="currentLanguage" 
-                @change="setLanguage($event.target.value)"
-                class="text-[11px] font-medium bg-white/90 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-0.5 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#0067c0] dark:focus:ring-sky-500"
-                title="Select Language / Seleziona Lingua">
-                <option value="en">🇬🇧 EN</option>
-                <option value="it">🇮🇹 IT</option>
-              </select>
-            </div>
           </div>
           <p class="text-xs text-slate-500 dark:text-slate-400 font-medium" x-text="network.name || t('mesh_infra')"></p>
         </div>
       </div>
 
       <!-- Center Indicator: Health Score (Issue #15) -->
-      <div class="hidden md:flex items-center space-x-6">
+      <div class="hidden xl:flex items-center space-x-6">
         <!-- Health Score Badge -->
         <div 
           @click="openHealthModal()"
@@ -253,13 +127,14 @@
         </div>
       </div>
 
-      <!-- Right Actions: Refresh, Help, Logout -->
-      <div class="flex items-center space-x-3">
+      <!-- Right Action: Refresh -->
+      <div class="app-header-actions flex items-center space-x-3 shrink-0">
         
         <!-- Refresh Button -->
         <button 
           @click="manualRefresh()"
           :disabled="isRefreshing"
+          :aria-label="isRefreshing ? t('header.refreshing') : t('header.refresh')"
           class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           :title="t('header.refresh_title')">
           <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,23 +143,110 @@
           <span class="hidden sm:inline" x-text="isRefreshing ? t('header.refreshing') : t('header.refresh')"></span>
         </button>
 
-        <!-- Context Help Trigger -->
+        <details class="header-settings relative" @click.outside="$el.removeAttribute('open')">
+          <summary class="header-settings-toggle flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 transition cursor-pointer" :title="currentLanguage === 'it' ? 'Menu applicazione' : 'App menu'" :aria-label="currentLanguage === 'it' ? 'Menu applicazione' : 'App menu'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87l.22.127c.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247c.275.476.165 1.082-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992v.255c-.008.378.137.75.43.992l1.003.827c.424.35.534.956.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124l-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.212-1.281c-.062-.374-.312-.686-.644-.87l-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.002-.827c.293-.242.439-.614.431-.992v-.255c.008-.379-.138-.751-.43-.992l-1.003-.827a1.125 1.125 0 01-.26-1.431l1.297-2.247a1.125 1.125 0 011.37-.49l1.216.456c.356.133.751.072 1.076-.124l.22-.128c.332-.183.582-.495.644-.869l.213-1.281z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          </summary>
+          <div class="header-settings-panel absolute right-0 top-[calc(100%+0.5rem)] w-60 p-3 rounded-xl bg-white/95 dark:bg-[#2b2b2b]/95 backdrop-blur-xl border border-slate-200 dark:border-white/[0.1] shadow-xl space-y-2">
+        <!-- Version Button (Opens Changelog) -->
         <button 
-          @click="openContextHelp('intro')"
-          class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 hover:text-[#0067c0] dark:text-slate-300 dark:hover:text-sky-400 border border-slate-200 dark:border-slate-700/60 transition cursor-pointer"
-          :title="t('header.quick_help')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          @click="$el.closest('details').removeAttribute('open'); openChangelogModal()"
+          class="header-pill-version text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800 dark:bg-sky-500/20 dark:hover:bg-sky-500/30 dark:text-sky-300 border border-sky-300 dark:border-sky-500/40 transition flex items-center space-x-1 cursor-pointer shadow-sm"
+          :title="t('header.changelog_title') + ' v' + appVersion">
+          <span x-text="'v' + appVersion">v1.4.01</span>
+          <svg class="w-3.5 h-3.5 text-sky-700 dark:text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </button>
 
-        <!-- Disconnect / Logout Trigger -->
-        <button 
-          @click="showLogoutModal = true"
-          class="p-2 rounded-lg bg-slate-100 hover:bg-rose-500/15 dark:bg-slate-800 dark:hover:bg-rose-500/20 text-slate-600 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-transparent hover:border-rose-500/30 transition cursor-pointer"
-          :title="t('header.logout')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        <!-- Auto-Update Notification Pill Badge (Appears ONLY when update is available) -->
+        <template x-if="updateInfo && updateInfo.update_available">
+          <button
+            @click="$el.closest('details').removeAttribute('open'); openUpdateModal()"
+            class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40 animate-pulse transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+            :title="t('header.update_btn_title')">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+            <span x-text="'🎉 v' + updateInfo.latest_version + ' ' + (currentLanguage === 'it' ? 'Disponibile' : 'Available')"></span>
+            <svg class="w-3 h-3 text-amber-600 dark:text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          </button>
+        </template>
+
+        <!-- Demo Active Notification Pill Badge in Header -->
+        <template x-if="isDemoMode">
+          <button
+            @click="toggleDemoMode(false)"
+            class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+            :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span>✨ DEMO</span>
+            <span class="text-[9px] opacity-80" x-text="hasSavedLiveToken ? '→ Live' : ''"></span>
+          </button>
+        </template>
+
+        <!-- About & Dedication Button -->
+        <button
+          @click="$el.closest('details').removeAttribute('open'); showAboutModal = true"
+          class="header-pill-about text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-900 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-500/40 transition flex items-center space-x-1 cursor-pointer shadow-sm"
+          :title="t('about_modal.title')">
+          <svg class="w-3.5 h-3.5 text-indigo-700 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
           </svg>
+          <span>About</span>
         </button>
+
+        <!-- Windows 11 Theme Switcher (☀️ Chiaro / 🌙 Scuro / 💻 Sistema) -->
+        <div class="relative flex items-center">
+          <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08]" :title="t('header.theme_toggle_title') || 'Cambia Tema (Chiaro / Scuro / Sistema)'">
+            <button
+              @click="setTheme('light')"
+              :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+              class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer"
+              :title="t('header.theme_light') || 'Tema Chiaro'">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
+            <button
+              @click="setTheme('dark')"
+              :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+              class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer"
+              :title="t('header.theme_dark') || 'Tema Scuro'">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+            <button
+              @click="setTheme('system')"
+              :class="currentTheme === 'system' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
+              class="p-1 rounded-md text-xs transition flex items-center justify-center cursor-pointer"
+              :title="t('header.theme_system') || 'Tema di Sistema'">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Language Selector (i18n) -->
+        <div class="relative flex items-center">
+          <select
+            x-model="currentLanguage"
+            @change="setLanguage($event.target.value)"
+            class="text-[11px] font-medium bg-white/90 dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-0.5 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#0067c0] dark:focus:ring-sky-500"
+            title="Select Language / Seleziona Lingua">
+            <option value="en">🇬🇧 EN</option>
+            <option value="it">🇮🇹 IT</option>
+          </select>
+        </div>
+
+        <div class="header-settings-divider"></div>
+        <button
+          @click="$el.closest('details').removeAttribute('open'); openContextHelp('intro')"
+          class="header-menu-item text-xs font-semibold rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/[0.06] transition flex items-center gap-2 px-2.5 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span x-text="t('header.quick_help')"></span>
+        </button>
+        <button
+          @click="$el.closest('details').removeAttribute('open'); showLogoutModal = true"
+          class="header-menu-item text-xs font-semibold rounded-lg text-rose-600 hover:bg-rose-500/10 dark:text-rose-400 transition flex items-center gap-2 px-2.5 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          <span x-text="t('header.logout')"></span>
+        </button>
+          </div>
+        </details>
+
       </div>
 
     </div>
@@ -294,10 +256,18 @@
   <!-- APP BODY: SIDEBAR + MAIN CONTENT WRAPPER -->
   <!-- ===================================================================== -->
   <div class="flex-1 flex w-full min-h-[calc(100vh-4rem)] relative">
+    <button
+      x-show="!sidebarCollapsed"
+      @click="toggleSidebar()"
+      class="mobile-sidebar-scrim"
+      :aria-label="currentLanguage === 'it' ? 'Chiudi il menu di navigazione' : 'Close navigation menu'">
+    </button>
     
     <!-- LEFT SIDEBAR -->
     <aside 
       class="sidebar-container sticky top-16 h-[calc(100vh-4rem)] flex flex-col justify-between border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 shrink-0 select-none overflow-y-auto overflow-x-hidden no-scrollbar shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
+      :inert="sidebarCollapsed && window.matchMedia('(max-width: 767px)').matches"
+      :aria-hidden="sidebarCollapsed && window.matchMedia('(max-width: 767px)').matches"
       :class="sidebarCollapsed ? 'w-[68px] sidebar-collapsed' : 'w-64 sidebar-expanded'">
 
       <!-- Top Navigation Items -->
@@ -514,7 +484,7 @@
     </aside>
 
     <!-- MAIN CONTENT CONTAINER -->
-    <main class="flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto overflow-x-hidden">
+    <main class="app-main flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 max-w-[1600px] mx-auto overflow-x-hidden">
 
     <!-- =================================================================== -->
     <!-- TAB 1: OVERVIEW & MESH TOPOLOGY -->
@@ -522,7 +492,7 @@
     <div x-show="currentTab === 'overview'" class="space-y-6 animate-fade-in">
       
       <!-- WAN Status & Summary Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         
         <!-- WAN Card -->
         <div class="glass-panel rounded-2xl p-5 relative overflow-hidden">
@@ -617,7 +587,7 @@
       </div>
 
       <!-- Mesh Nodes Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <template x-for="eero in eeros" :key="eero.id || eero.serial">
           <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
             <div>
@@ -692,80 +662,63 @@
     <div x-show="currentTab === 'devices'" class="space-y-6 animate-fade-in" style="display: none;">
       
       <!-- Filters and Search Bar -->
-      <div class="glass-panel rounded-2xl p-5 space-y-4">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="device-filter-panel glass-panel rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+        
+        <!-- Primary Toolbar: Search Bar + Quick Actions -->
+        <div class="device-filter-primary flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           
-          <!-- Search Input -->
-          <div class="relative w-full md:w-96">
-            <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <!-- Search Input with Integrated Clear Button -->
+          <div class="device-search relative flex-1 min-w-0">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
             <input 
               type="text" 
               x-model="deviceSearchQuery"
               :placeholder="t('devices.search_placeholder')"
-              class="glass-input w-full pl-10 pr-4 py-2 rounded-xl text-sm">
+              class="glass-input w-full pl-10 pr-9 py-2.5 rounded-xl text-sm"
+              :aria-label="t('devices.search_placeholder')">
+            <button 
+              x-show="deviceSearchQuery" 
+              x-cloak 
+              @click="deviceSearchQuery = ''" 
+              type="button" 
+              class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+              title="Clear search">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
           </div>
 
-          <!-- Quick Filters: Band, Node, Category -->
-          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Toolbar Quick Controls -->
+          <div class="device-filter-controls flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
             
-            <!-- Band Filter -->
-            <select x-model="selectedBandFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all" x-text="t('devices.filter_all_bands')"></option>
-              <option value="6GHz" x-text="t('devices.filter_band_6ghz')"></option>
-              <option value="5GHz" x-text="t('devices.filter_band_5ghz')"></option>
-              <option value="2.4GHz" x-text="t('devices.filter_band_24ghz')"></option>
-              <option value="wired" x-text="t('devices.filter_band_wired')"></option>
-            </select>
+            <!-- Result Counter Badge -->
+            <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 shadow-xs">
+              <span class="font-bold text-slate-900 dark:text-white" x-text="filteredDevices.length"></span>
+              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + (currentLanguage === 'it' ? 'dispositivi' : 'devices')"></span>
+            </div>
 
-            <!-- Node Filter -->
-            <select x-model="selectedNodeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all" x-text="t('devices.filter_all_nodes')"></option>
-              <template x-for="e in eeros" :key="e.id || e.serial">
-                <option :value="e.id" x-text="e.name"></option>
-              </template>
-            </select>
-
-            <!-- Category Filter -->
-            <select x-model="selectedCategoryFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all" x-text="t('devices.filter_all_categories')"></option>
-              <option value="favorites" x-text="t('devices.filter_favorites')"></option>
-              <option value="Computer" x-text="t('devices.cat_computer')"></option>
-              <option value="Mobile" x-text="t('devices.cat_mobile')"></option>
-              <option value="Smart Home" x-text="t('devices.cat_smarthome')"></option>
-              <option value="Intrattenimento" x-text="t('devices.cat_entertainment')"></option>
-              <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
-              <option value="Server/Rete" x-text="t('devices.cat_server')"></option>
-              <option value="Altro" x-text="t('devices.cat_other')"></option>
-            </select>
-
-            <!-- Profile Filter -->
-            <select x-model="selectedProfileFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all" x-text="t('devices.filter_all_profiles')"></option>
-              <option value="unassigned" x-text="t('devices.filter_unassigned')"></option>
-              <template x-for="prof in profiles" :key="prof.id">
-                <option :value="prof.id" x-text="'👤 ' + prof.name"></option>
-              </template>
-            </select>
-
-            <!-- IP Type Filter (Statico / DHCP) -->
-            <select x-model="selectedIpTypeFilter" class="glass-input px-3 py-2 rounded-xl text-xs">
-              <option value="all" x-text="t('devices.filter_all_assignments')"></option>
-              <option value="static" x-text="t('devices.filter_only_static')"></option>
-              <option value="dhcp" x-text="t('devices.filter_only_dhcp')"></option>
-            </select>
-
-            <!-- Connected Only Toggle -->
-            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-              <input type="checkbox" x-model="showConnectedOnly" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sky-600 focus:ring-0">
+            <!-- Connected Only Toggle Pill -->
+            <button
+              type="button"
+              @click="showConnectedOnly = !showConnectedOnly"
+              :class="showConnectedOnly 
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-semibold shadow-xs' 
+                : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              class="device-toggle-pill inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none">
+              <span class="w-2 h-2 rounded-full transition-all" :class="showConnectedOnly ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50 scale-110' : 'bg-slate-400 dark:bg-slate-500'"></span>
               <span x-text="t('devices.filter_connected_only')"></span>
-            </label>
+            </button>
 
-            <!-- Quick Refresh Dispositivi -->
-            <button 
+
+            <!-- Refresh Dispositivi -->
+            <button
+              type="button"
               @click="manualRefresh()"
               :disabled="isRefreshing"
-              class="p-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 border border-slate-300 dark:border-slate-700 transition shadow-sm dark:shadow-none cursor-pointer"
-              :title="t('devices.refresh_title')">
+              class="device-refresh-btn p-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] hover:bg-sky-500/10 dark:hover:bg-sky-500/20 text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 border border-slate-200/80 dark:border-white/[0.08] transition cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+              :title="t('devices.refresh_title')"
+              :aria-label="t('devices.refresh_title')">
               <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
@@ -774,12 +727,261 @@
           </div>
 
         </div>
+
+        <!-- Secondary Toolbar: The 5 Filter Dropdowns in a Balanced Full-Width Grid -->
+        <div class="device-filter-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-5 gap-2.5" @click.outside="closeDeviceDropdowns()" @keydown.escape.window="closeDeviceDropdowns()">
+          
+          <!-- Band Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('band')"
+              :class="[
+                selectedBandFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'band' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_bands')"
+              :aria-expanded="openDeviceDropdown === 'band'">
+              <span class="truncate pr-1.5" x-text="getBandFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'band' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'band'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedBandFilter = 'all'; closeDeviceDropdowns()" :class="selectedBandFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_bands')"></span>
+                <span x-show="selectedBandFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '6GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '6GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_6ghz')"></span>
+                <span x-show="selectedBandFilter === '6GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '5GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '5GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_5ghz')"></span>
+                <span x-show="selectedBandFilter === '5GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '2.4GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '2.4GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_24ghz')"></span>
+                <span x-show="selectedBandFilter === '2.4GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = 'wired'; closeDeviceDropdowns()" :class="selectedBandFilter === 'wired' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_wired')"></span>
+                <span x-show="selectedBandFilter === 'wired'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('node')"
+              :class="[
+                selectedNodeFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'node' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_nodes')"
+              :aria-expanded="openDeviceDropdown === 'node'">
+              <span class="truncate pr-1.5" x-text="getNodeFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'node' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'node'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedNodeFilter = 'all'; closeDeviceDropdowns()" :class="selectedNodeFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_nodes')"></span>
+                <span x-show="selectedNodeFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <template x-for="e in eeros" :key="e.id || e.serial">
+                <button type="button" @click="selectedNodeFilter = (e.id || e.serial); closeDeviceDropdowns()" :class="selectedNodeFilter === (e.id || e.serial) ? 'is-selected' : ''" class="device-filter-option">
+                  <span class="truncate" x-text="e.name"></span>
+                  <span x-show="selectedNodeFilter === (e.id || e.serial)" class="text-xs">✓</span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-2 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('category')"
+              :class="[
+                selectedCategoryFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'category' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_categories')"
+              :aria-expanded="openDeviceDropdown === 'category'">
+              <span class="truncate pr-1.5" x-text="getCategoryFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'category' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'category'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedCategoryFilter = 'all'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_categories')"></span>
+                <span x-show="selectedCategoryFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'favorites'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'favorites' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_favorites')"></span>
+                <span x-show="selectedCategoryFilter === 'favorites'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Computer'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Computer' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_computer')"></span>
+                <span x-show="selectedCategoryFilter === 'Computer'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Mobile'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Mobile' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_mobile')"></span>
+                <span x-show="selectedCategoryFilter === 'Mobile'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Smart Home'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Smart Home' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_smarthome')"></span>
+                <span x-show="selectedCategoryFilter === 'Smart Home'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Intrattenimento'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Intrattenimento' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_entertainment')"></span>
+                <span x-show="selectedCategoryFilter === 'Intrattenimento'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Gaming'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Gaming' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_gaming')"></span>
+                <span x-show="selectedCategoryFilter === 'Gaming'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Server/Rete'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Server/Rete' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_server')"></span>
+                <span x-show="selectedCategoryFilter === 'Server/Rete'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Altro'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Altro' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_other')"></span>
+                <span x-show="selectedCategoryFilter === 'Altro'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Profile Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-3 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('profile')"
+              :class="[
+                selectedProfileFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'profile' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_profiles')"
+              :aria-expanded="openDeviceDropdown === 'profile'">
+              <span class="truncate pr-1.5" x-text="getProfileFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'profile' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'profile'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedProfileFilter = 'all'; closeDeviceDropdowns()" :class="selectedProfileFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_profiles')"></span>
+                <span x-show="selectedProfileFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedProfileFilter = 'unassigned'; closeDeviceDropdowns()" :class="selectedProfileFilter === 'unassigned' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_unassigned')"></span>
+                <span x-show="selectedProfileFilter === 'unassigned'" class="text-xs">✓</span>
+              </button>
+              <template x-for="prof in profiles" :key="prof.id">
+                <button type="button" @click="selectedProfileFilter = prof.id; closeDeviceDropdowns()" :class="selectedProfileFilter === prof.id ? 'is-selected' : ''" class="device-filter-option">
+                  <span class="truncate" x-text="'👤 ' + prof.name"></span>
+                  <span x-show="selectedProfileFilter === prof.id" class="text-xs">✓</span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- IP Type Filter (Static / DHCP) -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-3 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('ip')"
+              :class="[
+                selectedIpTypeFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'ip' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_assignments')"
+              :aria-expanded="openDeviceDropdown === 'ip'">
+              <span class="truncate pr-1.5" x-text="getIpTypeFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'ip' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'ip'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu xl:right-0 xl:left-auto">
+              <button type="button" @click="selectedIpTypeFilter = 'all'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_assignments')"></span>
+                <span x-show="selectedIpTypeFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedIpTypeFilter = 'static'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'static' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_only_static')"></span>
+                <span x-show="selectedIpTypeFilter === 'static'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedIpTypeFilter = 'dhcp'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'dhcp' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_only_dhcp')"></span>
+                <span x-show="selectedIpTypeFilter === 'dhcp'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
       <!-- Devices Table -->
-      <div class="glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
-        <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
-          <table class="w-full text-left border-collapse text-xs">
+      <div class="device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div class="device-table-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
+          <table class="device-table w-full text-left border-collapse text-xs">
+            <caption class="sr-only" x-text="t('devices.title')"></caption>
+            <colgroup>
+              <col class="device-col-name">
+              <col class="device-col-address">
+              <col class="device-col-profile">
+              <col class="device-col-node">
+              <col class="device-col-band">
+              <col class="device-col-signal">
+              <col class="device-col-status">
+              <col class="device-col-actions">
+            </colgroup>
             <thead class="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
               <tr class="text-slate-700 dark:text-slate-400 uppercase tracking-wider font-semibold">
                 
@@ -873,17 +1075,17 @@
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
               <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <tr class="device-table-row hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                   
                   <!-- Name & Icon -->
-                  <td class="py-3 px-4">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                  <td class="device-name-cell py-3 px-4">
+                    <div class="device-identity flex items-center gap-3">
+                      <div class="w-8 h-8 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       </div>
-                      <div>
-                        <div class="flex items-center space-x-1.5">
-                          <div class="font-bold text-slate-900 dark:text-white text-sm" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                      <div class="min-w-0">
+                        <div class="flex min-w-0 items-center gap-1.5">
+                          <div class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm" :title="dev.custom_name || dev.nickname || dev.hostname || 'Device'" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
                           <template x-if="dev.is_favorite">
                             <span class="text-amber-500 dark:text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
                           </template>
@@ -891,13 +1093,13 @@
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
                           </template>
                         </div>
-                        <div class="text-[11px] text-slate-600 dark:text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
+                        <div class="truncate text-[11px] text-slate-600 dark:text-slate-500" x-text="dev.category || t('devices.cat_other')"></div>
                       </div>
                     </div>
                   </td>
 
                   <!-- IP & MAC with Static / DHCP badge -->
-                  <td class="py-3 px-4 font-mono">
+                  <td class="py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
                     <div class="flex items-center space-x-2">
                       <span class="text-slate-900 dark:text-slate-200 font-bold text-xs" x-text="dev.ip || '---'"></span>
                       <template x-if="dev.is_static">
@@ -915,11 +1117,11 @@
                   </td>
 
                   <!-- Profile / User -->
-                  <td class="py-3 px-4 whitespace-nowrap">
+                  <td class="py-3 px-4 whitespace-nowrap" :data-label="t('devices.col_profile')">
                     <template x-if="dev.profile_name">
-                      <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none">
+                      <span class="device-profile inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none">
                         <span>👤</span>
-                        <span x-text="dev.profile_name"></span>
+                        <span class="truncate" x-text="dev.profile_name"></span>
                       </span>
                     </template>
                     <template x-if="!dev.profile_name">
@@ -928,12 +1130,12 @@
                   </td>
 
                   <!-- Connected eero -->
-                  <td class="py-3 px-4 text-slate-900 dark:text-slate-200">
+                  <td class="py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
                     <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
                   </td>
 
                   <!-- Band / Channel -->
-                  <td class="py-3 px-4">
+                  <td class="py-3 px-4" :data-label="t('devices.col_band')">
                     <div class="flex items-center space-x-2">
                       <span 
                         class="px-2.5 py-0.5 rounded text-[10px] font-mono font-extrabold shadow-xs dark:shadow-none inline-block"
@@ -952,7 +1154,7 @@
                   </td>
 
                   <!-- Signal & PHY Link Speed (Real Eero API data) -->
-                  <td class="py-3 px-4 font-mono text-xs">
+                  <td class="py-3 px-4 font-mono text-xs" :data-label="t('devices.col_signal')">
                     <template x-if="dev.wireless">
                       <div>
                         <template x-if="dev.signal_rssi">
@@ -975,7 +1177,7 @@
                   </td>
 
                   <!-- Status (Online/Offline) -->
-                  <td class="py-3 px-4 text-center">
+                  <td class="py-3 px-4 text-center" :data-label="t('devices.col_status')">
                     <template x-if="dev.connected">
                       <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 shadow-xs dark:shadow-none" x-text="t('devices.status_online')"></span>
                     </template>
@@ -989,7 +1191,7 @@
                     <!-- Detail Modal Trigger -->
                     <button 
                       @click="openDeviceModal(dev)"
-                      class="p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
+                      class="device-edit-button inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
                       :title="t('devices.edit_rules')">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     </button>
@@ -1000,7 +1202,7 @@
 
               <!-- Dynamic Empty State -->
               <template x-if="filteredDevices.length === 0">
-                <tr>
+                <tr class="device-empty-row">
                   <td colspan="8" class="py-12 px-4 text-center text-slate-500">
                     <div class="flex flex-col items-center justify-center space-y-2">
                       <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
@@ -1070,7 +1272,7 @@
         <!-- Chart -->
         <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
           <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4" x-text="t('speedtest.chart_title')"></h3>
-          <div style="position: relative; height: 280px; width: 100%; min-height: 280px;">
+          <div class="chart-frame chart-frame-lg">
             <canvas id="speedtestHistoryChart" style="width: 100%; height: 100%; display: block;"></canvas>
           </div>
         </div>
@@ -1128,7 +1330,7 @@
         </div>
 
         <!-- KPI & Distribution Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <!-- Average RSSI -->
           <div class="glass-panel rounded-2xl p-4 border border-sky-300 dark:border-sky-500/20 flex flex-col justify-between">
             <span class="text-slate-600 dark:text-slate-400 text-xs font-medium" x-text="t('speedtest.signal_avg_kpi')"></span>
@@ -1251,7 +1453,7 @@
             </div>
           </div>
 
-          <div style="position: relative; height: 260px; width: 100%; min-height: 260px;">
+          <div class="chart-frame">
             <canvas id="deviceSignalChart" style="width: 100%; height: 100%; display: block;"></canvas>
           </div>
         </div>
@@ -1425,7 +1627,7 @@
                 <div class="p-3.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.03] space-y-3 transition">
                   
                   <!-- Instance Header Bar -->
-                  <div class="flex items-center justify-between gap-2">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div class="flex items-center space-x-2 flex-1 min-w-0">
                       <!-- Engine Type Pill -->
                       <span 
@@ -1784,32 +1986,32 @@
     <div @click.away="showDeviceModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-5 overflow-hidden max-h-[90vh] flex flex-col border border-slate-800 shadow-2xl">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+      <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
           </div>
-          <div>
-            <h3 class="text-base font-bold text-white flex items-center space-x-2">
-              <span x-text="selectedDevice ? (selectedDevice.custom_name || selectedDevice.nickname || selectedDevice.hostname) : t('device_modal.title')"></span>
+          <div class="min-w-0">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2 min-w-0">
+              <span class="min-w-0 truncate" x-text="selectedDevice ? (selectedDevice.custom_name || selectedDevice.nickname || selectedDevice.hostname) : t('device_modal.title')"></span>
               <template x-if="selectedDevice && selectedDevice.is_favorite">
                 <span class="text-amber-400 text-sm">⭐</span>
               </template>
             </h3>
-            <div class="flex items-center space-x-2 text-xs text-slate-400">
-              <span class="font-mono" x-text="selectedDevice ? (selectedDevice.mac || selectedDevice.mac_address) : ''"></span>
-              <span>•</span>
-              <span class="text-sky-400 font-mono" x-text="selectedDevice ? (selectedDevice.ip || 'DHCP') : ''"></span>
+            <div class="flex items-center space-x-2 text-xs text-slate-400 min-w-0">
+              <span class="font-mono min-w-0 truncate" x-text="selectedDevice ? (selectedDevice.mac || selectedDevice.mac_address) : ''"></span>
+              <span class="shrink-0">•</span>
+              <span class="text-sky-400 font-mono shrink-0" x-text="selectedDevice ? (selectedDevice.ip || 'DHCP') : ''"></span>
             </div>
           </div>
         </div>
-        <button @click="showDeviceModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+        <button @click="showDeviceModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
       </div>
 
       <!-- Tab Navigation -->
-      <div class="flex border-b border-slate-800 space-x-2 text-xs">
+      <div class="device-modal-tabs flex border-b border-slate-800 space-x-2 text-xs">
         <button 
           @click="deviceDetailTab = 'general'"
           class="pb-2.5 px-3 font-semibold transition border-b-2 flex items-center space-x-1.5"
@@ -1916,7 +2118,7 @@
           <div x-show="!deviceRulesLoading" class="space-y-4">
             <!-- Reservation Status Banner -->
             <template x-if="deviceReservation">
-              <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 flex items-start justify-between gap-3 shadow-sm dark:shadow-none">
+              <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/30 flex flex-col sm:flex-row items-start justify-between gap-3 shadow-sm dark:shadow-none">
                 <div class="flex items-start space-x-3">
                   <div class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 mt-0.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -2021,7 +2223,7 @@
           </div>
 
           <!-- Tabella Porte Aperte -->
-          <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/40">
+          <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto bg-slate-50/50 dark:bg-slate-900/40">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
                 <tr class="bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase font-semibold">
@@ -2492,8 +2694,8 @@
       </div>
 
       <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div class="flex items-center space-x-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div class="flex items-center space-x-3 min-w-0">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg transition"
                :class="updateInfo.update_available ? 'bg-amber-500/20 border border-amber-500/30 text-amber-500 dark:text-amber-400' : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 dark:text-emerald-400'">
             <span x-text="updateInfo.update_available ? '🚀' : '✨'"></span>
@@ -2508,7 +2710,7 @@
             <p class="text-xs text-slate-500 dark:text-slate-400" x-text="updateInfo.update_available ? t('update_modal.subtitle') : t('update_modal.subtitle_up_to_date')"></p>
           </div>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 self-end sm:self-auto">
           <button 
             @click="checkForUpdates(true)" 
             :disabled="isCheckingUpdate || isTriggeringUpdate"
