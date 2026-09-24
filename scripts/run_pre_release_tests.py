@@ -1902,6 +1902,18 @@ async def run_all_tests():
         runner.assert_true(res_ch_en.json().get("version") == "1.5.0", "Versione restituita da changelog EN è 1.5.0")
         runner.assert_true("## v1.5.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.5.0")
 
+        # 8. Test Build Number & Full Versioning (es. '1.5.0 build 1')
+        runner.assert_true(hasattr(settings, "build_number") and bool(settings.build_number), "settings.build_number configurato")
+        runner.assert_true(settings.full_version == f"{settings.app_version} build {settings.build_number}", f"settings.full_version format corretto: '{settings.full_version}'")
+        res_health = await client.get("/api/health")
+        runner.assert_true(res_health.status_code == 200, "GET /api/health risponde HTTP 200")
+        health_json = res_health.json()
+        runner.assert_true("build_number" in health_json, "Endpoint /api/health include campo 'build_number'")
+        runner.assert_true(health_json.get("full_version") == settings.full_version, f"/api/health full_version corrisponde: {health_json.get('full_version')}")
+        from app.services.updater import updater_service
+        update_data = await updater_service.check_for_updates(force=True)
+        runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
+
         runner.print_summary()
 
 

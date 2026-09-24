@@ -5,8 +5,10 @@
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
-    // App Version
-    appVersion: '1.5.0',
+    // App Version & Build Metadata
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version) || '1.5.0',
+    buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber) || '1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion) || '1.5.0 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',

@@ -141,6 +141,8 @@ async def healthcheck():
     return {
         "status": "healthy",
         "version": settings.app_version,
+        "build_number": settings.build_number,
+        "full_version": settings.full_version,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "is_authenticated": eero_client.is_authenticated,
         "demo_mode": settings.demo_mode or (bool(eero_client.user_token) and eero_client.user_token.startswith("demo_")),
@@ -153,5 +155,10 @@ async def index_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"app_name": settings.app_name, "app_version": settings.app_version}
+        context={
+            "app_name": settings.app_name,
+            "app_version": settings.app_version,
+            "build_number": settings.build_number,
+            "full_version": settings.full_version,
+        }
     )

@@ -141,6 +141,8 @@ class UpdaterService:
         result = {
             "status": "success",
             "current_version": current_ver,
+            "build_number": settings.build_number,
+            "full_version": settings.full_version,
             "latest_version": latest_ver,
             "update_available": update_avail,
             "release_title": release_title,

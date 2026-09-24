@@ -7,7 +7,8 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = "1.5.0"
+        app_version: str = os.getenv("APP_VERSION", "1.5.0")
+        build_number: str = os.getenv("BUILD_NUMBER", "1")
         debug: bool = False
         
         # Path configuration
@@ -49,6 +50,14 @@ try:
         )
 
         @property
+        def full_version(self) -> str:
+            """Restituisce la versione con numero di build, es. '1.5.0 build 1'."""
+            b = str(self.build_number).strip()
+            if b:
+                return f"{self.app_version} build {b}"
+            return self.app_version
+
+        @property
         def data_path(self) -> Path:
             p = Path(self.data_dir)
             p.mkdir(parents=True, exist_ok=True)
@@ -67,7 +76,8 @@ except ImportError:
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = "1.5.0"
+            self.app_version = os.getenv("APP_VERSION", "1.5.0")
+            self.build_number = os.getenv("BUILD_NUMBER", "1")
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
             self.poll_interval = int(os.getenv("POLL_INTERVAL", "30"))
@@ -83,8 +93,14 @@ except ImportError:
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
             self.cors_origins = os.getenv("CORS_ORIGINS", "")
-            self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
-            self.webhook_url = os.getenv("WEBHOOK_URL", "")
+
+        @property
+        def full_version(self) -> str:
+            """Restituisce la versione con numero di build, es. '1.5.0 build 1'."""
+            b = str(self.build_number).strip()
+            if b:
+                return f"{self.app_version} build {b}"
+            return self.app_version
 
         @property
         def data_path(self) -> Path:

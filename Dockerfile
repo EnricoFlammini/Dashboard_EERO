@@ -1,10 +1,16 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim-bookworm
 
-# Imposta variabili d'ambiente per Python
+# Build arguments per versionamento e build number (iniettato automaticamente in CI/CD)
+ARG APP_VERSION="1.5.0"
+ARG BUILD_NUMBER="1"
+
+# Imposta variabili d'ambiente per Python e metadati di release
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    TZ=UTC
+    TZ=UTC \
+    APP_VERSION=${APP_VERSION} \
+    BUILD_NUMBER=${BUILD_NUMBER}
 
 # Crea directory applicativa
 WORKDIR /app
