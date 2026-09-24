@@ -199,6 +199,56 @@ async def run_all_tests():
         normalized = normalize_adguard_url(test_url_raw)
         runner.assert_true(normalized == "http://192.168.1.100:8085", f"Normalizzazione URL corretta: '{test_url_raw}' -> '{normalized}'")
 
+        # Risoluzione network ID in get_forwards_and_reservations (Issue #33: metodo _resolve_network_id inesistente)
+        import logging
+        import httpx
+
+        class _WarningCollector(logging.Handler):
+            def __init__(self):
+                super().__init__(level=logging.WARNING)
+                self.messages = []
+
+            def emit(self, record):
+                self.messages.append(record.getMessage())
+
+        def _forwards_handler(request):
+            path = request.url.path
+            if path.endswith("/2.2/account"):
+                return httpx.Response(200, json={"data": {"networks": {"data": [{"url": "/2.2/networks/net_fwd_test"}]}}})
+            if path.endswith("/networks/net_fwd_test/reservations"):
+                return httpx.Response(200, json={"data": [{"mac": "aa:bb:cc:00:11:22", "ip": "192.168.4.50", "description": "Test Reservation"}]})
+            return httpx.Response(200, json={"data": []})
+
+        fwd_log = logging.getLogger("app.services.eero_client")
+        fwd_collector = _WarningCollector()
+        fwd_log.addHandler(fwd_collector)
+        saved_fwd_state = (eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client, eero_client.account_info)
+        try:
+            # Nessuna scrittura di session.json durante il test
+            eero_client.save_session = lambda: None
+            # 1. Senza sessione: nessun AttributeError registrato ad ogni poll
+            eero_client.user_token = None
+            eero_client.current_network_id = None
+            eero_client._is_demo_active = False
+            await eero_client.get_forwards_and_reservations()
+            runner.assert_true(
+                not any("Could not resolve network ID" in m for m in fwd_collector.messages),
+                f"get_forwards_and_reservations() senza sessione non registra errori di risoluzione rete (log: {fwd_collector.messages[:1]})"
+            )
+
+            # 2. Sessione live senza network ID: la rete viene risolta da /account e le prenotazioni lette dalla rete corretta
+            eero_client.user_token = "live_token_forwards_test"
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(_forwards_handler))
+            fwd_res = await eero_client.get_forwards_and_reservations()
+            runner.assert_true(eero_client.current_network_id == "net_fwd_test", f"Network ID risolto da /account (ottenuto: {eero_client.current_network_id})")
+            runner.assert_true(len(fwd_res.get("reservations", [])) == 1, f"Prenotazioni lette dalla rete risolta (ottenute: {len(fwd_res.get('reservations', []))})")
+        finally:
+            fwd_log.removeHandler(fwd_collector)
+            if eero_client._http_client is not saved_fwd_state[3] and eero_client._http_client is not None:
+                await eero_client._http_client.aclose()
+            del eero_client.save_session
+            (eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client, eero_client.account_info) = saved_fwd_state
+
         print("\n⚡ [7/7] TEST NORMALIZZAZIONE VELOCITÀ ETHERNET E SEGNALE WIRELESS (Issue #14)")
         # Test 1: Nodo cablato con porte multiple (Bedroom da Issue #14): Interface 0 WAN P2500 + Interface 1 P1000 + Wi-Fi 5GHz
         node_bedroom_raw = {
