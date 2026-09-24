@@ -204,6 +204,8 @@ class EeroClient:
 
         # Simulated Demo State
         self._demo_state = self._init_demo_state()
+        # Tassi base immutabili dei dispositivi demo (id -> (download, upload) in Mbps)
+        self._demo_base_rates: Dict[str, Tuple[float, float]] = {}
 
     def _get_client(self) -> httpx.AsyncClient:
         """Restituisce il client HTTP condiviso persistente con connection pooling e keep-alive (Issue #24)."""
@@ -3916,13 +3918,18 @@ class EeroClient:
         return [self._normalize_profile(p) for p in raw_list]
 
     def _get_demo_devices(self) -> List[Dict[str, Any]]:
-        # Varia leggermente i tassi di trasmissione per simulare traffico live
+        # Varia leggermente i tassi di trasmissione attorno a un valore base fisso per simulare traffico live
+        # (moltiplicare il valore del poll precedente produceva una crescita esponenziale senza limite)
         normalized_list = []
         for d in self._demo_state["devices"]:
             if d.get("connected"):
+                base_down, base_up = self._demo_base_rates.setdefault(
+                    str(d.get("id") or d.get("mac")),
+                    (d.get("download_rate_mbps", 1.0), d.get("upload_rate_mbps", 0.5)),
+                )
                 jitter = random.uniform(0.85, 1.25)
-                d["download_rate_mbps"] = round(d.get("download_rate_mbps", 1.0) * jitter, 2)
-                d["upload_rate_mbps"] = round(d.get("upload_rate_mbps", 0.5) * jitter, 2)
+                d["download_rate_mbps"] = round(base_down * jitter, 2)
+                d["upload_rate_mbps"] = round(base_up * jitter, 2)
                 d["rx_bytes"] = int(d.get("rx_bytes", 0)) + int(d["download_rate_mbps"] * 1024 * 1024 / 8 * 30)
                 d["tx_bytes"] = int(d.get("tx_bytes", 0)) + int(d["upload_rate_mbps"] * 1024 * 1024 / 8 * 30)
             norm = self._normalize_device(d)

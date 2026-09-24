@@ -93,6 +93,25 @@ async def run_all_tests():
         runner.assert_true(data["demo_mode"] is True, "Modalità Demo attivata correttamente")
         runner.assert_true(data["has_saved_live_token"] is True, "Token Live reale preservato in memoria durante Demo")
 
+        # Stabilità tassi dispositivi demo: oscillano attorno al valore base invece di crescere in modo esponenziale
+        import tempfile
+        from pathlib import Path
+        from app.services.eero_client import EeroClient
+        with tempfile.TemporaryDirectory() as demo_tmp_dir:
+            demo_rates_client = EeroClient(session_path=Path(demo_tmp_dir) / "session.json")
+        demo_base = {
+            str(d["id"]): float(d.get("download_rate_mbps", 1.0))
+            for d in demo_rates_client._demo_state["devices"] if d.get("connected")
+        }
+        for _ in range(600):
+            demo_rates_client._get_demo_devices()
+        demo_out_of_range = [
+            d["id"] for d in demo_rates_client._demo_state["devices"] if d.get("connected") and not (
+                demo_base[str(d["id"])] * 0.85 - 0.01 <= float(d["download_rate_mbps"]) <= demo_base[str(d["id"])] * 1.25 + 0.01
+            )
+        ]
+        runner.assert_true(not demo_out_of_range, f"Tassi demo restano entro 0.85x-1.25x del valore base dopo 600 poll (fuori intervallo: {demo_out_of_range})")
+
         print("\n🛡️ [2/6] TEST ISOLAMENTO E SICUREZZA ADGUARD HOME (DEMO MODE)")
         res = await client.get("/api/automations/adguard")
         runner.assert_true(res.status_code == 200, "Endpoint GET /api/automations/adguard risponde HTTP 200")
