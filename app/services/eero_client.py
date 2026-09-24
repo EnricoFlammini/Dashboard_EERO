@@ -1815,8 +1815,9 @@ class EeroClient:
         if not self.current_network_id:
             await self.fetch_account_info()
 
+        # Sessione reale senza rete risolta: mai dispositivi demo (finirebbero in notifiche, storico e sync DNS)
         if not self.current_network_id:
-            return self._get_demo_devices()
+            return []
 
         raw_list = []
         async with self._client_session() as client:
