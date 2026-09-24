@@ -426,6 +426,7 @@
     "contrib_jimcampbell100": "Inspiration for Multi-Network Fleet Management for multi-mesh eero accounts",
     "contrib_stevehoek": "Telegram Daily Digest English localization & multi-network switching assistance",
     "contrib_dannyfeliz": "Responsive UI optimizations, frequency filters & navigation state persistence",
+    "contrib_carbones73": "Strict telemetry (zero synthetic fallbacks), 5 GHz UNII-3 vs 6 GHz channel accuracy, live/demo session isolation & URL gateway election",
     "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @jonmacdonald (switch gateway reconciliation), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
     "close": "Close"
   },
