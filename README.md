@@ -1,6 +1,7 @@
 # eero Custom Dashboard & Mesh Management Suite 🚀
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Enrico%20Flammini-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/EnricoFlammini)
 [![Docker Image](https://img.shields.io/docker/v/enricoflammini/eero-dashboard?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/enricoflammini/eero-dashboard)
 [![Multi-Arch](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue?logo=docker)](#)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)

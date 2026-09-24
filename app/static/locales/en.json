@@ -421,6 +421,7 @@
     "deployment_desc": "Docker Hub Multi-Arch Container (amd64/arm64)",
     "fun_notes_title": "Fun Notes",
     "coffee_note": "Powered by coffee, late-night packet sniffing, and private eero APIs.",
+    "buy_me_a_coffee": "Buy me a coffee",
     "telemetry_note": "Zero Cloud Telemetry: Your data lives strictly in your local volume.",
     "credits_title": "Special Thanks & Community Hall of Fame",
     "credits_badge": "Hall of Fame",
