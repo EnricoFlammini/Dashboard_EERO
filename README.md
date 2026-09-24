@@ -166,7 +166,7 @@ When notifications are enabled, the dashboard sends structured HTTP POST JSON pa
 
 All stateful data is isolated in the `./data` volume:
 * **`metrics.db`**: SQLite database containing device metadata, speed tests, and alerts.
-* **`session.json`**: Official eero cloud 2FA session token.
+* **`session.json`**: Official eero cloud 2FA session token. Written with `0600` permissions (owner only). On Linux the container runs as root, so reading it from the host (e.g. to copy `user_token` into `EERO_USER_TOKEN`, or to back it up) needs `sudo cat ./data/session.json` or `docker exec eero_custom_dashboard cat /app/data/session.json`.
 
 ```bash
 # Backup command
@@ -439,7 +439,7 @@ Accedi alla dashboard dal browser:
 
 Tutti i dati risiedono nella cartella montata `./data`:
 * **`metrics.db`**: Database SQLite con storico prestazioni, metadati e allarmi.
-* **`session.json`**: Token di autenticazione eero 2FA.
+* **`session.json`**: Token di autenticazione eero 2FA. Scritto con permessi `0600` (solo il proprietario). Su Linux il container gira come root, quindi per leggerlo dall'host (ad es. per copiare `user_token` in `EERO_USER_TOKEN` o per il backup) serve `sudo cat ./data/session.json` oppure `docker exec eero_custom_dashboard cat /app/data/session.json`.
 
 ```bash
 # Esempio di backup rapido

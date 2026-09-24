@@ -1331,6 +1331,43 @@ async def run_all_tests():
         runner.assert_true("recommendations_i18n" in deg_calc and len(deg_calc["recommendations_i18n"]) > 0, "'recommendations_i18n' presente e popolato")
         runner.assert_true("en" in deg_calc["recommendations_i18n"][0], "Prima raccomandazione include versione 'en'")
 
+        # Permessi di session.json (contiene il token eero): 0600 anche se il file esisteva con permessi più ampi
+        if os.name == "posix":
+            import json
+            import stat
+            import tempfile
+            from pathlib import Path
+            from app.services.eero_client import EeroClient
+            with tempfile.TemporaryDirectory() as session_tmp_dir:
+                session_file = Path(session_tmp_dir) / "session.json"
+                session_file.write_text("{}", encoding="utf-8")
+                os.chmod(session_file, 0o644)
+                perm_client = EeroClient(session_path=session_file)
+                perm_client.user_token = "live_token_permissions_test"
+                perm_client.save_session()
+                session_mode = stat.S_IMODE(os.stat(session_file).st_mode)
+                runner.assert_true(session_mode == 0o600, f"session.json scritto con permessi 0600 (ottenuto: {oct(session_mode)})")
+                saved_token = json.loads(session_file.read_text(encoding="utf-8")).get("user_token")
+                runner.assert_true(saved_token == "live_token_permissions_test", "session.json contiene il token salvato")
+
+                # chmod non consentito (es. volume montato): il salvataggio avviene comunque e il file non resta vuoto
+                orig_fchmod = os.fchmod
+
+                def _fchmod_denied(fd, mode):
+                    raise PermissionError("chmod not permitted")
+
+                os.fchmod = _fchmod_denied
+                try:
+                    perm_client.user_token = "live_token_after_chmod_error"
+                    perm_client.save_session()
+                finally:
+                    os.fchmod = orig_fchmod
+                try:
+                    saved_token = json.loads(session_file.read_text(encoding="utf-8")).get("user_token")
+                except ValueError:
+                    saved_token = None  # file vuoto o troncato
+                runner.assert_true(saved_token == "live_token_after_chmod_error", f"session.json salvato anche se chmod non è consentito (token letto: {saved_token})")
+
         # Ripristina stato finale live
         await client.post("/api/auth/mode", json={"demo": False})
 

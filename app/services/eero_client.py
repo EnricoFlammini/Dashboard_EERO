@@ -295,7 +295,14 @@ class EeroClient:
                 "is_demo_active": self._is_demo_active,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
-            with open(self.session_path, "w", encoding="utf-8") as f:
+            # Il file contiene il token di sessione eero: leggibile e scrivibile solo dal proprietario (0600)
+            fd = os.open(self.session_path, os.O_WRONLY | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                try:
+                    os.fchmod(f.fileno(), 0o600)  # corregge anche un file già esistente creato con permessi più ampi
+                except (AttributeError, OSError):
+                    pass  # fchmod assente (Windows) o non consentito sul volume: il salvataggio prosegue
+                f.truncate(0)  # svuotato solo dopo il chmod: un chmod fallito non lascia mai il file vuoto
                 json.dump(data, f, indent=2)
             logger.info("Saved eero session to disk.")
         except Exception as e:
