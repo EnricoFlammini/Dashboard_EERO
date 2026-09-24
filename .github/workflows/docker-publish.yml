@@ -46,7 +46,7 @@ jobs:
             -d "{\"username\": \"${{ secrets.DOCKERHUB_USERNAME }}\", \"password\": \"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
             https://hub.docker.com/v2/users/login/ | jq -r .token 2>/dev/null || true)
           if [ -n "$DH_TOKEN" ] && [ "$DH_TOKEN" != "null" ]; then
-            for old_tag in 1.5.0-build.93 1.5.0-build.96 v1.5.0-build.94 v1.5.0-build.97 test-build.92 test-build.95; do
+            for old_tag in 1.5.0 v1.5.0 1.5.0-build.93 1.5.0-build.96 v1.5.0-build.94 v1.5.0-build.97 test-build.92 test-build.95; do
               curl -s -X DELETE -H "Authorization: JWT $DH_TOKEN" "https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags/${old_tag}/" >/dev/null 2>&1 || true
             done
           fi
@@ -119,14 +119,11 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ steps.versioning.outputs.app_version }},enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=v${{ steps.versioning.outputs.app_version }},enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
             type=raw,value=${{ steps.versioning.outputs.build_tag }},enable=${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
             type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
             type=raw,value=test-build.${{ steps.versioning.outputs.build_number }},enable=${{ github.ref == 'refs/heads/test' }}
             type=raw,value=${{ inputs.custom_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.custom_tag != '' }}
-            type=ref,event=tag
 
       - name: Build and push multi-arch Docker image
         uses: docker/build-push-action@v5
