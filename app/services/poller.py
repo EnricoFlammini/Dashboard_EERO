@@ -13,6 +13,24 @@ from app.services.speedtest_service import speedtest_service
 logger = logging.getLogger(__name__)
 
 
+# Chiavi con credenziali Wi-Fi nel payload eero (/2.2/networks/{id}): mai esposte dalla cache pubblica
+_WIFI_SECRET_KEYS = {"password", "passphrase", "psk", "network_key", "wpa_key", "pppoe_password"}
+
+
+def _without_wifi_passwords(value: Any) -> Any:
+    """Copia dei dettagli rete senza password Wi-Fi, a qualsiasi livello (rete principale, ospiti, ...).
+
+    Il cloud eero restituisce la password della rete principale ("password") e quella della rete ospiti
+    in /2.2/networks/{id}: la cache RAM è servita da GET pubblici (/api/network/overview), quindi non deve
+    contenerle. La rete ospiti resta consultabile dall'endpoint dedicato /api/network/guest (QR Code).
+    """
+    if isinstance(value, dict):
+        return {k: _without_wifi_passwords(v) for k, v in value.items() if str(k).lower() not in _WIFI_SECRET_KEYS}
+    if isinstance(value, list):
+        return [_without_wifi_passwords(v) for v in value]
+    return value
+
+
 class BackgroundPoller:
     """
     Background worker that periodically polls eero cloud/local state,
@@ -859,7 +877,7 @@ class BackgroundPoller:
 
             # 5. Aggiornamento Cache RAM
             if network_details:
-                self.cached_network = network_details
+                self.cached_network = _without_wifi_passwords(network_details)
             if eeros or not self.cached_eeros:
                 self.cached_eeros = eeros
             if enriched_devices or not self.cached_devices:

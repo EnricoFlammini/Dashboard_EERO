@@ -1353,6 +1353,46 @@ async def run_all_tests():
         runner.assert_true(client_id1 == client_id2, "Istanza httpx.AsyncClient riutilizzata nel pool (Keep-Alive attivo)")
         runner.assert_true(not eero_client._http_client.is_closed, "Client HTTP aperto e pronto per nuove richieste nel pool")
 
+        # Password Wi-Fi mai esposte dalla cache pubblica (/api/network/overview e /api/network/refresh)
+        import httpx
+        main_wifi_secret = "MainWifiSecret-Test-123"
+        guest_wifi_secret = "GuestWifiSecret-Test-456"
+
+        def _wifi_secret_handler(request):
+            if request.url.path.endswith("/networks/net_wifi_test"):
+                return httpx.Response(200, json={"data": {
+                    "url": "/2.2/networks/net_wifi_test",
+                    "name": "Test Network",
+                    "password": main_wifi_secret,
+                    "guest_network": {"enabled": True, "name": "Test Guest", "password": guest_wifi_secret},
+                    "backup_networks": [{"name": "Backup", "psk": main_wifi_secret}],
+                }})
+            return httpx.Response(200, json={"data": []})
+
+        saved_wifi_client = (eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client,
+                             eero_client._last_network_details, eero_client._last_eeros)
+        saved_wifi_cache = (background_poller.cached_network, background_poller.cached_eeros, background_poller.cached_devices,
+                            background_poller.cached_profiles, background_poller.cached_health_score, background_poller.cached_health_details)
+        try:
+            eero_client.user_token = "live_token_wifi_test"
+            eero_client.current_network_id = "net_wifi_test"
+            eero_client._is_demo_active = False
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(_wifi_secret_handler))
+            await background_poller._poll_and_cache()
+            overview_res = await client.get("/api/network/overview")
+            runner.assert_true(overview_res.status_code == 200, "GET /api/network/overview risponde HTTP 200")
+            runner.assert_true(overview_res.json()["data"]["network"].get("name") == "Test Network", "Overview contiene i dettagli rete del poll")
+            runner.assert_true(main_wifi_secret not in overview_res.text, "Password Wi-Fi principale assente da /api/network/overview")
+            runner.assert_true(guest_wifi_secret not in overview_res.text, "Password Wi-Fi ospiti assente da /api/network/overview")
+            guest_res = await client.get("/api/network/guest")
+            runner.assert_true(guest_res.json().get("guest_network", {}).get("password") == guest_wifi_secret, "Endpoint dedicato /api/network/guest restituisce ancora la password ospiti (QR Code)")
+        finally:
+            await eero_client._http_client.aclose()
+            (eero_client.user_token, eero_client.current_network_id, eero_client._is_demo_active, eero_client._http_client,
+             eero_client._last_network_details, eero_client._last_eeros) = saved_wifi_client
+            (background_poller.cached_network, background_poller.cached_eeros, background_poller.cached_devices,
+             background_poller.cached_profiles, background_poller.cached_health_score, background_poller.cached_health_details) = saved_wifi_cache
+
         # =====================================================================
         # 16. TEST ISOLAMENTO SPEEDTEST & PREVENZIONE LEAK MOCK TIM (Issue #35)
         # =====================================================================
