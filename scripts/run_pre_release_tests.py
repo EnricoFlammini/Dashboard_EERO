@@ -403,6 +403,18 @@ async def run_all_tests():
         runner.assert_true(steve_pc_norm["frequency_band"] == "6 GHz", f"Steve PC wifi rileva '6 GHz' (ottenuto: {steve_pc_norm['frequency_band']})")
         runner.assert_true(steve_pc_norm["wireless_band"] == "6GHz", f"Steve PC wifi wireless_band è '6GHz' (ottenuto: {steve_pc_norm['wireless_band']})")
 
+        # Test 9: Dispositivo wireless senza segnale nel payload eero: nessun RSSI inventato (-55 dBm)
+        no_signal_raw = {
+            "id": "dev_no_signal",
+            "hostname": "Wireless Sensor",
+            "connected": True,
+            "wireless": True,
+            "connectivity": {"connected": True, "frequency": 2437, "channel": 6}
+        }
+        no_signal_norm = eero_client._normalize_device(no_signal_raw)
+        runner.assert_true(no_signal_norm["signal_rssi"] is None, f"RSSI assente dal cloud resta None (ottenuto: {no_signal_norm['signal_rssi']})")
+        runner.assert_true(no_signal_norm["frequency_band"] == "2.4 GHz", f"Banda del dispositivo senza segnale rilevata comunque (ottenuto: {no_signal_norm['frequency_band']})")
+
         print("\n🏷️ [8/8] TEST MAPPING CATEGORIE NATIVE EERO, TAG ADGUARD E SALVATAGGIO METADATI (Issue #13)")
         from app.services.eero_client import map_eero_device_type, get_adguard_tags
 

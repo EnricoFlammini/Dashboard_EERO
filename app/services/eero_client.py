@@ -1330,7 +1330,8 @@ class EeroClient:
                             rssi = None
                     if rssi is None:
                         rssi = dev["connectivity"].get("rx_rssi") or dev["connectivity"].get("rssi") or dev["connectivity"].get("signal_dbm")
-                dev["signal_rssi"] = rssi if rssi is not None else (-55 if dev["connected"] and dev["wireless"] else None)
+                # Nessun valore inventato: senza segnale dal cloud resta None (nessun campione nello storico RSSI)
+                dev["signal_rssi"] = rssi
 
             # Ethernet Speed extraction (Point 3 & Issue #14)
             eth_speed_str = ""
