@@ -136,6 +136,7 @@ Access the dashboard in your browser:
 | `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
 | `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
+| `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
 
 ---
 
@@ -428,6 +429,7 @@ Accedi alla dashboard dal browser:
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
+| `CORS_ORIGINS` | *(vuoto)* | Origini browser aggiuntive autorizzate a chiamare le API, separate da virgola (es. `http://homeassistant.local:8123`). Lasciare vuoto salvo che un'altra web app debba chiamare le API della dashboard dal browser. Le richieste di modifica (POST/PUT/PATCH/DELETE) da qualsiasi altra origine web ricevono 403; i client senza header `Origin` (curl, Home Assistant REST, script) non sono toccati. Se un reverse proxy riscrive l'header `Host` senza impostare `X-Forwarded-Host`, aggiungere qui l'URL pubblico della dashboard. `*` ripristina il vecchio comportamento aperto a tutti (sconsigliato). |
 
 ---
 

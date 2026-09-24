@@ -31,6 +31,9 @@ try:
         webhook_url: str = os.getenv("WEBHOOK_URL", "")
         dashboard_lang: str = os.getenv("DASHBOARD_LANG", "en")
 
+        # CORS: origini esterne consentite, separate da virgola (vuoto = solo stessa origine)
+        cors_origins: str = os.getenv("CORS_ORIGINS", "")
+
         # Auto-Update & Docker Integration
         docker_socket_path: str = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
         watchtower_url: str = os.getenv("WATCHTOWER_URL", "")
@@ -75,6 +78,7 @@ except ImportError:
             self.docker_socket_path = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
+            self.cors_origins = os.getenv("CORS_ORIGINS", "")
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")
 

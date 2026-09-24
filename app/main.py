@@ -2,10 +2,11 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -63,13 +64,48 @@ app = FastAPI(
 )
 
 # Configurazione Middleware CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# La SPA è servita dalla stessa origine delle API: il CORS serve solo per origini esterne elencate in
+# CORS_ORIGINS (es. "http://homeassistant.local:8123"). Con allow_origins=["*"] qualsiasi sito aperto
+# nel browser poteva leggere e modificare le API della dashboard. "*" resta possibile ma sconsigliato.
+cors_origins = [origin.strip().rstrip("/").lower() for origin in settings.cors_origins.split(",") if origin.strip()]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+def _is_cross_origin_write(request: Request) -> bool:
+    """True se una richiesta di modifica arriva da una pagina di un'altra origine (CSRF).
+
+    Stessa logica di CrossOriginProtection di Go: Sec-Fetch-Site quando il browser lo invia (solo HTTPS e
+    localhost), altrimenti confronto tra Origin e Host. Le richieste senza Origin (curl, Home Assistant REST,
+    script) non provengono da una pagina web e restano consentite.
+    """
+    origin = request.headers.get("origin")
+    if origin and ("*" in cors_origins or origin.rstrip("/").lower() in cors_origins):
+        return False
+    sec_fetch_site = request.headers.get("sec-fetch-site")
+    if sec_fetch_site is not None:
+        return sec_fetch_site not in ("same-origin", "none")
+    if origin is None:
+        return False
+    if origin == "null":
+        return True
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    return urlsplit(origin).netloc.lower() != host.split(",")[0].strip().lower()
+
+
+@app.middleware("http")
+async def block_cross_origin_writes(request: Request, call_next):
+    """Rifiuta POST/PUT/PATCH/DELETE inviati da pagine di altri siti: le POST senza body non passano dal preflight CORS."""
+    if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):
+        return JSONResponse(status_code=403, content={"detail": "Cross-origin request blocked"})
+    return await call_next(request)
+
 
 # Definizione Percorsi Static e Template
 BASE_DIR = Path(__file__).resolve().parent

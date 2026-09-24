@@ -212,6 +212,52 @@ async def run_all_tests():
         nm_data = res.json()
         runner.assert_true(nm_data.get("enabled") is True and nm_data.get("start_time") == "22:30", "Impostazioni Night Mode persistite correttamente")
 
+        # Accesso cross-origin alle API: nessun header CORS per default e modifiche da altre origini rifiutate
+        evil_origin = {"Origin": "http://evil.example"}
+        focus_off = {"active": False}
+        res = await client.get("/api/health", headers=evil_origin)
+        runner.assert_true("access-control-allow-origin" not in res.headers, "Nessun header CORS per un'origine esterna non configurata")
+        res = await client.options("/api/network/guest", headers={**evil_origin, "Access-Control-Request-Method": "PUT", "Access-Control-Request-Headers": "content-type"})
+        runner.assert_true("access-control-allow-origin" not in res.headers, "Preflight CORS da origine esterna non autorizzato")
+        # Dashboard in HTTP su IP LAN: il browser non invia Sec-Fetch-Site, solo Origin
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers=evil_origin)
+        runner.assert_true(res.status_code == 403, f"POST da altra origine senza Sec-Fetch-Site (HTTP) rifiutata con 403 (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={"Origin": "null"})
+        runner.assert_true(res.status_code == 403, f"POST con Origin 'null' rifiutata con 403 (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={**evil_origin, "Sec-Fetch-Site": "cross-site"})
+        runner.assert_true(res.status_code == 403, f"POST con Sec-Fetch-Site cross-site rifiutata con 403 (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={"Origin": "http://test:9999", "Sec-Fetch-Site": "same-site"})
+        runner.assert_true(res.status_code == 403, f"POST same-site (altra porta dello stesso host) rifiutata con 403 (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={"Origin": "http://test"})
+        runner.assert_true(res.status_code == 200, f"POST dalla dashboard stessa in HTTP (Origin = Host) accettata (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={"Origin": "http://test", "Sec-Fetch-Site": "same-origin"})
+        runner.assert_true(res.status_code == 200, f"POST same-origin (HTTPS/localhost) accettata (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off, headers={"Origin": "https://dash.example", "Host": "backend:8000", "X-Forwarded-Host": "dash.example"})
+        runner.assert_true(res.status_code == 200, f"POST dietro reverse proxy (Origin = X-Forwarded-Host) accettata (ottenuto: {res.status_code})")
+        res = await client.post("/api/automations/focus-mode", json=focus_off)
+        runner.assert_true(res.status_code == 200, f"POST senza Origin (curl, Home Assistant REST) accettata (ottenuto: {res.status_code})")
+
+        # CORS_ORIGINS esplicito: l'origine elencata (anche con "/" finale nella configurazione) riceve gli header CORS
+        import importlib
+        import app.main as main_module
+        orig_cors_origins = settings.cors_origins
+        try:
+            settings.cors_origins = "http://homeassistant.local:8123/"
+            cors_app = importlib.reload(main_module).app
+            ha_origin = {"Origin": "http://homeassistant.local:8123"}
+            async with AsyncClient(transport=ASGITransport(app=cors_app), base_url="http://test") as cors_client:
+                res = await cors_client.get("/api/health", headers=ha_origin)
+                runner.assert_true(res.headers.get("access-control-allow-origin") == "http://homeassistant.local:8123", "Origine elencata in CORS_ORIGINS riceve Access-Control-Allow-Origin")
+                res = await cors_client.post("/api/automations/focus-mode", json=focus_off, headers=ha_origin)
+                runner.assert_true(res.status_code == 200, f"POST dall'origine elencata in CORS_ORIGINS accettata (ottenuto: {res.status_code})")
+                res = await cors_client.get("/api/health", headers=evil_origin)
+                runner.assert_true("access-control-allow-origin" not in res.headers, "Origine non elencata in CORS_ORIGINS resta esclusa")
+                res = await cors_client.post("/api/automations/focus-mode", json=focus_off, headers=evil_origin)
+                runner.assert_true(res.status_code == 403, f"POST da origine non elencata rifiutata anche con CORS_ORIGINS (ottenuto: {res.status_code})")
+        finally:
+            settings.cors_origins = orig_cors_origins
+            importlib.reload(main_module)
+
         print("\n🔄 [6/6] TEST RIPRISTINO SESSIONE LIVE E NORMALIZZAZIONE URL")
         # Normalizzazione URL AdGuard
         test_url_raw = "192.168.1.100:8085/#/dashboard"
