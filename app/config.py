@@ -20,6 +20,9 @@ try:
         
         # Demo Mode
         demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
+
+        # Documentazione interattiva API (/docs, /redoc, /openapi.json): disattivata per default
+        api_docs: bool = os.getenv("API_DOCS", "false").lower() in ("true", "1", "yes")
         
         # Permanent eero Authentication Token (Optional)
         eero_user_token: str = os.getenv("EERO_USER_TOKEN", "")
@@ -71,6 +74,7 @@ except ImportError:
             self.history_retention_days = int(os.getenv("HISTORY_RETENTION_DAYS", "30"))
             self.speedtest_interval_hours = int(os.getenv("SPEEDTEST_INTERVAL_HOURS", "12"))
             self.demo_mode = os.getenv("DEMO_MODE", "false").lower() in ("true", "1", "yes")
+            self.api_docs = os.getenv("API_DOCS", "false").lower() in ("true", "1", "yes")
             self.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")

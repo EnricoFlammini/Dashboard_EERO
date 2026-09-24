@@ -134,6 +134,7 @@ Access the dashboard in your browser:
 | `TZ` | `UTC` | Timezone for timestamps and daily digests (e.g. `Europe/Rome`) |
 | `DATA_DIR` | `/app/data` | Path to persistent storage volume (SQLite DB & session) |
 | `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
+| `API_DOCS` | `false` | Serve the interactive API docs at `/docs`, `/redoc` and `/openapi.json` (the API has no authentication, so keep it off unless you need it) |
 | `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
@@ -426,6 +427,7 @@ Accedi alla dashboard dal browser:
 | `HISTORY_RETENTION_DAYS` | `30` | Giorni di conservazione dello storico prima della pulizia automatica |
 | `SPEEDTEST_INTERVAL_HOURS` | `12` | Intervallo di esecuzione dello Speed Test automatico (ore, 0 per disattivare) |
 | `DEMO_MODE` | `false` | Se impostato su `true`, abilita la simulazione completa di una rete eero |
+| `API_DOCS` | `false` | Abilita la documentazione interattiva delle API su `/docs`, `/redoc` e `/openapi.json` (le API non hanno autenticazione: lasciare disattivato se non serve) |
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |

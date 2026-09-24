@@ -1076,6 +1076,22 @@ async def run_all_tests():
         # =====================================================================
         print("\n🔄 [12/12] TEST AUTO-UPDATE ENGINE & STORICIZZAZIONE SEGNALE (v1.4.0)")
 
+        # Documentazione interattiva delle API (Swagger / ReDoc / OpenAPI): 404 per default, 200 solo con API_DOCS=true
+        import importlib
+        import app.main as docs_main_module
+        orig_api_docs = settings.api_docs
+        try:
+            for api_docs_value, expected_docs_status in ((False, 404), (True, 200)):
+                settings.api_docs = api_docs_value
+                docs_app = importlib.reload(docs_main_module).app
+                async with AsyncClient(transport=ASGITransport(app=docs_app), base_url="http://test") as docs_client:
+                    for docs_path in ("/docs", "/redoc", "/openapi.json"):
+                        docs_res = await docs_client.get(docs_path)
+                        runner.assert_true(docs_res.status_code == expected_docs_status, f"GET {docs_path} risponde HTTP {expected_docs_status} con API_DOCS={api_docs_value} (ottenuto: {docs_res.status_code})")
+        finally:
+            settings.api_docs = orig_api_docs
+            importlib.reload(docs_main_module)
+
         # 1. Test Endpoint /api/system/update/check
         check_res = await client.get("/api/system/update/check?force=true")
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")

@@ -61,6 +61,10 @@ app = FastAPI(
     version=settings.app_version,
     description="Self-Hosted Management Suite, Bandwidth Historian & Built-in User Manual for Amazon eero",
     lifespan=lifespan,
+    # Swagger UI / ReDoc / schema OpenAPI solo con API_DOCS=true: le API non hanno autenticazione
+    docs_url="/docs" if settings.api_docs else None,
+    redoc_url="/redoc" if settings.api_docs else None,
+    openapi_url="/openapi.json" if settings.api_docs else None,
 )
 
 # Configurazione Middleware CORS
