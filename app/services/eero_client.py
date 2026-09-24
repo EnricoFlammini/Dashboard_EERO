@@ -2446,7 +2446,7 @@ class EeroClient:
         """Recupera le regole di inoltro porte e prenotazioni IP statico con normalizzazione universale."""
         if not self.current_network_id and not settings.demo_mode:
             try:
-                await self._resolve_network_id()
+                await self.fetch_account_info()
             except Exception as e:
                 logger.warning(f"Could not resolve network ID in get_forwards_and_reservations: {e}")
 
@@ -2457,6 +2457,10 @@ class EeroClient:
                 "reservations": [self._normalize_reservation(r) for r in raw_res if isinstance(r, dict)],
                 "forwards": [self._normalize_forward(f) for f in raw_fwd if isinstance(f, dict)],
             }
+
+        # Nessuna rete risolta: evita richieste verso /networks/None/...
+        if not self.current_network_id:
+            return {"reservations": [], "forwards": []}
 
         async with self._client_session() as client:
             raw_res_payload = None
