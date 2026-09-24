@@ -1238,7 +1238,9 @@ document.addEventListener('alpine:init', () => {
           const notes = (d.custom_notes || '').toLowerCase();
           const cat = (d.category || '').toLowerCase();
           const prof = (d.profile_name || '').toLowerCase();
-          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q);
+          const ipv6 = (d.ipv6 || '').toLowerCase();
+          const ipv6List = (d.ipv6_all || d.ipv6_addresses || []).join(' ').toLowerCase();
+          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q) || ipv6.includes(q) || ipv6List.includes(q);
         }
 
         return true;
@@ -1964,6 +1966,37 @@ document.addEventListener('alpine:init', () => {
         }
         this.copiedCliCommand = true;
         setTimeout(() => { this.copiedCliCommand = false; }, 3000);
+      }
+    },
+
+    copyToClipboard(text, successMsg = '') {
+      if (!text) return;
+      const title = this.currentLanguage === 'it' ? 'Appunti' : 'Clipboard';
+      const msg = successMsg || (this.currentLanguage === 'it' ? 'Copiato negli appunti!' : 'Copied to clipboard!');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          this.showToast(title, msg, 'success');
+        }).catch(() => {
+          this._fallbackCopyText(text, title, msg);
+        });
+      } else {
+        this._fallbackCopyText(text, title, msg);
+      }
+    },
+
+    _fallbackCopyText(text, title, msg) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        this.showToast(title, msg, 'success');
+      } catch (e) {
+        this.showToast(title, this.currentLanguage === 'it' ? 'Errore durante la copia' : 'Copy failed', 'error');
       }
     },
 

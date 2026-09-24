@@ -1270,11 +1270,19 @@ class EeroClient:
                     return None
                 if isinstance(item, str):
                     s = item.strip()
+                    if "/" in s:
+                        s = s.split("/")[0].strip()
+                    if "%" in s:
+                        s = s.split("%")[0].strip()
                     return s if s else None
                 if isinstance(item, dict):
                     addr = item.get("address") or item.get("ip") or item.get("ipv6") or item.get("ipv4")
                     if addr and isinstance(addr, str):
                         s = addr.strip()
+                        if "/" in s:
+                            s = s.split("/")[0].strip()
+                        if "%" in s:
+                            s = s.split("%")[0].strip()
                         return s if s else None
                 return None
 
@@ -1286,6 +1294,10 @@ class EeroClient:
                 all_ips_raw.extend(dev["ip_addresses"])
             if isinstance(dev.get("ipv6_addresses"), list):
                 all_ips_raw.extend(dev["ipv6_addresses"])
+            if isinstance(dev.get("ipv6_link_local"), list):
+                all_ips_raw.extend(dev["ipv6_link_local"])
+            if isinstance(dev.get("ipv6_all"), list):
+                all_ips_raw.extend(dev["ipv6_all"])
             if isinstance(dev.get("interface"), dict):
                 iface_ips = dev["interface"].get("ips") or []
                 if isinstance(iface_ips, list):
@@ -1304,6 +1316,7 @@ class EeroClient:
 
             ipv4_candidates = []
             ipv6_candidates = []
+            ipv6_link_local = []
 
             for raw_item in all_ips_raw:
                 ip_str = _clean_ip(raw_item)
@@ -1313,15 +1326,21 @@ class EeroClient:
                 if "." in ip_str and ":" not in ip_str and not ip_str.startswith("169.254."):
                     if ip_str not in ipv4_candidates:
                         ipv4_candidates.append(ip_str)
-                # IPv6 check (must contain colon, exclude link-local fe80:: and mesh gateway ::1)
-                elif ":" in ip_str and not ip_str.lower().startswith("fe80:") and not ip_str.endswith("::1"):
-                    if ip_str not in ipv6_candidates:
-                        ipv6_candidates.append(ip_str)
+                # IPv6 check (must contain colon, exclude mesh gateway/loopback ::1)
+                elif ":" in ip_str and not ip_str.endswith("::1"):
+                    if ip_str.lower().startswith("fe80:"):
+                        if ip_str not in ipv6_link_local:
+                            ipv6_link_local.append(ip_str)
+                    else:
+                        if ip_str not in ipv6_candidates:
+                            ipv6_candidates.append(ip_str)
 
             raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") if isinstance(dev.get("ip"), str) else None)
             dev["ip"] = str(raw_ip).strip() if raw_ip else None
-            dev["ipv6_addresses"] = ipv6_candidates
-            dev["ipv6"] = ipv6_candidates[0] if ipv6_candidates else None
+            dev["ipv6_addresses"] = ipv6_candidates  # Routable / Global unicast / SLAAC (sent to AdGuard/DNS)
+            dev["ipv6_link_local"] = ipv6_link_local  # Link-local addresses (fe80::, displayed in UI)
+            dev["ipv6_all"] = ipv6_candidates + ipv6_link_local  # Complete list for UI display and search
+            dev["ipv6"] = ipv6_candidates[0] if ipv6_candidates else (ipv6_link_local[0] if ipv6_link_local else None)
 
             # Connection Status (Online / Offline / Paused)
             conn_val = dev.get("connected")
@@ -3372,6 +3391,8 @@ class EeroClient:
                     "hostname": "MacBook-Pro-M3",
                     "nickname": "MacBook Pro Lavoro",
                     "ip": "192.168.4.101",
+                    "ipv6_addresses": ["2001:db8:1a:2b::101", "2001:db8:1a:2b:89ab:cdef:1234:5678"],
+                    "ipv6_link_local": ["fe80::b62e:99ff:fea1:0110"],
                     "connected": True,
                     "wireless": True,
                     "connection_type": "wireless",
@@ -3395,6 +3416,8 @@ class EeroClient:
                     "hostname": "Synology-DS920Plus",
                     "nickname": "Home NAS & Media Server",
                     "ip": "192.168.4.10",
+                    "ipv6_addresses": ["2001:db8:1a:2b::10"],
+                    "ipv6_link_local": ["fe80::211:32ff:fe9f:8844"],
                     "connected": True,
                     "wireless": False,
                     "wired": True,
@@ -3418,6 +3441,8 @@ class EeroClient:
                     "hostname": "iPhone-15-Pro",
                     "nickname": "iPhone Personale",
                     "ip": "192.168.4.110",
+                    "ipv6_addresses": ["2001:db8:1a:2b:f4f5:dbff:fe33:4455"],
+                    "ipv6_link_local": ["fe80::f6f5:dbff:fe33:4455"],
                     "connected": True,
                     "wireless": True,
                     "connection_type": "wireless",

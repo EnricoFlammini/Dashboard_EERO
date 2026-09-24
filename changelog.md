@@ -10,13 +10,27 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🏆 Nuova Sezione Riconoscimenti e Crediti Community:**
   * Inserita nel modale *About & Crediti* una nuova sezione con badge *Hall of Fame* dedicata agli utenti della community GitHub e Reddit che hanno reso possibile la costante evoluzione del progetto.
   * **Proposte di Feature & Feedback Community:**
-    * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40, #42).
+    * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync UI (#16, #17), Intelligent Address & IPv6 SLAAC Pruning (#23, #31), preservazione regole client AdGuard (#21), telemetria e switching Layer 2 dispositivi cablati (#36, #40, #42), visibilità e ricerca indirizzi IPv6 dispositivi (#43).
     * **[@Hatton920](https://github.com/Hatton920):** Network Health Score & Penalty Scoring Engine (#15), negoziazione velocità fisica link PHY (#14), distinzione stati rebooting vs offline per i nodi mesh (#34), isolamento e sanitizzazione speedtest (#35), fix collisione nomi nodi mesh (#41).
     * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore e promotore dell'architettura *Multi-Network Fleet Management* (#22) per account con più reti mesh eero.
     * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione completa in lingua inglese del Daily Digest Telegram (#38).
     * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive UI (#27, #28), persistenza stato navigazione e filtri frequenza radio (#29).
   * **Bug Hunters & Tester:**
     * Ringraziamenti speciali a **[@carbones73](https://github.com/carbones73)** (PR #47-#53: telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, de-drift simulatore ed elezione Primary Gateway; 4 Security Advisories GHSA: hardening CORS/CSRF, sanitizzazione password Wi-Fi, controllo API_DOCS Swagger e permessi 0600 per session.json), **[@BaRaD5](https://github.com/BaRaD5)** (Issue #24: caching locale query DNS), **[@jonmacdonald](https://github.com/jonmacdonald)** (Issue #26: riconciliazione switch gateway), **[@phutmacher](https://github.com/phutmacher)** (Issue #19: elezione primary gateway), **[@txrangersxx](https://github.com/txrangersxx)** (Issue #33: fix resolver network ID), **[@nextlevel2023](https://github.com/nextlevel2023)** (Issue #18: feedback autenticazione Amazon) e **u/djbills** su Reddit (segnalazione disallineamento tag `:latest` su Docker Hub).
+
+### 🌐 Visibilità, Ricerca & Gestione Completa Indirizzi IPv6 (Issue #43)
+* **🌐 Esposizione Dual-Stack & Trasparenza Indirizzi IPv6 Client:**
+  * Risolta la segnalazione [Issue #43](https://github.com/EnricoFlammini/Dashboard_EERO/issues/43) (`jpatchMC`) per consentire la visualizzazione e la ricerca completa degli indirizzi IPv6 assegnati ai dispositivi.
+  * **Pipeline Backend & Distinzione Ambiti IPv6 (`eero_client.py`):**
+    * Estesa la routine di normalizzazione per estrarre sia gli indirizzi instradabili Global Unicast / SLAAC (`ipv6_addresses`), sia gli indirizzi Link-Local `fe80::` (`ipv6_link_local`), esponendo la lista consolidata `ipv6_all`.
+    * Risolta la discrepanza per cui alcuni client mostravano un indirizzo IPv6 nell'app ufficiale eero ma non nella dashboard: gli indirizzi `fe80:...` vengono ora conservati e mostrati a fini diagnostici nella dashboard.
+    * **Preservazione Isolamento DNS AdGuard:** Gli indirizzi non instradabili `fe80:...` continuano ad essere esclusi dalla sincronizzazione verso AdGuard Home (`ids`), garantendo la corretta risoluzione DNS e rispettando il flag `drop_ipv6`.
+  * **Ricerca Istantanea per IPv6 nella Tabella Dispositivi (`app.js`):**
+    * La barra di ricerca della pagina dispositivi filtra in tempo reale anche in base a prefissi, singoli ottetti o indirizzi IPv6 completi (`ipv6`, `ipv6_all`).
+  * **Badge Discreto nella Tabella Client:**
+    * Inserito un badge compatto `IPv6` accanto al MAC address con tooltip al passaggio del mouse che elenca tutti gli indirizzi IPv6 associati al dispositivo, preservando l'ordine e la pulizia del layout.
+  * **Sezione Dedicata nel Modale Dispositivo con Copia Rapida (`index.html`):**
+    * Box dedicato nella scheda Generale del modale dispositivo che elenca tutti gli indirizzi IPv6, con badge cromatici di categoria (*SLAAC / Global* vs *Link-Local*) e pulsante copia negli appunti con 1 clic (`copyToClipboard`) e toast di conferma.
 
 ### 🔒 Hardening di Sicurezza & Vulnerability Remediation (Security Advisories / @carbones73)
 * **🛑 Protezione Cross-Origin (CORS) & Middleware CSRF (GHSA-jgpm-8wqq-cchm):**

@@ -212,6 +212,12 @@
     "service_label": "Descrizione:",
     "service_placeholder": "es. Web Server",
     "create_forward_btn": "+ Aggiungi Regola Inoltro Porta su eero",
+    "ipv6_section_title": "Indirizzi IPv6 Dispositivo",
+    "ipv6_addresses_count": "indirizzi",
+    "ipv6_badge_global": "SLAAC / Global",
+    "ipv6_badge_link_local": "Link-Local",
+    "copy_ipv6": "Copia indirizzo IPv6",
+    "ipv6_copied": "Indirizzo IPv6 copiato negli appunti!",
     "close_btn": "Chiudi"
   },
   "profiles": {

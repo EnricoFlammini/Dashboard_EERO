@@ -193,6 +193,28 @@ async def run_all_tests():
                     break
         runner.assert_true(not has_v6_in_no_v6_export, "Nessun indirizzo IPv6 presente negli IDs esportati quando include_ipv6=false")
 
+        # Test IPv6 candidate, link-local and all addresses normalization (Issue #43)
+        mock_raw_dev = {
+            "mac": "11:22:33:44:55:66",
+            "hostname": "Test-DualStack-Client",
+            "ips": ["192.168.4.150", "2001:db8::100/64", "fe80::1122:33ff:fe44:5566%eth0", "::1"],
+            "ipv6_addresses": ["2001:db8::200"],
+            "ipv6_link_local": ["fe80::dead:beef"],
+        }
+        normalized_dev = eero_client._normalize_device(mock_raw_dev)
+        runner.assert_true(normalized_dev.get("ip") == "192.168.4.150", "IPv4 estratto correttamente")
+        runner.assert_true("2001:db8::100" in normalized_dev.get("ipv6_addresses", []), "IPv6 globale 2001:db8::100 in ipv6_addresses senza CIDR /64 (Issue #43)")
+        runner.assert_true("2001:db8::200" in normalized_dev.get("ipv6_addresses", []), "IPv6 globale 2001:db8::200 in ipv6_addresses (Issue #43)")
+        runner.assert_true("fe80::1122:33ff:fe44:5566" in normalized_dev.get("ipv6_link_local", []), "Link-local fe80:: in ipv6_link_local senza scope %eth0 (Issue #43)")
+        runner.assert_true("fe80::dead:beef" in normalized_dev.get("ipv6_link_local", []), "Link-local fe80::dead:beef in ipv6_link_local (Issue #43)")
+        runner.assert_true("::1" not in normalized_dev.get("ipv6_all", []), "Loopback ::1 escluso da ipv6_all (Issue #43)")
+        runner.assert_true(len(normalized_dev.get("ipv6_all", [])) == 4, "ipv6_all contiene esattamente i 4 indirizzi validi (2 globali + 2 link-local)")
+        # Verifica che AdGuard export non includa link-local
+        res_ag = await client.get("/api/devices/export/adguard?include_ipv6=true")
+        runner.assert_true(res_ag.status_code == 200, "GET /api/devices/export/adguard?include_ipv6=true risponde 200")
+        has_fe80_in_adguard = any(str(cid).lower().startswith("fe80:") for cl in res_ag.json().get("clients", []) for cid in cl.get("ids", []))
+        runner.assert_true(not has_fe80_in_adguard, "Nessun indirizzo fe80: link-local inviato ad AdGuard (Issue #43)")
+
         print("\n🎮 [5/6] TEST CONTROLLI AUTOMAZIONI (Focus Mode & Night Mode)")
         # Test Gaming / Focus Mode toggle
         res = await client.post("/api/automations/focus-mode", json={"active": True})

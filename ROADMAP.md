@@ -283,20 +283,28 @@ gantt
 - [x] **Interactive API Docs Toggle `API_DOCS` (GHSA-f9xp-vqq6-f6r4):** Montaggio di `/docs`, `/redoc` e `/openapi.json` condizionato alla variabile `API_DOCS=true` (disattivato di default per proteggere endpoint di scrittura).
 - [x] **Permessi File Restrittivi `0600` per `session.json` (GHSA-pqh9-q8vm-x9mh):** Creazione atomica con `0o600` e `fchmod` prima del troncamento per proteggere il token cloud 2FA da altri utenti sull'host.
 
+#### 6. 🌐 Visibilità & Ricerca Indirizzi IPv6 Dispositivi (Issue #43 - @jpatchMC)
+*(Risolta - GitHub Issue #43: "ip6 addresses visable within devices page")*
+- [x] **Estrazione Dual-Stack Completa (Global SLAAC & Link-Local):** Aggiornata la pipeline di normalizzazione in `eero_client.py` per estrarre sia gli indirizzi IPv6 Global Unicast / ULA (`ipv6_addresses`), sia gli indirizzi Link-Local `fe80::` (`ipv6_link_local`), esponendo la collezione unificata `ipv6_all` nel modello dati.
+- [x] **Isolamento Resolver DNS AdGuard:** Gli indirizzi Link-Local non instradabili (`fe80:...`) restano rigorosamente esclusi dal payload inviato ad AdGuard Home (`ids`), preservando la corretta risoluzione DNS e rispettando il flag `drop_ipv6`.
+- [x] **Ricerca Istantanea per Indirizzo IPv6 nella Tabella Dispositivi:** Esteso il filtro reattivo `filteredDevices()` in `app.js` per effettuare matching su prefissi, ottetti completi o indirizzi IPv6 interi (`ipv6`, `ipv6_addresses`, `ipv6_link_local`).
+- [x] **Badge Discreto IPv6 nella Tabella Client:** Aggiunto un badge compatto `IPv6` accanto al MAC address con tooltip hover che mostra la lista completa degli indirizzi associati all'apparato.
+- [x] **Sezione Dedicata nel Modale Dispositivo con Copia con 1 Clic:** Box informativo nella scheda Generale del modale dispositivo con conteggio indirizzi, badge cromatici di categoria (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo.
+
 ---
 
 ### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge
 
-> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
+> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **ottimizzazioni layout responsive & persistenza filtri (PR #28 e #29 - @DannyFeliz)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
 
 #### 1. 🤖 AI Network Diagnostics & Intelligent Health Score
 * **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
   * Generazione dinamica di sintesi diagnostiche descrittive e contestuali all'interno del modale *Network Health Score*.
   * Spiegazione discorsiva dei fattori di penalità: attenuazione RSSI anomala ($< -75\text{ dBm}$), sovraffollamento della banda 2.4 GHz rispetto a 5/6 GHz, link PHY sottodimensionati o negoziazioni Ethernet degradate a 100 Mbps anziché 1 Gbps / 2.5 Gbps su porte e switch cablati.
   * Generazione di consigli guidati e pratici (es. *"Il nodo Studio negozia a 100 Mbps: verificare il cavo Ethernet Cat5e/Cat6 o la porta dello switch intermedio"*).
-* **Sticky Clients & Roaming Advisor:**
-  * Euristica per l'identificazione di dispositivi mobili agganciati a nodi mesh distanti con RSSI debole pur essendo in prossimità di nodi con segnale nettamente superiore ($\Delta \text{RSSI} \ge 20\text{ dBm}$).
-  * Badge visuale *"Roaming Sub-Ottimale"* nel modale apparato e nella lista client con suggerimenti operativi di de-autenticazione o riposizionamento beacon.
+* **Sticky Clients & Roaming Advisor (Issue #43 - @jpatchMC):**
+  * Riscontro alla richiesta di roaming client sollevata in Issue #43: non potendo forzare la de-autenticazione dal cloud eero (gestita autonomamente dal firmware TrueMesh 802.11k/v), introduzione di un'euristica mirata per identificare i dispositivi mobili agganciati a nodi mesh distanti con RSSI debole pur essendo in prossimità di nodi con segnale nettamente superiore ($\Delta \text{RSSI} \ge 20\text{ dBm}$).
+  * Badge visuale *"Roaming Sub-Ottimale"* nel modale apparato e nella lista client con suggerimenti operativi per favorire il riposizionamento beacon o il roaming.
 * **Anomaly Detection sul Traffico Notturno IoT:**
   * Analizzatore statistico su serie storiche SQLite (`device_usage_history`) durante le ore notturne (01:00 - 06:00).
   * Rilevamento automatico di anomalie (outlier statistici) per download/upload anomali su telecamere IP, sensori domotici o smart TV, con notifica immediata di potenziale compromissione o loop di rete.
@@ -373,6 +381,11 @@ gantt
   * Manutenzione periodica programmata del database SQLite in modalità WAL con esecuzione di `PRAGMA optimize;` e `VACUUM;` notturno per garantire dimensioni del database contenute (< 100 MB).
 * **Activity Log Multi-Filtro (Top Bandwidth Hogs):**
   * Filtri avanzati e interattivi per la classifica e il grafico dei consumi per dispositivo: filtraggio simultaneo per categoria apparato (Computer, Smartphone, IoT, Entertainment), per banda di frequenza (2.4 GHz, 5 GHz, 6 GHz, Cablato) o per nodo mesh di attestazione.
+* **Ottimizzazioni Layout Responsive UI (PR #28 / Issue #45 - @DannyFeliz):**
+  * Perfezionamento del layout e dei drawer per visualizzazione ottimale su schermi smartphone e tablet.
+  * Adattamento dinamico di tabelle, KPI card e touch targets accessibili.
+* **Persistenza Stato Navigazione & Filtri Frequenza Radio (PR #29 / Issue #46 - @DannyFeliz):**
+  * Memorizzazione persistente nel `localStorage` del browser per la sezione attiva (Dashboard, Dispositivi, Analytics, Controlli) e per l'ultimo filtro frequenza radio selezionato (2.4 GHz, 5 GHz, 6 GHz, Ethernet, Tutti), prevenendo reset indesiderati al ricaricamento della pagina.
 * **Progressive Web App (PWA) & Backup Wizard:**
   * Aggiunta di Web App Manifest (`manifest.json`), service worker per caching offline degli asset statici (CSS, JS, icone SVG) e supporto alla modalità *standalone* a tutto schermo su pannelli touch a parete (Wall Dashboard), tablet e smartphone.
   * Wizard guidato di esportazione e importazione configurazione JSON (`GET /api/system/backup`, `POST /api/system/restore`) per salvataggio e ripristino sicuro di alias personalizzati, impostazioni DNS, preferenze notifiche e parametri di automazione senza richiedere dump manuali del database.
@@ -386,7 +399,7 @@ gantt
 - [ ] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
 - [ ] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
 - [ ] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/ai_diagnostics.py`).
-- [ ] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini.
+- [ ] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
 - [ ] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
 - [ ] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
 - [ ] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
@@ -406,9 +419,11 @@ gantt
 - [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato.
 - [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
 - [ ] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
-- [ ] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale.
+- [ ] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
 - [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
+- [ ] Ottimizzazioni layout responsive mobile e tablet, touch targets e tabelle adattive (PR #28 / Issue #45 - @DannyFeliz).
+- [ ] Persistenza stato navigazione e filtri frequenza radio nel `localStorage` (PR #29 / Issue #46 - @DannyFeliz).
 - [ ] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
 - [ ] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
 

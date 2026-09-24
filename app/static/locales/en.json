@@ -212,6 +212,12 @@
     "service_label": "Description:",
     "service_placeholder": "e.g. Web Server",
     "create_forward_btn": "+ Add Port Forward Rule on eero",
+    "ipv6_section_title": "Device IPv6 Addresses",
+    "ipv6_addresses_count": "addresses",
+    "ipv6_badge_global": "SLAAC / Global",
+    "ipv6_badge_link_local": "Link-Local",
+    "copy_ipv6": "Copy IPv6 address",
+    "ipv6_copied": "IPv6 address copied to clipboard!",
     "close_btn": "Close"
   },
   "profiles": {
