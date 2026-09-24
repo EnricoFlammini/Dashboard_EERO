@@ -1049,6 +1049,23 @@ async def run_all_tests():
             runner.assert_true("TIM FTTH" not in str(res_net.get("isp", "")), "get_network_details() non restituisce 'TIM FTTH' su errore API autenticata")
             runner.assert_true(res_net.get("network_name") == "Cached Live Network", "get_network_details() preserva l'ultimo stato noto")
 
+            # get_devices() in sessione autenticata senza rete risolvibile (/account in errore) non deve ricadere nei dispositivi demo
+            import httpx
+            saved_devices_http = eero_client._http_client
+            eero_client.current_network_id = None
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(503, json={"meta": {"code": 503}})))
+            try:
+                res_devices = await eero_client.get_devices()
+            finally:
+                await eero_client._http_client.aclose()
+                eero_client._http_client = saved_devices_http
+                eero_client.current_network_id = "invalid_network_test_id"
+            demo_macs = {str(d.get("mac")).lower() for d in eero_client._demo_state["devices"]}
+            runner.assert_true(
+                not any(str(d.get("mac")).lower() in demo_macs for d in res_devices),
+                f"get_devices() senza rete risolta non restituisce dispositivi demo in sessione autenticata (ottenuti: {len(res_devices)})"
+            )
+
             # get_eeros() in caso di errore HTTP deve ritornare _last_eeros, MAI i nodi demo
             res_eeros = await eero_client.get_eeros()
             runner.assert_true(len(res_eeros) == 1 and res_eeros[0].get("name") == "Living Room", "get_eeros() preserva l'ultimo stato noto senza ricadere nei nodi demo")
