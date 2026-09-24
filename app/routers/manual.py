@@ -75,19 +75,21 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
 * **Indicatori di Banda & Canale Wi-Fi:** Badge espliciti per ciascun dispositivo (**6 GHz, 5 GHz, 2.4 GHz, Cablato Ethernet**) e canale wireless attivo (**CH 36, CH 11**, ecc.).
 * **Profili Utente Cloud eero:** Visualizzazione del membro della famiglia assegnato a ciascun apparato direttamente sincronizzato con l'app eero.
 * **Filtri Multi-Criterio Avanzati:** Filtra rapidamente per Frequenza di Banda, Profilo Utente, Nodo Mesh di attestazione o Tipo di Assegnazione IP (Statico vs DHCP).
+* **Badge IPv6 & Ricerca Istantanea (v1.5.0 - Issue #43):** Badge compatto `IPv6` accanto al MAC address con tooltip al passaggio del mouse che elenca tutti gli indirizzi associati (SLAAC e Link-Local); la barra di ricerca della tabella filtra in tempo reale per prefissi, ottetti o indirizzi IPv6 completi.
         """
     },
     {
         "id": "device-details",
         "title": "5. Metadati Dispositivo, IP Statici & Port Forwarding",
         "icon": "adjustments",
-        "summary": "Personalizzazione nomi, categorie, note locali, prenotazioni DHCP e port forwarding.",
+        "summary": "Personalizzazione nomi, categorie, note locali, prenotazioni DHCP, IPv6 e port forwarding.",
         "content": """
 ### Gestione e Configurazione del Singolo Dispositivo
 
 * **Modale Dettaglio Dispositivo:**
   - **Nome e Categoria Personalizzata:** Assegna categorie (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Altro) salvate nel database SQLite locale.
   - **Note & Documentazione Locale:** Campo note libero per salvare credenziali locali, ubicazione o porte di servizio.
+  - **Indirizzi IPv6 Dual-Stack & Copia con 1 Clic (v1.5.0 - Issue #43):** Box dedicato nella scheda Generale che elenca tutti gli indirizzi IPv6, con badge cromatici di categoria (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo.
   - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo con verifica automatica dei conflitti.
   - **Port Forwarding Integrato:** Aggiungi e rimuovi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
         """
@@ -129,6 +131,7 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
 2. **Multi-Engine DNS Synchronizer (In alto a destra):**
    - **Supporto Multi-Engine Eterogeneo:** Gestione simultanea di molteplici istanze di AdGuard Home, Pi-hole (v5 & v6) e Technitium DNS (record diretti A e Reverse PTR).
    - **Auto-Sync Continuo:** Il poller di background allinea automaticamente i server DNS configurati all'accesso di nuovi dispositivi.
+   - **Intelligent Address Pruning & Esclusione IPv6 (v1.5.0 - Issue #31):** Opzioni dedicate per singola istanza DNS per potare automaticamente vecchi IP scaduti e preservare o escludere indirizzi IPv6 temporanei dalla sincronizzazione.
    - **Pulsanti "Test" e "Sincronizza":** Verifica rapida della singola istanza o globale, con trigger di sincronizzazione immediata con un solo clic.
    - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
 3. **Notifiche Telegram & Webhook (In basso a sinistra):**
@@ -149,7 +152,7 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
         "id": "troubleshooting",
         "title": "8. Risoluzione Problemi, Aggiornamenti & FAQ",
         "icon": "wrench",
-        "summary": "FAQ su telemetria, motore di auto-aggiornamento Docker, AdGuard Home, backup e manutenzione.",
+        "summary": "FAQ su telemetria, motore di auto-aggiornamento Docker, sicurezza, backup e manutenzione.",
         "content": """
 ### Domande Frequenti & Troubleshooting
 
@@ -159,6 +162,11 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
   - In alternativa sono supportati trigger via **Watchtower Webhook** e modalità assistita da riga di comando.
 * **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
   - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
+* **Hardening di Sicurezza & Protezione Dati (v1.5.0 - 4 Advisory GHSA):**
+  - **CORS & Protezione CSRF:** Accesso cross-origin disabilitato di default (configurabile con `CORS_ORIGINS`) e blocco delle richieste cross-site mutanti con intestazioni `Sec-Fetch-Site`.
+  - **Sanitizzazione Password Wi-Fi:** Le credenziali Wi-Fi sono rimosse ricorsivamente prima dell'esposizione nella cache pubblica `/api/network/overview`.
+  - **Documentazione Interattiva FastAPI Disattivata di Default:** `/docs`, `/redoc` e `/openapi.json` sono montati solo con `API_DOCS=true` per proteggere gli endpoint operativi.
+  - **Permessi Restrittivi 0600 su session.json:** Il token cloud eero viene creato e salvato con permessi `0600` (lettura/scrittura esclusiva del proprietario del file).
 * **Come configurare l'integrazione con AdGuard Home?**
   - Nel tab *Automazioni & Controlli*, inserisci l'URL della tua istanza (es. `http://192.168.4.100:8085` o semplicemente `192.168.4.100:8085`), il tuo username e la password. Clicca su **Test Connessione** per verificare il collegamento e poi su **Salva Impostazioni AdGuard**. La password viene salvata in modo sicuro nel database SQLite locale e non viene mai esposta in chiaro.
 * **Cosa fare se la sessione scade?**
@@ -167,6 +175,45 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
   - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche, storico segnale e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
 * **Protezione da Rate Limiting:**
   - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
+        """
+    },
+    {
+        "id": "multi-network",
+        "title": "9. Gestione Multi-Rete & Switch a Caldo",
+        "icon": "globe",
+        "summary": "Gestione di account eero multi-sede, switch istantaneo in-app e persistenza della rete attiva.",
+        "content": """
+### Gestione Multi-Rete (v1.5.0 - Issue #22)
+
+* **Selettore a Tendina Dinamico (Header Fluent):** Se il tuo account eero gestisce più reti mesh (es. Casa principale, Ufficio, Seconda casa), l'intestazione della dashboard mostra un comodo menu a tendina interattivo che indica per ciascuna rete il numero di nodi mesh e di client online.
+* **Switch Istantaneo a Caldo:** Selezionando una rete diversa, la dashboard commuta immediatamente senza necessità di riavviare il container o inserire nuove credenziali OTP. La RAM cache viene rigenerata all'istante e i widget si aggiornano in tempo reale.
+* **Persistenza dell'Elezione della Rete:** La rete selezionata viene memorizzata in `session.json` e nel database SQLite locale, garantendo che i cicli periodici di polling non ripristino forzatamente la rete predefinita e che la scelta persista anche dopo il riavvio del container Docker.
+* **Supporto in Modalità Demo:** Include un simulatore multi-rete a due ambienti indipendenti (*Casa Rossi Mesh 6E* e *Ufficio & Studio Pro Mesh*) per testare e dimostrare le funzionalità anche senza account live.
+        """
+    },
+    {
+        "id": "statistics-usage",
+        "title": "10. Statistiche, Consumo Dati Dispositivi & Centro Esportazione",
+        "icon": "chart-bar",
+        "summary": "Suite di consumo dati per apparato, widget Top Bandwidth Hogs, grafici di distribuzione e Centro Esportazione CSV/JSON.",
+        "content": """
+### Statistiche Avanzate, Consumo Dati & Data Export Center (v1.5.0)
+
+* **Device Data Usage Insights Suite:**
+  - Accedendo alla scheda **"Consumo Dati"** nel modale del dispositivo, è possibile analizzare il volume di traffico scaricato e caricato su 3 orizzonti temporali: **Ultime 24 ore** (con andamento orario in Mbps), **Ultimi 7 giorni** (consumo giornaliero) e **Ultimi 30 giorni** (panoramica mensile).
+  - Grafico interattivo Chart.js a doppia linea con indicatori KPI di Download totale, Upload totale e Traffico combinato.
+  - **Trasparenza di Calcolo:** Algoritmo resiliente a standby, disconnessioni temporanee e azzeramenti contatori hardware, con modale esplicativo accessibile tramite i pulsanti `?` di aiuto.
+  - **Nota Tecnica Commutazione Cablata:** Per i dispositivi collegati via cavo Ethernet, l'indicatore `↓ — / ↑ — (Cablato)` riflette la commutazione trasparente Layer 2 hardware dello switch ASIC eero.
+* **Widget "Top Bandwidth Hogs":**
+  - Card dedicata nella dashboard principale che evidenzia in tempo reale i dispositivi che hanno generato il maggior volume di traffico, con accesso rapido alla vista dettagliata in un solo clic.
+* **Sezione Statistiche & Analytics di Rete:**
+  - **Ripartizione Frequenze Wi-Fi:** Distribuzione in percentuale e conteggio client tra 2.4 GHz, 5 GHz, 6 GHz e Cablati.
+  - **Bilanciamento Carico Nodi Mesh:** Monitoraggio del carico di apparati attestati su ciascun eero per ottimizzare il posizionamento dei ripetitori.
+  - **Categorie & Vendor OUI:** Ripartizione per tipologia di apparato e costruttore hardware (Apple, Samsung, Espressif, ecc.).
+  - **Tooltip Interattivi con Elenco Dispositivi:** Passando il cursore su qualunque barra o fetta di grafico, un tooltip avanzato elenca i nomi di tutti i dispositivi corrispondenti (fino a 15 con troncamento intelligente).
+  - **Trend Prestazioni Linea & Diagnostica SLA ISP:** Grafici storici a 7 e 30 giorni per velocità di download/upload, latenza ping e indice di stabilità complessiva della linea FTTH/VDSL.
+* **Centro Esportazione Dati (RFC 4180 CSV & JSON):**
+  - Esportazione rapida e standardizzata dell'inventario dispositivi, storico speedtest, campionamenti del segnale RSSI e storico consumo dati per integrazione con fogli di calcolo, Grafana o Home Assistant.
         """
     }
 ]
@@ -240,19 +287,21 @@ This web application is a full-featured, self-hosted management and monitoring p
 * **Wi-Fi Band & Channel Indicators:** Explicit frequency badges (**6 GHz, 5 GHz, 2.4 GHz, Wired Ethernet**) and active wireless channels (**CH 36, CH 11**, etc.).
 * **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
 * **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
+* **IPv6 Badge & Instant Search (v1.5.0 - Issue #43):** Compact `IPv6` badge next to the MAC address with a tooltip displaying all associated addresses (SLAAC & Link-Local); the search bar filters instantly by prefixes, octets, or full IPv6 addresses.
         """
     },
     {
         "id": "device-details",
         "title": "5. Device Metadata, Static IP & Port Forwarding",
         "icon": "adjustments",
-        "summary": "Custom names, categories, local notes, DHCP reservations, and port forwarding.",
+        "summary": "Custom names, categories, local notes, DHCP reservations, IPv6, and port forwarding.",
         "content": """
 ### Device Management & Rules
 
 * **Device Detail Modal:**
   - **Custom Name & Category:** Assign categories (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Other) saved to the local SQLite database.
   - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
+  - **Dual-Stack IPv6 Addresses & 1-Click Copy (v1.5.0 - Issue #43):** Dedicated box in the General tab listing all IPv6 addresses with category badges (*SLAAC / Global* vs *Link-Local*) and a 1-click clipboard copy button with visual feedback.
   - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
   - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
         """
@@ -294,6 +343,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 2. **Multi-Engine DNS Synchronizer (Top-Right):**
    - **Heterogeneous Multi-Engine Support:** Simultaneous management of multiple instances across AdGuard Home, Pi-hole (v5 & v6 REST API), and Technitium DNS (direct A and Reverse PTR records).
    - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into all active DNS servers.
+   - **Intelligent Address Pruning & IPv6 Exclusions (v1.5.0 - Issue #31):** Dedicated per-instance options to automatically prune obsolete IPs and exclude temporary IPv6 leases from synchronization.
    - **Individual & Global Test and Sync:** Quickly test individual or all instances, with instant 1-click manual synchronization.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
 3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
@@ -314,7 +364,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
         "id": "troubleshooting",
         "title": "8. Troubleshooting, Docker Updates & FAQ",
         "icon": "wrench",
-        "summary": "Frequently asked questions regarding telemetry, in-app Docker auto-updates, AdGuard sync, backups, and maintenance.",
+        "summary": "Frequently asked questions regarding telemetry, in-app Docker auto-updates, security hardening, backups, and maintenance.",
         "content": """
 ### Troubleshooting, Docker Updates & FAQ
 
@@ -324,6 +374,11 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
   - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
 * **Which client metrics come directly from eero hardware?**
   - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
+* **Security Hardening & Data Protection (v1.5.0 - 4 GHSA Advisories):**
+  - **CORS & Anti-CSRF Middleware:** Cross-origin access disabled by default (configured via `CORS_ORIGINS`) and cross-site mutating requests blocked via `Sec-Fetch-Site` inspection.
+  - **Wi-Fi Credential Sanitization:** Sensitive Wi-Fi passwords and keys are recursively stripped prior to caching in `/api/network/overview`.
+  - **Interactive OpenAPI/Swagger Disabled by Default:** `/docs`, `/redoc`, and `/openapi.json` are only mounted when `API_DOCS=true` to protect operational endpoints.
+  - **0600 File Permissions on session.json:** The eero session token file is created with atomic `0600` permissions (owner read/write only).
 * **How do I configure the AdGuard Home integration?**
   - Under the *Automations & Controls* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
 * **What should I do if my session expires?**
@@ -332,6 +387,45 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
   - All custom device names, categories, notes, notification settings, signal history, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
 * **Rate Limiting Protection:**
   - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.
+        """
+    },
+    {
+        "id": "multi-network",
+        "title": "9. Multi-Network Fleet Management & Hot-Swap",
+        "icon": "globe",
+        "summary": "Multi-location eero account support, instant in-app switching, and network election persistence.",
+        "content": """
+### Multi-Network Fleet Management (v1.5.0 - Issue #22)
+
+* **Dynamic Header Dropdown Selector (Windows 11 Fluent):** If your eero account manages multiple networks or physical locations (e.g., Main Residence, Office, Vacation Home), the dashboard header automatically displays an interactive dropdown showing mesh node and active client counts for each location.
+* **Instant In-Memory Hot-Swap:** Selecting another network switches the dashboard immediately without restarting the Docker container or prompting for new 2FA credentials. The RAM cache is immediately flushed and refreshed, updating all widgets and tables in real time.
+* **Network Election Persistence:** The chosen active network is stored in `session.json` and local SQLite `app_settings`, ensuring periodic polling cycles never force-reset your selection and that preferences survive container restarts.
+* **Demo Mode Support:** Includes an independent dual-network simulated fleet (*Home Mesh 6E* and *Office & Studio Pro Mesh*) to demonstrate fleet capabilities without needing an active live account.
+        """
+    },
+    {
+        "id": "statistics-usage",
+        "title": "10. Statistics, Device Data Usage & Data Export Center",
+        "icon": "chart-bar",
+        "summary": "Device data usage suite, Top Bandwidth Hogs, network distribution charts, and RFC 4180 CSV/JSON export.",
+        "content": """
+### Network Analytics, Data Usage & Data Export Center (v1.5.0)
+
+* **Device Data Usage Insights Suite:**
+  - Open the **"Data Usage"** tab in any device details modal to inspect bandwidth consumption across 3 distinct time horizons: **Last 24 Hours** (hourly Mbps throughput), **Last 7 Days** (daily totals), and **Last 30 Days** (monthly summary).
+  - Dual-line Chart.js telemetry curves with instant KPI pills for Total Download, Total Upload, and Combined Traffic.
+  - **Transparent Delta Estimation:** Resilient calculation algorithm designed to handle client sleep, roaming, and hardware counter resets, with a dedicated explanation modal accessible via contextual `?` buttons.
+  - **Ethernet Hardware Switching Technical Note:** For wired clients, the `↓ — / ↑ — (Wired)` indicator accurately reflects Layer 2 hardware ASIC switching within eero nodes.
+* **"Top Bandwidth Hogs" Widget:**
+  - Dedicated dashboard card showcasing top bandwidth consumers over configurable timeframes with 1-click drill-down into device telemetry.
+* **Network Statistics & Analytics View:**
+  - **Frequency Distribution:** Real-time breakdown across 2.4 GHz, 5 GHz, 6 GHz, and Wired Ethernet.
+  - **Mesh Node Load Balancing:** Identifies client distribution across all eero nodes to optimize beacon placement and eliminate coverage bottlenecks.
+  - **Device Categories & Hardware Vendors:** Visual breakdown by device type and manufacturer OUI fingerprinting.
+  - **Interactive Tooltip with Device Previews:** Hovering over chart bars or donut slices displays an interactive dark popover listing the actual devices contributing to that segment (up to 15 with smart truncation).
+  - **ISP SLA & Line Stability Trends:** 7-day and 30-day dual-axis charts tracking throughput consistency, latency trends, and overall line health.
+* **Data Export Center (RFC 4180 CSV & Structured JSON):**
+  - One-click standard data export for client devices inventory, WAN speedtest logs, wireless RSSI signal samples, and device bandwidth usage for external reporting or Grafana/Home Assistant ingestion.
         """
     }
 ]

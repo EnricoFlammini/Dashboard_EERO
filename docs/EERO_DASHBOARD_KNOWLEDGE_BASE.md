@@ -33,6 +33,8 @@
    * 4.16 [Statistiche & Analytics di Rete, SLA ISP & Data Export Center (v1.5.0)](#416-statistiche--analytics-di-rete-sla-isp--data-export-center-v150)
    * 4.17 [Telemetria Switching Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42)](#417-telemetria-switching-hardware-layer-2--dispositivi-cablati-issue-40--42)
    * 4.18 [Community Hall of Fame & Crediti Open Source](#418-community-hall-of-fame--crediti-open-source)
+   * 4.19 [Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)](#419-hardening-di-sicurezza--vulnerability-remediation-4-ghsa-advisories)
+   * 4.20 [Visibilità & Ricerca Indirizzi IPv6 Dispositivi (Issue #43)](#420-visibilità--ricerca-indirizzi-ipv6-dispositivi-issue-43)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -248,13 +250,28 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
 
 ### 4.18 Community Hall of Fame & Crediti Open Source
 * **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici:
-  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42).
+  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43).
   * `@Hatton920`: Health Score Breakdown, velocità link PHY, stato nodi rebooting vs offline, sanitizzazione speedtest (#14, #15, #34, #35, #41).
   * `@jimcampbell100`: Multi-Network Fleet Management (#22).
   * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38).
   * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46).
-  * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53).
+  * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53); 4 GitHub Security Advisories (hardening CORS/CSRF, sanitizzazione password Wi-Fi, switch documentazione interattiva API_DOCS, permessi 0600 per session.json).
 * **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
+
+### 4.19 Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)
+In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation sviluppata con la collaborazione di `@carbones73`), la suite include:
+1. **Protezione Cross-Origin (CORS) & Middleware Anti-CSRF (GHSA-jgpm-8wqq-cchm):** Chiusura di `allow_origins=["*"]`. Il supporto CORS è disabilitato di default e attivabile tramite `CORS_ORIGINS`. Un middleware dedicato ispeziona `Sec-Fetch-Site` e blocca con `HTTP 403 Forbidden` qualsiasi richiesta mutante (POST, PUT, PATCH, DELETE) cross-site non autorizzata dal browser.
+2. **Sanitizzazione Password Wi-Fi dall'Overview di Rete (GHSA-8fm4-wcq4-ch2p):** Prima che i dettagli di rete entrino nella RAM cache del poller, la funzione `_without_wifi_passwords()` rimuove ricorsivamente tutte le chiavi contenenti password (`password`, `passphrase`, `psk`, `network_key`, `wpa_key`, `pppoe_password`). Gli endpoint pubblici `/api/network/overview` e `/api/network/refresh` non espongono mai le credenziali Wi-Fi. La password ospiti rimane accessibile esclusivamente dall'endpoint dedicato `GET /api/network/guest` per il QR code e la modifica protetta.
+3. **Toggle Documentazione Interattiva API_DOCS (GHSA-f9xp-vqq6-f6r4):** Le interfacce FastAPI `/docs`, `/redoc` e `/openapi.json` sono disattivate di default per evitare l'esposizione di console di esecuzione non autenticate. Possono essere abilitate esplicitamente con `API_DOCS=true` nel file `.env`.
+4. **Permessi File Restrittivi 0600 su session.json (GHSA-pqh9-q8vm-x9mh):** Il token di sessione 2FA viene salvato in `data/session.json` impostando la modalità `0o600` (`fchmod` prima del troncamento del file), prevenendo l'accesso al token da parte di altri account locali sull'host.
+
+### 4.20 Visibilità & Ricerca Indirizzi IPv6 Dispositivi (Issue #43)
+*(Richiesta da GitHub Issue #43 - @jpatchMC)*
+* **Esposizione Dual-Stack Integrale:** La pipeline di estrazione e normalizzazione in `eero_client.py` rileva ed espone sia gli indirizzi IPv6 instradabili Global Unicast / SLAAC (`ipv6_addresses`), sia gli indirizzi di collegamento locale Link-Local `fe80::` (`ipv6_link_local`), unificandoli nella collezione `ipv6_all`.
+* **Isolamento Risoluzione DNS:** Gli indirizzi Link-Local non instradabili (`fe80:...`) restano rigorosamente esclusi dal payload sincronizzato verso AdGuard Home (`ids`), preservando la stabilità del resolver DNS e rispettando il flag `drop_ipv6`.
+* **Ricerca Istantanea per IPv6:** Il filtro reattivo della tabella dispositivi in `app.js` esegue il matching dinamico su prefissi, singoli ottetti o indirizzi IPv6 completi.
+* **Badge Discreto & Tooltip:** Badge visivo compatto `IPv6` nella tabella client con tooltip al passaggio del mouse contenente l'elenco completo degli indirizzi.
+* **Box Dedicato con Copia Rapida:** Scheda Generale del modale dispositivo con conteggio indirizzi, categorizzazione visiva (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo (`copyToClipboard`).
 
 ---
 
@@ -396,6 +413,8 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `WATCHTOWER_URL` | `""` | URL opzionale webhook Watchtower per triggerare il pull dell'immagine |
 | `UPDATE_CHECK_INTERVAL_HOURS`| `6` | Frequenza controllo nuove versioni su Docker Hub (ore) |
 | `DASHBOARD_LANG` | `"en"` | Lingua predefinita della dashboard e delle notifiche Telegram (`"en"` o `"it"`) |
+| `CORS_ORIGINS` | `""` | Origini consentite per chiamate Cross-Origin (separate da virgola, es. `http://localhost:3000`) |
+| `API_DOCS` | `false` | Se `true`, abilita la documentazione interattiva Swagger UI (`/docs`, `/redoc`, `/openapi.json`) |
 
 ---
 
@@ -471,6 +490,25 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **PR #51 (Risoluzione Network ID Regole & Prenotazioni):** Sostituita l'invocazione del metodo inesistente `_resolve_network_id()` con `fetch_account_info()` in `get_forwards_and_reservations()` e aggiunta protezione preventiva contro chiamate verso `/networks/None`.
 * **PR #52 (Eliminazione Segnale Fittizio -55 dBm):** In `_normalize_device()`, se la telemetria cloud eero non riporta il segnale RSSI, `signal_rssi` rimane `None` senza inventare `-55 dBm`, ripulendo la Weak Signal Watchlist e l'Health Score.
 * **PR #53 (Stabilizzazione Drift Tassi Demo Mode):** In `_get_demo_devices()`, il throughput simulato viene variato attorno a valori base fissi memorizzati (`_demo_base_rates`) anziché moltiplicare a cascata il valore del ciclo precedente, eliminando il moto browniano con drift positivo esponenziale.
+
+### Issue #43 — Dual-Stack IPv6 Visibility & Instant Search (@jpatchMC)
+* **Sintomo:** I dispositivi connessi che negoziano indirizzi IPv6 comparivano con indirizzi IPv6 visibili nell'app mobile ufficiale eero, ma non comparivano nella dashboard e non era possibile effettuare ricerche per indirizzo IPv6.
+* **Causa Radice:** La normalizzazione estraeva esclusivamente indirizzi Global Unicast scartando o ignorando gli indirizzi Link-Local (`fe80::`). Inoltre, il filtro di ricerca `filteredDevices()` cercava solo nell'attributo `ip` (IPv4).
+* **Risoluzione:** Estesa l'estrazione in `eero_client.py` per raccogliere sia Global SLAAC (`ipv6_addresses`), sia Link-Local (`ipv6_link_local`), esponendo `ipv6_all`. Aggiunto badge visivo discreto `IPv6` con tooltip nella tabella, box informativo nel modale con copia con 1 clic (`copyToClipboard`) e matching in `filteredDevices()` su tutti gli indirizzi IPv6. Preservata l'esclusione di `fe80::` da AdGuard Home per non compromettere la risoluzione DNS.
+
+### 4 GitHub Security Advisories — Vulnerability Hardening (@carbones73)
+* **GHSA-jgpm-8wqq-cchm (CORS Permissivo & Rischio CSRF LAN):**
+  * *Sintomo:* Qualsiasi pagina web aperta nel browser di un client sulla LAN locale poteva inviare comandi di scrittura verso la dashboard (riavvii nodi, toggle guest Wi-Fi, port forwarding, DNS sync).
+  * *Risoluzione:* CORS disabilitato di default (configurabile con `CORS_ORIGINS`) e middleware anti-CSRF che blocca richieste mutanti con `Sec-Fetch-Site: cross-site`.
+* **GHSA-8fm4-wcq4-ch2p (Password Wi-Fi Esposte nell'Overview Pubblico):**
+  * *Sintomo:* L'endpoint pubblico `GET /api/network/overview` esponeva le chiavi `password` e `guest_password` in chiaro a qualsiasi client in grado di raggiungere la porta della dashboard.
+  * *Risoluzione:* Sanitizzazione preventiva ricorsiva con `_without_wifi_passwords()` prima dell'inserimento nella cache del poller; password ospiti segregata nell'endpoint dedicato `GET /api/network/guest`.
+* **GHSA-f9xp-vqq6-f6r4 (Documentazione Interattiva Swagger Esposta):**
+  * *Sintomo:* I percorsi `/docs` e `/redoc` erano sempre montati senza autenticazione, offrendo una console di esecuzione immediata per tutti gli endpoint di scrittura.
+  * *Risoluzione:* Disattivazione di default dei percorsi docs in FastAPI; montaggio subordinato a `API_DOCS=true`.
+* **GHSA-pqh9-q8vm-x9mh (Permessi Troppo Ampi su session.json):**
+  * *Sintomo:* Il file `session.json` contenente il token eero veniva creato con i permessi predefiniti del processo (`0644`), risultando leggibile da altri utenti locali sull'host.
+  * *Risoluzione:* Creazione atomica con flag `0o600` e invocazione di `os.fchmod` prima del troncamento del file.
 
 ---
 

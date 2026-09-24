@@ -4,7 +4,7 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.5.0] - 2026-09-22
+## [1.5.0] - 2026-09-24
 
 ### 🏆 Community Hall of Fame & Special Thanks nel Modale About
 * **🏆 Nuova Sezione Riconoscimenti e Crediti Community:**

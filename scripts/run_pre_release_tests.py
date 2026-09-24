@@ -1885,6 +1885,23 @@ async def run_all_tests():
             runner.assert_true(k in it_dict.get("controls", {}), f"Chiave controls.{k} presente in it.json")
             runner.assert_true(k in en_dict.get("controls", {}), f"Chiave controls.{k} presente in en.json")
 
+        # 7. Test Manuale In-App & Package Versioning (v1.5.0)
+        import importlib
+        app_pkg = importlib.import_module("app")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.5.0", f"app.__version__ è '1.5.0' (trovato: {getattr(app_pkg, '__version__', None)})")
+        res_man_it = await client.get("/api/manual/sections?lang=it")
+        runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
+        runner.assert_true(res_man_it.json().get("count") == 10, f"Manuale IT contiene 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
+        res_man_en = await client.get("/api/manual/sections?lang=en")
+        runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
+        runner.assert_true(res_man_en.json().get("count") == 10, f"Manuale EN contiene 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
+        res_ch_it = await client.get("/api/manual/changelog?lang=it")
+        runner.assert_true(res_ch_it.json().get("version") == "1.5.0", "Versione restituita da changelog IT è 1.5.0")
+        runner.assert_true("## v1.5.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.5.0")
+        res_ch_en = await client.get("/api/manual/changelog?lang=en")
+        runner.assert_true(res_ch_en.json().get("version") == "1.5.0", "Versione restituita da changelog EN è 1.5.0")
+        runner.assert_true("## v1.5.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.5.0")
+
         runner.print_summary()
 
 
