@@ -377,6 +377,8 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Isolamento Release CI/CD Docker Hub:** Build isolate per branch di test senza sovrascrittura accidentale del tag `latest` stabile.
 * **Community Hall of Fame & Crediti:** Sezione speciale nel modale About con ringraziamenti ai contributori e ai tester della community.
 * **Telemetria Rigorosa, Accuratezza RF & Stabilità Nodi (PR #47-#53):** Correzioni per canali 5 GHz UNII-3 vs 6 GHz, isolamento sessione live/demo, elezione Primary Gateway per segmento URL, bonifica speedtest/RSSI sintetici e risoluzione network ID su regole/prenotazioni (crediti a @carbones73).
+* **Hardening di Sicurezza & Vulnerability Remediation (4 Advisory GHSA):** Protezione Cross-Origin e middleware CSRF (`CORS_ORIGINS`), sanitizzazione credenziali Wi-Fi dall'overview pubblico, disattivazione documentazione interattiva `/docs` di default (`API_DOCS`) e permessi `0600` su `session.json` (crediti a @carbones73).
+* **Visibilità & Ricerca Indirizzi IPv6 (Issue #43):** Estrazione dual-stack Global Unicast e Link-Local (`fe80::`), ricerca per IPv6 nella tabella client e sezione dedicata nel modale dispositivo con copia con 1 clic (crediti a @jpatchMC).
 * **Simulatore Multi-Rete in Demo Mode:** Supporto dual-network indipendente (Casa Rossi Mesh 6E e Ufficio & Studio Pro Mesh).
 
 ---
@@ -524,6 +526,8 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **CI/CD Docker Hub Release Isolation:** Test branch builds isolated to prevent accidental overwrite of production `latest` tag.
 * **Community Hall of Fame & Special Thanks:** Dedicated recognition section in About modal honoring community contributors and testers.
 * **Strict Telemetry, RF Accuracy & Node Stability (PRs #47-#53):** Fixes for 5 GHz UNII-3 vs 6 GHz radio channels, live/demo session isolation, exact URL-segment gateway matching, removal of placeholder speedtest/RSSI values and network ID resolution on DHCP/port rules (credits to @carbones73).
+* **Security Hardening & Vulnerability Remediation (4 GHSA Advisories):** Cross-Origin & CSRF protection (`CORS_ORIGINS`), Wi-Fi credential sanitization from public overview, interactive `/docs` Swagger toggle (`API_DOCS`), and restrictive `0600` file permissions on `session.json` (credits to @carbones73).
+* **Dual-Stack IPv6 Visibility & Instant Search (Issue #43):** Extraction and display of Global Unicast and Link-Local (`fe80::`) IPv6 addresses with 1-click clipboard copy, unobtrusive device table badge, and instant search (credits to @jpatchMC).
 * **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Home Mesh 6E and Office & Studio Pro Mesh).
 
 ---

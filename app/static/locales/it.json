@@ -432,7 +432,7 @@
     "contrib_jimcampbell100": "Ispiratore del Multi-Network Fleet Management per account con più reti mesh eero",
     "contrib_stevehoek": "Localizzazione Telegram Daily Digest in inglese & gestione switch multi-rete",
     "contrib_dannyfeliz": "Ottimizzazioni interfaccia responsive, filtri radio e persistenza navigazione",
-    "contrib_carbones73": "Telemetria rigorosa (zero stime sintetiche), accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live/demo ed elezione gateway",
+    "contrib_carbones73": "Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi 0600 su session.json), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione Primary Gateway",
     "contrib_bug_hunters_desc": "Grazie a @BaRaD5 (cache query DNS), @jonmacdonald (switch gateway reconciliation), @phutmacher (elezione primary gateway), @txrangersxx (network ID resolver), @nextlevel2023 (feedback login Amazon) e u/djbills (Docker tag isolation).",
     "close": "Chiudi"
   },
