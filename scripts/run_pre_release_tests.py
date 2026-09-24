@@ -367,6 +367,65 @@ async def run_all_tests():
         node_max7_norm = eero_client._normalize_eero_node(node_max7_raw)
         runner.assert_true(node_max7_norm["backhaul_type"] == "Wireless Mesh (6 GHz / -42 dBm)", f"Nodo Max 7 rileva 'Wireless Mesh (6 GHz / -42 dBm)' (ottenuto: {node_max7_norm['backhaul_type']})")
 
+        # Test 6e: Nodo Max 7 (Wi-Fi 7, EHT) su 5 GHz UNII-3: frequenza 5745 MHz, canale dispari 149
+        node_max7_5g_raw = {
+            "name": "Garage Max 7",
+            "model": "eero Max 7",
+            "gateway": False,
+            "wireless": True,
+            "connected": True,
+            "connectivity": {"frequency": 5745, "channel": 149, "phy_type": "EHT", "signal": -50}
+        }
+        node_max7_5g_norm = eero_client._normalize_eero_node(node_max7_5g_raw)
+        runner.assert_true(node_max7_5g_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -50 dBm)", f"Max 7 EHT su 5745 MHz / canale 149 rileva 'Wireless Mesh (5 GHz / -50 dBm)' (ottenuto: {node_max7_5g_norm['backhaul_type']})")
+
+        # Test 6f: Nodo Max 7 EHT con solo canale 36 (nessuna frequenza): EHT non implica 6 GHz
+        node_max7_ch36_raw = {
+            "name": "Office Max 7",
+            "model": "eero Max 7",
+            "gateway": False,
+            "wireless": True,
+            "connected": True,
+            "channel": 36,
+            "phy_type": "EHT",
+            "signal": {"rx_rssi": -57}
+        }
+        node_max7_ch36_norm = eero_client._normalize_eero_node(node_max7_ch36_raw)
+        runner.assert_true(node_max7_ch36_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -57 dBm)", f"Max 7 EHT su canale 36 rileva 'Wireless Mesh (5 GHz / -57 dBm)' (ottenuto: {node_max7_ch36_norm['backhaul_type']})")
+
+        # Test 6g: Nodo eero 6 con solo canale dispari 157 (UNII-3, 5 GHz)
+        node_unii3_raw = {
+            "name": "Kitchen eero 6",
+            "model": "eero 6",
+            "gateway": False,
+            "wireless": True,
+            "connected": True,
+            "channel": 157,
+            "signal": {"rx_rssi": -61}
+        }
+        node_unii3_norm = eero_client._normalize_eero_node(node_unii3_raw)
+        runner.assert_true(node_unii3_norm["backhaul_type"] == "Wireless Mesh (5 GHz / -61 dBm)", f"eero 6 su canale 157 rileva 'Wireless Mesh (5 GHz / -61 dBm)' (ottenuto: {node_unii3_norm['backhaul_type']})")
+
+        # Test 6h: Dispositivo Wi-Fi 7 (EHT) connesso a 5 GHz (frequenza 5180 MHz, canale 36)
+        wifi7_5g_dev_raw = {
+            "id": "dev_wifi7_5g",
+            "hostname": "Wi-Fi 7 Phone",
+            "connected": True,
+            "connectivity": {"connected": True, "frequency": 5180, "channel": 36, "phy_type": "EHT", "channel_width": "WIDTH_80MHz"}
+        }
+        wifi7_5g_dev_norm = eero_client._normalize_device(wifi7_5g_dev_raw)
+        runner.assert_true(wifi7_5g_dev_norm["frequency_band"] == "5 GHz", f"Dispositivo EHT su 5180 MHz rileva '5 GHz' (ottenuto: {wifi7_5g_dev_norm['frequency_band']})")
+
+        # Test 6i: Dispositivo EHT su 6 GHz con solo canale 37 (senza frequenza) resta 6 GHz
+        wifi7_6g_ch_raw = {
+            "id": "dev_wifi7_6g_ch",
+            "hostname": "Wi-Fi 7 Laptop",
+            "connected": True,
+            "connectivity": {"connected": True, "channel": 37, "phy_type": "EHT"}
+        }
+        wifi7_6g_ch_norm = eero_client._normalize_device(wifi7_6g_ch_raw)
+        runner.assert_true(wifi7_6g_ch_norm["frequency_band"] == "6 GHz", f"Dispositivo EHT su canale 37 rileva '6 GHz' (ottenuto: {wifi7_6g_ch_norm['frequency_band']})")
+
         # Test 7: Dispositivo Wi-Fi 6 GHz (Steve iPhone 17 da Issue #14: frequency=6295, channel=69, phy_type=EHT)
         iphone17_raw = {
             "id": "dev_iphone17",

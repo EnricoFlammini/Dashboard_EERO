@@ -1005,9 +1005,10 @@ class EeroClient:
             # - Channels:
             #   * Channels > 177 up to 233 only exist in 6 GHz band
             #   * 6 GHz Preferred Scanning Channels (PSC): 37, 53, 69, 85, 101, 117, 133, 181, 197, 213, 229
-            #   * Odd channel numbers between 33 and 233 (5 GHz channels 36-165 are strictly even numbers!)
+            #   * Odd channel numbers between 15 and 147 (2.4 GHz stops at 14 and 5 GHz channels 36-144 are even,
+            #     but the 5 GHz UNII-3 channels 149-177 are odd too, so they are NOT a 6 GHz hint)
             # - Channel width: 320 MHz (Wi-Fi 7 exclusive to 6 GHz)
-            # - PHY type: EHT (Wi-Fi 7 on channel > 14)
+            # - PHY type EHT is NOT a 6 GHz hint: Wi-Fi 7 also runs on 5 GHz and 2.4 GHz
             is_6ghz_link = (
                 (freq_num >= 5900 and freq_num <= 7200) or
                 band_str in ("6", "6.0", "6g", "6ghz") or
@@ -1016,9 +1017,8 @@ class EeroClient:
                 "6 ghz" in str(raw_band).lower() or
                 (177 < channel <= 233) or
                 (channel in (37, 53, 69, 85, 101, 117, 133, 181, 197, 213, 229)) or
-                (channel % 2 != 0 and 33 <= channel <= 233) or
-                "320" in chan_width or
-                (phy_type == "EHT" and channel > 14)
+                (channel % 2 != 0 and 15 <= channel < 149) or
+                "320" in chan_width
             )
 
             is_24ghz_link = (
@@ -1039,7 +1039,7 @@ class EeroClient:
                     "5g" in band_str or
                     "5ghz" in str(raw_band).lower() or
                     "5 ghz" in str(raw_band).lower() or
-                    (36 <= channel <= 177 and channel % 2 == 0)
+                    (36 <= channel <= 177 and (channel % 2 == 0 or channel >= 149))
                 )
             )
 
@@ -1054,7 +1054,8 @@ class EeroClient:
                 node["backhaul_type"] = f"Wireless Mesh (2.4 GHz{signal_str})"
             elif is_5ghz_link:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
-            elif is_6e_or_7_hardware and (channel == 0 or channel in (1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 129, 133, 137, 141, 145, 149, 153, 157, 161, 165, 169, 173, 177, 181, 185, 189, 193, 197, 201, 205, 209, 213, 217, 221, 225, 229, 233)):
+            # Nessun canale né frequenza: stima dal modello (ogni canale noto è già classificato sopra)
+            elif is_6e_or_7_hardware and channel == 0:
                 node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str})"
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
@@ -1272,13 +1273,15 @@ class EeroClient:
                 dev["wireless"] = True
                 dev["connection_type"] = "wireless"
                 
-                # 1. 6 GHz Wi-Fi 6E / Wi-Fi 7 (Frequency 5900-7200 MHz, explicit 6GHz, or 320MHz width)
+                # 1. 6 GHz Wi-Fi 6E / Wi-Fi 7 (Frequency 5900-7200 MHz, explicit 6GHz, 320MHz width,
+                #    or an odd channel 15-147 that only exists in 6 GHz). EHT alone is not a 6 GHz hint:
+                #    Wi-Fi 7 clients also connect on 5 GHz and 2.4 GHz.
                 if (
                     (freq_num >= 5900 and freq_num <= 7200) or 
                     band_str in ("6", "6.0", "6g", "6ghz") or 
                     "6g" in band_str or 
                     "320" in chan_width or 
-                    (phy_type == "EHT" and channel > 14)
+                    (channel % 2 != 0 and 15 <= channel < 149)
                 ):
                     dev["frequency_band"] = "6 GHz"
                     dev["wireless_band"] = "6GHz"
