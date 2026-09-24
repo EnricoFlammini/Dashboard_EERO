@@ -1910,9 +1910,13 @@ async def run_all_tests():
         health_json = res_health.json()
         runner.assert_true("build_number" in health_json, "Endpoint /api/health include campo 'build_number'")
         runner.assert_true(health_json.get("full_version") == settings.full_version, f"/api/health full_version corrisponde: {health_json.get('full_version')}")
-        from app.services.updater import updater_service
+        from app.services.updater import updater_service, is_newer_version
         update_data = await updater_service.check_for_updates(force=True)
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
+        runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
+        runner.assert_true(update_data.get("update_available") is False, "Nessun aggiornamento disponibile quando versione corrente combacia con Docker Hub")
+        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.2") is True, "is_newer_version rileva correttamente nuova build 2")
+        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 corrisponde alla corrente")
 
         runner.print_summary()
 

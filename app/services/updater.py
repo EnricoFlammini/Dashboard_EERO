@@ -30,9 +30,39 @@ def parse_semver(v: str) -> Tuple[int, int, int]:
     return (numbers[0], numbers[1], numbers[2])
 
 
+def parse_version_and_build(v: str) -> Tuple[int, int, int, int]:
+    """
+    Estrae la tupla (major, minor, patch, build) da stringhe di versione come:
+    '1.5.0', '1.5.0 build 1', 'v1.5.0-build.1', '1.5.0-build1', '1.5.0-build.2'.
+    """
+    clean = str(v).strip().lstrip("vV")
+    build_num = 0
+    build_match = re.search(r'[-_\s.]*(?:build|b)[-_\s.]*(\d+)', clean, re.IGNORECASE)
+    if build_match:
+        try:
+            build_num = int(build_match.group(1))
+        except ValueError:
+            build_num = 0
+        clean = clean[:build_match.start()]
+
+    parts = re.findall(r'\b\d+\b', clean)
+    major = int(parts[0]) if len(parts) > 0 else 0
+    minor = int(parts[1]) if len(parts) > 1 else 0
+    patch = int(parts[2]) if len(parts) > 2 else 0
+
+    return (major, minor, patch, build_num)
+
+
 def is_newer_version(current: str, remote: str) -> bool:
-    """Verifica se la versione remota è strettamente maggiore della versione corrente."""
-    return parse_semver(remote) > parse_semver(current)
+    """Verifica se la versione remota (comprensiva di build) è strettamente maggiore della versione corrente."""
+    cur_p = parse_version_and_build(current)
+    rem_p = parse_version_and_build(remote)
+
+    if rem_p[:3] > cur_p[:3]:
+        return True
+    if rem_p[:3] == cur_p[:3]:
+        return rem_p[3] > cur_p[3]
+    return False
 
 
 def extract_release_notes_from_changelog(version: str) -> str:
@@ -86,8 +116,13 @@ class UpdaterService:
                 return self._cached_update_info
 
         current_ver = settings.app_version
+        current_build = settings.build_number
+        current_full = settings.full_version
+
         latest_ver = current_ver
-        release_title = f"v{current_ver}"
+        latest_build = current_build
+        latest_full_ver = current_full
+        release_title = f"v{current_full}"
         release_notes = ""
         published_at = ""
         html_url = f"https://github.com/{GITHUB_REPO}/releases"
@@ -102,7 +137,11 @@ class UpdaterService:
                     tag_name = data.get("tag_name", "")
                     clean_tag = tag_name.lstrip("vV")
                     if clean_tag:
-                        latest_ver = clean_tag
+                        p_gh = parse_version_and_build(clean_tag)
+                        if p_gh[:3] > parse_version_and_build(latest_full_ver)[:3]:
+                            latest_ver = f"{p_gh[0]}.{p_gh[1]}.{p_gh[2]}"
+                            latest_build = str(p_gh[3]) if p_gh[3] > 0 else "1"
+                            latest_full_ver = f"{latest_ver} build {latest_build}"
                         release_title = data.get("name") or tag_name
                         release_notes = data.get("body") or ""
                         published_at = data.get("published_at") or ""
@@ -113,27 +152,51 @@ class UpdaterService:
         # 2. Interroga sempre anche Docker Hub Tags API per identificare l'effettiva immagine Docker più recente
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"https://hub.docker.com/v2/repositories/{DOCKER_IMAGE}/tags?page_size=25")
+                resp = await client.get(f"https://hub.docker.com/v2/repositories/{DOCKER_IMAGE}/tags?page_size=50")
                 if resp.status_code == 200:
                     data = resp.json()
+                    best_candidate = None
+                    best_tag_obj = None
+
                     for tag_obj in data.get("results", []):
                         t_name = tag_obj.get("name", "")
-                        clean_t_name = t_name.lstrip("vV")
-                        if clean_t_name and clean_t_name != "latest" and clean_t_name[0].isdigit():
-                            if is_newer_version(latest_ver, clean_t_name):
-                                latest_ver = clean_t_name
-                                published_at = tag_obj.get("last_updated", "")
-                                release_title = f"v{clean_t_name}"
-                                # Cerca se ci sono note nel changelog locale per questa versione
-                                local_notes = extract_release_notes_from_changelog(clean_t_name)
-                                if local_notes:
-                                    release_notes = local_notes
-                                else:
-                                    release_notes = f"Release v{clean_t_name} pubblicata su Docker Hub ({DOCKER_IMAGE}:{clean_t_name})."
+                        # Salta 'latest', tag di test e main branch
+                        if not t_name or t_name == "latest" or "test" in t_name.lower() or t_name == "main":
+                            continue
+                        parsed = parse_version_and_build(t_name)
+                        if parsed[0] == 0 and parsed[1] == 0 and parsed[2] == 0:
+                            continue
+                        # Salta numeri di run legacy non isolati (>= 90)
+                        if parsed[3] >= 90:
+                            continue
+
+                        if best_candidate is None or parsed > best_candidate:
+                            best_candidate = parsed
+                            best_tag_obj = tag_obj
+
+                    if best_candidate:
+                        b_maj, b_min, b_pat, b_bld = best_candidate
+                        cand_ver = f"{b_maj}.{b_min}.{b_pat}"
+                        cand_bld = str(b_bld) if b_bld > 0 else "1"
+                        cand_full = f"{cand_ver} build {cand_bld}"
+
+                        # Se è maggiore o uguale alla release attuale, adotta questo tag Docker
+                        if best_candidate >= parse_version_and_build(latest_full_ver):
+                            latest_ver = cand_ver
+                            latest_build = cand_bld
+                            latest_full_ver = cand_full
+                            if best_tag_obj:
+                                published_at = best_tag_obj.get("last_updated", "")
+                            release_title = f"v{latest_full_ver}"
+                            local_notes = extract_release_notes_from_changelog(cand_ver)
+                            if local_notes:
+                                release_notes = local_notes
+                            else:
+                                release_notes = f"Release v{latest_full_ver} pubblicata su Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
         except Exception as e:
             logger.warning(f"Error checking Docker Hub: {e}")
 
-        update_avail = is_newer_version(current_ver, latest_ver)
+        update_avail = is_newer_version(current_full, latest_full_ver)
         docker_sock = self.is_docker_socket_available
         watchtower = self.is_watchtower_configured
         can_auto = bool(docker_sock or watchtower)
@@ -141,9 +204,11 @@ class UpdaterService:
         result = {
             "status": "success",
             "current_version": current_ver,
-            "build_number": settings.build_number,
-            "full_version": settings.full_version,
+            "build_number": current_build,
+            "full_version": current_full,
             "latest_version": latest_ver,
+            "latest_build_number": latest_build,
+            "latest_full_version": latest_full_ver,
             "update_available": update_avail,
             "release_title": release_title,
             "release_notes": release_notes,

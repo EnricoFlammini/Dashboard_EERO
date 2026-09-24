@@ -257,6 +257,8 @@ document.addEventListener('alpine:init', () => {
       update_available: false,
       current_version: '1.5.0',
       latest_version: '1.5.0',
+      latest_build_number: '1',
+      latest_full_version: '1.5.0 build 1',
       release_title: '',
       release_notes: '',
       docker_socket_available: false,
