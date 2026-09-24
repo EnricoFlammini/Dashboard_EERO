@@ -1,6 +1,21 @@
 import os
 from pathlib import Path
 
+def _get_default_build_number() -> str:
+    env_b = os.getenv("BUILD_NUMBER")
+    if env_b and env_b.strip():
+        return env_b.strip()
+    try:
+        f = Path(__file__).resolve().parent.parent / "BUILD_NUMBER"
+        if f.exists():
+            content = f.read_text(encoding="utf-8").strip()
+            if content:
+                return content
+    except Exception:
+        pass
+    return "1"
+
+
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
     
@@ -8,7 +23,7 @@ try:
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
         app_version: str = os.getenv("APP_VERSION", "1.5.0")
-        build_number: str = os.getenv("BUILD_NUMBER", "1")
+        build_number: str = _get_default_build_number()
         debug: bool = False
         
         # Path configuration
@@ -77,7 +92,7 @@ except ImportError:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
             self.app_version = os.getenv("APP_VERSION", "1.5.0")
-            self.build_number = os.getenv("BUILD_NUMBER", "1")
+            self.build_number = _get_default_build_number()
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
             self.poll_interval = int(os.getenv("POLL_INTERVAL", "30"))
