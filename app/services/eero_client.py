@@ -743,14 +743,17 @@ class EeroClient:
         # Speed test
         if "speed" in data and isinstance(data["speed"], dict):
             sp = data["speed"]
-            down = (sp.get("down") or {}).get("value") if isinstance(sp.get("down"), dict) else sp.get("down_mbps", 951.0)
-            up = (sp.get("up") or {}).get("value") if isinstance(sp.get("up"), dict) else sp.get("up_mbps", 193.0)
-            ping = sp.get("ping_ms") or sp.get("latency") or 9.0
+            # Nessun valore predefinito: senza misura eero (es. speed test mai eseguito) i valori restano 0
+            # (un ping non fornito da eero vale quindi 0 ms, come gli altri campi assenti)
+            down = (sp.get("down") or {}).get("value") if isinstance(sp.get("down"), dict) else sp.get("down_mbps")
+            up = (sp.get("up") or {}).get("value") if isinstance(sp.get("up"), dict) else sp.get("up_mbps")
+            ping = sp.get("ping_ms") or sp.get("latency")
             data["speedtest"] = {
                 "download_mbps": round(float(down or 0), 1),
                 "upload_mbps": round(float(up or 0), 1),
                 "ping_ms": round(float(ping or 0), 1),
-                "timestamp": sp.get("date") or sp.get("timestamp") or datetime.now(timezone.utc).isoformat()
+                # None se eero non ha una data: un orario inventato (now) farebbe credere a speedtest_service che il test sia finito
+                "timestamp": sp.get("date") or sp.get("timestamp")
             }
         return data
 
