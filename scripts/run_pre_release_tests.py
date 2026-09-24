@@ -1915,8 +1915,9 @@ async def run_all_tests():
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
         runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
         runner.assert_true(update_data.get("update_available") is False, "Nessun aggiornamento disponibile quando versione corrente combacia con Docker Hub")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.2") is True, "is_newer_version rileva correttamente nuova build 2")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 corrisponde alla corrente")
+        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
+        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
+        runner.assert_true(is_newer_version("1.5.0 build 1", "1.5.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
 
         runner.print_summary()
 
