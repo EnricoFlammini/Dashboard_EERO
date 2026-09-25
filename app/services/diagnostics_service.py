@@ -324,11 +324,11 @@ class DiagnosticsService:
             aff = offline_pen.get("affected_items") or []
             names_str = ", ".join(aff) if aff else "uno o più nodi"
             narrative_it_parts.append(
-                f"⚠️ **Nodi Disconnessi:** I nodi mesh ({names_str}) risultano irraggiungibili o spenti, "
+                f"**Nodi Disconnessi:** I nodi mesh ({names_str}) risultano irraggiungibili o spenti, "
                 f"riducendo il raggio di copertura complessivo dell'abitazione."
             )
             narrative_en_parts.append(
-                f"⚠️ **Disconnected Nodes:** Mesh node(s) ({names_str}) are offline or unreachable, "
+                f"**Disconnected Nodes:** Mesh node(s) ({names_str}) are offline or unreachable, "
                 f"reducing overall wireless coverage."
             )
             checklist.append({
@@ -352,11 +352,11 @@ class DiagnosticsService:
             aff = backhaul_pen.get("affected_items") or []
             items_str = "; ".join(aff)
             narrative_it_parts.append(
-                f"🔌 **Backhaul Degradato:** Si riscontra un collegamento sottodimensionato su: {items_str}. "
+                f"**Backhaul Degradato:** Si riscontra un collegamento sottodimensionato su: {items_str}. "
                 f"Se la velocità è limitata a 100 Mbps, uno switch di rete o un cavo Cat5/Cat6 difettoso sta strozzando la banda Gigabit."
             )
             narrative_en_parts.append(
-                f"🔌 **Degraded Backhaul:** Sub-optimal backhaul link detected on: {items_str}. "
+                f"**Degraded Backhaul:** Sub-optimal backhaul link detected on: {items_str}. "
                 f"If link negotiates at 100 Mbps, a legacy switch or faulty Cat5/Cat6 cable is throttling Gigabit throughput."
             )
             checklist.append({
@@ -376,11 +376,11 @@ class DiagnosticsService:
             aff = client_pen.get("affected_items") or []
             cnt = len(aff)
             narrative_it_parts.append(
-                f"📶 **Client con Segnale Debole:** {cnt} dispositivo/i presentano un segnale RSSI inferiore a -75 dBm "
+                f"**Client con Segnale Debole:** {cnt} dispositivo/i presentano un segnale RSSI inferiore a -75 dBm "
                 f"({', '.join(aff[:3])}{'...' if len(aff) > 3 else ''}), con potenziale aumento di latenza e ritrasmissione pacchetti."
             )
             narrative_en_parts.append(
-                f"📶 **Weak Client Signal:** {cnt} device(s) have RSSI below -75 dBm "
+                f"**Weak Client Signal:** {cnt} device(s) have RSSI below -75 dBm "
                 f"({', '.join(aff[:3])}{'...' if len(aff) > 3 else ''}), increasing retransmission rate and latency."
             )
             checklist.append({
@@ -398,11 +398,11 @@ class DiagnosticsService:
         band_pen = next((p for p in penalties if p.get("id") == "band_24_crowding"), None)
         if band_pen:
             narrative_it_parts.append(
-                "📡 **Affollamento Spettro 2.4 GHz:** Oltre il 70% dei dispositivi wireless è attestato sulla frequenza 2.4 GHz, "
+                "**Affollamento Spettro 2.4 GHz:** Oltre il 70% dei dispositivi wireless è attestato sulla frequenza 2.4 GHz, "
                 "più soggetta a interferenze e con ampiezza di canale ridotta rispetto a 5 GHz e 6 GHz."
             )
             narrative_en_parts.append(
-                "📡 **2.4 GHz Band Crowding:** Over 70% of wireless clients are operating on the 2.4 GHz band, "
+                "**2.4 GHz Band Crowding:** Over 70% of wireless clients are operating on the 2.4 GHz band, "
                 "which is prone to interference and offers lower spectral efficiency than 5 GHz and 6 GHz."
             )
             checklist.append({
@@ -422,11 +422,11 @@ class DiagnosticsService:
             stk_devs = roaming_info.get("devices", [])
             dev_names = ", ".join(d.get("name") for d in stk_devs[:3])
             narrative_it_parts.append(
-                f"🔄 **Roaming Advisor (Sticky Clients):** Rilevati {stk_cnt} dispositivi mobili ({dev_names}) "
+                f"**Roaming Advisor (Sticky Clients):** Rilevati {stk_cnt} dispositivi mobili ({dev_names}) "
                 f"agganciati a nodi distanti con segnale debole pur disponendo di nodi alternativi più vicini."
             )
             narrative_en_parts.append(
-                f"🔄 **Roaming Advisor (Sticky Clients):** Detected {stk_cnt} mobile device(s) ({dev_names}) "
+                f"**Roaming Advisor (Sticky Clients):** Detected {stk_cnt} mobile device(s) ({dev_names}) "
                 f"clinging to distant nodes with poor signal despite closer mesh nodes being available."
             )
             checklist.append({
@@ -446,11 +446,11 @@ class DiagnosticsService:
             if crit_anom:
                 anom_names = ", ".join(a.get("hostname") or a.get("mac_address") for a in crit_anom[:2])
                 narrative_it_parts.append(
-                    f"🌙 **Traffico Notturno IoT Anomalo:** Rilevato volume dati anomalo nelle ore notturne (01:00 - 06:00) "
+                    f"**Traffico Notturno IoT Anomalo:** Rilevato volume dati anomalo nelle ore notturne (01:00 - 06:00) "
                     f"su: {anom_names}. Verificare lo stato del firmware o eventuali streaming/backup non previsti."
                 )
                 narrative_en_parts.append(
-                    f"🌙 **Unusual Night IoT Traffic:** Abnormal data volume recorded during night hours (01:00 - 06:00) "
+                    f"**Unusual Night IoT Traffic:** Abnormal data volume recorded during night hours (01:00 - 06:00) "
                     f"on: {anom_names}. Check device firmware or unintended cloud uploads/streaming."
                 )
                 checklist.append({

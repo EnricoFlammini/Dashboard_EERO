@@ -4084,8 +4084,8 @@
           <div class="p-4 rounded-2xl bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-purple-500/10 border border-sky-500/25 dark:border-sky-500/30 space-y-3.5 shadow-xs">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-400/40 flex items-center space-x-1">
-                  <span>🤖</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-400/40 flex items-center space-x-1.5">
+                  <svg class="w-3 h-3 shrink-0 text-sky-600 dark:text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.286L13 21l-2.286-6.857L5 12l5.714-2.286L13 3z"/></svg>
                   <span x-text="t('health_modal.ai_diagnostics_badge') || 'Diagnostica Intelligente AI'"></span>
                 </span>
                 <h4 class="text-xs font-bold text-slate-900 dark:text-white" x-text="t('health_modal.ai_analysis_title') || 'Analisi Descrittiva Dinamica'"></h4>
@@ -4107,7 +4107,7 @@
               <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 text-amber-900 dark:text-amber-200">
                 <div class="flex items-center justify-between text-xs font-bold">
                   <div class="flex items-center space-x-1.5">
-                    <span>🔄</span>
+                    <svg class="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <span x-text="t('health_modal.roaming_advisor_title') || 'Roaming Advisor (Sticky Clients)'"></span>
                   </div>
                   <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold font-mono" x-text="healthDetails.roaming_advisor.sticky_count + ' ' + (currentLanguage === 'it' ? 'dispositivi' : 'devices')"></span>
@@ -4136,7 +4136,7 @@
               <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 space-y-2 text-purple-900 dark:text-purple-200">
                 <div class="flex items-center justify-between text-xs font-bold">
                   <div class="flex items-center space-x-1.5">
-                    <span>🌙</span>
+                    <svg class="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                     <span x-text="t('health_modal.iot_anomalies_title') || 'Anomalie Traffico Notturno IoT (01:00 - 06:00)'"></span>
                   </div>
                   <span class="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold font-mono" x-text="healthDetails.iot_anomalies.length + ' ' + (currentLanguage === 'it' ? 'anomalie' : 'anomalies')"></span>
@@ -4162,7 +4162,7 @@
               <div class="space-y-2 pt-1 border-t border-sky-500/15 dark:border-sky-500/20">
                 <div class="flex items-center justify-between">
                   <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
-                    <span>📋</span>
+                    <svg class="w-3.5 h-3.5 shrink-0 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                     <span x-text="t('health_modal.action_checklist_title') || 'Piano di Risoluzione Guidato (Actionable Checklist)'"></span>
                   </h5>
                 </div>
@@ -4171,10 +4171,10 @@
                     <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex items-start space-x-2.5 text-[11px]">
                       <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] uppercase shrink-0 mt-0.5"
                             :class="{
-                              'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-400/30': item.priority === 'critical',
-                              'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400/30': item.priority === 'high',
-                              'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-400/30': item.priority === 'medium',
-                              'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-400/30': item.priority === 'low'
+                               'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-400/30': item.priority === 'critical',
+                               'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400/30': item.priority === 'high',
+                               'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-400/30': item.priority === 'medium',
+                               'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-400/30': item.priority === 'low'
                             }"
                             x-text="item.priority === 'critical' ? (t('health_modal.priority_critical') || 'Critica') : (item.priority === 'high' ? (t('health_modal.priority_high') || 'Alta') : (item.priority === 'medium' ? (t('health_modal.priority_medium') || 'Media') : (t('health_modal.priority_low') || 'Bassa')))">
                       </span>
@@ -4195,7 +4195,7 @@
         <div class="space-y-2.5">
           <div class="flex items-center justify-between">
             <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-              <span>⚠️</span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
               <span x-text="t('health_modal.penalties_title')">Fattori che Influenzano il Punteggio</span>
             </h4>
             <span class="text-[10px] text-slate-500" x-text="healthDetails && healthDetails.penalties ? healthDetails.penalties.length + ' ' + (t('health_modal.detected') || (currentLanguage === 'it' ? 'rilevati' : 'detected')) : '0'"></span>
@@ -4221,7 +4221,9 @@
                    :class="p.severity === 'critical' ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-700/50 text-rose-900 dark:text-rose-200' : (p.severity === 'warning' ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/50 text-amber-900 dark:text-amber-200' : 'bg-sky-50 dark:bg-sky-950/30 border-sky-300 dark:border-sky-700/50 text-sky-900 dark:text-sky-200')">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
-                    <span class="text-sm" x-text="p.severity === 'critical' ? '🔴' : (p.severity === 'warning' ? '🟠' : 'ℹ️')"></span>
+                    <span class="w-2 h-2 rounded-full shrink-0"
+                          :class="p.severity === 'critical' ? 'bg-rose-500 ring-2 ring-rose-500/20' : (p.severity === 'warning' ? 'bg-amber-500 ring-2 ring-amber-500/20' : 'bg-sky-500 ring-2 ring-sky-500/20')">
+                    </span>
                     <span class="font-bold text-xs" x-text="getHealthPenaltyTitle(p)"></span>
                   </div>
                   <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold"
@@ -4247,7 +4249,7 @@
         <!-- Section 2: Health Pillars (4 Pilastri) -->
         <div class="space-y-2.5">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-            <span>📊</span>
+            <svg class="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             <span x-text="t('health_modal.pillars_title')">Pilastri di Salute Rete</span>
           </h4>
 
@@ -4257,7 +4259,7 @@
             <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                  <span>🌐</span>
+                  <svg class="w-3.5 h-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                   <span x-text="t('health_modal.pillar_mesh')">Topologia Mesh & Nodi</span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.mesh_topology?.score || 40) >= 35 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.mesh_topology?.score ?? 40) + ' / ' + (healthDetails?.pillars?.mesh_topology?.max_score ?? 40)"></span>
@@ -4274,7 +4276,7 @@
             <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                  <span>⚡</span>
+                  <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                   <span x-text="t('health_modal.pillar_wan')">Gateway WAN & Internet</span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.wan_gateway?.score || 30) >= 25 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.wan_gateway?.score ?? 30) + ' / ' + (healthDetails?.pillars?.wan_gateway?.max_score ?? 30)"></span>
@@ -4291,7 +4293,7 @@
             <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                  <span>📶</span>
+                  <svg class="w-3.5 h-3.5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
                   <span x-text="t('health_modal.pillar_signal')">Qualità Segnale Wi-Fi Client</span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.client_signal?.score || 20) >= 18 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.client_signal?.score ?? 20) + ' / ' + (healthDetails?.pillars?.client_signal?.max_score ?? 20)"></span>
@@ -4308,7 +4310,7 @@
             <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
-                  <span>📡</span>
+                  <svg class="w-3.5 h-3.5 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.828a5 5 0 010-7.072m7.072 0a5 5 0 010 7.072M13 12a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
                   <span x-text="t('health_modal.pillar_channels')">Distribuzione Frequenze & Canali</span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.channel_density?.score || 10) >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.channel_density?.score ?? 10) + ' / ' + (healthDetails?.pillars?.channel_density?.max_score ?? 10)"></span>
@@ -4327,7 +4329,7 @@
         <!-- Section 3: Smart Recommendations -->
         <div class="space-y-2" x-show="healthDetails && healthDetails.recommendations && healthDetails.recommendations.length > 0">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-            <span>💡</span>
+            <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
             <span x-text="t('health_modal.recommendations_title')">Raccomandazioni & Suggerimenti</span>
           </h4>
           <div class="p-3.5 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-500/20 space-y-1.5">
