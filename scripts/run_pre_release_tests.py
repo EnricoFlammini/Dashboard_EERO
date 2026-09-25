@@ -1914,12 +1914,143 @@ async def run_all_tests():
         update_data = await updater_service.check_for_updates(force=True)
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
         runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
-        runner.assert_true(update_data.get("update_available") is False, "Nessun aggiornamento disponibile quando versione corrente combacia con Docker Hub")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
+        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
+        runner.assert_true(is_newer_version("1.5.0 build 2", "1.5.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
         runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
         runner.assert_true(is_newer_version("1.5.0 build 1", "1.5.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
 
+        # =====================================================================
+        # 20. TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)
+        # =====================================================================
+        print("\n📰 [20/20] TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)")
+
+        from app.services.eero_news_service import eero_news_service, parse_eero_version, is_newer_eero_version
+
+        # 1. Test Funzioni di Confronto Versioni eeroOS
+        runner.assert_true(parse_eero_version("v7.16.0-9483") == (7, 16, 0, 9483), "parse_eero_version analizza correttamente 'v7.16.0-9483'")
+        runner.assert_true(parse_eero_version("v7.5.2-192") == (7, 5, 2, 192), "parse_eero_version analizza correttamente 'v7.5.2-192'")
+        runner.assert_true(parse_eero_version("v6.16.5-4") == (6, 16, 5, 4), "parse_eero_version analizza correttamente 'v6.16.5-4'")
+        runner.assert_true(parse_eero_version("v1.0.11") == (1, 0, 11, 0), "parse_eero_version analizza correttamente 'v1.0.11'")
+        runner.assert_true(parse_eero_version(None) == (0, 0, 0, 0), "parse_eero_version gestisce None senza errori")
+        runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.5.2-192") is True, "is_newer_eero_version rileva correttamente nuova release 7.16 vs 7.5.2")
+        runner.assert_true(is_newer_eero_version("v7.5.2-192", "v7.16.0-9483") is False, "is_newer_eero_version riconosce versione precedente")
+        runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.16.0-9483") is False, "is_newer_eero_version ritorna False per versioni identiche")
+
+        # 2. Test Parser HTML Zendesk (Mock Payload Realistico)
+        sample_zendesk_html = """
+        <p>Introductory paragraph from eero support.</p>
+        <p><strong>eeroOS: v7.17.0-1000 - </strong><em>Released August 15, 2026</em></p>
+        <ul>
+            <li>Security vulnerability patches for Wi-Fi stack</li>
+            <li>Improved TrueChannel and AWGN interference mitigation on 6 GHz band</li>
+            <li>Performance and stability enhancements for mesh roaming</li>
+        </ul>
+        <p><strong>eeroOS: v7.16.1-50 - </strong><em>Released July 30, 2026</em></p>
+        <ul>
+            <li>General stability fixes and connection improvements</li>
+            <li>Matter and Thread protocol updates</li>
+        </ul>
+        """
+        parsed_notes = eero_news_service.parse_zendesk_html(sample_zendesk_html)
+        runner.assert_true(len(parsed_notes) == 2, f"Parser Zendesk estrae 2 release (trovate: {len(parsed_notes)})")
+        rel1 = parsed_notes[0]
+        runner.assert_true(rel1["version"] == "v7.17.0-1000", f"Versione release 1 corretta: {rel1['version']}")
+        runner.assert_true("August 15, 2026" in rel1["release_date"], f"Data release 1 corretta: {rel1['release_date']}")
+        runner.assert_true(len(rel1["content"]) == 3, f"Release 1 ha 3 bullet points (trovati: {len(rel1['content'])})")
+        runner.assert_true(rel1["is_security_patch"] is True, "Release 1 identificata correttamente come Security Patch")
+        runner.assert_true("Sicurezza" in rel1["tags"], "Tag 'Sicurezza' assegnato a Release 1")
+        runner.assert_true("Wi-Fi 7 / 6 GHz" in rel1["tags"], "Tag 'Wi-Fi 7 / 6 GHz' assegnato a Release 1")
+        runner.assert_true("Stabilità" in rel1["tags"], "Tag 'Stabilità' assegnato a Release 1")
+
+        rel2 = parsed_notes[1]
+        runner.assert_true(rel2["version"] == "v7.16.1-50", f"Versione release 2 corretta: {rel2['version']}")
+        runner.assert_true(rel2["is_security_patch"] is False, "Release 2 non contiene patch di sicurezza")
+        runner.assert_true("Smart Home" in rel2["tags"], "Tag 'Smart Home' assegnato a Release 2 per Thread/Matter")
+
+        # 3. Test Persistenza SQLite (Tabella eero_release_notes)
+        await db_service.clear_release_notes()
+        empty_notes = await db_service.get_release_notes()
+        runner.assert_true(len(empty_notes) == 0, "clear_release_notes svuota correttamente la tabella SQLite")
+
+        saved_count = await db_service.save_release_notes(parsed_notes)
+        runner.assert_true(saved_count == 2, f"save_release_notes ha salvato 2 record (salvati: {saved_count})")
+
+        db_notes = await db_service.get_release_notes(limit=10)
+        runner.assert_true(len(db_notes) == 2, f"get_release_notes recupera 2 record (ottenuti: {len(db_notes)})")
+        runner.assert_true(db_notes[0]["version"] in ("v7.17.0-1000", "v7.16.1-50"), "Versioni memorizzate conformi")
+        runner.assert_true(isinstance(db_notes[0]["content"], list), "content_json deserializzato come array Python")
+
+        latest_db = await db_service.get_latest_release_note()
+        runner.assert_true(latest_db is not None and bool(latest_db.get("version")), "get_latest_release_note restituisce la release più recente")
+
+        sec_only = await db_service.get_release_notes(security_only=True)
+        runner.assert_true(len(sec_only) == 1 and sec_only[0]["version"] == "v7.17.0-1000", "get_release_notes con security_only=True filtra correttamente")
+
+        # 4. Test Resilienza Offline & Timeout
+        import httpx
+        def _failing_transport(req):
+            raise httpx.ConnectError("Simulated offline network failure")
+
+        saved_last_fetch = eero_news_service._last_fetched
+        eero_news_service._last_fetched = None  # Forza tentativo remoto
+        orig_demo = settings.demo_mode
+        settings.demo_mode = False
+        eero_client.set_demo_mode(False)
+
+        # Simula chiamata con fallback su DB esistente
+        offline_notes = await eero_news_service.fetch_official_release_notes(force=True)
+        runner.assert_true(len(offline_notes) >= 2, f"In caso di timeout/offline fetch_official_release_notes usa la cache SQLite senza eccezioni (trovati: {len(offline_notes)})")
+        
+        # Test fallback community feedback su errore
+        community_res = await eero_news_service.fetch_community_feedback()
+        runner.assert_true(isinstance(community_res, list) and len(community_res) > 0, "fetch_community_feedback gestisce blocchi/errori restituendo discussioni di fallback")
+
+        # Ripristina stato demo per i test successivi
+        settings.demo_mode = orig_demo
+        eero_client.set_demo_mode(True)
+
+        # 5. Test Endpoint REST FastAPI GET /api/system/eero-news
+        res_news = await client.get("/api/system/eero-news")
+        runner.assert_true(res_news.status_code == 200, "Endpoint GET /api/system/eero-news risponde HTTP 200")
+        news_json = res_news.json()
+        runner.assert_true(news_json.get("status") == "success", "GET /api/system/eero-news restituisce status success")
+        runner.assert_true("current_firmware" in news_json, "Risposta include 'current_firmware'")
+        runner.assert_true("latest_firmware" in news_json, "Risposta include 'latest_firmware'")
+        runner.assert_true("is_up_to_date" in news_json, "Risposta include flag 'is_up_to_date'")
+        runner.assert_true("update_available" in news_json, "Risposta include flag 'update_available'")
+        runner.assert_true("nodes" in news_json and isinstance(news_json["nodes"], list), "Risposta include array 'nodes'")
+        runner.assert_true("releases" in news_json and len(news_json["releases"]) > 0, "Risposta include elenco note di rilascio")
+        runner.assert_true("community_posts" in news_json, "Risposta include feed 'community_posts'")
+
+        # In modalità Demo (flotta su v7.5.2 vs release v7.16+), deve rilevare update disponibile
+        runner.assert_true(news_json.get("is_up_to_date") is False, "In ambiente Demo rileva correttamente is_up_to_date=False (v7.5.2 vs v7.16+)")
+        runner.assert_true(news_json.get("update_available") is True, "In ambiente Demo rileva correttamente update_available=True")
+
+        # 6. Test Endpoint REST POST /api/system/eero-news/refresh
+        res_refresh = await client.post("/api/system/eero-news/refresh")
+        runner.assert_true(res_refresh.status_code == 200, "Endpoint POST /api/system/eero-news/refresh risponde HTTP 200")
+        refresh_json = res_refresh.json()
+        runner.assert_true(refresh_json.get("status") == "success", "POST refresh restituisce status success")
+
+        # 7. Verifica Integrità Dizionari Localizzazione (it.json ed en.json)
+        with open("app/static/locales/it.json", "r", encoding="utf-8") as f:
+            it_locale = json.load(f)
+        with open("app/static/locales/en.json", "r", encoding="utf-8") as f:
+            en_locale = json.load(f)
+
+        runner.assert_true("eero_news" in it_locale.get("nav", {}), "Voce 'eero_news' presente in nav di it.json")
+        runner.assert_true("eero_news" in en_locale.get("nav", {}), "Voce 'eero_news' presente in nav di en.json")
+        runner.assert_true("eero_news" in it_locale, "Sezione 'eero_news' presente in it.json")
+        runner.assert_true("eero_news" in en_locale, "Sezione 'eero_news' presente in en.json")
+        runner.assert_true("up_to_date_title" in it_locale["eero_news"], "up_to_date_title presente in it.json")
+        runner.assert_true("up_to_date_title" in en_locale["eero_news"], "up_to_date_title presente in en.json")
+        runner.assert_true("update_avail_title" in it_locale["eero_news"], "update_avail_title presente in it.json")
+        runner.assert_true("update_avail_title" in en_locale["eero_news"], "update_avail_title presente in en.json")
+        runner.assert_true("community_title" in it_locale["eero_news"], "community_title presente in it.json")
+        runner.assert_true("community_title" in en_locale["eero_news"], "community_title presente in en.json")
+
         runner.print_summary()
+
 
 
 

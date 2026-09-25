@@ -124,6 +124,14 @@ document.addEventListener('alpine:init', () => {
     deviceSortField: 'name',
     deviceSortDirection: 'asc',
 
+    // eeroOS Release Notes & Community Updates State (v1.6.0)
+    eeroNewsLoading: false,
+    eeroNewsError: null,
+    eeroNewsData: null,
+    eeroNewsSearchQuery: '',
+    eeroNewsFilter: 'all', // 'all', 'security', 'wifi7', 'stability'
+    eeroNewsExpandedVersions: {},
+
     // Profiles & Cloud Users State
     profiles: [],
     showCreateProfileModal: false,
@@ -321,6 +329,7 @@ document.addEventListener('alpine:init', () => {
         await this.refreshAllData();
         this.startPolling();
         this.checkForUpdates(false);
+        this.fetchEeroNews(false);
       }
 
       // Reattività cambio tab con rendering forzato e resize automatico
@@ -345,6 +354,8 @@ document.addEventListener('alpine:init', () => {
           this.fetchDnsSettings();
           this.fetchAdGuardSettings();
           this.fetchAlerts();
+        } else if (tab === 'news') {
+          this.fetchEeroNews();
         }
       });
     },
@@ -608,6 +619,8 @@ document.addEventListener('alpine:init', () => {
         await this.fetchDigestSettings();
         await this.fetchAdGuardSettings();
         await this.fetchAlerts();
+      } else if (tab === 'news') {
+        await this.fetchEeroNews();
       }
     },
 
@@ -2875,6 +2888,74 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         console.error("Open context help error:", err);
       }
+    },
+
+    // =========================================================================
+    // eeroOS RELEASE NOTES & COMMUNITY UPDATES (v1.6.0)
+    // =========================================================================
+    async fetchEeroNews(force = false) {
+      this.eeroNewsLoading = true;
+      this.eeroNewsError = null;
+      try {
+        const url = force ? '/api/system/eero-news/refresh' : '/api/system/eero-news';
+        const method = force ? 'POST' : 'GET';
+        const res = await fetch(url, { method });
+        if (res.ok) {
+          const data = await res.json();
+          this.eeroNewsData = data;
+          if (data.releases && data.releases.length > 0 && Object.keys(this.eeroNewsExpandedVersions).length === 0) {
+            this.eeroNewsExpandedVersions[data.releases[0].version] = true;
+          }
+        } else {
+          this.eeroNewsError = "Impossibile caricare le novità eeroOS";
+        }
+      } catch (err) {
+        console.error("fetchEeroNews error:", err);
+        this.eeroNewsError = err.message || "Errore di connessione";
+      } finally {
+        this.eeroNewsLoading = false;
+      }
+    },
+
+    toggleReleaseAccordion(version) {
+      this.eeroNewsExpandedVersions[version] = !this.eeroNewsExpandedVersions[version];
+    },
+
+    expandAllReleases() {
+      if (this.eeroNewsData && this.eeroNewsData.releases) {
+        const expanded = {};
+        this.eeroNewsData.releases.forEach(r => {
+          expanded[r.version] = true;
+        });
+        this.eeroNewsExpandedVersions = expanded;
+      }
+    },
+
+    collapseAllReleases() {
+      this.eeroNewsExpandedVersions = {};
+    },
+
+    get filteredEeroReleases() {
+      if (!this.eeroNewsData || !this.eeroNewsData.releases) return [];
+      let list = this.eeroNewsData.releases;
+      const q = (this.eeroNewsSearchQuery || '').toLowerCase().trim();
+      if (q) {
+        list = list.filter(r => {
+          const verMatch = (r.version || '').toLowerCase().includes(q);
+          const dateMatch = (r.release_date || '').toLowerCase().includes(q);
+          const summaryMatch = (r.summary || '').toLowerCase().includes(q);
+          const contentMatch = (r.content || []).some(c => c.toLowerCase().includes(q));
+          return verMatch || dateMatch || summaryMatch || contentMatch;
+        });
+      }
+      if (this.eeroNewsFilter === 'security') {
+        list = list.filter(r => r.is_security_patch || (r.tags || []).includes('Sicurezza') || (r.tags || []).includes('Security'));
+      } else if (this.eeroNewsFilter === 'wifi7') {
+        list = list.filter(r => (r.tags || []).includes('Wi-Fi 7 / 6 GHz'));
+      } else if (this.eeroNewsFilter === 'stability') {
+        list = list.filter(r => (r.tags || []).includes('Stabilità') || (r.tags || []).includes('Stability'));
+      }
+      return list;
     },
 
     async openChangelogModal() {

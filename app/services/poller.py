@@ -60,6 +60,7 @@ class BackgroundPoller:
         self._last_scheduled_speedtest: Optional[datetime] = None
         self._last_digest_date: Optional[str] = None
         self._last_adguard_sync: Optional[datetime] = None
+        self._last_eero_news_run: Optional[datetime] = None
         self._prev_device_metrics: Dict[str, Dict[str, Any]] = {}
         self._prev_poll_time: Optional[datetime] = None
         self._prev_connected_wireless_macs: Set[str] = set()
@@ -991,6 +992,17 @@ class BackgroundPoller:
         if self.cached_devices and (not self._last_adguard_sync or (now - self._last_adguard_sync).total_seconds() > 1800):
             self._last_adguard_sync = now
             asyncio.create_task(adguard_service.auto_sync_if_enabled(self.cached_devices))
+
+        # F. Sincronizzazione periodica Note di Rilascio eeroOS (ogni 6 ore)
+        if not self._last_eero_news_run or (now - self._last_eero_news_run).total_seconds() > 21600:
+            self._last_eero_news_run = now
+            async def _safe_news_refresh():
+                try:
+                    from app.services.eero_news_service import eero_news_service
+                    await eero_news_service.fetch_official_release_notes()
+                except Exception as err:
+                    logger.debug(f"Periodic eero release notes refresh skipped/failed: {err}")
+            asyncio.create_task(_safe_news_refresh())
 
     async def _send_daily_digest(self, lang: Optional[str] = None) -> Dict[str, Any]:
         try:

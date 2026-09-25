@@ -144,6 +144,20 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_net_time ON device_usage_history(network_id, timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_time ON device_usage_history(timestamp);")
 
+            # 10. eeroOS Release Notes & Updates Hub (v1.6.0)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS eero_release_notes (
+                    version TEXT PRIMARY KEY,
+                    release_date TEXT,
+                    title TEXT,
+                    summary TEXT,
+                    content_json TEXT,
+                    is_security_patch BOOLEAN DEFAULT 0,
+                    fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_eero_releases_date ON eero_release_notes(release_date);")
+
             # Purge all mock demo devices from live signal history table
             await db.execute("""
                 DELETE FROM device_signal_history 
@@ -1201,6 +1215,104 @@ class DBService:
             await db.commit()
             logger.info(f"Data retention cleanup executed (cutoff: {cutoff}): {deleted_counts}")
         return deleted_counts
+
+    # ----------------- EERO RELEASE NOTES & UPDATES HUB (v1.6.0) -----------------
+    async def save_release_notes(self, notes: List[Dict[str, Any]]) -> int:
+        """Salva o aggiorna le note di rilascio ufficiali di eeroOS in SQLite."""
+        if not notes:
+            return 0
+        import json
+        saved_count = 0
+        async with self.get_connection() as db:
+            for note in notes:
+                version = note.get("version")
+                if not version:
+                    continue
+                release_date = note.get("release_date", "")
+                title = note.get("title", f"eeroOS: {version}")
+                summary = note.get("summary", "")
+                content_json = note.get("content_json")
+                if isinstance(content_json, (list, dict)):
+                    content_json = json.dumps(content_json, ensure_ascii=False)
+                elif content_json is None:
+                    content_json = json.dumps(note.get("content", []), ensure_ascii=False)
+                is_sec = 1 if note.get("is_security_patch") else 0
+
+                await db.execute("""
+                    INSERT INTO eero_release_notes (
+                        version, release_date, title, summary, content_json, is_security_patch, fetched_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(version) DO UPDATE SET
+                        release_date=excluded.release_date,
+                        title=excluded.title,
+                        summary=excluded.summary,
+                        content_json=excluded.content_json,
+                        is_security_patch=excluded.is_security_patch,
+                        fetched_at=CURRENT_TIMESTAMP;
+                """, (version, release_date, title, summary, content_json, is_sec))
+                saved_count += 1
+            await db.commit()
+        return saved_count
+
+    async def get_release_notes(self, limit: int = 100, security_only: bool = False) -> List[Dict[str, Any]]:
+        """Recupera l'elenco cronologico delle note di rilascio memorizzate nel database."""
+        import json
+        async with self.get_connection() as db:
+            query = "SELECT version, release_date, title, summary, content_json, is_security_patch, fetched_at FROM eero_release_notes"
+            params = []
+            if security_only:
+                query += " WHERE is_security_patch = 1"
+            query += " ORDER BY rowid ASC LIMIT ?"
+            params.append(limit)
+            cursor = await db.execute(query, params)
+            rows = await cursor.fetchall()
+
+            results = []
+            for row in rows:
+                c_json = row["content_json"]
+                try:
+                    content_list = json.loads(c_json) if c_json else []
+                except Exception:
+                    content_list = []
+                # Riconoscimento automatico tag euristici
+                full_text = " ".join(content_list).lower()
+                tags = []
+                if row["is_security_patch"]:
+                    tags.append("Sicurezza")
+                if any(k in full_text for k in ("wi-fi 7", "wifi 7", "6 ghz", "6ghz", "truechannel", "awgn")):
+                    tags.append("Wi-Fi 7 / 6 GHz")
+                if any(k in full_text for k in ("stability", "crash", "reboot", "disconnection", "stabilità")):
+                    tags.append("Stabilità")
+                if any(k in full_text for k in ("performance", "throughput", "latency", "velocità", "prestazioni")):
+                    tags.append("Prestazioni")
+
+                results.append({
+                    "version": row["version"],
+                    "release_date": row["release_date"],
+                    "title": row["title"],
+                    "summary": row["summary"],
+                    "content": content_list,
+                    "tags": tags,
+                    "is_security_patch": bool(row["is_security_patch"]),
+                    "fetched_at": row["fetched_at"]
+                })
+            try:
+                from app.services.eero_news_service import parse_eero_version
+                results.sort(key=lambda r: parse_eero_version(r.get("version")), reverse=True)
+            except Exception:
+                pass
+            return results[:limit]
+
+    async def get_latest_release_note(self) -> Optional[Dict[str, Any]]:
+        """Recupera la release più recente salvata in cache SQLite."""
+        notes = await self.get_release_notes(limit=1)
+        return notes[0] if notes else None
+
+    async def clear_release_notes(self):
+        """Svuota la tabella delle release notes (utilizzato nei test o in caso di re-sync integrale)."""
+        async with self.get_connection() as db:
+            await db.execute("DELETE FROM eero_release_notes;")
+            await db.commit()
 
 
 # Istanza singleton DB

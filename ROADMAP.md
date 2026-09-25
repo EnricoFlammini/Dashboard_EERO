@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 🤖 **AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
 
 ---
 
@@ -43,6 +43,7 @@ gantt
     Diagnostica SLA ISP & Export CSV/JSON :done, v1_5d, after v1_5c, 3d
     Tooltip Dispositivi Grafici Analytics :done, v1_5e, after v1_5d, 1d
     section v1.6.0 - AI Diagnostics, RBAC, Automations & Homelab
+    eeroOS Release Notes & Community Hub :done, v1_6_news, 2026-09-25, 2d
     Local RBAC & User Management Engine               :active, v1_6a, 2026-09-24, 4d
     AI Natural Language Diagnostics & Roaming Advisor :v1_6b, after v1_6a, 4d
     Anomaly Detection Traffico Notturno IoT           :v1_6c, after v1_6b, 3d
@@ -390,6 +391,26 @@ gantt
   * Aggiunta di Web App Manifest (`manifest.json`), service worker per caching offline degli asset statici (CSS, JS, icone SVG) e supporto alla modalità *standalone* a tutto schermo su pannelli touch a parete (Wall Dashboard), tablet e smartphone.
   * Wizard guidato di esportazione e importazione configurazione JSON (`GET /api/system/backup`, `POST /api/system/restore`) per salvataggio e ripristino sicuro di alias personalizzati, impostazioni DNS, preferenze notifiche e parametri di automazione senza richiedere dump manuali del database.
 
+#### 6. 📰 Hub "Novità e Note di Rilascio eeroOS" & Community Updates (Zendesk & Reddit Public Hub)
+* **Backend Poller & Scraping Autonomo (`app/services/eero_news_service.py`):**
+  * Client HTTP asincrono che interroga periodicamente l'API pubblica e non autenticata del centro supporto eero: `GET https://eero.zendesk.com/api/v2/help_center/en-us/articles/209636523.json` (con fallback su `https://support.eero.com/...`).
+  * Parsing HTML avanzato con regex/parser mirato privo di dipendenze esterne: estrazione automatica di versione, data di rilascio, elenco puntato delle novità, highlights di sicurezza e classificazione semantica automatica dei tag (*Sicurezza*, *Wi-Fi 7 / 6 GHz*, *Stabilità*, *Prestazioni*, *Smart Home*).
+  * Cache a lunga durata con poller di background programmato ogni 6 ore, garantendo impatto nullo sul traffico di rete e zero rate limiting.
+* **Correlazione Firmware Locale (eero Client API):**
+  * Interrogazione e monitoraggio della versione firmware attualmente installata su ciascun nodo del mesh locale (`/2.2/networks/{id}/updates` e `get_eeros()`).
+  * Rilevamento in tempo reale dell'allineamento della rete rispetto all'ultima release ufficiale eero (`is_up_to_date`) e dello stato di roll-out graduale (`update_available`).
+* **Feed Community Resiliente (Reddit r/amazoneero):**
+  * Integrazione con l'endpoint pubblico Reddit (`r/amazoneero`) per recuperare gli ultimi thread di discussione e benchmark su stabilità e bug dei firmware appena rilasciati.
+  * Gestione trasparente e tollerante ai fallimenti: fallback immediato su feed interno curato in caso di restrizioni 403 o assenza di connettività.
+* **Persistenza Dedicata SQLite (`metrics.db`):**
+  * Nuova tabella `eero_release_notes` per l'archiviazione persistente delle versioni, date, array JSON dei contenuti e flag di sicurezza.
+  * Endpoint REST dedicati: `GET /api/system/eero-news` e `POST /api/system/eero-news/refresh`.
+* **Frontend Alpine.js Windows 11 Fluent Design:**
+  * Nuova voce di navigazione nella sidebar collassabile con icona SVG a tema giornale/feed (coerente con lo stile senza emoji dell'interfaccia) e badge pulsante per update disponibili.
+  * Banner di stato acrilico superiore: Card verde acrilica se la rete è allineata all'ultima versione; Card ambra/blu con avviso di rolling release graduale se è disponibile un firmware più recente.
+  * Accordion espandibili per ogni release con badge colorati, lista puntata, barra di ricerca istantanea e filtri rapidi (*Tutte*, *Sicurezza*, *Wi-Fi 7*, *Stabilità*).
+  * Supporto Dual-Theme (Light & Dark Mode) e localizzazione bilingue IT / EN completa (`it.json`, `en.json`).
+
 ---
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
@@ -433,6 +454,19 @@ gantt
 - [ ] Dispatcher multi-canale di notifica con connettori nativi per Discord, Gotify, NTFY e Pushover.
 - [ ] Driver di sincronizzazione DNS per istanze Blocky e server ricorsivi Unbound in `DNSManager`.
 - [ ] Aggiornamento documentazione tecnica, manuale integrato (`app/routers/manual.py`) e test pre-release (385+ test previsti).
+
+##### Modulo 5: 📰 eeroOS Release Notes & Community Updates Hub (Completato)
+- [x] Client HTTP asincrono e parser HTML Zendesk (`app/services/eero_news_service.py`).
+- [x] Correlazione firmware locale e calcolo stato di allineamento flotta mesh (`is_up_to_date` / `update_available`).
+- [x] Connettore feed community Reddit (`r/amazoneero`) con gestione resiliente di fallback su blocco 403 / offline.
+- [x] Tabella dedicata SQLite `eero_release_notes` con indici, serializzazione JSON e salvataggio automatico.
+- [x] Poller periodico di background a intervallo di 6 ore integrato in `BackgroundPoller`.
+- [x] Endpoint REST FastAPI: `GET /api/system/eero-news` e `POST /api/system/eero-news/refresh`.
+- [x] Nuova voce di navigazione nella sidebar con icona SVG Windows 11 Fluent (senza emoji) e badge dinamico.
+- [x] Vista dedicata con banner di stato acrilico (Verde per rete allineata, Ambra/Blu per rolling release disponibile).
+- [x] Accordion espandibile per ciascuna release con chip tag (Sicurezza, Wi-Fi 7 / 6 GHz, Stabilità, Prestazioni) e ricerca real-time.
+- [x] Supporto completo Dual-Theme (Dark/Light mode) e localizzazione bilingue IT / EN (`it.json`, `en.json`).
+- [x] Mock realistici per Demo Mode e suite di test unitari/integrazione (478 test superati al 100%).
 
 ---
 

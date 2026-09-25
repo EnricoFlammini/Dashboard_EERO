@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from app.config import settings
 from app.services.db import db_service
+from app.services.eero_news_service import eero_news_service
 from app.services.notifications import notification_service
 from app.services.updater import updater_service
 
@@ -47,3 +48,27 @@ async def trigger_update():
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/eero-news")
+async def get_eero_news(force: bool = Query(False, description="Forza il ricalcolo e recupero da Zendesk")):
+    """Restituisce l'elenco cronologico delle note di rilascio eeroOS, la versione del firmware
+
+    installata sui nodi mesh dell'utente, lo stato di allineamento e i feedback della community.
+    """
+    try:
+        summary = await eero_news_service.get_news_summary(force=force)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore nel recupero delle notizie eero: {str(e)}")
+
+
+@router.post("/eero-news/refresh")
+async def refresh_eero_news():
+    """Forza il controllo e re-scraping immediato delle release notes eeroOS da Zendesk API."""
+    try:
+        summary = await eero_news_service.get_news_summary(force=True)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore nel refresh delle notizie eero: {str(e)}")
+

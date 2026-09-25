@@ -1844,6 +1844,36 @@ class EeroClient:
             self._last_eeros = nodes
             return nodes
 
+    async def get_network_updates(self, network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Recupera lo stato di aggiornamento firmware della rete (/2.2/networks/{id}/updates)."""
+        target_id = network_id or self.current_network_id
+        if settings.demo_mode or not self.is_authenticated or (self.user_token and self.user_token.startswith("demo_")):
+            return {
+                "has_update": True,
+                "can_update_now": False,
+                "target_firmware": "v7.16.0-9483",
+                "update_status": "rolling_release"
+            }
+
+        if not target_id:
+            await self.fetch_account_info()
+            target_id = self.current_network_id
+
+        if not target_id:
+            return {}
+
+        try:
+            async with self._client_session() as client:
+                resp = await client.get(f"{EERO_API_BASE}/networks/{target_id}/updates", headers=self._get_headers())
+                if resp.status_code == 200:
+                    return resp.json().get("data", {})
+                else:
+                    logger.debug(f"Updates endpoint returned {resp.status_code}: {resp.text}")
+                    return {}
+        except Exception as e:
+            logger.debug(f"Error querying network updates: {e}")
+            return {}
+
     async def get_devices(self) -> List[Dict[str, Any]]:
         """Recupera l'elenco dei dispositivi connessi/noti e il loro stato di banda."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):

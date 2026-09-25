@@ -509,6 +509,38 @@
           <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.manual')"></span>
         </button>
 
+        <!-- 6. Note di Rilascio / eeroOS News (v1.6.0) -->
+        <button 
+          @click="setTab('news')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'news'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? (t('nav.eero_news') || 'Note di Rilascio eeroOS') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.eero_news') || 'Note di Rilascio'"></span>
+          <!-- Update badge indicator if available -->
+          <template x-if="eeroNewsData && eeroNewsData.update_available">
+            <span 
+              x-show="!sidebarCollapsed"
+              class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 animate-pulse">
+              NEW
+            </span>
+          </template>
+          <template x-if="eeroNewsData && eeroNewsData.update_available && sidebarCollapsed">
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-[#262626] animate-ping"></span>
+          </template>
+        </button>
+
       </div>
 
       <!-- Bottom Quick Actions: Gaming Mode & Demo Mode -->
@@ -2323,6 +2355,359 @@
           </template>
         </div>
 
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 7: eeroOS RELEASE NOTES & COMMUNITY UPDATES (v1.6.0) -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'news'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- News Header Panel -->
+      <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/10 dark:bg-sky-500/20 text-[#0067c0] dark:text-sky-400 flex items-center justify-center border border-sky-500/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white" x-text="t('eero_news.title') || 'Novità & Note di Rilascio eeroOS'"></h2>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="t('eero_news.subtitle') || 'Changelog ufficiale del firmware eeroOS, stato di allineamento della rete e aggiornamenti della community'"></p>
+        </div>
+        
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+          <!-- Search Box -->
+          <div class="relative w-full md:w-64">
+            <input 
+              type="text" 
+              x-model="eeroNewsSearchQuery" 
+              :placeholder="t('eero_news.search_placeholder') || 'Cerca per versione o testo...'"
+              class="glass-input w-full pl-9 pr-8 py-2 rounded-xl text-xs">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <button 
+              x-show="eeroNewsSearchQuery" 
+              @click="eeroNewsSearchQuery = ''" 
+              class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+
+          <!-- Refresh Button -->
+          <button 
+            @click="fetchEeroNews(true)" 
+            :disabled="eeroNewsLoading"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#0067c0] hover:bg-[#005ba4] text-white dark:bg-sky-500 dark:hover:bg-sky-600 dark:text-white shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 transition shrink-0">
+            <svg class="w-3.5 h-3.5" :class="eeroNewsLoading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span class="hidden sm:inline" x-text="eeroNewsLoading ? (t('eero_news.refreshing') || 'Controllo...') : (t('eero_news.refresh_btn') || 'Verifica Nuove Note')"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Status Banner (Windows 11 Fluent Acrylic) -->
+      <template x-if="eeroNewsData">
+        <div>
+          <!-- State A: Fleet is Up to Date -->
+          <template x-if="eeroNewsData.is_up_to_date">
+            <div class="rounded-2xl p-6 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/30 backdrop-blur-xl shadow-sm space-y-4">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/40">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                      <span x-text="t('eero_news.up_to_date_title') || 'La tua rete è aggiornata'"></span>
+                      <span class="font-mono text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-bold" x-text="eeroNewsData.current_firmware"></span>
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5" x-text="(t('eero_news.up_to_date_desc') || 'Tutti i nodi mesh eseguono l\'ultima versione ufficiale rilasciata da eero ({version}).').replace('{version}', eeroNewsData.latest_firmware)"></p>
+                  </div>
+                </div>
+                <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+                  <span x-text="t('eero_news.last_checked') || 'Ultimo controllo:'"></span>
+                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                </div>
+              </div>
+
+              <!-- Nodes Firmware Chips -->
+              <div class="pt-2 border-t border-emerald-500/20 flex flex-wrap gap-2.5">
+                <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 self-center mr-1" x-text="(t('eero_news.mesh_nodes_status') || 'Nodi Mesh:')"></div>
+                <template x-for="node in eeroNewsData.nodes" :key="node.id">
+                  <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-xs">
+                    <span class="w-2 h-2 rounded-full" :class="node.status === 'online' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                    <span class="font-medium text-slate-800 dark:text-slate-200" x-text="node.name"></span>
+                    <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400" x-text="'(' + node.os_version + ')'"></span>
+                    <span x-show="node.is_gateway" class="text-[9px] uppercase font-bold px-1 rounded bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300" x-text="t('eero_news.node_gateway') || 'GW'"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- State B: Update Available or Behind Official Latest -->
+          <template x-if="!eeroNewsData.is_up_to_date || eeroNewsData.update_available">
+            <div class="rounded-2xl p-6 bg-gradient-to-r from-amber-500/15 via-sky-500/10 to-transparent border border-amber-500/30 backdrop-blur-xl shadow-sm space-y-4">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center space-x-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/40 animate-pulse">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                      <span x-text="(t('eero_news.update_avail_title') || 'Nuovo aggiornamento disponibile: {version}').replace('{version}', eeroNewsData.latest_firmware)"></span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 uppercase font-black">Rolling Release</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed" x-text="(t('eero_news.update_avail_desc') || 'La tua rete esegue la versione {current}. Ricorda che i rollout di eero avvengono gradualmente a scaglioni (rolling release) nel corso di alcune settimane dalla pubblicazione ufficiale.').replace('{current}', eeroNewsData.current_firmware)"></p>
+                  </div>
+                </div>
+                <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+                  <span x-text="t('eero_news.last_checked') || 'Ultimo controllo:'"></span>
+                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                </div>
+              </div>
+
+              <!-- Nodes Overview & Compare -->
+              <div class="pt-3 border-t border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                  <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 self-center mr-1" x-text="t('eero_news.mesh_nodes_status') || 'Nodi Mesh:'"></div>
+                  <template x-for="node in eeroNewsData.nodes" :key="node.id">
+                    <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-xs">
+                      <span class="w-2 h-2 rounded-full" :class="node.status === 'online' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
+                      <span class="font-medium text-slate-800 dark:text-slate-200" x-text="node.name"></span>
+                      <span class="font-mono text-[10px]" :class="node.os_version === eeroNewsData.latest_firmware ? 'text-emerald-500 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'" x-text="'(' + node.os_version + ')'"></span>
+                    </div>
+                  </template>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-3">
+                  <div><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.installed_version') || 'Installata:'"></span> <span class="font-mono font-bold" x-text="eeroNewsData.current_firmware"></span></div>
+                  <div>→</div>
+                  <div><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.latest_release') || 'Ultima:'"></span> <span class="font-mono font-bold text-sky-600 dark:text-sky-400" x-text="eeroNewsData.latest_firmware"></span></div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- Releases Accordion Filter Bar & Controls -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-3">
+        <!-- Filter Tabs / Pills -->
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button 
+            @click="eeroNewsFilter = 'all'"
+            :class="eeroNewsFilter === 'all' ? 'bg-[#0067c0] text-white dark:bg-sky-500' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 hover:bg-black/[0.08] dark:hover:bg-white/[0.1]'"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+            x-text="t('eero_news.filter_all') || 'Tutte le Release'">
+          </button>
+          <button 
+            @click="eeroNewsFilter = 'security'"
+            :class="eeroNewsFilter === 'security' ? 'bg-rose-600 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 hover:bg-black/[0.08] dark:hover:bg-white/[0.1]'"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <span x-text="t('eero_news.filter_security') || 'Patch di Sicurezza'"></span>
+          </button>
+          <button 
+            @click="eeroNewsFilter = 'wifi7'"
+            :class="eeroNewsFilter === 'wifi7' ? 'bg-sky-600 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 hover:bg-black/[0.08] dark:hover:bg-white/[0.1]'"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+            <span x-text="t('eero_news.filter_wifi7') || 'Wi-Fi 7 / 6 GHz'"></span>
+          </button>
+          <button 
+            @click="eeroNewsFilter = 'stability'"
+            :class="eeroNewsFilter === 'stability' ? 'bg-emerald-600 text-white' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 hover:bg-black/[0.08] dark:hover:bg-white/[0.1]'"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <span x-text="t('eero_news.filter_stability') || 'Miglioramenti Stabilità'"></span>
+          </button>
+        </div>
+
+        <!-- Right Expand/Collapse All -->
+        <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+          <span class="text-xs text-slate-400 font-mono mr-2" x-text="filteredEeroReleases.length + ' release'"></span>
+          <button 
+            @click="expandAllReleases()" 
+            class="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-black/[0.03] dark:bg-white/[0.05] rounded-lg transition"
+            x-text="t('eero_news.expand_all') || 'Espandi Tutte'">
+          </button>
+          <button 
+            @click="collapseAllReleases()" 
+            class="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-black/[0.03] dark:bg-white/[0.05] rounded-lg transition"
+            x-text="t('eero_news.collapse_all') || 'Comprimi Tutte'">
+          </button>
+        </div>
+      </div>
+
+      <!-- Releases Accordion List -->
+      <div class="space-y-3">
+        <template x-for="rel in filteredEeroReleases" :key="rel.version">
+          <div class="glass-panel rounded-2xl overflow-hidden transition-all duration-200 border border-black/[0.06] dark:border-white/[0.08] hover:border-black/[0.12] dark:hover:border-white/[0.15]">
+            <!-- Accordion Header -->
+            <button 
+              @click="toggleReleaseAccordion(rel.version)" 
+              class="w-full text-left p-4 sm:p-5 flex items-start sm:items-center justify-between gap-4 cursor-pointer focus:outline-none transition">
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                  <!-- Version Pill -->
+                  <span class="font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white" x-text="rel.version"></span>
+                  
+                  <!-- Date Badge -->
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span x-text="rel.release_date"></span>
+                  </span>
+
+                  <!-- Installed on Local Fleet Badge -->
+                  <template x-if="eeroNewsData && eeroNewsData.current_firmware === rel.version">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 border border-[#0067c0]/30 dark:border-sky-500/40 flex items-center space-x-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                      <span>Installata sulla tua rete</span>
+                    </span>
+                  </template>
+
+                  <!-- Security Badge -->
+                  <template x-if="rel.is_security_patch">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center space-x-1">
+                      <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                      <span x-text="t('eero_news.tag_security') || 'Sicurezza'"></span>
+                    </span>
+                  </template>
+
+                  <!-- Dynamic Tags -->
+                  <template x-for="tag in rel.tags" :key="tag">
+                    <span 
+                      x-show="tag !== 'Sicurezza' && tag !== 'Security'"
+                      class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08]"
+                      x-text="tag">
+                    </span>
+                  </template>
+                </div>
+
+                <!-- Summary Line -->
+                <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 truncate" x-text="rel.summary"></p>
+              </div>
+
+              <!-- Chevron Toggle -->
+              <div class="shrink-0 p-1 rounded-lg text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200">
+                <svg 
+                  class="w-5 h-5 transition-transform duration-200" 
+                  :class="eeroNewsExpandedVersions[rel.version] ? 'rotate-180 text-sky-500' : ''" 
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </button>
+
+            <!-- Accordion Expanded Body -->
+            <div 
+              x-show="eeroNewsExpandedVersions[rel.version]" 
+              x-transition:enter="transition ease-out duration-150"
+              x-transition:enter-start="opacity-0 -translate-y-1"
+              x-transition:enter-end="opacity-100 translate-y-0"
+              class="px-5 pb-5 pt-1 border-t border-black/[0.05] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.02]">
+              <div class="mt-3 space-y-2">
+                <template x-for="(bullet, bIdx) in rel.content" :key="bIdx">
+                  <div class="flex items-start space-x-2.5 text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
+                    <div class="w-1.5 h-1.5 rounded-full bg-sky-500 mt-1.5 shrink-0"></div>
+                    <span class="flex-1" x-text="bullet"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Empty state when search produces no results -->
+        <template x-if="filteredEeroReleases.length === 0">
+          <div class="glass-panel rounded-2xl p-12 text-center space-y-3">
+            <svg class="w-10 h-10 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.no_results') || 'Nessuna release trovata per i criteri selezionati.'"></div>
+            <button 
+              @click="eeroNewsSearchQuery = ''; eeroNewsFilter = 'all'" 
+              class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 transition cursor-pointer">
+              Reimposta Filtri
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Community Feedback Section (r/amazoneero) -->
+      <div class="glass-panel rounded-2xl p-6 space-y-4">
+        <div class="flex items-start sm:items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-500/30">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.702zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.197-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white" x-text="t('eero_news.community_title') || 'Feedback Community (r/amazoneero)'"></h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('eero_news.community_subtitle') || 'Discussioni recenti e test di stabilità degli utenti sull\'ultimo firmware'"></p>
+            </div>
+          </div>
+          <a 
+            href="https://www.reddit.com/r/amazoneero/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="text-xs text-[#0067c0] dark:text-sky-400 hover:underline flex items-center space-x-1 shrink-0">
+            <span>r/amazoneero</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+
+        <!-- Community Threads Cards Grid -->
+        <template x-if="eeroNewsData && eeroNewsData.community_posts && eeroNewsData.community_posts.length">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <template x-for="post in eeroNewsData.community_posts" :key="post.id || post.title">
+              <div class="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.08] hover:border-black/[0.12] dark:hover:border-white/[0.15] transition flex flex-col justify-between space-y-3">
+                <div class="space-y-1.5">
+                  <div class="flex items-center space-x-1.5 text-[10px] font-mono text-slate-400">
+                    <span class="px-1.5 py-0.2 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold" x-text="post.flair || 'Reddit'"></span>
+                    <span x-text="'u/' + post.author"></span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2" x-text="post.title"></h4>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-black/[0.04] dark:border-white/[0.05] text-[11px] text-slate-500 dark:text-slate-400">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="flex items-center space-x-1 font-mono">
+                      <span>▲</span>
+                      <span x-text="post.score"></span>
+                    </span>
+                    <span class="flex items-center space-x-1 font-mono">
+                      <span>💬</span>
+                      <span x-text="post.num_comments"></span>
+                    </span>
+                  </div>
+                  <a 
+                    :href="post.url || 'https://www.reddit.com/r/amazoneero/'" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">
+                    Leggi →
+                  </a>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <!-- Source Disclaimer Footer -->
+      <div class="p-4 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.06] text-center text-[11px] text-slate-400 flex items-center justify-center space-x-2">
+        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span x-text="t('eero_news.source_disclaimer') || 'Fonte ufficiale: eero Customer Support (Zendesk Help Center API). I dati sono sincronizzati periodicamente in background con impatto nullo sulle prestazioni.'"></span>
       </div>
 
     </div>
