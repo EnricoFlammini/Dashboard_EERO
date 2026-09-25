@@ -18,6 +18,7 @@ FALLBACK_ZENDESK_URL = "https://support.eero.com/api/v2/help_center/en-us/articl
 REDDIT_COMMUNITY_URL = (
     "https://www.reddit.com/r/amazoneero/search.json?q=flair%3AUpdate+OR+%22release+notes%22&sort=new&limit=5"
 )
+REDDIT_RSS_URL = "https://www.reddit.com/r/amazoneero/.rss"
 CACHE_TTL_SECONDS = 6 * 3600  # 6 ore di cache
 
 
@@ -281,6 +282,60 @@ class EeroNewsService:
         self._last_fetched = now
         return default_notes
 
+    def parse_reddit_atom_feed(self, xml_content: str) -> List[Dict[str, Any]]:
+        """Esegue il parsing del feed Atom XML di r/amazoneero per estrarre discussioni reali."""
+        import xml.etree.ElementTree as ET
+
+        posts: List[Dict[str, Any]] = []
+        if not xml_content:
+            return posts
+
+        try:
+            root = ET.fromstring(xml_content)
+            ns = {"atom": "http://www.w3.org/2005/Atom"}
+            for entry in root.findall("atom:entry", ns)[:5]:
+                title_elem = entry.find("atom:title", ns)
+                link_elem = entry.find("atom:link", ns)
+                author_elem = entry.find("atom:author/atom:name", ns)
+                id_elem = entry.find("atom:id", ns)
+                category_elem = entry.find("atom:category", ns)
+
+                title = title_elem.text.strip() if title_elem is not None and title_elem.text else ""
+                url = link_elem.attrib.get("href", "").strip() if link_elem is not None else ""
+                author_raw = (
+                    author_elem.text.strip()
+                    if author_elem is not None and author_elem.text
+                    else "redditor"
+                )
+                author = author_raw.replace("/u/", "").strip()
+                post_id = (
+                    id_elem.text.strip()
+                    if id_elem is not None and id_elem.text
+                    else f"post_{len(posts)}"
+                )
+                flair = (
+                    category_elem.attrib.get("label", "Community")
+                    if category_elem is not None
+                    else "Community"
+                )
+
+                if title and url and "/comments/" in url:
+                    posts.append(
+                        {
+                            "id": post_id,
+                            "title": title,
+                            "author": author,
+                            "url": url,
+                            "score": 0,
+                            "num_comments": 0,
+                            "created_utc": int(datetime.now(timezone.utc).timestamp()),
+                            "flair": flair,
+                        }
+                    )
+        except Exception as ex:
+            logger.debug(f"Failed to parse Reddit RSS feed: {ex}")
+        return posts
+
     async def fetch_community_feedback(self) -> List[Dict[str, Any]]:
         """Recupera in modo asincrono gli ultimi thread di discussione da Reddit r/amazoneero."""
         now = datetime.now(timezone.utc)
@@ -297,8 +352,24 @@ class EeroNewsService:
             return posts
 
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
+
+        # 1. Tentativo con Feed RSS Atom (pubblico e include link reali alle discussioni)
+        try:
+            async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
+                rss_resp = await client.get(REDDIT_RSS_URL)
+                if rss_resp.status_code == 200 and rss_resp.text:
+                    rss_posts = self.parse_reddit_atom_feed(rss_resp.text)
+                    if rss_posts:
+                        self._cached_community_posts = rss_posts
+                        self._last_community_fetch = now
+                        return rss_posts
+        except Exception as e:
+            logger.debug(f"Reddit RSS community fetch fallback: {e}")
+
+        # 2. Tentativo con Endpoint JSON Reddit Search
         try:
             async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
                 resp = await client.get(REDDIT_COMMUNITY_URL)
@@ -308,14 +379,15 @@ class EeroNewsService:
                     posts = []
                     for item in children[:5]:
                         post_data = item.get("data", {})
+                        permalink = post_data.get("permalink", "")
                         posts.append(
                             {
                                 "id": post_data.get("id"),
                                 "title": post_data.get("title", ""),
                                 "author": post_data.get("author", "redditor"),
-                                "url": f"https://reddit.com{post_data.get('permalink', '')}"
-                                if post_data.get("permalink")
-                                else "",
+                                "url": f"https://www.reddit.com{permalink}"
+                                if permalink
+                                else "https://www.reddit.com/r/amazoneero/",
                                 "score": post_data.get("score", 0),
                                 "num_comments": post_data.get("num_comments", 0),
                                 "created_utc": post_data.get("created_utc"),
@@ -327,9 +399,9 @@ class EeroNewsService:
                         self._last_community_fetch = now
                         return posts
         except Exception as e:
-            logger.debug(f"Reddit community fetch fallback: {e}")
+            logger.debug(f"Reddit JSON community fetch fallback: {e}")
 
-        # Se la chiamata a Reddit è bloccata (403) o timeout, restituisce post curati/fallback
+        # Se la chiamata a Reddit è bloccata (403/429) o timeout, restituisce post curati/fallback con URL di ricerca validi
         posts = self._get_demo_community_posts()
         self._cached_community_posts = posts
         self._last_community_fetch = now
@@ -498,13 +570,13 @@ class EeroNewsService:
         ]
 
     def _get_demo_community_posts(self) -> List[Dict[str, Any]]:
-        """Restituisce discussioni realistiche della community r/amazoneero per demo e test."""
+        """Restituisce discussioni realistiche della community r/amazoneero per demo e test con link di ricerca sempre validi."""
         return [
             {
                 "id": "post_01",
                 "title": "eeroOS v7.16.0 Rollout Experience - AWGN Fix and Wi-Fi 7 Stability",
                 "author": "MeshExpert_Net",
-                "url": "https://www.reddit.com/r/amazoneero/comments/eeroos_7_16_0_experience/",
+                "url": "https://www.reddit.com/r/amazoneero/search/?q=v7.16.0&restrict_sr=1&sort=new",
                 "score": 42,
                 "num_comments": 19,
                 "created_utc": 1784650000,
@@ -514,7 +586,7 @@ class EeroNewsService:
                 "id": "post_02",
                 "title": "v7.16.0 vs v7.15.1: 6 GHz throughput tests on eero Max 7 & Pro 6E",
                 "author": "TechHomelabGuy",
-                "url": "https://www.reddit.com/r/amazoneero/comments/v7_16_throughput_benchmarks/",
+                "url": "https://www.reddit.com/r/amazoneero/search/?q=throughput&restrict_sr=1&sort=new",
                 "score": 35,
                 "num_comments": 14,
                 "created_utc": 1784560000,
@@ -524,7 +596,7 @@ class EeroNewsService:
                 "id": "post_03",
                 "title": "Anyone else noticing faster roaming on Apple devices with latest firmware?",
                 "author": "CupertinoWifi",
-                "url": "https://www.reddit.com/r/amazoneero/comments/fast_roaming_feedback/",
+                "url": "https://www.reddit.com/r/amazoneero/search/?q=roaming&restrict_sr=1&sort=new",
                 "score": 28,
                 "num_comments": 8,
                 "created_utc": 1784400000,
