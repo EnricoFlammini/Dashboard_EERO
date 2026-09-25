@@ -131,6 +131,8 @@ document.addEventListener('alpine:init', () => {
     eeroNewsSearchQuery: '',
     eeroNewsFilter: 'all', // 'all', 'security', 'wifi7', 'stability'
     eeroNewsExpandedVersions: {},
+    eeroNewsShowAllReleases: false,
+    eeroNewsDefaultLimit: 5,
 
     // Profiles & Cloud Users State
     profiles: [],
@@ -2917,6 +2919,15 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    setEeroNewsFilter(filterName) {
+      this.eeroNewsFilter = filterName;
+      this.eeroNewsShowAllReleases = false;
+    },
+
+    toggleShowAllReleases() {
+      this.eeroNewsShowAllReleases = !this.eeroNewsShowAllReleases;
+    },
+
     toggleReleaseAccordion(version) {
       this.eeroNewsExpandedVersions[version] = !this.eeroNewsExpandedVersions[version];
     },
@@ -2928,6 +2939,7 @@ document.addEventListener('alpine:init', () => {
           expanded[r.version] = true;
         });
         this.eeroNewsExpandedVersions = expanded;
+        this.eeroNewsShowAllReleases = true;
       }
     },
 
@@ -2956,6 +2968,19 @@ document.addEventListener('alpine:init', () => {
         list = list.filter(r => (r.tags || []).includes('Stabilità') || (r.tags || []).includes('Stability'));
       }
       return list;
+    },
+
+    get visibleEeroReleases() {
+      const list = this.filteredEeroReleases;
+      if (this.eeroNewsShowAllReleases) {
+        return list;
+      }
+      return list.slice(0, this.eeroNewsDefaultLimit);
+    },
+
+    get remainingEeroReleasesCount() {
+      const total = this.filteredEeroReleases.length;
+      return Math.max(0, total - this.eeroNewsDefaultLimit);
     },
 
     async openChangelogModal() {

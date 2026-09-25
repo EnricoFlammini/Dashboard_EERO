@@ -1924,17 +1924,58 @@ async def run_all_tests():
         # =====================================================================
         print("\n📰 [20/20] TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)")
 
-        from app.services.eero_news_service import eero_news_service, parse_eero_version, is_newer_eero_version
+        from app.services.eero_news_service import (
+            eero_news_service,
+            parse_eero_version,
+            compare_eero_versions,
+            is_newer_eero_version,
+            compute_firmware_alignment,
+        )
 
-        # 1. Test Funzioni di Confronto Versioni eeroOS
+        # 1. Test Funzioni di Confronto Versioni eeroOS (SemVer & Build)
         runner.assert_true(parse_eero_version("v7.16.0-9483") == (7, 16, 0, 9483), "parse_eero_version analizza correttamente 'v7.16.0-9483'")
         runner.assert_true(parse_eero_version("v7.5.2-192") == (7, 5, 2, 192), "parse_eero_version analizza correttamente 'v7.5.2-192'")
         runner.assert_true(parse_eero_version("v6.16.5-4") == (6, 16, 5, 4), "parse_eero_version analizza correttamente 'v6.16.5-4'")
         runner.assert_true(parse_eero_version("v1.0.11") == (1, 0, 11, 0), "parse_eero_version analizza correttamente 'v1.0.11'")
+        runner.assert_true(parse_eero_version("v7.17.1-24") == (7, 17, 1, 24), "parse_eero_version analizza correttamente 'v7.17.1-24'")
         runner.assert_true(parse_eero_version(None) == (0, 0, 0, 0), "parse_eero_version gestisce None senza errori")
+        runner.assert_true(compare_eero_versions("v7.17.1-24", "v7.16.0-9483") == 1, "compare_eero_versions riconosce 7.17.1-24 > 7.16.0-9483")
+        runner.assert_true(compare_eero_versions("v7.16.0-9483", "v7.17.1-24") == -1, "compare_eero_versions riconosce 7.16.0-9483 < 7.17.1-24")
+        runner.assert_true(compare_eero_versions("v7.16.0-9483", "v7.16.0-9483") == 0, "compare_eero_versions riconosce versioni identiche")
         runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.5.2-192") is True, "is_newer_eero_version rileva correttamente nuova release 7.16 vs 7.5.2")
         runner.assert_true(is_newer_eero_version("v7.5.2-192", "v7.16.0-9483") is False, "is_newer_eero_version riconosce versione precedente")
         runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.16.0-9483") is False, "is_newer_eero_version ritorna False per versioni identiche")
+
+        # 1.1 Test Allineamento Rigoroso e Mutua Esclusione (compute_firmware_alignment)
+        # Caso A: Rete locale più recente della release censita (Early-rollout tipico eero: 7.17.1-24 vs 7.16.0-9483)
+        align_early = compute_firmware_alignment("v7.17.1-24", "v7.16.0-9483")
+        runner.assert_true(align_early["firmware_status"] == "newer_than_published", "compute_firmware_alignment assegna stato 'newer_than_published'")
+        runner.assert_true(align_early["is_up_to_date"] is True, "align_early imposta is_up_to_date=True")
+        runner.assert_true(align_early["update_available"] is False, "align_early garantisce update_available=False")
+        runner.assert_true(align_early["target_firmware"] is None, "align_early non ha target_firmware pendente")
+
+        # Caso B: Rete perfettamente allineata alla release ufficiale (7.16.0-9483 vs 7.16.0-9483)
+        align_same = compute_firmware_alignment("v7.16.0-9483", "v7.16.0-9483")
+        runner.assert_true(align_same["firmware_status"] == "up_to_date", "compute_firmware_alignment assegna stato 'up_to_date'")
+        runner.assert_true(align_same["is_up_to_date"] is True, "align_same imposta is_up_to_date=True")
+        runner.assert_true(align_same["update_available"] is False, "align_same imposta update_available=False")
+
+        # Caso C: Rete indietro rispetto alla release ufficiale (7.15.1-119 vs 7.16.0-9483)
+        align_behind = compute_firmware_alignment("v7.15.1-119", "v7.16.0-9483")
+        runner.assert_true(align_behind["firmware_status"] == "update_available", "compute_firmware_alignment assegna stato 'update_available'")
+        runner.assert_true(align_behind["is_up_to_date"] is False, "align_behind imposta is_up_to_date=False")
+        runner.assert_true(align_behind["update_available"] is True, "align_behind imposta update_available=True")
+        runner.assert_true(align_behind["target_firmware"] == "v7.16.0-9483", "align_behind target_firmware corrisponde alla release ufficiale")
+
+        # Caso D: API eero segnala target più recente (es. 7.17.0-1000 su flotta a 7.16)
+        align_pending = compute_firmware_alignment("v7.16.0-9483", "v7.16.0-9483", pending_api_target="v7.17.0-1000")
+        runner.assert_true(align_pending["firmware_status"] == "update_available", "Pending API target più recente attiva 'update_available'")
+        runner.assert_true(align_pending["target_firmware"] == "v7.17.0-1000", "target_firmware riflette l'aggiornamento pendente API")
+
+        # Caso E: API eero segnala target antecedente o uguale alla versione già installata (es. target 7.16 ma installata 7.17)
+        align_ignore_old_target = compute_firmware_alignment("v7.17.1-24", "v7.16.0-9483", pending_api_target="v7.16.0-9483")
+        runner.assert_true(align_ignore_old_target["firmware_status"] == "newer_than_published", "Target pendente più vecchio viene correttamente ignorato")
+        runner.assert_true(align_ignore_old_target["update_available"] is False, "update_available rimane False con target obsoleto")
 
         # 2. Test Parser HTML Zendesk (Mock Payload Realistico)
         sample_zendesk_html = """
@@ -2018,6 +2059,7 @@ async def run_all_tests():
         runner.assert_true("latest_firmware" in news_json, "Risposta include 'latest_firmware'")
         runner.assert_true("is_up_to_date" in news_json, "Risposta include flag 'is_up_to_date'")
         runner.assert_true("update_available" in news_json, "Risposta include flag 'update_available'")
+        runner.assert_true("firmware_status" in news_json, "Risposta include stringa 'firmware_status'")
         runner.assert_true("nodes" in news_json and isinstance(news_json["nodes"], list), "Risposta include array 'nodes'")
         runner.assert_true("releases" in news_json and len(news_json["releases"]) > 0, "Risposta include elenco note di rilascio")
         runner.assert_true("community_posts" in news_json, "Risposta include feed 'community_posts'")
@@ -2025,6 +2067,7 @@ async def run_all_tests():
         # In modalità Demo (flotta su v7.5.2 vs release v7.16+), deve rilevare update disponibile
         runner.assert_true(news_json.get("is_up_to_date") is False, "In ambiente Demo rileva correttamente is_up_to_date=False (v7.5.2 vs v7.16+)")
         runner.assert_true(news_json.get("update_available") is True, "In ambiente Demo rileva correttamente update_available=True")
+        runner.assert_true(news_json.get("firmware_status") == "update_available", "In ambiente Demo firmware_status è 'update_available'")
 
         # 6. Test Endpoint REST POST /api/system/eero-news/refresh
         res_refresh = await client.post("/api/system/eero-news/refresh")
@@ -2044,8 +2087,18 @@ async def run_all_tests():
         runner.assert_true("eero_news" in en_locale, "Sezione 'eero_news' presente in en.json")
         runner.assert_true("up_to_date_title" in it_locale["eero_news"], "up_to_date_title presente in it.json")
         runner.assert_true("up_to_date_title" in en_locale["eero_news"], "up_to_date_title presente in en.json")
+        runner.assert_true("newer_than_published_title" in it_locale["eero_news"], "newer_than_published_title presente in it.json")
+        runner.assert_true("newer_than_published_title" in en_locale["eero_news"], "newer_than_published_title presente in en.json")
+        runner.assert_true("newer_than_published_desc" in it_locale["eero_news"], "newer_than_published_desc presente in it.json")
+        runner.assert_true("newer_than_published_desc" in en_locale["eero_news"], "newer_than_published_desc presente in en.json")
         runner.assert_true("update_avail_title" in it_locale["eero_news"], "update_avail_title presente in it.json")
         runner.assert_true("update_avail_title" in en_locale["eero_news"], "update_avail_title presente in en.json")
+        runner.assert_true("show_older_releases" in it_locale["eero_news"], "show_older_releases presente in it.json")
+        runner.assert_true("show_older_releases" in en_locale["eero_news"], "show_older_releases presente in en.json")
+        runner.assert_true("show_recent_only" in it_locale["eero_news"], "show_recent_only presente in it.json")
+        runner.assert_true("show_recent_only" in en_locale["eero_news"], "show_recent_only presente in en.json")
+        runner.assert_true("installed_on_network" in it_locale["eero_news"], "installed_on_network presente in it.json")
+        runner.assert_true("installed_on_network" in en_locale["eero_news"], "installed_on_network presente in en.json")
         runner.assert_true("community_title" in it_locale["eero_news"], "community_title presente in it.json")
         runner.assert_true("community_title" in en_locale["eero_news"], "community_title presente in en.json")
 

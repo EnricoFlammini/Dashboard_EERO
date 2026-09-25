@@ -22,15 +22,15 @@ CACHE_TTL_SECONDS = 6 * 3600  # 6 ore di cache
 
 
 def parse_eero_version(ver_str: Optional[str]) -> Tuple[int, int, int, int]:
-    """Converte una stringa di versione eeroOS (es. 'v7.16.0-9483' o '7.5.2-192') in una tupla confrontabile.
+    """Converte una stringa di versione eeroOS (es. 'v7.16.0-9483', 'v7.17.1-24' o '7.5.2-192') in una tupla confrontabile.
 
     Ritorna: (major, minor, patch, build)
     """
     if not ver_str:
         return (0, 0, 0, 0)
     clean = ver_str.strip().lstrip("vV")
-    # Formato tipico: X.Y.Z-BUILD o X.Y.Z
-    match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?(?:-(\d+))?", clean)
+    # Formato tipico: X.Y.Z-BUILD o X.Y.Z o X.Y-BUILD (supporta separatori standard '-' o '.')
+    match = re.match(r"^(\d+)\.(\d+)(?:\.(\d+))?(?:[-.bB]+(\d+))?", clean)
     if not match:
         return (0, 0, 0, 0)
     major = int(match.group(1) or 0)
@@ -40,9 +40,83 @@ def parse_eero_version(ver_str: Optional[str]) -> Tuple[int, int, int, int]:
     return (major, minor, patch, build)
 
 
+def compare_eero_versions(v1: Optional[str], v2: Optional[str]) -> int:
+    """Confronta numericamente due versioni eeroOS (major, minor, patch, build).
+
+    Ritorna:
+      1 se v1 > v2
+      0 se v1 == v2
+     -1 se v1 < v2
+    """
+    t1 = parse_eero_version(v1)
+    t2 = parse_eero_version(v2)
+    if t1 > t2:
+        return 1
+    elif t1 < t2:
+        return -1
+    return 0
+
+
 def is_newer_eero_version(target_ver: str, base_ver: str) -> bool:
     """Verifica se target_ver è strettamente più recente di base_ver."""
-    return parse_eero_version(target_ver) > parse_eero_version(base_ver)
+    return compare_eero_versions(target_ver, base_ver) > 0
+
+
+def compute_firmware_alignment(
+    current_firmware: str,
+    latest_official_firmware: str,
+    pending_api_target: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Calcola in modo rigoroso e mutualmente esclusivo lo stato del firmware della flotta.
+
+    Stati possibili (firmware_status):
+      - 'up_to_date': la flotta esegue esattamente l'ultima versione ufficiale censita
+      - 'newer_than_published': la versione installata è più recente di quella pubblicata
+                                sull'articolo di supporto Zendesk (tipico early-rollout eero)
+      - 'update_available': è disponibile un aggiornamento firmware target pendente o
+                            la flotta è indietro rispetto all'ultima versione ufficiale censita
+    """
+    curr_tuple = parse_eero_version(current_firmware)
+    latest_tuple = parse_eero_version(latest_official_firmware)
+
+    # 1. Verifica se le API eero segnalano un target_firmware pendente valido e strettamente più recente
+    valid_pending_target = None
+    if pending_api_target and is_newer_eero_version(pending_api_target, current_firmware):
+        valid_pending_target = pending_api_target
+
+    # 2. Decisione dello stato mutualmente esclusivo:
+    if valid_pending_target:
+        return {
+            "is_up_to_date": False,
+            "update_available": True,
+            "firmware_status": "update_available",
+            "target_firmware": valid_pending_target,
+        }
+
+    if is_newer_eero_version(latest_official_firmware, current_firmware):
+        return {
+            "is_up_to_date": False,
+            "update_available": True,
+            "firmware_status": "update_available",
+            "target_firmware": latest_official_firmware,
+        }
+
+    # Se arriviamo qui, current_firmware >= latest_official_firmware
+    # Non ci sono aggiornamenti disponibili: la flotta è aggiornata.
+    if curr_tuple > latest_tuple and latest_tuple > (0, 0, 0, 0):
+        return {
+            "is_up_to_date": True,
+            "update_available": False,
+            "firmware_status": "newer_than_published",
+            "target_firmware": None,
+        }
+    else:
+        return {
+            "is_up_to_date": True,
+            "update_available": False,
+            "firmware_status": "up_to_date",
+            "target_firmware": None,
+        }
 
 
 class EeroNewsService:
@@ -309,13 +383,6 @@ class EeroNewsService:
         latest_release = releases[0] if releases else None
         latest_firmware = latest_release.get("version") if latest_release else current_firmware
 
-        # Confronto versioni
-        curr_tuple = parse_eero_version(current_firmware)
-        latest_tuple = parse_eero_version(latest_firmware)
-
-        # Allineamento: se la versione locale è >= all'ultima nota ufficiale
-        is_up_to_date = curr_tuple >= latest_tuple if latest_tuple > (0, 0, 0, 0) else True
-
         # Verifica target update pendente dalle API eero
         pending_target_firmware = None
         try:
@@ -326,7 +393,12 @@ class EeroNewsService:
         except Exception:
             pass
 
-        update_available = (not is_up_to_date) or bool(pending_target_firmware)
+        # Calcolo allineamento rigoroso e mutualmente esclusivo
+        alignment = compute_firmware_alignment(
+            current_firmware=current_firmware,
+            latest_official_firmware=latest_firmware,
+            pending_api_target=pending_target_firmware,
+        )
 
         # 3. Community posts
         community_posts = await self.fetch_community_feedback()
@@ -339,11 +411,12 @@ class EeroNewsService:
 
         return {
             "status": "success",
+            "firmware_status": alignment["firmware_status"],  # "up_to_date" | "update_available" | "newer_than_published"
             "current_firmware": current_firmware,
             "latest_firmware": latest_firmware,
-            "is_up_to_date": is_up_to_date,
-            "update_available": update_available,
-            "target_firmware": pending_target_firmware or (latest_firmware if update_available else None),
+            "is_up_to_date": alignment["is_up_to_date"],
+            "update_available": alignment["update_available"],
+            "target_firmware": alignment["target_firmware"],
             "nodes": nodes_summary,
             "releases": releases,
             "total_releases": len(releases),

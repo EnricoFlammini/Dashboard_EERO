@@ -568,6 +568,8 @@
     "subtitle": "Official eeroOS firmware changelog, mesh fleet alignment status and community feedback",
     "up_to_date_title": "Your network is up to date",
     "up_to_date_desc": "All mesh nodes are running the latest official firmware release provided by eero ({version}).",
+    "newer_than_published_title": "Network up to date (early-rollout)",
+    "newer_than_published_desc": "Your network is running version {current}, which is newer than the latest documented release ({version}). This is expected: eero deploys firmware updates to devices before updating the support article.",
     "update_avail_title": "New update available: {version}",
     "update_avail_desc": "Your mesh is currently running version {current}. Please note that eero rolls out updates gradually in waves (rolling release) over several weeks after public release.",
     "installed_version": "Installed Version",
@@ -595,6 +597,9 @@
     "community_open": "Open Thread",
     "community_comments": "comments",
     "no_results": "No releases match the selected search criteria.",
+    "show_older_releases": "Show older versions ({count} releases)",
+    "show_recent_only": "Show recent releases only",
+    "installed_on_network": "Installed on your network",
     "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead."
   }
 }

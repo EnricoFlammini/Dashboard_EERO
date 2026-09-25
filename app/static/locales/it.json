@@ -568,6 +568,8 @@
     "subtitle": "Changelog ufficiale del firmware eeroOS, stato di allineamento della rete e aggiornamenti della community",
     "up_to_date_title": "La tua rete è aggiornata",
     "up_to_date_desc": "Tutti i nodi mesh eseguono l'ultima versione ufficiale rilasciata da eero ({version}).",
+    "newer_than_published_title": "Rete aggiornata (early-rollout)",
+    "newer_than_published_desc": "La tua rete esegue la versione {current}, più recente dell'ultima release documentata ({version}). Questo è normale: eero rilascia gli aggiornamenti sul campo prima di aggiornare l'articolo di supporto.",
     "update_avail_title": "Nuovo aggiornamento disponibile: {version}",
     "update_avail_desc": "La tua rete esegue la versione {current}. Ricorda che i rollout di eero avvengono gradualmente a scaglioni (rolling release) nel corso di alcune settimane dalla pubblicazione ufficiale.",
     "installed_version": "Versione Installata",
@@ -595,6 +597,9 @@
     "community_open": "Apri Discussione",
     "community_comments": "commenti",
     "no_results": "Nessuna release trovata per i criteri di ricerca selezionati.",
+    "show_older_releases": "Mostra versioni precedenti ({count} release)",
+    "show_recent_only": "Mostra solo le ultime novità",
+    "installed_on_network": "Installata sulla tua rete",
     "source_disclaimer": "Fonte ufficiale: eero Customer Support (Zendesk Help Center API). I dati sono sincronizzati periodicamente in background con impatto nullo sulle prestazioni."
   }
 }
