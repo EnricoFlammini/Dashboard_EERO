@@ -1145,7 +1145,17 @@
 
                   <!-- Connected eero -->
                   <td class="py-3 px-4 text-slate-900 dark:text-slate-200">
-                    <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                    <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                      <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                      <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
+                        <span 
+                          class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 flex items-center space-x-0.5 cursor-help"
+                          :title="currentLanguage === 'it' ? dev.roaming_advisor.advice_it : dev.roaming_advisor.advice_en">
+                          <span>🔄</span>
+                          <span x-text="t('devices.sticky_roaming_badge') || 'Roaming Sub-Ottimale'"></span>
+                        </span>
+                      </template>
+                    </div>
                   </td>
 
                   <!-- Band / Channel -->
@@ -4068,6 +4078,118 @@
             </button>
           </div>
         </div>
+
+        <!-- AI Network Diagnostics & Natural Language Summary (v1.6.0 Modulo 1) -->
+        <template x-if="healthDetails && (healthDetails.ai_summary || (healthDetails.roaming_advisor && healthDetails.roaming_advisor.sticky_count > 0) || (healthDetails.iot_anomalies && healthDetails.iot_anomalies.length > 0))">
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-purple-500/10 border border-sky-500/25 dark:border-sky-500/30 space-y-3.5 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-400/40 flex items-center space-x-1">
+                  <span>🤖</span>
+                  <span x-text="t('health_modal.ai_diagnostics_badge') || 'Diagnostica Intelligente AI'"></span>
+                </span>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white" x-text="t('health_modal.ai_analysis_title') || 'Analisi Descrittiva Dinamica'"></h4>
+              </div>
+            </div>
+
+            <!-- Discursive Narrative -->
+            <div class="space-y-2 text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+              <p class="font-medium" x-text="currentLanguage === 'it' ? healthDetails?.ai_summary?.overview_it : healthDetails?.ai_summary?.overview_en"></p>
+              <template x-if="healthDetails?.ai_summary && (healthDetails.ai_summary.narrative_it || healthDetails.ai_summary.narrative_en)">
+                <div class="p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-[11px] space-y-1">
+                  <div x-html="(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en) ? (currentLanguage === 'it' ? healthDetails.ai_summary.narrative_it : healthDetails.ai_summary.narrative_en).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') : ''"></div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Roaming Advisor Highlight Card (Issue #43) -->
+            <template x-if="healthDetails?.roaming_advisor && healthDetails.roaming_advisor.sticky_count > 0">
+              <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 text-amber-900 dark:text-amber-200">
+                <div class="flex items-center justify-between text-xs font-bold">
+                  <div class="flex items-center space-x-1.5">
+                    <span>🔄</span>
+                    <span x-text="t('health_modal.roaming_advisor_title') || 'Roaming Advisor (Sticky Clients)'"></span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold font-mono" x-text="healthDetails.roaming_advisor.sticky_count + ' ' + (currentLanguage === 'it' ? 'dispositivi' : 'devices')"></span>
+                </div>
+                <div class="space-y-1.5">
+                  <template x-for="stk in (healthDetails.roaming_advisor.devices || [])" :key="stk.mac">
+                    <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-500/20 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <div>
+                        <span class="font-bold text-slate-900 dark:text-white" x-text="stk.name"></span>
+                        <span class="text-slate-500 dark:text-slate-400"> (</span><span class="font-mono text-rose-600 dark:text-rose-400 font-bold" x-text="stk.current_rssi + ' dBm'"></span><span class="text-slate-500 dark:text-slate-400"> su </span><span class="font-medium text-slate-700 dark:text-slate-300" x-text="stk.connected_eero_name"></span><span class="text-slate-500 dark:text-slate-400">)</span>
+                      </div>
+                      <div class="flex items-center space-x-1 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold">
+                        <span>Consigliato:</span>
+                        <span class="font-bold text-slate-900 dark:text-white" x-text="stk.suggested_eero_name"></span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold" x-text="'(+~' + stk.estimated_delta_dbm + ' dBm)'"></span>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+                <p class="text-[10px] opacity-80 italic" x-text="t('health_modal.force_roaming_tip') || 'Disattivare e riattivare il Wi-Fi sul dispositivo per forzare il riaggancio 802.11k/v al nodo ottimale.'"></p>
+              </div>
+            </template>
+
+            <!-- Night IoT Anomalies Alert Card -->
+            <template x-if="healthDetails?.iot_anomalies && healthDetails.iot_anomalies.length > 0">
+              <div class="p-3 rounded-xl bg-purple-500/10 border border-purple-500/25 space-y-2 text-purple-900 dark:text-purple-200">
+                <div class="flex items-center justify-between text-xs font-bold">
+                  <div class="flex items-center space-x-1.5">
+                    <span>🌙</span>
+                    <span x-text="t('health_modal.iot_anomalies_title') || 'Anomalie Traffico Notturno IoT (01:00 - 06:00)'"></span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold font-mono" x-text="healthDetails.iot_anomalies.length + ' ' + (currentLanguage === 'it' ? 'anomalie' : 'anomalies')"></span>
+                </div>
+                <div class="space-y-1.5">
+                  <template x-for="anom in healthDetails.iot_anomalies" :key="anom.mac_address + anom.timestamp">
+                    <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-purple-500/20 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <div>
+                        <span class="font-bold text-slate-900 dark:text-white" x-text="anom.hostname"></span>:
+                        <span class="text-slate-600 dark:text-slate-300" x-text="currentLanguage === 'it' ? anom.description_it : anom.description_en"></span>
+                      </div>
+                      <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] uppercase self-start sm:self-auto shrink-0"
+                            :class="anom.severity === 'critical' ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'"
+                            x-text="anom.severity"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Actionable Remediation Checklist -->
+            <template x-if="healthDetails?.action_checklist && healthDetails.action_checklist.length > 0">
+              <div class="space-y-2 pt-1 border-t border-sky-500/15 dark:border-sky-500/20">
+                <div class="flex items-center justify-between">
+                  <h5 class="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                    <span>📋</span>
+                    <span x-text="t('health_modal.action_checklist_title') || 'Piano di Risoluzione Guidato (Actionable Checklist)'"></span>
+                  </h5>
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                  <template x-for="item in healthDetails.action_checklist" :key="item.id">
+                    <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex items-start space-x-2.5 text-[11px]">
+                      <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] uppercase shrink-0 mt-0.5"
+                            :class="{
+                              'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-400/30': item.priority === 'critical',
+                              'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400/30': item.priority === 'high',
+                              'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-400/30': item.priority === 'medium',
+                              'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-400/30': item.priority === 'low'
+                            }"
+                            x-text="item.priority === 'critical' ? (t('health_modal.priority_critical') || 'Critica') : (item.priority === 'high' ? (t('health_modal.priority_high') || 'Alta') : (item.priority === 'medium' ? (t('health_modal.priority_medium') || 'Media') : (t('health_modal.priority_low') || 'Bassa')))">
+                      </span>
+                      <div class="space-y-0.5">
+                        <div class="font-bold text-slate-900 dark:text-white" x-text="currentLanguage === 'it' ? item.title_it : item.title_en"></div>
+                        <div class="text-slate-600 dark:text-slate-400 text-[10.5px]" x-text="currentLanguage === 'it' ? item.description_it : item.description_en"></div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+          </div>
+        </template>
 
         <!-- Section 1: Active Penalties / Impact Factors (Issue #15 Core) -->
         <div class="space-y-2.5">

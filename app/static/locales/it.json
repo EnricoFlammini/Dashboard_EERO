@@ -138,7 +138,8 @@
     "cat_entertainment": "TV & Streaming",
     "cat_gaming": "Console Gaming",
     "cat_server": "Server & NAS",
-    "cat_other": "Altro"
+    "cat_other": "Altro",
+    "sticky_roaming_badge": "Roaming Sub-Ottimale"
   },
   "device_modal": {
     "title": "Dettaglio Dispositivo",
@@ -504,7 +505,18 @@
     "refresh_diagnostics": "Aggiorna Diagnostica",
     "close": "Chiudi",
     "view_health_report": "Diagnostica Salute Rete",
-    "health_tooltip": "Clicca per visualizzare la diagnostica dettagliata e i fattori di stabilità"
+    "health_tooltip": "Clicca per visualizzare la diagnostica dettagliata e i fattori di stabilità",
+    "ai_diagnostics_badge": "Diagnostica Intelligente AI",
+    "ai_analysis_title": "Analisi Descrittiva Dinamica",
+    "action_checklist_title": "Piano di Risoluzione Guidato (Actionable Checklist)",
+    "roaming_advisor_title": "Roaming Advisor (Sticky Clients)",
+    "roaming_advisor_subtitle": "Dispositivi mobili agganciati a nodi distanti con segnale sub-ottimale",
+    "iot_anomalies_title": "Anomalie Traffico Notturno IoT (01:00 - 06:00)",
+    "iot_anomalies_subtitle": "Picchi anomali di download/upload rilevati su apparati domotici e telecamere",
+    "priority_critical": "Critica",
+    "priority_high": "Alta",
+    "priority_medium": "Media",
+    "priority_low": "Bassa"
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",

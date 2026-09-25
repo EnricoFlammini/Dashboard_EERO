@@ -158,6 +158,26 @@ class DBService:
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_eero_releases_date ON eero_release_notes(release_date);")
 
+            # 11. IoT Night Traffic Anomalies (v1.6.0 Module 1)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS iot_traffic_anomalies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    mac_address TEXT NOT NULL,
+                    hostname TEXT,
+                    device_category TEXT,
+                    anomaly_type TEXT NOT NULL,
+                    megabytes_transferred REAL NOT NULL,
+                    baseline_megabytes REAL DEFAULT 0,
+                    severity TEXT NOT NULL,
+                    description_it TEXT,
+                    description_en TEXT,
+                    is_demo INTEGER DEFAULT 0
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_time ON iot_traffic_anomalies(timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_mac ON iot_traffic_anomalies(mac_address);")
+
             # Purge all mock demo devices from live signal history table
             await db.execute("""
                 DELETE FROM device_signal_history 
@@ -1313,6 +1333,85 @@ class DBService:
         async with self.get_connection() as db:
             await db.execute("DELETE FROM eero_release_notes;")
             await db.commit()
+
+    # ----------------- IOT NIGHT ANOMALIES & HISTORIC NODE LOOKUP (v1.6.0) -----------------
+    async def save_iot_anomalies(self, anomalies: List[Dict[str, Any]]) -> int:
+        """Salva o aggiorna eventi di anomalia sul traffico notturno IoT."""
+        if not anomalies:
+            return 0
+        inserted = 0
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        async with self.get_connection() as db:
+            for a in anomalies:
+                mac = str(a.get("mac_address") or a.get("mac") or "").lower().strip()
+                if not mac:
+                    continue
+                hostname = a.get("hostname") or mac
+                category = a.get("device_category") or "iot"
+                anom_type = a.get("anomaly_type") or "excessive_upload"
+                mb_transferred = float(a.get("megabytes_transferred") or 0.0)
+                baseline_mb = float(a.get("baseline_megabytes") or 0.0)
+                severity = a.get("severity") or "warning"
+                desc_it = a.get("description_it") or ""
+                desc_en = a.get("description_en") or ""
+                is_demo = 1 if a.get("is_demo") else 0
+                ts = a.get("timestamp") or now
+
+                await db.execute("""
+                    INSERT INTO iot_traffic_anomalies (
+                        timestamp, mac_address, hostname, device_category, anomaly_type,
+                        megabytes_transferred, baseline_megabytes, severity,
+                        description_it, description_en, is_demo
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (ts, mac, hostname, category, anom_type, mb_transferred, baseline_mb, severity, desc_it, desc_en, is_demo))
+                inserted += 1
+            await db.commit()
+        return inserted
+
+    async def get_iot_anomalies(self, limit: int = 50, days: int = 7) -> List[Dict[str, Any]]:
+        """Recupera l'elenco delle anomalie di traffico registrate."""
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff_z = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        async with self.get_connection() as db:
+            cursor = await db.execute("""
+                SELECT id, timestamp, mac_address, hostname, device_category, anomaly_type,
+                       megabytes_transferred, baseline_megabytes, severity,
+                       description_it, description_en, is_demo
+                FROM iot_traffic_anomalies
+                WHERE timestamp >= ? OR timestamp >= ?
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (cutoff, cutoff_z, limit))
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
+
+    async def clear_iot_anomalies(self):
+        """Svuota la tabella delle anomalie IoT (utilizzato nei test)."""
+        async with self.get_connection() as db:
+            await db.execute("DELETE FROM iot_traffic_anomalies;")
+            await db.commit()
+
+    async def get_device_historic_node_affinity(self, mac_address: str) -> Optional[Dict[str, Any]]:
+        """Restituisce il nodo mesh eero a cui il dispositivo ha registrato storicamente il segnale migliore."""
+        mac = str(mac_address).lower().strip()
+        async with self.get_connection() as db:
+            cursor = await db.execute("""
+                SELECT connected_eero_name, AVG(signal_rssi) as avg_rssi, COUNT(*) as sample_count
+                FROM device_signal_history
+                WHERE LOWER(mac_address) = ? AND connected_eero_name IS NOT NULL AND connected_eero_name != ''
+                GROUP BY connected_eero_name
+                HAVING sample_count >= 2
+                ORDER BY avg_rssi DESC
+                LIMIT 1
+            """, (mac,))
+            row = await cursor.fetchone()
+            if row:
+                return {
+                    "best_node": row["connected_eero_name"],
+                    "avg_rssi": round(row["avg_rssi"], 1),
+                    "samples": row["sample_count"]
+                }
+        return None
 
 
 # Istanza singleton DB

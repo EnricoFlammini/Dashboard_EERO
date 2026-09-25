@@ -50,6 +50,7 @@ class BackgroundPoller:
         self.cached_profiles: List[Dict[str, Any]] = []
         self.cached_health_score: int = 100
         self.cached_health_details: Dict[str, Any] = {}
+        self.cached_iot_anomalies: List[Dict[str, Any]] = []
         
         # Tracking states for alert detection
         self._known_macs: Set[str] = set()
@@ -90,6 +91,7 @@ class BackgroundPoller:
         self.cached_profiles = []
         self.cached_health_score = 100
         self.cached_health_details = {}
+        self.cached_iot_anomalies = []
         self._prev_device_metrics = {}
         logger.info("Poller RAM cache invalidated.")
 
@@ -102,6 +104,7 @@ class BackgroundPoller:
             "profiles": self.cached_profiles,
             "health_score": self.cached_health_score,
             "health_details": self.cached_health_details,
+            "iot_anomalies": self.cached_iot_anomalies,
             "last_poll_time": self._last_poll_time.isoformat() if self._last_poll_time else None,
             "is_authenticated": eero_client.is_authenticated,
             "demo_mode": settings.demo_mode or (eero_client.user_token and eero_client.user_token.startswith("demo_")),
@@ -458,6 +461,24 @@ class BackgroundPoller:
                 "en": "All eero mesh stability parameters are optimal. No corrective action needed."
             })
 
+        # Diagnostica Intelligente AI & Roaming Advisor (v1.6.0 Modulo 1)
+        from app.services.diagnostics_service import diagnostics_service
+
+        roaming_info = diagnostics_service.analyze_roaming_advisor(enriched_devices, eeros)
+        recent_anomalies = getattr(self, "cached_iot_anomalies", [])
+        ai_summary = diagnostics_service.generate_health_summary(
+            health_details={
+                "score": final_score,
+                "status": overall_status,
+                "penalties": penalties,
+            },
+            network_details=network_details,
+            eeros=eeros,
+            devices=enriched_devices,
+            roaming_info=roaming_info,
+            recent_anomalies=recent_anomalies,
+        )
+
         return {
             "score": final_score,
             "status": overall_status,
@@ -517,6 +538,10 @@ class BackgroundPoller:
             },
             "recommendations": recommendations,
             "recommendations_i18n": recommendations_i18n,
+            "ai_summary": ai_summary,
+            "roaming_advisor": roaming_info,
+            "iot_anomalies": recent_anomalies,
+            "action_checklist": ai_summary.get("checklist", []),
             "metrics": {
                 "total_nodes": len(eeros),
                 "online_nodes": len(eeros) - len(offline_nodes),
@@ -524,7 +549,9 @@ class BackgroundPoller:
                 "connected_clients": len(connected_clients),
                 "wireless_clients": len(wireless_connected),
                 "weak_signal_clients": total_degraded,
-                "ping_ms": float(network_details.get("speedtest", {}).get("ping_ms") or 0.0)
+                "ping_ms": float(network_details.get("speedtest", {}).get("ping_ms") or 0.0),
+                "sticky_roaming_clients": roaming_info.get("sticky_count", 0),
+                "iot_anomalies_count": len(recent_anomalies),
             }
         }
 
@@ -870,6 +897,16 @@ class BackgroundPoller:
                     if prev_status == "online" and status == "offline":
                         asyncio.create_task(notification_service.notify_node_offline(node))
                 self._known_eeros_status[node_id] = status
+
+            # 3.7 Rilevamento / Aggiornamento Anomalie Traffico Notturno IoT (v1.6.0 Modulo 1)
+            try:
+                from app.services.diagnostics_service import diagnostics_service
+                if getattr(eero_client, "is_demo_mode", False) or settings.demo_mode:
+                    self.cached_iot_anomalies = diagnostics_service.detect_iot_night_anomalies(enriched_devices, [], is_demo=True)
+                else:
+                    self.cached_iot_anomalies = await db_service.get_iot_anomalies(limit=20)
+            except Exception as anom_err:
+                logger.debug(f"IoT anomalies loading error: {anom_err}")
 
             # 4. Calcolo Network Health Score & Breakdown Dettagliato (Issue #15)
             health_details = self.calculate_health_details(network_details, eeros, enriched_devices)

@@ -1922,7 +1922,7 @@ async def run_all_tests():
         # =====================================================================
         # 20. TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)
         # =====================================================================
-        print("\n📰 [20/20] TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)")
+        print("\n📰 [20/21] TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)")
 
         from app.services.eero_news_service import (
             eero_news_service,
@@ -2101,6 +2101,174 @@ async def run_all_tests():
         runner.assert_true("installed_on_network" in en_locale["eero_news"], "installed_on_network presente in en.json")
         runner.assert_true("community_title" in it_locale["eero_news"], "community_title presente in it.json")
         runner.assert_true("community_title" in en_locale["eero_news"], "community_title presente in en.json")
+
+        # =====================================================================
+        # 21. TEST AI NETWORK DIAGNOSTICS, ROAMING ADVISOR & IOT ANOMALY DETECTION (v1.6.0)
+        # =====================================================================
+        print("\n🤖 [21/21] TEST AI NETWORK DIAGNOSTICS, ROAMING ADVISOR & IOT ANOMALY DETECTION (v1.6.0)")
+
+        from app.services.diagnostics_service import (
+            diagnostics_service,
+            is_mobile_client,
+            is_iot_client,
+        )
+
+        # 1. Test Euristica di Classificazione Client (is_mobile_client vs is_iot_client)
+        runner.assert_true(is_mobile_client("iPhone 15 Pro", "iPhone"), "is_mobile_client riconosce iPhone come dispositivo mobile")
+        runner.assert_true(is_mobile_client("Samsung Galaxy Tab S9", "Galaxy-Tab"), "is_mobile_client riconosce Galaxy Tab come mobile")
+        runner.assert_true(is_mobile_client("MacBook Pro M3", "MacBook-Pro"), "is_mobile_client riconosce MacBook come mobile/laptop")
+        runner.assert_true(is_mobile_client("iPad Air", "iPad"), "is_mobile_client riconosce iPad come mobile")
+        runner.assert_true(is_mobile_client("LG OLED 4K TV", "LGwebOSTV") is False, "is_mobile_client esclude Smart TV fisse")
+        runner.assert_true(is_mobile_client("Shelly 1PM Relay", "shelly-switch") is False, "is_mobile_client esclude relè IoT")
+        runner.assert_true(is_mobile_client("Sonoff Cam Outdoor", "sonoff-cam") is False, "is_mobile_client esclude telecamere IoT")
+
+        runner.assert_true(is_iot_client("Shelly Plus 1PM", "shelly1pm-living"), "is_iot_client riconosce Shelly come apparato IoT")
+        runner.assert_true(is_iot_client("Philips Hue Bridge", "hue-bridge"), "is_iot_client riconosce Hue Bridge come IoT")
+        runner.assert_true(is_iot_client("Sonoff Micro", "sonoff-micro"), "is_iot_client riconosce Sonoff come IoT")
+        runner.assert_true(is_iot_client("Aqara Hub M2", "aqara-hub"), "is_iot_client riconosce Aqara Hub come IoT")
+        runner.assert_true(is_iot_client("Tasmota Plug", "tasmota-plug-1"), "is_iot_client riconosce Tasmota come IoT")
+        runner.assert_true(is_iot_client("MacBook Pro", "MacBook-Pro") is False, "is_iot_client esclude personal computer")
+        runner.assert_true(is_iot_client("iPhone 15", "iPhone") is False, "is_iot_client esclude smartphone")
+
+        # 2. Test Roaming Advisor Euristico (Sticky Clients Detection)
+        mock_eeros = [
+            {"id": "eero_gw", "name": "eero Gateway", "is_gateway": True, "status": "connected"},
+            {"id": "eero_studio", "name": "eero Studio", "is_gateway": False, "status": "connected"},
+        ]
+        mock_devices = [
+            # Client mobile agganciato a GW con segnale degradato (-80 dBm) -> Deve essere sticky client
+            {
+                "id": "dev_mobile_sticky",
+                "custom_name": "Galaxy Tab S9",
+                "hostname": "Galaxy-Tab-S9",
+                "mac": "3C:22:FB:99:88:77",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -80,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            },
+            # Client mobile con ottimo segnale (-55 dBm) -> NON deve essere sticky
+            {
+                "id": "dev_mobile_good",
+                "custom_name": "iPhone 15 Pro",
+                "hostname": "iPhone-15",
+                "mac": "4D:33:AA:11:22:33",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -55,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            },
+            # Dispositivo fisso con segnale degradato (-85 dBm) -> NON deve comparire come roaming advisor
+            {
+                "id": "dev_tv_weak",
+                "custom_name": "LG OLED TV",
+                "hostname": "LGwebOSTV",
+                "mac": "AA:BB:CC:DD:EE:FF",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -85,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            }
+        ]
+
+        roaming_report = diagnostics_service.analyze_roaming_advisor(mock_devices, mock_eeros)
+        runner.assert_true(roaming_report["sticky_count"] == 1, f"Roaming Advisor rileva esattamente 1 sticky client (rilevati: {roaming_report['sticky_count']})")
+        sticky_dev = roaming_report["devices"][0]
+        runner.assert_true(sticky_dev["mac"].lower() == "3c:22:fb:99:88:77", "MAC del dispositivo sticky corrisponde a Galaxy Tab S9")
+        runner.assert_true(sticky_dev["connected_eero_name"] == "eero Gateway", "Nodo attuale rilevato correttamente come Gateway")
+        runner.assert_true(sticky_dev["suggested_eero_name"] == "eero Studio", "Nodo consigliato per roaming è 'eero Studio'")
+        runner.assert_true(sticky_dev["estimated_delta_dbm"] > 0, "Guadagno stimato del segnale positivo (>0 dB)")
+        runner.assert_true(bool(sticky_dev["advice_it"]) and bool(sticky_dev["advice_en"]), "Suggerimenti d'azione bilingue presenti")
+
+        # 3. Test NLG Health Summary & Actionable Checklist
+        mock_penalties = [
+            {"id": "degraded_backhaul", "factor": "Ethernet Capped to 100M", "points": 15, "description": "Il nodo eero Studio negozia a soli 100 Mbps", "affected_items": ["eero Studio (100 Mbps)"]},
+            {"id": "offline_nodes", "factor": "Offline Nodes", "points": 25, "description": "1 nodo eero risulta offline", "affected_items": ["eero Studio"]}
+        ]
+        health_summary = diagnostics_service.generate_health_summary(
+            health_details={"score": 60, "status": "attention", "penalties": mock_penalties},
+            network_details={"status": "online"},
+            eeros=mock_eeros,
+            devices=mock_devices,
+            roaming_info=roaming_report,
+            recent_anomalies=[]
+        )
+        runner.assert_true(bool(health_summary["overview_it"]) and bool(health_summary["overview_en"]), "Health summary produce panoramica bilingue")
+        runner.assert_true(bool(health_summary["narrative_it"]) and bool(health_summary["narrative_en"]), "Health summary produce narrativa bilingue dettagliata")
+        runner.assert_true("100 Mbps" in health_summary["narrative_it"], "Narrativa IT menziona la limitazione 100 Mbps del cavo")
+        runner.assert_true("100 Mbps" in health_summary["narrative_en"], "Narrativa EN menziona la limitazione 100 Mbps del cavo")
+        runner.assert_true(len(health_summary["checklist"]) >= 2, f"Checklist contiene azioni correttive (trovate: {len(health_summary['checklist'])})")
+
+        first_priority = health_summary["checklist"][0]["priority"]
+        runner.assert_true(first_priority in ("critical", "high"), f"Prima azione in checklist ha priorità elevata ({first_priority})")
+
+        # 4. Test Rilevamento Anomalie Notturne IoT e Persistenza SQLite
+        await db_service.clear_iot_anomalies()
+        init_anomalies = await db_service.get_iot_anomalies()
+        runner.assert_true(len(init_anomalies) == 0, "clear_iot_anomalies svuota la tabella SQLite")
+
+        detected_demo_anomalies = diagnostics_service.detect_iot_night_anomalies(mock_devices, demo_mode=True)
+        runner.assert_true(len(detected_demo_anomalies) > 0, "detect_iot_night_anomalies produce anomalie sintetiche realistiche in demo mode")
+        sample_anom = detected_demo_anomalies[0]
+        runner.assert_true("mac_address" in sample_anom and "device_name" in sample_anom, "Anomalia include MAC e Device Name")
+        runner.assert_true("observed_mb" in sample_anom and "baseline_mb" in sample_anom, "Anomalia include metriche di traffico")
+
+        saved_anom_count = await db_service.save_iot_anomalies(detected_demo_anomalies)
+        runner.assert_true(saved_anom_count == len(detected_demo_anomalies), "save_iot_anomalies persiste correttamente tutte le anomalie")
+
+        retrieved_anomalies = await db_service.get_iot_anomalies(limit=10)
+        runner.assert_true(len(retrieved_anomalies) == len(detected_demo_anomalies), "get_iot_anomalies recupera le anomalie salvate")
+
+        # 5. Test Endpoint REST GET /api/diagnostics/iot-anomalies
+        res_iot_api = await client.get("/api/diagnostics/iot-anomalies")
+        runner.assert_true(res_iot_api.status_code == 200, "GET /api/diagnostics/iot-anomalies risponde HTTP 200")
+        iot_api_json = res_iot_api.json()
+        runner.assert_true(iot_api_json.get("status") == "success", "Risposta /api/diagnostics/iot-anomalies ha status success")
+        runner.assert_true("anomalies" in iot_api_json and isinstance(iot_api_json["anomalies"], list), "Risposta include array 'anomalies'")
+
+        # 6. Test Integrazione Completa in /api/network/health-breakdown
+        await client.post("/api/auth/mode", json={"demo": True})
+        await background_poller._poll_and_cache()
+        res_health = await client.get("/api/network/health-breakdown")
+        runner.assert_true(res_health.status_code == 200, "GET /api/network/health-breakdown risponde HTTP 200")
+        health_json = res_health.json()
+        h_details = health_json.get("data", {}).get("health_details", {})
+        runner.assert_true("ai_summary" in h_details, "Payload health breakdown include 'ai_summary'")
+        runner.assert_true("overview_it" in h_details["ai_summary"], "ai_summary include 'overview_it'")
+        runner.assert_true("overview_en" in h_details["ai_summary"], "ai_summary include 'overview_en'")
+        runner.assert_true("narrative_it" in h_details["ai_summary"], "ai_summary include 'narrative_it'")
+        runner.assert_true("narrative_en" in h_details["ai_summary"], "ai_summary include 'narrative_en'")
+        runner.assert_true("roaming_advisor" in h_details, "Payload health breakdown include 'roaming_advisor'")
+        runner.assert_true("devices" in h_details["roaming_advisor"], "roaming_advisor include 'devices'")
+        runner.assert_true("iot_anomalies" in h_details, "Payload health breakdown include 'iot_anomalies'")
+        runner.assert_true("action_checklist" in h_details, "Payload health breakdown include 'action_checklist'")
+        runner.assert_true(isinstance(h_details["action_checklist"], list), "action_checklist è una lista ordinata")
+
+        # In modalità Demo, verifica che il tablet Galaxy-Tab-S9 (dev_11) compaia nei consigli di roaming
+        demo_sticky_devices = h_details["roaming_advisor"].get("devices", [])
+        galaxy_sticky = any("galaxy" in str(d.get("name") or "").lower() or "galaxy" in str(d.get("hostname") or "").lower() or d.get("mac") == "3c:22:fb:99:88:77" for d in demo_sticky_devices)
+        runner.assert_true(galaxy_sticky, "In Demo Mode Galaxy-Tab-S9 è identificato dal Roaming Advisor (Sticky Client)")
+
+        # 7. Verifica Dizionari di Localizzazione Bilingue (it.json ed en.json)
+        runner.assert_true("sticky_roaming_badge" in it_locale.get("devices", {}), "sticky_roaming_badge presente in it.json [devices]")
+        runner.assert_true("sticky_roaming_badge" in en_locale.get("devices", {}), "sticky_roaming_badge presente in en.json [devices]")
+        runner.assert_true("ai_diagnostics_badge" in it_locale.get("health_modal", {}), "ai_diagnostics_badge presente in it.json [health_modal]")
+        runner.assert_true("ai_diagnostics_badge" in en_locale.get("health_modal", {}), "ai_diagnostics_badge presente in en.json [health_modal]")
+        runner.assert_true("ai_analysis_title" in it_locale.get("health_modal", {}), "ai_analysis_title presente in it.json [health_modal]")
+        runner.assert_true("ai_analysis_title" in en_locale.get("health_modal", {}), "ai_analysis_title presente in en.json [health_modal]")
+        runner.assert_true("action_checklist_title" in it_locale.get("health_modal", {}), "action_checklist_title presente in it.json [health_modal]")
+        runner.assert_true("action_checklist_title" in en_locale.get("health_modal", {}), "action_checklist_title presente in en.json [health_modal]")
+        runner.assert_true("roaming_advisor_title" in it_locale.get("health_modal", {}), "roaming_advisor_title presente in it.json [health_modal]")
+        runner.assert_true("roaming_advisor_title" in en_locale.get("health_modal", {}), "roaming_advisor_title presente in en.json [health_modal]")
+        runner.assert_true("iot_anomalies_title" in it_locale.get("health_modal", {}), "iot_anomalies_title presente in it.json [health_modal]")
+        runner.assert_true("iot_anomalies_title" in en_locale.get("health_modal", {}), "iot_anomalies_title presente in en.json [health_modal]")
+        runner.assert_true("priority_critical" in it_locale.get("health_modal", {}), "priority_critical presente in it.json [health_modal]")
+        runner.assert_true("priority_high" in it_locale.get("health_modal", {}), "priority_high presente in it.json [health_modal]")
+        runner.assert_true("priority_medium" in it_locale.get("health_modal", {}), "priority_medium presente in it.json [health_modal]")
+        runner.assert_true("priority_low" in it_locale.get("health_modal", {}), "priority_low presente in it.json [health_modal]")
 
         runner.print_summary()
 

@@ -299,14 +299,14 @@ gantt
 > **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **ottimizzazioni layout responsive & persistenza filtri (PR #28 e #29 - @DannyFeliz)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
 
 #### 1. 🤖 AI Network Diagnostics & Intelligent Health Score
-* **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
+* [x] **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
   * Generazione dinamica di sintesi diagnostiche descrittive e contestuali all'interno del modale *Network Health Score*.
   * Spiegazione discorsiva dei fattori di penalità: attenuazione RSSI anomala ($< -75\text{ dBm}$), sovraffollamento della banda 2.4 GHz rispetto a 5/6 GHz, link PHY sottodimensionati o negoziazioni Ethernet degradate a 100 Mbps anziché 1 Gbps / 2.5 Gbps su porte e switch cablati.
   * Generazione di consigli guidati e pratici (es. *"Il nodo Studio negozia a 100 Mbps: verificare il cavo Ethernet Cat5e/Cat6 o la porta dello switch intermedio"*).
-* **Sticky Clients & Roaming Advisor (Issue #43 - @jpatchMC):**
+* [x] **Sticky Clients & Roaming Advisor (Issue #43 - @jpatchMC):**
   * Riscontro alla richiesta di roaming client sollevata in Issue #43: non potendo forzare la de-autenticazione dal cloud eero (gestita autonomamente dal firmware TrueMesh 802.11k/v), introduzione di un'euristica mirata per identificare i dispositivi mobili agganciati a nodi mesh distanti con RSSI debole pur essendo in prossimità di nodi con segnale nettamente superiore ($\Delta \text{RSSI} \ge 20\text{ dBm}$).
   * Badge visuale *"Roaming Sub-Ottimale"* nel modale apparato e nella lista client con suggerimenti operativi per favorire il riposizionamento beacon o il roaming.
-* **Anomaly Detection sul Traffico Notturno IoT:**
+* [x] **Anomaly Detection sul Traffico Notturno IoT:**
   * Analizzatore statistico su serie storiche SQLite (`device_usage_history`) durante le ore notturne (01:00 - 06:00).
   * Rilevamento automatico di anomalie (outlier statistici) per download/upload anomali su telecamere IP, sensori domotici o smart TV, con notifica immediata di potenziale compromissione o loop di rete.
 
@@ -419,9 +419,9 @@ gantt
 - [ ] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
 - [ ] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
 - [ ] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
-- [ ] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/ai_diagnostics.py`).
-- [ ] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
-- [ ] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
+- [x] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/diagnostics_service.py`).
+- [x] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
+- [x] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
 - [ ] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
 - [ ] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
 - [ ] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
@@ -431,7 +431,7 @@ gantt
 - [ ] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
 - [ ] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
 - [ ] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
-- [ ] Nuova tabella `traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
+- [x] Nuova tabella `iot_traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
 - [ ] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
 - [ ] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
@@ -439,8 +439,8 @@ gantt
 - [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
 - [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato.
 - [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
-- [ ] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
-- [ ] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
+- [x] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
+- [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
 - [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
 - [ ] Ottimizzazioni layout responsive mobile e tablet, touch targets e tabelle adattive (PR #28 / Issue #45 - @DannyFeliz).

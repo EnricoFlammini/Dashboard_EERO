@@ -149,6 +149,13 @@ async def healthcheck():
     }
 
 
+@app.get("/api/diagnostics/iot-anomalies")
+async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
+    """Alias diretto per l'interrogazione delle anomalie IoT notturne."""
+    from app.routers.network import get_iot_night_anomalies
+    return await get_iot_night_anomalies(limit=limit, days=days)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Serve la Single Page Application (SPA) della Dashboard."""

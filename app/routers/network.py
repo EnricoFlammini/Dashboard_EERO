@@ -54,6 +54,31 @@ async def get_health_breakdown():
     }
 
 
+@router.get("/diagnostics/iot-anomalies")
+async def get_iot_night_anomalies(limit: int = 50, days: int = 7):
+    """Restituisce le anomalie di traffico notturno registrate per apparati IoT (v1.6.0 Modulo 1)."""
+    try:
+        from app.services.db import db_service
+        cached_anomalies = getattr(background_poller, "cached_iot_anomalies", [])
+        db_anomalies = await db_service.get_iot_anomalies(limit=limit, days=days)
+        
+        # Unifica con priorità a quelle in memoria se in demo mode
+        if getattr(eero_client, "is_demo_mode", False) or settings.demo_mode:
+            all_anomalies = cached_anomalies or db_anomalies
+        else:
+            all_anomalies = db_anomalies or cached_anomalies
+
+        return {
+            "status": "success",
+            "count": len(all_anomalies),
+            "data": all_anomalies,
+            "anomalies": all_anomalies,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching IoT anomalies: {e}")
+        return {"status": "error", "message": str(e), "data": []}
+
+
 @router.post("/refresh")
 async def force_network_refresh():
     """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""
