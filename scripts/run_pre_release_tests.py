@@ -710,6 +710,9 @@ async def run_all_tests():
         page_html = page_res.text
         runner.assert_true("styles.css?v=" in page_html, "styles.css include parametro versione cache-busting (?v=)")
         runner.assert_true("app.js?v=" in page_html, "app.js include parametro versione cache-busting (?v=)")
+        for route in ("/dashboard", "/devices", "/speedtest", "/automations", "/manual"):
+            route_res = await client.get(route)
+            runner.assert_true(route_res.status_code == 200 and 'x-data="eeroApp"' in route_res.text, f"GET {route} serve la SPA")
 
         # Test salvataggio impostazioni AdGuard singola istanza
         adg_payload = {
@@ -1925,4 +1928,3 @@ async def run_all_tests():
 
 if __name__ == "__main__":
     asyncio.run(run_all_tests())
-
