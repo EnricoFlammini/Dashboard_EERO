@@ -296,7 +296,7 @@ gantt
 
 ### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge
 
-> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **ottimizzazioni layout responsive & persistenza filtri (PR #28 e #29 - @DannyFeliz)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
+> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management - Issue #39)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **routing URL persistente & layout responsive (PR #28 e PR #29 - @DannyFeliz)**, **resilienza cloud poller & bonifica valori placeholder (Issue #55 e #56 - @carbones73, Issue #57 - @jpatchMC)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
 
 #### 1. 🤖 AI Network Diagnostics & Intelligent Health Score
 * [x] **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
@@ -310,7 +310,8 @@ gantt
   * Analizzatore statistico su serie storiche SQLite (`device_usage_history`) durante le ore notturne (01:00 - 06:00).
   * Rilevamento automatico di anomalie (outlier statistici) per download/upload anomali su telecamere IP, sensori domotici o smart TV, con notifica immediata di potenziale compromissione o loop di rete.
 
-#### 2. 🔐 Local Role-Based Access Control (RBAC) & User Management
+#### 2. 🔐 Local Role-Based Access Control (RBAC) & User Management (Issue #39)
+*(In risposta alla richiesta della community in Issue #39: "Read-Only Mode / Role-Based Access Control (RBAC) for Local Dashboard")*
 * **Architettura a Sessione Cloud Unificata & Utenti Locali Indipendenti:**
   * Mantenimento della connessione a monte verso eero Cloud imperniata sull'unico token principale già autenticato con 2FA dall'amministratore di rete (`session.json`).
   * Nessuna necessità di distribuire credenziali Amazon/eero o codici OTP secondari a familiari, colleghi o ospiti.
@@ -382,11 +383,14 @@ gantt
   * Manutenzione periodica programmata del database SQLite in modalità WAL con esecuzione di `PRAGMA optimize;` e `VACUUM;` notturno per garantire dimensioni del database contenute (< 100 MB).
 * **Activity Log Multi-Filtro (Top Bandwidth Hogs):**
   * Filtri avanzati e interattivi per la classifica e il grafico dei consumi per dispositivo: filtraggio simultaneo per categoria apparato (Computer, Smartphone, IoT, Entertainment), per banda di frequenza (2.4 GHz, 5 GHz, 6 GHz, Cablato) o per nodo mesh di attestazione.
-* **Ottimizzazioni Layout Responsive UI (PR #28 / Issue #45 - @DannyFeliz):**
-  * Perfezionamento del layout e dei drawer per visualizzazione ottimale su schermi smartphone e tablet.
-  * Adattamento dinamico di tabelle, KPI card e touch targets accessibili.
-* **Persistenza Stato Navigazione & Filtri Frequenza Radio (PR #29 / Issue #46 - @DannyFeliz):**
-  * Memorizzazione persistente nel `localStorage` del browser per la sezione attiva (Dashboard, Dispositivi, Analytics, Controlli) e per l'ultimo filtro frequenza radio selezionato (2.4 GHz, 5 GHz, 6 GHz, Ethernet, Tutti), prevenendo reset indesiderati al ricaricamento della pagina.
+* **Ottimizzazioni Layout Responsive UI (PR #29 / Issue #46 - @DannyFeliz):**
+  * Riorganizzazione dell'header con menu a comparsa (gear menu) su smartphone e tablet per eliminare l'affollamento dei comandi.
+  * Sidebar collassabile e reflow della tabella apparati in card responsive leggibili su schermi stretti (320px–1024px) senza scroll orizzontale forzato.
+  * Adattamento touch-friendly per KPI card, grafici, modali di dettaglio, prenotazioni IP statici e inoltro porte.
+* **Persistenza Stato Navigazione & Filtri Dispositivi via URL (PR #28 / Issue #45 - @DannyFeliz):**
+  * Percorsi stabili serviti per ciascuna vista principale (`/`, `/devices`, `/speedtest`, `/controls`, `/manual`) con routing sincronizzato tramite HTML5 History API.
+  * Sincronizzazione real-time dei filtri di ricerca e frequenza con la query string dell'URL (inclusi caratteri Unicode ed emoji), con piena persistenza su ricaricamento pagina (F5) e navigazione con i tasti *Avanti* e *Indietro* del browser.
+  * Prevenzione del flash visivo di righe non filtrate durante il caricamento asincrono iniziale di profili e dispositivi.
 * **Progressive Web App (PWA) & Backup Wizard:**
   * Aggiunta di Web App Manifest (`manifest.json`), service worker per caching offline degli asset statici (CSS, JS, icone SVG) e supporto alla modalità *standalone* a tutto schermo su pannelli touch a parete (Wall Dashboard), tablet e smartphone.
   * Wizard guidato di esportazione e importazione configurazione JSON (`GET /api/system/backup`, `POST /api/system/restore`) per salvataggio e ripristino sicuro di alias personalizzati, impostazioni DNS, preferenze notifiche e parametri di automazione senza richiedere dump manuali del database.
@@ -411,6 +415,23 @@ gantt
   * Accordion espandibili per ogni release con badge colorati, lista puntata, barra di ricerca istantanea e filtri rapidi (*Tutte*, *Sicurezza*, *Wi-Fi 7*, *Stabilità*).
   * Supporto Dual-Theme (Light & Dark Mode) e localizzazione bilingue IT / EN completa (`it.json`, `en.json`).
 
+#### 7. 🛡️ Resilienza Cloud Poller, Trasparenza Dati & IPv6 ULA (Issue #55, #56 - @carbones73 & Issue #57 - @jpatchMC)
+* **Gestione Resiliente Fallimenti Cloud eero & Stale State (Issue #55 - @carbones73):**
+  * Rilevamento esplicito delle mancate risposte o errori HTTP (401 Unauthorized, 503 Outage) in `get_network_details()` e `get_eeros()`.
+  * Blocco dell'avanzamento fasullo del timestamp `last_poll_time` in caso di errore, esposizione del flag `data_stale: true`, timestamp `last_successful_poll` e contatore `consecutive_failed_polls`.
+  * Sospensione dei falsi allarmi `node_offline` su dati non aggiornati durante un'interruzione cloud.
+  * Banner UI informativo per avviso di rete non raggiungibile e prompt di re-autenticazione immediata in caso di sessione scaduta (HTTP 401).
+  * Notifica automatica multi-canale (`cloud_unreachable` / `cloud_recovered`) dopo N fallimenti consecutivi.
+* **Bonifica Valori Placeholder e Normalizzazione Rigorosa (Issue #56 - @carbones73):**
+  * Eliminazione dei fallback hardcoded arbitrari che simulano misurazioni reali:
+    * `public_ip`: mantenimento a `null` (anziché `0.0.0.0` o IP LAN gateway) con visualizzazione "n/a" nell'interfaccia.
+    * `gateway_ip`: mantenimento a `null` (anziché forzatura su subnet predefinita `192.168.4.1`), adeguando lo step 3 dell'elezione del primary gateway e i template UI.
+    * `rx_bytes` / `tx_bytes`: rimozione della stima sintetica `packets * 1420` / `packets * 280` spacciata per contatore reale.
+    * Frequenza Wi-Fi nodi: etichettatura esplicita `(stimata)` o omissione della banda qualora dedotta unicamente dal modello hardware (es. Pro 6E / Max 7) in assenza di canale operativo effettivo.
+* **Supporto & Derivazione Indirizzi IPv6 ULA vs GUA (Issue #57 - @jpatchMC):**
+  * Analisi e supporto per la visualizzazione degli indirizzi IPv6 ULA (*Unique Local Address*, RFC 4193, prefisso `fd00::/8`) accanto ai GUA (*Global Unicast Address* / SLAAC).
+  * Valutazione euristica di derivazione ULA mediante prefisso annunciato e lower 64 bits dell'interfaccia, oppure associazione tramite neighbor discovery / DNS integration con badge identificativo dedicato.
+
 ---
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
@@ -426,6 +447,9 @@ gantt
 - [ ] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
 - [ ] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
 - [ ] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
+- [ ] Gestione esplicita errori HTTP cloud eero, flag data_stale e contatore fallimenti poller (Issue #55 - @carbones73).
+- [ ] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
+- [ ] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
 
 ##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`)
 - [ ] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
@@ -443,8 +467,10 @@ gantt
 - [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
 - [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
-- [ ] Ottimizzazioni layout responsive mobile e tablet, touch targets e tabelle adattive (PR #28 / Issue #45 - @DannyFeliz).
-- [ ] Persistenza stato navigazione e filtri frequenza radio nel `localStorage` (PR #29 / Issue #46 - @DannyFeliz).
+- [ ] Ottimizzazioni layout responsive mobile e tablet, gear menu e schede apparati adattive (PR #29 / Issue #46 - @DannyFeliz).
+- [ ] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45 - @DannyFeliz).
+- [ ] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
+- [ ] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
 - [ ] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
 - [ ] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
 
