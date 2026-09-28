@@ -29,10 +29,12 @@ document.addEventListener('alpine:init', () => {
       news: '/news'
     },
     currentTab: 'overview',
-    sidebarCollapsed: localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    sidebarCollapsed: (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1199px)').matches) || localStorage.getItem('eero_sidebar_collapsed') === 'true',
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed;
-      localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+      if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) {
+        localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+      }
     },
     
     // Auth & Session State
@@ -133,6 +135,53 @@ document.addEventListener('alpine:init', () => {
     deviceFiltersReady: false,
     deviceSortField: 'name',
     deviceSortDirection: 'asc',
+    openDeviceDropdown: null,
+    toggleDeviceDropdown(name) {
+      this.openDeviceDropdown = this.openDeviceDropdown === name ? null : name;
+    },
+    closeDeviceDropdowns() {
+      this.openDeviceDropdown = null;
+    },
+    getBandFilterLabel() {
+      const map = {
+        all: this.t('devices.filter_all_bands'),
+        '6GHz': this.t('devices.filter_band_6ghz'),
+        '5GHz': this.t('devices.filter_band_5ghz'),
+        '2.4GHz': this.t('devices.filter_band_24ghz'),
+        wired: this.t('devices.filter_band_wired')
+      };
+      return map[this.selectedBandFilter] || this.t('devices.filter_all_bands');
+    },
+    getNodeFilterLabel() {
+      if (this.selectedNodeFilter === 'all') return this.t('devices.filter_all_nodes');
+      const node = (this.eeros || []).find(e => (e.id || e.serial) === this.selectedNodeFilter);
+      return node ? node.name : this.t('devices.filter_all_nodes');
+    },
+    getCategoryFilterLabel() {
+      if (this.selectedCategoryFilter === 'all') return this.t('devices.filter_all_categories');
+      if (this.selectedCategoryFilter === 'favorites') return this.t('devices.filter_favorites');
+      const map = {
+        Computer: this.t('devices.cat_computer'),
+        Mobile: this.t('devices.cat_mobile'),
+        'Smart Home': this.t('devices.cat_smarthome'),
+        Intrattenimento: this.t('devices.cat_entertainment'),
+        Gaming: this.t('devices.cat_gaming'),
+        'Server/Rete': this.t('devices.cat_server'),
+        Altro: this.t('devices.cat_other')
+      };
+      return map[this.selectedCategoryFilter] || this.selectedCategoryFilter;
+    },
+    getProfileFilterLabel() {
+      if (this.selectedProfileFilter === 'all') return this.t('devices.filter_all_profiles');
+      if (this.selectedProfileFilter === 'unassigned') return this.t('devices.filter_unassigned');
+      const prof = (this.profiles || []).find(p => p.id === this.selectedProfileFilter);
+      return prof ? ('👤 ' + prof.name) : this.t('devices.filter_all_profiles');
+    },
+    getIpTypeFilterLabel() {
+      if (this.selectedIpTypeFilter === 'static') return this.t('devices.filter_only_static');
+      if (this.selectedIpTypeFilter === 'dhcp') return this.t('devices.filter_only_dhcp');
+      return this.t('devices.filter_all_assignments');
+    },
 
     // eeroOS Release Notes & Community Updates State (v1.6.0)
     eeroNewsLoading: false,
@@ -328,6 +377,14 @@ document.addEventListener('alpine:init', () => {
         this.loadDeviceFiltersFromUrl();
       }
       this.initTheme();
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const mql = window.matchMedia('(max-width: 1199px)');
+        if (mql && mql.addEventListener) {
+          mql.addEventListener('change', ({ matches }) => {
+            this.sidebarCollapsed = matches || localStorage.getItem('eero_sidebar_collapsed') === 'true';
+          });
+        }
+      }
 
       // Sincronizza dinamicamente versione e build number con /api/health
       try {
@@ -682,6 +739,9 @@ document.addEventListener('alpine:init', () => {
     async setTab(tab, updateUrl = true) {
       if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+        this.sidebarCollapsed = true;
+      }
       const url = tab === 'devices' ? this.deviceFiltersUrl() : this.routes[tab];
       if (updateUrl && typeof window !== 'undefined' && window.history && `${window.location.pathname}${window.location.search}` !== url) {
         window.history.pushState({}, '', url);

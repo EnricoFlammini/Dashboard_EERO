@@ -467,7 +467,7 @@ gantt
 - [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
 - [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
-- [ ] Ottimizzazioni layout responsive mobile e tablet, gear menu e schede apparati adattive (PR #29 / Issue #46 - @DannyFeliz).
+- [x] Ottimizzazioni layout responsive mobile e tablet, gear menu e schede apparati adattive (PR #29 / Issue #46 - @DannyFeliz).
 - [x] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45 - @DannyFeliz).
 - [ ] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
 - [ ] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
