@@ -19,6 +19,15 @@ document.addEventListener('alpine:init', () => {
     translationsLoaded: false,
 
     // Navigation & Sidebar State
+    routes: {
+      overview: '/dashboard',
+      devices: '/devices',
+      speedtest: '/speedtest',
+      analytics: '/analytics',
+      automations: '/automations',
+      manual: '/manual',
+      news: '/news'
+    },
     currentTab: 'overview',
     sidebarCollapsed: localStorage.getItem('eero_sidebar_collapsed') === 'true',
     toggleSidebar() {
@@ -121,6 +130,7 @@ document.addEventListener('alpine:init', () => {
     selectedProfileFilter: 'all',
     selectedIpTypeFilter: 'all',
     showConnectedOnly: false,
+    deviceFiltersReady: false,
     deviceSortField: 'name',
     deviceSortDirection: 'asc',
 
@@ -310,6 +320,13 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
+      this.currentTab = this.tabFromPath();
+      if (typeof window !== 'undefined' && window.location && window.location.pathname === '/') {
+        window.history.replaceState({}, '', this.routes.overview);
+      }
+      if (this.currentTab === 'devices') {
+        this.loadDeviceFiltersFromUrl();
+      }
       this.initTheme();
 
       // Sincronizza dinamicamente versione e build number con /api/health
@@ -332,6 +349,8 @@ document.addEventListener('alpine:init', () => {
         this.startPolling();
         this.checkForUpdates(false);
         this.fetchEeroNews(false);
+      } else {
+        this.deviceFiltersReady = true;
       }
 
       // Reattività cambio tab con rendering forzato e resize automatico
@@ -360,6 +379,21 @@ document.addEventListener('alpine:init', () => {
           this.fetchEeroNews();
         }
       });
+
+      if (this.$watch) {
+        for (const filter of ['deviceSearchQuery', 'selectedBandFilter', 'selectedNodeFilter', 'selectedCategoryFilter', 'selectedProfileFilter', 'selectedIpTypeFilter', 'showConnectedOnly']) {
+          this.$watch(filter, () => this.syncDeviceFiltersToUrl());
+        }
+      }
+
+      if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('popstate', () => {
+          const tab = this.tabFromPath();
+          if (tab === 'devices') this.loadDeviceFiltersFromUrl();
+          this.setTab(tab, false);
+        });
+      }
+      await this.setTab(this.currentTab, false);
     },
 
     async setLanguage(lang) {
@@ -602,8 +636,56 @@ document.addEventListener('alpine:init', () => {
       return res;
     },
 
-    async setTab(tab) {
+    tabFromPath() {
+      const path = (typeof window !== 'undefined' && window.location ? window.location.pathname : '').replace(/\/$/, '') || '/dashboard';
+      if (path === '/eero-news') return 'news';
+      return Object.keys(this.routes).find(tab => this.routes[tab] === path) || 'overview';
+    },
+
+    loadDeviceFiltersFromUrl() {
+      if (typeof window === 'undefined' || !window.location) return;
+      const params = new URLSearchParams(window.location.search);
+      this.deviceSearchQuery = params.get('search') || '';
+      this.selectedBandFilter = params.get('band') || 'all';
+      this.selectedNodeFilter = params.get('node') || 'all';
+      this.selectedCategoryFilter = params.get('category') || 'all';
+      this.selectedProfileFilter = params.get('profile') || 'all';
+      this.selectedIpTypeFilter = params.get('assignment') || 'all';
+      this.showConnectedOnly = params.get('connected') === 'true';
+    },
+
+    deviceFiltersUrl() {
+      const params = new URLSearchParams();
+      for (const [key, value, defaultValue] of [
+        ['search', this.deviceSearchQuery, ''],
+        ['band', this.selectedBandFilter, 'all'],
+        ['node', this.selectedNodeFilter, 'all'],
+        ['category', this.selectedCategoryFilter, 'all'],
+        ['profile', this.selectedProfileFilter, 'all'],
+        ['assignment', this.selectedIpTypeFilter, 'all']
+      ]) {
+        if (value !== defaultValue) params.set(key, value);
+      }
+      if (this.showConnectedOnly) params.set('connected', 'true');
+      const query = params.toString();
+      return `${this.routes.devices}${query ? `?${query}` : ''}`;
+    },
+
+    syncDeviceFiltersToUrl() {
+      if (this.currentTab !== 'devices' || typeof window === 'undefined' || !window.location) return;
+      const url = this.deviceFiltersUrl();
+      if (`${window.location.pathname}${window.location.search}` !== url) {
+        window.history.replaceState({}, '', url);
+      }
+    },
+
+    async setTab(tab, updateUrl = true) {
+      if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
+      const url = tab === 'devices' ? this.deviceFiltersUrl() : this.routes[tab];
+      if (updateUrl && typeof window !== 'undefined' && window.history && `${window.location.pathname}${window.location.search}` !== url) {
+        window.history.pushState({}, '', url);
+      }
       if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
@@ -812,6 +894,13 @@ document.addEventListener('alpine:init', () => {
         this.fetchAdGuardSettings(),
         this.fetchAlerts(),
       ]);
+      if (this.currentTab === 'devices') {
+        if (this.$nextTick) {
+          await this.$nextTick();
+        }
+        this.loadDeviceFiltersFromUrl();
+      }
+      this.deviceFiltersReady = true;
     },
 
     async fetchOverview() {

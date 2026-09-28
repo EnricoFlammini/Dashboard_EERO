@@ -156,6 +156,14 @@ async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
     return await get_iot_night_anomalies(limit=limit, days=days)
 
 
+@app.get("/eero-news", response_class=HTMLResponse)
+@app.get("/news", response_class=HTMLResponse)
+@app.get("/manual", response_class=HTMLResponse)
+@app.get("/automations", response_class=HTMLResponse)
+@app.get("/analytics", response_class=HTMLResponse)
+@app.get("/speedtest", response_class=HTMLResponse)
+@app.get("/devices", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Serve la Single Page Application (SPA) della Dashboard."""
