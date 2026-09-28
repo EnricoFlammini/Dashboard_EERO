@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.5.0)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.6.0)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation
@@ -1122,7 +1122,7 @@ async def run_all_tests():
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
         check_data = check_res.json()
         runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
-        runner.assert_true(check_data.get("current_version") == "1.5.0", f"Versione corrente rilevata è 1.5.0 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true(check_data.get("current_version") == "1.6.0", f"Versione corrente rilevata è 1.6.0 (ottenuta: {check_data.get('current_version')})")
         runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
 
         # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
@@ -1888,10 +1888,10 @@ async def run_all_tests():
             runner.assert_true(k in it_dict.get("controls", {}), f"Chiave controls.{k} presente in it.json")
             runner.assert_true(k in en_dict.get("controls", {}), f"Chiave controls.{k} presente in en.json")
 
-        # 7. Test Manuale In-App & Package Versioning (v1.5.0)
+        # 7. Test Manuale In-App & Package Versioning (v1.6.0)
         import importlib
         app_pkg = importlib.import_module("app")
-        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.5.0", f"app.__version__ è '1.5.0' (trovato: {getattr(app_pkg, '__version__', None)})")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.0", f"app.__version__ è '1.6.0' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
         runner.assert_true(res_man_it.json().get("count") == 10, f"Manuale IT contiene 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
@@ -1899,13 +1899,13 @@ async def run_all_tests():
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
         runner.assert_true(res_man_en.json().get("count") == 10, f"Manuale EN contiene 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
         res_ch_it = await client.get("/api/manual/changelog?lang=it")
-        runner.assert_true(res_ch_it.json().get("version") == "1.5.0", "Versione restituita da changelog IT è 1.5.0")
-        runner.assert_true("## v1.5.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.5.0")
+        runner.assert_true(res_ch_it.json().get("version") == "1.6.0", "Versione restituita da changelog IT è 1.6.0")
+        runner.assert_true("## v1.6.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.0")
         res_ch_en = await client.get("/api/manual/changelog?lang=en")
-        runner.assert_true(res_ch_en.json().get("version") == "1.5.0", "Versione restituita da changelog EN è 1.5.0")
-        runner.assert_true("## v1.5.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.5.0")
+        runner.assert_true(res_ch_en.json().get("version") == "1.6.0", "Versione restituita da changelog EN è 1.6.0")
+        runner.assert_true("## v1.6.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.0")
 
-        # 8. Test Build Number & Full Versioning (es. '1.5.0 build 1')
+        # 8. Test Build Number & Full Versioning (es. '1.6.0 build 1')
         runner.assert_true(hasattr(settings, "build_number") and bool(settings.build_number), "settings.build_number configurato")
         runner.assert_true(settings.full_version == f"{settings.app_version} build {settings.build_number}", f"settings.full_version format corretto: '{settings.full_version}'")
         res_health = await client.get("/api/health")
@@ -1917,10 +1917,10 @@ async def run_all_tests():
         update_data = await updater_service.check_for_updates(force=True)
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
         runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
-        runner.assert_true(is_newer_version("1.5.0 build 2", "1.5.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
-        runner.assert_true(is_newer_version("1.5.0 build 1", "1.5.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
+        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
+        runner.assert_true(is_newer_version("1.6.0 build 2", "1.6.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
+        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
+        runner.assert_true(is_newer_version("1.6.0 build 1", "1.6.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
 
         # =====================================================================
         # 20. TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)

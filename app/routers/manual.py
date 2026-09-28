@@ -459,6 +459,14 @@ CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
+## v1.6.0
+* **Hub Note di Rilascio eeroOS & Community Feedback (Issue #55):** Monitoraggio firmware ufficiale via Zendesk REST API e feed Reddit r/amazoneero, con confronto allineamento flotta locale vs release cloud (Up-to-date, Update Available, Newer than published).
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56 / v1.6.0 Modulo 1):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
+* **Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45):** Routing completo con sincronizzazione bidirezionale dell'URL hash/query e supporto cronologia browser.
+* **Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46):** Sidebar scorrevole con scrim su schermi mobile, header responsive con menu impostazioni Fluent, tabella dispositivi a schede su schermi piccoli e frame grafici ad altezza dinamica.
+
+---
+
 ## v1.5.0
 * **Statistiche & Analytics di Rete, Analisi SLA ISP & Data Export Center:** Nuova vista con grafici di ripartizione frequenze, carico nodi mesh, categorie, vendor e trend SLA con esportazione CSV/JSON.
 * **Device Data Usage Insights Suite:** Nuova scheda "Consumo Dati" con selettore temporale (Ultime 24h, 7 Giorni, 30 Giorni), curve Chart.js e widget Top Bandwidth Hogs.
@@ -607,6 +615,14 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+## v1.6.0
+* **Official eeroOS Release Notes Hub & Community Feedback (Issue #55):** Real-time firmware tracking via Zendesk REST API and r/amazoneero Reddit feed, with local fleet firmware alignment comparison (Up-to-date, Update Available, Newer than published).
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56 / v1.6.0 Module 1):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
+* **Navigation Deep-Linking & URL State Synchronization (PR #28 / Issue #45):** Bidirectional URL hash and query parameter synchronization with browser history support and shareable direct links.
+* **Responsive App Shell, Windows 11 Fluent Header & Mobile Drawer (PR #29 / Issue #46):** Sliding mobile drawer sidebar with scrim backdrop, responsive header with Fluent settings menu, responsive device table cards on small screens, and clamp-height dynamic chart frames.
+
+---
 
 ## v1.5.0
 * **Network Statistics & Analytics, ISP SLA Analysis & Data Export Center:** New main view with frequency breakdown, mesh node load, device categories, vendors, and SLA trends with CSV/JSON export.

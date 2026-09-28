@@ -312,7 +312,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.5.0',
+    changelogVersion: '1.6.0',
     changelogLoading: false,
 
     // About Modal State
@@ -321,13 +321,13 @@ document.addEventListener('alpine:init', () => {
     // Estimated Data Usage Info Modal State
     showUsageInfoModal: false,
 
-    // Auto-Update State (v1.5.0)
+    // Auto-Update State (v1.6.0)
     updateInfo: {
       update_available: false,
-      current_version: '1.5.0',
-      latest_version: '1.5.0',
+      current_version: '1.6.0',
+      latest_version: '1.6.0',
       latest_build_number: '1',
-      latest_full_version: '1.5.0 build 1',
+      latest_full_version: '1.6.0 build 1',
       release_title: '',
       release_notes: '',
       docker_socket_available: false,
@@ -3141,7 +3141,7 @@ document.addEventListener('alpine:init', () => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.5.0';
+          this.changelogVersion = json.version || '1.6.0';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         } else {
           throw new Error(json.message || "Failed to load");

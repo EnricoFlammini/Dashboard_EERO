@@ -4,6 +4,51 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.6.0] - 2026-09-28
+
+### 📰 Hub Note di Rilascio eeroOS & Community Feedback (Issue #55)
+* **📰 Monitoraggio Firmware Ufficiale eeroOS via Zendesk API & Reddit RSS:**
+  * Implementato scraper asincrono resiliente (`eero_news_service.py`) per le note di rilascio ufficiali di eero (Zendesk REST API v2 Help Center) con salvataggio persistente su SQLite (`eero_release_notes`) e caching intelligente offline.
+  * Integrazione del feed RSS della community `r/amazoneero` con gestione automatica di fallback e timeout.
+  * **Confronto Firmware Rete Mesh Locale vs Release Ufficiale:**
+    * Rilevamento automatico e classificazione dello stato firmware di ciascun nodo della flotta: *Allineato (Up-to-date)*, *Aggiornamento disponibile (Update Available)* o *Firmware più recente di quello pubblicato (Newer than published)* per rollout progressivi o canali beta.
+  * **Nuova Scheda Dedicata "Note di Rilascio" nella UI:**
+    * Vista completa con badge colorati per le release, filtro per soli aggiornamenti di sicurezza, toggle recenti/tutte e trigger manuale di sincronizzazione in tempo reale con toast feedback.
+
+### 🤖 AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56 / v1.6.0 Modulo 1)
+* **🤖 Diagnostica di Rete Intelligente in Linguaggio Naturale:**
+  * Motore di analisi diagnostica che genera executive summary e narrative dettagliate bilingue (italiano e inglese) sullo stato di salute della rete, evidenziando limitazioni fisiche dei cavi Ethernet (100 Mbps PHY), nodi mesh disallineati e carichi anomali.
+  * **Checklist di Azioni Correttive Prioritizzate:** Elenco ordinato con priorità granulare (*Critica*, *Alta*, *Media*, *Bassa*) per guidare l'amministratore nella risoluzione delle problematiche.
+* **🧭 Roaming Advisor per Sticky Clients:**
+  * Algoritmo specializzato per rilevare client mobili (smartphone, tablet, laptop) rimasti agganciati a nodi mesh lontani con segnale degradato (RSSI debole), stimando il guadagno potenziale in dBm e consigliando il nodo eero ottimale verso cui effettuare il roaming.
+  * Badge contestuale `Roaming Consigliato` nella tabella dispositivi con tooltip informativo e raccomandazioni pratiche bilingue.
+* **🌙 Rilevamento Anomalie Traffico Notturno IoT:**
+  * Monitoraggio del traffico di apparati smart home e IoT (relè Shelly, hub Sonoff/Aqara, bridge Hue, telecamere) nelle ore notturne (01:00-06:00).
+  * Notifica di volumi di scambio dati anomali verso server esterni e persistenza su tabella SQLite `iot_night_anomalies`.
+
+### 🧭 Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45)
+* **🧭 Navigazione ad URL Dinamici & Persistenza Filtri:**
+  * Sincronizzazione bidirezionale tra lo stato dell'applicazione e la barra degli indirizzi tramite hash e query parameters (`#devices?band=...`, `#analytics`, `#settings`, ecc.).
+  * Pieno supporto ai pulsanti Avanti/Indietro del browser, cronologia di navigazione e link diretti condivisibili.
+  * Pulizia automatica dei parametri predefiniti dall'URL per mantenere l'indirizzo pulito.
+
+### 📱 Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46)
+* **📱 Architettura Responsive per Dispositivi Mobili e Tablet:**
+  * Sidebar trasformata in un cassetto scorrevole (drawer) su mobile con scrim semitrasparente (`.mobile-sidebar-scrim`), auto-collasso sotto i 1200px e chiusura automatica alla selezione di una scheda.
+  * Accessibilità completa con gestione di `:inert` e `:aria-hidden`.
+* **🎛️ Header Shell & Menu Fluent Settings:**
+  * Nuova struttura `.app-header` con branding responsive, conservazione del selettore Multi-Network (v1.6.0) e health score pill adattivo.
+  * Menu contestuale Fluent Windows 11 (`<details class="header-settings">`) che raggruppa pillole di versione, auto-update, demo, about, tema, lingua, guida e logout.
+* **🔽 Dropdown Custom Verso il Basso nella Toolbar Dispositivi:**
+  * Sostituzione dei menu `<select>` nativi con 5 dropdown custom verso il basso (Banda, Nodo, Categoria, Profilo, Tipo IP) integrati con il deep-linking URL della PR #28.
+  * Pulsante per cancellare rapidamente la ricerca testo e pill con indicatore animato per il toggle "Solo connessi".
+* **📱 Tabella Dispositivi Responsive a Schede (Mobile Grid):**
+  * Layout a schede con griglia adattiva su schermi piccoli con etichette dinamiche (`:data-label`), preservando le 9 colonne, il traffico DL/UL in tempo reale, i badge IPv6, i badge Static/DHCP e il Roaming Advisor.
+* **📈 Frame Grafici Dinamici (`.chart-frame`):**
+  * Altezza fluida con `clamp()` per i grafici di Speedtest e del monitor segnale.
+
+---
+
 ## [1.5.0] - 2026-09-24
 
 ### 🏆 Community Hall of Fame & Special Thanks nel Modale About
