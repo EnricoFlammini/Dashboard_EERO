@@ -30,11 +30,37 @@ document.addEventListener('alpine:init', () => {
     },
     currentTab: 'overview',
     sidebarCollapsed: (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1199px)').matches) || localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    showMobileMenu: false,
+    showMobileDeviceFilters: false,
+    toggleMobileMenu() {
+      this.showMobileMenu = !this.showMobileMenu;
+    },
+    closeMobileMenu() {
+      this.showMobileMenu = false;
+    },
     toggleSidebar() {
-      this.sidebarCollapsed = !this.sidebarCollapsed;
-      if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) {
-        localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+        this.toggleMobileMenu();
+        return;
       }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+    },
+    getDeviceIconPath(cat) {
+      const c = (cat || '').toLowerCase();
+      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
+        return 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z';
+      }
+      if (c.includes('tablet') || c.includes('ipad')) {
+        return 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z';
+      }
+      if (c.includes('tv') || c.includes('media') || c.includes('entertainment')) {
+        return 'M7 4h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm-3 16h16';
+      }
+      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay')) {
+        return 'M13 10V3L4 14h7v7l9-11h-7z';
+      }
+      return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
     
     // Auth & Session State
@@ -739,6 +765,7 @@ document.addEventListener('alpine:init', () => {
     async setTab(tab, updateUrl = true) {
       if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
+      this.showMobileMenu = false;
       if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
         this.sidebarCollapsed = true;
       }

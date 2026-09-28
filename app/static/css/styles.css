@@ -1281,38 +1281,21 @@ html.dark .sidebar-btn-inactive:hover {
   }
 
   .mobile-sidebar-scrim {
-    display: block;
-    position: fixed;
-    inset: 4rem 0 0;
-    z-index: 20;
-    border: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(2px);
+    display: none !important;
   }
 
   aside.sidebar-container {
-    position: fixed;
-    top: 4rem;
-    bottom: 0;
-    left: 0;
-    height: auto;
-    width: min(20rem, calc(100vw - 3rem)) !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    box-shadow: var(--popover-shadow);
-    transition: transform 0.2s ease;
-  }
-
-  aside.sidebar-expanded {
-    transform: translateX(0);
-  }
-
-  aside.sidebar-collapsed {
-    transform: translateX(-100%);
+    display: none !important;
   }
 
   .app-main {
-    padding: 1rem 0.75rem 1.5rem !important;
+    padding: 0.75rem 0.75rem 5.5rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 
   .app-main .glass-panel,
