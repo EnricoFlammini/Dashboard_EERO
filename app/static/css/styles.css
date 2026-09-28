@@ -1341,28 +1341,24 @@ html.dark .sidebar-btn-inactive:hover {
     width: 2.25rem;
     height: 2.25rem;
   }
+}
 
-  .device-modal-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.25rem;
-  }
+/* Device Modal Tabs: Smooth Horizontal Scroll on Mobile & Touch Devices */
+.device-modal-tabs {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
-  .device-modal-tabs > * + * {
-    margin-left: 0 !important;
-  }
+.device-modal-tabs::-webkit-scrollbar {
+  display: none;
+}
 
-  .device-modal-tabs > button {
-    min-width: 0;
-    padding-inline: 0.25rem;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.25rem;
-    line-height: 1.15;
-    text-align: center;
-  }
-
-  .device-modal-tabs > button > * + * {
-    margin-left: 0 !important;
-  }
+.device-modal-tabs > button {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
