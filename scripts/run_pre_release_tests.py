@@ -3366,6 +3366,7 @@ async def run_all_tests():
         runner.assert_true("setTab('settings-controls')" in index_html or "setTab('automations')" in index_html, "Voce 'Controlli & Ospiti' presente nei menu")
         runner.assert_true("setTab('settings-users')" in index_html or "openUsersModal()" in index_html, "Voce 'Gestione Utenti & Permessi' presente nel menu")
         runner.assert_true("setTab('settings-backup')" in index_html or "openBackupModal()" in index_html, "Voce 'Backup & Ripristino' presente nel menu")
+        runner.assert_true("setTab('settings-export')" in index_html, "Voce 'Download Dati' presente nel menu")
         runner.assert_true("setTab('settings-updates')" in index_html or "openUpdateModal(" in index_html, "Voce 'Verifica aggiornamenti' presente nel menu")
         runner.assert_true("setTab('news')" in index_html, "Voce 'Note di Rilascio eeroOS' con badge presente nei menu")
         runner.assert_true("openChangelogModal()" in index_html, "Voce 'Visualizza Changelog' presente nei menu")

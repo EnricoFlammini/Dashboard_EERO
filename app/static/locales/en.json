@@ -41,7 +41,8 @@
     "changelog": "View Changelog",
     "about": "About & Credits",
     "health_score": "Network Health Score",
-    "quick_help": "Quick Help"
+    "quick_help": "Quick Help",
+    "settings_export": "Data Export"
   },
   "guests_page": {
     "title": "Guest Wi-Fi Access",
@@ -57,11 +58,21 @@
     "password_copied": "Password Copied",
     "password_copied_desc": "Guest network password copied to clipboard.",
     "config_hint": "To change SSID, password or enable guest network, go to",
-    "config_link": "Settings → Controls & Guests"
+    "config_link": "Settings → Controls & Guests",
+    "status_active": "Guest Network Active",
+    "status_inactive": "Guest Network Disabled",
+    "scan_instruction": "Scan the QR code with your smartphone camera to connect instantly without typing the password.",
+    "settings_redirect_hint": "To configure SSID, enable/disable the network or generate a new password:",
+    "go_to_settings": "Settings → Controls & Guests"
   },
   "quality_analytics": {
     "page_title": "Signal Quality & Network Analytics",
-    "page_subtitle": "Advanced RF diagnostics, Wi-Fi coverage and network & WAN performance telemetry"
+    "page_subtitle": "Advanced RF diagnostics, Wi-Fi coverage and network & WAN performance telemetry",
+    "title": "Signal Quality & Network Analytics",
+    "subtitle": "Wireless RF diagnostics, mesh coverage and aggregate ISP metrics",
+    "analytics_section_title": "Network Telemetry & Provider Performance",
+    "analytics_section_subtitle": "Key SLA reliability metrics, per-node load and spectral distribution",
+    "chart_signal_subtitle": "Continuous historical tracking of RSSI signal levels (dBm) for all wireless clients"
   },
   "header": {
     "network_state": "Network Status",
@@ -179,7 +190,10 @@
     "cat_gaming": "Gaming Consoles",
     "cat_server": "Servers & NAS",
     "cat_other": "Other",
-    "sticky_roaming_badge": "Sub-Optimal Roaming"
+    "sticky_roaming_badge": "Sub-Optimal Roaming",
+    "filters": "Filters",
+    "cat_audio": "Audio & Speakers",
+    "cat_home_office": "Home Office"
   },
   "device_modal": {
     "title": "Device Details",
@@ -408,7 +422,8 @@
     "dns_sync_single": "Sync",
     "dns_prune_stale_ips": "Intelligent IP Pruning (removes stale leases & IPv6)",
     "dns_drop_ipv6": "Exclude IPv6 from sync",
-    "dns_no_instances": "No DNS instances configured. Click 'Add DNS Instance' to start."
+    "dns_no_instances": "No DNS instances configured. Click 'Add DNS Instance' to start.",
+    "dns_server_name_placeholder": "e.g. AdGuard Home, Pi-hole..."
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -557,7 +572,8 @@
     "priority_critical": "Critical",
     "priority_high": "High",
     "priority_medium": "Medium",
-    "priority_low": "Low"
+    "priority_low": "Low",
+    "force_roaming_tip": "Tip: To encourage roaming to a closer mesh node, turn Wi-Fi off and back on on the client device."
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
@@ -747,6 +763,23 @@
     "grade_d": "D (High Latency)",
     "grade_f": "F (Critical)",
     "desc": "Index of latency stability under maximum network load (Bufferbloat Grade)"
+  },
+  "settings_users": {
+    "title": "User Management & Permissions",
+    "subtitle": "Local user access administration, roles (Admin vs Viewer / Read-Only) and RBAC permission matrix"
+  },
+  "settings_backup": {
+    "title": "Backup & Restore",
+    "subtitle": "Configuration backup management, snapshot restore and SQLite database maintenance",
+    "db_health_title": "SQLite Database Health & Compaction",
+    "compact_btn": "Compact Database (VACUUM)"
+  },
+  "settings_updates": {
+    "title": "Check for Updates & Docker Container",
+    "subtitle": "Docker Hub container status, installed version, socket status and 1-click update trigger"
+  },
+  "settings_export": {
+    "title": "Data Export & Download Center",
+    "subtitle": "Download complete historical network datasets in CSV or JSON format for external analysis, archiving or spreadsheets"
   }
 }
-

@@ -41,7 +41,8 @@
     "changelog": "Visualizza Changelog",
     "about": "About & Crediti",
     "health_score": "Network Health Score",
-    "quick_help": "Guida Rapida"
+    "quick_help": "Guida Rapida",
+    "settings_export": "Download Dati"
   },
   "guests_page": {
     "title": "Accesso Wi-Fi Ospiti",
@@ -57,11 +58,21 @@
     "password_copied": "Password Copiata",
     "password_copied_desc": "Password della rete ospiti copiata negli appunti.",
     "config_hint": "Per modificare SSID, password o abilitare la rete ospiti, accedi a",
-    "config_link": "Impostazioni → Controlli & Ospiti"
+    "config_link": "Impostazioni → Controlli & Ospiti",
+    "status_active": "Rete Ospiti Attiva",
+    "status_inactive": "Rete Ospiti Disattivata",
+    "scan_instruction": "Inquadra il QR Code con la fotocamera del tuo smartphone per collegarti istantaneamente senza digitare la password.",
+    "settings_redirect_hint": "Per configurare SSID, attivare/disattivare la rete o generare una nuova password:",
+    "go_to_settings": "Impostazioni → Controlli & Ospiti"
   },
   "quality_analytics": {
     "page_title": "Qualità Segnale & Analytics Rete",
-    "page_subtitle": "Diagnostica RF avanzata, copertura Wi-Fi e telemetria delle prestazioni WAN e di rete"
+    "page_subtitle": "Diagnostica RF avanzata, copertura Wi-Fi e telemetria delle prestazioni WAN e di rete",
+    "title": "Qualità Segnale & Analytics",
+    "subtitle": "Diagnostica RF wireless, copertura mesh e metriche aggregate del provider",
+    "analytics_section_title": "Telemetria Rete & Prestazioni Provider",
+    "analytics_section_subtitle": "Indicatori chiave di affidabilità SLA, carico per nodo e bilanciamento spettrale",
+    "chart_signal_subtitle": "Storicizzazione continua del livello di segnale RSSI (dBm) di tutti i client wireless"
   },
   "header": {
     "network_state": "Stato Rete",
@@ -179,7 +190,10 @@
     "cat_gaming": "Console Gaming",
     "cat_server": "Server & NAS",
     "cat_other": "Altro",
-    "sticky_roaming_badge": "Roaming Sub-Ottimale"
+    "sticky_roaming_badge": "Roaming Sub-Ottimale",
+    "filters": "Filtri",
+    "cat_audio": "Audio & Speaker",
+    "cat_home_office": "Ufficio & Lavoro"
   },
   "device_modal": {
     "title": "Dettaglio Dispositivo",
@@ -408,7 +422,8 @@
     "dns_sync_single": "Sync",
     "dns_prune_stale_ips": "Pruning Intelligente IP (rimuove lease e IPv6 obsoleti)",
     "dns_drop_ipv6": "Escludi IPv6 dalla sincronizzazione",
-    "dns_no_instances": "Nessuna istanza DNS configurata. Clicca su 'Aggiungi Istanza DNS' per iniziare."
+    "dns_no_instances": "Nessuna istanza DNS configurata. Clicca su 'Aggiungi Istanza DNS' per iniziare.",
+    "dns_server_name_placeholder": "Es. AdGuard Home, Pi-hole..."
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",
@@ -557,7 +572,8 @@
     "priority_critical": "Critica",
     "priority_high": "Alta",
     "priority_medium": "Media",
-    "priority_low": "Bassa"
+    "priority_low": "Bassa",
+    "force_roaming_tip": "Consiglio: Per forzare il roaming su un nodo più vicino, disattiva e riattiva il Wi-Fi sul dispositivo."
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
@@ -747,6 +763,23 @@
     "grade_d": "D (Latenza Elevata)",
     "grade_f": "F (Critico)",
     "desc": "Indice di stabilità della latenza sotto carico massimo (Bufferbloat Grade)"
+  },
+  "settings_users": {
+    "title": "Gestione Utenti & Permessi",
+    "subtitle": "Amministrazione accessi locali, ruoli (Admin vs Viewer / Read-Only) e matrice permessi RBAC"
+  },
+  "settings_backup": {
+    "title": "Backup & Ripristino",
+    "subtitle": "Gestione backup della configurazione, ripristino snapshot e manutenzione del database SQLite",
+    "db_health_title": "Stato Database SQLite & Compattazione",
+    "compact_btn": "Compatta Database (VACUUM)"
+  },
+  "settings_updates": {
+    "title": "Verifica aggiornamenti e Container Docker",
+    "subtitle": "Stato container Docker Hub, versione installata, socket status e trigger per 1-click update"
+  },
+  "settings_export": {
+    "title": "Centro Download & Esportazione Dati",
+    "subtitle": "Scarica i dataset storici completi della rete in formato CSV o JSON per analisi esterna, archiviazione o fogli di calcolo"
   }
 }
-

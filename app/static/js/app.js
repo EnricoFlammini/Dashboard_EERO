@@ -28,17 +28,19 @@ document.addEventListener('alpine:init', () => {
       'settings-controls': '/settings/controls',
       'settings-users': '/settings/users',
       'settings-backup': '/settings/backup',
+      'settings-export': '/settings/export',
       'settings-updates': '/settings/updates',
       analytics: '/quality-analytics',
       automations: '/settings/controls',
       controls: '/settings/controls',
+      export: '/settings/export',
       manual: '/manual',
       news: '/news'
     },
     currentTab: 'overview',
     settingsExpanded: false,
     isSettingsTab() {
-      return ['settings-controls', 'settings-users', 'settings-backup', 'settings-updates'].includes(this.currentTab);
+      return ['settings-controls', 'settings-users', 'settings-backup', 'settings-export', 'settings-updates'].includes(this.currentTab);
     },
     toggleSettingsMenu() {
       if (this.sidebarCollapsed) {
@@ -305,6 +307,9 @@ document.addEventListener('alpine:init', () => {
     guestQrCodeUrl: '',
     guestQrCodeUrlLight: '',
     guestQrCodeUrlDark: '',
+    get activeGuestQrCodeUrl() {
+      return this.guestQrCodeUrl;
+    },
     focusModeActive: false,
     focusModeTargetCount: 0,
     
@@ -811,7 +816,7 @@ document.addEventListener('alpine:init', () => {
         }
       }
       if (typeof val !== 'string') {
-        return path;
+        return '';
       }
       let res = val;
       for (const [k, v] of Object.entries(params)) {
@@ -824,6 +829,7 @@ document.addEventListener('alpine:init', () => {
       const path = (typeof window !== 'undefined' && window.location ? window.location.pathname : '').replace(/\/$/, '') || '/dashboard';
       if (path === '/eero-news') return 'news';
       if (path === '/settings') return 'settings-controls';
+      if (path === '/settings/export' || path === '/export') return 'settings-export';
       if (path === '/automations' || path === '/controls') return 'settings-controls';
       if (path === '/analytics') return 'quality-analytics';
       return Object.keys(this.routes).find(tab => this.routes[tab] === path) || 'overview';
