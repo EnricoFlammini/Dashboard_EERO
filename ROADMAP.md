@@ -437,27 +437,27 @@ gantt
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
 
 ##### Modulo 1: Backend FastAPI, Auth & Engine Core
-- [ ] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
-- [ ] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
-- [ ] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
+- [x] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
+- [x] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
+- [x] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
 - [x] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/diagnostics_service.py`).
 - [x] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
 - [x] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
-- [ ] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
-- [ ] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
-- [ ] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
-- [ ] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
-- [ ] Gestione esplicita errori HTTP cloud eero, flag data_stale e contatore fallimenti poller (Issue #55 - @carbones73).
-- [ ] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
-- [ ] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
+- [x] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
+- [x] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
+- [x] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
+- [x] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
+- [x] Gestione esplicita errori HTTP cloud eero, flag data_stale e contatore fallimenti poller (Issue #55 - @carbones73).
+- [x] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
+- [x] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
 
 ##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`)
-- [ ] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
-- [ ] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
-- [ ] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
+- [x] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
+- [x] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
+- [x] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
 - [x] Nuova tabella `iot_traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
 - [ ] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
-- [ ] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
+- [x] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
 ##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA
 - [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.

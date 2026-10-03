@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 from contextlib import asynccontextmanager
@@ -30,7 +31,7 @@ class DBService:
             await db.execute("DROP TABLE IF EXISTS wan_metrics;")
             await db.execute("DROP TABLE IF EXISTS device_metrics;")
 
-            # 3. Speedtests
+            # 3. Speedtests (WAN throughput & Bufferbloat)
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS speedtests (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,10 +41,25 @@ class DBService:
                     ping_ms REAL DEFAULT 0,
                     jitter REAL DEFAULT 0,
                     server_name TEXT,
-                    source TEXT DEFAULT 'eero_api'
+                    source TEXT DEFAULT 'eero_api',
+                    ping_under_load REAL DEFAULT 0,
+                    bufferbloat_grade TEXT DEFAULT '',
+                    bufferbloat_delta_ms REAL DEFAULT 0
                 );
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_speedtests_time ON speedtests(timestamp);")
+            try:
+                await db.execute("ALTER TABLE speedtests ADD COLUMN ping_under_load REAL DEFAULT 0;")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE speedtests ADD COLUMN bufferbloat_grade TEXT DEFAULT '';")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE speedtests ADD COLUMN bufferbloat_delta_ms REAL DEFAULT 0;")
+            except Exception:
+                pass
 
             # 4. Device Metadata (Local annotations, custom icons, notes, static IP, etc.)
             await db.execute("""
@@ -178,6 +194,79 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_time ON iot_traffic_anomalies(timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_mac ON iot_traffic_anomalies(mac_address);")
 
+            # 12. Local Users & RBAC Matrix (v1.6.0 Module 1 & 2)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS local_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    salt TEXT NOT NULL,
+                    is_admin INTEGER DEFAULT 0,
+                    permissions_json TEXT DEFAULT '[]',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_login DATETIME
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_local_users_username ON local_users(username);")
+
+            # 13. Local User Sessions
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS user_sessions (
+                    token TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NOT NULL,
+                    FOREIGN KEY(user_id) REFERENCES local_users(id) ON DELETE CASCADE
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);")
+
+            # 14. Device Schedules & Parental Control Automations (v1.6.0 Modulo 1 & 2)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_schedules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    target_type TEXT NOT NULL DEFAULT 'devices',
+                    target_ids_json TEXT NOT NULL DEFAULT '[]',
+                    days_of_week_json TEXT NOT NULL DEFAULT '[]',
+                    start_time TEXT NOT NULL,
+                    end_time TEXT NOT NULL,
+                    action TEXT NOT NULL DEFAULT 'pause',
+                    enabled INTEGER DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_device_schedules_enabled ON device_schedules(enabled);")
+
+            # Bootstrap utente admin predefinito se la tabella local_users è vuota
+            async with db.execute("SELECT COUNT(*) FROM local_users;") as cur_u:
+                row_u = await cur_u.fetchone()
+                user_cnt = row_u[0] if row_u else 0
+
+            if user_cnt == 0:
+                from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
+                admin_u = str(getattr(settings, "admin_user", "admin") or "admin").strip()
+                admin_p = str(getattr(settings, "admin_password", "admin") or "admin").strip()
+                p_hash, p_salt = auth_service.hash_password(admin_p)
+                all_perms_json = json.dumps(ALL_PERMISSION_KEYS)
+                await db.execute(
+                    """
+                    INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
+                    VALUES (?, ?, ?, 1, ?, CURRENT_TIMESTAMP);
+                    """,
+                    (admin_u, p_hash, p_salt, all_perms_json)
+                )
+                logger.info(f"Local Auth: Inizializzato utente admin predefinito '{admin_u}'.")
+            else:
+                from app.services.auth_service import ALL_PERMISSION_KEYS
+                # Sincronizza permessi completi per gli amministratori se sono state introdotte nuove chiavi RBAC
+                await db.execute(
+                    "UPDATE local_users SET permissions_json = ? WHERE is_admin = 1;",
+                    (json.dumps(ALL_PERMISSION_KEYS),)
+                )
+
             # Purge all mock demo devices from live signal history table
             await db.execute("""
                 DELETE FROM device_signal_history 
@@ -285,17 +374,38 @@ class DBService:
         ping_ms: float,
         jitter: float = 0.0,
         server_name: str = "eero Cloud SpeedTest",
-        source: str = "eero_api"
+        source: str = "eero_api",
+        ping_under_load: Optional[float] = None,
+        bufferbloat_grade: Optional[str] = None,
+        bufferbloat_delta_ms: Optional[float] = None,
     ) -> int:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        p_load = float(ping_under_load) if ping_under_load is not None else float(ping_ms)
+        b_delta = float(bufferbloat_delta_ms) if bufferbloat_delta_ms is not None else max(0.0, round(p_load - float(ping_ms), 1))
+        if not bufferbloat_grade:
+            if b_delta < 5.0:
+                b_grade = "A+"
+            elif b_delta < 15.0:
+                b_grade = "A"
+            elif b_delta < 30.0:
+                b_grade = "B"
+            elif b_delta < 60.0:
+                b_grade = "C"
+            elif b_delta < 200.0:
+                b_grade = "D"
+            else:
+                b_grade = "F"
+        else:
+            b_grade = str(bufferbloat_grade)
+
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
                 INSERT INTO speedtests 
-                (timestamp, download_mbps, upload_mbps, ping_ms, jitter, server_name, source)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (timestamp, download_mbps, upload_mbps, ping_ms, jitter, server_name, source, ping_under_load, bufferbloat_grade, bufferbloat_delta_ms)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (now, download_mbps, upload_mbps, ping_ms, jitter, server_name, source)
+                (now, download_mbps, upload_mbps, ping_ms, jitter, server_name, source, p_load, b_grade, b_delta)
             )
             await db.commit()
             return cursor.lastrowid
@@ -304,7 +414,7 @@ class DBService:
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
-                SELECT id, timestamp, download_mbps, upload_mbps, ping_ms, jitter, server_name, source
+                SELECT id, timestamp, download_mbps, upload_mbps, ping_ms, jitter, server_name, source, ping_under_load, bufferbloat_grade, bufferbloat_delta_ms
                 FROM speedtests
                 WHERE server_name NOT LIKE '%Fastweb Milan%'
                   AND server_name NOT LIKE '%Demo%'
@@ -1412,6 +1522,548 @@ class DBService:
                     "samples": row["sample_count"]
                 }
         return None
+
+    # =========================================================================
+    # LOCAL USERS & SESSIONS (v1.6.0 Module 1 & 2)
+    # =========================================================================
+    async def get_local_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """Recupera un utente locale in base allo username (case-insensitive)."""
+        u = str(username).strip().lower()
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                "SELECT * FROM local_users WHERE LOWER(username) = ?;",
+                (u,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                d = dict(row)
+                try:
+                    d["permissions"] = json.loads(d.get("permissions_json") or "[]")
+                except Exception:
+                    d["permissions"] = []
+                d["is_admin"] = bool(d.get("is_admin"))
+                return d
+        return None
+
+    async def get_local_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Recupera un utente locale in base al suo ID primario."""
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                "SELECT * FROM local_users WHERE id = ?;",
+                (user_id,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                d = dict(row)
+                try:
+                    d["permissions"] = json.loads(d.get("permissions_json") or "[]")
+                except Exception:
+                    d["permissions"] = []
+                d["is_admin"] = bool(d.get("is_admin"))
+                return d
+        return None
+
+    async def list_local_users(self) -> List[Dict[str, Any]]:
+        """Restituisce l'elenco di tutti gli utenti locali registrati (omettendo hash e salt)."""
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                "SELECT id, username, is_admin, permissions_json, created_at, last_login FROM local_users ORDER BY id ASC;"
+            )
+            rows = await cursor.fetchall()
+            users = []
+            for r in rows:
+                d = dict(r)
+                try:
+                    d["permissions"] = json.loads(d.get("permissions_json") or "[]")
+                except Exception:
+                    d["permissions"] = []
+                d["is_admin"] = bool(d.get("is_admin"))
+                d.pop("permissions_json", None)
+                users.append(d)
+            return users
+
+    async def create_local_user(
+        self,
+        username: str,
+        password_hash: str,
+        salt: str,
+        is_admin: bool = False,
+        permissions: Optional[List[str]] = None
+    ) -> int:
+        """Crea un nuovo utente locale e restituisce il suo ID."""
+        u = str(username).strip()
+        perms_json = json.dumps(permissions or [])
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                """
+                INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+                """,
+                (u, password_hash, salt, 1 if is_admin else 0, perms_json)
+            )
+            await db.commit()
+            return cursor.lastrowid
+
+    async def update_local_user(
+        self,
+        user_id: int,
+        username: Optional[str] = None,
+        password_hash: Optional[str] = None,
+        salt: Optional[str] = None,
+        is_admin: Optional[bool] = None,
+        permissions: Optional[List[str]] = None
+    ) -> bool:
+        """Aggiorna i campi di un utente locale esistente."""
+        updates = []
+        params = []
+        if username is not None:
+            updates.append("username = ?")
+            params.append(str(username).strip())
+        if password_hash is not None and salt is not None:
+            updates.append("password_hash = ?")
+            params.append(password_hash)
+            updates.append("salt = ?")
+            params.append(salt)
+        if is_admin is not None:
+            updates.append("is_admin = ?")
+            params.append(1 if is_admin else 0)
+        if permissions is not None:
+            updates.append("permissions_json = ?")
+            params.append(json.dumps(permissions))
+
+        if not updates:
+            return False
+
+        params.append(user_id)
+        query = f"UPDATE local_users SET {', '.join(updates)} WHERE id = ?;"
+        async with self.get_connection() as db:
+            cursor = await db.execute(query, tuple(params))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def delete_local_user(self, user_id: int) -> bool:
+        """Elimina un utente locale e rimuove a cascata le sue sessioni."""
+        async with self.get_connection() as db:
+            await db.execute("DELETE FROM user_sessions WHERE user_id = ?;", (user_id,))
+            cursor = await db.execute("DELETE FROM local_users WHERE id = ?;", (user_id,))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def count_admin_users(self) -> int:
+        """Conta quanti amministratori sono attualmente configurati."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("SELECT COUNT(*) FROM local_users WHERE is_admin = 1;")
+            row = await cursor.fetchone()
+            return row[0] if row else 0
+
+    async def update_user_last_login(self, user_id: int) -> None:
+        """Aggiorna il timestamp di ultimo accesso di un utente."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        async with self.get_connection() as db:
+            await db.execute(
+                "UPDATE local_users SET last_login = ? WHERE id = ?;",
+                (now_str, user_id)
+            )
+            await db.commit()
+
+    async def create_user_session(self, user_id: int, duration_days: int = 7) -> str:
+        """Genera e memorizza un nuovo token di sessione per l'utente specificato."""
+        from app.services.auth_service import auth_service
+        token = auth_service.generate_session_token()
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(days=duration_days)
+        async with self.get_connection() as db:
+            await db.execute(
+                """
+                INSERT INTO user_sessions (token, user_id, created_at, expires_at)
+                VALUES (?, ?, ?, ?);
+                """,
+                (token, user_id, now.isoformat(), expires_at.isoformat())
+            )
+            await db.commit()
+        return token
+
+    async def get_user_by_session_token(self, token: str) -> Optional[Dict[str, Any]]:
+        """Verifica un session token e restituisce i dati dell'utente se la sessione è valida e non scaduta."""
+        if not token:
+            return None
+        now_iso = datetime.now(timezone.utc).isoformat()
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                """
+                SELECT u.id, u.username, u.is_admin, u.permissions_json, u.created_at, u.last_login, s.expires_at
+                FROM user_sessions s
+                JOIN local_users u ON s.user_id = u.id
+                WHERE s.token = ? AND s.expires_at > ?;
+                """,
+                (token, now_iso)
+            )
+            row = await cursor.fetchone()
+            if row:
+                d = dict(row)
+                try:
+                    d["permissions"] = json.loads(d.get("permissions_json") or "[]")
+                except Exception:
+                    d["permissions"] = []
+                d["is_admin"] = bool(d.get("is_admin"))
+                d.pop("permissions_json", None)
+                return d
+        return None
+
+    async def delete_user_session(self, token: str) -> bool:
+        """Elimina la sessione specificata (logout)."""
+        if not token:
+            return False
+        async with self.get_connection() as db:
+            cursor = await db.execute("DELETE FROM user_sessions WHERE token = ?;", (token,))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def clear_local_users(self) -> None:
+        """Svuota utenti locali e sessioni (utilizzato nei test di integrazione)."""
+        async with self.get_connection() as db:
+            await db.execute("DELETE FROM user_sessions;")
+            await db.execute("DELETE FROM local_users;")
+            await db.commit()
+
+    # =========================================================================
+    # GESTIONE DEVICE SCHEDULES & PARENTAL CONTROL (v1.6.0 Modulo 1 & 2)
+    # =========================================================================
+    async def get_device_schedules(self, only_enabled: bool = False) -> List[Dict[str, Any]]:
+        """Recupera l'elenco delle pianificazioni configurate."""
+        query = "SELECT * FROM device_schedules"
+        if only_enabled:
+            query += " WHERE enabled = 1"
+        query += " ORDER BY id ASC;"
+        
+        async with self.get_connection() as db:
+            cursor = await db.execute(query)
+            rows = await cursor.fetchall()
+            results = []
+            for r in rows:
+                d = dict(r)
+                d["enabled"] = bool(d.get("enabled"))
+                try:
+                    d["target_ids"] = json.loads(d.get("target_ids_json") or "[]")
+                except Exception:
+                    d["target_ids"] = []
+                try:
+                    d["days_of_week"] = json.loads(d.get("days_of_week_json") or "[]")
+                except Exception:
+                    d["days_of_week"] = []
+                results.append(d)
+            return results
+
+    async def get_device_schedule_by_id(self, schedule_id: int) -> Optional[Dict[str, Any]]:
+        """Recupera una pianificazione per ID."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("SELECT * FROM device_schedules WHERE id = ?;", (schedule_id,))
+            row = await cursor.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["enabled"] = bool(d.get("enabled"))
+            try:
+                d["target_ids"] = json.loads(d.get("target_ids_json") or "[]")
+            except Exception:
+                d["target_ids"] = []
+            try:
+                d["days_of_week"] = json.loads(d.get("days_of_week_json") or "[]")
+            except Exception:
+                d["days_of_week"] = []
+            return d
+
+    async def create_device_schedule(
+        self,
+        name: str,
+        target_type: str,
+        target_ids: List[str],
+        days_of_week: List[str],
+        start_time: str,
+        end_time: str,
+        action: str = "pause",
+        enabled: bool = True
+    ) -> int:
+        """Crea una nuova regola di pianificazione/parental control."""
+        target_ids_json = json.dumps(target_ids)
+        days_json = json.dumps(days_of_week)
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                """
+                INSERT INTO device_schedules (name, target_type, target_ids_json, days_of_week_json, start_time, end_time, action, enabled, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                """,
+                (name, target_type, target_ids_json, days_json, start_time, end_time, action, 1 if enabled else 0)
+            )
+            await db.commit()
+            return cursor.lastrowid
+
+    async def update_device_schedule(self, schedule_id: int, **fields) -> bool:
+        """Aggiorna i parametri di una pianificazione esistente."""
+        allowed_fields = {"name", "target_type", "target_ids", "days_of_week", "start_time", "end_time", "action", "enabled"}
+        updates = []
+        params = []
+        for k, v in fields.items():
+            if k not in allowed_fields:
+                continue
+            if k == "target_ids":
+                updates.append("target_ids_json = ?")
+                params.append(json.dumps(v))
+            elif k == "days_of_week":
+                updates.append("days_of_week_json = ?")
+                params.append(json.dumps(v))
+            elif k == "enabled":
+                updates.append("enabled = ?")
+                params.append(1 if v else 0)
+            else:
+                updates.append(f"{k} = ?")
+                params.append(v)
+        if not updates:
+            return False
+        updates.append("updated_at = CURRENT_TIMESTAMP")
+        params.append(schedule_id)
+        
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                f"UPDATE device_schedules SET {', '.join(updates)} WHERE id = ?;",
+                tuple(params)
+            )
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def delete_device_schedule(self, schedule_id: int) -> bool:
+        """Elimina una pianificazione."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("DELETE FROM device_schedules WHERE id = ?;", (schedule_id,))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def toggle_device_schedule(self, schedule_id: int, enabled: Optional[bool] = None) -> bool:
+        """Attiva o disattiva una regola di pianificazione."""
+        async with self.get_connection() as db:
+            if enabled is None:
+                cursor = await db.execute("UPDATE device_schedules SET enabled = 1 - enabled, updated_at = CURRENT_TIMESTAMP WHERE id = ?;", (schedule_id,))
+            else:
+                cursor = await db.execute("UPDATE device_schedules SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;", (1 if enabled else 0, schedule_id))
+            await db.commit()
+            return cursor.rowcount > 0
+
+    async def clear_device_schedules(self) -> None:
+        """Svuota tutte le pianificazioni (utilizzato nei test)."""
+        async with self.get_connection() as db:
+            await db.execute("DELETE FROM device_schedules;")
+            await db.commit()
+
+    async def run_database_maintenance(self, vacuum: bool = False) -> Dict[str, Any]:
+        """Esegue manutenzione e compattazione SQLite (PRAGMA optimize, VACUUM opzionale)."""
+        async with self.get_connection() as db:
+            await db.execute("PRAGMA optimize;")
+            if vacuum:
+                await db.execute("VACUUM;")
+            await db.commit()
+        logger.info(f"SQLite optimization completed (vacuum={vacuum}).")
+        return {
+            "status": "success",
+            "pragma_optimize": True,
+            "vacuum": vacuum,
+            "vacuum_performed": vacuum,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    # ----------------- DISASTER RECOVERY: BACKUP & RESTORE (v1.6.0 Modulo 1) -----------------
+    async def export_system_backup(self) -> Dict[str, Any]:
+        """
+        Esporta un backup atomico completo dello stato di configurazione della dashboard:
+        - Metadati dispositivi (nomi, categorie, icone, note, preferiti, IP statici)
+        - Impostazioni globali dashboard e automazioni (app_settings)
+        - Regole di parental scheduling (device_schedules)
+        - Utenti locali e permessi (local_users)
+        """
+        # 1. Device metadata
+        meta_dict = await self.get_all_device_metadata()
+        device_metadata_list = list(meta_dict.values())
+
+        # 2. App settings
+        app_settings_dict = await self.get_all_settings()
+
+        # 3. Device schedules
+        schedules_list = await self.get_device_schedules(only_enabled=False)
+
+        # 4. Local users (elenco completo per ripristino account)
+        local_users_list = []
+        async with self.get_connection() as db:
+            cursor = await db.execute(
+                "SELECT id, username, password_hash, salt, is_admin, permissions_json, created_at FROM local_users ORDER BY id ASC;"
+            )
+            rows = await cursor.fetchall()
+            for r in rows:
+                user_dict = dict(r)
+                if isinstance(user_dict.get("permissions_json"), str):
+                    try:
+                        user_dict["permissions"] = json.loads(user_dict["permissions_json"])
+                    except Exception:
+                        user_dict["permissions"] = []
+                local_users_list.append(user_dict)
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        return {
+            "metadata": {
+                "backup_version": "1.6.0",
+                "schema_version": 1,
+                "exported_at": now_iso,
+                "app_name": "eero Custom Dashboard",
+            },
+            "device_metadata": device_metadata_list,
+            "app_settings": app_settings_dict,
+            "device_schedules": schedules_list,
+            "local_users": local_users_list,
+        }
+
+    async def import_system_restore(self, backup_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Esegue il ripristino transazionale atomico dei dati da un payload di backup valido.
+        """
+        if not isinstance(backup_data, dict):
+            raise ValueError("Il payload di backup non è un oggetto JSON valido.")
+
+        meta = backup_data.get("metadata") or {}
+        if not meta and "device_metadata" not in backup_data and "app_settings" not in backup_data and "device_schedules" not in backup_data:
+            raise ValueError("Struttura del file di backup non riconosciuta o priva di sezioni valide.")
+
+        restored_stats = {
+            "device_metadata": 0,
+            "app_settings": 0,
+            "device_schedules": 0,
+            "local_users": 0,
+        }
+
+        async with self.get_connection() as db:
+            # 1. Ripristino device_metadata
+            dev_meta = backup_data.get("device_metadata") or []
+            if isinstance(dev_meta, list):
+                for dm in dev_meta:
+                    mac = str(dm.get("mac_address") or "").lower().strip()
+                    if not mac:
+                        continue
+                    await db.execute(
+                        """
+                        INSERT INTO device_metadata
+                        (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(mac_address) DO UPDATE SET
+                            custom_name = excluded.custom_name,
+                            custom_icon = excluded.custom_icon,
+                            category = excluded.category,
+                            custom_notes = excluded.custom_notes,
+                            static_ip = excluded.static_ip,
+                            is_favorite = excluded.is_favorite,
+                            is_low_latency_target = excluded.is_low_latency_target,
+                            profile_id = excluded.profile_id,
+                            updated_at = CURRENT_TIMESTAMP;
+                        """,
+                        (
+                            mac,
+                            dm.get("custom_name"),
+                            dm.get("custom_icon") or "device",
+                            dm.get("category") or "Altro",
+                            dm.get("custom_notes"),
+                            dm.get("static_ip"),
+                            1 if dm.get("is_favorite") else 0,
+                            1 if dm.get("is_low_latency_target") else 0,
+                            dm.get("profile_id"),
+                        )
+                    )
+                    restored_stats["device_metadata"] += 1
+
+            # 2. Ripristino app_settings
+            settings_dict = backup_data.get("app_settings") or {}
+            if isinstance(settings_dict, dict):
+                for k, v in settings_dict.items():
+                    if k:
+                        await db.execute(
+                            """
+                            INSERT INTO app_settings (key, value, updated_at)
+                            VALUES (?, ?, CURRENT_TIMESTAMP)
+                            ON CONFLICT(key) DO UPDATE SET
+                                value = excluded.value,
+                                updated_at = CURRENT_TIMESTAMP;
+                            """,
+                            (str(k), str(v) if v is not None else "")
+                        )
+                        restored_stats["app_settings"] += 1
+
+            # 3. Ripristino device_schedules
+            schedules_list = backup_data.get("device_schedules") or []
+            if isinstance(schedules_list, list):
+                for sc in schedules_list:
+                    name = str(sc.get("name") or "").strip()
+                    if not name:
+                        continue
+                    t_type = sc.get("target_type") or "devices"
+                    t_ids = sc.get("target_ids") or []
+                    if not isinstance(t_ids, list):
+                        t_ids = []
+                    d_week = sc.get("days_of_week") or []
+                    if not isinstance(d_week, list):
+                        d_week = []
+                    await db.execute(
+                        """
+                        INSERT INTO device_schedules
+                        (name, target_type, target_ids_json, days_of_week_json, start_time, end_time, action, enabled, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+                        """,
+                        (
+                            name,
+                            t_type,
+                            json.dumps(t_ids),
+                            json.dumps(d_week),
+                            sc.get("start_time") or "22:00",
+                            sc.get("end_time") or "07:00",
+                            sc.get("action") or "pause",
+                            1 if sc.get("enabled", True) else 0,
+                        )
+                    )
+                    restored_stats["device_schedules"] += 1
+
+            # 4. Ripristino local_users
+            users_list = backup_data.get("local_users") or []
+            if isinstance(users_list, list):
+                for u in users_list:
+                    uname = str(u.get("username") or "").strip()
+                    p_hash = u.get("password_hash")
+                    p_salt = u.get("salt")
+                    if uname and p_hash and p_salt:
+                        p_json = json.dumps(u.get("permissions") or [])
+                        is_adm = 1 if u.get("is_admin") else 0
+                        await db.execute(
+                            """
+                            INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
+                            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            ON CONFLICT(username) DO UPDATE SET
+                                password_hash = excluded.password_hash,
+                                salt = excluded.salt,
+                                is_admin = excluded.is_admin,
+                                permissions_json = excluded.permissions_json;
+                            """,
+                            (uname, p_hash, p_salt, is_adm, p_json)
+                        )
+                        restored_stats["local_users"] += 1
+
+            await db.commit()
+
+        # Log evento allarme
+        await self.save_alert(
+            alert_type="system_backup_restored",
+            title="💾 Ripristino Backup di Sistema Eseguito",
+            message=f"Ripristino completato con successo: {restored_stats['device_metadata']} metadati dispositivi, {restored_stats['app_settings']} impostazioni, {restored_stats['device_schedules']} regole orarie e {restored_stats['local_users']} utenti."
+        )
+
+        return {
+            "status": "success",
+            "message": "Ripristino del backup completato con successo.",
+            "restored_elements": restored_stats,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
 
 # Istanza singleton DB

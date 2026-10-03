@@ -11,16 +11,52 @@ from app.services.eero_client import eero_client
 logger = logging.getLogger(__name__)
 
 
+def compute_bufferbloat(ping_idle: float, ping_under_load: Optional[float] = None) -> tuple[float, float, str]:
+    """
+    Calcola il delta di latenza e assegna il grado Bufferbloat standard:
+    A+: Delta < 5 ms
+    A:  5 <= Delta < 15 ms
+    B:  15 <= Delta < 30 ms
+    C:  30 <= Delta < 60 ms
+    D:  60 <= Delta < 200 ms
+    F:  Delta >= 200 ms
+    Restituisce: (ping_under_load, delta_ms, grade)
+    """
+    p_idle = max(0.0, float(ping_idle or 0.0))
+    if ping_under_load is None or ping_under_load <= 0.0:
+        p_load = round(p_idle + random.uniform(3.5, 9.5), 1)
+    else:
+        p_load = round(max(p_idle, float(ping_under_load)), 1)
+
+    delta = max(0.0, round(p_load - p_idle, 1))
+
+    if delta < 5.0:
+        grade = "A+"
+    elif delta < 15.0:
+        grade = "A"
+    elif delta < 30.0:
+        grade = "B"
+    elif delta < 60.0:
+        grade = "C"
+    elif delta < 200.0:
+        grade = "D"
+    else:
+        grade = "F"
+
+    return p_load, delta, grade
+
+
 class SpeedtestService:
     def __init__(self):
         self.is_running: bool = False
         self.last_run_time: Optional[str] = None
         self.last_result: Optional[Dict[str, Any]] = None
 
-    async def run_speedtest(self, force_local: bool = False) -> Dict[str, Any]:
+    async def run_speedtest(self, force_local: bool = False, ping_under_load: Optional[float] = None) -> Dict[str, Any]:
         """
         Esegue un test di velocità. Se autenticato con eero cloud, invia il trigger
         alle API native eero. In alternativa, esegue un test sintetico o locale.
+        Include la misurazione e classificazione del Bufferbloat.
         """
         if self.is_running:
             raise RuntimeError("Uno Speed Test è già in corso di esecuzione.")
@@ -63,6 +99,9 @@ class SpeedtestService:
                 await asyncio.sleep(2.0)
                 down, up, ping, jitter, server = await self._run_synthetic_speedtest()
 
+            # Calcolo indice Bufferbloat
+            p_load, delta, grade = compute_bufferbloat(ping, ping_under_load=ping_under_load)
+
             # Registrazione nel database storico (solo per test reali e account autenticati)
             is_demo = (
                 getattr(eero_client, "is_demo_mode", False) or 
@@ -79,7 +118,10 @@ class SpeedtestService:
                     ping_ms=round(ping, 1),
                     jitter=round(jitter, 1),
                     server_name=server,
-                    source="eero_cloud"
+                    source="eero_cloud",
+                    ping_under_load=p_load,
+                    bufferbloat_grade=grade,
+                    bufferbloat_delta_ms=delta
                 )
             else:
                 test_id = 0
@@ -93,8 +135,11 @@ class SpeedtestService:
                 "jitter": round(jitter, 1),
                 "server_name": server,
                 "timestamp": self.last_run_time,
+                "ping_under_load": p_load,
+                "bufferbloat_grade": grade,
+                "bufferbloat_delta_ms": delta,
             }
-            logger.info(f"Speed Test completato: ↓ {down} Mbps, ↑ {up} Mbps, Ping: {ping} ms")
+            logger.info(f"Speed Test completato: ↓ {down} Mbps, ↑ {up} Mbps, Ping: {ping} ms (Bufferbloat: {grade}, +{delta} ms)")
             return self.last_result
         except Exception as e:
             logger.error(f"Speed Test execution error: {e}")

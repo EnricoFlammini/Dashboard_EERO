@@ -1,8 +1,10 @@
 import json
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
 from app.services.db import db_service
@@ -376,7 +378,7 @@ async def test_dns_instance(payload: Optional[DNSTestRequest] = None):
     return {"status": "success" if res.get("success") else "error", **res}
 
 
-@router.post("/dns/sync")
+@router.post("/dns/sync", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def sync_dns_devices(payload: Optional[DNSSyncRequest] = None):
     """Sincronizza l'elenco dei dispositivi verso tutte le istanze DNS abilitate (o una specifica)."""
     cached = background_poller.get_cached_state()
@@ -434,7 +436,7 @@ async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
     return res
 
 
-@router.post("/adguard/sync")
+@router.post("/adguard/sync", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     """Forza la sincronizzazione immediata di tutti i dispositivi correnti verso AdGuard Home."""
     cached = background_poller.get_cached_state()
@@ -455,3 +457,46 @@ async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
         "status": "success",
         **res
     }
+
+
+# =========================================================================
+# ROUTINE DI MANUTENZIONE NOTTURNA AUTOMATICA MESH & SQLITE (v1.6.0 Modulo 1)
+# =========================================================================
+
+class NightlyMaintenanceSettingsRequest(BaseModel):
+    enabled: bool = Field(False, description="Abilita il ciclo di manutenzione notturna automatica")
+    time: str = Field("04:00", description="Orario di esecuzione giornaliero (HH:MM)")
+    auto_reboot: bool = Field(False, description="Abilita riavvio preventivo controllato se la stabilità mesh degrada sotto soglia")
+    reboot_threshold_score: int = Field(50, ge=10, le=90, description="Soglia Health Score per scatenare il riavvio (default: 50)")
+    vacuum: bool = Field(False, description="Esegui compattazione profonda VACUUM oltre a PRAGMA optimize")
+
+
+@router.get("/nightly-maintenance")
+async def get_nightly_maintenance_settings():
+    """Recupera le impostazioni correnti di manutenzione notturna e ultimo timestamp di esecuzione."""
+    from app.services.scheduler import maintenance_engine
+    cfg = await maintenance_engine.get_settings()
+    return {"status": "success", "settings": cfg}
+
+
+@router.post("/nightly-maintenance", dependencies=[Depends(require_permission("action_manage_rules"))])
+async def update_nightly_maintenance_settings(payload: NightlyMaintenanceSettingsRequest):
+    """Aggiorna le impostazioni del ciclo di manutenzione notturna."""
+    from app.services.scheduler import maintenance_engine
+    await maintenance_engine.save_settings(
+        enabled=payload.enabled,
+        time=payload.time,
+        auto_reboot=payload.auto_reboot,
+        reboot_threshold_score=payload.reboot_threshold_score,
+        vacuum=payload.vacuum
+    )
+    return {"status": "success", "message": "Impostazioni di manutenzione notturna salvate con successo."}
+
+
+@router.post("/nightly-maintenance/run", dependencies=[Depends(require_permission("action_reboot_nodes"))])
+async def run_nightly_maintenance_now():
+    """Avvia manualmente ed immediatamente il ciclo di manutenzione e compattazione database."""
+    from app.services.scheduler import maintenance_engine
+    res = await maintenance_engine.run_maintenance_now(force=True)
+    return res
+

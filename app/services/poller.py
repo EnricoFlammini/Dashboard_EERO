@@ -66,6 +66,13 @@ class BackgroundPoller:
         self._prev_poll_time: Optional[datetime] = None
         self._prev_connected_wireless_macs: Set[str] = set()
 
+        # Cloud Resilience & Graceful Disconnection (Issue #55)
+        self._consecutive_failed_polls: int = 0
+        self._last_successful_poll: Optional[datetime] = None
+        self.data_stale: bool = False
+        self.cloud_status: str = "connected"
+        self._cloud_alert_sent: bool = False
+
     async def start(self):
         if self._running:
             return
@@ -105,7 +112,11 @@ class BackgroundPoller:
             "health_score": self.cached_health_score,
             "health_details": self.cached_health_details,
             "iot_anomalies": self.cached_iot_anomalies,
-            "last_poll_time": self._last_poll_time.isoformat() if self._last_poll_time else None,
+            "last_poll_time": self._last_successful_poll.isoformat() if self._last_successful_poll else (self._last_poll_time.isoformat() if self._last_poll_time else None),
+            "last_successful_poll": self._last_successful_poll.isoformat() if self._last_successful_poll else None,
+            "data_stale": self.data_stale,
+            "cloud_status": self.cloud_status,
+            "consecutive_failed_polls": self._consecutive_failed_polls,
             "is_authenticated": eero_client.is_authenticated,
             "demo_mode": settings.demo_mode or (eero_client.user_token and eero_client.user_token.startswith("demo_")),
             "active_network_id": eero_client.current_network_id,
@@ -561,7 +572,12 @@ class BackgroundPoller:
         
         while self._running:
             try:
-                poll_interval = int(await db_service.get_setting("poll_interval", str(settings.poll_interval)))
+                base_interval = int(await db_service.get_setting("poll_interval", str(settings.poll_interval)))
+                if self._consecutive_failed_polls > 0:
+                    # Progressive backoff durante disconnessione o indisponibilità cloud (max 120s)
+                    poll_interval = min(120, base_interval * min(self._consecutive_failed_polls + 1, 4))
+                else:
+                    poll_interval = base_interval
                 await asyncio.sleep(poll_interval)
                 await self._poll_and_cache()
                 await self._run_periodic_jobs()
@@ -582,10 +598,44 @@ class BackgroundPoller:
                 except Exception as e:
                     logger.warning(f"Error loading known MACs from DB: {e}")
 
-            # 1. Recupero dati da eero client
-            network_details = await eero_client.get_network_details()
-            eeros = await eero_client.get_eeros()
-            devices = await eero_client.get_devices()
+            # 1. Recupero dati da eero client con resilienza ad outage/timeout cloud (Issue #55)
+            try:
+                network_details = await eero_client.get_network_details()
+                eeros = await eero_client.get_eeros()
+                devices = await eero_client.get_devices()
+            except Exception as e:
+                self._consecutive_failed_polls += 1
+                self.data_stale = True
+                err_str = str(e).lower()
+                status_code = getattr(getattr(e, "response", None), "status_code", None)
+                if status_code == 401 or "401" in err_str or "unauthorized" in err_str or "expired" in err_str:
+                    self.cloud_status = "unauthorized"
+                else:
+                    self.cloud_status = "unreachable"
+
+                logger.warning(
+                    f"Cloud poll attempt failed ({self._consecutive_failed_polls} consecutive failure(s), "
+                    f"cloud_status='{self.cloud_status}'): {e}"
+                )
+
+                if self._consecutive_failed_polls >= 3 and not self._cloud_alert_sent:
+                    self._cloud_alert_sent = True
+                    asyncio.create_task(notification_service.notify_cloud_unreachable(
+                        reason=self.cloud_status,
+                        consecutive_failures=self._consecutive_failed_polls
+                    ))
+                # Interrompi il ciclo senza aggiornare il timestamp di poll né i nodi/allarmi falsi
+                return
+
+            # Se la chiamata ha avuto successo e l'allarme era attivo, notifica il ripristino
+            if self._cloud_alert_sent:
+                asyncio.create_task(notification_service.notify_cloud_recovered())
+                self._cloud_alert_sent = False
+
+            self._consecutive_failed_polls = 0
+            self.data_stale = False
+            self.cloud_status = "connected"
+
             try:
                 profiles = await eero_client.get_profiles()
             except Exception as ep:
@@ -886,17 +936,18 @@ class BackgroundPoller:
             except Exception as usage_err:
                 logger.debug(f"Device usage sampling error: {usage_err}")
 
-            # Rilevamento nodi eero offline (Issue #34)
-            for node in eeros:
-                node_id = str(node.get("id") or node.get("serial"))
-                node_status = str(node.get("status") or "").lower()
-                status = "online" if node_status in ("online", "green") else ("rebooting" if node_status == "rebooting" else "offline")
-                if node_id in self._known_eeros_status:
-                    prev_status = self._known_eeros_status[node_id]
-                    # Allarme disconnessione solo per cadute impreviste (non per riavvii intenzionali)
-                    if prev_status == "online" and status == "offline":
-                        asyncio.create_task(notification_service.notify_node_offline(node))
-                self._known_eeros_status[node_id] = status
+            # Rilevamento nodi eero offline (Issue #34) - Soppressione falsi allarmi durante interruzioni cloud (Issue #55)
+            if self._consecutive_failed_polls == 0 and not self.data_stale:
+                for node in eeros:
+                    node_id = str(node.get("id") or node.get("serial"))
+                    node_status = str(node.get("status") or "").lower()
+                    status = "online" if node_status in ("online", "green") else ("rebooting" if node_status == "rebooting" else "offline")
+                    if node_id in self._known_eeros_status:
+                        prev_status = self._known_eeros_status[node_id]
+                        # Allarme disconnessione solo per cadute impreviste (non per riavvii intenzionali)
+                        if prev_status == "online" and status == "offline":
+                            asyncio.create_task(notification_service.notify_node_offline(node))
+                    self._known_eeros_status[node_id] = status
 
             # 3.7 Rilevamento / Aggiornamento Anomalie Traffico Notturno IoT (v1.6.0 Modulo 1)
             try:
@@ -922,7 +973,8 @@ class BackgroundPoller:
                 self.cached_devices = enriched_devices
             if profiles or not self.cached_profiles:
                 self.cached_profiles = profiles
-            self._last_poll_time = datetime.now(timezone.utc)
+            self._last_successful_poll = datetime.now(timezone.utc)
+            self._last_poll_time = self._last_successful_poll
 
             # 6. Sincronizzazione automatica Speed Test reale da eero Gateway
             sp = network_details.get("speedtest") if isinstance(network_details, dict) else None
@@ -1040,6 +1092,20 @@ class BackgroundPoller:
                 except Exception as err:
                     logger.debug(f"Periodic eero release notes refresh skipped/failed: {err}")
             asyncio.create_task(_safe_news_refresh())
+
+        # G. Parental Scheduling & Regole Temporali (v1.6.0 Modulo 1)
+        try:
+            from app.services.scheduler import schedule_engine
+            asyncio.create_task(schedule_engine.evaluate_schedules(now))
+        except Exception as sch_err:
+            logger.debug(f"Periodic schedule evaluation error: {sch_err}")
+
+        # H. Manutenzione Notturna Mesh & Compattazione SQLite (v1.6.0 Modulo 1)
+        try:
+            from app.services.scheduler import maintenance_engine
+            asyncio.create_task(maintenance_engine.check_and_run_nightly_maintenance(now))
+        except Exception as maint_err:
+            logger.debug(f"Periodic maintenance check error: {maint_err}")
 
     async def _send_daily_digest(self, lang: Optional[str] = None) -> Dict[str, Any]:
         try:

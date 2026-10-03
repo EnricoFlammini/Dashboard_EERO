@@ -1,9 +1,11 @@
 import logging
 from typing import Any, Dict, List, Optional
 import re
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
+
+from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
 from app.services.eero_client import eero_client, get_adguard_tags
@@ -210,7 +212,7 @@ async def export_adguard(
 
 
 
-@router.post("/{device_id_or_mac:path}/metadata")
+@router.post("/{device_id_or_mac:path}/metadata", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def save_device_metadata(device_id_or_mac: str, payload: DeviceMetadataRequest):
     """Salva nel database SQLite locale note, categoria, icona personalizzata e preferiti per il dispositivo."""
     clean_target = device_id_or_mac.strip().lower()
@@ -231,7 +233,7 @@ async def save_device_metadata(device_id_or_mac: str, payload: DeviceMetadataReq
     return {"status": "success", "metadata": updated}
 
 
-@router.post("/{device_id:path}/rename")
+@router.post("/{device_id:path}/rename", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def rename_device(device_id: str, payload: DeviceRenameRequest):
     """Rinomina il dispositivo sincronizzando il nuovo nickname con il cloud eero."""
     try:
@@ -341,7 +343,7 @@ async def get_device_rules(mac_address: str):
         }
 
 
-@router.post("/{mac_address}/reservation")
+@router.post("/{mac_address}/reservation", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def set_device_reservation(mac_address: str, payload: ReservationRequest):
     """Riserva un IP statico DHCP per il dispositivo su Amazon eero, riassegnando se necessario."""
     mac_clean = mac_address.lower().strip()
@@ -376,7 +378,7 @@ async def set_device_reservation(mac_address: str, payload: ReservationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{mac_address}/reservation")
+@router.delete("/{mac_address}/reservation", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def delete_device_reservation(mac_address: str):
     """Rimuove la prenotazione IP statico dal router eero."""
     mac_clean = mac_address.lower().strip()
@@ -415,7 +417,7 @@ async def get_port_forwards_and_reservations():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{mac_address}/forwards")
+@router.post("/{mac_address}/forwards", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def create_device_port_forward(mac_address: str, payload: PortForwardRequest):
     """Aggiunge una nuova regola di inoltro porte per il dispositivo."""
     try:
@@ -432,7 +434,7 @@ async def create_device_port_forward(mac_address: str, payload: PortForwardReque
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{mac_address}/forwards/{forward_id}")
+@router.delete("/{mac_address}/forwards/{forward_id}", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def delete_device_port_forward(mac_address: str, forward_id: str):
     """Elimina una regola di inoltro porte."""
     try:

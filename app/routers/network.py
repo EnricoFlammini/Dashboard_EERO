@@ -2,8 +2,10 @@ import logging
 import secrets
 import string
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
 from app.services.eero_client import eero_client, EERO_API_BASE
@@ -164,7 +166,7 @@ async def get_mesh_nodes():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/reboot")
+@router.post("/reboot", dependencies=[Depends(require_permission("action_reboot_nodes"))])
 async def reboot_network():
     """Invia il comando di riavvio all'intera rete mesh."""
     try:
@@ -175,7 +177,7 @@ async def reboot_network():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/eeros/{eero_id}/reboot")
+@router.post("/eeros/{eero_id}/reboot", dependencies=[Depends(require_permission("action_reboot_nodes"))])
 async def reboot_single_eero(eero_id: str):
     """Riavvia un singolo nodo eero mesh."""
     try:
@@ -237,7 +239,7 @@ async def get_guest_network():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/guest")
+@router.post("/guest", dependencies=[Depends(require_permission("action_toggle_guest"))])
 async def update_guest_network(payload: GuestNetworkRequest):
     """Aggiorna le impostazioni della rete ospiti (Attiva/Disattiva, SSID, Password)."""
     try:

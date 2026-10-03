@@ -1,0 +1,117 @@
+"""
+Router per l'autenticazione locale e gestione sessioni utente (v1.6.0 Modulo 1).
+Fornisce rotte per login, logout, verifica stato sessione e catalogo permessi RBAC.
+"""
+
+import logging
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from pydantic import BaseModel, Field
+
+from app.routers.dependencies import get_current_user, _extract_token_from_request
+from app.services.auth_service import auth_service
+from app.services.db import db_service
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/auth/local", tags=["Local Authentication"])
+
+
+class LocalLoginRequest(BaseModel):
+    username: str = Field(..., min_length=1, description="Nome utente locale registrato")
+    password: str = Field(..., min_length=1, description="Password in chiaro")
+
+
+@router.post("/login")
+async def local_login(payload: LocalLoginRequest, response: Response):
+    """
+    Autentica un utente locale tramite username e password PBKDF2/SHA-256.
+    Restituisce un session token e imposta un cookie HTTP-only sicuro.
+    """
+    username = payload.username.strip()
+    user = await db_service.get_local_user_by_username(username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenziali non valide (username o password errati)."
+        )
+
+    # Verifica password
+    is_valid = auth_service.verify_password(
+        payload.password,
+        user.get("password_hash", ""),
+        user.get("salt", "")
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenziali non valide (username o password errati)."
+        )
+
+    user_id = user["id"]
+    token = await db_service.create_user_session(user_id=user_id, duration_days=7)
+    await db_service.update_user_last_login(user_id=user_id)
+
+    # Impostazione cookie HTTP-only
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        max_age=7 * 24 * 3600,
+        httponly=True,
+        samesite="lax",
+        secure=False  # Consentito anche su reti locali HTTP standard
+    )
+
+    clean_user = {
+        "id": user["id"],
+        "username": user["username"],
+        "is_admin": user["is_admin"],
+        "permissions": user["permissions"],
+        "created_at": user.get("created_at"),
+        "last_login": user.get("last_login")
+    }
+
+    logger.info(f"Local Auth: Utente '{username}' autenticato con successo.")
+    return {
+        "status": "success",
+        "token": token,
+        "user": clean_user
+    }
+
+
+@router.post("/logout")
+async def local_logout(request: Request, response: Response):
+    """
+    Invalida il token di sessione attivo e rimuove il cookie HTTP-only.
+    """
+    token = _extract_token_from_request(request)
+    if token:
+        await db_service.delete_user_session(token)
+    
+    response.delete_cookie(key="session_token")
+    return {
+        "status": "success",
+        "message": "Sessione terminata con successo."
+    }
+
+
+@router.get("/me")
+async def get_current_user_profile(user: dict = Depends(get_current_user)):
+    """
+    Restituisce le informazioni del profilo utente attualmente loggato e la lista dei suoi permessi.
+    """
+    return {
+        "status": "success",
+        "user": user
+    }
+
+
+@router.get("/permissions")
+async def get_permissions_catalog():
+    """
+    Restituisce il catalogo descrittivo bilingue di tutti i permessi granulari supportati dalla dashboard.
+    """
+    return {
+        "status": "success",
+        "data": auth_service.get_permissions_catalog()
+    }

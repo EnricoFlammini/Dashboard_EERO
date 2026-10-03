@@ -58,6 +58,11 @@ try:
         watchtower_url: str = os.getenv("WATCHTOWER_URL", "")
         update_check_interval_hours: int = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
 
+        # Local Authentication & Admin Bootstrap (v1.6.0 Module 1)
+        admin_user: str = os.getenv("ADMIN_USER", "admin")
+        admin_password: str = os.getenv("ADMIN_PASSWORD", "admin")
+        require_local_auth: bool = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -108,6 +113,9 @@ except ImportError:
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
             self.cors_origins = os.getenv("CORS_ORIGINS", "")
+            self.admin_user = os.getenv("ADMIN_USER", "admin")
+            self.admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+            self.require_local_auth = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
 
         @property
         def full_version(self) -> str:

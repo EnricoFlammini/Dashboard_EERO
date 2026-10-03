@@ -229,6 +229,55 @@ class NotificationService:
         await self.send_telegram_message(text)
         await self.send_webhook("node_offline", eero_node)
 
+    async def notify_cloud_unreachable(self, reason: str = "unreachable", consecutive_failures: int = 3, lang: Optional[str] = None):
+        """Notifica disconnessione prolungata o sessione scaduta con il Cloud eero (Issue #55)."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+        is_auth = (reason == "unauthorized")
+
+        if is_auth:
+            title = "🔐 Sessione Cloud eero Scaduta!" if is_it else "🔐 eero Cloud Session Expired!"
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"{'La sessione con il cloud eero è scaduta o non è più valida (HTTP 401). È necessario eseguire nuovamente l\'accesso per ripristinare il monitoraggio.' if is_it else 'The session with eero cloud has expired or is no longer valid (HTTP 401). Re-login is required to restore monitoring.'}"
+            )
+            db_msg = "Sessione cloud eero scaduta (HTTP 401). Re-login richiesto." if is_it else "eero cloud session expired (HTTP 401). Re-login required."
+        else:
+            title = "⚠️ Cloud eero Non Raggiungibile!" if is_it else "⚠️ eero Cloud Unreachable!"
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"{f'Il cloud eero non risponde dopo {consecutive_failures} tentativi consecutivi. I dati in dashboard potrebbero non essere aggiornati (modalità cache attiva).' if is_it else f'eero cloud is unreachable after {consecutive_failures} consecutive poll attempts. Dashboard data may be stale (serving cached state).'}"
+            )
+            db_msg = f"Cloud eero non raggiungibile ({consecutive_failures} tentativi falliti)." if is_it else f"eero cloud unreachable ({consecutive_failures} failed attempts)."
+
+        await db_service.save_alert(
+            alert_type="cloud_unreachable",
+            title=title,
+            message=db_msg
+        )
+        await self.send_telegram_message(text)
+        await self.send_webhook("cloud_unreachable", {"reason": reason, "consecutive_failures": consecutive_failures})
+
+    async def notify_cloud_recovered(self, lang: Optional[str] = None):
+        """Notifica ripristino connettività con il Cloud eero dopo un'interruzione (Issue #55)."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+
+        title = "✅ Connessione Cloud eero Ripristinata!" if is_it else "✅ eero Cloud Connection Restored!"
+        text = (
+            f"<b>{title}</b>\n\n"
+            f"{'La connessione con i server cloud eero è tornata operativa. Il monitoraggio e la sincronizzazione telemetria sono ripresi regolarmente.' if is_it else 'Connection to eero cloud servers has been restored. Monitoring and telemetry sync have resumed normally.'}"
+        )
+        db_msg = "Connessione cloud eero ripristinata con successo." if is_it else "eero cloud connection restored successfully."
+
+        await db_service.save_alert(
+            alert_type="cloud_recovered",
+            title=title,
+            message=db_msg
+        )
+        await self.send_telegram_message(text)
+        await self.send_webhook("cloud_recovered", {"status": "connected"})
+
     async def notify_digest(self, digest_summary: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)
         is_it = (active_lang == "it")

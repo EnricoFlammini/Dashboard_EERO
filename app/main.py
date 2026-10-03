@@ -11,7 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
-from app.routers import analytics, auth, automations, devices, manual, metrics, network, profiles, speedtest, system
+from app.routers import (
+    analytics, auth, automations, devices, local_auth, manual,
+    metrics, network, profiles, schedules, speedtest, system, users
+)
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -124,12 +127,15 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Registrazione Router API
 app.include_router(auth.router)
+app.include_router(local_auth.router)
+app.include_router(users.router)
 app.include_router(network.router)
 app.include_router(devices.router)
 app.include_router(profiles.router)
 app.include_router(metrics.router)
 app.include_router(speedtest.router)
 app.include_router(automations.router)
+app.include_router(schedules.router)
 app.include_router(manual.router)
 app.include_router(system.router)
 app.include_router(analytics.router)
