@@ -4744,6 +4744,19 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    formatUserPermissionsCount(u) {
+      if (!u) return '';
+      const total = (this.permissionsCatalog && this.permissionsCatalog.length) ? this.permissionsCatalog.length : 10;
+      const isIt = this.currentLanguage === 'it';
+      if (u.is_admin || u.role === 'admin') {
+        return isIt ? `Tutti (${total} attivi)` : `All (${total} active)`;
+      }
+      const activeCount = (this.permissionsCatalog && this.permissionsCatalog.length)
+        ? this.permissionsCatalog.filter(p => (u.permissions || []).includes(p.key)).length
+        : (u.permissions ? u.permissions.length : 0);
+      return `${activeCount} / ${total} ` + (isIt ? 'attivi' : 'active');
+    },
+
     async saveLocalUser() {
       if (!this.localAuthToken) {
         this.showToast(

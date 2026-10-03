@@ -3137,7 +3137,7 @@
                                 x-text="u.role || (u.is_admin ? 'admin' : 'operator')"></span>
                         </td>
                         <td class="p-3.5">
-                          <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="u.is_admin ? ('Tutti (' + (u.permissions ? u.permissions.length : 10) + ' attivi)') : ((u.permissions ? u.permissions.length : 0) + ' / ' + (permissionsCatalog.length || 10) + ' attivi')"></div>
+                          <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="formatUserPermissionsCount(u)"></div>
                         </td>
                         <td class="p-3.5">
                           <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
@@ -5846,7 +5846,7 @@
                               x-text="u.role || (u.is_admin ? 'admin' : 'operator')"></span>
                       </td>
                       <td class="p-3">
-                        <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="u.is_admin ? ('Tutti (' + (u.permissions ? u.permissions.length : 10) + ' attivi)') : ((u.permissions ? u.permissions.length : 0) + ' / ' + (permissionsCatalog.length || 10) + ' attivi')"></div>
+                        <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="formatUserPermissionsCount(u)"></div>
                       </td>
                       <td class="p-3">
                         <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
