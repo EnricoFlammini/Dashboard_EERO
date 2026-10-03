@@ -683,7 +683,10 @@
     "role_admin": "Amministratore",
     "role_operator": "Operatore",
     "role_viewer": "Sola Lettura",
-    "no_access": "Non disponi dei permessi necessari per questa operazione."
+    "no_access": "Non disponi dei permessi necessari per questa operazione.",
+    "admin_required_title": "Accesso Amministratore Richiesto",
+    "admin_required_desc": "Per gestire gli utenti, creare nuovi account o modificare i permessi RBAC è necessario effettuare l'accesso come Amministratore (credenziali predefinite: admin / admin).",
+    "login_as_admin_btn": "Accedi come Admin"
   },
   "users_modal": {
     "title": "Gestione Utenti & Matrice Permessi",

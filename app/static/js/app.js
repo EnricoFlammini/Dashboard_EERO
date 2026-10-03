@@ -4384,12 +4384,21 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     can(permKey) {
       if (!this.currentUser) return true; // Default open in single-user mode
-      if (this.currentUser.role === 'admin') return true;
+      if (this.currentUser.role === 'admin' || this.currentUser.is_admin) return true;
       if (Array.isArray(this.currentUser.permissions)) {
         if (this.currentUser.permissions.includes('*')) return true;
         return this.currentUser.permissions.includes(permKey);
       }
       return false;
+    },
+
+    openLocalLoginModal(defaultUsername = 'admin') {
+      this.localLoginData = {
+        username: defaultUsername || 'admin',
+        password: '',
+        error: ''
+      };
+      this.showLocalLoginModal = true;
     },
 
     async checkLocalAuthSession() {
@@ -4448,6 +4457,10 @@ document.addEventListener('alpine:init', () => {
             (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
             'success'
           );
+          if (this.currentTab === 'settings-users') {
+            await this.loadPermissionsCatalog();
+            await this.loadLocalUsers();
+          }
         } else {
           this.localLoginData.error = data.detail || (this.currentLanguage === 'it' ? 'Credenziali non valide' : 'Invalid credentials');
         }
@@ -4517,6 +4530,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     startCreateUser() {
+      if (!this.localAuthToken) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
+          this.currentLanguage === 'it' ? 'Accedi come amministratore per creare nuovi utenti.' : 'Log in as administrator to create new users.',
+          'warning'
+        );
+        this.openLocalLoginModal('admin');
+        return;
+      }
       this.userForm = {
         id: '',
         username: '',
@@ -4530,6 +4552,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     startEditUser(u) {
+      if (!this.localAuthToken) {
+        this.openLocalLoginModal('admin');
+        return;
+      }
       this.userForm = {
         id: u.id,
         username: u.username,
@@ -4567,6 +4593,15 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveLocalUser() {
+      if (!this.localAuthToken) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
+          this.currentLanguage === 'it' ? 'Accedi con l\'account amministratore per salvare gli utenti.' : 'Log in as administrator to save users.',
+          'warning'
+        );
+        this.openLocalLoginModal('admin');
+        return;
+      }
       if (!this.userForm.username) {
         this.showToast('Errore', 'Username obbligatorio', 'warning');
         return;
@@ -4608,6 +4643,12 @@ document.addEventListener('alpine:init', () => {
           await this.loadLocalUsers();
         } else {
           const err = await res.json();
+          if (res.status === 401) {
+            this.localAuthToken = null;
+            if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+            this.currentUser = null;
+            this.openLocalLoginModal('admin');
+          }
           this.showToast('Errore', err.detail || 'Operazione fallita', 'error');
         }
       } catch (e) {
@@ -4616,6 +4657,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteLocalUser(userId, username) {
+      if (!this.localAuthToken) {
+        this.openLocalLoginModal('admin');
+        return;
+      }
       if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
       const headers = {};
       if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;

@@ -683,7 +683,10 @@
     "role_admin": "Administrator",
     "role_operator": "Operator",
     "role_viewer": "Read Only",
-    "no_access": "You do not have the required permissions for this action."
+    "no_access": "You do not have the required permissions for this action.",
+    "admin_required_title": "Administrator Access Required",
+    "admin_required_desc": "To manage users, create new accounts or modify RBAC permissions, please log in as Administrator (default credentials: admin / admin).",
+    "login_as_admin_btn": "Log in as Admin"
   },
   "users_modal": {
     "title": "Users Management & Permission Matrix",
