@@ -85,6 +85,7 @@ async def refresh_eero_news():
 # =========================================================================
 
 @router.get("/backup", dependencies=[Depends(require_admin)])
+@router.get("/backup/export", dependencies=[Depends(require_admin)])
 async def export_system_backup_endpoint():
     """
     Esporta un backup atomico completo dello stato di configurazione della dashboard:
@@ -107,6 +108,7 @@ async def export_system_backup_endpoint():
 
 
 @router.post("/restore", dependencies=[Depends(require_admin)])
+@router.post("/backup/restore", dependencies=[Depends(require_admin)])
 async def import_system_restore_endpoint(payload: Dict[str, Any]):
     """
     Esegue il ripristino atomico dei dati da un payload di backup valido.

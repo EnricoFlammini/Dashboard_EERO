@@ -387,6 +387,68 @@ document.addEventListener('alpine:init', () => {
     signalChartInstance: null,
     signalLoading: false,
 
+    // =========================================================================
+    // MODULE 3: LOCAL AUTHENTICATION & RBAC STATE
+    // =========================================================================
+    currentUser: null,
+    localAuthToken: (typeof localStorage !== 'undefined') ? (localStorage.getItem('eero_local_auth_token') || null) : null,
+    showLocalLoginModal: false,
+    localLoginData: { username: '', password: '', error: '' },
+    isLocalAuthChecking: false,
+
+    // =========================================================================
+    // MODULE 3: USERS & GRANULAR PERMISSIONS MANAGEMENT
+    // =========================================================================
+    showUsersModal: false,
+    usersLoading: false,
+    localUsersList: [],
+    permissionsCatalog: [],
+    userModalMode: 'list', // 'list' | 'create' | 'edit'
+    userForm: {
+      id: '',
+      username: '',
+      display_name: '',
+      role: 'operator',
+      password: '',
+      is_active: true,
+      permissions: []
+    },
+
+    // =========================================================================
+    // MODULE 3: BACKUP & ATOMIC RESTORE
+    // =========================================================================
+    showBackupModal: false,
+    backupLoading: false,
+    backupRestoreStatus: '',
+
+    // =========================================================================
+    // MODULE 3: PARENTAL SCHEDULING & TIME WINDOWS
+    // =========================================================================
+    schedulesList: [],
+    schedulesLoading: false,
+    showScheduleModal: false,
+    scheduleModalMode: 'create', // 'create' | 'edit'
+    scheduleForm: {
+      id: '',
+      name: '',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      start_time: '21:00',
+      end_time: '07:00',
+      action: 'pause',
+      target_type: 'category',
+      target_id: 'gaming',
+      is_active: true
+    },
+
+    // =========================================================================
+    // MODULE 3: BANDWIDTH HOGS MULTI-FILTERS & RESILIENCE
+    // =========================================================================
+    hogsCategoryFilter: 'all',
+    hogsBandFilter: 'all',
+    hogsNodeFilter: 'all',
+    telemetryStale: false,
+    telemetryAuthExpired: false,
+
     // Toast Notification System
     toasts: [],
 
@@ -425,6 +487,7 @@ document.addEventListener('alpine:init', () => {
 
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
+      await this.checkLocalAuthSession();
       await this.loadManualSections();
 
       if (this.isAuthenticated) {
@@ -790,6 +853,7 @@ document.addEventListener('alpine:init', () => {
         await this.fetchDigestSettings();
         await this.fetchAdGuardSettings();
         await this.fetchAlerts();
+        await this.fetchSchedules();
       } else if (tab === 'news') {
         await this.fetchEeroNews();
       }
@@ -4234,6 +4298,545 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.exportLoading = false;
       }
+    },
+
+    // =========================================================================
+    // MODULE 3: LOCAL AUTHENTICATION & RBAC LOGIC
+    // =========================================================================
+    can(permKey) {
+      if (!this.currentUser) return true; // Default open in single-user mode
+      if (this.currentUser.role === 'admin') return true;
+      if (Array.isArray(this.currentUser.permissions)) {
+        if (this.currentUser.permissions.includes('*')) return true;
+        return this.currentUser.permissions.includes(permKey);
+      }
+      return false;
+    },
+
+    async checkLocalAuthSession() {
+      if (!this.localAuthToken) {
+        try {
+          const res = await fetch('/api/auth/local/me');
+          if (res.ok) {
+            const data = await res.json();
+            this.currentUser = data.user;
+          }
+        } catch (e) {}
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/local/me', {
+          headers: { 'Authorization': `Bearer ${this.localAuthToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.currentUser = data.user;
+        } else {
+          this.localAuthToken = null;
+          if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+          this.currentUser = null;
+        }
+      } catch (e) {
+        console.error("Local auth check error:", e);
+      }
+    },
+
+    async performLocalLogin() {
+      this.localLoginData.error = '';
+      if (!this.localLoginData.username || !this.localLoginData.password) {
+        this.localLoginData.error = this.currentLanguage === 'it' ? 'Inserisci username e password' : 'Username and password required';
+        return;
+      }
+      this.isLocalAuthChecking = true;
+      try {
+        const res = await fetch('/api/auth/local/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: this.localLoginData.username,
+            password: this.localLoginData.password
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          this.localAuthToken = data.token;
+          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          this.currentUser = data.user;
+          this.showLocalLoginModal = false;
+          this.localLoginData = { username: '', password: '', error: '' };
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Accesso Eseguito' : 'Login Successful',
+            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            'success'
+          );
+        } else {
+          this.localLoginData.error = data.detail || (this.currentLanguage === 'it' ? 'Credenziali non valide' : 'Invalid credentials');
+        }
+      } catch (err) {
+        this.localLoginData.error = String(err);
+      } finally {
+        this.isLocalAuthChecking = false;
+      }
+    },
+
+    async performLocalLogout() {
+      if (this.localAuthToken) {
+        try {
+          await fetch('/api/auth/local/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${this.localAuthToken}` }
+          });
+        } catch (e) {}
+      }
+      this.localAuthToken = null;
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+      this.currentUser = null;
+      this.showToast(
+        this.currentLanguage === 'it' ? 'Disconnesso' : 'Logged Out',
+        this.currentLanguage === 'it' ? 'Sessione locale terminata' : 'Local session terminated',
+        'info'
+      );
+    },
+
+    // =========================================================================
+    // MODULE 3: USERS & GRANULAR PERMISSIONS MODAL
+    // =========================================================================
+    async openUsersModal() {
+      this.showUsersModal = true;
+      this.userModalMode = 'list';
+      await this.loadPermissionsCatalog();
+      await this.loadLocalUsers();
+    },
+
+    async loadPermissionsCatalog() {
+      try {
+        const res = await fetch('/api/auth/local/permissions');
+        if (res.ok) {
+          const data = await res.json();
+          this.permissionsCatalog = data.permissions || [];
+        }
+      } catch (e) {
+        console.error("Failed to load permissions catalog:", e);
+      }
+    },
+
+    async loadLocalUsers() {
+      this.usersLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/users', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.localUsersList = data.users || [];
+        }
+      } catch (e) {
+        console.error("Failed to load users:", e);
+      } finally {
+        this.usersLoading = false;
+      }
+    },
+
+    startCreateUser() {
+      this.userForm = {
+        id: '',
+        username: '',
+        display_name: '',
+        role: 'operator',
+        password: '',
+        is_active: true,
+        permissions: ['view_topology', 'view_clients', 'view_analytics', 'view_logs']
+      };
+      this.userModalMode = 'create';
+    },
+
+    startEditUser(u) {
+      this.userForm = {
+        id: u.id,
+        username: u.username,
+        display_name: u.display_name || '',
+        role: u.role || 'operator',
+        password: '',
+        is_active: Boolean(u.is_active),
+        permissions: Array.isArray(u.permissions) ? [...u.permissions] : []
+      };
+      this.userModalMode = 'edit';
+    },
+
+    toggleUserPermission(permKey) {
+      const idx = this.userForm.permissions.indexOf(permKey);
+      if (idx > -1) {
+        this.userForm.permissions.splice(idx, 1);
+      } else {
+        this.userForm.permissions.push(permKey);
+      }
+    },
+
+    applyPermissionPreset(preset) {
+      if (preset === 'all') {
+        this.userForm.permissions = this.permissionsCatalog.map(p => p.key);
+        this.userForm.role = 'admin';
+      } else if (preset === 'readonly') {
+        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs'];
+        this.userForm.role = 'viewer';
+      } else if (preset === 'operator') {
+        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_pause_devices', 'action_reboot_nodes'];
+        this.userForm.role = 'operator';
+      } else if (preset === 'none') {
+        this.userForm.permissions = [];
+      }
+    },
+
+    async saveLocalUser() {
+      if (!this.userForm.username) {
+        this.showToast('Errore', 'Username obbligatorio', 'warning');
+        return;
+      }
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+      try {
+        let res;
+        if (this.userModalMode === 'create') {
+          res = await fetch('/api/users', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              username: this.userForm.username,
+              display_name: this.userForm.display_name,
+              role: this.userForm.role,
+              password: this.userForm.password || 'password123',
+              is_active: this.userForm.is_active,
+              permissions: this.userForm.permissions
+            })
+          });
+        } else {
+          const payload = {
+            display_name: this.userForm.display_name,
+            role: this.userForm.role,
+            is_active: this.userForm.is_active,
+            permissions: this.userForm.permissions
+          };
+          if (this.userForm.password) payload.password = this.userForm.password;
+          res = await fetch(`/api/users/${encodeURIComponent(this.userForm.id)}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(payload)
+          });
+        }
+        if (res.ok) {
+          this.showToast('Successo', 'Utente salvato correttamente', 'success');
+          this.userModalMode = 'list';
+          await this.loadLocalUsers();
+        } else {
+          const err = await res.json();
+          this.showToast('Errore', err.detail || 'Operazione fallita', 'error');
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    async deleteLocalUser(userId, username) {
+      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
+      const headers = {};
+      if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+      try {
+        const res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+          method: 'DELETE',
+          headers
+        });
+        if (res.ok) {
+          this.showToast('Successo', `Utente ${username} eliminato`, 'success');
+          await this.loadLocalUsers();
+        } else {
+          const err = await res.json();
+          this.showToast('Errore', err.detail || 'Impossibile eliminare utente', 'error');
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: BACKUP & ATOMIC RESTORE LOGIC
+    // =========================================================================
+    openBackupModal() {
+      this.showBackupModal = true;
+      this.backupRestoreStatus = '';
+    },
+
+    async downloadBackup() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/backup/export', { headers });
+        if (!res.ok) throw new Error('Errore durante esportazione backup');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eero_dashboard_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.showToast('Backup Esportato', 'Download del file JSON completato', 'success');
+      } catch (e) {
+        this.showToast('Errore Backup', String(e), 'error');
+      }
+    },
+
+    async uploadBackup(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      this.backupLoading = true;
+      this.backupRestoreStatus = 'Ripristino in corso...';
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/backup/restore', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(json)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.backupRestoreStatus = 'Configurazione ripristinata con successo!';
+          this.showToast('Ripristino Completato', 'I dati sono stati ripristinati correttamente', 'success');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1200);
+        } else {
+          this.backupRestoreStatus = `Errore: ${data.detail || 'Impossibile ripristinare il file'}`;
+          this.showToast('Errore Ripristino', data.detail || 'Errore ripristino', 'error');
+        }
+      } catch (e) {
+        this.backupRestoreStatus = `Errore di parsing: ${e.message}`;
+        this.showToast('Errore File', 'Il file selezionato non è un JSON valido', 'error');
+      } finally {
+        this.backupLoading = false;
+        event.target.value = '';
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: PARENTAL SCHEDULING LOGIC
+    // =========================================================================
+    async fetchSchedules() {
+      this.schedulesLoading = true;
+      try {
+        const res = await fetch('/api/schedules');
+        if (res.ok) {
+          const data = await res.json();
+          this.schedulesList = data.schedules || [];
+        }
+      } catch (e) {
+        console.error("Failed to fetch schedules:", e);
+      } finally {
+        this.schedulesLoading = false;
+      }
+    },
+
+    openScheduleModal(s = null) {
+      if (s) {
+        this.scheduleForm = {
+          id: s.id,
+          name: s.name,
+          days: Array.isArray(s.days) ? [...s.days] : ['mon', 'tue', 'wed', 'thu', 'fri'],
+          start_time: s.start_time || '21:00',
+          end_time: s.end_time || '07:00',
+          action: s.action || 'pause',
+          target_type: s.target_type || 'category',
+          target_id: s.target_id || '',
+          is_active: Boolean(s.is_active)
+        };
+        this.scheduleModalMode = 'edit';
+      } else {
+        this.scheduleForm = {
+          id: '',
+          name: '',
+          days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+          start_time: '21:00',
+          end_time: '07:00',
+          action: 'pause',
+          target_type: 'category',
+          target_id: 'gaming',
+          is_active: true
+        };
+        this.scheduleModalMode = 'create';
+      }
+      this.showScheduleModal = true;
+    },
+
+    toggleScheduleDay(day) {
+      const idx = this.scheduleForm.days.indexOf(day);
+      if (idx > -1) {
+        if (this.scheduleForm.days.length > 1) {
+          this.scheduleForm.days.splice(idx, 1);
+        }
+      } else {
+        this.scheduleForm.days.push(day);
+      }
+    },
+
+    async saveSchedule() {
+      if (!this.scheduleForm.name) {
+        this.showToast('Errore', 'Inserisci un nome per la regola', 'warning');
+        return;
+      }
+      try {
+        let res;
+        const payload = {
+          name: this.scheduleForm.name,
+          days: this.scheduleForm.days,
+          start_time: this.scheduleForm.start_time,
+          end_time: this.scheduleForm.end_time,
+          action: this.scheduleForm.action,
+          target_type: this.scheduleForm.target_type,
+          target_id: this.scheduleForm.target_id,
+          is_active: this.scheduleForm.is_active
+        };
+        if (this.scheduleModalMode === 'create') {
+          res = await fetch('/api/schedules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch(`/api/schedules/${encodeURIComponent(this.scheduleForm.id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        if (res.ok) {
+          this.showToast('Successo', 'Regola oraria salvata', 'success');
+          this.showScheduleModal = false;
+          await this.fetchSchedules();
+        } else {
+          const err = await res.json();
+          this.showToast('Errore', err.detail || 'Impossibile salvare la regola', 'error');
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    async toggleSchedule(id) {
+      try {
+        const res = await fetch(`/api/schedules/${encodeURIComponent(id)}/toggle`, {
+          method: 'POST'
+        });
+        if (res.ok) {
+          await this.fetchSchedules();
+        }
+      } catch (e) {
+        console.error("Toggle schedule error:", e);
+      }
+    },
+
+    async deleteSchedule(id) {
+      if (!confirm('Vuoi eliminare questa regola di pianificazione?')) return;
+      try {
+        const res = await fetch(`/api/schedules/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          this.showToast('Successo', 'Regola eliminata', 'info');
+          await this.fetchSchedules();
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    async evaluateSchedulesNow() {
+      try {
+        const res = await fetch('/api/schedules/evaluate', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          this.showToast(
+            'Valutazione Completata',
+            `Regole attive: ${data.evaluated || 0}, azioni eseguite: ${data.actions_taken || 0}`,
+            'success'
+          );
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: BANDWIDTH HOGS MULTI-FILTERS COMPUTED
+    // =========================================================================
+    getFilteredTopHogs() {
+      if (!this.topHogsList || !Array.isArray(this.topHogsList)) return [];
+      return this.topHogsList.filter(hog => {
+        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === (hog.mac || '').toLowerCase()) || d.id === hog.device_id);
+        
+        // Category filter
+        if (this.hogsCategoryFilter !== 'all') {
+          const cat = dev ? (dev.category || '') : (hog.category || '');
+          if (cat !== this.hogsCategoryFilter) return false;
+        }
+
+        // Frequency band filter
+        if (this.hogsBandFilter !== 'all' && dev) {
+          if (this.hogsBandFilter === 'wired') {
+            if (dev.connection_type !== 'wired' && dev.wireless) return false;
+          } else if (this.hogsBandFilter === '6ghz') {
+            const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
+            if (!is6) return false;
+          } else if (this.hogsBandFilter === '5ghz') {
+            const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
+            if (!is5) return false;
+          } else if (this.hogsBandFilter === '2.4ghz') {
+            const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
+            if (!is24) return false;
+          }
+        }
+
+        // Mesh Node filter
+        if (this.hogsNodeFilter !== 'all' && dev) {
+          if (dev.connected_eero_id !== this.hogsNodeFilter && dev.connected_eero_name !== this.hogsNodeFilter) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    },
+
+    // =========================================================================
+    // MODULE 3: BUFFERBLOAT RATING HELPER
+    // =========================================================================
+    getBufferbloatGrade(speedtestObj) {
+      const st = speedtestObj || this.latestSpeedtest || {};
+      const ping = Number(st.ping_ms || st.ping || 0);
+      const loadedLatency = Number(st.loaded_latency_ms || st.loaded_ping || 0);
+      const delta = loadedLatency > 0 ? (loadedLatency - ping) : 0;
+
+      if (loadedLatency > 0) {
+        if (delta <= 5) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (delta <= 15) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (delta <= 30) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
+        if (delta <= 60) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
+        if (delta <= 120) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
+        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+      }
+
+      if (ping > 0) {
+        if (ping <= 12) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (ping <= 20) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (ping <= 35) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
+        if (ping <= 55) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
+        if (ping <= 85) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
+        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+      }
+
+      return { grade: 'n/a', label: 'Non Disponibile', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30' };
     },
 
     // =========================================================================

@@ -460,15 +460,16 @@ gantt
 - [x] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
 ##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA
+- [x] Menu di navigazione unificato (desktop sidebar e mobile drawer) senza titoli di categoria e rimozione ingranaggio header.
 - [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
-- [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato.
+- [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato (`can(...)`).
 - [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
 - [x] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
 - [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
 - [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
 - [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
-- [x] Ottimizzazioni layout responsive mobile e tablet, gear menu e schede apparati adattive (PR #29 / Issue #46 - @DannyFeliz).
-- [x] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45 - @DannyFeliz).
+- [x] Ottimizzazioni layout responsive mobile e tablet, menu unificato e schede apparati adattive (PR #29 / Issue #46).
+- [x] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45).
 - [ ] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
 - [ ] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
 - [ ] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.

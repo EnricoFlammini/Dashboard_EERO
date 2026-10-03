@@ -3334,6 +3334,102 @@ async def run_all_tests():
         if op_cmp_id:
             await db_service.delete_local_user(op_cmp_id)
 
+        # -----------------------------------------------------------------
+        # 27. TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)
+        # -----------------------------------------------------------------
+        print("\n🚀 [27/27] TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)")
+
+        import json
+        from pathlib import Path
+
+        # 1. Verifica template index.html: rimozione ingranaggio e pulizia menu
+        index_html_path = Path("app/templates/index.html")
+        runner.assert_true(index_html_path.exists(), "File index.html esiste")
+        index_html = index_html_path.read_text(encoding="utf-8")
+
+        # Ingranaggio (gear) deve essere COMPLETAMENTE rimosso dall'header
+        runner.assert_true("header-settings" not in index_html, "Nessun details con classe 'header-settings' nell'header")
+        runner.assert_true('id="header-settings-toggle"' not in index_html, "Nessun id='header-settings-toggle' nell'header")
+
+        # Titoli 'Pagine & Sezioni' e 'Strumenti & Impostazioni' devono essere rimossi
+        runner.assert_true("Pagine & Sezioni" not in index_html, "Titolo categoria 'Pagine & Sezioni' rimosso da sidebar e drawer")
+        runner.assert_true("Strumenti & Impostazioni" not in index_html, "Titolo categoria 'Strumenti & Impostazioni' rimosso da sidebar e drawer")
+        runner.assert_true("PAGINE & SEZIONI" not in index_html.upper(), "Nessuna variante di 'PAGINE & SEZIONI' nei menu")
+        runner.assert_true("STRUMENTI & IMPOSTAZIONI" not in index_html.upper(), "Nessuna variante di 'STRUMENTI & IMPOSTAZIONI' nei menu")
+
+        # Verifica voci unificate presenti nel template (sia sidebar che mobile drawer)
+        runner.assert_true("setTab('overview')" in index_html, "Voce 'Dashboard & Mesh' presente nei menu")
+        runner.assert_true("setTab('devices')" in index_html, "Voce 'Dispositivi' presente con conteggio online")
+        runner.assert_true("setTab('speedtest')" in index_html, "Voce 'Speed Test & Qualità' presente nei menu")
+        runner.assert_true("setTab('analytics')" in index_html, "Voce 'Statistiche & Analytics' presente nei menu")
+        runner.assert_true("setTab('automations')" in index_html, "Voce 'Controlli & QR Ospiti' presente nei menu")
+        runner.assert_true("setTab('news')" in index_html, "Voce 'Note di Rilascio eeroOS' con badge presente nei menu")
+        runner.assert_true("openChangelogModal()" in index_html, "Voce 'Visualizza Changelog' presente nei menu")
+        runner.assert_true("openContextHelp('intro')" in index_html, "Voce 'Guida & Manuale Rapido' presente nei menu")
+        runner.assert_true("showAboutModal = true" in index_html, "Voce 'About & Crediti' presente nei menu")
+        runner.assert_true("openUsersModal()" in index_html, "Voce 'Gestione Utenti & Permessi' presente nel menu")
+        runner.assert_true("openBackupModal()" in index_html, "Voce 'Backup & Ripristino' presente nel menu")
+
+        # Gating RBAC can(...) sui pulsanti amministrativi nel menu
+        runner.assert_true("can('action_manage_users')" in index_html, "Voce 'Gestione Utenti' protetta da can('action_manage_users')")
+        runner.assert_true("can('action_system_backup')" in index_html, "Voce 'Backup & Ripristino' protetta da can('action_system_backup')")
+
+        # Verifica elementi UI Modulo 3 in index.html
+        runner.assert_true("telemetryStale" in index_html or "telemetryAuthExpired" in index_html, "Banner Telemetry Resilience (Issue #55) integrato in index.html")
+        runner.assert_true("hogsCategoryFilter" in index_html, "Filtri Top Bandwidth Hogs integrati in index.html")
+        runner.assert_true("getBufferbloatGrade" in index_html, "Badge Bufferbloat WAN integrato in index.html")
+        runner.assert_true("schedulesList" in index_html, "Griglia Time Windows Parental Control integrata in index.html")
+        runner.assert_true("showUsersModal" in index_html, "Modale Gestione Utenti & Permessi integrata in index.html")
+        runner.assert_true("showBackupModal" in index_html, "Modale Disaster Recovery Backup & Ripristino integrata in index.html")
+        runner.assert_true("showScheduleModal" in index_html, "Modale Creazione/Modifica Regole Orarie integrata in index.html")
+
+        # 2. Verifica PWA: manifest.json e sw.js
+        pwa_manifest_path = Path("app/static/manifest.json")
+        runner.assert_true(pwa_manifest_path.exists(), "File app/static/manifest.json presente")
+        pwa_manifest = json.loads(pwa_manifest_path.read_text(encoding="utf-8"))
+        runner.assert_true(pwa_manifest.get("display") == "standalone", "PWA display è impostato su 'standalone'")
+        runner.assert_true(pwa_manifest.get("start_url") in ["/", "/dashboard"], "PWA start_url è impostato correttamente")
+        runner.assert_true(len(pwa_manifest.get("icons", [])) >= 2, "PWA manifest definisce icone per varie risoluzioni")
+        runner.assert_true("manifest.json" in index_html, "index.html include tag link per manifest.json")
+
+        sw_path = Path("app/static/sw.js")
+        runner.assert_true(sw_path.exists(), "File app/static/sw.js presente")
+        sw_content = sw_path.read_text(encoding="utf-8")
+        runner.assert_true("addEventListener('install'" in sw_content or 'addEventListener("install"' in sw_content, "Service Worker gestisce evento 'install'")
+        runner.assert_true("addEventListener('activate'" in sw_content or 'addEventListener("activate"' in sw_content, "Service Worker gestisce evento 'activate'")
+        runner.assert_true("addEventListener('fetch'" in sw_content or 'addEventListener("fetch"' in sw_content, "Service Worker gestisce evento 'fetch'")
+        runner.assert_true("serviceWorker.register('/static/sw.js')" in index_html, "index.html registra il Service Worker")
+
+        # 3. Verifica sincronizzazione bilingue i18n Modulo 3
+        it_loc = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_loc = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        required_mod3_blocks = ["auth_local", "users_modal", "backup_modal", "schedules", "resilience", "bufferbloat"]
+        for block in required_mod3_blocks:
+            runner.assert_true(block in it_loc, f"Blocco '{block}' presente in it.json")
+            runner.assert_true(block in en_loc, f"Blocco '{block}' presente in en.json")
+            it_keys = set(it_loc[block].keys())
+            en_keys = set(en_loc[block].keys())
+            runner.assert_true(it_keys == en_keys, f"Parità chiavi perfetta in '{block}' tra it.json ed en.json")
+
+        # 4. Verifica Logica Client Alpine.js in app.js
+        app_js_path = Path("app/static/js/app.js")
+        runner.assert_true(app_js_path.exists(), "File app/static/js/app.js presente")
+        app_js = app_js_path.read_text(encoding="utf-8")
+        runner.assert_true("can(" in app_js, "Funzione RBAC client can() definita in app.js")
+        runner.assert_true("getFilteredTopHogs()" in app_js, "Funzione filtri getFilteredTopHogs() definita in app.js")
+        runner.assert_true("getBufferbloatGrade(" in app_js, "Funzione getBufferbloatGrade() definita in app.js")
+        runner.assert_true("fetchSchedules()" in app_js, "Funzione fetchSchedules() definita in app.js")
+        runner.assert_true("openUsersModal()" in app_js, "Funzione openUsersModal() definita in app.js")
+        runner.assert_true("openBackupModal()" in app_js, "Funzione openBackupModal() definita in app.js")
+
+        # 5. Verifica Endpoint Alias Disaster Recovery Backup
+        res_bk_export_alias = await client.get("/api/system/backup/export", headers=adm_hdr)
+        runner.assert_true(res_bk_export_alias.status_code == 200, "GET /api/system/backup/export alias risponde HTTP 200")
+        runner.assert_true(res_bk_export_alias.json().get("metadata", {}).get("backup_version") == "1.6.0", "Backup da /api/system/backup/export contiene versione corretta")
+
+        res_bk_restore_alias = await client.post("/api/system/backup/restore", json={"bad": "data"}, headers=adm_hdr)
+        runner.assert_true(res_bk_restore_alias.status_code == 400, "POST /api/system/backup/restore alias risponde HTTP 400 su payload malformato")
+
         runner.print_summary()
 
 
