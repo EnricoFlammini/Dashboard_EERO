@@ -2425,10 +2425,25 @@ class DBService:
     async def run_database_maintenance(self, vacuum: bool = False) -> Dict[str, Any]:
         """Esegue manutenzione e compattazione SQLite (PRAGMA optimize, VACUUM opzionale)."""
         async with self.get_connection() as db:
-            await db.execute("PRAGMA optimize;")
-            if vacuum:
-                await db.execute("VACUUM;")
+            async with db.execute("PRAGMA optimize;"):
+                pass
             await db.commit()
+
+        if vacuum:
+            async with aiosqlite.connect(self.db_path, isolation_level=None) as vac_db:
+                try:
+                    async with vac_db.execute("PRAGMA wal_checkpoint(TRUNCATE);"):
+                        pass
+                except Exception as ex_wal:
+                    logger.warning(f"WAL checkpoint before vacuum error: {ex_wal}")
+                async with vac_db.execute("VACUUM;"):
+                    pass
+                try:
+                    async with vac_db.execute("PRAGMA wal_checkpoint(TRUNCATE);"):
+                        pass
+                except Exception as ex_wal:
+                    logger.warning(f"WAL checkpoint after vacuum error: {ex_wal}")
+
         logger.info(f"SQLite optimization completed (vacuum={vacuum}).")
         return {
             "status": "success",

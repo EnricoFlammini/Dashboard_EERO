@@ -153,7 +153,7 @@ async def trigger_database_compaction():
     """
     try:
         from app.services.retention_worker import retention_worker
-        summary = await retention_worker.run_compaction_cycle()
+        summary = await retention_worker.run_compaction_cycle(vacuum=True)
         return summary
     except Exception as e:
         logger.error(f"Error during manual database compaction: {e}")

@@ -73,13 +73,13 @@ class RetentionWorker:
             except asyncio.CancelledError:
                 break
 
-    async def run_compaction_cycle(self) -> Dict[str, Any]:
+    async def run_compaction_cycle(self, vacuum: bool = False) -> Dict[str, Any]:
         """
         Esegue un ciclo completo e atomico di tiering:
         1. Trova le ore concluse non ancora aggregate e genera i record hourly.
         2. Trova i giorni conclusi e genera i record daily.
         3. Elimina i campioni scaduti (Tier 1 > 48h, Tier 2 > 30d, Tier 3 > 365d).
-        4. Esegue PRAGMA optimize sul database SQLite.
+        4. Esegue PRAGMA optimize sul database SQLite (e VACUUM se richiesto).
         """
         async with self._lock:
             now = datetime.now(timezone.utc)
@@ -170,7 +170,7 @@ class RetentionWorker:
             daily_purged = await db_service.purge_expired_daily_samples()
 
             # 4. Ottimizzazione SQLite WAL & statistiche
-            await db_service.run_database_maintenance(vacuum=False)
+            await db_service.run_database_maintenance(vacuum=vacuum)
             db_stats = await db_service.get_database_stats()
 
             self._last_run = now
