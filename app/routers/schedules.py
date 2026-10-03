@@ -48,7 +48,13 @@ class ScheduleUpdateRequest(BaseModel):
 @router.get("", response_model=List[Dict[str, Any]])
 async def list_schedules():
     """Restituisce l'elenco di tutte le pianificazioni salvate."""
-    return await db_service.get_device_schedules()
+    schedules = await db_service.get_device_schedules()
+    for s in schedules:
+        s["is_active"] = bool(s.get("enabled"))
+        s["days"] = s.get("days_of_week") or []
+        tids = s.get("target_ids") or []
+        s["target_id"] = tids[0] if tids else ""
+    return schedules
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

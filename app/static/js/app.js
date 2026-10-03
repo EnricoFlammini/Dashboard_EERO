@@ -4948,7 +4948,20 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/schedules');
         if (res.ok) {
           const data = await res.json();
-          this.schedulesList = data.schedules || [];
+          const rawList = Array.isArray(data) ? data : (data.schedules || []);
+          this.schedulesList = rawList.map(s => {
+            const daysArr = Array.isArray(s.days) ? s.days : (Array.isArray(s.days_of_week) ? s.days_of_week : []);
+            const targetId = s.target_id || (Array.isArray(s.target_ids) && s.target_ids.length ? s.target_ids[0] : '');
+            const isActive = s.is_active !== undefined ? Boolean(s.is_active) : (s.enabled !== undefined ? Boolean(s.enabled) : true);
+            return {
+              ...s,
+              days: daysArr,
+              days_of_week: daysArr,
+              target_id: targetId,
+              is_active: isActive,
+              enabled: isActive
+            };
+          });
         }
       } catch (e) {
         console.error("Failed to fetch schedules:", e);
