@@ -26,6 +26,15 @@
     "demo_active": "DEMO ATTIVA",
     "demo_mode": "Modalità Demo",
     "demo_activate": "Attiva Simulatore",
+    "speedtest_only": "Speed test",
+    "guests": "Ospiti",
+    "guests_short": "Ospiti",
+    "quality_analytics": "Qualità e analytics",
+    "settings": "Impostazioni",
+    "settings_controls": "Controlli & Ospiti",
+    "settings_users": "Gestione Utenti & Permessi",
+    "settings_backup": "Backup & Ripristino",
+    "settings_updates": "Verifica aggiornamenti",
     "users_management": "Gestione Utenti & Permessi",
     "backup_restore": "Backup & Ripristino",
     "software_update": "Aggiornamento Software",
@@ -33,6 +42,26 @@
     "about": "About & Crediti",
     "health_score": "Network Health Score",
     "quick_help": "Guida Rapida"
+  },
+  "guests_page": {
+    "title": "Accesso Wi-Fi Ospiti",
+    "subtitle": "Inquadra il codice QR con lo smartphone per connetterti istantaneamente alla rete ospiti",
+    "active": "Rete Ospiti Attiva",
+    "disabled": "Rete Ospiti Disattivata",
+    "disabled_desc": "La rete Wi-Fi ospiti è attualmente disattivata. Puoi abilitarla nelle impostazioni.",
+    "scan_hint": "Inquadra per connetterti",
+    "copy_credentials": "Copia credenziali negli appunti",
+    "copy_password": "Copia password",
+    "credentials_copied": "Credenziali Copiate",
+    "credentials_copied_desc": "Nome rete e password ospiti copiati negli appunti.",
+    "password_copied": "Password Copiata",
+    "password_copied_desc": "Password della rete ospiti copiata negli appunti.",
+    "config_hint": "Per modificare SSID, password o abilitare la rete ospiti, accedi a",
+    "config_link": "Impostazioni → Controlli & Ospiti"
+  },
+  "quality_analytics": {
+    "page_title": "Qualità Segnale & Analytics Rete",
+    "page_subtitle": "Diagnostica RF avanzata, copertura Wi-Fi e telemetria delle prestazioni WAN e di rete"
   },
   "header": {
     "network_state": "Stato Rete",

@@ -23,12 +23,37 @@ document.addEventListener('alpine:init', () => {
       overview: '/dashboard',
       devices: '/devices',
       speedtest: '/speedtest',
-      analytics: '/analytics',
-      automations: '/automations',
+      guests: '/guests',
+      'quality-analytics': '/quality-analytics',
+      'settings-controls': '/settings/controls',
+      'settings-users': '/settings/users',
+      'settings-backup': '/settings/backup',
+      'settings-updates': '/settings/updates',
+      analytics: '/quality-analytics',
+      automations: '/settings/controls',
+      controls: '/settings/controls',
       manual: '/manual',
       news: '/news'
     },
     currentTab: 'overview',
+    settingsExpanded: false,
+    isSettingsTab() {
+      return ['settings-controls', 'settings-users', 'settings-backup', 'settings-updates'].includes(this.currentTab);
+    },
+    toggleSettingsMenu() {
+      if (this.sidebarCollapsed) {
+        this.sidebarCollapsed = false;
+        this.settingsExpanded = true;
+        if (!this.isSettingsTab()) {
+          this.setTab('settings-controls');
+        }
+        return;
+      }
+      this.settingsExpanded = !this.settingsExpanded;
+      if (this.settingsExpanded && !this.isSettingsTab()) {
+        this.setTab('settings-controls');
+      }
+    },
     sidebarCollapsed: (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1199px)').matches) || localStorage.getItem('eero_sidebar_collapsed') === 'true',
     showMobileMenu: false,
     showMobileDeviceFilters: false,
@@ -420,6 +445,9 @@ document.addEventListener('alpine:init', () => {
     showBackupModal: false,
     backupLoading: false,
     backupRestoreStatus: '',
+    dbStats: null,
+    dbStatsLoading: false,
+    dbCompacting: false,
 
     // =========================================================================
     // MODULE 3: PARENTAL SCHEDULING & TIME WINDOWS
@@ -503,24 +531,34 @@ document.addEventListener('alpine:init', () => {
       this.$watch('currentTab', (tab) => {
         if (tab === 'speedtest') {
           this.loadSpeedtestData();
-          setTimeout(() => {
-            this.loadSignalOverview();
-          }, 50);
-        } else if (tab === 'analytics') {
+        } else if (tab === 'quality-analytics' || tab === 'analytics') {
           if (this.$nextTick) {
             this.$nextTick(() => {
+              this.loadSignalOverview();
               this.loadAnalyticsData();
             });
           } else {
+            this.loadSignalOverview();
             this.loadAnalyticsData();
           }
-        } else if (tab === 'automations' || tab === 'controls') {
+        } else if (tab === 'guests') {
+          this.fetchGuestNetwork();
+        } else if (tab === 'settings-controls' || tab === 'automations' || tab === 'controls') {
           this.fetchNightMode();
           this.fetchNotificationSettings();
           this.fetchDigestSettings();
           this.fetchDnsSettings();
           this.fetchAdGuardSettings();
           this.fetchAlerts();
+          this.fetchSchedules();
+          this.fetchGuestNetwork();
+        } else if (tab === 'settings-users') {
+          this.loadPermissionsCatalog();
+          this.loadLocalUsers();
+        } else if (tab === 'settings-backup') {
+          this.fetchDbStats();
+        } else if (tab === 'settings-updates') {
+          this.checkForUpdates(false);
         } else if (tab === 'news') {
           this.fetchEeroNews();
         }
@@ -567,7 +605,7 @@ document.addEventListener('alpine:init', () => {
       if (this.showChangelogModal) {
         await this.openChangelogModal();
       }
-      if (this.currentTab === 'analytics') {
+      if (this.currentTab === 'analytics' || this.currentTab === 'quality-analytics') {
         this.renderAnalyticsCharts();
       }
     },
@@ -785,6 +823,9 @@ document.addEventListener('alpine:init', () => {
     tabFromPath() {
       const path = (typeof window !== 'undefined' && window.location ? window.location.pathname : '').replace(/\/$/, '') || '/dashboard';
       if (path === '/eero-news') return 'news';
+      if (path === '/settings') return 'settings-controls';
+      if (path === '/automations' || path === '/controls') return 'settings-controls';
+      if (path === '/analytics') return 'quality-analytics';
       return Object.keys(this.routes).find(tab => this.routes[tab] === path) || 'overview';
     },
 
@@ -828,6 +869,9 @@ document.addEventListener('alpine:init', () => {
     async setTab(tab, updateUrl = true) {
       if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
+      if (this.isSettingsTab()) {
+        this.settingsExpanded = true;
+      }
       this.showMobileMenu = false;
       if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
         this.sidebarCollapsed = true;
@@ -839,21 +883,32 @@ document.addEventListener('alpine:init', () => {
       if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
-          await this.loadSignalOverview();
         }, 50);
-      } else if (tab === 'analytics') {
+      } else if (tab === 'quality-analytics' || tab === 'analytics') {
         setTimeout(async () => {
+          await this.loadSignalOverview();
           await this.loadAnalyticsData(true);
         }, 50);
+      } else if (tab === 'guests') {
+        await this.fetchGuestNetwork();
       } else if (tab === 'devices') {
         await this.fetchDevices();
-      } else if (tab === 'automations' || tab === 'controls') {
+      } else if (tab === 'settings-controls' || tab === 'automations' || tab === 'controls') {
         await this.fetchNightMode();
         await this.fetchNotificationSettings();
         await this.fetchDigestSettings();
+        await this.fetchDnsSettings();
         await this.fetchAdGuardSettings();
         await this.fetchAlerts();
         await this.fetchSchedules();
+        await this.fetchGuestNetwork();
+      } else if (tab === 'settings-users') {
+        await this.loadPermissionsCatalog();
+        await this.loadLocalUsers();
+      } else if (tab === 'settings-backup') {
+        await this.fetchDbStats();
+      } else if (tab === 'settings-updates') {
+        await this.checkForUpdates(false);
       } else if (tab === 'news') {
         await this.fetchEeroNews();
       }
@@ -2507,6 +2562,24 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         this.showToast("Errore", err.message, "error");
       }
+    },
+
+    copyGuestCredentials() {
+      const name = this.guestNetwork?.name || 'eero-guest';
+      const password = this.guestNetwork?.password || '';
+      const text = `Wi-Fi: ${name}\nPassword: ${password}`;
+      const msg = this.currentLanguage === 'it' ? 'Credenziali Wi-Fi ospiti copiate negli appunti!' : 'Guest Wi-Fi credentials copied to clipboard!';
+      this.copyToClipboard(text, msg);
+    },
+
+    copyGuestPassword() {
+      const password = this.guestNetwork?.password || '';
+      if (!password) {
+        this.showToast(this.currentLanguage === 'it' ? 'Nessuna password' : 'No password', this.currentLanguage === 'it' ? 'La rete ospiti non ha una password impostata.' : 'Guest network has no password set.', 'warning');
+        return;
+      }
+      const msg = this.currentLanguage === 'it' ? 'Password ospiti copiata negli appunti!' : 'Guest password copied to clipboard!';
+      this.copyToClipboard(password, msg);
     },
 
     async fetchFocusMode() {
@@ -4618,6 +4691,45 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.backupLoading = false;
         event.target.value = '';
+      }
+    },
+
+    async fetchDbStats() {
+      this.dbStatsLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/database/stats', { headers });
+        if (res.ok) {
+          this.dbStats = await res.json();
+        }
+      } catch (err) {
+        console.error("Failed to load db stats:", err);
+      } finally {
+        this.dbStatsLoading = false;
+      }
+    },
+
+    async triggerDbCompaction() {
+      this.dbCompacting = true;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/database/compact', {
+          method: 'POST',
+          headers
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.showToast(this.currentLanguage === 'it' ? 'Database Compattato' : 'Database Compacted', this.currentLanguage === 'it' ? 'Compattazione e ottimizzazione completate con successo.' : 'Compaction and optimization completed successfully.', 'success');
+          await this.fetchDbStats();
+        } else {
+          this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', data.detail || 'Errore durante la compattazione', 'error');
+        }
+      } catch (err) {
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(err), 'error');
+      } finally {
+        this.dbCompacting = false;
       }
     },
 

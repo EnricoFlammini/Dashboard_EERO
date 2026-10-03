@@ -26,6 +26,15 @@
     "demo_active": "DEMO ACTIVE",
     "demo_mode": "Demo Mode",
     "demo_activate": "Activate Simulator",
+    "speedtest_only": "Speed Test",
+    "guests": "Guests",
+    "guests_short": "Guests",
+    "quality_analytics": "Quality & Analytics",
+    "settings": "Settings",
+    "settings_controls": "Controls & Guests",
+    "settings_users": "Users & Permissions",
+    "settings_backup": "Backup & Restore",
+    "settings_updates": "Check Updates",
     "users_management": "Users & Permissions",
     "backup_restore": "Backup & Restore",
     "software_update": "Software Update",
@@ -33,6 +42,26 @@
     "about": "About & Credits",
     "health_score": "Network Health Score",
     "quick_help": "Quick Help"
+  },
+  "guests_page": {
+    "title": "Guest Wi-Fi Access",
+    "subtitle": "Scan the QR code with your smartphone to connect instantly to the guest network",
+    "active": "Guest Network Active",
+    "disabled": "Guest Network Disabled",
+    "disabled_desc": "The guest Wi-Fi network is currently disabled. You can enable it in settings.",
+    "scan_hint": "Scan to connect",
+    "copy_credentials": "Copy credentials to clipboard",
+    "copy_password": "Copy password",
+    "credentials_copied": "Credentials Copied",
+    "credentials_copied_desc": "Guest network name and password copied to clipboard.",
+    "password_copied": "Password Copied",
+    "password_copied_desc": "Guest network password copied to clipboard.",
+    "config_hint": "To change SSID, password or enable guest network, go to",
+    "config_link": "Settings → Controls & Guests"
+  },
+  "quality_analytics": {
+    "page_title": "Signal Quality & Network Analytics",
+    "page_subtitle": "Advanced RF diagnostics, Wi-Fi coverage and network & WAN performance telemetry"
   },
   "header": {
     "network_state": "Network Status",

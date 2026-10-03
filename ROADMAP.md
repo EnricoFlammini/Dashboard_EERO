@@ -461,6 +461,9 @@ gantt
 
 ##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA (Completato)
 - [x] Menu di navigazione unificato (desktop sidebar e mobile drawer) senza titoli di categoria e rimozione ingranaggio header.
+- [x] Riorganizzazione barra di navigazione laterale (Sidebar) e mobile drawer con gerarchia a 6 sezioni fisse: 1. Dashboard & Mesh, 2. Dispositivi, 3. Speed test, 4. Ospiti, 5. Qualità e analytics, 6. Impostazioni (Accordion espandibile).
+- [x] Ristrutturazione viste e separazione delle responsabilità: vista pura 'Speed test' (prestazioni e bufferbloat, senza metriche segnale), vista 'Ospiti' rapida per condivisione (QR code acrilico e copia credenziali negli appunti), vista unificata 'Qualità e analytics' (KPI segnale, grafici distribuzione e SLA ISP senza Data Export Center).
+- [x] Menu ad albero 'Impostazioni' con animazione Fluent chevron e 4 sub-rotte dedicate: Controlli & Ospiti (`/settings/controls`), Gestione Utenti & Permessi (`/settings/users`), Backup & Ripristino (`/settings/backup`), Verifica aggiornamenti (`/settings/updates`) con monitoraggio SQLite e Docker Hub.
 - [x] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
 - [x] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato (`can(...)`).
 - [x] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.

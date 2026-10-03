@@ -167,6 +167,13 @@ async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
     return await get_iot_night_anomalies(limit=limit, days=days)
 
 
+@app.get("/settings/updates", response_class=HTMLResponse)
+@app.get("/settings/backup", response_class=HTMLResponse)
+@app.get("/settings/users", response_class=HTMLResponse)
+@app.get("/settings/controls", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
+@app.get("/quality-analytics", response_class=HTMLResponse)
+@app.get("/guests", response_class=HTMLResponse)
 @app.get("/eero-news", response_class=HTMLResponse)
 @app.get("/news", response_class=HTMLResponse)
 @app.get("/manual", response_class=HTMLResponse)
