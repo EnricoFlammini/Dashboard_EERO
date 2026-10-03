@@ -115,3 +115,34 @@ async def get_permissions_catalog():
         "status": "success",
         "data": auth_service.get_permissions_catalog()
     }
+
+
+class SessionTimeoutRequest(BaseModel):
+    minutes: int = Field(..., ge=0, le=1440, description="Minuti di inattività prima del logout automatico (0 = disattivato)")
+
+
+@router.get("/session-timeout")
+async def get_session_timeout():
+    """Restituisce il timeout di inattività configurato in minuti (0 = disattivato)."""
+    raw_val = await db_service.get_setting("session_timeout_minutes", "15")
+    try:
+        minutes = int(raw_val)
+    except (TypeError, ValueError):
+        minutes = 15
+    return {
+        "status": "success",
+        "session_timeout_minutes": minutes
+    }
+
+
+@router.post("/session-timeout")
+async def set_session_timeout(payload: SessionTimeoutRequest):
+    """Aggiorna il timeout di inattività per il logout automatico in minuti."""
+    await db_service.set_setting("session_timeout_minutes", str(payload.minutes))
+    logger.info(f"Local Auth: Aggiornato timeout inattività a {payload.minutes} minuti.")
+    return {
+        "status": "success",
+        "session_timeout_minutes": payload.minutes,
+        "message": f"Timeout sessione impostato a {payload.minutes} minuti." if payload.minutes > 0 else "Logout automatico disattivato."
+    }
+

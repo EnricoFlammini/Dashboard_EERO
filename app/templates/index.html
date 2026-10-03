@@ -172,7 +172,7 @@
           </div>
 
           <!-- Multi-Network Selector & Hot-Swap (Issue #22) -->
-          <div class="relative" x-data="{ openNetDropdown: false }">
+          <div class="relative" x-data="{ openNetDropdown: false }" x-show="currentUser">
             <button 
               @click="openNetDropdown = !openNetDropdown"
               @click.away="openNetDropdown = false"
@@ -222,7 +222,7 @@
       </div>
 
       <!-- Center Indicator: Health Score (Issue #15) -->
-      <div class="hidden xl:flex items-center space-x-6">
+      <div class="hidden xl:flex items-center space-x-6" x-show="currentUser">
         <!-- Health Score Badge -->
         <div 
           @click="openHealthModal()"
@@ -335,6 +335,7 @@
 
         <!-- 1. Dashboard & Mesh -->
         <button 
+          x-show="currentUser"
           @click="setTab('overview')"
           :class="[
             sidebarCollapsed 
@@ -354,6 +355,7 @@
 
         <!-- 2. Dispositivi -->
         <button 
+          x-show="currentUser"
           @click="setTab('devices')"
           :class="[
             sidebarCollapsed 
@@ -383,6 +385,7 @@
 
         <!-- 3. Speed test -->
         <button 
+          x-show="currentUser"
           @click="setTab('speedtest')"
           :class="[
             sidebarCollapsed 
@@ -424,6 +427,7 @@
 
         <!-- 5. Qualità e analytics -->
         <button 
+          x-show="currentUser"
           @click="setTab('quality-analytics')"
           :class="[
             sidebarCollapsed 
@@ -442,7 +446,7 @@
         </button>
 
         <!-- 6. Impostazioni (Accordion) -->
-        <div class="w-full">
+        <div x-show="currentUser" class="w-full">
           <button 
             @click="toggleSettingsMenu()"
             :class="[
@@ -535,7 +539,7 @@
         </div>
 
         <!-- Divider Line (Fluent Clean Separator) -->
-        <div class="my-2 border-t border-black/[0.06] dark:border-white/[0.08]"></div>
+        <div x-show="currentUser" class="my-2 border-t border-black/[0.06] dark:border-white/[0.08]"></div>
 
         <!-- Note di Rilascio / eeroOS News (v1.6.0) -->
         <button 
@@ -571,6 +575,7 @@
 
         <!-- Network Health Score -->
         <button 
+          x-show="currentUser"
           @click="openHealthModal()"
           :class="[
             sidebarCollapsed 
@@ -606,6 +611,7 @@
 
         <!-- Guida & Manuale Rapido -->
         <button 
+          x-show="currentUser"
           @click="openContextHelp('intro')"
           :class="[
             sidebarCollapsed 
@@ -642,7 +648,7 @@
       </div>
 
       <!-- Bottom Controls & Quick Actions -->
-      <div class="p-3 border-t border-black/[0.06] dark:border-white/[0.08] sidebar-nav-group space-y-2 bg-black/[0.01] dark:bg-white/[0.02] w-full">
+      <div x-show="currentUser" class="p-3 border-t border-black/[0.06] dark:border-white/[0.08] sidebar-nav-group space-y-2 bg-black/[0.01] dark:bg-white/[0.02] w-full">
 
         <!-- Gaming Focus Mode Button -->
         <button 
@@ -742,6 +748,7 @@
           </select>
           <!-- Logout Button -->
           <button 
+            x-show="currentUser"
             @click="showLogoutModal = true"
             class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
             :title="t('header.logout') || 'Disconnetti'">
@@ -764,6 +771,7 @@
             <span x-text="currentLanguage === 'it' ? 'IT' : 'EN'"></span>
           </button>
           <button 
+            x-show="currentUser"
             @click="showLogoutModal = true" 
             class="w-10 h-8 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-500/10 transition cursor-pointer" 
             :title="t('header.logout') || 'Disconnetti'">
@@ -2066,7 +2074,7 @@
         </div>
 
         <!-- Help Callout & Settings Redirection Link -->
-        <div class="mt-8 pt-6 border-t border-black/[0.06] dark:border-white/5 w-full flex items-center justify-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+        <div x-show="currentUser" class="mt-8 pt-6 border-t border-black/[0.06] dark:border-white/5 w-full flex items-center justify-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
           <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           <span>
             <span x-text="t('guests_page.settings_redirect_hint') || 'Per configurare SSID, attivare/disattivare la rete o generare una nuova password:'"></span>
@@ -2874,7 +2882,56 @@
           </div>
         </div>
 
-        <!-- 5. Parental Scheduling & Time Rules Card (Module 3) -->
+        <!-- 5. Sicurezza Sessione & Disconnessione Automatica -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between lg:col-span-2">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="currentLanguage === 'it' ? 'Timeout Sessione & Disconnessione Automatica' : 'Session Timeout & Auto-Logout'"></h3>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold inline-block mt-0.5"
+                        :class="sessionTimeoutMinutes > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20'"
+                        x-text="sessionTimeoutMinutes > 0 ? (currentLanguage === 'it' ? ('Disconnessione dopo ' + sessionTimeoutMinutes + ' min di inattività') : ('Auto-logout after ' + sessionTimeoutMinutes + ' min inactivity')) : (currentLanguage === 'it' ? 'Disattivato (Nessun timeout)' : 'Disabled (No timeout)')"></span>
+                </div>
+              </div>
+            </div>
+            
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'Termina automaticamente la sessione dell\'utente se non vengono rilevate interazioni (movimento del mouse, pressione tasti o tocco schermo) per il periodo selezionato, proteggendo la riservatezza della dashboard su dispositivi e postazioni condivise.' : 'Automatically ends the user session when no interactions are detected for the chosen interval, securing the dashboard on shared devices.'"></p>
+
+            <div class="space-y-2 pt-1 text-xs">
+              <label class="block text-slate-700 dark:text-slate-300 font-semibold" x-text="currentLanguage === 'it' ? 'Tempo di inattività prima del logout:' : 'Inactivity duration before logout:'"></label>
+              <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                <template x-for="mins in [5, 10, 15, 30, 60, 0]" :key="mins">
+                  <button 
+                    type="button"
+                    @click="saveSessionTimeout(mins)"
+                    class="py-2.5 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5"
+                    :class="sessionTimeoutMinutes === mins 
+                      ? 'bg-[#0067c0] text-white border-[#0067c0] dark:bg-sky-500 dark:border-sky-500 shadow-md shadow-sky-500/20 ring-2 ring-sky-500/30' 
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
+                    <span class="text-sm font-extrabold" x-text="mins === 0 ? (currentLanguage === 'it' ? 'Mai' : 'Never') : (mins + ' min')"></span>
+                    <span class="text-[9px] font-normal opacity-80" x-text="mins === 15 ? (currentLanguage === 'it' ? 'Predefinito' : 'Default') : (mins === 0 ? (currentLanguage === 'it' ? 'Disattivo' : 'Disabled') : (currentLanguage === 'it' ? 'Inattività' : 'Inactivity'))"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-black/[0.06] dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500">
+            <span class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full" :class="sessionTimeoutMinutes > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+              <span x-text="sessionTimeoutMinutes > 0 ? (currentLanguage === 'it' ? 'Watchdog inattività attivo su eventi mouse/tastiera/touch' : 'Inactivity watchdog active on mouse/keyboard/touch events') : (currentLanguage === 'it' ? 'Watchdog inattività disattivato' : 'Inactivity watchdog disabled')"></span>
+            </span>
+            <span class="font-mono text-[10px] text-slate-400" x-text="'Ultima interazione: ' + new Date(lastUserActivity).toLocaleTimeString()"></span>
+          </div>
+        </div>
+
+        <!-- 6. Parental Scheduling & Time Rules Card (Module 3) -->
         <div class="lg:col-span-2 glass-panel rounded-2xl p-6 space-y-5 border border-sky-500/20 shadow-md">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/5 pb-4">
             <div class="flex items-center space-x-3">
@@ -6147,6 +6204,7 @@
     
     <!-- Tab 1: Dashboard -->
     <button 
+      x-show="currentUser"
       @click="setTab('overview')"
       class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer"
       :class="currentTab === 'overview' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
@@ -6158,6 +6216,7 @@
 
     <!-- Tab 2: Dispositivi (with counter badge) -->
     <button 
+      x-show="currentUser"
       @click="setTab('devices')"
       class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer relative"
       :class="currentTab === 'devices' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
@@ -6175,6 +6234,7 @@
 
     <!-- Tab 3: Speed Test -->
     <button 
+      x-show="currentUser"
       @click="setTab('speedtest')"
       class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer"
       :class="currentTab === 'speedtest' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
@@ -6198,6 +6258,23 @@
         </template>
       </div>
       <span class="text-[10px] leading-tight" x-text="t('nav.guests_short') || t('nav.guests') || 'Ospiti'"></span>
+    </button>
+
+    <!-- Tab eeroOS News (when unauthenticated) -->
+    <button 
+      x-show="!currentUser"
+      @click="setTab('news')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer relative"
+      :class="currentTab === 'news' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <div class="relative">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+        </svg>
+        <template x-if="eeroNewsData && eeroNewsData.update_available">
+          <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+        </template>
+      </div>
+      <span class="text-[10px] leading-tight" x-text="t('nav.eero_news_short') || 'Note Rilascio'"></span>
     </button>
 
     <!-- Tab 5: Menu Drawer (Hamburger) -->
@@ -6271,6 +6348,7 @@
         <div class="space-y-1">
           <!-- Dashboard & Mesh -->
           <button 
+            x-show="currentUser"
             @click="setTab('overview'); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
             :class="currentTab === 'overview' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
@@ -6283,6 +6361,7 @@
 
           <!-- Dispositivi -->
           <button 
+            x-show="currentUser"
             @click="setTab('devices'); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
             :class="currentTab === 'devices' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
@@ -6295,6 +6374,7 @@
 
           <!-- 3. Speed test -->
           <button 
+            x-show="currentUser"
             @click="setTab('speedtest'); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
             :class="currentTab === 'speedtest' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
@@ -6322,8 +6402,28 @@
             </div>
           </button>
 
+          <!-- Note di Rilascio eeroOS (Mobile Drawer) -->
+          <button 
+            @click="setTab('news'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'news' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+              </svg>
+              <span class="text-sm" x-text="t('nav.eero_news') || 'Note di Rilascio eeroOS'"></span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <template x-if="eeroNewsData && eeroNewsData.update_available">
+                <span class="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">NEW</span>
+              </template>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </button>
+
           <!-- 5. Qualità e analytics -->
           <button 
+            x-show="currentUser"
             @click="setTab('quality-analytics'); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
             :class="(currentTab === 'quality-analytics' || currentTab === 'analytics') ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
@@ -6335,7 +6435,7 @@
           </button>
 
           <!-- 6. Impostazioni (Accordion in Mobile Drawer) -->
-          <div class="pt-1">
+          <div x-show="currentUser" class="pt-1">
             <button 
               @click="toggleSettingsMenu()"
               class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
@@ -6398,12 +6498,13 @@
         </div>
 
         <!-- Divider Line (Fluent Clean Separator) -->
-        <div class="my-2 border-t border-slate-200 dark:border-slate-800/80"></div>
+        <div x-show="currentUser" class="my-2 border-t border-slate-200 dark:border-slate-800/80"></div>
 
         <!-- Tools & Additional Actions -->
         <div class="space-y-1">
           <!-- Network Health -->
           <button 
+            x-show="currentUser"
             @click="openHealthModal(); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
             <div class="flex items-center space-x-3">
@@ -6426,6 +6527,7 @@
 
           <!-- Quick Help Modal -->
           <button 
+            x-show="currentUser"
             @click="openContextHelp('intro'); closeMobileMenu()"
             class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
             <div class="flex items-center space-x-3">
@@ -6475,8 +6577,19 @@
             <option value="en">🇬🇧 EN</option>
           </select>
 
-          <!-- Logout -->
+          <!-- Login Button (when unauthenticated) -->
           <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal('admin'); closeMobileMenu()"
+            class="p-2.5 rounded-xl bg-[#0067c0]/10 text-[#0067c0] dark:text-sky-400 hover:bg-[#0067c0]/20 transition cursor-pointer flex items-center space-x-1"
+            title="Accedi">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            <span class="text-xs font-bold" x-text="t('auth_local.login_btn') || 'Accedi'"></span>
+          </button>
+
+          <!-- Logout Button (when logged in) -->
+          <button 
+            x-show="currentUser"
             @click="showLogoutModal = true; closeMobileMenu()"
             class="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
             title="Disconnetti">

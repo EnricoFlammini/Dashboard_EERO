@@ -6,9 +6,9 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.5.0',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.0',
     buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.5.0 build 1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.0 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
@@ -425,6 +425,9 @@ document.addEventListener('alpine:init', () => {
     showLocalLoginModal: false,
     localLoginData: { username: '', password: '', error: '' },
     isLocalAuthChecking: false,
+    sessionTimeoutMinutes: (typeof localStorage !== 'undefined' && localStorage.getItem('eero_session_timeout') !== null) ? Number(localStorage.getItem('eero_session_timeout')) : 15,
+    lastUserActivity: Date.now(),
+    inactivityWatchdogStarted: false,
 
     // =========================================================================
     // MODULE 3: USERS & GRANULAR PERMISSIONS MANAGEMENT
@@ -521,6 +524,17 @@ document.addEventListener('alpine:init', () => {
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
       await this.checkLocalAuthSession();
+      await this.loadSessionTimeoutSetting();
+      this.initInactivityWatchdog();
+
+      // Se l'utente non è loggato, limita la visualizzazione solo a ospiti (QR) o release notes (news)
+      if (!this.currentUser && this.currentTab !== 'guests' && this.currentTab !== 'news') {
+        this.currentTab = 'guests';
+        if (typeof window !== 'undefined' && window.history) {
+          window.history.replaceState({}, '', this.routes.guests);
+        }
+      }
+
       await this.loadManualSections();
 
       if (this.isAuthenticated) {
@@ -578,6 +592,10 @@ document.addEventListener('alpine:init', () => {
       if (typeof window !== 'undefined' && window.addEventListener) {
         window.addEventListener('popstate', () => {
           const tab = this.tabFromPath();
+          if (!this.currentUser && tab !== 'guests' && tab !== 'news') {
+            this.setTab('guests', false);
+            return;
+          }
           if (tab === 'devices') this.loadDeviceFiltersFromUrl();
           this.setTab(tab, false);
         });
@@ -873,6 +891,21 @@ document.addEventListener('alpine:init', () => {
     },
 
     async setTab(tab, updateUrl = true) {
+      // Se non autenticato, sono permesse solo la visualizzazione Wi-Fi ospiti (QR code) e note di rilascio
+      if (!this.currentUser && tab !== 'guests' && tab !== 'news') {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Richiesto' : 'Login Required',
+          this.currentLanguage === 'it' ? 'Effettua l\'accesso per consultare questa sezione.' : 'Please sign in to access this section.',
+          'info'
+        );
+        this.openLocalLoginModal('admin');
+        if (this.currentTab !== 'guests' && this.currentTab !== 'news') {
+          tab = 'guests';
+        } else {
+          return;
+        }
+      }
+
       // Protezione accessi per tab amministrative riservate
       if (tab === 'settings-users' && !this.can('action_manage_users')) {
         this.showToast(
@@ -4476,6 +4509,7 @@ document.addEventListener('alpine:init', () => {
           this.localAuthToken = data.token;
           if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
           this.currentUser = data.user;
+          this.lastUserActivity = Date.now();
           this.showLocalLoginModal = false;
           this.localLoginData = { username: '', password: '', error: '' };
           this.showToast(
@@ -4483,7 +4517,9 @@ document.addEventListener('alpine:init', () => {
             (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
             'success'
           );
-          if (this.currentTab === 'settings-users') {
+          if (this.currentTab === 'guests') {
+            await this.setTab('overview');
+          } else if (this.currentTab === 'settings-users') {
             await this.loadPermissionsCatalog();
             await this.loadLocalUsers();
           }
@@ -4509,14 +4545,98 @@ document.addEventListener('alpine:init', () => {
       this.localAuthToken = null;
       if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
       this.currentUser = null;
-      if (this.currentTab === 'settings-users' || this.currentTab === 'settings-backup') {
-        this.setTab('overview');
-      }
+      await this.setTab('guests');
       this.showToast(
         this.currentLanguage === 'it' ? 'Disconnesso' : 'Logged Out',
         this.currentLanguage === 'it' ? 'Sessione locale terminata' : 'Local session terminated',
         'info'
       );
+    },
+
+    // =========================================================================
+    // INACTIVITY AUTO-LOGOUT WATCHDOG & CONFIGURATION
+    // =========================================================================
+    initInactivityWatchdog() {
+      if (this.inactivityWatchdogStarted) return;
+      this.inactivityWatchdogStarted = true;
+      this.lastUserActivity = Date.now();
+
+      if (typeof window !== 'undefined' && window.addEventListener) {
+        let lastThrottle = 0;
+        const onActivity = () => {
+          const now = Date.now();
+          if (now - lastThrottle > 2000) {
+            lastThrottle = now;
+            this.lastUserActivity = now;
+          }
+        };
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+          window.addEventListener(evt, onActivity, { passive: true });
+        });
+      }
+
+      setInterval(() => {
+        if (!this.currentUser) return;
+        const timeout = Number(this.sessionTimeoutMinutes);
+        if (!timeout || timeout <= 0) return;
+        const elapsedMinutes = (Date.now() - this.lastUserActivity) / (60 * 1000);
+        if (elapsedMinutes >= timeout) {
+          console.warn(`Auto-logout: user inactive for ${elapsedMinutes.toFixed(1)}m (timeout: ${timeout}m)`);
+          this.performLocalLogout();
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Sessione Scaduta' : 'Session Expired',
+            this.currentLanguage === 'it' 
+              ? `Disconnessione automatica eseguita dopo ${timeout} minuti di inattività.` 
+              : `Automatically logged out after ${timeout} minutes of inactivity.`,
+            'warning'
+          );
+        }
+      }, 10000);
+    },
+
+    async loadSessionTimeoutSetting() {
+      try {
+        const res = await fetch('/api/auth/local/session-timeout');
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.session_timeout_minutes !== 'undefined') {
+            this.sessionTimeoutMinutes = Number(data.session_timeout_minutes);
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('eero_session_timeout', String(this.sessionTimeoutMinutes));
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback already loaded from localStorage
+      }
+    },
+
+    async saveSessionTimeout(minutes) {
+      const val = Number(minutes);
+      this.sessionTimeoutMinutes = val;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('eero_session_timeout', String(val));
+      }
+      this.lastUserActivity = Date.now();
+      try {
+        await fetch('/api/auth/local/session-timeout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.localAuthToken ? { 'Authorization': `Bearer ${this.localAuthToken}` } : {})
+          },
+          body: JSON.stringify({ minutes: val })
+        });
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Impostazione Salvata' : 'Setting Saved',
+          this.currentLanguage === 'it' 
+            ? (val > 0 ? `Timeout inattività impostato a ${val} minuti.` : 'Disconnessione automatica disattivata.')
+            : (val > 0 ? `Inactivity timeout set to ${val} minutes.` : 'Automatic logout disabled.'),
+          'success'
+        );
+      } catch (e) {
+        console.error("Error saving session timeout:", e);
+      }
     },
 
     // =========================================================================

@@ -2,7 +2,7 @@
 FROM python:3.12-slim-bookworm
 
 # Build arguments per versionamento e build number (iniettato automaticamente in CI/CD)
-ARG APP_VERSION="1.5.0"
+ARG APP_VERSION="1.6.0"
 ARG BUILD_NUMBER="1"
 
 # Imposta variabili d'ambiente per Python e metadati di release
