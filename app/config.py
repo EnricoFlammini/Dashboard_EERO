@@ -63,6 +63,12 @@ try:
         admin_password: str = os.getenv("ADMIN_PASSWORD", "admin")
         require_local_auth: bool = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
 
+        # Data Retention & Multi-Tier Compaction (v1.6.0 Module 2)
+        retention_raw_hours: int = int(os.getenv("RETENTION_RAW_HOURS", "48"))
+        retention_hourly_days: int = int(os.getenv("RETENTION_HOURLY_DAYS", "30"))
+        retention_daily_days: int = int(os.getenv("RETENTION_DAILY_DAYS", "365"))
+        retention_worker_interval_minutes: int = int(os.getenv("RETENTION_WORKER_INTERVAL_MINUTES", "60"))
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -116,6 +122,10 @@ except ImportError:
             self.admin_user = os.getenv("ADMIN_USER", "admin")
             self.admin_password = os.getenv("ADMIN_PASSWORD", "admin")
             self.require_local_auth = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
+            self.retention_raw_hours = int(os.getenv("RETENTION_RAW_HOURS", "48"))
+            self.retention_hourly_days = int(os.getenv("RETENTION_HOURLY_DAYS", "30"))
+            self.retention_daily_days = int(os.getenv("RETENTION_DAILY_DAYS", "365"))
+            self.retention_worker_interval_minutes = int(os.getenv("RETENTION_WORKER_INTERVAL_MINUTES", "60"))
 
         @property
         def full_version(self) -> str:

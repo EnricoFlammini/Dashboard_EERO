@@ -15,7 +15,7 @@ Covers:
 import sys
 import os
 import asyncio
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 
 # Configure UTF-8 stdout for Windows console
 if sys.platform == "win32":
@@ -3122,6 +3122,217 @@ async def run_all_tests():
         if op_res_id:
             await db_service.delete_local_user(op_res_id)
         await db_service.clear_device_schedules()
+
+        # -----------------------------------------------------------------
+        # 26. TEST MULTI-TIER DATA RETENTION & COMPACTION WORKER (v1.6.0 Modulo 2)
+        # -----------------------------------------------------------------
+        print("\n🚀 [26/26] TEST MULTI-TIER DATA RETENTION & COMPACTION WORKER (v1.6.0)")
+
+        from app.services.retention_worker import retention_worker
+
+        # 1. Verifica esistenza e schema tabelle Tier 2 e Tier 3 in SQLite
+        async with db_service.get_connection() as db:
+            cur_tables = await db.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            all_tbl_rows = await cur_tables.fetchall()
+            existing_tables = set(r["name"] for r in all_tbl_rows)
+
+        runner.assert_true("device_usage_hourly" in existing_tables, "Tabella 'device_usage_hourly' presente su SQLite")
+        runner.assert_true("device_usage_daily" in existing_tables, "Tabella 'device_usage_daily' presente su SQLite")
+        runner.assert_true("device_signal_hourly" in existing_tables, "Tabella 'device_signal_hourly' presente su SQLite")
+
+        # 2. Inserimento campioni di test in device_usage_history per un'ora conclusa
+        test_mac_tier = "aa:bb:cc:dd:ee:99"
+        now_utc = datetime.now(timezone.utc)
+        test_hour_dt = (now_utc - timedelta(hours=12)).replace(minute=0, second=0, microsecond=0)
+        ts_prev = (test_hour_dt - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_1 = (test_hour_dt + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_2 = (test_hour_dt + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_3 = (test_hour_dt + timedelta(minutes=50)).strftime("%Y-%m-%d %H:%M:%S")
+        hour_key_test = test_hour_dt.strftime("%Y-%m-%d %H:00:00")
+        day_date_test = test_hour_dt.date()
+        day_date_str = day_date_test.strftime("%Y-%m-%d")
+
+        async with db_service.get_connection() as db:
+            await db.execute("DELETE FROM device_usage_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_daily WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_hourly WHERE mac_address = ?;", (test_mac_tier,))
+
+            # Campione prima dell'ora (per verificare delta del primo punto)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_prev, test_mac_tier, "net_tier_1", "Test-Device-Tier", 100.0 * 1024 * 1024, 20.0 * 1024 * 1024, 10.0, 2.0)
+            )
+            # Campioni dentro l'ora:
+            # 14:10 -> 140MB rx (delta +40MB), 30MB tx (delta +10MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_1, test_mac_tier, "net_tier_1", "Test-Device-Tier", 140.0 * 1024 * 1024, 30.0 * 1024 * 1024, 25.0, 5.0)
+            )
+            # 14:30 -> 190MB rx (delta +50MB), 45MB tx (delta +15MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_2, test_mac_tier, "net_tier_1", "Test-Device-Tier", 190.0 * 1024 * 1024, 45.0 * 1024 * 1024, 35.0, 8.0)
+            )
+            # 14:50 -> 250MB rx (delta +60MB), 60MB tx (delta +15MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_3, test_mac_tier, "net_tier_1", "Test-Device-Tier", 250.0 * 1024 * 1024, 60.0 * 1024 * 1024, 45.0, 10.0)
+            )
+
+            # Campioni segnale Wi-Fi nell'ora
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_1, test_mac_tier, "Test-Device-Tier", -60, "5 GHz", 36, "Soggiorno", 450.0, 300.0)
+            )
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_2, test_mac_tier, "Test-Device-Tier", -66, "5 GHz", 36, "Soggiorno", 400.0, 280.0)
+            )
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_3, test_mac_tier, "Test-Device-Tier", -72, "5 GHz", 36, "Camera", 350.0, 260.0)
+            )
+            await db.commit()
+
+        # 3. Test aggregate_hourly_usage
+        cnt_h_usage = await db_service.aggregate_hourly_usage(test_hour_dt)
+        runner.assert_true(cnt_h_usage >= 1, f"aggregate_hourly_usage ha processato {cnt_h_usage} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_h = await db.execute("SELECT * FROM device_usage_hourly WHERE mac_address = ? AND hour_timestamp = ?;", (test_mac_tier, hour_key_test))
+            row_h = await cur_h.fetchone()
+
+        runner.assert_true(row_h is not None, "Record hourly presente in device_usage_hourly")
+        expected_rx_delta = (250.0 - 100.0) * 1024 * 1024 # 150 MB delta
+        actual_rx_delta = float(row_h["rx_bytes_delta"] or 0)
+        runner.assert_true(abs(actual_rx_delta - expected_rx_delta) < 1000, f"rx_bytes_delta calcolato correttamente (atteso: {expected_rx_delta}, ottenuto: {actual_rx_delta})")
+        runner.assert_true(row_h["samples_count"] == 3, f"samples_count nell'ora è 3 (ottenuto: {row_h['samples_count']})")
+        runner.assert_true(row_h["max_down_mbps"] == 45.0, f"max_down_mbps è 45.0 (ottenuto: {row_h['max_down_mbps']})")
+
+        # 4. Test aggregate_hourly_signals
+        cnt_h_signals = await db_service.aggregate_hourly_signals(test_hour_dt)
+        runner.assert_true(cnt_h_signals >= 1, f"aggregate_hourly_signals ha processato {cnt_h_signals} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_sig_h = await db.execute("SELECT * FROM device_signal_hourly WHERE mac_address = ? AND hour_timestamp = ?;", (test_mac_tier, hour_key_test))
+            row_sig_h = await cur_sig_h.fetchone()
+
+        runner.assert_true(row_sig_h is not None, "Record segnale orario presente in device_signal_hourly")
+        expected_avg_rssi = round((-60 - 66 - 72) / 3) # -66
+        runner.assert_true(row_sig_h["avg_rssi"] == expected_avg_rssi, f"avg_rssi calcolato correttamente ({expected_avg_rssi})")
+        runner.assert_true(row_sig_h["min_rssi"] == -72, "min_rssi è -72")
+        runner.assert_true(row_sig_h["max_rssi"] == -60, "max_rssi è -60")
+        runner.assert_true(row_sig_h["primary_band"] == "5 GHz", "primary_band è '5 GHz'")
+        runner.assert_true(row_sig_h["primary_eero_name"] == "Soggiorno", "primary_eero_name è 'Soggiorno'")
+
+        # 5. Test aggregate_daily_usage
+        cnt_d_usage = await db_service.aggregate_daily_usage(day_date_test)
+        runner.assert_true(cnt_d_usage >= 1, f"aggregate_daily_usage ha processato {cnt_d_usage} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_d = await db.execute("SELECT * FROM device_usage_daily WHERE mac_address = ? AND day_date = ?;", (test_mac_tier, day_date_str))
+            row_d = await cur_d.fetchone()
+
+        runner.assert_true(row_d is not None, "Record daily presente in device_usage_daily")
+        runner.assert_true(float(row_d["rx_bytes_total"] or 0) == actual_rx_delta, "rx_bytes_total aggregato a livello giornaliero")
+        runner.assert_true(row_d["peak_down_mbps"] == 45.0, "peak_down_mbps registrato nel rollup giornaliero")
+
+        # 6. Test Purga Controllata Campioni Scaduti
+        # Inseriamo un record grezzo recente (< 10 min) e verifichiamo che la purga a 6h non lo elimini
+        ts_recent = (now_utc - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        async with db_service.get_connection() as db:
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, 1000, 1000, 5, 1, 0);",
+                (ts_recent, test_mac_tier, "net_tier_1", "Test-Device-Tier")
+            )
+            await db.commit()
+
+        # Purga campioni grezzi più vecchi di 6 ore (quelli a -12h vengono cancellati, quello a -5min resta)
+        purge_raw_res = await db_service.purge_expired_raw_samples(raw_retention_hours=6)
+        runner.assert_true(purge_raw_res.get("device_usage_history", 0) >= 3, "Campioni grezzi remoti (>6h) rimossi con successo")
+
+        async with db_service.get_connection() as db:
+            cur_check_recent = await db.execute("SELECT COUNT(*) FROM device_usage_history WHERE mac_address = ? AND timestamp = ?;", (test_mac_tier, ts_recent))
+            cnt_recent = (await cur_check_recent.fetchone())[0]
+            # Verifica che i dati compattati in device_usage_hourly siano intatti
+            cur_check_hourly = await db.execute("SELECT COUNT(*) FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            cnt_hourly = (await cur_check_hourly.fetchone())[0]
+
+        runner.assert_true(cnt_recent == 1, "Campione recente (<1h) intatto dopo la purga")
+        runner.assert_true(cnt_hourly >= 1, "Rollup orario preservato anche dopo la cancellazione dei campioni grezzi")
+
+        # 7. Test Statistiche Database (db_service.get_database_stats())
+        db_stats = await db_service.get_database_stats()
+        runner.assert_true("size_mb" in db_stats, "Statistiche database espongono 'size_mb'")
+        runner.assert_true("tables" in db_stats, "Statistiche database espongono conteggi tabelle")
+        runner.assert_true("device_usage_hourly" in db_stats.get("tables", {}), "Tabella 'device_usage_hourly' monitorata nelle stats")
+        runner.assert_true("device_usage_daily" in db_stats.get("tables", {}), "Tabella 'device_usage_daily' monitorata nelle stats")
+
+        # 8. Test Esecuzione Ciclo Retention Worker
+        compaction_res = await retention_worker.run_compaction_cycle()
+        runner.assert_true(compaction_res.get("status") == "success", "run_compaction_cycle eseguito con successo")
+        runner.assert_true("raw_purged" in compaction_res, "Report include conteggio raw_purged")
+        runner.assert_true("hourly_purged" in compaction_res, "Report include conteggio hourly_purged")
+        runner.assert_true(retention_worker.last_run is not None, "retention_worker._last_run aggiornato")
+
+        # 9. Test Endpoints REST API
+        # GET /api/system/database/stats (Accessibile)
+        res_db_stats = await client.get("/api/system/database/stats")
+        runner.assert_true(res_db_stats.status_code == 200, "GET /api/system/database/stats risponde HTTP 200")
+        stats_payload = res_db_stats.json()
+        runner.assert_true("size_mb" in stats_payload, "Risposta stats include 'size_mb'")
+        runner.assert_true("retention_policy" in stats_payload, "Risposta stats include 'retention_policy'")
+        runner.assert_true(stats_payload.get("retention_policy", {}).get("raw_hours") == 48, "Policy raw_hours è 48h")
+
+        # POST /api/system/database/compact
+        # Non autenticato -> 401 Unauthorized
+        res_compact_unauth = await client.post("/api/system/database/compact")
+        runner.assert_true(res_compact_unauth.status_code == 401, "POST /api/system/database/compact senza autenticazione risponde HTTP 401")
+
+        # Creiamo un operatore non admin per testare il blocco 403 Forbidden
+        res_create_op_cmp = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_compact_test",
+                "password": "PasswordTest123!",
+                "is_admin": False,
+                "permissions": ["view_topology"]
+            },
+            headers=adm_hdr
+        )
+        op_cmp_id = res_create_op_cmp.json().get("user", {}).get("id")
+        res_op_cmp_login = await client.post("/api/auth/local/login", json={"username": "operatore_compact_test", "password": "PasswordTest123!"})
+        op_cmp_hdr = {"Authorization": f"Bearer {res_op_cmp_login.json().get('token')}"}
+
+        # Operatore non admin -> 403 Forbidden
+        res_compact_forbid = await client.post("/api/system/database/compact", headers=op_cmp_hdr)
+        runner.assert_true(res_compact_forbid.status_code == 403, "POST /api/system/database/compact con operatore non admin risponde HTTP 403")
+
+        # Admin -> 200 OK
+        res_compact_admin = await client.post("/api/system/database/compact", headers=adm_hdr)
+        runner.assert_true(res_compact_admin.status_code == 200, "POST /api/system/database/compact con admin risponde HTTP 200")
+        runner.assert_true(res_compact_admin.json().get("status") == "success", "Compattazione admin restituisce status 'success'")
+
+        # 10. Test Trasparenza Query Storiche (get_top_bandwidth_hogs su dati orari)
+        hogs_weekly = await db_service.get_top_bandwidth_hogs(period="weekly", is_demo=0)
+        runner.assert_true(isinstance(hogs_weekly, list), "get_top_bandwidth_hogs restituisce una lista su period='weekly'")
+        # Il dispositivo test mac tier è presente con i suoi consumi calcolati dalla tabella oraria
+        tier_dev_hog = next((h for h in hogs_weekly if h.get("mac") == test_mac_tier), None)
+        runner.assert_true(tier_dev_hog is not None, "Dispositivo aggregato in device_usage_hourly presente nella classifica Top Hogs")
+
+        # Pulizia dati test tier
+        async with db_service.get_connection() as db:
+            await db.execute("DELETE FROM device_usage_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_daily WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.commit()
+
+        if op_cmp_id:
+            await db_service.delete_local_user(op_cmp_id)
 
         runner.print_summary()
 

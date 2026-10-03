@@ -456,7 +456,7 @@ gantt
 - [x] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
 - [x] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
 - [x] Nuova tabella `iot_traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
-- [ ] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
+- [x] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
 - [x] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
 ##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA

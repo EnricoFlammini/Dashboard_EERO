@@ -48,10 +48,15 @@ async def lifespan(app: FastAPI):
     # 3. Avvio Poller Asincrono in Background
     await background_poller.start()
 
+    # 4. Avvio Retention Worker di Compattazione & Tiering (v1.6.0 Module 2)
+    from app.services.retention_worker import retention_worker
+    await retention_worker.start()
+
     yield
 
     # Chiusura pulita dei processi in background
     logger.info("Chiusura in corso dei servizi in background...")
+    await retention_worker.stop()
     await background_poller.stop()
     await eero_client.close()
     disable_dns_cache()

@@ -1,8 +1,9 @@
+from collections import Counter
 import json
 import logging
 import random
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 import aiosqlite
 from app.config import settings
@@ -239,6 +240,77 @@ class DBService:
                 );
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_schedules_enabled ON device_schedules(enabled);")
+
+            # 15. Device Usage Hourly Rollup (v1.6.0 Module 2)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_usage_hourly (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    hour_timestamp DATETIME NOT NULL,
+                    mac_address TEXT NOT NULL,
+                    network_id TEXT NOT NULL,
+                    hostname TEXT,
+                    rx_bytes_delta REAL DEFAULT 0,
+                    tx_bytes_delta REAL DEFAULT 0,
+                    avg_down_mbps REAL DEFAULT 0,
+                    max_down_mbps REAL DEFAULT 0,
+                    avg_up_mbps REAL DEFAULT 0,
+                    max_up_mbps REAL DEFAULT 0,
+                    samples_count INTEGER DEFAULT 0,
+                    is_demo INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(mac_address, hour_timestamp, is_demo)
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_hourly_mac_time ON device_usage_hourly(mac_address, hour_timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_hourly_time ON device_usage_hourly(hour_timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_hourly_net_time ON device_usage_hourly(network_id, hour_timestamp);")
+
+            # 16. Device Usage Daily Rollup (v1.6.0 Module 2)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_usage_daily (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    day_date DATE NOT NULL,
+                    mac_address TEXT NOT NULL,
+                    network_id TEXT NOT NULL,
+                    hostname TEXT,
+                    rx_bytes_total REAL DEFAULT 0,
+                    tx_bytes_total REAL DEFAULT 0,
+                    avg_down_mbps REAL DEFAULT 0,
+                    peak_down_mbps REAL DEFAULT 0,
+                    avg_up_mbps REAL DEFAULT 0,
+                    peak_up_mbps REAL DEFAULT 0,
+                    samples_count INTEGER DEFAULT 0,
+                    is_demo INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(mac_address, day_date, is_demo)
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_daily_mac_date ON device_usage_daily(mac_address, day_date);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_daily_date ON device_usage_daily(day_date);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_usage_daily_net_date ON device_usage_daily(network_id, day_date);")
+
+            # 17. Device Signal Hourly Rollup (v1.6.0 Module 2)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_signal_hourly (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    hour_timestamp DATETIME NOT NULL,
+                    mac_address TEXT NOT NULL,
+                    hostname TEXT,
+                    avg_rssi INTEGER NOT NULL,
+                    min_rssi INTEGER NOT NULL,
+                    max_rssi INTEGER NOT NULL,
+                    primary_band TEXT,
+                    primary_eero_name TEXT,
+                    avg_rx_bitrate REAL DEFAULT 0,
+                    avg_tx_bitrate REAL DEFAULT 0,
+                    samples_count INTEGER DEFAULT 0,
+                    is_demo INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(mac_address, hour_timestamp, is_demo)
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_hourly_mac_time ON device_signal_hourly(mac_address, hour_timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_hourly_time ON device_signal_hourly(hour_timestamp);")
 
             # Bootstrap utente admin predefinito se la tabella local_users è vuota
             async with db.execute("SELECT COUNT(*) FROM local_users;") as cur_u:
@@ -1084,6 +1156,36 @@ class DBService:
             rows = await cursor.fetchall()
             points = [dict(r) for r in rows]
 
+            # Se i campioni grezzi sono insufficienti o già compattati dal Tier 1, interroga device_usage_hourly
+            if len(points) < 2 and period in ("weekly", "monthly") and is_demo == 0:
+                h_cur = await db.execute(
+                    """
+                    SELECT hour_timestamp as timestamp, rx_bytes_delta, tx_bytes_delta, avg_down_mbps, avg_up_mbps
+                    FROM device_usage_hourly
+                    WHERE mac_address = ? AND is_demo = ? AND hour_timestamp >= ?
+                    ORDER BY hour_timestamp ASC
+                    """,
+                    (mac, is_demo, cutoff)
+                )
+                h_rows = await h_cur.fetchall()
+                if h_rows and len(h_rows) >= 2:
+                    cum_rx = 0.0
+                    cum_tx = 0.0
+                    h_points = []
+                    for hr in h_rows:
+                        cum_rx += float(hr["rx_bytes_delta"] or 0.0)
+                        cum_tx += float(hr["tx_bytes_delta"] or 0.0)
+                        h_points.append({
+                            "timestamp": hr["timestamp"],
+                            "rx_bytes": cum_rx,
+                            "tx_bytes": cum_tx,
+                            "download_mbps": float(hr["avg_down_mbps"] or 0.0),
+                            "upload_mbps": float(hr["avg_up_mbps"] or 0.0),
+                            "download_rate_mbps": float(hr["avg_down_mbps"] or 0.0),
+                            "upload_rate_mbps": float(hr["avg_up_mbps"] or 0.0),
+                        })
+                    points = h_points
+
         # Se non ci sono sufficienti campioni storicizzati o siamo in modalità simulata,
         # generiamo una serie coerente e realistica per la visualizzazione nei grafici
         if len(points) < 2:
@@ -1258,6 +1360,43 @@ class DBService:
         cutoff = (now - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
         cutoff_z = (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+        # Routing veloce: per weekly e monthly, verifica prima la tabella aggregata device_usage_hourly
+        if period in ("weekly", "monthly") and is_demo == 0:
+            async with self.get_connection() as db:
+                h_query = """
+                    SELECT mac_address, hostname,
+                           SUM(rx_bytes_delta) as sum_rx,
+                           SUM(tx_bytes_delta) as sum_tx,
+                           AVG(avg_down_mbps) as avg_down,
+                           AVG(avg_up_mbps) as avg_up
+                    FROM device_usage_hourly
+                    WHERE hour_timestamp >= ? AND is_demo = ?
+                """
+                h_params: List[Any] = [cutoff, is_demo]
+                if network_id:
+                    h_query += " AND network_id = ?"
+                    h_params.append(str(network_id))
+                h_query += " GROUP BY mac_address ORDER BY (SUM(rx_bytes_delta) + SUM(tx_bytes_delta)) DESC LIMIT ?"
+                h_params.append(limit)
+
+                h_cur = await db.execute(h_query, tuple(h_params))
+                h_rows = await h_cur.fetchall()
+                if h_rows and len(h_rows) > 0:
+                    results = []
+                    for hr in h_rows:
+                        f_rx = round(float(hr["sum_rx"] or 0), 1)
+                        f_tx = round(float(hr["sum_tx"] or 0), 1)
+                        results.append({
+                            "mac": hr["mac_address"],
+                            "hostname": hr["hostname"] or hr["mac_address"],
+                            "rx_bytes": f_rx,
+                            "tx_bytes": f_tx,
+                            "total_bytes": f_rx + f_tx,
+                            "avg_down_mbps": round(float(hr["avg_down"] or 0), 2),
+                            "avg_up_mbps": round(float(hr["avg_up"] or 0), 2),
+                        })
+                    return results
+
         async with self.get_connection() as db:
             query = """
                 SELECT mac_address, hostname, MAX(rx_bytes) as max_rx, MAX(tx_bytes) as max_tx,
@@ -1345,6 +1484,387 @@ class DBService:
             await db.commit()
             logger.info(f"Data retention cleanup executed (cutoff: {cutoff}): {deleted_counts}")
         return deleted_counts
+
+    # ----------------- MULTI-TIER DATA RETENTION & COMPACTION (v1.6.0 Module 2) -----------------
+    async def aggregate_hourly_usage(self, target_hour: datetime) -> int:
+        """
+        Esegue il rollup orario dei campioni grezzi da device_usage_history
+        nella tabella aggregata device_usage_hourly per l'ora specificata.
+        """
+        h_start = target_hour.replace(minute=0, second=0, microsecond=0)
+        h_end = h_start + timedelta(minutes=59, seconds=59)
+        start_str = h_start.strftime("%Y-%m-%d %H:%M:%S")
+        end_str = h_end.strftime("%Y-%m-%d %H:%M:%S")
+        hour_key = h_start.strftime("%Y-%m-%d %H:00:00")
+
+        inserted_or_updated = 0
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT DISTINCT mac_address, is_demo
+                FROM device_usage_history
+                WHERE replace(replace(timestamp, 'T', ' '), 'Z', '') BETWEEN ? AND ?
+                """,
+                (start_str, end_str)
+            )
+            devices = await cur.fetchall()
+
+            for dev in devices:
+                mac = dev["mac_address"]
+                is_demo = int(dev["is_demo"] or 0)
+
+                p_cur = await db.execute(
+                    """
+                    SELECT timestamp, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps
+                    FROM device_usage_history
+                    WHERE mac_address = ? AND is_demo = ? 
+                      AND replace(replace(timestamp, 'T', ' '), 'Z', '') BETWEEN ? AND ?
+                    ORDER BY replace(replace(timestamp, 'T', ' '), 'Z', '') ASC
+                    """,
+                    (mac, is_demo, start_str, end_str)
+                )
+                points = await p_cur.fetchall()
+                if not points:
+                    continue
+
+                delta_rx = 0.0
+                delta_tx = 0.0
+                down_speeds = []
+                up_speeds = []
+                last_net = "0"
+                last_host = mac
+
+                # Rileva campione precedente all'ora per calcolare il primo delta
+                prev_cur = await db.execute(
+                    """
+                    SELECT rx_bytes, tx_bytes FROM device_usage_history
+                    WHERE mac_address = ? AND is_demo = ? 
+                      AND replace(replace(timestamp, 'T', ' '), 'Z', '') < ?
+                    ORDER BY replace(replace(timestamp, 'T', ' '), 'Z', '') DESC LIMIT 1
+                    """,
+                    (mac, is_demo, start_str)
+                )
+                prev_sample = await prev_cur.fetchone()
+                if prev_sample:
+                    first_rx = float(points[0]["rx_bytes"] or 0.0)
+                    p_rx = float(prev_sample["rx_bytes"] or 0.0)
+                    first_tx = float(points[0]["tx_bytes"] or 0.0)
+                    p_tx = float(prev_sample["tx_bytes"] or 0.0)
+                    delta_rx += (first_rx - p_rx) if first_rx >= p_rx else first_rx
+                    delta_tx += (first_tx - p_tx) if first_tx >= p_tx else first_tx
+
+                for i, pt in enumerate(points):
+                    last_net = pt["network_id"] or last_net
+                    last_host = pt["hostname"] or last_host
+                    d_mb = float(pt["download_mbps"] or 0.0)
+                    u_mb = float(pt["upload_mbps"] or 0.0)
+                    down_speeds.append(d_mb)
+                    up_speeds.append(u_mb)
+
+                    if i > 0:
+                        rx_prev = float(points[i-1]["rx_bytes"] or 0.0)
+                        rx_curr = float(pt["rx_bytes"] or 0.0)
+                        tx_prev = float(points[i-1]["tx_bytes"] or 0.0)
+                        tx_curr = float(pt["tx_bytes"] or 0.0)
+                        delta_rx += (rx_curr - rx_prev) if rx_curr >= rx_prev else rx_curr
+                        delta_tx += (tx_curr - tx_prev) if tx_curr >= tx_prev else tx_curr
+
+                avg_down = round(sum(down_speeds) / len(down_speeds), 2) if down_speeds else 0.0
+                max_down = round(max(down_speeds), 2) if down_speeds else 0.0
+                avg_up = round(sum(up_speeds) / len(up_speeds), 2) if up_speeds else 0.0
+                max_up = round(max(up_speeds), 2) if up_speeds else 0.0
+                samples_cnt = len(points)
+
+                await db.execute(
+                    """
+                    INSERT INTO device_usage_hourly
+                    (hour_timestamp, mac_address, network_id, hostname, rx_bytes_delta, tx_bytes_delta,
+                     avg_down_mbps, max_down_mbps, avg_up_mbps, max_up_mbps, samples_count, is_demo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(mac_address, hour_timestamp, is_demo) DO UPDATE SET
+                        network_id = excluded.network_id,
+                        hostname = excluded.hostname,
+                        rx_bytes_delta = excluded.rx_bytes_delta,
+                        tx_bytes_delta = excluded.tx_bytes_delta,
+                        avg_down_mbps = excluded.avg_down_mbps,
+                        max_down_mbps = excluded.max_down_mbps,
+                        avg_up_mbps = excluded.avg_up_mbps,
+                        max_up_mbps = excluded.max_up_mbps,
+                        samples_count = excluded.samples_count;
+                    """,
+                    (hour_key, mac, str(last_net), str(last_host), delta_rx, delta_tx,
+                     avg_down, max_down, avg_up, max_up, samples_cnt, is_demo)
+                )
+                inserted_or_updated += 1
+
+            await db.commit()
+        return inserted_or_updated
+
+    async def aggregate_daily_usage(self, target_date: Any) -> int:
+        """
+        Esegue il rollup giornaliero aggregando i record di device_usage_hourly
+        nella tabella aggregata device_usage_daily per la data specificata.
+        """
+        if isinstance(target_date, (datetime, date)):
+            day_str = target_date.strftime("%Y-%m-%d")
+        else:
+            day_str = str(target_date)[:10]
+
+        pattern = f"{day_str}%"
+        inserted_or_updated = 0
+
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT mac_address, network_id, hostname, is_demo,
+                       SUM(rx_bytes_delta) as sum_rx,
+                       SUM(tx_bytes_delta) as sum_tx,
+                       AVG(avg_down_mbps) as avg_down,
+                       MAX(max_down_mbps) as peak_down,
+                       AVG(avg_up_mbps) as avg_up,
+                       MAX(max_up_mbps) as peak_up,
+                       SUM(samples_count) as total_samples
+                FROM device_usage_hourly
+                WHERE hour_timestamp LIKE ?
+                GROUP BY mac_address, is_demo
+                """,
+                (pattern,)
+            )
+            rows = await cur.fetchall()
+
+            for r in rows:
+                mac = r["mac_address"]
+                is_demo = int(r["is_demo"] or 0)
+                net_id = r["network_id"] or "0"
+                hostname = r["hostname"] or mac
+                rx_tot = float(r["sum_rx"] or 0.0)
+                tx_tot = float(r["sum_tx"] or 0.0)
+                avg_d = round(float(r["avg_down"] or 0.0), 2)
+                peak_d = round(float(r["peak_down"] or 0.0), 2)
+                avg_u = round(float(r["avg_up"] or 0.0), 2)
+                peak_u = round(float(r["peak_up"] or 0.0), 2)
+                samples = int(r["total_samples"] or 0)
+
+                await db.execute(
+                    """
+                    INSERT INTO device_usage_daily
+                    (day_date, mac_address, network_id, hostname, rx_bytes_total, tx_bytes_total,
+                     avg_down_mbps, peak_down_mbps, avg_up_mbps, peak_up_mbps, samples_count, is_demo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(mac_address, day_date, is_demo) DO UPDATE SET
+                        network_id = excluded.network_id,
+                        hostname = excluded.hostname,
+                        rx_bytes_total = excluded.rx_bytes_total,
+                        tx_bytes_total = excluded.tx_bytes_total,
+                        avg_down_mbps = excluded.avg_down_mbps,
+                        peak_down_mbps = excluded.peak_down_mbps,
+                        avg_up_mbps = excluded.avg_up_mbps,
+                        peak_up_mbps = excluded.peak_up_mbps,
+                        samples_count = excluded.samples_count;
+                    """,
+                    (day_str, mac, net_id, hostname, rx_tot, tx_tot,
+                     avg_d, peak_d, avg_u, peak_u, samples, is_demo)
+                )
+                inserted_or_updated += 1
+
+            await db.commit()
+        return inserted_or_updated
+
+    async def aggregate_hourly_signals(self, target_hour: datetime) -> int:
+        """
+        Esegue il rollup orario dei campioni di segnale da device_signal_history
+        nella tabella aggregata device_signal_hourly per l'ora specificata.
+        """
+        h_start = target_hour.replace(minute=0, second=0, microsecond=0)
+        h_end = h_start + timedelta(minutes=59, seconds=59)
+        start_str = h_start.strftime("%Y-%m-%d %H:%M:%S")
+        end_str = h_end.strftime("%Y-%m-%d %H:%M:%S")
+        hour_key = h_start.strftime("%Y-%m-%d %H:00:00")
+
+        inserted_or_updated = 0
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT DISTINCT mac_address, is_demo
+                FROM device_signal_history
+                WHERE replace(replace(timestamp, 'T', ' '), 'Z', '') BETWEEN ? AND ?
+                """,
+                (start_str, end_str)
+            )
+            devices = await cur.fetchall()
+
+            for dev in devices:
+                mac = dev["mac_address"]
+                is_demo = int(dev["is_demo"] or 0)
+
+                p_cur = await db.execute(
+                    """
+                    SELECT signal_rssi, frequency_band, connected_eero_name, rx_bitrate, tx_bitrate, hostname
+                    FROM device_signal_history
+                    WHERE mac_address = ? AND is_demo = ?
+                      AND replace(replace(timestamp, 'T', ' '), 'Z', '') BETWEEN ? AND ?
+                    """,
+                    (mac, is_demo, start_str, end_str)
+                )
+                points = await p_cur.fetchall()
+                if not points:
+                    continue
+
+                rssis = []
+                bands = []
+                eeros = []
+                rx_rates = []
+                tx_rates = []
+                hostname = mac
+
+                for pt in points:
+                    hostname = pt["hostname"] or hostname
+                    r = pt["signal_rssi"]
+                    if r is not None and r != 0:
+                        rssis.append(int(r))
+                    if pt["frequency_band"]:
+                        bands.append(str(pt["frequency_band"]))
+                    if pt["connected_eero_name"]:
+                        eeros.append(str(pt["connected_eero_name"]))
+                    if pt["rx_bitrate"] is not None:
+                        rx_rates.append(float(pt["rx_bitrate"]))
+                    if pt["tx_bitrate"] is not None:
+                        tx_rates.append(float(pt["tx_bitrate"]))
+
+                if not rssis:
+                    continue
+
+                avg_rssi = int(round(sum(rssis) / len(rssis)))
+                min_rssi = min(rssis)
+                max_rssi = max(rssis)
+                primary_band = Counter(bands).most_common(1)[0][0] if bands else ""
+                primary_eero = Counter(eeros).most_common(1)[0][0] if eeros else ""
+                avg_rx = round(sum(rx_rates) / len(rx_rates), 2) if rx_rates else 0.0
+                avg_tx = round(sum(tx_rates) / len(tx_rates), 2) if tx_rates else 0.0
+                samples_cnt = len(points)
+
+                await db.execute(
+                    """
+                    INSERT INTO device_signal_hourly
+                    (hour_timestamp, mac_address, hostname, avg_rssi, min_rssi, max_rssi,
+                     primary_band, primary_eero_name, avg_rx_bitrate, avg_tx_bitrate, samples_count, is_demo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(mac_address, hour_timestamp, is_demo) DO UPDATE SET
+                        hostname = excluded.hostname,
+                        avg_rssi = excluded.avg_rssi,
+                        min_rssi = excluded.min_rssi,
+                        max_rssi = excluded.max_rssi,
+                        primary_band = excluded.primary_band,
+                        primary_eero_name = excluded.primary_eero_name,
+                        avg_rx_bitrate = excluded.avg_rx_bitrate,
+                        avg_tx_bitrate = excluded.avg_tx_bitrate,
+                        samples_count = excluded.samples_count;
+                    """,
+                    (hour_key, mac, hostname, avg_rssi, min_rssi, max_rssi,
+                     primary_band, primary_eero, avg_rx, avg_tx, samples_cnt, is_demo)
+                )
+                inserted_or_updated += 1
+
+            await db.commit()
+        return inserted_or_updated
+
+    async def purge_expired_raw_samples(self, raw_retention_hours: Optional[int] = None) -> Dict[str, int]:
+        """Elimina i campioni grezzi ad alta frequenza (Tier 1) oltre la soglia configurata (default: 48 ore)."""
+        hours = raw_retention_hours or getattr(settings, "retention_raw_hours", 48)
+        cutoff_dt = datetime.now(timezone.utc) - timedelta(hours=hours)
+        cutoff_str = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        deleted = {}
+        async with self.get_connection() as db:
+            c1 = await db.execute("DELETE FROM device_usage_history WHERE replace(replace(timestamp, 'T', ' '), 'Z', '') < ?", (cutoff_str,))
+            deleted["device_usage_history"] = c1.rowcount
+            c2 = await db.execute("DELETE FROM device_signal_history WHERE replace(replace(timestamp, 'T', ' '), 'Z', '') < ?", (cutoff_str,))
+            deleted["device_signal_history"] = c2.rowcount
+            await db.commit()
+            logger.info(f"Tier 1 raw purge executed (cutoff: {cutoff_str}): {deleted}")
+        return deleted
+
+    async def purge_expired_hourly_samples(self, hourly_retention_days: Optional[int] = None) -> Dict[str, int]:
+        """Elimina i rollup orari (Tier 2) oltre la soglia configurata (default: 30 giorni)."""
+        days = hourly_retention_days or getattr(settings, "retention_hourly_days", 30)
+        cutoff_dt = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_str = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        deleted = {}
+        async with self.get_connection() as db:
+            c1 = await db.execute("DELETE FROM device_usage_hourly WHERE hour_timestamp < ?", (cutoff_str,))
+            deleted["device_usage_hourly"] = c1.rowcount
+            c2 = await db.execute("DELETE FROM device_signal_hourly WHERE hour_timestamp < ?", (cutoff_str,))
+            deleted["device_signal_hourly"] = c2.rowcount
+            await db.commit()
+            logger.info(f"Tier 2 hourly purge executed (cutoff: {cutoff_str}): {deleted}")
+        return deleted
+
+    async def purge_expired_daily_samples(self, daily_retention_days: Optional[int] = None) -> Dict[str, int]:
+        """Elimina i rollup giornalieri (Tier 3) oltre la soglia configurata (default: 365 giorni)."""
+        days = daily_retention_days or getattr(settings, "retention_daily_days", 365)
+        cutoff_dt = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_day = cutoff_dt.strftime("%Y-%m-%d")
+
+        deleted = {}
+        async with self.get_connection() as db:
+            c1 = await db.execute("DELETE FROM device_usage_daily WHERE day_date < ?", (cutoff_day,))
+            deleted["device_usage_daily"] = c1.rowcount
+            await db.commit()
+            logger.info(f"Tier 3 daily purge executed (cutoff: {cutoff_day}): {deleted}")
+        return deleted
+
+    async def get_database_stats(self) -> Dict[str, Any]:
+        """Restituisce le statistiche su dimensioni fisiche, conteggio righe per tier e salute del database."""
+        import os
+        db_size_bytes = 0
+        wal_size_bytes = 0
+        if os.path.exists(self.db_path):
+            db_size_bytes = os.path.getsize(self.db_path)
+        wal_path = f"{self.db_path}-wal"
+        if os.path.exists(wal_path):
+            wal_size_bytes = os.path.getsize(wal_path)
+
+        counts = {}
+        async with self.get_connection() as db:
+            for tbl in ["device_usage_history", "device_usage_hourly", "device_usage_daily",
+                        "device_signal_history", "device_signal_hourly", "speedtests",
+                        "alert_history", "local_users", "device_schedules", "iot_traffic_anomalies"]:
+                try:
+                    async with db.execute(f"SELECT COUNT(*) FROM {tbl};") as cur:
+                        row = await cur.fetchone()
+                        counts[tbl] = row[0] if row else 0
+                except Exception:
+                    counts[tbl] = 0
+
+            oldest_ts = None
+            newest_ts = None
+            try:
+                async with db.execute("SELECT MIN(timestamp), MAX(timestamp) FROM device_usage_history;") as cur:
+                    r = await cur.fetchone()
+                    if r and r[0]:
+                        oldest_ts = r[0]
+                        newest_ts = r[1]
+            except Exception:
+                pass
+
+        return {
+            "db_path": self.db_path,
+            "size_bytes": db_size_bytes,
+            "size_mb": round(db_size_bytes / (1024 * 1024), 2),
+            "wal_size_bytes": wal_size_bytes,
+            "wal_size_mb": round(wal_size_bytes / (1024 * 1024), 2),
+            "total_size_mb": round((db_size_bytes + wal_size_bytes) / (1024 * 1024), 2),
+            "tables": counts,
+            "oldest_sample": oldest_ts,
+            "newest_sample": newest_ts,
+            "retention_policy": {
+                "raw_hours": getattr(settings, "retention_raw_hours", 48),
+                "hourly_days": getattr(settings, "retention_hourly_days", 30),
+                "daily_days": getattr(settings, "retention_daily_days", 365),
+                "worker_interval_minutes": getattr(settings, "retention_worker_interval_minutes", 60)
+            }
+        }
 
     # ----------------- EERO RELEASE NOTES & UPDATES HUB (v1.6.0) -----------------
     async def save_release_notes(self, notes: List[Dict[str, Any]]) -> int:

@@ -123,3 +123,38 @@ async def import_system_restore_endpoint(payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=f"Errore durante il ripristino del backup: {str(e)}")
 
 
+# =========================================================================
+# DATABASE METRICS & DATA RETENTION ENGINE (v1.6.0 Modulo 2)
+# =========================================================================
+
+@router.get("/database/stats")
+async def get_database_statistics():
+    """
+    Restituisce le statistiche su dimensioni fisiche (MB), conteggio righe per tier e stato compattazione.
+    """
+    try:
+        from app.services.retention_worker import retention_worker
+        stats = await db_service.get_database_stats()
+        stats["last_retention_summary"] = retention_worker.last_summary
+        stats["last_retention_run"] = retention_worker.last_run.strftime("%Y-%m-%dT%H:%M:%SZ") if retention_worker.last_run else None
+        return stats
+    except Exception as e:
+        logger.error(f"Error fetching database stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore recupero statistiche database: {str(e)}")
+
+
+@router.post("/database/compact", dependencies=[Depends(require_admin)])
+async def trigger_database_compaction():
+    """
+    Esegue manualmente e on-demand un ciclo completo di compattazione e tiering multi-livello.
+    Richiede privilegi di amministratore.
+    """
+    try:
+        from app.services.retention_worker import retention_worker
+        summary = await retention_worker.run_compaction_cycle()
+        return summary
+    except Exception as e:
+        logger.error(f"Error during manual database compaction: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore durante la compattazione del database: {str(e)}")
+
+
