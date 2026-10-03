@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(In corso di rilascio - Moduli 1, 2, 3 e 5 Completati)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
 
 ---
 
@@ -44,13 +44,13 @@ gantt
     Tooltip Dispositivi Grafici Analytics :done, v1_5e, after v1_5d, 1d
     section v1.6.0 - AI Diagnostics, RBAC, Automations & Homelab
     eeroOS Release Notes & Community Hub :done, v1_6_news, 2026-09-25, 2d
-    Local RBAC & User Management Engine               :active, v1_6a, 2026-09-24, 4d
-    AI Natural Language Diagnostics & Roaming Advisor :v1_6b, after v1_6a, 4d
-    Anomaly Detection Traffico Notturno IoT           :v1_6c, after v1_6b, 3d
-    Parental Scheduling & Speedtest Bufferbloat Engine :v1_6d, after v1_6c, 4d
-    Home Assistant MQTT Auto-Discovery & Prometheus    :v1_6e, after v1_6d, 5d
+    Local RBAC & User Management Engine               :done, v1_6a, 2026-09-24, 4d
+    AI Natural Language Diagnostics & Roaming Advisor :done, v1_6b, after v1_6a, 4d
+    Anomaly Detection Traffico Notturno IoT           :done, v1_6c, after v1_6b, 3d
+    Parental Scheduling & Speedtest Bufferbloat Engine :done, v1_6d, after v1_6c, 4d
+    Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
+    Home Assistant MQTT Auto-Discovery & Prometheus    :active, v1_6e, after v1_6g, 5d
     Multi-Notifier Dispatcher (Discord, Gotify, NTFY)  :v1_6f, after v1_6e, 3d
-    Data Retention Worker, PWA & Backup Wizard         :v1_6g, after v1_6f, 4d
 ```
 
 ---
@@ -436,7 +436,7 @@ gantt
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
 
-##### Modulo 1: Backend FastAPI, Auth & Engine Core
+##### Modulo 1: Backend FastAPI, Auth & Engine Core (Completato)
 - [x] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
 - [x] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
 - [x] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
@@ -451,7 +451,7 @@ gantt
 - [x] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
 - [x] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
 
-##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`)
+##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`) (Completato)
 - [x] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
 - [x] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
 - [x] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
@@ -459,21 +459,21 @@ gantt
 - [x] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
 - [x] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
-##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA
+##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA (Completato)
 - [x] Menu di navigazione unificato (desktop sidebar e mobile drawer) senza titoli di categoria e rimozione ingranaggio header.
-- [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
-- [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato (`can(...)`).
-- [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
+- [x] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
+- [x] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato (`can(...)`).
+- [x] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
 - [x] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
 - [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
-- [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
-- [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
+- [x] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
+- [x] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
 - [x] Ottimizzazioni layout responsive mobile e tablet, menu unificato e schede apparati adattive (PR #29 / Issue #46).
 - [x] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45).
-- [ ] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
-- [ ] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
-- [ ] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
-- [ ] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
+- [x] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
+- [x] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
+- [x] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
+- [x] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
 
 ##### Modulo 4: Integrazioni Ecosistema Homelab & Notifiche Esterne
 - [ ] Client MQTT asincrono con Home Assistant Auto-Discovery per device tracking, sensori nodi e switch ospiti/gaming.
