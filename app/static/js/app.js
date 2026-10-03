@@ -873,6 +873,25 @@ document.addEventListener('alpine:init', () => {
     },
 
     async setTab(tab, updateUrl = true) {
+      // Protezione accessi per tab amministrative riservate
+      if (tab === 'settings-users' && !this.can('action_manage_users')) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
+          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere alla gestione utenti.' : 'Please sign in as Admin to access user management.',
+          'warning'
+        );
+        this.openLocalLoginModal('admin');
+        return;
+      }
+      if (tab === 'settings-backup' && !this.can('action_system_backup')) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
+          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere a backup e ripristino.' : 'Please sign in as Admin to access backup & restore.',
+          'warning'
+        );
+        this.openLocalLoginModal('admin');
+        return;
+      }
       if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
       if (this.isSettingsTab()) {
@@ -4383,7 +4402,14 @@ document.addEventListener('alpine:init', () => {
     // MODULE 3: LOCAL AUTHENTICATION & RBAC LOGIC
     // =========================================================================
     can(permKey) {
-      if (!this.currentUser) return true; // Default open in single-user mode
+      if (!this.currentUser) {
+        // Modalità Viewer / Non autenticato (Read-Only Guest Mode):
+        // NESSUN permesso di tipo action_* o amministrativo è consentito se non loggati
+        if (!permKey) return false;
+        if (permKey.startsWith('action_')) return false;
+        // Consente la consultazione in sola lettura per gli scope view_*
+        return true;
+      }
       if (this.currentUser.role === 'admin' || this.currentUser.is_admin) return true;
       if (Array.isArray(this.currentUser.permissions)) {
         if (this.currentUser.permissions.includes('*')) return true;
@@ -4483,6 +4509,9 @@ document.addEventListener('alpine:init', () => {
       this.localAuthToken = null;
       if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
       this.currentUser = null;
+      if (this.currentTab === 'settings-users' || this.currentTab === 'settings-backup') {
+        this.setTab('overview');
+      }
       this.showToast(
         this.currentLanguage === 'it' ? 'Disconnesso' : 'Logged Out',
         this.currentLanguage === 'it' ? 'Sessione locale terminata' : 'Local session terminated',

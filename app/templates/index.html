@@ -891,6 +891,7 @@
             <span x-text="t('health_modal.view_health_report')"></span>
           </button>
           <button 
+            x-show="can('action_reboot_nodes')"
             @click="rebootNetwork()"
             class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 border border-rose-300 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:text-rose-400 dark:border-rose-500/30 transition flex items-center space-x-1.5 shadow-sm dark:shadow-none cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -956,6 +957,7 @@
               </span>
 
               <button 
+                x-show="can('action_reboot_nodes')"
                 @click="rebootEero(eero)"
                 class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-600 border border-slate-300 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 dark:border-slate-700 transition flex items-center space-x-1 shadow-sm dark:shadow-none cursor-pointer">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -1907,11 +1909,18 @@
           <div class="flex flex-col items-center">
             <button 
               @click="runSpeedtest()"
-              :disabled="speedtestRunning"
+              :disabled="speedtestRunning || !can('action_run_speedtest')"
+              :class="!can('action_run_speedtest') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
               class="w-40 h-40 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-lg shadow-2xl shadow-sky-500/30 flex flex-col items-center justify-center space-y-1 transition-transform active:scale-95 disabled:opacity-50">
               <svg class="w-8 h-8" :class="speedtestRunning ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
               <span x-text="speedtestRunning ? t('speedtest.running_btn') : t('speedtest.run_btn')"></span>
             </button>
+
+            <!-- Read-Only Notice when lacking action_run_speedtest -->
+            <div x-show="!can('action_run_speedtest')" class="mt-4 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium flex items-center space-x-1.5 shadow-xs">
+              <span>🔒</span>
+              <span x-text="currentLanguage === 'it' ? 'Modalità sola lettura: accedi come Admin per eseguire lo speed test.' : 'Read-only mode: sign in as Admin to run speed test.'"></span>
+            </div>
 
             <!-- Progress Bar -->
             <div x-show="speedtestRunning" class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-6 overflow-hidden">
@@ -2520,8 +2529,9 @@
             </div>
             <button 
               @click="toggleGuestNetwork()"
-              :class="guestNetwork.enabled ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'"
-              class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer">
+              :disabled="!can('action_toggle_guest')"
+              :class="[!can('action_toggle_guest') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', guestNetwork.enabled ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400']"
+              class="px-3 py-1 rounded-full text-xs font-bold transition">
               <span x-text="guestNetwork.enabled ? t('controls.enabled') : t('controls.disabled')"></span>
             </button>
           </div>
@@ -2549,12 +2559,13 @@
                 <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.guest_password')"></label>
                 <div class="flex space-x-1">
                   <input type="text" x-model="guestNetwork.password" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono">
-                  <button @click="generateGuestPassword()" class="p-2 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" :title="t('controls.generate_password')">
+                  <button x-show="can('action_toggle_guest')" @click="generateGuestPassword()" class="p-2 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" :title="t('controls.generate_password')">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   </button>
                 </div>
               </div>
               <button 
+                x-show="can('action_toggle_guest')"
                 @click="saveGuestSettings()"
                 class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition cursor-pointer shadow-sm"
                 x-text="t('controls.save_guest_btn')">
@@ -2579,7 +2590,7 @@
                 </div>
 
                 <!-- Action Toolbar: Add Instance, Test All, Sync All -->
-                <div class="flex flex-wrap items-center gap-2">
+                <div x-show="can('action_sync_dns')" class="flex flex-wrap items-center gap-2">
                   <button 
                     @click="addDnsInstance()"
                     class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200 dark:border-emerald-500/30 transition flex items-center cursor-pointer">
@@ -2733,7 +2744,7 @@
                       </template>
                     </div>
 
-                    <div class="flex items-center space-x-2">
+                    <div x-show="can('action_sync_dns')" class="flex items-center space-x-2">
                       <button 
                         @click="testDnsInstance(inst)"
                         :disabled="dnsTesting && dnsTestingId === inst.id"
@@ -2770,6 +2781,7 @@
               </label>
 
               <button 
+                x-show="can('action_sync_dns')"
                 @click="saveDnsSettings()"
                 class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#0067c0] to-indigo-600 hover:from-[#1975c5] hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition cursor-pointer"
                 x-text="t('controls.dns_save_btn') || 'Salva Configurazioni DNS'">
@@ -2791,7 +2803,7 @@
                   <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('controls.notifications_desc')"></p>
                 </div>
               </div>
-              <button @click="testNotifications()" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300 dark:border-indigo-500/30 text-xs font-semibold transition cursor-pointer" x-text="t('controls.send_test')">
+              <button x-show="can('action_manage_rules')" @click="testNotifications()" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 dark:text-indigo-300 dark:border-indigo-500/30 text-xs font-semibold transition cursor-pointer" x-text="t('controls.send_test')">
               </button>
             </div>
 
@@ -2820,6 +2832,7 @@
 
           <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
             <button 
+              x-show="can('action_manage_rules')"
               @click="saveNotificationSettings()"
               class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition shadow-lg shadow-sky-600/20 text-xs cursor-pointer"
               x-text="t('controls.save_notifications')">
@@ -2853,6 +2866,7 @@
           </div>
           <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
             <button 
+              x-show="can('action_manage_rules')"
               @click="triggerDigest()" 
               class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition cursor-pointer" 
               x-text="t('controls.digest_btn')">
@@ -2875,6 +2889,7 @@
 
             <div class="flex items-center space-x-2">
               <button 
+                x-show="can('action_manage_rules')"
                 @click="evaluateSchedulesNow()" 
                 class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5"
                 :title="t('schedules.evaluate_btn') || 'Valuta Ora'">
@@ -2921,8 +2936,9 @@
                       <!-- Toggle Switch -->
                       <button 
                         @click="toggleSchedule(s.id)"
-                        :class="s.is_active ? 'bg-[#0067c0] dark:bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"
-                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
+                        :disabled="!can('action_manage_rules')"
+                        :class="[!can('action_manage_rules') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer', s.is_active ? 'bg-[#0067c0] dark:bg-sky-500' : 'bg-slate-300 dark:bg-slate-700']"
+                        class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
                         <span :class="s.is_active ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"></span>
                       </button>
                     </div>
@@ -2945,7 +2961,7 @@
                     </div>
 
                     <!-- Edit / Delete Buttons -->
-                    <div class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.04] dark:border-white/5">
+                    <div x-show="can('action_manage_rules')" class="flex items-center justify-end space-x-2 pt-2 border-t border-black/[0.04] dark:border-white/5">
                       <button 
                         @click="openScheduleModal(s)"
                         class="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition cursor-pointer text-xs"
@@ -2996,7 +3012,7 @@
           </div>
 
           <div class="flex items-center space-x-2">
-            <template x-if="userModalMode === 'list'">
+            <template x-if="userModalMode === 'list' && can('action_manage_users')">
               <button 
                 @click="startCreateUser()"
                 class="px-4 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white text-xs font-bold transition shadow-sm cursor-pointer flex items-center space-x-1.5 active:scale-95">
@@ -3004,7 +3020,7 @@
                 <span x-text="t('users_modal.add_user') || 'Nuovo Utente'"></span>
               </button>
             </template>
-            <template x-if="userModalMode !== 'list'">
+            <template x-if="userModalMode !== 'list' && can('action_manage_users')">
               <button 
                 @click="userModalMode = 'list'"
                 class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer">
@@ -3013,8 +3029,8 @@
             </template>
         </div>
 
-        <!-- Admin Login Required Notice (when not logged in) -->
-        <div x-show="!currentUser" class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <!-- Admin Login Required Notice (when not logged in or missing action_manage_users) -->
+        <div x-show="!can('action_manage_users')" class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
           <div class="flex items-center space-x-3">
             <span class="text-2xl shrink-0">🔐</span>
             <div>
@@ -3032,7 +3048,7 @@
         </div>
 
         <!-- Mode 1: Table List View -->
-        <div x-show="userModalMode === 'list'" class="space-y-4">
+        <div x-show="userModalMode === 'list' && can('action_manage_users')" class="space-y-4">
           <div x-show="usersLoading" class="py-12 text-center text-xs text-slate-400">
             <span class="animate-spin inline-block mr-2">⏳</span> Caricamento utenti...
           </div>
@@ -3102,7 +3118,7 @@
         </div>
 
         <!-- Mode 2: In-place Create / Edit View -->
-        <div x-show="userModalMode !== 'list'" class="space-y-6">
+        <div x-show="userModalMode !== 'list' && can('action_manage_users')" class="space-y-6">
           <form @submit.prevent="saveLocalUser()" class="space-y-5 text-xs">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -3223,7 +3239,25 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Admin Login Required Notice (when not logged in or missing action_system_backup) -->
+      <div x-show="!can('action_system_backup')" class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div class="flex items-center space-x-3">
+          <span class="text-3xl shrink-0">🔐</span>
+          <div>
+            <span class="font-bold text-amber-900 dark:text-amber-200 block text-sm" x-text="t('auth_local.admin_required_title') || 'Accesso Amministratore Richiesto'"></span>
+            <p class="text-slate-600 dark:text-slate-400 mt-1" x-text="t('auth_local.admin_required_desc') || 'Per accedere alle funzionalità di Backup, Ripristino snapshot e compattazione del database è necessario effettuare l\'accesso come Amministratore.'"></p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          @click="openLocalLoginModal('admin')"
+          class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-sm shadow-sky-500/20 cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+          <span x-text="t('auth_local.login_as_admin_btn') || 'Accedi come Admin'"></span>
+        </button>
+      </div>
+
+      <div x-show="can('action_system_backup')" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- 1. Export Card -->
         <div class="glass-panel rounded-2xl p-6 space-y-4 text-xs">
           <div class="flex items-center space-x-3 border-b border-black/[0.06] dark:border-white/5 pb-3">
@@ -3496,7 +3530,7 @@
               <span x-text="isCheckingUpdate ? (currentLanguage === 'it' ? 'Verifica...' : 'Checking...') : (currentLanguage === 'it' ? 'Ricontrolla Release' : 'Recheck Releases')"></span>
             </button>
 
-            <template x-if="updateInfo && updateInfo.can_auto_install">
+            <template x-if="updateInfo && updateInfo.can_auto_install && currentUser && (currentUser.is_admin || currentUser.role === 'admin')">
               <button 
                 @click="triggerAutoUpdate()" 
                 :disabled="isTriggeringUpdate"
@@ -4241,6 +4275,7 @@
                       placeholder="es. 192.168.4.50" 
                       class="glass-input flex-1 px-3 py-2 rounded-xl text-sm font-mono font-semibold">
                     <button 
+                      x-show="can('action_manage_rules')"
                       @click="saveDeviceReservation()"
                       :disabled="!deviceStaticIpInput || (ipConflictInfo && ipConflictInfo.hasConflict)"
                       class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-lg shadow-sky-600/20 shrink-0 cursor-pointer">
@@ -4331,6 +4366,7 @@
                     </td>
                     <td class="py-2.5 px-3 text-right font-sans">
                       <button 
+                        x-show="can('action_manage_rules')"
                         @click="deleteDevicePortForward(fwd.id || (fwd.url ? fwd.url.split('/').pop() : ''))"
                         class="p-1 rounded text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                         :title="t('device_modal.delete_forward_title')">
@@ -4349,7 +4385,7 @@
           </div>
 
           <!-- Form Nuova Regola -->
-          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div x-show="can('action_manage_rules')" class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
             <div class="font-bold text-white text-xs" x-text="t('device_modal.add_forward_title')"></div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div>
@@ -4534,7 +4570,7 @@
       <!-- Modal Footer -->
       <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
         <button @click="showDeviceModal = false" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('device_modal.close_btn')"></button>
-        <template x-if="deviceDetailTab === 'general'">
+        <template x-if="deviceDetailTab === 'general' && can('action_edit_devices')">
           <button @click="saveDeviceMetadata()" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30 transition cursor-pointer" x-text="t('device_modal.save_metadata_btn')"></button>
         </template>
       </div>
@@ -5253,7 +5289,7 @@
             x-text="t('update_modal.cancel')">
           </button>
 
-          <template x-if="updateInfo.can_auto_install">
+          <template x-if="updateInfo.can_auto_install && currentUser && (currentUser.is_admin || currentUser.role === 'admin')">
             <button 
               @click="triggerAutoUpdate()" 
               :disabled="isTriggeringUpdate"
