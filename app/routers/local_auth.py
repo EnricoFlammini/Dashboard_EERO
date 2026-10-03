@@ -48,6 +48,13 @@ async def local_login(payload: LocalLoginRequest, response: Response):
             detail="Credenziali non valide (username o password errati)."
         )
 
+    # Verifica se l'account è disattivato dall'amministratore
+    if user.get("is_active") is False or user.get("is_active") == 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account disattivato dall'amministratore. Contatta l'amministratore di sistema."
+        )
+
     user_id = user["id"]
     token = await db_service.create_user_session(user_id=user_id, duration_days=7)
     await db_service.update_user_last_login(user_id=user_id)
@@ -65,7 +72,10 @@ async def local_login(payload: LocalLoginRequest, response: Response):
     clean_user = {
         "id": user["id"],
         "username": user["username"],
+        "display_name": user.get("display_name", ""),
+        "role": user.get("role") or ("admin" if user.get("is_admin") else "operator"),
         "is_admin": user["is_admin"],
+        "is_active": bool(user.get("is_active", 1)),
         "permissions": user["permissions"],
         "created_at": user.get("created_at"),
         "last_login": user.get("last_login")
@@ -111,9 +121,11 @@ async def get_permissions_catalog():
     """
     Restituisce il catalogo descrittivo bilingue di tutti i permessi granulari supportati dalla dashboard.
     """
+    catalog = auth_service.get_permissions_catalog()
     return {
         "status": "success",
-        "data": auth_service.get_permissions_catalog()
+        "data": catalog,
+        "permissions": catalog.get("permissions", [])
     }
 
 

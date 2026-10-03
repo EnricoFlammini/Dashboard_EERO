@@ -20,14 +20,20 @@ router = APIRouter(prefix="/api/users", tags=["Local Users Management"])
 class CreateUserRequest(BaseModel):
     username: str = Field(..., min_length=2, max_length=50, description="Nome utente univoco")
     password: str = Field(..., min_length=4, max_length=128, description="Password in chiaro")
-    is_admin: bool = Field(False, description="Flag per privilegi di amministratore")
+    display_name: Optional[str] = Field("", max_length=100, description="Nome visualizzato utente")
+    role: Optional[str] = Field("operator", max_length=50, description="Ruolo utente (admin, operator, viewer)")
+    is_admin: Optional[bool] = Field(False, description="Flag per privilegi di amministratore")
+    is_active: Optional[bool] = Field(True, description="Stato abilitato/disabilitato dell'account")
     permissions: List[str] = Field(default_factory=list, description="Elenco chiavi di permesso assegnate")
 
 
 class UpdateUserRequest(BaseModel):
     username: Optional[str] = Field(None, min_length=2, max_length=50)
     password: Optional[str] = Field(None, min_length=4, max_length=128)
+    display_name: Optional[str] = None
+    role: Optional[str] = None
     is_admin: Optional[bool] = None
+    is_active: Optional[bool] = None
     permissions: Optional[List[str]] = None
 
 
@@ -63,9 +69,14 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
             detail=f"Lo username '{clean_username}' è già in uso."
         )
 
+    # Coerenza ruolo e flag is_admin
+    effective_is_admin = bool(payload.is_admin or payload.role == "admin")
+    effective_role = "admin" if effective_is_admin else (payload.role or "operator")
+    effective_is_active = True if payload.is_active is None else bool(payload.is_active)
+
     # Validazione permessi: se admin, assegna automaticamente tutti i permessi se non specificati
     valid_perms = auth_service.validate_permissions(payload.permissions)
-    if payload.is_admin and not valid_perms:
+    if effective_is_admin and not valid_perms:
         valid_perms = ALL_PERMISSION_KEYS
 
     # Hashing crittografico password
@@ -73,9 +84,12 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
 
     new_id = await db_service.create_local_user(
         username=clean_username,
+        display_name=payload.display_name or "",
+        role=effective_role,
         password_hash=pwd_hash,
         salt=pwd_salt,
-        is_admin=payload.is_admin,
+        is_admin=effective_is_admin,
+        is_active=effective_is_active,
         permissions=valid_perms
     )
 
@@ -87,7 +101,7 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
     created_user.pop("password_hash", None)
     created_user.pop("salt", None)
 
-    logger.info(f"Local Auth: Utente '{clean_username}' (id: {new_id}, admin: {payload.is_admin}) creato con successo da '{admin.get('username')}'.")
+    logger.info(f"Local Auth: Utente '{clean_username}' (id: {new_id}, admin: {effective_is_admin}) creato con successo da '{admin.get('username')}'.")
     return {
         "status": "success",
         "message": f"Utente '{clean_username}' creato con successo.",
@@ -116,7 +130,7 @@ async def get_user(user_id: int, admin: dict = Depends(require_admin)):
 @router.put("/{user_id}")
 async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = Depends(require_admin)):
     """
-    Aggiorna username, password, stato admin o permessi di un utente locale.
+    Aggiorna username, password, stato admin, stato attivo o permessi di un utente locale.
     Riservato agli amministratori.
     """
     user = await db_service.get_local_user_by_id(user_id)
@@ -129,14 +143,28 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
         if existing and existing["id"] != user_id:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Username '{new_username}' già utilizzato da un altro utente.")
 
+    # Determina is_admin target
+    target_is_admin = None
+    if payload.is_admin is not None:
+        target_is_admin = bool(payload.is_admin)
+    elif payload.role is not None:
+        target_is_admin = (payload.role == "admin")
+
     # Protezione rimozione ultimo amministratore
-    if payload.is_admin is False and user.get("is_admin"):
+    if target_is_admin is False and user.get("is_admin"):
         admin_count = await db_service.count_admin_users()
         if admin_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Impossibile revocare i permessi di amministratore: deve rimanere almeno un amministratore attivo nel sistema."
             )
+
+    # Determina role coerente
+    target_role = payload.role
+    if target_is_admin is True:
+        target_role = "admin"
+    elif target_is_admin is False and (not target_role or target_role == "admin"):
+        target_role = "operator"
 
     pwd_hash = None
     pwd_salt = None
@@ -150,9 +178,12 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
     success = await db_service.update_local_user(
         user_id=user_id,
         username=new_username,
+        display_name=payload.display_name,
+        role=target_role,
         password_hash=pwd_hash,
         salt=pwd_salt,
-        is_admin=payload.is_admin,
+        is_admin=target_is_admin,
+        is_active=payload.is_active,
         permissions=valid_perms
     )
 

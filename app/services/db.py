@@ -200,15 +200,34 @@ class DBService:
                 CREATE TABLE IF NOT EXISTS local_users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username TEXT UNIQUE NOT NULL,
+                    display_name TEXT DEFAULT '',
+                    role TEXT DEFAULT 'operator',
                     password_hash TEXT NOT NULL,
                     salt TEXT NOT NULL,
                     is_admin INTEGER DEFAULT 0,
+                    is_active INTEGER DEFAULT 1,
                     permissions_json TEXT DEFAULT '[]',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     last_login DATETIME
                 );
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_local_users_username ON local_users(username);")
+
+            # Migration check: aggiungi colonne display_name, role, is_active se assenti
+            try:
+                await db.execute("ALTER TABLE local_users ADD COLUMN display_name TEXT DEFAULT '';")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE local_users ADD COLUMN role TEXT DEFAULT 'operator';")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE local_users ADD COLUMN is_active INTEGER DEFAULT 1;")
+            except Exception:
+                pass
+            await db.execute("UPDATE local_users SET is_active = 1 WHERE is_active IS NULL;")
+            await db.execute("UPDATE local_users SET role = 'admin', display_name = 'Amministratore Rete' WHERE is_admin = 1 AND (role IS NULL OR role = '' OR role = 'operator');")
 
             # 13. Local User Sessions
             await db.execute("""
@@ -325,8 +344,8 @@ class DBService:
                 all_perms_json = json.dumps(ALL_PERMISSION_KEYS)
                 await db.execute(
                     """
-                    INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
-                    VALUES (?, ?, ?, 1, ?, CURRENT_TIMESTAMP);
+                    INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
+                    VALUES (?, 'Amministratore Rete', 'admin', ?, ?, 1, 1, ?, CURRENT_TIMESTAMP);
                     """,
                     (admin_u, p_hash, p_salt, all_perms_json)
                 )
@@ -2062,6 +2081,9 @@ class DBService:
                 except Exception:
                     d["permissions"] = []
                 d["is_admin"] = bool(d.get("is_admin"))
+                d["is_active"] = bool(d.get("is_active") if d.get("is_active") is not None else 1)
+                d["display_name"] = d.get("display_name") or ""
+                d["role"] = d.get("role") or ("admin" if d["is_admin"] else "operator")
                 return d
         return None
 
@@ -2080,6 +2102,9 @@ class DBService:
                 except Exception:
                     d["permissions"] = []
                 d["is_admin"] = bool(d.get("is_admin"))
+                d["is_active"] = bool(d.get("is_active") if d.get("is_active") is not None else 1)
+                d["display_name"] = d.get("display_name") or ""
+                d["role"] = d.get("role") or ("admin" if d["is_admin"] else "operator")
                 return d
         return None
 
@@ -2087,7 +2112,7 @@ class DBService:
         """Restituisce l'elenco di tutti gli utenti locali registrati (omettendo hash e salt)."""
         async with self.get_connection() as db:
             cursor = await db.execute(
-                "SELECT id, username, is_admin, permissions_json, created_at, last_login FROM local_users ORDER BY id ASC;"
+                "SELECT id, username, display_name, role, is_admin, is_active, permissions_json, created_at, last_login FROM local_users ORDER BY id ASC;"
             )
             rows = await cursor.fetchall()
             users = []
@@ -2098,6 +2123,9 @@ class DBService:
                 except Exception:
                     d["permissions"] = []
                 d["is_admin"] = bool(d.get("is_admin"))
+                d["is_active"] = bool(d.get("is_active") if d.get("is_active") is not None else 1)
+                d["display_name"] = d.get("display_name") or ""
+                d["role"] = d.get("role") or ("admin" if d["is_admin"] else "operator")
                 d.pop("permissions_json", None)
                 users.append(d)
             return users
@@ -2107,19 +2135,24 @@ class DBService:
         username: str,
         password_hash: str,
         salt: str,
+        display_name: str = "",
+        role: str = "operator",
         is_admin: bool = False,
+        is_active: bool = True,
         permissions: Optional[List[str]] = None
     ) -> int:
         """Crea un nuovo utente locale e restituisce il suo ID."""
         u = str(username).strip()
+        dn = str(display_name or "").strip()
+        r = str(role or ("admin" if is_admin else "operator")).strip()
         perms_json = json.dumps(permissions or [])
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
-                INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+                INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
                 """,
-                (u, password_hash, salt, 1 if is_admin else 0, perms_json)
+                (u, dn, r, password_hash, salt, 1 if is_admin else 0, 1 if is_active else 0, perms_json)
             )
             await db.commit()
             return cursor.lastrowid
@@ -2128,9 +2161,12 @@ class DBService:
         self,
         user_id: int,
         username: Optional[str] = None,
+        display_name: Optional[str] = None,
+        role: Optional[str] = None,
         password_hash: Optional[str] = None,
         salt: Optional[str] = None,
         is_admin: Optional[bool] = None,
+        is_active: Optional[bool] = None,
         permissions: Optional[List[str]] = None
     ) -> bool:
         """Aggiorna i campi di un utente locale esistente."""
@@ -2139,6 +2175,12 @@ class DBService:
         if username is not None:
             updates.append("username = ?")
             params.append(str(username).strip())
+        if display_name is not None:
+            updates.append("display_name = ?")
+            params.append(str(display_name).strip())
+        if role is not None:
+            updates.append("role = ?")
+            params.append(str(role).strip())
         if password_hash is not None and salt is not None:
             updates.append("password_hash = ?")
             params.append(password_hash)
@@ -2147,6 +2189,9 @@ class DBService:
         if is_admin is not None:
             updates.append("is_admin = ?")
             params.append(1 if is_admin else 0)
+        if is_active is not None:
+            updates.append("is_active = ?")
+            params.append(1 if is_active else 0)
         if permissions is not None:
             updates.append("permissions_json = ?")
             params.append(json.dumps(permissions))
@@ -2211,7 +2256,7 @@ class DBService:
         async with self.get_connection() as db:
             cursor = await db.execute(
                 """
-                SELECT u.id, u.username, u.is_admin, u.permissions_json, u.created_at, u.last_login, s.expires_at
+                SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.is_active, u.permissions_json, u.created_at, u.last_login, s.expires_at
                 FROM user_sessions s
                 JOIN local_users u ON s.user_id = u.id
                 WHERE s.token = ? AND s.expires_at > ?;
@@ -2226,6 +2271,9 @@ class DBService:
                 except Exception:
                     d["permissions"] = []
                 d["is_admin"] = bool(d.get("is_admin"))
+                d["is_active"] = bool(d.get("is_active") if d.get("is_active") is not None else 1)
+                d["display_name"] = d.get("display_name") or ""
+                d["role"] = d.get("role") or ("admin" if d["is_admin"] else "operator")
                 d.pop("permissions_json", None)
                 return d
         return None
@@ -2555,17 +2603,23 @@ class DBService:
                     if uname and p_hash and p_salt:
                         p_json = json.dumps(u.get("permissions") or [])
                         is_adm = 1 if u.get("is_admin") else 0
+                        dn = str(u.get("display_name") or "")
+                        role = str(u.get("role") or ("admin" if is_adm else "operator"))
+                        is_act = 1 if u.get("is_active", 1) else 0
                         await db.execute(
                             """
-                            INSERT INTO local_users (username, password_hash, salt, is_admin, permissions_json, created_at)
-                            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                            INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                             ON CONFLICT(username) DO UPDATE SET
+                                display_name = excluded.display_name,
+                                role = excluded.role,
                                 password_hash = excluded.password_hash,
                                 salt = excluded.salt,
                                 is_admin = excluded.is_admin,
+                                is_active = excluded.is_active,
                                 permissions_json = excluded.permissions_json;
                             """,
-                            (uname, p_hash, p_salt, is_adm, p_json)
+                            (uname, dn, role, p_hash, p_salt, is_adm, is_act, p_json)
                         )
                         restored_stats["local_users"] += 1
 

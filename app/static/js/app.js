@@ -4654,7 +4654,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/auth/local/permissions');
         if (res.ok) {
           const data = await res.json();
-          this.permissionsCatalog = data.permissions || [];
+          this.permissionsCatalog = data.permissions || (data.data && data.data.permissions) || [];
         }
       } catch (e) {
         console.error("Failed to load permissions catalog:", e);
@@ -4709,9 +4709,9 @@ document.addEventListener('alpine:init', () => {
         id: u.id,
         username: u.username,
         display_name: u.display_name || '',
-        role: u.role || 'operator',
+        role: u.role || (u.is_admin ? 'admin' : 'operator'),
         password: '',
-        is_active: Boolean(u.is_active),
+        is_active: u.is_active !== undefined ? Boolean(u.is_active) : true,
         permissions: Array.isArray(u.permissions) ? [...u.permissions] : []
       };
       this.userModalMode = 'edit';
@@ -4728,13 +4728,16 @@ document.addEventListener('alpine:init', () => {
 
     applyPermissionPreset(preset) {
       if (preset === 'all') {
-        this.userForm.permissions = this.permissionsCatalog.map(p => p.key);
+        const allKeys = this.permissionsCatalog.length 
+          ? this.permissionsCatalog.map(p => p.key) 
+          : ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns', 'action_manage_users', 'action_system_backup'];
+        this.userForm.permissions = allKeys;
         this.userForm.role = 'admin';
       } else if (preset === 'readonly') {
         this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs'];
         this.userForm.role = 'viewer';
       } else if (preset === 'operator') {
-        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_pause_devices', 'action_reboot_nodes'];
+        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns'];
         this.userForm.role = 'operator';
       } else if (preset === 'none') {
         this.userForm.permissions = [];
@@ -4759,6 +4762,7 @@ document.addEventListener('alpine:init', () => {
       if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
       try {
         let res;
+        const isAdm = this.userForm.role === 'admin';
         if (this.userModalMode === 'create') {
           res = await fetch('/api/users', {
             method: 'POST',
@@ -4767,8 +4771,9 @@ document.addEventListener('alpine:init', () => {
               username: this.userForm.username,
               display_name: this.userForm.display_name,
               role: this.userForm.role,
+              is_admin: isAdm,
               password: this.userForm.password || 'password123',
-              is_active: this.userForm.is_active,
+              is_active: Boolean(this.userForm.is_active),
               permissions: this.userForm.permissions
             })
           });
@@ -4776,7 +4781,8 @@ document.addEventListener('alpine:init', () => {
           const payload = {
             display_name: this.userForm.display_name,
             role: this.userForm.role,
-            is_active: this.userForm.is_active,
+            is_admin: isAdm,
+            is_active: Boolean(this.userForm.is_active),
             permissions: this.userForm.permissions
           };
           if (this.userForm.password) payload.password = this.userForm.password;

@@ -106,8 +106,17 @@ def require_permission(perm_key: str) -> Callable:
             if user.get("is_admin"):
                 return user
             
-            perms = user.get("permissions") or []
-            if perm_key in perms:
+            perms = set(user.get("permissions") or [])
+            alias_map = {
+                "action_pause_devices": {"action_pause_devices", "action_manage_schedules"},
+                "action_manage_schedules": {"action_manage_schedules", "action_pause_devices"},
+                "view_clients": {"view_clients", "view_devices"},
+                "view_devices": {"view_devices", "view_clients"},
+                "view_analytics": {"view_analytics", "view_speedtest"},
+                "view_speedtest": {"view_speedtest", "view_analytics"},
+            }
+            allowed_keys = alias_map.get(perm_key, {perm_key})
+            if perms.intersection(allowed_keys) or "*" in perms:
                 return user
             
             logger.warning(

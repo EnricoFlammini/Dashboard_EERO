@@ -3084,6 +3084,7 @@
                 ← Torna alla Lista
               </button>
             </template>
+          </div>
         </div>
 
         <!-- Admin Login Required Notice (when not logged in or missing action_manage_users) -->
@@ -3133,10 +3134,10 @@
                         <td class="p-3.5">
                           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase"
                                 :class="u.role === 'admin' ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20' : (u.role === 'operator' ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20' : 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20')"
-                                x-text="u.role"></span>
+                                x-text="u.role || (u.is_admin ? 'admin' : 'operator')"></span>
                         </td>
                         <td class="p-3.5">
-                          <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="(u.permissions ? u.permissions.length : 0) + ' / 10 attivi'"></div>
+                          <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="u.is_admin ? ('Tutti (' + (u.permissions ? u.permissions.length : 10) + ' attivi)') : ((u.permissions ? u.permissions.length : 0) + ' / ' + (permissionsCatalog.length || 10) + ' attivi')"></div>
                         </td>
                         <td class="p-3.5">
                           <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
@@ -3207,7 +3208,7 @@
             </div>
 
             <!-- Active Toggle -->
-            <div class="flex items-center space-x-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center space-x-3 p-3.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-slate-200 dark:border-slate-800">
               <button 
                 type="button"
                 @click="userForm.is_active = !userForm.is_active"
@@ -3215,7 +3216,10 @@
                 class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
                 <span :class="userForm.is_active ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"></span>
               </button>
-              <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('users_modal.is_active') || 'Account Abilitato e Attivo'"></span>
+              <div class="flex flex-col">
+                <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="t('users_modal.is_active') || 'Account Abilitato e Attivo'"></span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="userForm.is_active ? 'L\'utente può autenticarsi e operare sulla dashboard.' : 'L\'account è disabilitato: i tentativi di accesso saranno bloccati.'"></span>
+              </div>
             </div>
 
             <!-- Granular RBAC Permissions Section -->
@@ -5839,10 +5843,10 @@
                       <td class="p-3">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase"
                               :class="u.role === 'admin' ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20' : (u.role === 'operator' ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20' : 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20')"
-                              x-text="u.role"></span>
+                              x-text="u.role || (u.is_admin ? 'admin' : 'operator')"></span>
                       </td>
                       <td class="p-3">
-                        <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="(u.permissions ? u.permissions.length : 0) + ' / 10 attivi'"></div>
+                        <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="u.is_admin ? ('Tutti (' + (u.permissions ? u.permissions.length : 10) + ' attivi)') : ((u.permissions ? u.permissions.length : 0) + ' / ' + (permissionsCatalog.length || 10) + ' attivi')"></div>
                       </td>
                       <td class="p-3">
                         <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
