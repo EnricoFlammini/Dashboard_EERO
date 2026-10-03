@@ -146,6 +146,55 @@ class ScheduleEngine:
                             applied_actions.append({"target": f"profile:{prof_id}", "paused": should_pause})
                         except Exception as ex:
                             logger.error(f"ScheduleEngine error pausing profile {prof_id}: {ex}")
+
+                elif t_type in ("all_profiles", "all_users"):
+                    try:
+                        profs = await eero_client.get_profiles()
+                        for p in profs:
+                            p_id = str(p.get("id") or p.get("url", "").split("/")[-1])
+                            await eero_client.set_profile_paused(p_id, should_pause)
+                            applied_actions.append({"target": f"profile:{p_id}", "paused": should_pause})
+                    except Exception as ex:
+                        logger.error(f"ScheduleEngine error pausing all profiles: {ex}")
+
+                elif t_type in ("node_led", "led"):
+                    led_state = (not is_active_now) if action in ("turn_off", "off", "pause") else is_active_now
+                    for node_id in targets:
+                        try:
+                            await eero_client.set_eero_led(str(node_id), led_on=led_state)
+                            applied_actions.append({"target": f"node_led:{node_id}", "led_on": led_state})
+                        except Exception as ex:
+                            logger.error(f"ScheduleEngine error setting LED on node {node_id}: {ex}")
+
+                elif t_type in ("all_nodes_led", "all_leds"):
+                    led_state = (not is_active_now) if action in ("turn_off", "off", "pause") else is_active_now
+                    try:
+                        from app.services.poller import background_poller
+                        cached = background_poller.get_cached_state()
+                        eeros = cached.get("eeros", [])
+                        for node in eeros:
+                            n_id = str(node.get("id") or node.get("serial", ""))
+                            await eero_client.set_eero_led(n_id, led_on=led_state)
+                            applied_actions.append({"target": f"node_led:{n_id}", "led_on": led_state})
+                    except Exception as ex:
+                        logger.error(f"ScheduleEngine error setting LED on all nodes: {ex}")
+
+                elif t_type in ("node_reboot", "all_nodes_reboot"):
+                    if is_active_now:
+                        if t_type == "all_nodes_reboot" or "all" in targets:
+                            try:
+                                await eero_client.reboot_network()
+                                applied_actions.append({"target": "network", "rebooted": True})
+                            except Exception as ex:
+                                logger.error(f"ScheduleEngine error rebooting network: {ex}")
+                        else:
+                            for node_id in targets:
+                                try:
+                                    await eero_client.reboot_eero(str(node_id))
+                                    applied_actions.append({"target": f"node:{node_id}", "rebooted": True})
+                                except Exception as ex:
+                                    logger.error(f"ScheduleEngine error rebooting node {node_id}: {ex}")
+
                 else:
                     for dev_id in targets:
                         try:
@@ -155,11 +204,11 @@ class ScheduleEngine:
                             logger.error(f"ScheduleEngine error pausing device {dev_id}: {ex}")
 
                 # Registra l'evento nello storico allarmi
-                status_label = "Attivata (Pausa Connessione)" if is_active_now else "Terminata (Ripristino Connessione)"
+                status_label = "Attivata" if is_active_now else "Terminata"
                 await db_service.save_alert(
                     alert_type="schedule_transition",
-                    title=f"🕒 Regola Parental Control '{s_name}'",
-                    message=f"La regola oraria '{s_name}' è stata applicata: stato {status_label} su {len(targets)} apparati/profili."
+                    title=f"🕒 Regola Pianificata '{s_name}'",
+                    message=f"La regola oraria '{s_name}' è stata applicata: stato {status_label} su {len(targets) if targets else 1} target ({t_type})."
                 )
 
         return {

@@ -4959,19 +4959,21 @@ document.addEventListener('alpine:init', () => {
 
     openScheduleModal(s = null) {
       if (s) {
+        const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids.length ? s.target_ids[0] : '');
         this.scheduleForm = {
           id: s.id,
           name: s.name,
-          days: Array.isArray(s.days) ? [...s.days] : ['mon', 'tue', 'wed', 'thu', 'fri'],
+          days: Array.isArray(s.days) ? [...s.days] : (Array.isArray(s.days_of_week) ? [...s.days_of_week] : ['mon', 'tue', 'wed', 'thu', 'fri']),
           start_time: s.start_time || '21:00',
           end_time: s.end_time || '07:00',
           action: s.action || 'pause',
-          target_type: s.target_type || 'category',
-          target_id: s.target_id || '',
-          is_active: Boolean(s.is_active)
+          target_type: s.target_type || 'profile',
+          target_id: tid,
+          is_active: s.is_active !== undefined ? Boolean(s.is_active) : (s.enabled !== undefined ? Boolean(s.enabled) : true)
         };
         this.scheduleModalMode = 'edit';
       } else {
+        const defaultProf = (this.profiles && this.profiles.length > 0) ? (this.profiles[0].id || this.profiles[0].name) : '';
         this.scheduleForm = {
           id: '',
           name: '',
@@ -4979,13 +4981,111 @@ document.addEventListener('alpine:init', () => {
           start_time: '21:00',
           end_time: '07:00',
           action: 'pause',
-          target_type: 'category',
-          target_id: 'gaming',
+          target_type: 'profile',
+          target_id: defaultProf,
           is_active: true
         };
         this.scheduleModalMode = 'create';
       }
       this.showScheduleModal = true;
+    },
+
+    onScheduleTargetTypeChange() {
+      const tt = this.scheduleForm.target_type;
+      if (tt === 'profile') {
+        this.scheduleForm.action = 'pause';
+        if (!this.scheduleForm.target_id && this.profiles && this.profiles.length > 0) {
+          this.scheduleForm.target_id = this.profiles[0].id || this.profiles[0].name;
+        }
+      } else if (tt === 'all_profiles') {
+        this.scheduleForm.action = 'pause';
+        this.scheduleForm.target_id = 'all';
+      } else if (tt === 'node_led') {
+        this.scheduleForm.action = 'turn_off';
+        if ((!this.scheduleForm.target_id || this.scheduleForm.target_id === 'all') && this.eeros && this.eeros.length > 0) {
+          this.scheduleForm.target_id = this.eeros[0].id || this.eeros[0].serial;
+        }
+      } else if (tt === 'all_nodes_led') {
+        this.scheduleForm.action = 'turn_off';
+        this.scheduleForm.target_id = 'all';
+      } else if (tt === 'node_reboot') {
+        this.scheduleForm.action = 'reboot';
+        if ((!this.scheduleForm.target_id || this.scheduleForm.target_id === 'all') && this.eeros && this.eeros.length > 0) {
+          this.scheduleForm.target_id = this.eeros[0].id || this.eeros[0].serial;
+        }
+      } else if (tt === 'all_nodes_reboot') {
+        this.scheduleForm.action = 'reboot';
+        this.scheduleForm.target_id = 'all';
+      }
+    },
+
+    getScheduleActionOptions() {
+      const tt = this.scheduleForm.target_type;
+      const isIt = this.currentLanguage === 'it';
+      if (tt === 'node_led' || tt === 'all_nodes_led') {
+        return [
+          { value: 'turn_off', label: isIt ? 'Spegni Luce LED (durante l\'intervallo)' : 'Turn Off Status Light (during window)' },
+          { value: 'turn_on', label: isIt ? 'Accendi Luce LED (durante l\'intervallo)' : 'Turn On Status Light (during window)' }
+        ];
+      }
+      if (tt === 'node_reboot' || tt === 'all_nodes_reboot') {
+        return [
+          { value: 'reboot', label: isIt ? 'Riavvia all\'orario di inizio' : 'Reboot at start time' }
+        ];
+      }
+      return [
+        { value: 'pause', label: isIt ? 'Sospendi Connessione (Pausa)' : 'Pause Connection' },
+        { value: 'unpause', label: isIt ? 'Ripristina Connessione' : 'Resume Connection' }
+      ];
+    },
+
+    formatScheduleTarget(s) {
+      if (!s) return '';
+      const tt = s.target_type;
+      const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids[0]) || '';
+      const isIt = this.currentLanguage === 'it';
+      if (tt === 'profile') {
+        const prof = (this.profiles || []).find(p => String(p.id) === String(tid) || String(p.url || '').endsWith(String(tid)) || p.name === tid);
+        return (isIt ? 'Utente: ' : 'User: ') + (prof ? prof.name : tid);
+      }
+      if (tt === 'all_profiles') {
+        return isIt ? 'Tutti gli Utenti' : 'All Users';
+      }
+      if (tt === 'node_led') {
+        const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
+        return (isIt ? 'Luce LED: ' : 'LED: ') + (node ? (node.name || node.location || 'eero') : tid);
+      }
+      if (tt === 'all_nodes_led') {
+        return isIt ? 'Luce LED: Tutti i Nodi' : 'LED: All Nodes';
+      }
+      if (tt === 'node_reboot') {
+        const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
+        return (isIt ? 'Riavvio: ' : 'Reboot: ') + (node ? (node.name || node.location || 'eero') : tid);
+      }
+      if (tt === 'all_nodes_reboot') {
+        return isIt ? 'Riavvio: Tutta la Rete' : 'Reboot: Entire Mesh';
+      }
+      if (tt === 'category') {
+        return (isIt ? 'Categoria: ' : 'Category: ') + tid;
+      }
+      if (tt === 'device') {
+        const dev = (this.devices || []).find(d => String(d.id) === String(tid) || String(d.mac).toLowerCase() === String(tid).toLowerCase());
+        return (isIt ? 'Dispositivo: ' : 'Device: ') + (dev ? (dev.custom_name || dev.nickname || dev.hostname || tid) : tid);
+      }
+      return isIt ? 'Tutta la Rete' : 'Entire Network';
+    },
+
+    formatScheduleAction(s) {
+      if (!s) return '';
+      const isIt = this.currentLanguage === 'it';
+      switch (s.action) {
+        case 'pause': return isIt ? 'Pausa Connessione' : 'Pause Connection';
+        case 'unpause': return isIt ? 'Ripristino Connessione' : 'Resume Connection';
+        case 'turn_off': return isIt ? 'Spegnimento LED' : 'LED Off';
+        case 'turn_on': return isIt ? 'Accensione LED' : 'LED On';
+        case 'reboot': return isIt ? 'Riavvio Programmato' : 'Scheduled Reboot';
+        default: return s.action;
+      }
     },
 
     toggleScheduleDay(day) {
@@ -5004,6 +5104,12 @@ document.addEventListener('alpine:init', () => {
         this.showToast('Errore', 'Inserisci un nome per la regola', 'warning');
         return;
       }
+      const isSpecialAll = ['all_profiles', 'all_nodes_led', 'all_nodes_reboot'].includes(this.scheduleForm.target_type);
+      const tid = this.scheduleForm.target_id || (isSpecialAll ? 'all' : '');
+      if (!tid && !isSpecialAll) {
+        this.showToast('Errore', 'Seleziona un destinatario valido per la regola', 'warning');
+        return;
+      }
       try {
         let res;
         const payload = {
@@ -5013,7 +5119,8 @@ document.addEventListener('alpine:init', () => {
           end_time: this.scheduleForm.end_time,
           action: this.scheduleForm.action,
           target_type: this.scheduleForm.target_type,
-          target_id: this.scheduleForm.target_id,
+          target_id: tid,
+          target_ids: [tid],
           is_active: this.scheduleForm.is_active
         };
         if (this.scheduleModalMode === 'create') {

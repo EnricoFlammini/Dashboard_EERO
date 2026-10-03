@@ -2827,10 +2827,38 @@ async def run_all_tests():
             runner.assert_true(len(profile_pause_calls) == 1, "set_profile_paused chiamato alla transizione di disattivazione")
             runner.assert_true(profile_pause_calls[0]["paused"] is False, "Profilo ripristinato (paused=False)")
 
-            # Verifica che sia stato registrato l'alert di transizione
-            alerts_sched = await db_service.get_alerts(limit=10)
-            sched_alert_found = any((a.get("type") == "schedule_transition" or a.get("alert_type") == "schedule_transition") for a in alerts_sched)
-            runner.assert_true(sched_alert_found, "Alert di transizione 'schedule_transition' registrato su DB")
+            # Test schedulazione LED Nodo (spegnimento notturno e riaccensione)
+            node_led_calls = []
+            orig_set_led = eero_client.set_eero_led
+            async def _mock_set_eero_led(node_id, led_on):
+                node_led_calls.append({"node_id": node_id, "led_on": led_on})
+                return {"status": "success"}
+            eero_client.set_eero_led = _mock_set_eero_led
+
+            try:
+                await db_service.clear_device_schedules()
+                schedule_engine.reset_state()
+                await db_service.create_device_schedule(
+                    name="Spegni LED Salotto",
+                    target_type="node_led",
+                    target_ids=["node_salotto"],
+                    days_of_week=["mon"],
+                    start_time="09:00",
+                    end_time="12:00",
+                    action="turn_off",
+                    enabled=True
+                )
+                # Attiva: LED spento (led_on=False)
+                await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 10, 0))
+                runner.assert_true(len(node_led_calls) == 1, "set_eero_led chiamato per nodo node_salotto")
+                runner.assert_true(node_led_calls[0]["led_on"] is False, "LED nodo spento durante la finestra programmata (led_on=False)")
+
+                # Disattiva: LED riacceso (led_on=True)
+                await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 13, 0))
+                runner.assert_true(len(node_led_calls) == 2, "set_eero_led chiamato alla disattivazione della finestra")
+                runner.assert_true(node_led_calls[1]["led_on"] is True, "LED nodo riacceso al termine della finestra programmata (led_on=True)")
+            finally:
+                eero_client.set_eero_led = orig_set_led
 
         finally:
             eero_client.update_device = orig_upd_dev

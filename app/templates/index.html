@@ -2985,8 +2985,8 @@
                           <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="s.start_time + ' - ' + s.end_time"></span>
                           <span>•</span>
                           <span class="px-1.5 py-0.5 rounded text-[10px] uppercase font-bold"
-                                :class="s.action === 'pause' ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'"
-                                x-text="s.action === 'pause' ? 'Pausa' : 'Attivo'"></span>
+                                :class="['pause', 'turn_off'].includes(s.action) ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'"
+                                x-text="formatScheduleAction(s)"></span>
                         </div>
                       </div>
 
@@ -3003,9 +3003,9 @@
                     <!-- Target and Days Badges -->
                     <div class="space-y-1.5 pt-2 border-t border-black/[0.04] dark:border-white/5">
                       <div class="flex items-center space-x-2 text-xs">
-                        <span class="text-slate-400 text-[11px]">Destinatario:</span>
+                        <span class="text-slate-400 text-[11px]" x-text="t('schedules.target_type') || 'Destinatario:'"></span>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20"
-                              x-text="(s.target_type === 'category' ? ('Categoria: ' + s.target_id) : (s.target_type === 'device' ? ('Dispositivo: ' + s.target_id) : (s.target_type === 'profile' ? ('Profilo: ' + s.target_id) : 'Tutta la Rete')))"></span>
+                              x-text="formatScheduleTarget(s)"></span>
                       </div>
                       
                       <div class="flex flex-wrap gap-1 pt-1">
@@ -6143,37 +6143,56 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.target_type') || 'Tipo Bersaglio'"></label>
-            <select x-model="scheduleForm.target_type" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-              <option value="category">Categoria Dispositivi</option>
-              <option value="device">Dispositivo Singolo</option>
-              <option value="profile">Profilo Utente eero</option>
-              <option value="all">Tutti i Dispositivi</option>
+            <select x-model="scheduleForm.target_type" @change="onScheduleTargetTypeChange()" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+              <optgroup label="Utenti e Profili eero">
+                <option value="profile" x-text="t('schedules.target_user') || 'Utente Singolo (Profilo eero)'"></option>
+                <option value="all_profiles" x-text="t('schedules.target_all_users') || 'Tutti gli Utenti'"></option>
+              </optgroup>
+              <optgroup label="Nodi Mesh eero">
+                <option value="node_led" x-text="t('schedules.target_node_led') || 'Luce LED Nodo Singolo'"></option>
+                <option value="all_nodes_led" x-text="t('schedules.target_all_nodes_led') || 'Luce LED Tutti i Nodi'"></option>
+                <option value="node_reboot" x-text="t('schedules.target_node_reboot') || 'Riavvio Nodo Singolo'"></option>
+                <option value="all_nodes_reboot" x-text="t('schedules.target_all_nodes_reboot') || 'Riavvio Rete / Tutti i Nodi'"></option>
+              </optgroup>
             </select>
           </div>
 
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.target_id') || 'Identificativo / Bersaglio'"></label>
-            <template x-if="scheduleForm.target_type === 'category'">
+            
+            <!-- Utente Singolo: dropdown profili reali eero -->
+            <template x-if="scheduleForm.target_type === 'profile'">
               <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-                <option value="gaming">Gaming</option>
-                <option value="streaming">Streaming & TV</option>
-                <option value="mobile">Smartphone / Tablet</option>
-                <option value="computers">Computer & Laptop</option>
-                <option value="iot">Smart Home & IoT</option>
-              </select>
-            </template>
-            <template x-if="scheduleForm.target_type === 'device'">
-              <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-                <template x-for="d in devices" :key="d.id">
-                  <option :value="d.id" x-text="(d.custom_name || d.nickname || d.hostname || d.ip) + ' (' + d.ip + ')'"></option>
+                <option value="" disabled x-text="t('schedules.select_user_placeholder') || 'Seleziona un utente...'"></option>
+                <template x-for="p in (profiles || [])" :key="p.id">
+                  <option :value="p.id" x-text="p.name + (p.devices && p.devices.length ? ' (' + p.devices.length + ' disp.)' : '')"></option>
                 </template>
               </select>
             </template>
-            <template x-if="scheduleForm.target_type === 'profile'">
-              <input type="text" x-model="scheduleForm.target_id" placeholder="Nome profilo eero" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+
+            <!-- Tutti gli Utenti -->
+            <template x-if="scheduleForm.target_type === 'all_profiles'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_users_desc') || 'Tutti i profili utente eero'"></div>
             </template>
-            <template x-if="scheduleForm.target_type === 'all'">
-              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold">Tutta la rete mesh</div>
+
+            <!-- Nodo Mesh Singolo (Luce LED o Riavvio): dropdown nodi reali eero -->
+            <template x-if="scheduleForm.target_type === 'node_led' || scheduleForm.target_type === 'node_reboot'">
+              <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+                <option value="" disabled x-text="t('schedules.select_node_placeholder') || 'Seleziona un nodo mesh...'"></option>
+                <template x-for="node in (eeros || [])" :key="node.id || node.serial">
+                  <option :value="node.id || node.serial" x-text="(node.name || node.location || 'eero') + (node.model ? ' (' + node.model + ')' : '')"></option>
+                </template>
+              </select>
+            </template>
+
+            <!-- Tutti i Nodi: Luce LED -->
+            <template x-if="scheduleForm.target_type === 'all_nodes_led'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_nodes_desc') || 'Tutti i nodi mesh eero'"></div>
+            </template>
+
+            <!-- Tutti i Nodi: Riavvio -->
+            <template x-if="scheduleForm.target_type === 'all_nodes_reboot'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold">Intera rete mesh eero</div>
             </template>
           </div>
         </div>
@@ -6182,8 +6201,9 @@
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.action') || 'Azione da Applicare'"></label>
           <select x-model="scheduleForm.action" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-            <option value="pause" x-text="t('schedules.action_pause') || 'Sospendi Connessione (Pausa)'"></option>
-            <option value="unpause" x-text="t('schedules.action_unpause') || 'Ripristina Connessione'"></option>
+            <template x-for="opt in getScheduleActionOptions()" :key="opt.value">
+              <option :value="opt.value" x-text="opt.label"></option>
+            </template>
           </select>
         </div>
 
