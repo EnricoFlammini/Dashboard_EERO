@@ -310,11 +310,11 @@
     
     <!-- LEFT SIDEBAR (Desktop Only >= 768px) -->
     <aside 
-      class="sidebar-container hidden md:flex sticky top-16 h-[calc(100vh-4rem)] flex-col justify-between border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 shrink-0 select-none overflow-y-auto overflow-x-hidden no-scrollbar shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
+      class="sidebar-container hidden md:flex sticky top-16 h-[calc(100vh-4rem)] flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 shrink-0 select-none overflow-hidden shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
       :class="sidebarCollapsed ? 'w-[68px] sidebar-collapsed' : 'w-64 sidebar-expanded'">
 
-      <!-- Top Navigation & Tools Items -->
-      <div class="p-3 sidebar-nav-group space-y-1.5 w-full">
+      <!-- Top Scrollable Navigation & Tools Items -->
+      <div class="flex-1 overflow-y-auto overflow-x-hidden p-3 sidebar-nav-group space-y-1.5 w-full no-scrollbar min-h-0">
 
         <!-- Collapse / Expand Quick Toggle Header in Sidebar (Without Title) -->
         <div class="flex items-center justify-end px-2 py-1 mb-1">
@@ -644,85 +644,84 @@
           <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('about_modal.title') || 'About & Crediti'"></span>
           <span x-show="!sidebarCollapsed" class="text-[10px] font-mono text-slate-400" x-text="'v' + fullVersion"></span>
         </button>
+        <!-- Gaming Focus Mode Button -->
+        <div x-show="currentUser" class="pt-2 mt-1 border-t border-black/[0.06] dark:border-white/[0.08] space-y-2 w-full">
+          <button 
+            id="btn-gaming-mode"
+            @click="toggleFocusMode()"
+            :class="[
+              sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start',
+              focusModeActive 
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 border-rose-600' 
+                : 'bg-black/[0.03] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border-black/[0.06] dark:border-white/[0.08]'
+            ]"
+            class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+            :title="t('header.gaming_tooltip')">
+            <div class="w-5 h-5 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+              <div class="font-bold text-xs" x-text="t('nav.gaming_mode') || 'Gaming Mode'"></div>
+              <div class="text-[10px] opacity-80" x-text="focusModeActive ? (t('nav.gaming_active') || 'Gaming Attivo') : (t('nav.gaming_disabled') || 'Disattivo')"></div>
+            </div>
+            <span x-show="sidebarCollapsed && focusModeActive" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
+          </button>
+
+          <!-- Demo Mode Toggle Button -->
+          <template x-if="isDemoMode">
+            <button 
+              id="btn-demo-mode-active"
+              @click="toggleDemoMode(false)"
+              :class="sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start'"
+              class="flex items-center rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 shadow-md shadow-emerald-600/30 transition-all cursor-pointer group relative"
+              :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
+              <div class="w-5 h-5 flex items-center justify-center shrink-0">
+                <span class="text-base group-hover:scale-110 transition-transform">✨</span>
+              </div>
+              <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+                <div class="font-black text-xs text-white flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+                  <span x-text="t('nav.demo_active') || 'DEMO ATTIVA'"></span>
+                </div>
+                <div class="text-[10px] text-emerald-100 font-semibold" x-text="hasSavedLiveToken ? ('→ ' + (t('header.switch_to_live') || 'Torna a Live')) : ('→ ' + (t('header.live_login_btn') || 'Accedi a Live'))"></div>
+              </div>
+              <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
+              <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626]"></span>
+            </button>
+          </template>
+
+          <template x-if="!isDemoMode">
+            <button 
+              id="btn-demo-mode-inactive"
+              @click="toggleDemoMode(true)"
+              :class="sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start'"
+              class="flex items-center rounded-xl text-xs font-semibold bg-black/[0.03] hover:bg-amber-500/15 dark:bg-white/[0.05] dark:hover:bg-amber-500/15 text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] hover:border-amber-500/30 transition-all cursor-pointer group relative"
+              :title="t('header.demo_switch_title')">
+              <div class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+                <span class="text-base group-hover:scale-110 transition-transform">✨</span>
+              </div>
+              <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+                <div class="font-bold text-xs" x-text="t('nav.demo_mode') || 'Modalità Demo'"></div>
+                <div class="text-[10px] opacity-75" x-text="t('nav.demo_activate') || 'Attiva Simulatore'"></div>
+              </div>
+            </button>
+          </template>
+        </div>
 
       </div>
 
-      <!-- Bottom Controls & Quick Actions -->
-      <div x-show="currentUser" class="p-3 border-t border-black/[0.06] dark:border-white/[0.08] sidebar-nav-group space-y-2 bg-black/[0.01] dark:bg-white/[0.02] w-full">
-
-        <!-- Gaming Focus Mode Button -->
-        <button 
-          id="btn-gaming-mode"
-          @click="toggleFocusMode()"
-          :class="[
-            sidebarCollapsed 
-              ? 'w-11 h-11 mx-auto justify-center p-0' 
-              : 'w-full px-3 py-2.5 justify-start',
-            focusModeActive 
-              ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 border-rose-600' 
-              : 'bg-black/[0.03] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border-black/[0.06] dark:border-white/[0.08]'
-          ]"
-          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="t('header.gaming_tooltip')">
-          <div class="w-5 h-5 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-          <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
-            <div class="font-bold text-xs" x-text="t('nav.gaming_mode') || 'Gaming Mode'"></div>
-            <div class="text-[10px] opacity-80" x-text="focusModeActive ? (t('nav.gaming_active') || 'Gaming Attivo') : (t('nav.gaming_disabled') || 'Disattivo')"></div>
-          </div>
-          <span x-show="sidebarCollapsed && focusModeActive" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
-        </button>
-
-        <!-- Demo Mode Toggle Button -->
-        <template x-if="isDemoMode">
-          <button 
-            id="btn-demo-mode-active"
-            @click="toggleDemoMode(false)"
-            :class="sidebarCollapsed 
-              ? 'w-11 h-11 mx-auto justify-center p-0' 
-              : 'w-full px-3 py-2.5 justify-start'"
-            class="flex items-center rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 shadow-md shadow-emerald-600/30 transition-all cursor-pointer group relative"
-            :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
-            <div class="w-5 h-5 flex items-center justify-center shrink-0">
-              <span class="text-base group-hover:scale-110 transition-transform">✨</span>
-            </div>
-            <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
-              <div class="font-black text-xs text-white flex items-center space-x-1.5">
-                <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
-                <span x-text="t('nav.demo_active') || 'DEMO ATTIVA'"></span>
-              </div>
-              <div class="text-[10px] text-emerald-100 font-semibold" x-text="hasSavedLiveToken ? ('→ ' + (t('header.switch_to_live') || 'Torna a Live')) : ('→ ' + (t('header.live_login_btn') || 'Accedi a Live'))"></div>
-            </div>
-            <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
-            <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626]"></span>
-          </button>
-        </template>
-
-        <template x-if="!isDemoMode">
-          <button 
-            id="btn-demo-mode-inactive"
-            @click="toggleDemoMode(true)"
-            :class="sidebarCollapsed 
-              ? 'w-11 h-11 mx-auto justify-center p-0' 
-              : 'w-full px-3 py-2.5 justify-start'"
-            class="flex items-center rounded-xl text-xs font-semibold bg-black/[0.03] hover:bg-amber-500/15 dark:bg-white/[0.05] dark:hover:bg-amber-500/15 text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] hover:border-amber-500/30 transition-all cursor-pointer group relative"
-            :title="t('header.demo_switch_title')">
-            <div class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
-              <span class="text-base group-hover:scale-110 transition-transform">✨</span>
-            </div>
-            <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
-              <div class="font-bold text-xs" x-text="t('nav.demo_mode') || 'Modalità Demo'"></div>
-              <div class="text-[10px] opacity-75" x-text="t('nav.demo_activate') || 'Attiva Simulatore'"></div>
-            </div>
-          </button>
-        </template>
-
-        <!-- Appearance & Language & Logout Footer -->
+      <!-- Pinned Bottom Controls (Always visible at bottom) -->
+      <div class="shrink-0 p-2.5 sm:p-3 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/95 dark:bg-[#262626]/95 backdrop-blur-md w-full">
         <!-- Expanded State -->
-        <div x-show="!sidebarCollapsed" class="pt-2 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between gap-1.5">
+        <div x-show="!sidebarCollapsed" class="flex items-center justify-between gap-1.5 w-full">
           <!-- Theme Switcher -->
-          <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08]">
+          <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08] shrink-0">
             <button 
               @click="setTheme('light')" 
               :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
@@ -746,30 +745,42 @@
             <option value="it">🇮🇹 IT</option>
             <option value="en">🇬🇧 EN</option>
           </select>
-          <!-- Logout Button -->
+          <!-- Logout Button (when logged in) -->
           <button 
             x-show="currentUser"
             @click="showLogoutModal = true"
-            class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
+            class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer shrink-0"
             :title="t('header.logout') || 'Disconnetti'">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           </button>
+          <!-- Login Button (when not logged in) -->
+          <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal('admin')"
+            class="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition cursor-pointer shrink-0"
+            :title="t('auth_local.login_btn') || 'Accedi'">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+          </button>
         </div>
 
-        <!-- Collapsed State -->
-        <div x-show="sidebarCollapsed" class="pt-2 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col items-center space-y-1.5">
+        <!-- Collapsed State (w-[68px]) -->
+        <div x-show="sidebarCollapsed" class="flex flex-col items-center space-y-1.5 w-full">
+          <!-- Theme Toggle Button -->
           <button 
             @click="setTheme(currentTheme === 'dark' ? 'light' : 'dark')" 
             class="w-10 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
             :title="currentTheme === 'dark' ? (t('header.theme_light') || 'Tema Chiaro') : (t('header.theme_dark') || 'Tema Scuro')">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            <svg x-show="currentTheme === 'dark'" class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg x-show="currentTheme !== 'dark'" class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
           </button>
+          <!-- Language Toggle Button with Flag Icon -->
           <button 
             @click="setLanguage(currentLanguage === 'it' ? 'en' : 'it')" 
-            class="w-10 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
-            :title="currentLanguage === 'it' ? 'Switch to English' : 'Passa all\'Italiano'">
-            <span x-text="currentLanguage === 'it' ? 'IT' : 'EN'"></span>
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
+            :title="currentLanguage === 'it' ? 'Switch to English (EN)' : 'Passa all\'Italiano (IT)'">
+            <span x-text="currentLanguage === 'it' ? '🇮🇹' : '🇬🇧'"></span>
           </button>
+          <!-- Logout Button (when logged in) -->
           <button 
             x-show="currentUser"
             @click="showLogoutModal = true" 
@@ -777,7 +788,16 @@
             :title="t('header.logout') || 'Disconnetti'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
           </button>
+          <!-- Login Button (when not logged in) -->
+          <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal('admin')" 
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition cursor-pointer" 
+            :title="t('auth_local.login_btn') || 'Accedi'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+          </button>
         </div>
+      </div>
     </aside>
 
     <!-- MAIN CONTENT CONTAINER -->
