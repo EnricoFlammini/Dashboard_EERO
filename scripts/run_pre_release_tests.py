@@ -2635,6 +2635,24 @@ async def run_all_tests():
         sched_disabled = {**sched_daytime, "enabled": False}
         runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_disabled, dt_mon_10) is False, "Regola disabilitata non è mai attiva anche nell'orario target")
 
+        # Test 1d: Regola di Riavvio Programmato (Point-in-Time alle 04:00 di Lunedì)
+        sched_reboot = {
+            "enabled": True,
+            "target_type": "all_nodes_reboot",
+            "action": "reboot",
+            "start_time": "04:00",
+            "end_time": "04:00",
+            "days_of_week": ["mon"],
+        }
+        dt_mon_0400 = datetime(2026, 10, 5, 4, 0)
+        dt_mon_0401 = datetime(2026, 10, 5, 4, 1)
+        dt_mon_0359 = datetime(2026, 10, 5, 3, 59)
+        dt_tue_0400 = datetime(2026, 10, 6, 4, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0400) is True, "Riavvio programmato attivo alle 04:00 esatte del giorno pianificato")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0401) is False, "Riavvio programmato non attivo al minuto successivo (04:01)")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0359) is False, "Riavvio programmato non attivo al minuto precedente (03:59)")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_tue_0400) is False, "Riavvio programmato non attivo in giorno non pianificato (Martedì)")
+
         # 2. Test Metodi Database CRUD (db_service) per device_schedules
         await db_service.clear_device_schedules()
         runner.assert_true(len(await db_service.get_device_schedules()) == 0, "clear_device_schedules svuota correttamente la tabella")

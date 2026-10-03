@@ -4983,15 +4983,24 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    isRebootSchedule(item = null) {
+      const obj = item || this.scheduleForm;
+      if (!obj) return false;
+      const tt = obj.target_type;
+      const act = obj.action;
+      return tt === 'node_reboot' || tt === 'all_nodes_reboot' || act === 'reboot';
+    },
+
     openScheduleModal(s = null) {
       if (s) {
         const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids.length ? s.target_ids[0] : '');
+        const isReboot = s.target_type === 'node_reboot' || s.target_type === 'all_nodes_reboot' || s.action === 'reboot';
         this.scheduleForm = {
           id: s.id,
           name: s.name,
           days: Array.isArray(s.days) ? [...s.days] : (Array.isArray(s.days_of_week) ? [...s.days_of_week] : ['mon', 'tue', 'wed', 'thu', 'fri']),
           start_time: s.start_time || '21:00',
-          end_time: s.end_time || '07:00',
+          end_time: isReboot ? (s.start_time || '04:00') : (s.end_time || '07:00'),
           action: s.action || 'pause',
           target_type: s.target_type || 'profile',
           target_id: tid,
@@ -5036,11 +5045,13 @@ document.addEventListener('alpine:init', () => {
         this.scheduleForm.target_id = 'all';
       } else if (tt === 'node_reboot') {
         this.scheduleForm.action = 'reboot';
+        this.scheduleForm.end_time = this.scheduleForm.start_time || '04:00';
         if ((!this.scheduleForm.target_id || this.scheduleForm.target_id === 'all') && this.eeros && this.eeros.length > 0) {
           this.scheduleForm.target_id = this.eeros[0].id || this.eeros[0].serial;
         }
       } else if (tt === 'all_nodes_reboot') {
         this.scheduleForm.action = 'reboot';
+        this.scheduleForm.end_time = this.scheduleForm.start_time || '04:00';
         this.scheduleForm.target_id = 'all';
       }
     },
@@ -5135,6 +5146,9 @@ document.addEventListener('alpine:init', () => {
       if (!tid && !isSpecialAll) {
         this.showToast('Errore', 'Seleziona un destinatario valido per la regola', 'warning');
         return;
+      }
+      if (this.isRebootSchedule()) {
+        this.scheduleForm.end_time = this.scheduleForm.start_time;
       }
       try {
         let res;

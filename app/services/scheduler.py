@@ -86,6 +86,12 @@ class ScheduleEngine:
         is_today_scheduled = curr_weekday in schedule_day_indices
         is_yesterday_scheduled = prev_weekday in schedule_day_indices
 
+        # Caso 0: Regola a evento puntuale / riavvio programmato (attiva nel minuto esatto dell'orario di inizio)
+        action = schedule.get("action")
+        target_type = schedule.get("target_type")
+        if action == "reboot" or target_type in ("node_reboot", "all_nodes_reboot"):
+            return is_today_scheduled and (curr_t.hour == start_t.hour and curr_t.minute == start_t.minute)
+
         # Caso A: Finestra diurna nello stesso giorno (es. 08:00 -> 18:00)
         if start_t <= end_t:
             return is_today_scheduled and (start_t <= curr_t < end_t)
