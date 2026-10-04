@@ -5345,6 +5345,9 @@ document.addEventListener('alpine:init', () => {
         return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
       }
 
+      return { grade: 'n/a', label: 'Non Disponibile', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30' };
+    },
+
     // =========================================================================
     // MODULE 4: SYSTEM LOGGING & DIAGNOSTICS (v1.6.0)
     // =========================================================================
