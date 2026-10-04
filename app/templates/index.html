@@ -5823,7 +5823,7 @@
             <button 
               @click="userModalMode = 'list'"
               class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 transition cursor-pointer">
-              <span x-text="t('users_modal.back_to_list') || '← Torna alla Lista'"></span>
+              ← Torna alla Lista
             </button>
           </template>
           <button @click="showUsersModal = false" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition cursor-pointer">
@@ -5835,7 +5835,7 @@
       <!-- Mode 1: Users List View -->
       <div x-show="userModalMode === 'list'" class="flex-1 overflow-y-auto space-y-4">
         <div x-show="usersLoading" class="py-8 text-center text-xs text-slate-400">
-          <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('users_modal.loading_users') || 'Caricamento utenti...'"></span>
+          <span class="animate-spin inline-block mr-2">⏳</span> Caricamento utenti...
         </div>
 
         <div x-show="!usersLoading">
@@ -5846,7 +5846,7 @@
                   <tr>
                     <th class="p-3" x-text="t('users_modal.col_user') || 'Utente'"></th>
                     <th class="p-3" x-text="t('users_modal.col_role') || 'Ruolo'"></th>
-                    <th class="p-3" x-text="t('users_modal.col_permissions') || 'Permessi'"></th>
+                    <th class="p-3">Permessi</th>
                     <th class="p-3" x-text="t('users_modal.col_status') || 'Stato'"></th>
                     <th class="p-3 text-right" x-text="t('users_modal.col_actions') || 'Azioni'"></th>
                   </tr>
@@ -5869,20 +5869,20 @@
                       <td class="p-3">
                         <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
                           <span class="w-2 h-2 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                          <span x-text="u.is_active ? (t('users_modal.status_active') || 'Attivo') : (t('users_modal.status_inactive') || 'Disattivato')"></span>
+                          <span x-text="u.is_active ? 'Attivo' : 'Disattivato'"></span>
                         </span>
                       </td>
                       <td class="p-3 text-right space-x-1">
                         <button 
                           @click="startEditUser(u)"
                           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-sky-600 hover:bg-sky-500/10 transition cursor-pointer"
-                          :title="t('users_modal.edit_user') || 'Modifica Utente'">
+                          title="Modifica Utente">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
                         <button 
                           @click="deleteLocalUser(u.id, u.username)"
                           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
-                          :title="t('users_modal.delete_user') || 'Elimina Utente'">
+                          title="Elimina Utente">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                       </td>
@@ -5914,21 +5914,21 @@
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.display_name') || 'Nome Visualizzato'"></label>
-              <input type="text" x-model="userForm.display_name" :placeholder="t('users_modal.display_name_placeholder') || 'Es. Admin Rete'" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+              <input type="text" x-model="userForm.display_name" placeholder="Es. Amministratore Rete" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
             </div>
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.role') || 'Ruolo Predefinito'"></label>
               <select x-model="userForm.role" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-                <option value="admin">Admin</option>
-                <option value="operator">Operator</option>
-                <option value="viewer">Viewer</option>
+                <option value="admin">Amministratore (Admin)</option>
+                <option value="operator">Operatore di Rete (Operator)</option>
+                <option value="viewer">Sola Lettura (Viewer)</option>
               </select>
             </div>
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                <span x-text="t('auth_local.password') || 'Password'"></span>
+                <span>Password</span>
                 <span x-show="userModalMode === 'edit'" class="text-[10px] text-slate-400 font-normal ml-1" x-text="'(' + (t('users_modal.password_placeholder') || 'Lascia vuoto per non cambiare') + ')'"></span>
               </label>
               <input type="password" x-model="userForm.password" :required="userModalMode === 'create'" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
@@ -5958,8 +5958,8 @@
               <!-- Quick Presets -->
               <div class="flex flex-wrap items-center gap-1.5">
                 <button type="button" @click="applyPermissionPreset('all')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 transition cursor-pointer" x-text="t('users_modal.preset_all') || 'Tutti'"></button>
-                <button type="button" @click="applyPermissionPreset('operator')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/20 transition cursor-pointer" x-text="t('users_modal.preset_operator') || 'Operator'"></button>
-                <button type="button" @click="applyPermissionPreset('readonly')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-500/10 hover:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-500/20 transition cursor-pointer" x-text="t('users_modal.preset_readonly') || 'Viewer'"></button>
+                <button type="button" @click="applyPermissionPreset('operator')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/20 transition cursor-pointer" x-text="t('users_modal.preset_operator') || 'Operatore'"></button>
+                <button type="button" @click="applyPermissionPreset('readonly')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-500/10 hover:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-500/20 transition cursor-pointer" x-text="t('users_modal.preset_readonly') || 'Sola Lettura'"></button>
                 <button type="button" @click="applyPermissionPreset('none')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/20 transition cursor-pointer" x-text="t('users_modal.preset_none') || 'Nessuno'"></button>
               </div>
             </div>
@@ -5967,21 +5967,21 @@
             <!-- iOS Toggle Switches for Each Permission -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <template x-for="perm in (permissionsCatalog.length ? permissionsCatalog : [
-                { key: 'view_topology', label: 'Visualizzazione Topologia Mesh & WAN', label_en: 'Mesh Topology & WAN View' },
-                { key: 'view_clients', label: 'Visualizzazione Flotta Dispositivi', label_en: 'Device Fleet View' },
-                { key: 'view_analytics', label: 'Visualizzazione Grafici & SLA', label_en: 'Analytics & SLA View' },
-                { key: 'view_logs', label: 'Visualizzazione Log & Audit', label_en: 'Logs & Audit View' },
-                { key: 'action_reboot_nodes', label: 'Riavvio Nodi Mesh eero', label_en: 'Reboot Mesh Nodes' },
-                { key: 'action_pause_devices', label: 'Sospensione / Pausa Wi-Fi Dispositivi', label_en: 'Pause Devices Wi-Fi' },
-                { key: 'action_manage_rules', label: 'Gestione Regole & Port Forwarding', label_en: 'Manage DHCP Rules & Port Forwarding' },
-                { key: 'action_sync_dns', label: 'Sincronizzazione Host DNS Esterni', label_en: 'Sync External DNS Hosts' },
-                { key: 'action_manage_users', label: 'Amministrazione Utenti & RBAC', label_en: 'Administer Users & RBAC' },
-                { key: 'action_system_backup', label: 'Esportazione & Ripristino Backup', label_en: 'Backup & Disaster Recovery' }
+                { key: 'view_topology', label: 'Visualizzazione Topologia Mesh & WAN' },
+                { key: 'view_clients', label: 'Visualizzazione Flotta Dispositivi' },
+                { key: 'view_analytics', label: 'Visualizzazione Grafici & SLA' },
+                { key: 'view_logs', label: 'Visualizzazione Log & Audit' },
+                { key: 'action_reboot_nodes', label: 'Riavvio Nodi Mesh eero' },
+                { key: 'action_pause_devices', label: 'Sospensione / Pausa Wi-Fi Dispositivi' },
+                { key: 'action_manage_rules', label: 'Gestione Regole & Port Forwarding' },
+                { key: 'action_sync_dns', label: 'Sincronizzazione Host DNS Esterni' },
+                { key: 'action_manage_users', label: 'Amministrazione Utenti & RBAC' },
+                { key: 'action_system_backup', label: 'Esportazione & Ripristino Backup' }
               ])" :key="perm.key">
                 <div class="p-3 rounded-xl border flex items-center justify-between transition-all duration-200"
                      :class="userForm.permissions.includes(perm.key) ? 'bg-[#0067c0]/5 dark:bg-sky-500/10 border-[#0067c0]/30 dark:border-sky-500/30' : 'bg-black/[0.02] dark:bg-white/[0.02] border-slate-200 dark:border-slate-800 opacity-70'">
                   <div class="space-y-0.5 pr-2">
-                    <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="(currentLanguage === 'en' && perm.label_en) ? perm.label_en : (perm.label || perm.key)"></div>
+                    <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="perm.label || perm.key"></div>
                     <div class="font-mono text-[9px] text-slate-400" x-text="perm.key"></div>
                   </div>
 
