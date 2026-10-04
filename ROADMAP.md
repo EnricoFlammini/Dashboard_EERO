@@ -51,6 +51,9 @@ gantt
     Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
     Home Assistant MQTT Auto-Discovery & Prometheus    :done, v1_6e, after v1_6g, 5d
     Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
+    section v1.6.1 - Offline Resilience & UX Polish
+    Local Asset Bundling (Issue #58)                  :active, v1_61a, 2026-10-06, 2d
+    Device Sort by First Seen & New Badge (Issue #60) :v1_61b, after v1_61a, 2d
 ```
 
 ---
@@ -499,6 +502,40 @@ gantt
 - [x] Accordion espandibile per ciascuna release con chip tag (Sicurezza, Wi-Fi 7 / 6 GHz, Stabilità, Prestazioni) e ricerca real-time.
 - [x] Supporto completo Dual-Theme (Dark/Light mode) e localizzazione bilingue IT / EN (`it.json`, `en.json`).
 - [x] Mock realistici per Demo Mode e suite di test unitari/integrazione (478 test superati al 100%).
+
+---
+
+### 🔮 Release v1.6.1 (Pianificata) — 📦 Local Asset Bundling & Total Offline Independence (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60)
+
+> **Obiettivo:** Raggiungere la totale indipendenza dal cloud pubblico e dalla connettività Internet per il caricamento dell'interfaccia utente durante blackout ISP (**Issue #58 - @jpatchMC**) e implementare l'identificazione e l'ordinamento immediato dei nuovi apparati connessi alla rete mediante la colonna `first_seen` (**Issue #60 - @DannyFeliz**).
+
+#### 1. 📦 Local Asset Bundling & Total Offline Independence (Issue #58 - @jpatchMC)
+*(In risposta alla segnalazione in Issue #58: "use of online assets - UI couldn't load during ISP outage")*
+- [ ] **Vendor Bundle Locale (`app/static/vendor/`):**
+  - Download e packaging offline di tutte le librerie esterne:
+    - Tailwind CSS / bundle precompilato (`app/static/vendor/tailwind.js`).
+    - Alpine.js v3 (`app/static/vendor/alpine.min.js`).
+    - Chart.js v4 (`app/static/vendor/chart.umd.min.js`).
+    - Lucide Icons SVG (`app/static/vendor/lucide.min.js`).
+  - Sostituzione di tutti i tag `<script src="https://cdn...">` in `index.html` con puntatori locali `/static/vendor/...`.
+- [ ] **Self-Hosting Font System:**
+  - Inclusione locale dei file WOFF2 per **Inter** e **JetBrains Mono** in `app/static/fonts/` con regole `@font-face` in `styles.css`.
+  - Eliminazione dei collegamenti preconnect e stylesheet verso `fonts.googleapis.com` e `fonts.gstatic.com`.
+- [ ] **Full Offline Dashboard Guarantee:**
+  - Garanzia al 100% che la dashboard e tutti i controlli locali funzionino perfettamente in LAN anche quando il router eero ha perso la connessione WAN verso l'operatore Internet.
+
+#### 2. 🆕 Ordinamento e Filtro Dispositivi per "Primo Accesso / Più Recenti" (Issue #60 - @DannyFeliz)
+*(In risposta alla richiesta in Issue #60: "Ability to sort or filter devices by Recently Joined / First Seen")*
+- [ ] **Propagazione `first_seen` nell'API (`/api/devices`):**
+  - Correlazione del timestamp `first_seen` della tabella SQLite `known_devices` nel modello normalizzato di ciascun dispositivo in `eero_client.py` (`dev["first_seen"]`).
+- [ ] **Nuovo Criterio di Ordinamento nella UI (`app.js`):**
+  - Aggiunta di `first_seen` in `deviceSortField` e gestione comparatore temporale decrescente (i dispositivi più recenti in cima alla tabella).
+  - Nuova opzione *"Primo Accesso / Più Recenti"* nel dropdown personalizzato di ordinamento dispositivi in `index.html`.
+- [ ] **Badge "NEW" & Filtro Rapido:**
+  - Badge visivo *"NEW"* per gli apparati rilevati per la prima volta nelle ultime 24 ore o 7 giorni.
+  - Quick pill o toggle per visualizzare istantaneamente solo i dispositivi aggiunti di recente.
+- [ ] **Localizzazione Bilingue Completa:**
+  - Aggiunta delle stringhe dedicate in `it.json` ed `en.json` (`devices.sort_first_seen`, `devices.badge_new`, `devices.filter_recent`).
 
 ---
 
