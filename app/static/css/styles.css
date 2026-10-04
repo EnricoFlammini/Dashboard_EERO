@@ -459,104 +459,6 @@ html:not(.dark) .bg-slate-800\/60 {
   border-color: #e2e8f0 !important;
 }
 
-/* Sticky Table Header in Light Mode (removes harsh black header bar) */
-html:not(.dark) table thead,
-html:not(.dark) table thead tr,
-html:not(.dark) table thead th {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  border-color: #e2e8f0 !important;
-}
-html:not(.dark) table thead th:hover {
-  color: #0f172a !important;
-}
-
-/* Table Row and Borders in Light Mode */
-html:not(.dark) tbody tr:hover,
-html:not(.dark) tr.hover\:bg-slate-800\/30:hover {
-  background-color: rgba(0, 103, 192, 0.04) !important;
-}
-html:not(.dark) .border-slate-800,
-html:not(.dark) .border-slate-800\/80,
-html:not(.dark) .border-slate-800\/60,
-html:not(.dark) .border-slate-700,
-html:not(.dark) .border-slate-700\/80,
-html:not(.dark) .border-slate-700\/60,
-html:not(.dark) .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
-}
-
-/* Inputs, Selects & Forms in Light Mode */
-html:not(.dark) .glass-input,
-html:not(.dark) select,
-html:not(.dark) input:not([type="checkbox"]):not([type="radio"]) {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-html:not(.dark) input::placeholder,
-html:not(.dark) .glass-input::placeholder {
-  color: #64748b !important;
-}
-html:not(.dark) input[type="checkbox"] {
-  background-color: #ffffff !important;
-  border-color: #94a3b8 !important;
-}
-
-/* Docker Maintenance Card in Light Mode */
-html:not(.dark) .from-slate-900\/90.to-amber-950\/20 {
-  background: linear-gradient(to right, #fffdf8, #fffbeb) !important;
-  border-color: rgba(245, 158, 11, 0.25) !important;
-}
-
-/* Preserve bright white text for solid badges and action buttons */
-html:not(.dark) button.bg-rose-500,
-html:not(.dark) button.bg-rose-600,
-html:not(.dark) button.bg-sky-500,
-html:not(.dark) button.bg-sky-600,
-html:not(.dark) button.bg-indigo-600,
-html:not(.dark) button.bg-emerald-600,
-html:not(.dark) button[class*="bg-gradient-"],
-html:not(.dark) button[class*="from-"],
-html:not(.dark) button[class*="bg-gradient-"] *,
-html:not(.dark) button[class*="from-"] *,
-html:not(.dark) .bg-rose-500 .text-white,
-html:not(.dark) .bg-rose-600 .text-white,
-html:not(.dark) .bg-sky-500 .text-white,
-html:not(.dark) .bg-sky-600 .text-white,
-html:not(.dark) .bg-indigo-600 .text-white,
-html:not(.dark) .bg-emerald-600 .text-white,
-html:not(.dark) [class*="bg-gradient-"] .text-white,
-html:not(.dark) .btn-primary,
-html:not(.dark) .btn-accent,
-html:not(.dark) .btn-primary *,
-html:not(.dark) .btn-accent * {
-  color: #ffffff !important;
-}
-
-/* Header Pills Contrast (Version & About) */
-html:not(.dark) .header-pill-version {
-  background-color: #e0f2fe !important;
-  color: #0369a1 !important;
-  border: 1px solid #7dd3fc !important;
-}
-html:not(.dark) .header-pill-version:hover {
-  background-color: #bae6fd !important;
-  color: #075985 !important;
-  border-color: #38bdf8 !important;
-}
-html:not(.dark) .header-pill-version * {
-  color: #0369a1 !important;
-}
-html:not(.dark) .header-pill-about {
-  background-color: #ede9fe !important;
-  color: #5b21b6 !important;
-  border: 1px solid #c4b5fd !important;
-}
-html:not(.dark) .header-pill-about:hover {
-  background-color: #ddd6fe !important;
-  color: #4c1d95 !important;
-  border-color: #a78bfa !important;
 /* High-Contrast Typography Overrides for Light Mode */
 html:not(.dark) .text-slate-400 {
   color: #334155 !important; /* Slate 700: high contrast readable label text (9.5:1 ratio) */
@@ -1362,3 +1264,68 @@ html.dark .sidebar-btn-inactive:hover {
   flex-shrink: 0 !important;
   white-space: nowrap !important;
 }
+
+/* ====================================================================
+   16. LIVE LOG VIEWER TERMINAL CONSOLE (High-Contrast Theme-Immune)
+   ==================================================================== */
+.log-console-terminal {
+  background-color: #0b0f19 !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.log-console-terminal,
+.log-console-terminal * {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+html:not(.dark) .log-console-terminal .log-time,
+html.dark .log-console-terminal .log-time {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .log-console-terminal .log-logger,
+html.dark .log-console-terminal .log-logger {
+  color: #38bdf8 !important;
+}
+
+html:not(.dark) .log-console-terminal .log-message,
+html.dark .log-console-terminal .log-message {
+  color: #f8fafc !important;
+}
+
+html:not(.dark) .log-console-terminal .log-detail-box,
+html.dark .log-console-terminal .log-detail-box {
+  background-color: #030712 !important;
+  border-color: #1f2937 !important;
+  color: #fca5a5 !important;
+}
+
+html:not(.dark) .log-console-terminal .log-badge-debug,
+html.dark .log-console-terminal .log-badge-debug {
+  background-color: rgba(147, 51, 234, 0.3) !important;
+  color: #e9d5ff !important;
+  border-color: rgba(168, 85, 247, 0.6) !important;
+}
+
+html:not(.dark) .log-console-terminal .log-badge-info,
+html.dark .log-console-terminal .log-badge-info {
+  background-color: rgba(14, 165, 233, 0.3) !important;
+  color: #bae6fd !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
+}
+
+html:not(.dark) .log-console-terminal .log-badge-warning,
+html.dark .log-console-terminal .log-badge-warning {
+  background-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fef08a !important;
+  border-color: rgba(234, 179, 8, 0.6) !important;
+}
+
+html:not(.dark) .log-console-terminal .log-badge-error,
+html.dark .log-console-terminal .log-badge-error {
+  background-color: rgba(239, 68, 68, 0.35) !important;
+  color: #fecdd3 !important;
+  border-color: rgba(248, 113, 113, 0.7) !important;
+}
+

@@ -3124,10 +3124,10 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="logConfig.level === 'DEBUG' 
                     ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25 ring-2 ring-purple-500/40 border-purple-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'"
+                  class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">DEBUG</span>
-                  <span class="text-[9px] font-normal opacity-80" x-text="currentLanguage === 'it' ? 'Dettagliato' : 'Verbose'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Dettagliato' : 'Verbose'"></span>
                 </button>
 
                 <!-- INFO -->
@@ -3137,10 +3137,10 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="logConfig.level === 'INFO' 
                     ? 'bg-sky-600 text-white shadow-md shadow-sky-600/25 ring-2 ring-sky-500/40 border-sky-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-sky-950/30'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-sky-950/30'"
+                  class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">INFO</span>
-                  <span class="text-[9px] font-normal opacity-80" x-text="currentLanguage === 'it' ? 'Normale' : 'Standard'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Normale' : 'Standard'"></span>
                 </button>
 
                 <!-- WARNING -->
@@ -3150,10 +3150,10 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="logConfig.level === 'WARNING' 
                     ? 'bg-amber-600 text-white shadow-md shadow-amber-600/25 ring-2 ring-amber-500/40 border-amber-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'"
+                  class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">WARNING</span>
-                  <span class="text-[9px] font-normal opacity-80" x-text="currentLanguage === 'it' ? 'Avvisi' : 'Warnings'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Avvisi' : 'Warnings'"></span>
                 </button>
 
                 <!-- ERROR -->
@@ -3163,10 +3163,10 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="logConfig.level === 'ERROR' 
                     ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25 ring-2 ring-rose-500/40 border-rose-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/30'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/30'"
+                  class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">ERROR</span>
-                  <span class="text-[9px] font-normal opacity-80" x-text="currentLanguage === 'it' ? 'Critico' : 'Critical'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Critico' : 'Critical'"></span>
                 </button>
               </div>
             </div>
@@ -3186,8 +3186,8 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="!showCustomRetention && logConfig.retention_days === 1 
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">24h</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_24h') || '1 giorno'"></span>
                 </button>
@@ -3199,8 +3199,8 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="!showCustomRetention && logConfig.retention_days === 7 
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">7gg</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_7d') || '1 settimana'"></span>
                 </button>
@@ -3212,8 +3212,8 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="!showCustomRetention && logConfig.retention_days === 15 
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">15gg</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_15d') || '15 giorni'"></span>
                 </button>
@@ -3225,8 +3225,8 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="!showCustomRetention && logConfig.retention_days === 30 
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">1m</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_30d') || '30 giorni'"></span>
                 </button>
@@ -3238,8 +3238,8 @@
                   :disabled="!can('action_manage_rules') || !logConfig.enabled"
                   :class="showCustomRetention 
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
-                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
+                  class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">✏️</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_custom') || 'Altro'"></span>
                 </button>
@@ -3253,8 +3253,8 @@
                   max="3650"
                   x-model.number="customRetentionInput" 
                   placeholder="Giorni" 
-                  class="glass-input w-28 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-center">
-                <span class="text-xs text-slate-500" x-text="t('logs.retention_days_unit') || 'giorni (0 = illimitato)'"></span>
+                  class="glass-input w-28 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-center border-slate-300 dark:border-slate-700">
+                <span class="text-xs text-slate-600 dark:text-slate-400 font-medium" x-text="t('logs.retention_days_unit') || 'giorni (0 = illimitato)'"></span>
                 <button 
                   type="button"
                   @click="applyCustomRetention()"
@@ -3274,7 +3274,7 @@
               <button 
                 type="button"
                 @click="downloadSystemLogs('log')"
-                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5 shadow-xs">
+                class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5 shadow-xs">
                 <span>⬇️</span>
                 <span x-text="t('logs.download_log') || 'Scarica .log'"></span>
               </button>
@@ -3283,7 +3283,7 @@
               <button 
                 type="button"
                 @click="downloadSystemLogs('json')"
-                class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5 shadow-xs">
+                class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5 shadow-xs">
                 <span>📦</span>
                 <span x-text="t('logs.download_json') || 'Scarica .json'"></span>
               </button>
@@ -3293,13 +3293,13 @@
                 type="button"
                 @click="fetchSystemLogs(); fetchLogConfig()"
                 :disabled="logLoading"
-                class="px-3 py-1.5 rounded-xl bg-[#0067c0]/10 hover:bg-[#0067c0]/20 dark:bg-sky-500/15 dark:hover:bg-sky-500/25 text-[#0067c0] dark:text-sky-300 font-semibold text-xs border border-[#0067c0]/20 dark:border-sky-500/30 transition cursor-pointer flex items-center space-x-1.5 disabled:opacity-50">
+                class="px-3.5 py-1.5 rounded-xl bg-[#0067c0]/10 hover:bg-[#0067c0]/20 dark:bg-sky-500/15 dark:hover:bg-sky-500/25 text-[#0067c0] dark:text-sky-300 font-bold text-xs border border-[#0067c0]/30 dark:border-sky-500/40 transition cursor-pointer flex items-center space-x-1.5 disabled:opacity-50 shadow-xs">
                 <span :class="logLoading ? 'animate-spin' : ''">🔄</span>
                 <span x-text="t('logs.refresh_btn') || 'Aggiorna'"></span>
               </button>
 
               <!-- Auto-Refresh Toggle -->
-              <label class="flex items-center space-x-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none px-2 py-1">
+              <label class="flex items-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 font-semibold cursor-pointer select-none px-2 py-1">
                 <input type="checkbox" x-model="logAutoRefresh" class="rounded border-slate-300 dark:border-slate-700 text-cyan-600 focus:ring-0 w-3.5 h-3.5">
                 <span x-text="t('logs.auto_refresh') || 'Auto-refresh (10s)'"></span>
               </label>
@@ -3310,24 +3310,24 @@
               type="button"
               x-show="can('action_manage_rules')"
               @click="openClearLogsModal()"
-              class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200 dark:border-rose-500/30 transition cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto shadow-xs">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-300 dark:border-rose-500/40 transition cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto shadow-xs">
+              <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               <span x-text="t('logs.clear_btn') || 'Svuota Registro'"></span>
             </button>
           </div>
 
           <!-- Live Log Viewer Console Container -->
-          <div class="space-y-2 pt-2">
+          <div class="space-y-2.5 pt-2">
             
             <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
-                <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              <h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center space-x-1.5">
+                <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span x-text="t('logs.viewer_title') || 'Live Log Viewer Console'"></span>
               </h4>
             </div>
 
             <!-- Console Filter Bar -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
               
               <!-- Quick Search Input -->
               <div class="relative flex-1 max-w-md">
@@ -3335,91 +3335,91 @@
                   type="text" 
                   x-model.debounce.300ms="logSearchQuery"
                   :placeholder="t('logs.search_placeholder') || 'Cerca nel messaggio o modulo...'" 
-                  class="glass-input w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-mono">
+                  class="glass-input w-full pl-8 pr-3 py-1.5 rounded-lg text-xs font-mono font-medium border-slate-300 dark:border-slate-700">
                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
               </div>
 
               <!-- Level Chips Selector -->
-              <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0 text-[11px] font-bold">
+              <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-bold">
                 <template x-for="lvl in ['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR']" :key="lvl">
                   <button 
                     type="button"
                     @click="logLevelFilter = lvl"
                     :class="logLevelFilter === lvl 
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs' 
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'"
-                    class="px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+                      ? 'bg-sky-600 text-white border-sky-600 shadow-sm' 
+                      : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-700'"
+                    class="px-3 py-1 rounded-lg border transition cursor-pointer shrink-0 font-bold shadow-2xs"
                     x-text="lvl === 'ALL' ? (t('logs.filter_all') || 'Tutti') : lvl">
                   </button>
                 </template>
               </div>
 
               <!-- Storage & Records Stats Pills -->
-              <div class="flex items-center space-x-2 text-[11px] text-slate-500 font-mono shrink-0">
-                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" :title="t('logs.file_size') || 'Dimensione File'">
+              <div class="flex items-center space-x-2 text-xs text-slate-800 dark:text-slate-200 font-mono font-semibold shrink-0">
+                <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs" :title="t('logs.file_size') || 'Dimensione File'">
                   💾 <span x-text="(logStats.file_size_mb || 0) + ' MB'"></span>
                 </span>
-                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" :title="t('logs.total_records') || 'Eventi Registrati'">
+                <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs" :title="t('logs.total_records') || 'Eventi Registrati'">
                   📑 <span x-text="logTotalCount || 0"></span>
                 </span>
               </div>
             </div>
 
-            <!-- Dark Acrylic Terminal Output Box -->
-            <div class="bg-slate-950 text-slate-200 font-mono text-[11px] leading-relaxed rounded-xl p-3.5 border border-slate-800 shadow-inner max-h-[380px] overflow-y-auto space-y-1">
+            <!-- Dark Acrylic Terminal Output Box with Theme-Immune High Contrast -->
+            <div class="log-console-terminal rounded-xl p-3.5 border shadow-inner max-h-[420px] overflow-y-auto space-y-1.5 select-text">
               
               <template x-if="logLoading && logsList.length === 0">
-                <div class="py-12 text-center text-slate-500">
+                <div class="py-12 text-center text-slate-400">
                   <span class="animate-spin inline-block mr-2">⏳</span> Caricamento registri di sistema in corso...
                 </div>
               </template>
 
               <template x-if="!logLoading && logsList.length === 0">
-                <div class="py-12 text-center text-slate-500 space-y-1">
-                  <div class="text-xl">📋</div>
-                  <div x-text="t('logs.no_logs') || 'Nessun evento registrato corrispondente ai criteri.'"></div>
+                <div class="py-12 text-center text-slate-400 space-y-1.5">
+                  <div class="text-2xl">📋</div>
+                  <div class="font-medium text-slate-300" x-text="t('logs.no_logs') || 'Nessun evento registrato corrispondente ai criteri.'"></div>
                 </div>
               </template>
 
               <template x-for="l in logsList" :key="l.id">
-                <div class="p-1 rounded hover:bg-white/[0.04] transition flex flex-col space-y-1 border-b border-white/[0.03]">
-                  <div class="flex items-start space-x-2">
+                <div class="py-1 px-1.5 rounded hover:bg-white/[0.06] transition flex flex-col space-y-1 border-b border-white/[0.04]">
+                  <div class="flex items-start space-x-2 text-[11px] leading-snug">
                     <!-- Timestamp -->
-                    <span class="text-slate-500 shrink-0 select-all" x-text="l.timestamp"></span>
+                    <span class="log-time shrink-0 select-all font-mono" x-text="l.timestamp"></span>
 
                     <!-- Level Badge -->
                     <span 
                       :class="{
-                        'bg-purple-900/60 text-purple-300 border-purple-700/50': l.level === 'DEBUG',
-                        'bg-sky-900/60 text-sky-300 border-sky-700/50': l.level === 'INFO',
-                        'bg-amber-900/60 text-amber-300 border-amber-700/50': l.level === 'WARNING',
-                        'bg-rose-900/70 text-rose-300 border-rose-700/50 font-bold': l.level === 'ERROR' || l.level === 'CRITICAL'
+                        'log-badge-debug': l.level === 'DEBUG',
+                        'log-badge-info': l.level === 'INFO',
+                        'log-badge-warning': l.level === 'WARNING',
+                        'log-badge-error': l.level === 'ERROR' || l.level === 'CRITICAL'
                       }"
-                      class="px-1.5 py-0.2 rounded text-[10px] uppercase font-bold border shrink-0"
+                      class="px-1.5 py-0.2 rounded text-[10px] uppercase font-bold border shrink-0 tracking-wide"
                       x-text="l.level">
                     </span>
 
                     <!-- Module / Logger Name -->
-                    <span class="text-cyan-400/90 shrink-0 font-semibold" x-text="l.logger_name + ':'"></span>
+                    <span class="log-logger shrink-0 font-bold font-mono" x-text="l.logger_name + ':'"></span>
 
                     <!-- Message Body -->
-                    <span class="text-slate-200 break-all select-all flex-1" x-text="l.message"></span>
+                    <span class="log-message break-all select-all flex-1 font-mono" x-text="l.message"></span>
 
                     <!-- Details expander button if details_json exists -->
                     <template x-if="l.details_json">
                       <button 
                         type="button"
                         @click="toggleLogDetail(l.id)" 
-                        class="text-[10px] text-amber-400 hover:text-amber-300 underline shrink-0 cursor-pointer ml-1"
+                        class="text-[10px] text-amber-300 hover:text-amber-200 underline font-bold shrink-0 cursor-pointer ml-1"
                         x-text="expandedLogDetails[l.id] ? (t('logs.hide_details') || 'Nascondi') : (t('logs.show_details') || 'Dettagli')">
                       </button>
                     </template>
                   </div>
 
                   <!-- Collapsible Stacktrace / Details JSON -->
-                  <div x-show="expandedLogDetails[l.id]" class="mt-1 p-2 rounded bg-black/60 border border-slate-800 text-[10px] text-rose-300/90 whitespace-pre-wrap select-all font-mono">
+                  <div x-show="expandedLogDetails[l.id]" class="log-detail-box mt-1 p-2.5 rounded-lg border text-[11px] whitespace-pre-wrap select-all font-mono leading-relaxed">
                     <span x-text="l.details_json"></span>
                   </div>
                 </div>
