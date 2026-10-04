@@ -226,8 +226,7 @@ class DBService:
                 await db.execute("ALTER TABLE local_users ADD COLUMN is_active INTEGER DEFAULT 1;")
             except Exception:
                 pass
-            await db.execute("UPDATE local_users SET is_active = 1 WHERE is_active IS NULL;")
-            await db.execute("UPDATE local_users SET role = 'admin', display_name = 'Amministratore Rete' WHERE is_admin = 1 AND (role IS NULL OR role = '' OR role = 'operator');")
+            await db.execute("UPDATE local_users SET role = 'admin', display_name = 'Admin' WHERE is_admin = 1 AND (role IS NULL OR role = '' OR role = 'operator' OR display_name = 'Amministratore Rete');")
 
             # 13. Local User Sessions
             await db.execute("""
@@ -345,7 +344,7 @@ class DBService:
                 await db.execute(
                     """
                     INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
-                    VALUES (?, 'Amministratore Rete', 'admin', ?, ?, 1, 1, ?, CURRENT_TIMESTAMP);
+                    VALUES (?, 'Admin', 'admin', ?, ?, 1, 1, ?, CURRENT_TIMESTAMP);
                     """,
                     (admin_u, p_hash, p_salt, all_perms_json)
                 )

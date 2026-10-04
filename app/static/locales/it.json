@@ -680,12 +680,12 @@
     "logging_in": "Accesso in corso...",
     "logout": "Disconnetti",
     "user_logged": "Accesso effettuato come",
-    "role_admin": "Amministratore",
-    "role_operator": "Operatore",
-    "role_viewer": "Sola Lettura",
+    "role_admin": "Admin",
+    "role_operator": "Operator",
+    "role_viewer": "Viewer",
     "no_access": "Non disponi dei permessi necessari per questa operazione.",
     "admin_required_title": "Accesso Amministratore Richiesto",
-    "admin_required_desc": "Per gestire gli utenti, creare nuovi account o modificare i permessi RBAC è necessario effettuare l'accesso come Amministratore (credenziali predefinite: admin / admin).",
+    "admin_required_desc": "Per gestire gli utenti, creare nuovi account o modificare i permessi RBAC è necessario effettuare l'accesso come Admin (credenziali predefinite: admin / admin).",
     "login_as_admin_btn": "Accedi come Admin"
   },
   "users_modal": {
@@ -695,13 +695,16 @@
     "edit_user": "Modifica Utente",
     "username": "Username",
     "display_name": "Nome Visualizzato",
+    "display_name_placeholder": "Es. Admin Rete",
     "role": "Ruolo",
     "password_placeholder": "Lascia vuoto per non modificare",
     "is_active": "Account Attivo",
+    "active_desc_enabled": "L'utente può autenticarsi e operare sulla dashboard.",
+    "active_desc_disabled": "L'account è disabilitato: i tentativi di accesso saranno bloccati.",
     "permissions_title": "Matrice Permessi Accesso",
     "preset_all": "Tutti i Permessi",
-    "preset_readonly": "Sola Lettura",
-    "preset_operator": "Operatore",
+    "preset_readonly": "Viewer",
+    "preset_operator": "Operator",
     "preset_none": "Nessuno",
     "save_user": "Salva Utente",
     "cancel": "Annulla",
@@ -709,8 +712,13 @@
     "no_users": "Nessun utente locale configurato.",
     "col_user": "Utente",
     "col_role": "Ruolo",
+    "col_permissions": "Permessi",
     "col_status": "Stato",
-    "col_actions": "Azioni"
+    "col_actions": "Azioni",
+    "back_to_list": "← Torna alla Lista",
+    "loading_users": "Caricamento utenti...",
+    "status_active": "Attivo",
+    "status_inactive": "Disattivato"
   },
   "backup_modal": {
     "title": "Backup & Ripristino Configurazione",
@@ -718,8 +726,10 @@
     "export_title": "Esporta Backup",
     "export_desc": "Scarica una copia completa della configurazione inclusi profili, nomi personalizzati, assegnazioni IP, regole DNS e impostazioni.",
     "export_btn": "Scarica File JSON",
+    "export_format_hint": "Salvataggio atomico in formato JSON",
     "restore_title": "Ripristina da Backup",
     "restore_desc": "Carica un file JSON generato in precedenza per ripristinare la configurazione dell'applicazione.",
+    "restore_format_hint": "Sostituzione e importazione dati",
     "select_file": "Seleziona file di backup (.json)",
     "restore_warning": "Attenzione: il ripristino sovrascriverà le impostazioni correnti con quelle presenti nel file di backup.",
     "upload_btn": "Avvia Ripristino",
@@ -784,13 +794,20 @@
   },
   "settings_users": {
     "title": "Gestione Utenti & Permessi",
-    "subtitle": "Amministrazione accessi locali, ruoli (Admin vs Viewer / Read-Only) e matrice permessi RBAC"
+    "subtitle": "Amministrazione accessi locali, ruoli predefiniti (Admin, Operator, Viewer) e matrice permessi RBAC"
   },
   "settings_backup": {
     "title": "Backup & Ripristino",
     "subtitle": "Gestione backup della configurazione, ripristino snapshot e manutenzione del database SQLite",
     "db_health_title": "Stato Database SQLite & Compattazione",
-    "compact_btn": "Compatta Database (VACUUM)"
+    "compact_btn": "Compatta Database (VACUUM)",
+    "compacting": "Compattazione in corso...",
+    "db_description": "La dashboard salva le telemetrie di rete, traffico e segnali in un database SQLite con Write-Ahead Logging (WAL). La compattazione esegue il tiering dei dati storici ed effettua il riordino degli indici liberando spazio su disco.",
+    "db_size": "Dimensione Database",
+    "wal_size": "Dimensione File WAL",
+    "total_size": "Dimensione Totale Disco",
+    "last_compaction": "Ultima Compattazione",
+    "auto_interval": "Automatica (60m)"
   },
   "settings_updates": {
     "title": "Verifica aggiornamenti e Container Docker",

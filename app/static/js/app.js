@@ -4768,7 +4768,11 @@ document.addEventListener('alpine:init', () => {
         return;
       }
       if (!this.userForm.username) {
-        this.showToast('Errore', 'Username obbligatorio', 'warning');
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Errore' : 'Error',
+          this.currentLanguage === 'it' ? 'Username obbligatorio' : 'Username is required',
+          'warning'
+        );
         return;
       }
       const headers = { 'Content-Type': 'application/json' };
@@ -4806,7 +4810,11 @@ document.addEventListener('alpine:init', () => {
           });
         }
         if (res.ok) {
-          this.showToast('Successo', 'Utente salvato correttamente', 'success');
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Successo' : 'Success',
+            this.currentLanguage === 'it' ? 'Utente salvato correttamente' : 'User saved successfully',
+            'success'
+          );
           this.userModalMode = 'list';
           await this.loadLocalUsers();
         } else {
@@ -4817,10 +4825,14 @@ document.addEventListener('alpine:init', () => {
             this.currentUser = null;
             this.openLocalLoginModal('admin');
           }
-          this.showToast('Errore', err.detail || 'Operazione fallita', 'error');
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore' : 'Error',
+            err.detail || (this.currentLanguage === 'it' ? 'Operazione fallita' : 'Operation failed'),
+            'error'
+          );
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
       }
     },
 
@@ -4829,7 +4841,10 @@ document.addEventListener('alpine:init', () => {
         this.openLocalLoginModal('admin');
         return;
       }
-      if (!confirm(`Sei sicuro di voler eliminare l'utente "${username}"?`)) return;
+      const confirmMsg = this.currentLanguage === 'it'
+        ? `Sei sicuro di voler eliminare l'utente "${username}"?`
+        : `Are you sure you want to delete user "${username}"?`;
+      if (!confirm(confirmMsg)) return;
       const headers = {};
       if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
       try {
@@ -4838,14 +4853,22 @@ document.addEventListener('alpine:init', () => {
           headers
         });
         if (res.ok) {
-          this.showToast('Successo', `Utente ${username} eliminato`, 'success');
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Successo' : 'Success',
+            this.currentLanguage === 'it' ? `Utente ${username} eliminato` : `User ${username} deleted`,
+            'success'
+          );
           await this.loadLocalUsers();
         } else {
           const err = await res.json();
-          this.showToast('Errore', err.detail || 'Impossibile eliminare utente', 'error');
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore' : 'Error',
+            err.detail || (this.currentLanguage === 'it' ? 'Impossibile eliminare utente' : 'Failed to delete user'),
+            'error'
+          );
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
       }
     },
 
@@ -4862,7 +4885,7 @@ document.addEventListener('alpine:init', () => {
         const headers = {};
         if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
         const res = await fetch('/api/system/backup/export', { headers });
-        if (!res.ok) throw new Error('Errore durante esportazione backup');
+        if (!res.ok) throw new Error(this.currentLanguage === 'it' ? 'Errore durante esportazione backup' : 'Error during backup export');
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -4872,9 +4895,13 @@ document.addEventListener('alpine:init', () => {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
-        this.showToast('Backup Esportato', 'Download del file JSON completato', 'success');
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Backup Esportato' : 'Backup Exported',
+          this.currentLanguage === 'it' ? 'Download del file JSON completato' : 'JSON file download completed',
+          'success'
+        );
       } catch (e) {
-        this.showToast('Errore Backup', String(e), 'error');
+        this.showToast(this.currentLanguage === 'it' ? 'Errore Backup' : 'Backup Error', String(e), 'error');
       }
     },
 
@@ -4882,7 +4909,7 @@ document.addEventListener('alpine:init', () => {
       const file = event.target.files?.[0];
       if (!file) return;
       this.backupLoading = true;
-      this.backupRestoreStatus = 'Ripristino in corso...';
+      this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Ripristino in corso...' : 'Restoring in progress...';
       try {
         const text = await file.text();
         const json = JSON.parse(text);
@@ -4895,18 +4922,30 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (res.ok) {
-          this.backupRestoreStatus = 'Configurazione ripristinata con successo!';
-          this.showToast('Ripristino Completato', 'I dati sono stati ripristinati correttamente', 'success');
+          this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Configurazione ripristinata con successo!' : 'Configuration restored successfully!';
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Ripristino Completato' : 'Restore Completed',
+            this.currentLanguage === 'it' ? 'I dati sono stati ripristinati correttamente' : 'Data restored successfully',
+            'success'
+          );
           setTimeout(() => {
             window.location.reload();
           }, 1200);
         } else {
-          this.backupRestoreStatus = `Errore: ${data.detail || 'Impossibile ripristinare il file'}`;
-          this.showToast('Errore Ripristino', data.detail || 'Errore ripristino', 'error');
+          this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore' : 'Error'}: ${data.detail || (this.currentLanguage === 'it' ? 'Impossibile ripristinare il file' : 'Unable to restore file')}`;
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore Ripristino' : 'Restore Error',
+            data.detail || (this.currentLanguage === 'it' ? 'Errore ripristino' : 'Restore error'),
+            'error'
+          );
         }
       } catch (e) {
-        this.backupRestoreStatus = `Errore di parsing: ${e.message}`;
-        this.showToast('Errore File', 'Il file selezionato non è un JSON valido', 'error');
+        this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore di parsing' : 'Parsing error'}: ${e.message}`;
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Errore File' : 'File Error',
+          this.currentLanguage === 'it' ? 'Il file selezionato non è un JSON valido' : 'Selected file is not valid JSON',
+          'error'
+        );
       } finally {
         this.backupLoading = false;
         event.target.value = '';

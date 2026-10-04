@@ -680,12 +680,12 @@
     "logging_in": "Signing in...",
     "logout": "Sign Out",
     "user_logged": "Signed in as",
-    "role_admin": "Administrator",
+    "role_admin": "Admin",
     "role_operator": "Operator",
-    "role_viewer": "Read Only",
+    "role_viewer": "Viewer",
     "no_access": "You do not have the required permissions for this action.",
     "admin_required_title": "Administrator Access Required",
-    "admin_required_desc": "To manage users, create new accounts or modify RBAC permissions, please log in as Administrator (default credentials: admin / admin).",
+    "admin_required_desc": "To manage users, create new accounts or modify RBAC permissions, please log in as Admin (default credentials: admin / admin).",
     "login_as_admin_btn": "Log in as Admin"
   },
   "users_modal": {
@@ -695,12 +695,15 @@
     "edit_user": "Edit User",
     "username": "Username",
     "display_name": "Display Name",
+    "display_name_placeholder": "e.g. Network Admin",
     "role": "Role",
     "password_placeholder": "Leave blank to keep unchanged",
     "is_active": "Active Account",
+    "active_desc_enabled": "User can authenticate and operate on the dashboard.",
+    "active_desc_disabled": "Account is disabled: login attempts will be blocked.",
     "permissions_title": "Access Permission Matrix",
     "preset_all": "All Permissions",
-    "preset_readonly": "Read Only",
+    "preset_readonly": "Viewer",
     "preset_operator": "Operator",
     "preset_none": "None",
     "save_user": "Save User",
@@ -709,8 +712,13 @@
     "no_users": "No local users configured.",
     "col_user": "User",
     "col_role": "Role",
+    "col_permissions": "Permissions",
     "col_status": "Status",
-    "col_actions": "Actions"
+    "col_actions": "Actions",
+    "back_to_list": "← Back to List",
+    "loading_users": "Loading users...",
+    "status_active": "Active",
+    "status_inactive": "Disabled"
   },
   "backup_modal": {
     "title": "Configuration Backup & Restore",
@@ -718,8 +726,10 @@
     "export_title": "Export Backup",
     "export_desc": "Download a full copy of configuration including profiles, device custom names, IP reservations, DNS rules and settings.",
     "export_btn": "Download JSON File",
+    "export_format_hint": "Atomic save in JSON format",
     "restore_title": "Restore from Backup",
     "restore_desc": "Upload a previously exported JSON backup file to restore application settings.",
+    "restore_format_hint": "Data replacement and import",
     "select_file": "Select backup file (.json)",
     "restore_warning": "Warning: Restoring will overwrite existing configurations with the data from the backup file.",
     "upload_btn": "Start Restore",
@@ -784,13 +794,20 @@
   },
   "settings_users": {
     "title": "User Management & Permissions",
-    "subtitle": "Local user access administration, roles (Admin vs Viewer / Read-Only) and RBAC permission matrix"
+    "subtitle": "Local user access administration, default roles (Admin, Operator, Viewer) and RBAC permission matrix"
   },
   "settings_backup": {
     "title": "Backup & Restore",
     "subtitle": "Configuration backup management, snapshot restore and SQLite database maintenance",
     "db_health_title": "SQLite Database Health & Compaction",
-    "compact_btn": "Compact Database (VACUUM)"
+    "compact_btn": "Compact Database (VACUUM)",
+    "compacting": "Compaction in progress...",
+    "db_description": "The dashboard stores network telemetry, traffic, and signals in an SQLite database with Write-Ahead Logging (WAL). Compaction tiers historical data and reorganizes indices, reclaiming disk space.",
+    "db_size": "Database Size",
+    "wal_size": "WAL File Size",
+    "total_size": "Total Disk Size",
+    "last_compaction": "Last Compaction",
+    "auto_interval": "Automatic (60m)"
   },
   "settings_updates": {
     "title": "Check for Updates & Docker Container",
