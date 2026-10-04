@@ -1894,10 +1894,10 @@ async def run_all_tests():
         runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.0", f"app.__version__ è '1.6.0' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
-        runner.assert_true(res_man_it.json().get("count") == 10, f"Manuale IT contiene 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
+        runner.assert_true(res_man_it.json().get("count") >= 10, f"Manuale IT contiene almeno 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
         res_man_en = await client.get("/api/manual/sections?lang=en")
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
-        runner.assert_true(res_man_en.json().get("count") == 10, f"Manuale EN contiene 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
+        runner.assert_true(res_man_en.json().get("count") >= 10, f"Manuale EN contiene almeno 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
         res_ch_it = await client.get("/api/manual/changelog?lang=it")
         runner.assert_true(res_ch_it.json().get("version") == "1.6.0", "Versione restituita da changelog IT è 1.6.0")
         runner.assert_true("## v1.6.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.0")
@@ -3383,7 +3383,7 @@ async def run_all_tests():
         # -----------------------------------------------------------------
         # 27. TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)
         # -----------------------------------------------------------------
-        print("\n🚀 [27/27] TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)")
+        print("\n🚀 [27/28] TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)")
 
         import json
         from pathlib import Path
@@ -3478,6 +3478,395 @@ async def run_all_tests():
 
         res_bk_restore_alias = await client.post("/api/system/backup/restore", json={"bad": "data"}, headers=adm_hdr)
         runner.assert_true(res_bk_restore_alias.status_code == 400, "POST /api/system/backup/restore alias risponde HTTP 400 su payload malformato")
+
+        # -----------------------------------------------------------------
+        # 28. TEST BACKEND LOGGING & SYSTEM LOG RETENTION WORKER (v1.6.0 Modulo 4 - Fase 1)
+        # -----------------------------------------------------------------
+        print("\n🚀 [28/28] TEST BACKEND LOGGING & SYSTEM LOG RETENTION WORKER (v1.6.0)")
+
+        # 1. Verifica Tabella system_logs su SQLite
+        async with db_service.get_connection() as db_check:
+            cur_l = await db_check.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='system_logs';")
+            tbl_l = await cur_l.fetchone()
+            runner.assert_true(tbl_l is not None, "Tabella 'system_logs' presente su SQLite")
+
+        # 2. Configurazione Logging predefinita e persistenza
+        log_cfg = await db_service.get_logging_config()
+        runner.assert_true(isinstance(log_cfg, dict), "get_logging_config restituisce un dizionario")
+        runner.assert_true(log_cfg.get("enabled") is True, "Configurazione log default ha enabled=True")
+        runner.assert_true(log_cfg.get("level") in ["DEBUG", "INFO", "WARNING", "ERROR"], "Configurazione log default ha livello valido")
+        runner.assert_true(log_cfg.get("retention_days") == 7, "Configurazione log default ha retention_days=7")
+
+        # Aggiornamento configurazione
+        updated_cfg = await db_service.set_logging_config(enabled=True, level="DEBUG", retention_days=15)
+        runner.assert_true(updated_cfg.get("level") == "DEBUG", "set_logging_config aggiorna il livello a DEBUG")
+        runner.assert_true(updated_cfg.get("retention_days") == 15, "set_logging_config aggiorna la retention a 15 giorni")
+
+        # Ripristino default
+        await db_service.set_logging_config(level="INFO", retention_days=7)
+
+        # 3. LogService & Handler
+        from app.services.log_service import log_service
+        runner.assert_true(hasattr(log_service, "start"), "LogService espone metodo start")
+        runner.assert_true(hasattr(log_service, "stop"), "LogService espone metodo stop")
+        runner.assert_true(hasattr(log_service, "set_level"), "LogService espone metodo set_level")
+        runner.assert_true(hasattr(log_service, "set_enabled"), "LogService espone metodo set_enabled")
+        runner.assert_true(hasattr(log_service, "clear_logs"), "LogService espone metodo clear_logs")
+
+        # Avvio e inserimento eventi di test
+        await log_service.start()
+        runner.assert_true(log_service.log_file_path.exists(), "File system.log creato sul filesystem")
+
+        # Inserimento log singolo
+        inserted_id = await db_service.insert_system_log(
+            level="WARNING",
+            logger_name="test.runner",
+            message="Messaggio diagnostico di test per runner pre-release",
+            details_json=json.dumps({"test_run": True})
+        )
+        runner.assert_true(isinstance(inserted_id, int) and inserted_id > 0, "insert_system_log restituisce un id valido")
+
+        # Inserimento batch
+        batch_count = await db_service.insert_system_logs_batch([
+            {"level": "INFO", "logger_name": "test.batch1", "message": "Log batch 1"},
+            {"level": "ERROR", "logger_name": "test.batch2", "message": "Log batch 2 errore critico"},
+        ])
+        runner.assert_true(batch_count == 2, "insert_system_logs_batch inserisce correttamente 2 record")
+
+        # Recupero e filtri
+        all_logs = await db_service.get_system_logs(limit=20)
+        runner.assert_true(len(all_logs) >= 3, "get_system_logs restituisce i record inseriti")
+
+        error_logs = await db_service.get_system_logs(level="ERROR", limit=10)
+        runner.assert_true(all(l["level"] == "ERROR" for l in error_logs), "Filtro per level='ERROR' rispettato")
+
+        search_logs = await db_service.get_system_logs(search="errore critico", limit=10)
+        runner.assert_true(len(search_logs) >= 1 and "errore critico" in search_logs[0]["message"], "Filtro per testo 'search' funzionante")
+
+        total_cnt = await db_service.get_system_logs_count()
+        runner.assert_true(total_cnt >= 3, "get_system_logs_count restituisce conteggio accurato")
+
+        # Statistiche log
+        log_stats = await db_service.get_system_logs_stats()
+        runner.assert_true(log_stats.get("total_count", 0) >= 3, "Statistiche log espongono total_count")
+        runner.assert_true("WARNING" in log_stats.get("level_counts", {}), "Statistiche log includono ripartizione livelli")
+        runner.assert_true("file_size_bytes" in log_stats, "Statistiche log includono file_size_bytes")
+
+        # Retention & Purga
+        await db_service.insert_system_log(
+            level="DEBUG",
+            logger_name="test.expired",
+            message="Record scaduto per test purga",
+            timestamp="2021-01-01 00:00:00"
+        )
+        purged_cnt = await db_service.purge_expired_system_logs(retention_days=1)
+        runner.assert_true(purged_cnt >= 1, "purge_expired_system_logs elimina correttamente i record obsoleti")
+
+        # Integrazione ciclo retention worker
+        compaction_res = await retention_worker.run_compaction_cycle()
+        runner.assert_true("logs_purged" in compaction_res, "Retention worker include logs_purged nel sommario")
+
+        # Svuotamento (Clear logs)
+        clear_res = await log_service.clear_logs()
+        runner.assert_true(clear_res.get("status") == "success", "clear_logs restituisce status success")
+        post_clear_logs = await db_service.get_system_logs(limit=10)
+        runner.assert_true(len(post_clear_logs) == 1, "Dopo clear_logs rimane solo l'audit log di svuotamento")
+        runner.assert_true("cancellati con successo" in post_clear_logs[0]["message"], "Audit log di svuotamento registrato correttamente")
+
+        # 4. REST API Endpoint Testing (/api/system/logs) (v1.6.0 Modulo 4 - Fase 2)
+        # GET /api/system/logs/config con admin
+        res_cfg = await client.get("/api/system/logs/config", headers=adm_hdr)
+        runner.assert_true(res_cfg.status_code == 200, "GET /api/system/logs/config risponde HTTP 200")
+        cfg_body = res_cfg.json()
+        runner.assert_true(cfg_body.get("status") == "success", "GET /api/system/logs/config ha status success")
+        runner.assert_true("enabled" in cfg_body, "GET /api/system/logs/config contiene flag enabled")
+        runner.assert_true("level" in cfg_body, "GET /api/system/logs/config contiene level")
+        runner.assert_true("retention_days" in cfg_body, "GET /api/system/logs/config contiene retention_days")
+        runner.assert_true("stats" in cfg_body, "GET /api/system/logs/config include sezione stats")
+
+        # POST /api/system/logs/config con admin
+        res_cfg_up = await client.post(
+            "/api/system/logs/config",
+            json={"level": "DEBUG", "retention_days": 14, "enabled": True},
+            headers=adm_hdr
+        )
+        runner.assert_true(res_cfg_up.status_code == 200, "POST /api/system/logs/config risponde HTTP 200")
+        up_body = res_cfg_up.json()
+        runner.assert_true(up_body.get("level") == "DEBUG", "POST /api/system/logs/config aggiorna il livello a DEBUG")
+        runner.assert_true(up_body.get("retention_days") == 14, "POST /api/system/logs/config aggiorna la retention a 14")
+
+        # Validazione errore su livello non supportato
+        res_bad_lvl = await client.post("/api/system/logs/config", json={"level": "INVALID_LVL"}, headers=adm_hdr)
+        runner.assert_true(res_bad_lvl.status_code == 400, "POST /api/system/logs/config con livello non valido risponde HTTP 400")
+
+        # Validazione errore su retention negativa
+        res_bad_ret = await client.post("/api/system/logs/config", json={"retention_days": -1}, headers=adm_hdr)
+        runner.assert_true(res_bad_ret.status_code == 422 or res_bad_ret.status_code == 400, "POST /api/system/logs/config con retention negativa risponde HTTP 400/422")
+
+        # Ripristino config standard
+        await client.post("/api/system/logs/config", json={"level": "INFO", "retention_days": 7}, headers=adm_hdr)
+
+        # GET /api/system/logs paginato e con filtri
+        await db_service.insert_system_log(level="INFO", logger_name="api.test", message="Messaggio diagnostico per API GET")
+        await db_service.insert_system_log(level="ERROR", logger_name="api.test", message="Errore critico per query test")
+        res_logs_list = await client.get("/api/system/logs?limit=50&offset=0", headers=adm_hdr)
+        runner.assert_true(res_logs_list.status_code == 200, "GET /api/system/logs risponde HTTP 200")
+        list_body = res_logs_list.json()
+        runner.assert_true(list_body.get("status") == "success", "GET /api/system/logs ha status success")
+        runner.assert_true("total" in list_body, "GET /api/system/logs include total")
+        runner.assert_true("logs" in list_body and len(list_body["logs"]) >= 2, "GET /api/system/logs include array logs")
+
+        # Filtro per livello e ricerca testuale via query params
+        res_filter_lvl = await client.get("/api/system/logs?level=ERROR", headers=adm_hdr)
+        runner.assert_true(res_filter_lvl.status_code == 200, "GET /api/system/logs?level=ERROR risponde HTTP 200")
+        runner.assert_true(all(l.get("level") == "ERROR" for l in res_filter_lvl.json().get("logs", [])), "Filtro query level='ERROR' rispettato")
+
+        res_filter_q = await client.get("/api/system/logs?q=critico", headers=adm_hdr)
+        runner.assert_true(res_filter_q.status_code == 200, "GET /api/system/logs?q=critico risponde HTTP 200")
+        runner.assert_true(len(res_filter_q.json().get("logs", [])) >= 1, "Ricerca testuale via API restituisce risultati corretti")
+
+        # POST /api/system/logs/clear
+        res_clear_api = await client.post("/api/system/logs/clear", headers=adm_hdr)
+        runner.assert_true(res_clear_api.status_code == 200, "POST /api/system/logs/clear risponde HTTP 200")
+        runner.assert_true(res_clear_api.json().get("status") == "success", "POST /api/system/logs/clear status success")
+        runner.assert_true("deleted_records" in res_clear_api.json(), "POST /api/system/logs/clear restituisce deleted_records")
+
+        # GET /api/system/logs/download (formato log standard)
+        res_down_log = await client.get("/api/system/logs/download?format=log", headers=adm_hdr)
+        runner.assert_true(res_down_log.status_code == 200, "GET /api/system/logs/download?format=log risponde HTTP 200")
+        runner.assert_true("attachment" in res_down_log.headers.get("content-disposition", ""), "Download log include header Content-Disposition attachment")
+        runner.assert_true(".log" in res_down_log.headers.get("content-disposition", ""), "Nome file scaricato ha estensione .log")
+
+        # GET /api/system/logs/download (formato json)
+        res_down_json = await client.get("/api/system/logs/download?format=json", headers=adm_hdr)
+        runner.assert_true(res_down_json.status_code == 200, "GET /api/system/logs/download?format=json risponde HTTP 200")
+        runner.assert_true("application/json" in res_down_json.headers.get("content-type", ""), "Download json restituisce Content-Type application/json")
+        down_json_body = res_down_json.json()
+        runner.assert_true("logs" in down_json_body, "Download json include array di log")
+
+        # 5. Verifica Controlli di Accesso RBAC
+        # Creazione operatore con solo 'view_logs' (senza action_manage_rules)
+        res_create_op_log = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_logs_viewer",
+                "display_name": "Operatore Logs",
+                "password": "PasswordTest123!",
+                "role": "operator",
+                "permissions": ["view_logs"]
+            },
+            headers=adm_hdr
+        )
+        op_log_id = res_create_op_log.json().get("user", {}).get("id")
+        res_op_log_login = await client.post("/api/auth/local/login", json={"username": "operatore_logs_viewer", "password": "PasswordTest123!"})
+        op_log_hdr = {"Authorization": f"Bearer {res_op_log_login.json().get('token')}"}
+
+        # view_logs consente lettura e download
+        res_op_read_cfg = await client.get("/api/system/logs/config", headers=op_log_hdr)
+        runner.assert_true(res_op_read_cfg.status_code == 200, "Operatore con view_logs può leggere GET /api/system/logs/config")
+
+        res_op_read_logs = await client.get("/api/system/logs", headers=op_log_hdr)
+        runner.assert_true(res_op_read_logs.status_code == 200, "Operatore con view_logs può leggere GET /api/system/logs")
+
+        res_op_down = await client.get("/api/system/logs/download", headers=op_log_hdr)
+        runner.assert_true(res_op_down.status_code == 200, "Operatore con view_logs può eseguire GET /api/system/logs/download")
+
+        # view_logs NON consente modifiche di configurazione o svuotamento (richiede action_manage_rules)
+        res_op_forbid_cfg = await client.post("/api/system/logs/config", json={"level": "DEBUG"}, headers=op_log_hdr)
+        runner.assert_true(res_op_forbid_cfg.status_code == 403, "Operatore senza action_manage_rules bloccato con 403 su POST /api/system/logs/config")
+
+        res_op_forbid_clear = await client.post("/api/system/logs/clear", headers=op_log_hdr)
+        runner.assert_true(res_op_forbid_clear.status_code == 403, "Operatore senza action_manage_rules bloccato con 403 su POST /api/system/logs/clear")
+
+        # Pulizia utente test
+        if op_log_id:
+            await db_service.delete_local_user(op_log_id)
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 3: TEST UI CARD, MODAL, JS LOGIC & I18N PARITY
+        # -------------------------------------------------------------
+        print("\n🖥️ [MODULO 4 - FASE 3] TEST UI CARD LOGS, MODAL, JS LOGIC & I18N PARITY")
+        
+        # 1. Parità dizionari i18n per 'logs'
+        it_dict = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_dict = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        runner.assert_true("logs" in it_dict, "Chiave 'logs' presente in it.json")
+        runner.assert_true("logs" in en_dict, "Chiave 'logs' presente in en.json")
+        it_logs_keys = set(it_dict.get("logs", {}).keys())
+        en_logs_keys = set(en_dict.get("logs", {}).keys())
+        runner.assert_true(len(it_logs_keys) >= 38, f"it.json ha almeno 38 chiavi logs (trovate {len(it_logs_keys)})")
+        runner.assert_true(it_logs_keys == en_logs_keys, "Parità 100% tra chiavi 'logs' di it.json ed en.json")
+
+        # 2. Template index.html: presenza Card 7 e Modal di svuotamento
+        index_html = Path("app/templates/index.html").read_text(encoding="utf-8")
+        runner.assert_true("logs.title" in index_html, "Card 7 'logs.title' presente nel template index.html")
+        runner.assert_true("logConfig.enabled" in index_html, "Toggle logConfig.enabled presente in index.html")
+        runner.assert_true("setLogLevel(" in index_html, "Selettore setLogLevel presente in index.html")
+        runner.assert_true("setLogRetention(" in index_html, "Selettore setLogRetention presente in index.html")
+        runner.assert_true("downloadSystemLogs(" in index_html, "Azione downloadSystemLogs presente in index.html")
+        runner.assert_true("showClearLogsModal" in index_html, "Modal showClearLogsModal presente in index.html")
+        runner.assert_true("logs.viewer_title" in index_html, "Live Console 'logs.viewer_title' presente in index.html")
+
+        # 3. Frontend app.js: presenza reactive state e metodi
+        app_js = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("fetchLogConfig" in app_js, "Metodo fetchLogConfig presente in app.js")
+        runner.assert_true("fetchSystemLogs" in app_js, "Metodo fetchSystemLogs presente in app.js")
+        runner.assert_true("setLogLevel" in app_js, "Metodo setLogLevel presente in app.js")
+        runner.assert_true("setLogRetention" in app_js, "Metodo setLogRetention presente in app.js")
+        runner.assert_true("toggleLogEnabled" in app_js, "Metodo toggleLogEnabled presente in app.js")
+        runner.assert_true("confirmClearLogs" in app_js, "Metodo confirmClearLogs presente in app.js")
+        runner.assert_true("downloadSystemLogs" in app_js, "Metodo downloadSystemLogs presente in app.js")
+        runner.assert_true("openClearLogsModal" in app_js, "Metodo openClearLogsModal presente in app.js")
+        runner.assert_true("closeClearLogsModal" in app_js, "Metodo closeClearLogsModal presente in app.js")
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 4: TEST HOMELAB INTEGRATIONS (MQTT, PROMETHEUS, MULTI-CHANNEL DISPATCHER)
+        # -------------------------------------------------------------
+        print("\n🏠 [MODULO 4 - FASE 4] TEST HOMELAB INTEGRATIONS (MQTT, PROMETHEUS, NOTIFICATIONS)")
+
+        # 1. Test MQTT Service & Endpoints
+        from app.services.mqtt_client import mqtt_service
+        runner.assert_true(mqtt_service is not None, "Istanza mqtt_service creata con successo")
+        runner.assert_true(hasattr(mqtt_service, "start") and hasattr(mqtt_service, "stop"), "mqtt_service espone metodi start e stop")
+        runner.assert_true(hasattr(mqtt_service, "publish_discovery_configs"), "mqtt_service espone publish_discovery_configs")
+        runner.assert_true(hasattr(mqtt_service, "publish_telemetry"), "mqtt_service espone publish_telemetry")
+
+        # Home Assistant Discovery Payloads
+        payloads = mqtt_service._get_discovery_payloads()
+        runner.assert_true(len(payloads) >= 8, f"Home Assistant discovery payloads generati (trovati {len(payloads)})")
+        disc_topics = [p["topic"] for p in payloads]
+        runner.assert_true(any("wan_download" in t for t in disc_topics), "Discovery contiene sensore wan_download")
+        runner.assert_true(any("health_score" in t for t in disc_topics), "Discovery contiene sensore health_score")
+        runner.assert_true(any("clients_count" in t for t in disc_topics), "Discovery contiene sensore clients_count")
+        runner.assert_true(any("bufferbloat_grade" in t for t in disc_topics), "Discovery contiene sensore bufferbloat_grade")
+        runner.assert_true(any("binary_sensor" in t for t in disc_topics), "Discovery contiene binary_sensor per connettività")
+
+        # GET /api/automations/mqtt/config
+        res_mqtt_cfg = await client.get("/api/automations/mqtt/config", headers=adm_hdr)
+        runner.assert_true(res_mqtt_cfg.status_code == 200, "GET /api/automations/mqtt/config risponde HTTP 200")
+        mqtt_cfg_data = res_mqtt_cfg.json()
+        runner.assert_true("broker_host" in mqtt_cfg_data, "Configurazione MQTT include broker_host")
+        runner.assert_true("base_topic" in mqtt_cfg_data, "Configurazione MQTT include base_topic")
+        runner.assert_true("ha_discovery_prefix" in mqtt_cfg_data, "Configurazione MQTT include ha_discovery_prefix")
+
+        # POST /api/automations/mqtt/config
+        res_mqtt_up = await client.post(
+            "/api/automations/mqtt/config",
+            json={"base_topic": "eero_homelab_test", "publish_interval": 20},
+            headers=adm_hdr
+        )
+        runner.assert_true(res_mqtt_up.status_code == 200, "POST /api/automations/mqtt/config risponde HTTP 200")
+        runner.assert_true(res_mqtt_up.json().get("config", {}).get("base_topic") == "eero_homelab_test", "Aggiornato base_topic a 'eero_homelab_test'")
+
+        # Ripristino config MQTT standard
+        await client.post("/api/automations/mqtt/config", json={"base_topic": "eero_dashboard", "publish_interval": 30}, headers=adm_hdr)
+
+        # POST /api/automations/mqtt/test
+        res_mqtt_test = await client.post("/api/automations/mqtt/test", headers=adm_hdr)
+        runner.assert_true(res_mqtt_test.status_code == 200, "POST /api/automations/mqtt/test risponde HTTP 200")
+        runner.assert_true(res_mqtt_test.json().get("status") == "success", "Test di pubblicazione MQTT eseguito con successo")
+
+        # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
+        res_prom_root = await client.get("/metrics")
+        runner.assert_true(res_prom_root.status_code == 200, "GET /metrics root risponde HTTP 200")
+        runner.assert_true("text/plain" in res_prom_root.headers.get("content-type", ""), "GET /metrics restituisce Content-Type text/plain")
+        prom_text = res_prom_root.text
+        runner.assert_true("eero_info" in prom_text, "Metriche Prometheus includono eero_info")
+        runner.assert_true("eero_clients_total" in prom_text, "Metriche Prometheus includono eero_clients_total")
+        runner.assert_true("eero_clients_band_total" in prom_text, "Metriche Prometheus includono eero_clients_band_total")
+        runner.assert_true("eero_wan_download_mbps" in prom_text, "Metriche Prometheus includono eero_wan_download_mbps")
+        runner.assert_true("eero_wan_upload_mbps" in prom_text, "Metriche Prometheus includono eero_wan_upload_mbps")
+        runner.assert_true("eero_health_score" in prom_text, "Metriche Prometheus includono eero_health_score")
+        runner.assert_true("eero_mesh_nodes_online" in prom_text, "Metriche Prometheus includono eero_mesh_nodes_online")
+        runner.assert_true("eero_bufferbloat_grade_numeric" in prom_text, "Metriche Prometheus includono eero_bufferbloat_grade_numeric")
+        runner.assert_true("eero_bandwidth_rx_bytes_total" in prom_text, "Metriche Prometheus includono eero_bandwidth_rx_bytes_total")
+
+        res_prom_api = await client.get("/api/metrics/prometheus")
+        runner.assert_true(res_prom_api.status_code == 200, "GET /api/metrics/prometheus risponde HTTP 200")
+        runner.assert_true("eero_wan_download_mbps" in res_prom_api.text, "GET /api/metrics/prometheus contiene metriche corrette")
+
+        # Verifica Dashboard Grafana JSON
+        grafana_path = Path("deploy/grafana/eero_dashboard.json")
+        runner.assert_true(grafana_path.exists(), "File deploy/grafana/eero_dashboard.json presente")
+        grafana_json = json.loads(grafana_path.read_text(encoding="utf-8"))
+        runner.assert_true(len(grafana_json.get("panels", [])) >= 8, f"Dashboard Grafana ha almeno 8 pannelli (trovati {len(grafana_json.get('panels', []))})")
+        runner.assert_true(grafana_json.get("uid") == "eero-mesh-metrics", "Dashboard Grafana ha UID corretto")
+
+        # 3. Test Multi-Channel Dispatcher & Specialized Alerts
+        notif_cfg = await client.get("/api/automations/notifications", headers=adm_hdr)
+        runner.assert_true(notif_cfg.status_code == 200, "GET /api/automations/notifications risponde HTTP 200")
+        notif_body = notif_cfg.json()
+        runner.assert_true("discord_enabled" in notif_body, "Impostazioni notifiche contengono discord_enabled")
+        runner.assert_true("pushover_enabled" in notif_body, "Impostazioni notifiche contengono pushover_enabled")
+
+        # Test invio su tutti i 4 canali in Demo
+        res_test_notif = await client.post("/api/automations/notifications/test", headers=adm_hdr)
+        runner.assert_true(res_test_notif.status_code == 200, "POST /api/automations/notifications/test risponde HTTP 200")
+        test_res_json = res_test_notif.json()
+        runner.assert_true(test_res_json.get("telegram_sent") is True, "Canale Telegram testato con successo")
+        runner.assert_true(test_res_json.get("webhook_sent") is True, "Canale Webhook testato con successo")
+        runner.assert_true(test_res_json.get("discord_sent") is True, "Canale Discord testato con successo")
+        runner.assert_true(test_res_json.get("pushover_sent") is True, "Canale Pushover testato con successo")
+
+        # Test alert bufferbloat degradato
+        await notification_service.notify_bufferbloat_degradation({
+            "grade": "D",
+            "unloaded_latency_ms": 14.5,
+            "download_latency_ms": 125.0,
+            "upload_latency_ms": 95.0
+        })
+        
+        # Test alert qualità mesh debole
+        await notification_service.notify_mesh_quality_warning("Gateway Soggiorno", "Interferenza radar DFS rilevata su canale 100")
+
+        # Test alert sicurezza brute-force
+        await notification_service.notify_security_auth_alert("192.168.4.199", "admin", 5, "IP temporaneamente bloccato (15 min)")
+
+        # Test alert backup completato
+        await notification_service.notify_backup_status(True, "eero_backup_auto.zip", "3.4 MB archiviati su SQLite e system.log")
+
+        # Verifica registrazione alert su SQLite
+        recent_alerts = await db_service.get_alerts(limit=10)
+        recent_types = [a.get("type") for a in recent_alerts]
+        runner.assert_true("bufferbloat_warning" in recent_types, "Alert 'bufferbloat_warning' salvato su DB")
+        runner.assert_true("mesh_warning" in recent_types, "Alert 'mesh_warning' salvato su DB")
+        runner.assert_true("security_auth" in recent_types, "Alert 'security_auth' salvato su DB")
+        runner.assert_true("backup_status" in recent_types, "Alert 'backup_status' salvato su DB")
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 5: TEST TECHNICAL MANUAL & BILINGUAL CHANGELOG
+        # -------------------------------------------------------------
+        print("\n📚 [MODULO 4 - FASE 5] TEST TECHNICAL MANUAL & BILINGUAL CHANGELOG")
+
+        # 1. Test capitoli manuale utente (IT ed EN)
+        res_man_it = await client.get("/api/manual/sections?lang=it")
+        runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
+        man_it_data = res_man_it.json()
+        runner.assert_true(man_it_data.get("count") == 14, f"Manuale IT ha 14 capitoli (trovati {man_it_data.get('count')})")
+        it_sec_ids = [s["id"] for s in man_it_data.get("sections", [])]
+        runner.assert_true("system-logs" in it_sec_ids, "Capitolo 'system-logs' presente nel manuale IT")
+        runner.assert_true("homelab-mqtt" in it_sec_ids, "Capitolo 'homelab-mqtt' presente nel manuale IT")
+        runner.assert_true("prometheus-grafana" in it_sec_ids, "Capitolo 'prometheus-grafana' presente nel manuale IT")
+        runner.assert_true("multi-channel-alerts" in it_sec_ids, "Capitolo 'multi-channel-alerts' presente nel manuale IT")
+
+        res_man_en = await client.get("/api/manual/sections?lang=en")
+        runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
+        man_en_data = res_man_en.json()
+        runner.assert_true(man_en_data.get("count") == 14, f"Manuale EN ha 14 capitoli (trovati {man_en_data.get('count')})")
+        en_sec_ids = [s["id"] for s in man_en_data.get("sections", [])]
+        runner.assert_true(it_sec_ids == en_sec_ids, "Parità 100% degli ID capitoli tra manuale IT ed EN")
+
+        # 2. Test sommario changelog in-app (IT ed EN)
+        res_ch_it = await client.get("/api/manual/changelog?lang=it")
+        runner.assert_true(res_ch_it.status_code == 200, "GET /api/manual/changelog?lang=it risponde HTTP 200")
+        runner.assert_true("Modulo 4" in res_ch_it.json().get("content", ""), "Changelog IT contiene 'Modulo 4'")
+
+        res_ch_en = await client.get("/api/manual/changelog?lang=en")
+        runner.assert_true(res_ch_en.status_code == 200, "GET /api/manual/changelog?lang=en risponde HTTP 200")
+        runner.assert_true("Module 4" in res_ch_en.json().get("content", ""), "Changelog EN contiene 'Module 4'")
+
+        await mqtt_service.stop()
+        await log_service.stop()
 
         runner.print_summary()
 

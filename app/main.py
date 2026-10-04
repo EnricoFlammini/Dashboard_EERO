@@ -6,13 +6,13 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
 from app.routers import (
-    analytics, auth, automations, devices, local_auth, manual,
+    analytics, auth, automations, devices, local_auth, logs, manual,
     metrics, network, profiles, schedules, speedtest, system, users
 )
 from app.services.db import db_service
@@ -42,6 +42,10 @@ async def lifespan(app: FastAPI):
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
 
+    # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
+    from app.services.log_service import log_service
+    await log_service.start()
+
     # 2. Caricamento Sessione eero
     eero_client.load_session()
 
@@ -52,14 +56,20 @@ async def lifespan(app: FastAPI):
     from app.services.retention_worker import retention_worker
     await retention_worker.start()
 
+    # 5. Avvio Servizio MQTT & Home Assistant Discovery (v1.6.0 Module 4)
+    from app.services.mqtt_client import mqtt_service
+    await mqtt_service.start()
+
     yield
 
     # Chiusura pulita dei processi in background
     logger.info("Chiusura in corso dei servizi in background...")
+    await mqtt_service.stop()
     await retention_worker.stop()
     await background_poller.stop()
     await eero_client.close()
     disable_dns_cache()
+    await log_service.stop()
     logger.info("Applicazione terminata correttamente.")
 
 
@@ -143,6 +153,7 @@ app.include_router(automations.router)
 app.include_router(schedules.router)
 app.include_router(manual.router)
 app.include_router(system.router)
+app.include_router(logs.router)
 app.include_router(analytics.router)
 
 
@@ -165,6 +176,14 @@ async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
     """Alias diretto per l'interrogazione delle anomalie IoT notturne."""
     from app.routers.network import get_iot_night_anomalies
     return await get_iot_night_anomalies(limit=limit, days=days)
+
+
+@app.get("/metrics")
+async def prometheus_metrics_root():
+    """Endpoint standard Prometheus / OpenMetrics per lo scraping dei dati di telemetria."""
+    from app.routers.metrics import generate_prometheus_metrics
+    content = await generate_prometheus_metrics()
+    return Response(content=content, media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.get("/settings/updates", response_class=HTMLResponse)

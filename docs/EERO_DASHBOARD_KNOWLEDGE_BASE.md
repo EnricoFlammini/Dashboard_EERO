@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.5.0)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.0)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.5.0**  
+> *Versione di riferimento del software:* **v1.6.0**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -35,6 +35,10 @@
    * 4.18 [Community Hall of Fame & Crediti Open Source](#418-community-hall-of-fame--crediti-open-source)
    * 4.19 [Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)](#419-hardening-di-sicurezza--vulnerability-remediation-4-ghsa-advisories)
    * 4.20 [Visibilità & Ricerca Indirizzi IPv6 Dispositivi (Issue #43)](#420-visibilità--ricerca-indirizzi-ipv6-dispositivi-issue-43)
+   * 4.21 [System Monitoring & Live Log Viewer Console (v1.6.0)](#421-system-monitoring--live-log-viewer-console-v160)
+   * 4.22 [Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0)](#422-homelab--home-automation-mqtt--home-assistant-auto-discovery-v160)
+   * 4.23 [Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)](#423-metriche-native-prometheus--dashboard-grafana-ufficiale-v160)
+   * 4.24 [Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)](#424-multi-channel-notification-dispatcher--allarmi-specializzati-v160)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -273,6 +277,50 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
 * **Badge Discreto & Tooltip:** Badge visivo compatto `IPv6` nella tabella client con tooltip al passaggio del mouse contenente l'elenco completo degli indirizzi.
 * **Box Dedicato con Copia Rapida:** Scheda Generale del modale dispositivo con conteggio indirizzi, categorizzazione visiva (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo (`copyToClipboard`).
 
+### 4.21 System Monitoring & Live Log Viewer Console (v1.6.0)
+* **Buffer Circolare RAM a Zero I/O:** `LogService` mantiene in memoria un ring buffer (`collections.deque`) da 1.000 a 10.000 record con lock asincrono thread-safe per servire le interrogazioni della UI in **0 ms** senza impattare il disco.
+* **Persistenza Selettiva SQLite:** Salvataggio asincrono batch dei record di log nella tabella `system_logs` di `metrics.db`.
+* **Criteri di Retention Integrati:** Configurazione flessibile per giorni (`LOG_RETENTION_DAYS`, default: 7 giorni) o conteggio massimo righe (`LOG_MAX_ENTRIES`, default: 5.000 righe). Il worker periodico `RetentionWorker` esegue automaticamente la pulizia a ogni ciclo senza bloccare le altre operazioni del database.
+* **Switch Dinamico a Caldo del Log Level:** Possibilità di modificare al volo il livello di cattura (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) dall'interfaccia o via REST (`POST /api/system/logs/config`) senza riavviare il container Docker.
+* **Console UI Interattiva (Card 7 in Controlli):**
+  * Console in stile terminale con font monospace, timestamp precisi e color-coding semantico (blu per INFO, ambra per WARNING, rosso per ERROR, viola per DEBUG).
+  * Auto-refresh a frequenza personalizzabile (2s, 5s, 10s, disattivato) con indicatore di stato e contatore record.
+  * Filtro per livello minimo e barra di ricerca full-text istantanea.
+  * Download del file di log grezzo formattato RFC-5424 (`/api/system/logs/download`) con timestamp nel nome file.
+  * Modale di sicurezza a 2 passaggi con conferma per lo svuotamento chirurgico dei log memorizzati (`DELETE /api/system/logs/clear`).
+
+### 4.22 Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0)
+* **Client MQTT Asincrono Resiliente (`aiomqtt` / `paho-mqtt`):** Connessione verso qualsiasi broker locale o cloud (es. Mosquitto, EMQX) con riconnessione automatica con backoff esponenziale in caso di caduta temporanea del broker.
+* **Home Assistant MQTT Auto-Discovery:** Pubblicazione automatica dei payload JSON di autoconfigurazione sul prefisso standard (default: `homeassistant/sensor/...`) all'avvio e ad ogni cambio rete.
+* **Entità Registrate su Home Assistant:**
+  * Sensori di stato WAN: Download Speed, Upload Speed, Ping Gateway, IP Pubblico, Uptime rete.
+  * Sensori per Nodi Mesh eero: Connettività nodo, backhaul (cablato/wireless), IP nodo, modello hardware e versione firmware.
+  * Sensori aggregati: Numero client online, dispositivi per frequenza (2.4/5/6 GHz, Ethernet), Health Score globale di rete.
+* **Telemetria Periodica & Event-Driven:** Invio telemetria a ogni ciclo del poller (`POLL_INTERVAL`), sincronizzato con gli stati di standby e riavvio.
+
+### 4.23 Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)
+* **Endpoint Root & API Prometheus:** Esposizione del formato ufficiale OpenMetrics su `GET /metrics` e `GET /api/metrics/prometheus` con `Content-Type: text/plain; version=0.0.4; charset=utf-8`.
+* **Metriche Esportate (Gauges e Counters):**
+  * `eero_network_health_score`: Punteggio di salute complessivo calcolato a 4 pilastri.
+  * `eero_wan_status` & `eero_wan_ip_info`: Stato di connessione Internet e metadati ISP.
+  * `eero_speedtest_download_mbps`, `eero_speedtest_upload_mbps`, `eero_speedtest_ping_ms`: Ultimi valori certificati dal gateway hardware.
+  * `eero_devices_total`, `eero_devices_online`, `eero_devices_wired`, `eero_devices_guest`: Censimento dispositivi per tipologia.
+  * `eero_devices_by_band{band="2.4ghz|5ghz|6ghz"}`: Client distribuiti sulle singole frequenze radio.
+  * `eero_mesh_node_status{serial="...", model="..."}`: Stato operativo di ciascun access point mesh.
+  * `eero_device_bandwidth_mbps{mac="...", name="..."}`: Throughput istantaneo dei singoli client monitorati.
+* **Dashboard Grafana Pre-Configurata (`deploy/grafana/eero_dashboard.json`):**
+  * 13 pannelli pronti all'uso divisi in sezioni logiche: Stato WAN & SLA Gateway, Mesh Topology & Node Health, Client Inventory & Band Distribution, Top Bandwidth Hogs & Live Gauges.
+
+### 4.24 Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)
+* **Nuovi Canali di Notifica Integrati:**
+  * **Discord Webhooks:** Notifiche ricche con formattazione Embed, avatar del bot, timestamp ISO e bordi colorati in base alla gravità dell'evento (verde per ripristini, arancione per warning, rosso per emergenze).
+  * **Pushover API:** Notifiche push ad alta priorità verso smartphone, smartwatch e desktop, con supporto per parametri `priority` e suoni di avviso personalizzati.
+* **Nuovi Allarmi Intelligenti Specializzati:**
+  1. **Low Wi-Fi Signal Threshold:** Avviso immediato quando un dispositivo critico registra una degradazione prolungata dell'RSSI al di sotto della soglia impostata (es. < -80 dBm).
+  2. **ISP Speedtest Degradation Alert:** Notifica automatica se la velocità WAN scende sotto una soglia critica definita rispetto al contratto dell'utente.
+  3. **IP Conflict / Duplicate Lease Warning:** Rilevamento preventivo di conflitti di indirizzi IP statici o leasing sovrapposti.
+  4. **Mesh Node Offline Alert:** Notifica tempestiva in caso di disconnessione o caduta di un nodo mesh secondario con identificazione del seriale e della posizione.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -338,14 +386,30 @@ Campionamento del volume dati e throughput per singolo client.
 * `idx_device_usage_net_time` (`network_id`, `timestamp`)
 * `idx_device_usage_time` (`timestamp`)
 
+#### 6. `system_logs` (v1.6.0)
+Persistenza dei log applicativi e diagnostici del sistema con supporto a retention per data e numero massimo di record.
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+* `level` (TEXT NOT NULL) — `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+* `logger_name` (TEXT NOT NULL) — modulo o router generatore (es. `app.services.poller`)
+* `message` (TEXT NOT NULL) — corpo del messaggio di log
+* `context_json` (TEXT) — metadati opzionali serializzati in JSON
+
+*Indici:*
+* `idx_system_logs_timestamp` (`timestamp`)
+* `idx_system_logs_level` (`level`)
+* `idx_system_logs_logger` (`logger_name`)
+
 ---
 
 ## 6. Catalogo Completo API REST (Endpoint Reference)
 
-Tutti gli endpoint rispondono in formato JSON con intestazione `application/json`.
+Tutti gli endpoint rispondono in formato JSON con intestazione `application/json` (eccetto `/metrics` che risponde in formato OpenMetrics testo standard `text/plain`).
 
 | Metodo | Endpoint | Descrizione | Parametri / Payload |
 | :--- | :--- | :--- | :--- |
+| **GET** | `/metrics` | Metriche native in formato OpenMetrics per scraping Prometheus (v1.6.0) | Nessuno |
+| **GET** | `/api/metrics/prometheus` | Alias endpoint Prometheus per integrazione Homelab (v1.6.0) | Nessuno |
 | **GET** | `/api/auth/status` | Stato autenticazione e modalità Demo/Live | Nessuno |
 | **POST** | `/api/auth/login` | Avvia procedura 2FA eero inviando codice OTP | `{"identifier": "+39333..."}` |
 | **POST** | `/api/auth/verify` | Verifica codice OTP e salva sessione permanente | `{"code": "123456", "user_token": "..."}` |
@@ -377,19 +441,24 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **POST** | `/api/automations/gaming/toggle` | Attiva o disattiva la Gaming Mode | `{"enabled": true/false}` |
 | **GET** | `/api/automations/guest` | Dati e stato rete Wi-Fi Ospiti e QR Code | Nessuno |
 | **POST** | `/api/automations/guest` | Aggiorna configurazione rete ospiti (SSID, password, abilitazione) | `{"enabled": true, "name": "...", "password": "..."}` |
-| **POST** | `/api/automations/notifications/test` | Invia notifica di test su Telegram o Webhook | Nessuno |
+| **POST** | `/api/automations/notifications/test` | Invia notifica di test su Telegram, Webhook, Discord o Pushover (v1.6.0) | `{"channel": "telegram"\|"webhook"\|"discord"\|"pushover"}` |
 | **GET** | `/api/metrics/speedtest` | Storico misurazioni speed test e statistiche aggregate | Nessuno |
 | **POST** | `/api/metrics/speedtest/run` | Avvia un nuovo test di velocità sul gateway eero | Nessuno |
 | **GET** | `/api/metrics/signal/overview` | Panoramica potenza segnale Wi-Fi e Watchlist deboli | Nessuno |
 | **GET** | `/api/metrics/signal/history` | Storico temporale potenza RSSI per un client | `?mac_address=...&hours=24` |
 | **GET** | `/api/system/update/check` | Verifica disponibilità aggiornamenti Docker/GitHub | `?force=true` |
 | **POST** | `/api/system/update/trigger` | Avvia aggiornamento automatico 1-clic del container | Nessuno |
+| **GET** | `/api/system/logs/config` | Restituisce livello logging attivo e parametri retention (v1.6.0) | Nessuno |
+| **POST** | `/api/system/logs/config` | Aggiorna a caldo livello di log e retention (v1.6.0) | `{"level": "INFO", "retention_days": 7, "max_entries": 5000}` |
+| **GET** | `/api/system/logs` | Interroga log di sistema filtrati (RAM / SQLite) (v1.6.0) | `?level=INFO&search=...&limit=100&offset=0&source=all` |
+| **DELETE** | `/api/system/logs/clear` | Svuota chirurgicamente i log in RAM e su database (v1.6.0) | Nessuno |
+| **GET** | `/api/system/logs/download` | Esporta file .log grezzo testuale (RFC-5424) (v1.6.0) | `?level=DEBUG&limit=5000` |
 | **GET** | `/api/analytics/distribution` | Distribuzione frequenze Wi-Fi, carico nodi mesh, categorie e vendor OUI con campo `devices: [...]` per ciascuna categoria (v1.5.0) | Nessuno |
 | **GET** | `/api/analytics/isp-sla` | Trend temporale e indice SLA affidabilità provider internet (v1.5.0) | `?days=7|30` |
 | **GET** | `/api/analytics/export/{data_type}` | Esportazione dataset (devices, speedtest, signal, usage) in formato CSV o JSON (v1.5.0) | `?format=csv|json&limit=500` |
 | **GET** | `/api/manual/chapters` | Elenco capitoli e argomenti del manuale integrato | `?lang=it|en` |
 | **GET** | `/api/manual/chapter/{id}` | Contenuto HTML formattato di un capitolo del manuale | `?lang=it|en` |
-| **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.5.0) | `?lang=it|en` |
+| **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.6.0) | `?lang=it|en` |
 | **GET** | `/api/system/language` | Restituisce la preferenza di lingua attiva e persistita su SQLite (v1.5.0) | Nessuno |
 | **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "en"\|"it"}` |
 
@@ -406,6 +475,19 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `DEMO_MODE` | `false` | Se `true`, forza l'avvio in modalità simulazione |
 | `EERO_USER_TOKEN` | `""` | Token permanente per bypassare il login interattivo 2FA |
 | `EERO_NETWORK_ID` | `""` | ID opzionale della rete preferita da avviare come attiva |
+| `LOG_LEVEL` | `"INFO"` | Livello minimo di logging (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) (v1.6.0) |
+| `LOG_RETENTION_DAYS` | `7` | Giorni di conservazione dei log applicativi nel database SQLite (v1.6.0) |
+| `LOG_MAX_ENTRIES` | `5000` | Numero massimo di righe conservate nella tabella `system_logs` (v1.6.0) |
+| `MQTT_ENABLED` | `false` | Se `true`, avvia il client MQTT e l'auto-discovery per Home Assistant (v1.6.0) |
+| `MQTT_BROKER` | `""` | Hostname o IP del broker MQTT (es. `192.168.4.10`) (v1.6.0) |
+| `MQTT_PORT` | `1883` | Porta TCP del broker MQTT (v1.6.0) |
+| `MQTT_USERNAME` | `""` | Username opzionale per autenticazione broker MQTT (v1.6.0) |
+| `MQTT_PASSWORD` | `""` | Password opzionale per autenticazione broker MQTT (v1.6.0) |
+| `MQTT_TOPIC_PREFIX` | `"eero"` | Prefisso dei topic MQTT per la pubblicazione telemetria (v1.6.0) |
+| `MQTT_DISCOVERY_PREFIX` | `"homeassistant"` | Prefisso per Home Assistant MQTT Discovery (v1.6.0) |
+| `DISCORD_WEBHOOK_URL` | `""` | URL webhook Discord per notifiche ricche con messaggi Embed (v1.6.0) |
+| `PUSHOVER_USER_KEY` | `""` | User Key dell'account Pushover per notifiche push mobili (v1.6.0) |
+| `PUSHOVER_API_TOKEN` | `""` | API Application Token per l'integrazione Pushover (v1.6.0) |
 | `TELEGRAM_BOT_TOKEN` | `""` | Token API Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | `""` | ID numerico chat/canale Telegram destinatario delle notifiche |
 | `WEBHOOK_URL` | `""` | Endpoint HTTP POST per eventi JSON verso Home Assistant / script |

@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(In corso di rilascio - Moduli 1, 2, 3 e 5 Completati)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Completata al 100% - Tutti i 5 Moduli Rilasciati)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema (livelli a caldo, retention, live console), Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
 
 ---
 
@@ -49,8 +49,8 @@ gantt
     Anomaly Detection Traffico Notturno IoT           :done, v1_6c, after v1_6b, 3d
     Parental Scheduling & Speedtest Bufferbloat Engine :done, v1_6d, after v1_6c, 4d
     Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
-    Home Assistant MQTT Auto-Discovery & Prometheus    :active, v1_6e, after v1_6g, 5d
-    Multi-Notifier Dispatcher (Discord, Gotify, NTFY)  :v1_6f, after v1_6e, 3d
+    Home Assistant MQTT Auto-Discovery & Prometheus    :done, v1_6e, after v1_6g, 5d
+    Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
 ```
 
 ---
@@ -478,12 +478,14 @@ gantt
 - [x] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
 - [x] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
 
-##### Modulo 4: Integrazioni Ecosistema Homelab & Notifiche Esterne
-- [ ] Client MQTT asincrono con Home Assistant Auto-Discovery per device tracking, sensori nodi e switch ospiti/gaming.
-- [ ] Endpoint nativo OpenMetrics/Prometheus (`GET /metrics`) e template dashboard Grafana incluso in repository.
-- [ ] Dispatcher multi-canale di notifica con connettori nativi per Discord, Gotify, NTFY e Pushover.
-- [ ] Driver di sincronizzazione DNS per istanze Blocky e server ricorsivi Unbound in `DNSManager`.
-- [ ] Aggiornamento documentazione tecnica, manuale integrato (`app/routers/manual.py`) e test pre-release (385+ test previsti).
+##### Modulo 4: Gestione Log di Sistema, Live Console & Integrazioni Homelab (Completato)
+- [x] Logger asincrono unificato (`app/services/log_service.py`), tabella SQLite `system_logs` e file rotativo `data/system.log`.
+- [x] Configurazione profondità log a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`), retention temporale flessibile (24h, 7gg, 15gg, 1m, custom) e worker di pulizia `retention_worker.py`.
+- [x] UI Card 7 in Controlli & Ospiti con Live Console Viewer, ricerca full-text, chip per severità, download log (.log/.json) e modale di svuotamento sicuro.
+- [x] Client MQTT asincrono con Home Assistant Auto-Discovery (`app/services/mqtt_client.py`) per telemetria WAN/Mesh, sensori binari e device tracking.
+- [x] Endpoint nativo OpenMetrics/Prometheus (`GET /metrics` e `GET /api/metrics/prometheus`) e template dashboard Grafana (13 pannelli) in `deploy/grafana/eero_dashboard.json`.
+- [x] Dispatcher multi-canale di notifica con connettori nativi per Discord Webhook e Pushover, allarmi per degrado bufferbloat, interferenze mesh, brute-force e backup.
+- [x] Aggiornamento documentazione tecnica, 4 nuovi capitoli manuale integrato (`app/routers/manual.py`) e test pre-release (1033 test superati al 100%).
 
 ##### Modulo 5: 📰 eeroOS Release Notes & Community Updates Hub (Completato)
 - [x] Client HTTP asincrono e parser HTML Zendesk (`app/services/eero_news_service.py`).

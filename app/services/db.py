@@ -330,6 +330,20 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_hourly_mac_time ON device_signal_hourly(mac_address, hour_timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_hourly_time ON device_signal_hourly(hour_timestamp);")
 
+            # 18. System Logs & Diagnostics (v1.6.0 Module 4)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS system_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    level TEXT NOT NULL,
+                    logger_name TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    details_json TEXT
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_time ON system_logs(timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level);")
+
             # Bootstrap utente admin predefinito se la tabella local_users è vuota
             async with db.execute("SELECT COUNT(*) FROM local_users;") as cur_u:
                 row_u = await cur_u.fetchone()
@@ -400,6 +414,9 @@ class DBService:
                 ("history_retention_days", str(settings.history_retention_days)),
                 ("poll_interval", str(settings.poll_interval)),
                 ("speedtest_schedule_hours", str(settings.speedtest_interval_hours)),
+                ("log_enabled", "true"),
+                ("log_level", "INFO"),
+                ("log_retention_days", "7"),
             ]
             for key, val in default_settings:
                 await db.execute(
@@ -1847,7 +1864,8 @@ class DBService:
         async with self.get_connection() as db:
             for tbl in ["device_usage_history", "device_usage_hourly", "device_usage_daily",
                         "device_signal_history", "device_signal_hourly", "speedtests",
-                        "alert_history", "local_users", "device_schedules", "iot_traffic_anomalies"]:
+                        "alert_history", "local_users", "device_schedules", "iot_traffic_anomalies",
+                        "system_logs"]:
                 try:
                     async with db.execute(f"SELECT COUNT(*) FROM {tbl};") as cur:
                         row = await cur.fetchone()
@@ -2652,6 +2670,248 @@ class DBService:
             "restored_elements": restored_stats,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+    # ----------------- SYSTEM LOGS & DIAGNOSTICS (v1.6.0 Module 4) -----------------
+    async def get_logging_config(self) -> Dict[str, Any]:
+        """Recupera le impostazioni correnti di diagnostica e log di sistema."""
+        enabled_val = await self.get_setting("log_enabled", "true")
+        level_val = await self.get_setting("log_level", "INFO")
+        retention_val = await self.get_setting("log_retention_days", "7")
+
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        norm_level = level_val.upper().strip() if level_val and level_val.upper().strip() in valid_levels else "INFO"
+
+        try:
+            retention_int = int(retention_val)
+        except (ValueError, TypeError):
+            retention_int = 7
+
+        return {
+            "enabled": str(enabled_val).lower() in ("true", "1", "yes"),
+            "level": norm_level,
+            "retention_days": retention_int,
+        }
+
+    async def set_logging_config(
+        self,
+        enabled: Optional[bool] = None,
+        level: Optional[str] = None,
+        retention_days: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Aggiorna le impostazioni di configurazione log in app_settings."""
+        if enabled is not None:
+            await self.set_setting("log_enabled", "true" if enabled else "false")
+        if level is not None:
+            valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+            clean_level = level.upper().strip()
+            if clean_level in valid_levels:
+                await self.set_setting("log_level", clean_level)
+        if retention_days is not None:
+            await self.set_setting("log_retention_days", str(max(0, int(retention_days))))
+
+        return await self.get_logging_config()
+
+    async def insert_system_log(
+        self,
+        level: str,
+        logger_name: str,
+        message: str,
+        details_json: Optional[str] = None,
+        timestamp: Optional[str] = None,
+    ) -> int:
+        """Inserisce un singolo evento di log nella tabella system_logs."""
+        ts = timestamp or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                INSERT INTO system_logs (timestamp, level, logger_name, message, details_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (ts, level.upper(), logger_name, message, details_json),
+            )
+            await db.commit()
+            return cur.lastrowid
+
+    async def insert_system_logs_batch(self, records: List[Dict[str, Any]]) -> int:
+        """Inserimento atomico e massivo di record di log con executemany."""
+        if not records:
+            return 0
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        params = [
+            (
+                r.get("timestamp") or now_str,
+                str(r.get("level") or "INFO").upper(),
+                str(r.get("logger_name") or "root"),
+                str(r.get("message") or ""),
+                r.get("details_json"),
+            )
+            for r in records
+        ]
+        async with self.get_connection() as db:
+            cur = await db.executemany(
+                """
+                INSERT INTO system_logs (timestamp, level, logger_name, message, details_json)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                params,
+            )
+            await db.commit()
+            return cur.rowcount
+
+    async def get_system_logs(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        level: Optional[str] = None,
+        search: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Recupera i record di log filtrati con ordinamento decrescente (più recenti prima)."""
+        conditions = []
+        params = []
+
+        if level and level.strip().upper() != "ALL":
+            conditions.append("level = ?")
+            params.append(level.strip().upper())
+
+        if search and search.strip():
+            conditions.append("(message LIKE ? OR logger_name LIKE ? OR details_json LIKE ?)")
+            s_param = f"%{search.strip()}%"
+            params.extend([s_param, s_param, s_param])
+
+        if start_time and start_time.strip():
+            conditions.append("timestamp >= ?")
+            params.append(start_time.strip())
+
+        if end_time and end_time.strip():
+            conditions.append("timestamp <= ?")
+            params.append(end_time.strip())
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        query = f"""
+            SELECT id, timestamp, level, logger_name, message, details_json
+            FROM system_logs
+            {where_clause}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+        """
+        params.extend([max(1, min(limit, 2000)), max(0, offset)])
+
+        async with self.get_connection() as db:
+            cur = await db.execute(query, tuple(params))
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def get_system_logs_count(
+        self,
+        level: Optional[str] = None,
+        search: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+    ) -> int:
+        """Conteggia il numero totale di log che corrispondono ai filtri forniti."""
+        conditions = []
+        params = []
+
+        if level and level.strip().upper() != "ALL":
+            conditions.append("level = ?")
+            params.append(level.strip().upper())
+
+        if search and search.strip():
+            conditions.append("(message LIKE ? OR logger_name LIKE ? OR details_json LIKE ?)")
+            s_param = f"%{search.strip()}%"
+            params.extend([s_param, s_param, s_param])
+
+        if start_time and start_time.strip():
+            conditions.append("timestamp >= ?")
+            params.append(start_time.strip())
+
+        if end_time and end_time.strip():
+            conditions.append("timestamp <= ?")
+            params.append(end_time.strip())
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        query = f"SELECT COUNT(*) FROM system_logs {where_clause}"
+
+        async with self.get_connection() as db:
+            cur = await db.execute(query, tuple(params))
+            row = await cur.fetchone()
+            return row[0] if row else 0
+
+    async def get_system_logs_stats(self) -> Dict[str, Any]:
+        """Restituisce le metriche statistiche aggregate sui log archiviati su SQLite e file."""
+        stats = {
+            "total_count": 0,
+            "level_counts": {"DEBUG": 0, "INFO": 0, "WARNING": 0, "ERROR": 0, "CRITICAL": 0},
+            "oldest_timestamp": None,
+            "newest_timestamp": None,
+            "file_size_bytes": 0,
+            "file_size_mb": 0.0,
+        }
+        async with self.get_connection() as db:
+            cur = await db.execute("SELECT level, COUNT(*) as c FROM system_logs GROUP BY level")
+            rows = await cur.fetchall()
+            for r in rows:
+                lvl = r["level"].upper()
+                stats["level_counts"][lvl] = r["c"]
+                stats["total_count"] += r["c"]
+
+            cur_t = await db.execute("SELECT MIN(timestamp) as min_ts, MAX(timestamp) as max_ts FROM system_logs")
+            row_t = await cur_t.fetchone()
+            if row_t:
+                stats["oldest_timestamp"] = row_t["min_ts"]
+                stats["newest_timestamp"] = row_t["max_ts"]
+
+        try:
+            log_p = settings.log_file_path
+            if log_p.exists():
+                sz = log_p.stat().st_size
+                stats["file_size_bytes"] = sz
+                stats["file_size_mb"] = round(sz / (1024 * 1024), 2)
+        except Exception:
+            pass
+
+        return stats
+
+    async def clear_system_logs(self) -> int:
+        """Svuota la tabella system_logs e restituisce il numero di righe cancellate."""
+        async with self.get_connection() as db:
+            cur = await db.execute("SELECT COUNT(*) FROM system_logs")
+            row = await cur.fetchone()
+            cnt = row[0] if row else 0
+            await db.execute("DELETE FROM system_logs")
+            await db.commit()
+            return cnt
+
+    async def purge_expired_system_logs(self, retention_days: Optional[int] = None) -> int:
+        """
+        Elimina i log obsoleti in base al periodo di retention (in giorni).
+        Se retention_days <= 0 o impostato a 0, la conservazione è illimitata e non viene eliminato nulla.
+        """
+        if retention_days is None:
+            cfg = await self.get_logging_config()
+            retention_days = cfg.get("retention_days", 7)
+
+        if retention_days <= 0:
+            return 0
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                "DELETE FROM system_logs WHERE timestamp < ?",
+                (cutoff_str,),
+            )
+            deleted_count = cur.rowcount if cur.rowcount is not None else 0
+            await db.commit()
+
+        if deleted_count > 0:
+            logger.info(
+                f"Purged {deleted_count} expired system logs older than {cutoff_str} ({retention_days} days retention)."
+            )
+        return deleted_count
 
 
 # Istanza singleton DB

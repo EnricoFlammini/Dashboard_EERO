@@ -59,7 +59,8 @@ class RetentionWorker:
                     f"RetentionWorker: Ciclo completato con successo. "
                     f"Ore aggregate: {summary.get('hours_aggregated', 0)}, "
                     f"Giorni aggregati: {summary.get('days_aggregated', 0)}, "
-                    f"Grezzi eliminati: {summary.get('raw_purged', {})}"
+                    f"Grezzi eliminati: {summary.get('raw_purged', {})}, "
+                    f"Log eliminati: {summary.get('logs_purged', 0)}"
                 )
             except asyncio.CancelledError:
                 break
@@ -78,7 +79,7 @@ class RetentionWorker:
         Esegue un ciclo completo e atomico di tiering:
         1. Trova le ore concluse non ancora aggregate e genera i record hourly.
         2. Trova i giorni conclusi e genera i record daily.
-        3. Elimina i campioni scaduti (Tier 1 > 48h, Tier 2 > 30d, Tier 3 > 365d).
+        3. Elimina i campioni scaduti (Tier 1 > 48h, Tier 2 > 30d, Tier 3 > 365d) e log di sistema.
         4. Esegue PRAGMA optimize sul database SQLite (e VACUUM se richiesto).
         """
         async with self._lock:
@@ -164,10 +165,11 @@ class RetentionWorker:
                 except Exception as ex:
                     logger.warning(f"RetentionWorker: Errore aggregazione giorno {d_str}: {ex}")
 
-            # 3. Purga dei dati scaduti per ciascun Tier
+            # 3. Purga dei dati scaduti per ciascun Tier e log di sistema
             raw_purged = await db_service.purge_expired_raw_samples()
             hourly_purged = await db_service.purge_expired_hourly_samples()
             daily_purged = await db_service.purge_expired_daily_samples()
+            logs_purged = await db_service.purge_expired_system_logs()
 
             # 4. Ottimizzazione SQLite WAL & statistiche
             await db_service.run_database_maintenance(vacuum=vacuum)
@@ -183,6 +185,7 @@ class RetentionWorker:
                 "raw_purged": raw_purged,
                 "hourly_purged": hourly_purged,
                 "daily_purged": daily_purged,
+                "logs_purged": logs_purged,
                 "db_stats": db_stats
             }
             return self._last_summary

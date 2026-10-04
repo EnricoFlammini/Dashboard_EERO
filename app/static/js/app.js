@@ -571,6 +571,8 @@ document.addEventListener('alpine:init', () => {
           this.fetchAlerts();
           this.fetchSchedules();
           this.fetchGuestNetwork();
+          this.fetchLogConfig();
+          this.fetchSystemLogs();
         } else if (tab === 'settings-users') {
           this.loadPermissionsCatalog();
           this.loadLocalUsers();
@@ -587,6 +589,9 @@ document.addEventListener('alpine:init', () => {
         for (const filter of ['deviceSearchQuery', 'selectedBandFilter', 'selectedNodeFilter', 'selectedCategoryFilter', 'selectedProfileFilter', 'selectedIpTypeFilter', 'showConnectedOnly']) {
           this.$watch(filter, () => this.syncDeviceFiltersToUrl());
         }
+        this.$watch('logLevelFilter', () => this.fetchSystemLogs());
+        this.$watch('logSearchQuery', () => this.fetchSystemLogs());
+        this.$watch('logAutoRefresh', () => this.toggleLogAutoRefresh());
       }
 
       if (typeof window !== 'undefined' && window.addEventListener) {
@@ -5340,7 +5345,243 @@ document.addEventListener('alpine:init', () => {
         return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
       }
 
-      return { grade: 'n/a', label: 'Non Disponibile', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30' };
+    // =========================================================================
+    // MODULE 4: SYSTEM LOGGING & DIAGNOSTICS (v1.6.0)
+    // =========================================================================
+    logConfig: {
+      enabled: true,
+      level: 'INFO',
+      retention_days: 7
+    },
+    logStats: {
+      total_count: 0,
+      level_counts: { DEBUG: 0, INFO: 0, WARNING: 0, ERROR: 0, CRITICAL: 0 },
+      oldest_timestamp: null,
+      newest_timestamp: null,
+      file_size_bytes: 0,
+      file_size_mb: 0.0
+    },
+    logsList: [],
+    logTotalCount: 0,
+    logLoading: false,
+    logLevelFilter: 'ALL',
+    logSearchQuery: '',
+    logAutoRefresh: false,
+    logAutoRefreshTimer: null,
+    customRetentionInput: 7,
+    showCustomRetention: false,
+    showClearLogsModal: false,
+    isClearingLogs: false,
+    expandedLogDetails: {},
+
+    async fetchLogConfig() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig = {
+            enabled: Boolean(data.enabled),
+            level: data.level || 'INFO',
+            retention_days: Number(data.retention_days) || 7
+          };
+          this.logStats = data.stats || this.logStats;
+          this.showCustomRetention = ![1, 7, 15, 30].includes(this.logConfig.retention_days);
+          if (this.showCustomRetention) {
+            this.customRetentionInput = this.logConfig.retention_days;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch log config:", e);
+      }
+    },
+
+    async fetchSystemLogs() {
+      this.logLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        let url = `/api/system/logs?limit=150&offset=0`;
+        if (this.logLevelFilter && this.logLevelFilter !== 'ALL') {
+          url += `&level=${encodeURIComponent(this.logLevelFilter)}`;
+        }
+        if (this.logSearchQuery && this.logSearchQuery.trim()) {
+          url += `&q=${encodeURIComponent(this.logSearchQuery.trim())}`;
+        }
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.logsList = data.logs || [];
+          this.logTotalCount = data.total || this.logsList.length;
+        }
+      } catch (e) {
+        console.error("Failed to fetch system logs:", e);
+      } finally {
+        this.logLoading = false;
+      }
+    },
+
+    async toggleLogEnabled() {
+      if (!this.can('action_manage_rules')) return;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ enabled: this.logConfig.enabled })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.enabled = data.enabled;
+          this.showToast(this.t('logs.saved_success') || 'Configurazione log aggiornata.', 'success');
+        } else {
+          this.logConfig.enabled = !this.logConfig.enabled;
+          this.showToast("Errore aggiornamento stato log.", 'error');
+        }
+      } catch (e) {
+        this.logConfig.enabled = !this.logConfig.enabled;
+        console.error("Failed to toggle log enabled:", e);
+      }
+    },
+
+    async setLogLevel(lvl) {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ level: lvl })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.level = data.level;
+          this.showToast(this.t('logs.saved_success') || 'Livello log aggiornato.', 'success');
+          await this.fetchSystemLogs();
+        }
+      } catch (e) {
+        console.error("Failed to set log level:", e);
+      }
+    },
+
+    async setLogRetention(days) {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      if (days === 'custom') {
+        this.showCustomRetention = true;
+        return;
+      }
+      this.showCustomRetention = false;
+      const d = parseInt(days, 10);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ retention_days: d })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.retention_days = data.retention_days;
+          this.showToast(this.t('logs.saved_success') || 'Periodo di retention aggiornato.', 'success');
+        }
+      } catch (e) {
+        console.error("Failed to set log retention:", e);
+      }
+    },
+
+    async applyCustomRetention() {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      const d = Math.max(0, parseInt(this.customRetentionInput, 10) || 0);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ retention_days: d })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.retention_days = data.retention_days;
+          this.showToast(this.t('logs.saved_success') || 'Periodo di retention personalizzato applicato.', 'success');
+        }
+      } catch (e) {
+        console.error("Failed to apply custom retention:", e);
+      }
+    },
+
+    openClearLogsModal() {
+      this.showClearLogsModal = true;
+    },
+
+    closeClearLogsModal() {
+      this.showClearLogsModal = false;
+    },
+
+    async confirmClearLogs() {
+      if (!this.can('action_manage_rules')) return;
+      this.isClearingLogs = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/clear', {
+          method: 'POST',
+          headers
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.showClearLogsModal = false;
+          this.showToast(data.message || 'Log di sistema cancellati con successo.', 'success');
+          await this.fetchLogConfig();
+          await this.fetchSystemLogs();
+        } else {
+          this.showToast("Errore durante la cancellazione dei log.", 'error');
+        }
+      } catch (e) {
+        console.error("Failed to clear system logs:", e);
+      } finally {
+        this.isClearingLogs = false;
+      }
+    },
+
+    downloadSystemLogs(format = 'log') {
+      let url = `/api/system/logs/download?format=${format}`;
+      if (this.localAuthToken) {
+        url += `&token=${encodeURIComponent(this.localAuthToken)}`;
+      }
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },
+
+    toggleLogAutoRefresh() {
+      if (this.logAutoRefresh) {
+        if (!this.logAutoRefreshTimer) {
+          this.logAutoRefreshTimer = setInterval(() => {
+            if (this.currentTab === 'settings-controls' || this.currentTab === 'automations' || this.currentTab === 'controls') {
+              this.fetchSystemLogs();
+              this.fetchLogConfig();
+            }
+          }, 10000);
+        }
+      } else {
+        if (this.logAutoRefreshTimer) {
+          clearInterval(this.logAutoRefreshTimer);
+          this.logAutoRefreshTimer = null;
+        }
+      }
+    },
+
+    toggleLogDetail(id) {
+      this.expandedLogDetails[id] = !this.expandedLogDetails[id];
     },
 
     // =========================================================================

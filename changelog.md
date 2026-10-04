@@ -4,7 +4,49 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.6.0] - 2026-09-28
+## [1.6.0] - 2026-10-04
+
+### 🪵 Modulo 4: Gestione Log di Sistema, Live Console & Integrazioni Homelab (v1.6.0)
+* **🪵 Gestione Log di Sistema & Profondità a Caldo:**
+  * Implementato logger asincrono unificato (`app/services/log_service.py`) con scrittura simultanea su file circolare `data/system.log` e persistenza su tabella SQLite indicizzata `system_logs`.
+  * Selettore dinamico del livello di log a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`) via API e interfaccia utente senza riavvio del container.
+  * Politica di retention temporale configurabile (24 Ore, 7 Giorni, 15 Giorni, 1 Mese, Custom o Illimitata) con worker di compattazione e pulizia automatica `retention_worker.py`.
+* **🖥️ Live Log Viewer Console (Card 7 in Controlli & Ospiti):**
+  * Console in stile terminale acrilico dark con font monospazio (`Fira Code`), filtro full-text live su messaggi e moduli, chip filter per severità, espansione dettagli JSON strutturati e toggle auto-refresh ogni 10 secondi.
+  * Strumenti di esportazione istantanea in formato `.log` standard (RFC 5424) o `.json` strutturato.
+  * Modale di sicurezza per lo svuotamento irreversibile dei registri con tracciamento audit log e protezione RBAC.
+* **🏠 Integrazione MQTT & Home Assistant Auto-Discovery:**
+  * Implementato worker asincrono MQTT (`app/services/mqtt_client.py`) con supporto Home Assistant MQTT Auto-Discovery:
+    * Sensori telemetrici: `eero WAN Download`, `eero WAN Upload`, `eero Network Health`, `eero Connected Clients`, `eero Mesh Nodes Online`, `eero Bufferbloat Grade`.
+    * Sensori binari di connettività: `eero Internet Status` e `eero Cloud Status`.
+    * Entità `device_tracker` per ciascun client di rete con stato `home`/`not_home`, IP, MAC e interfaccia di attestazione.
+* **📊 Esportazione Metriche Prometheus / OpenMetrics (`/metrics`):**
+  * Endpoint standard `/metrics` e `/api/metrics/prometheus` esposto in formato `text/plain; version=0.0.4; charset=utf-8` per scraping diretto da server Prometheus, VictoriaMetrics o Grafana Agent.
+  * Dashboard Grafana preconfigurata salvata in `deploy/grafana/eero_dashboard.json` con 13 pannelli analitici (gauge di salute, throughput WAN, latenze bufferbloat, distribuzione frequenze Wi-Fi, nodi mesh).
+* **🔔 Dispatcher Notifiche Multi-Canale & Allarmi Specializzati:**
+  * Connettori per **Discord Webhook** (embed card grafiche a colori semaforici) e **Pushover** (priorità configurabili).
+  * Nuovi allarmi automatici: degrado latenza Bufferbloat (Grade D/F o >100ms), anomalie e interferenze nodi mesh, tentativi di accesso fallito brute-force e stato backup.
+
+### 🛡️ Modulo 3: Notifiche & Disaster Recovery Snapshot (v1.6.0)
+* **💾 Disaster Recovery & Backup Snapshots:**
+  * Motore di esportazione e ripristino istantaneo di archivi snapshot validati (database SQLite, impostazioni, metadati personalizzati e sessione eero).
+  * Validazione crittografica e verifica integrità schemi prima del ripristino per prevenire corruzioni di stato.
+* **⏰ Parental Scheduling Interattivo:**
+  * Modale di creazione e modifica regole orarie per il controllo parentale a fasce orarie e giorni della settimana per singoli dispositivi o interi profili.
+
+### 📦 Modulo 2: Compattazione Dati Multi-Tier, Bufferbloat & PWA Offline-First (v1.6.0)
+* **🗄️ Archiviazione & Compattazione Dati Multi-Tiering:**
+  * Compattazione scalabile su 3 livelli di granularità: campionamenti Raw per 48 ore, medie aggregate orarie per 30 giorni e statistiche giornaliere per 365 giorni.
+* **⚡ Misurazione Analitica Bufferbloat & Latenza Sotto Carico:**
+  * Indicatore analitico con voto da `A+` a `F` e monitoraggio del delta di latenza (a riposo vs in download vs in upload).
+* **📱 Progressive Web App (PWA) & Service Worker:**
+  * Supporto PWA installabile con `manifest.json` e Service Worker (`sw.js`) per caching e consultazione offline resiliente.
+
+### 🔐 Modulo 1: Autenticazione Locale, RBAC & Smart Automations (v1.6.0)
+* **🔐 Autenticazione Locale & Controllo Accessi RBAC:**
+  * Sistema di login locale con ruoli distinti (`Admin`, `Operator`, `Viewer`), protezione JWT e matrice granulare di permessi operativi.
+* **🌙 Nightly Maintenance Engine:**
+  * Worker automatico di manutenzione notturna per ottimizzazioni del database, pulizie cache e backup di sicurezza.
 
 ### 📰 Hub Note di Rilascio eeroOS & Community Feedback (Issue #55)
 * **📰 Monitoraggio Firmware Ufficiale eeroOS via Zendesk API & Reddit RSS:**

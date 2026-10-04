@@ -215,6 +215,117 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
 * **Centro Esportazione Dati (RFC 4180 CSV & JSON):**
   - Esportazione rapida e standardizzata dell'inventario dispositivi, storico speedtest, campionamenti del segnale RSSI e storico consumo dati per integrazione con fogli di calcolo, Grafana o Home Assistant.
         """
+    },
+    {
+        "id": "system-logs",
+        "title": "11. Gestione Log di Sistema & Diagnostica Avanzata",
+        "icon": "terminal",
+        "summary": "Console live dei log, livelli di dettaglio dinamici (DEBUG/INFO/WARNING/ERROR), retention, esportazione e svuotamento sicuro.",
+        "content": """
+### Gestione Log di Sistema & Diagnostica Avanzata (v1.6.0)
+
+La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestione Log & Diagnostica**:
+
+* **Master Switch Logging:**
+  - Toggle rapido per attivare o sospendere la scrittura degli eventi nel database locale SQLite (`system_logs`) e nel file rotativo su disco (`data/system.log`).
+* **Profondità di Analisi (Livelli di Dettaglio a Caldo):**
+  - Seleziona istantaneamente il livello di severità senza riavviare il container:
+    - `DEBUG`: Dettagliato. Traccia tutte le chiamate API interne, le risposte del cloud e le sincronizzazioni di rete.
+    - `INFO`: Normale (predefinito). Registra gli eventi significativi, variazioni di stato dei nodi e connessioni client.
+    - `WARNING`: Avvisi. Segnala degradi di latenza, disconnessioni temporanee e anomalie di sincronizzazione.
+    - `ERROR`: Critico. Limita i log esclusivamente alle eccezioni bloccanti e agli errori di comunicazione.
+* **Periodo di Conservazione (Retention Temporale):**
+  - Imposta il periodo di persistenza: **24 Ore**, **7 Giorni**, **15 Giorni**, **1 Mese (30gg)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
+  - Un worker di background compila e rimuove periodicamente i log obsoleti garantendo che lo storage non si saturi mai.
+* **Console Live Log Viewer:**
+  - Box terminale ad alto contrasto con font monospazio (`Fira Code`).
+  - Ricerca rapida full-text sul testo dei messaggi e sul nome del modulo (`logger_name`).
+  - Filtro rapido a chip per livello di gravità (`TUTTI`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+  - Esplorazione interattiva dei dettagli JSON per ogni record (chiamate HTTP, payload, audit di sicurezza).
+  - Toggle per **Auto-Refresh ogni 10s**.
+* **Strumenti di Esportazione & Svuotamento:**
+  - **Download Log:** Esportazione del log completo in formato testo `.log` standard RFC 5424 oppure in formato strutturato `.json`.
+  - **Svuotamento Sicuro (Clear Logs):** Pulsante protetto da permessi RBAC con modale di conferma per azzerare tabella e file di log in un clic.
+        """
+    },
+    {
+        "id": "homelab-mqtt",
+        "title": "12. Integrazione Homelab via MQTT & Home Assistant Discovery",
+        "icon": "share",
+        "summary": "Connessione a broker MQTT, Home Assistant MQTT Auto-Discovery, sensori telemetrici e device tracking dei client.",
+        "content": """
+### Integrazione Homelab via MQTT & Home Assistant Discovery (v1.6.0)
+
+La dashboard si integra nativamente nel tuo ambiente HomeLab tramite il protocollo **MQTT**:
+
+* **Home Assistant MQTT Auto-Discovery:**
+  - Rilevamento istantaneo senza configurazioni YAML manuali: tutte le entità vengono create automaticamente sotto il prefisso standard `homeassistant/`.
+  - **Sensori Telemetrici:**
+    - `eero WAN Download` & `eero WAN Upload` (Velocità in Mbps con `device_class: data_rate`).
+    - `eero Network Health` (Punteggio di salute 0-100%).
+    - `eero Connected Clients` (Conteggio client attivi con icona `mdi:devices`).
+    - `eero Mesh Nodes Online` (Nodi mesh operativi).
+    - `eero Bufferbloat Grade` (Voto di reattività linea da A+ a F).
+  - **Sensori Binari di Connettività:**
+    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
+    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
+  - **Device Tracker dei Client di Rete:**
+    - Generazione automatica di entità `device_tracker` per ciascun dispositivo della rete.
+    - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di attestazione e interfaccia radio (5 GHz / 6 GHz / Ethernet).
+* **Configurazione Broker & Sicurezza:**
+  - Supporta broker locali e remoti (Mosquitto, EMQX, HiveMQ) con autenticazione via username e password.
+  - Riconnessione asincrona automatica e gestione trasparente in modalità Demo.
+        """
+    },
+    {
+        "id": "prometheus-grafana",
+        "title": "13. Metriche Prometheus & Dashboard Grafana",
+        "icon": "presentation-chart-line",
+        "summary": "Scraping OpenMetrics nativo (/metrics), time-series esposte e template Grafana preconfigurato.",
+        "content": """
+### Metriche Prometheus & Dashboard Grafana (v1.6.0)
+
+La dashboard espone un endpoint nativo conforme alle specifiche **Prometheus / OpenMetrics** per consentire il monitoraggio centralizzato dell'infrastruttura mesh:
+
+* **Endpoint di Scraping:**
+  - Accessibile direttamente all'indirizzo `GET /metrics` (o `/api/metrics/prometheus`).
+  - Risponde in formato `text/plain; version=0.0.4; charset=utf-8`.
+* **Serie Temporali Esposte:**
+  - `eero_info`: Metadati della dashboard, versione e nome della rete mesh.
+  - `eero_clients_total`: Client rilevati con etichetta `status="connected"` o `"disconnected"`.
+  - `eero_clients_band_total`: Client attivi raggruppati per banda (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
+  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Throughput istantaneo aggregato della WAN.
+  - `eero_wan_ping_ms`: Latenza gateway verso l'esterno.
+  - `eero_health_score`: Punteggio sintetico di efficienza della rete (0-100).
+  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Stato e conteggio dei nodi mesh.
+  - `eero_bufferbloat_grade_numeric` & latenze (`unloaded`, `download`, `upload` in ms).
+  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Contatori cumulativi di traffico.
+* **Template Dashboard Grafana Incluso:**
+  - File pronto all'uso disponibile in `deploy/grafana/eero_dashboard.json`.
+  - Comprende 13 pannelli grafici (gauge di salute, grafici di velocità, ripartizione bande Wi-Fi, metriche bufferbloat e stato nodi).
+        """
+    },
+    {
+        "id": "multi-channel-alerts",
+        "title": "14. Allarmi Multi-Canale & Notifiche Emergenza",
+        "icon": "bell",
+        "summary": "Dispatcher multi-canale (Telegram, Discord, Webhook, Pushover) e allarmi specializzati di sicurezza, degradamento linea e backup.",
+        "content": """
+### Allarmi Multi-Canale & Notifiche di Emergenza (v1.6.0)
+
+Il motore di notifica supporta una strategia di inoltro multi-canale per avvisi critici ed eventi di rete:
+
+* **Canali Supportati:**
+  - **Telegram Bot:** Messaggistica istantanea formattata HTML con pulsanti di interazione rapida.
+  - **Discord Webhook:** Notifiche ricche con embed card grafiche, codici colore e metadati evento.
+  - **Pushover:** Notifiche push prioritarie per smartphone con supporto alert di emergenza.
+  - **Generic Webhook:** Payload JSON per l'integrazione con Node-RED, Home Assistant automations o script custom.
+* **Allarmi Specializzati Integrati:**
+  - **Degrado Bufferbloat:** Notifica tempestiva quando la latenza sotto carico peggiora (Grade D o F, o latenza caricata > 100ms).
+  - **Anomalie Qualità Nodo Mesh:** Avviso su canali DFS radar o degrado del backhaul wireless di un nodo mesh.
+  - **Allarme Sicurezza Autenticazione (Brute-Force):** Segnalazione di tentativi consecutivi di login fallito da indirizzi IP sospetti.
+  - **Esito Backup Notturno:** Conferma di avvenuto backup dei dati SQLite e dei file di log o notifica di errore.
+        """
     }
 ]
 
@@ -427,6 +538,117 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 * **Data Export Center (RFC 4180 CSV & Structured JSON):**
   - One-click standard data export for client devices inventory, WAN speedtest logs, wireless RSSI signal samples, and device bandwidth usage for external reporting or Grafana/Home Assistant ingestion.
         """
+    },
+    {
+        "id": "system-logs",
+        "title": "11. System Logging & Advanced Diagnostics",
+        "icon": "terminal",
+        "summary": "Live log viewer console, dynamic log levels (DEBUG/INFO/WARNING/ERROR), retention policies, export and secure clearing.",
+        "content": """
+### System Logging & Advanced Diagnostics (v1.6.0)
+
+The **Controls & Guest QR** tab now features Card 7 dedicated to **System Logs & Diagnostics**:
+
+* **Master Logging Switch:**
+  - Instant toggle to enable or suspend event logging into the local SQLite database (`system_logs`) and rotating disk file (`data/system.log`).
+* **Dynamic Log Levels (Runtime Depth):**
+  - Switch log verbosity instantly without restarting the container:
+    - `DEBUG`: Verbose. Records detailed API calls, cloud round-trips, and background synchronization events.
+    - `INFO`: Normal (default). Records significant network lifecycle events, node states, and device connections.
+    - `WARNING`: Alerts. Captures latency spikes, intermittent disconnects, and DNS synchronization warnings.
+    - `ERROR`: Critical. Restricts logging strictly to unexpected exceptions and fatal connection failures.
+* **Retention Policies:**
+  - Configure automatic log lifecycle: **24 Hours**, **7 Days**, **15 Days**, **1 Month (30d)**, or **Custom** (specific day count, or `0` for unlimited).
+  - An automated background retention worker purges expired records periodically to safeguard flash storage.
+* **Live Log Viewer Console:**
+  - Acrylic terminal box styled with monospace typography.
+  - Real-time text search filtering by log message or logger module name.
+  - Severity chip filters (`ALL`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+  - Expandable JSON structured details for each log entry (HTTP calls, request parameters, security audits).
+  - Optional **Auto-Refresh (10s)** toggle.
+* **Export & Maintenance Actions:**
+  - **Download Logs:** Export the full log stream in standard RFC 5424 `.log` format or structured `.json`.
+  - **Secure Purge (Clear Logs):** RBAC-protected action with confirmation modal to zero disk files and database records.
+        """
+    },
+    {
+        "id": "homelab-mqtt",
+        "title": "12. Homelab Integration via MQTT & Home Assistant Discovery",
+        "icon": "share",
+        "summary": "MQTT broker connectivity, Home Assistant MQTT Auto-Discovery, telemetry sensors and client device tracking.",
+        "content": """
+### Homelab Integration via MQTT & Home Assistant Discovery (v1.6.0)
+
+The dashboard natively integrates into your HomeLab ecosystem via **MQTT**:
+
+* **Home Assistant MQTT Auto-Discovery:**
+  - Zero-configuration discovery: all entities are automatically declared under the standard `homeassistant/` discovery prefix.
+  - **Telemetry Sensors:**
+    - `eero WAN Download` & `eero WAN Upload` (Speed in Mbps with `device_class: data_rate`).
+    - `eero Network Health` (Health score from 0 to 100%).
+    - `eero Connected Clients` (Active client count with `mdi:devices`).
+    - `eero Mesh Nodes Online` (Operational mesh nodes count).
+    - `eero Bufferbloat Grade` (Line responsiveness grade from A+ to F).
+  - **Connectivity Binary Sensors:**
+    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
+    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
+  - **Client Device Trackers:**
+    - Automatic `device_tracker` creation for client devices on the network.
+    - Reports `home` / `not_home` state, local IP, MAC address, connected mesh node, and connection medium (5 GHz / 6 GHz / Wired).
+* **Broker Configuration & Reliability:**
+  - Compatible with standard brokers (Eclipse Mosquitto, EMQX, HiveMQ) with username/password authentication.
+  - Asynchronous background reconnection with exponential backoff and seamless Demo mode simulation.
+        """
+    },
+    {
+        "id": "prometheus-grafana",
+        "title": "13. Prometheus Metrics & Grafana Dashboard",
+        "icon": "presentation-chart-line",
+        "summary": "Native OpenMetrics scraping (/metrics), exported time-series and ready-to-import Grafana dashboard template.",
+        "content": """
+### Prometheus Metrics & Grafana Dashboard (v1.6.0)
+
+The dashboard provides a native **Prometheus / OpenMetrics** export endpoint for centralized homelab observability:
+
+* **Scraping Endpoint:**
+  - Directly accessible at `GET /metrics` (or `/api/metrics/prometheus`).
+  - Serves standard OpenMetrics text (`text/plain; version=0.0.4; charset=utf-8`).
+* **Exported Metrics Series:**
+  - `eero_info`: Metadata, version tag, and active mesh network name.
+  - `eero_clients_total`: Client counts tagged with `status="connected"` or `"disconnected"`.
+  - `eero_clients_band_total`: Active clients partitioned by band (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
+  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Real-time aggregated WAN throughput.
+  - `eero_wan_ping_ms`: Gateway round-trip latency in milliseconds.
+  - `eero_health_score`: Comprehensive health index (0 to 100).
+  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Mesh node operational counts.
+  - `eero_bufferbloat_grade_numeric` & latency breakdown (`unloaded`, `download`, `upload` in ms).
+  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Monotonic transfer counters.
+* **Prebuilt Grafana Dashboard Template:**
+  - Ready-to-import dashboard located at `deploy/grafana/eero_dashboard.json`.
+  - Features 13 preconfigured panels covering speed gauges, historical bandwidth curves, frequency breakdowns, and mesh node statuses.
+        """
+    },
+    {
+        "id": "multi-channel-alerts",
+        "title": "14. Multi-Channel Alerts & Emergency Notifications",
+        "icon": "bell",
+        "summary": "Multi-channel dispatcher (Telegram, Discord, Webhook, Pushover) and specialized alerts for bufferbloat, mesh quality and security.",
+        "content": """
+### Multi-Channel Alerts & Emergency Notifications (v1.6.0)
+
+The notification engine features a unified multi-channel dispatch architecture for critical alerts and network events:
+
+* **Supported Channels:**
+  - **Telegram Bot:** Instant HTML-formatted alerts with direct node and client details.
+  - **Discord Webhook:** Rich embed cards with color-coded severity bars and structured fields.
+  - **Pushover:** High-priority mobile push notifications for immediate delivery.
+  - **Generic Webhook:** Raw JSON payloads for custom pipelines (Node-RED, n8n, Home Assistant).
+* **Integrated Specialized Alerts:**
+  - **Bufferbloat Degradation Warning:** Triggered when loaded latency degrades significantly (Grade D or F, or loaded delta > 100ms).
+  - **Mesh Node Signal Anomaly:** Proactive notice on DFS radar interference or weak wireless backhaul.
+  - **Authentication Security Alert (Brute-Force):** Security warning upon repeated failed local login attempts from specific IPs.
+  - **Nightly Backup Report:** Automated success/failure reporting for database and configuration archives.
+        """
     }
 ]
 
@@ -460,8 +682,12 @@ CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
 ## v1.6.0
+* **Modulo 1 - Autenticazione Locale, RBAC & Smart Automations:** Gestione accessi multi-utente con ruoli `Admin`, `Operator` e `Viewer`, parental scheduling avanzato a fasce orarie e giorni della settimana, motore di manutenzione notturna programmata e backup di emergenza.
+* **Modulo 2 - Compattazione Dati Multi-Tier, Bufferbloat & PWA Offline-First:** Compattazione scalabile SQLite (Raw 48h -> Oraria 30gg -> Giornaliera 365gg), indicatore analitico Bufferbloat con grading da A+ a F e latenze a riposo/carico, supporto Progressive Web App (PWA) con Service Worker per consultazione offline.
+* **Modulo 3 - Notifiche & Disaster Recovery Snapshot:** Sistema di esportazione e ripristino snapshot crittografati/validati della configurazione, gestione scheduler parentale interattivo da interfaccia.
+* **Modulo 4 - Gestione Log di Sistema, Live Console & Integrazioni Homelab:** Card di controllo per profondità di logging a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`), retention temporale configurabile (24h, 7gg, 15gg, 1m, custom), Live Console Viewer acrilica con ricerca e filtri per severità, download log (.log / .json) e svuotamento sicuro con modale di conferma; integrazione MQTT con Home Assistant Auto-Discovery e device tracking; esportazione metrica nativa Prometheus/OpenMetrics (`/metrics`) con dashboard Grafana (13 pannelli); dispatcher notifiche multi-canale esteso a Discord Webhook e Pushover con allarmi per degrado bufferbloat, interferenze mesh, brute-force e backup.
 * **Hub Note di Rilascio eeroOS & Community Feedback (Issue #55):** Monitoraggio firmware ufficiale via Zendesk REST API e feed Reddit r/amazoneero, con confronto allineamento flotta locale vs release cloud (Up-to-date, Update Available, Newer than published).
-* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56 / v1.6.0 Modulo 1):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
 * **Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45):** Routing completo con sincronizzazione bidirezionale dell'URL hash/query e supporto cronologia browser.
 * **Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46):** Sidebar scorrevole con scrim su schermi mobile, header responsive con menu impostazioni Fluent, tabella dispositivi a schede su schermi piccoli e frame grafici ad altezza dinamica.
 
@@ -617,8 +843,12 @@ CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
 ## v1.6.0
+* **Module 1 - Local Authentication, RBAC & Smart Automations:** Multi-user authentication with `Admin`, `Operator`, and `Viewer` roles, advanced parental time scheduling with day-of-week matrices, nightly maintenance engine, and disaster recovery emergency backups.
+* **Module 2 - Multi-Tier Data Compaction, Bufferbloat & PWA Offline-First:** Scalable multi-tier SQLite archiving (Raw 48h -> Hourly 30d -> Daily 365d), analytical Bufferbloat rating gauge (A+ to F with loaded/unloaded latencies), Progressive Web App (PWA) offline-first service worker support.
+* **Module 3 - Notifications & Disaster Recovery Snapshot:** Validated and encrypted configuration snapshots export/restore suite, interactive parental control schedule editor.
+* **Module 4 - System Logging, Live Console & Homelab Integrations:** Runtime log depth controls (`DEBUG`, `INFO`, `WARNING`, `ERROR`), configurable retention policies (24h, 7d, 15d, 1m, custom), acrylic Live Console Viewer with full-text search and severity chips, full stream download (.log / .json) and secure purge modal; MQTT integration with Home Assistant Auto-Discovery and device trackers; native Prometheus/OpenMetrics (`/metrics`) endpoint with 13-panel prebuilt Grafana dashboard; multi-channel notification dispatcher extended to Discord Webhooks and Pushover with dedicated alerts for bufferbloat degradation, mesh anomalies, brute-force attempts and backup status.
 * **Official eeroOS Release Notes Hub & Community Feedback (Issue #55):** Real-time firmware tracking via Zendesk REST API and r/amazoneero Reddit feed, with local fleet firmware alignment comparison (Up-to-date, Update Available, Newer than published).
-* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56 / v1.6.0 Module 1):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
 * **Navigation Deep-Linking & URL State Synchronization (PR #28 / Issue #45):** Bidirectional URL hash and query parameter synchronization with browser history support and shareable direct links.
 * **Responsive App Shell, Windows 11 Fluent Header & Mobile Drawer (PR #29 / Issue #46):** Sliding mobile drawer sidebar with scrim backdrop, responsive header with Fluent settings menu, responsive device table cards on small screens, and clamp-height dynamic chart frames.
 

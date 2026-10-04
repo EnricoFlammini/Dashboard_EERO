@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 import httpx
 from app.config import settings
 from app.services.db import db_service
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class NotificationService:
-    """Dispatches event alerts and reports via Telegram Bot and custom Webhook."""
+    """Dispatches event alerts and reports via Telegram Bot, custom Webhook, Discord and Pushover."""
 
     def __init__(self):
         self._demo_settings: Dict[str, Any] = {
@@ -17,6 +18,11 @@ class NotificationService:
             "telegram_chat_id": "-1001234567890",
             "webhook_enabled": True,
             "webhook_url": "https://demo-webhook.lan/events",
+            "discord_enabled": True,
+            "discord_webhook_url": "https://discord.com/api/webhooks/demo/fake",
+            "pushover_enabled": True,
+            "pushover_user_key": "uFakeDemoPushoverUserKey",
+            "pushover_api_token": "aFakeDemoPushoverToken",
             "system_language": settings.dashboard_lang,
         }
 
@@ -52,6 +58,11 @@ class NotificationService:
             "telegram_chat_id": all_s.get("telegram_chat_id", settings.telegram_chat_id),
             "webhook_enabled": all_s.get("webhook_alerts_enabled", "true" if settings.webhook_url else "false").lower() == "true",
             "webhook_url": all_s.get("webhook_url", settings.webhook_url),
+            "discord_enabled": all_s.get("discord_alerts_enabled", "true" if settings.discord_webhook_url else "false").lower() == "true",
+            "discord_webhook_url": all_s.get("discord_webhook_url", settings.discord_webhook_url),
+            "pushover_enabled": all_s.get("pushover_alerts_enabled", "true" if settings.pushover_user_key else "false").lower() == "true",
+            "pushover_user_key": all_s.get("pushover_user_key", settings.pushover_user_key),
+            "pushover_api_token": all_s.get("pushover_api_token", settings.pushover_api_token),
             "system_language": all_s.get("system_language", settings.dashboard_lang),
         }
 
@@ -62,9 +73,14 @@ class NotificationService:
         telegram_chat_id: Optional[str] = None,
         webhook_enabled: bool = False,
         webhook_url: Optional[str] = None,
+        discord_enabled: bool = False,
+        discord_webhook_url: Optional[str] = None,
+        pushover_enabled: bool = False,
+        pushover_user_key: Optional[str] = None,
+        pushover_api_token: Optional[str] = None,
         language: Optional[str] = None
     ) -> None:
-        """Salva le impostazioni di notifica (in memoria in Demo Mode, su SQLite in Live Mode)."""
+        """Salva le impostazioni di notifica per tutti i canali."""
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
             self._demo_settings["telegram_enabled"] = telegram_enabled
@@ -75,6 +91,14 @@ class NotificationService:
             self._demo_settings["webhook_enabled"] = webhook_enabled
             if webhook_url is not None:
                 self._demo_settings["webhook_url"] = webhook_url.strip()
+            self._demo_settings["discord_enabled"] = discord_enabled
+            if discord_webhook_url is not None:
+                self._demo_settings["discord_webhook_url"] = discord_webhook_url.strip()
+            self._demo_settings["pushover_enabled"] = pushover_enabled
+            if pushover_user_key is not None:
+                self._demo_settings["pushover_user_key"] = pushover_user_key.strip()
+            if pushover_api_token is not None:
+                self._demo_settings["pushover_api_token"] = pushover_api_token.strip()
             if language is not None and language.lower().strip() in ("it", "en"):
                 self._demo_settings["system_language"] = language.lower().strip()
             return
@@ -87,6 +111,14 @@ class NotificationService:
         await db_service.set_setting("webhook_alerts_enabled", "true" if webhook_enabled else "false")
         if webhook_url is not None:
             await db_service.set_setting("webhook_url", webhook_url.strip())
+        await db_service.set_setting("discord_alerts_enabled", "true" if discord_enabled else "false")
+        if discord_webhook_url is not None:
+            await db_service.set_setting("discord_webhook_url", discord_webhook_url.strip())
+        await db_service.set_setting("pushover_alerts_enabled", "true" if pushover_enabled else "false")
+        if pushover_user_key is not None:
+            await db_service.set_setting("pushover_user_key", pushover_user_key.strip())
+        if pushover_api_token is not None:
+            await db_service.set_setting("pushover_api_token", pushover_api_token.strip())
         if language is not None and language.lower().strip() in ("it", "en"):
             await db_service.set_setting("system_language", language.lower().strip())
 
@@ -132,14 +164,19 @@ class NotificationService:
             logger.error(f"Telegram notification error: {e}")
             return False
 
-    async def send_webhook(self, event_type: str, data: Dict[str, Any]) -> bool:
+    async def send_webhook(self, event_type: str, data: Dict[str, Any], ignore_enabled: bool = False) -> bool:
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
-            if not self._demo_settings.get("webhook_enabled", True):
+            if not ignore_enabled and not self._demo_settings.get("webhook_enabled", True):
                 logger.debug(f"[Demo Mode] Webhook disabilitato nelle impostazioni demo ({event_type}).")
                 return False
             logger.info(f"[Demo Mode] Simulazione invio notifica Webhook riuscita (evento: {event_type})")
             return True
+
+        if not ignore_enabled:
+            enabled = await db_service.get_setting("webhook_alerts_enabled", "true" if settings.webhook_url else "false")
+            if enabled.lower() != "true":
+                return False
 
         webhook_url = await db_service.get_setting("webhook_url", settings.webhook_url)
         if not webhook_url:
@@ -147,7 +184,7 @@ class NotificationService:
 
         payload = {
             "event": event_type,
-            "timestamp": data.get("timestamp"),
+            "timestamp": data.get("timestamp") or datetime.now(timezone.utc).isoformat(),
             "data": data,
             "source": "eero_custom_dashboard"
         }
@@ -158,6 +195,106 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Webhook notification error: {e}")
             return False
+
+    async def send_discord_message(
+        self,
+        title: str,
+        description: str,
+        color: int = 0x38bdf8,
+        fields: Optional[List[Dict[str, Any]]] = None,
+        ignore_enabled: bool = False
+    ) -> bool:
+        """Invia un alert formattato tramite Webhook Discord con embed card."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            if not ignore_enabled and not self._demo_settings.get("discord_enabled", True):
+                return False
+            logger.info(f"[Demo Mode] Simulazione invio notifica Discord riuscita (titolo: {title})")
+            return True
+
+        if not ignore_enabled:
+            enabled = await db_service.get_setting("discord_alerts_enabled", "true" if settings.discord_webhook_url else "false")
+            if enabled.lower() != "true":
+                return False
+
+        webhook_url = await db_service.get_setting("discord_webhook_url", settings.discord_webhook_url)
+        if not webhook_url:
+            return False
+
+        clean_desc = description.replace("<b>", "**").replace("</b>", "**").replace("<code>", "`").replace("</code>", "`")
+        payload = {
+            "username": "eero Dashboard Alert",
+            "embeds": [
+                {
+                    "title": title,
+                    "description": clean_desc,
+                    "color": color,
+                    "fields": fields or [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "footer": {"text": "eero Management Suite"}
+                }
+            ]
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(webhook_url, json=payload)
+                return resp.status_code in (200, 204)
+        except Exception as e:
+            logger.error(f"Discord notification error: {e}")
+            return False
+
+    async def send_pushover_message(
+        self,
+        title: str,
+        message: str,
+        priority: int = 0,
+        ignore_enabled: bool = False
+    ) -> bool:
+        """Invia una notifica push tramite l'API di Pushover."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            if not ignore_enabled and not self._demo_settings.get("pushover_enabled", True):
+                return False
+            logger.info(f"[Demo Mode] Simulazione invio notifica Pushover riuscita (titolo: {title})")
+            return True
+
+        if not ignore_enabled:
+            enabled = await db_service.get_setting("pushover_alerts_enabled", "true" if settings.pushover_user_key else "false")
+            if enabled.lower() != "true":
+                return False
+
+        user_key = await db_service.get_setting("pushover_user_key", settings.pushover_user_key)
+        api_token = await db_service.get_setting("pushover_api_token", settings.pushover_api_token)
+        if not user_key or not api_token:
+            return False
+
+        clean_msg = message.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "")
+        payload = {
+            "token": api_token,
+            "user": user_key,
+            "title": title,
+            "message": clean_msg,
+            "priority": priority,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post("https://api.pushover.net/1/messages.json", data=payload)
+                return resp.status_code == 200
+        except Exception as e:
+            logger.error(f"Pushover notification error: {e}")
+            return False
+
+    async def _dispatch_all_channels(self, event_type: str, title: str, text: str, db_msg: str, data: Dict[str, Any], color: int = 0x38bdf8):
+        """Helper to dispatch across SQLite alerts, Telegram, Webhook, Discord and Pushover."""
+        await db_service.save_alert(
+            alert_type=event_type,
+            title=title,
+            message=db_msg
+        )
+        await self.send_telegram_message(text)
+        await self.send_webhook(event_type, data)
+        await self.send_discord_message(title=title, description=text, color=color)
+        await self.send_pushover_message(title=title, message=db_msg)
 
     async def notify_new_device(self, device: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)
@@ -188,17 +325,8 @@ class NotificationService:
                 f"• <b>Connected to:</b> {eero_node} ({band})\n"
             )
             db_msg = f"Device '{hostname}' (IP: {ip}, MAC: {mac}) connected to node {eero_node}."
-        
-        # Registra su database
-        await db_service.save_alert(
-            alert_type="new_device",
-            title=title,
-            message=db_msg
-        )
 
-        # Invia canali esterni se attivi
-        await self.send_telegram_message(text)
-        await self.send_webhook("new_device", device)
+        await self._dispatch_all_channels("new_device", title, text, db_msg, device, color=0x38bdf8)
 
     async def notify_node_offline(self, eero_node: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)
@@ -221,16 +349,9 @@ class NotificationService:
             )
             db_msg = f"Mesh node {name} ({ip}) is offline."
 
-        await db_service.save_alert(
-            alert_type="node_offline",
-            title=title,
-            message=db_msg
-        )
-        await self.send_telegram_message(text)
-        await self.send_webhook("node_offline", eero_node)
+        await self._dispatch_all_channels("node_offline", title, text, db_msg, eero_node, color=0xf59e0b)
 
     async def notify_cloud_unreachable(self, reason: str = "unreachable", consecutive_failures: int = 3, lang: Optional[str] = None):
-        """Notifica disconnessione prolungata o sessione scaduta con il Cloud eero (Issue #55)."""
         active_lang = await self.get_language(lang)
         is_it = (active_lang == "it")
         is_auth = (reason == "unauthorized")
@@ -250,16 +371,9 @@ class NotificationService:
             )
             db_msg = f"Cloud eero non raggiungibile ({consecutive_failures} tentativi falliti)." if is_it else f"eero cloud unreachable ({consecutive_failures} failed attempts)."
 
-        await db_service.save_alert(
-            alert_type="cloud_unreachable",
-            title=title,
-            message=db_msg
-        )
-        await self.send_telegram_message(text)
-        await self.send_webhook("cloud_unreachable", {"reason": reason, "consecutive_failures": consecutive_failures})
+        await self._dispatch_all_channels("cloud_unreachable", title, text, db_msg, {"reason": reason, "consecutive_failures": consecutive_failures}, color=0xef4444)
 
     async def notify_cloud_recovered(self, lang: Optional[str] = None):
-        """Notifica ripristino connettività con il Cloud eero dopo un'interruzione (Issue #55)."""
         active_lang = await self.get_language(lang)
         is_it = (active_lang == "it")
 
@@ -270,13 +384,7 @@ class NotificationService:
         )
         db_msg = "Connessione cloud eero ripristinata con successo." if is_it else "eero cloud connection restored successfully."
 
-        await db_service.save_alert(
-            alert_type="cloud_recovered",
-            title=title,
-            message=db_msg
-        )
-        await self.send_telegram_message(text)
-        await self.send_webhook("cloud_recovered", {"status": "connected"})
+        await self._dispatch_all_channels("cloud_recovered", title, text, db_msg, {"status": "connected"}, color=0x10b981)
 
     async def notify_digest(self, digest_summary: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)
@@ -295,9 +403,7 @@ class NotificationService:
         nodes_tot = digest_summary.get("total_nodes", 0)
         down = digest_summary.get("wan_down", 0)
         up = digest_summary.get("wan_up", 0)
-        ping = digest_summary.get("wan_ping", 0)
 
-        # Formattazione dettagliata delle frequenze
         bands_detail = []
         if c_6g > 0: bands_detail.append(f"6 GHz: {c_6g}")
         if c_5g > 0: bands_detail.append(f"5 GHz: {c_5g}")
@@ -328,13 +434,126 @@ class NotificationService:
             )
             db_msg = f"Daily digest report sent: {active} connected clients, {nodes_on}/{nodes_tot} active mesh nodes, ISP: {isp}."
 
-        await db_service.save_alert(
-            alert_type="daily_digest",
-            title=title,
-            message=db_msg
-        )
-        await self.send_telegram_message(text)
-        await self.send_webhook("daily_digest", digest_summary)
+        await self._dispatch_all_channels("daily_digest", title, text, db_msg, digest_summary, color=0x6366f1)
+
+    async def notify_bufferbloat_degradation(self, bb_result: Dict[str, Any], lang: Optional[str] = None):
+        """Notifica degrado delle prestazioni di latenza sotto carico (Bufferbloat Grade D o F)."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+
+        grade = str(bb_result.get("grade") or "D").upper()
+        unloaded = bb_result.get("unloaded_latency_ms", 0)
+        dl_lat = bb_result.get("download_latency_ms", 0)
+        ul_lat = bb_result.get("upload_latency_ms", 0)
+
+        title = f"🐌 Degrado Bufferbloat Rilevato (Voto: {grade})!" if is_it else f"🐌 Bufferbloat Degradation Detected (Grade: {grade})!"
+        if is_it:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"La latenza di rete subisce forti ritardi sotto carico:\n"
+                f"• <b>Voto Bufferbloat:</b> <code>{grade}</code>\n"
+                f"• <b>Latenza a Riposo:</b> {unloaded} ms\n"
+                f"• <b>Latenza in Download:</b> +{dl_lat} ms\n"
+                f"• <b>Latenza in Upload:</b> +{ul_lat} ms\n\n"
+                f"<i>Consiglio: verifica la funzione SQM (Smart Queue Management) su eero o riduci il traffico concorrente.</i>"
+            )
+            db_msg = f"Bufferbloat degradato: Voto {grade}, latenza download +{dl_lat}ms, upload +{ul_lat}ms."
+        else:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"Network latency experiences significant delays under load:\n"
+                f"• <b>Bufferbloat Grade:</b> <code>{grade}</code>\n"
+                f"• <b>Unloaded Latency:</b> {unloaded} ms\n"
+                f"• <b>Download Latency:</b> +{dl_lat} ms\n"
+                f"• <b>Upload Latency:</b> +{ul_lat} ms\n\n"
+                f"<i>Tip: Check SQM (Smart Queue Management) in the eero app or prioritize bandwidth hogs.</i>"
+            )
+            db_msg = f"Bufferbloat degradation: Grade {grade}, dl latency +{dl_lat}ms, ul latency +{ul_lat}ms."
+
+        await self._dispatch_all_channels("bufferbloat_warning", title, text, db_msg, bb_result, color=0xf97316)
+
+    async def notify_mesh_quality_warning(self, node_name: str, issue: str, lang: Optional[str] = None):
+        """Notifica calo di qualità o interferenze su un nodo mesh."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+
+        title = f"📡 Qualità Segnale Nodo Mesh '{node_name}' Degradata" if is_it else f"📡 Mesh Node '{node_name}' Signal Quality Warning"
+        if is_it:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"Il nodo mesh <b>{node_name}</b> segnala problemi di backhaul o interferenze:\n"
+                f"• <b>Dettagli:</b> {issue}\n"
+            )
+            db_msg = f"Allarme qualità mesh su {node_name}: {issue}."
+        else:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"Mesh node <b>{node_name}</b> reports backhaul degradation or wireless interference:\n"
+                f"• <b>Details:</b> {issue}\n"
+            )
+            db_msg = f"Mesh quality alert on {node_name}: {issue}."
+
+        await self._dispatch_all_channels("mesh_warning", title, text, db_msg, {"node_name": node_name, "issue": issue}, color=0xf59e0b)
+
+    async def notify_security_auth_alert(self, ip: str, username: str, attempts: int, action: str, lang: Optional[str] = None):
+        """Notifica alert di sicurezza su tentativi ripetuti di accesso fallito (Brute-Force)."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+
+        title = "🛡️ Allarme Sicurezza: Tentativi di Login Falliti!" if is_it else "🛡️ Security Alert: Repeated Failed Login Attempts!"
+        if is_it:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"Rilevata attività sospetta di autenticazione locale:\n"
+                f"• <b>Indirizzo IP:</b> <code>{ip}</code>\n"
+                f"• <b>Nome Utente:</b> <code>{username}</code>\n"
+                f"• <b>Tentativi consecutivi:</b> {attempts}\n"
+                f"• <b>Azione intrapresa:</b> {action}\n"
+            )
+            db_msg = f"Sicurezza: {attempts} tentativi di accesso falliti da IP {ip} per l'utente '{username}'. Azione: {action}."
+        else:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"Suspicious local authentication activity detected:\n"
+                f"• <b>IP Address:</b> <code>{ip}</code>\n"
+                f"• <b>Username:</b> <code>{username}</code>\n"
+                f"• <b>Failed Attempts:</b> {attempts}\n"
+                f"• <b>Action taken:</b> {action}\n"
+            )
+            db_msg = f"Security: {attempts} failed login attempts from IP {ip} for user '{username}'. Action: {action}."
+
+        await self._dispatch_all_channels("security_auth", title, text, db_msg, {"ip": ip, "username": username, "attempts": attempts, "action": action}, color=0xd97706)
+
+    async def notify_backup_status(self, success: bool, backup_name: str, details: str, lang: Optional[str] = None):
+        """Notifica l'esito dell'esecuzione del backup programmato o di emergenza."""
+        active_lang = await self.get_language(lang)
+        is_it = (active_lang == "it")
+
+        if success:
+            title = "💾 Backup Automatico Completato con Successo" if is_it else "💾 Automated Backup Completed Successfully"
+            db_msg = f"Backup '{backup_name}' generato correttamente ({details})."
+            color = 0x10b981
+        else:
+            title = "❌ Errore durante il Backup Automatico!" if is_it else "❌ Error during Automated Backup!"
+            db_msg = f"Fallimento backup '{backup_name}': {details}."
+            color = 0xef4444
+
+        if is_it:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"• <b>Archivio:</b> <code>{backup_name}</code>\n"
+                f"• <b>Stato:</b> {'Completato ✅' if success else 'Fallito ❌'}\n"
+                f"• <b>Dettagli:</b> {details}\n"
+            )
+        else:
+            text = (
+                f"<b>{title}</b>\n\n"
+                f"• <b>Archive:</b> <code>{backup_name}</code>\n"
+                f"• <b>Status:</b> {'Success ✅' if success else 'Failed ❌'}\n"
+                f"• <b>Details:</b> {details}\n"
+            )
+
+        await self._dispatch_all_channels("backup_status", title, text, db_msg, {"success": success, "backup_name": backup_name, "details": details}, color=color)
 
 
 notification_service = NotificationService()
