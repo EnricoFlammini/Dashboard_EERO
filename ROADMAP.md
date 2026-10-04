@@ -51,9 +51,8 @@ gantt
     Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
     Home Assistant MQTT Auto-Discovery & Prometheus    :done, v1_6e, after v1_6g, 5d
     Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
-    section v1.6.1 - Offline Resilience & UX Polish
-    Local Asset Bundling (Issue #58)                  :active, v1_61a, 2026-10-06, 2d
-    Device Sort by First Seen & New Badge (Issue #60) :v1_61b, after v1_61a, 2d
+    Local Asset Bundling & Offline UI (Issue #58)     :active, v1_6_assets, after v1_6f, 2d
+    Device Sort by First Seen & New Badge (Issue #60) :v1_6_recent, after v1_6_assets, 2d
 ```
 
 ---
@@ -435,6 +434,16 @@ gantt
   * Analisi e supporto per la visualizzazione degli indirizzi IPv6 ULA (*Unique Local Address*, RFC 4193, prefisso `fd00::/8`) accanto ai GUA (*Global Unicast Address* / SLAAC).
   * Valutazione euristica di derivazione ULA mediante prefisso annunciato e lower 64 bits dell'interfaccia, oppure associazione tramite neighbor discovery / DNS integration con badge identificativo dedicato.
 
+#### 8. 📦 Local Asset Bundling & Total Offline Independence (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60)
+* **Local Asset Bundling & Funzionamento 100% Offline (Issue #58 - @jpatchMC):**
+  * Eliminazione di tutte le dipendenze da CDN esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`, `fonts.googleapis.com`) che impediscono il caricamento dell'interfaccia durante i blackout Internet o outage dell'operatore (ISP outage).
+  * Packaging e distribuzione locale delle librerie in `app/static/vendor/` (`tailwind`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) e self-hosting dei font (Inter, JetBrains Mono WOFF2) in `app/static/fonts/`.
+  * Garanzia di caricamento istantaneo e consultazione della dashboard locale sulla LAN anche con linea WAN scollegata.
+* **Ordinamento e Filtro Dispositivi per "Primo Accesso / Più Recenti" (Issue #60 - @DannyFeliz):**
+  * Propagazione del timestamp `first_seen` (già presente e storicizzato nella tabella `known_devices`) all'interno del payload dell'endpoint `/api/devices`.
+  * Aggiunta del criterio di ordinamento *"Primo Accesso / Più Recenti"* (`first_seen` decrescente) nel dropdown personalizzato dei dispositivi in `index.html` e `app.js`.
+  * Badge visivo compatto `"NEW"` per gli apparati visti per la prima volta nelle ultime 24 ore o 7 giorni e toggle filtro rapido per isolare i nuovi arrivati.
+
 ---
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
@@ -503,39 +512,14 @@ gantt
 - [x] Supporto completo Dual-Theme (Dark/Light mode) e localizzazione bilingue IT / EN (`it.json`, `en.json`).
 - [x] Mock realistici per Demo Mode e suite di test unitari/integrazione (478 test superati al 100%).
 
----
-
-### 🔮 Release v1.6.1 (Pianificata) — 📦 Local Asset Bundling & Total Offline Independence (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60)
-
-> **Obiettivo:** Raggiungere la totale indipendenza dal cloud pubblico e dalla connettività Internet per il caricamento dell'interfaccia utente durante blackout ISP (**Issue #58 - @jpatchMC**) e implementare l'identificazione e l'ordinamento immediato dei nuovi apparati connessi alla rete mediante la colonna `first_seen` (**Issue #60 - @DannyFeliz**).
-
-#### 1. 📦 Local Asset Bundling & Total Offline Independence (Issue #58 - @jpatchMC)
-*(In risposta alla segnalazione in Issue #58: "use of online assets - UI couldn't load during ISP outage")*
-- [ ] **Vendor Bundle Locale (`app/static/vendor/`):**
-  - Download e packaging offline di tutte le librerie esterne:
-    - Tailwind CSS / bundle precompilato (`app/static/vendor/tailwind.js`).
-    - Alpine.js v3 (`app/static/vendor/alpine.min.js`).
-    - Chart.js v4 (`app/static/vendor/chart.umd.min.js`).
-    - Lucide Icons SVG (`app/static/vendor/lucide.min.js`).
-  - Sostituzione di tutti i tag `<script src="https://cdn...">` in `index.html` con puntatori locali `/static/vendor/...`.
-- [ ] **Self-Hosting Font System:**
-  - Inclusione locale dei file WOFF2 per **Inter** e **JetBrains Mono** in `app/static/fonts/` con regole `@font-face` in `styles.css`.
-  - Eliminazione dei collegamenti preconnect e stylesheet verso `fonts.googleapis.com` e `fonts.gstatic.com`.
-- [ ] **Full Offline Dashboard Guarantee:**
-  - Garanzia al 100% che la dashboard e tutti i controlli locali funzionino perfettamente in LAN anche quando il router eero ha perso la connessione WAN verso l'operatore Internet.
-
-#### 2. 🆕 Ordinamento e Filtro Dispositivi per "Primo Accesso / Più Recenti" (Issue #60 - @DannyFeliz)
-*(In risposta alla richiesta in Issue #60: "Ability to sort or filter devices by Recently Joined / First Seen")*
-- [ ] **Propagazione `first_seen` nell'API (`/api/devices`):**
-  - Correlazione del timestamp `first_seen` della tabella SQLite `known_devices` nel modello normalizzato di ciascun dispositivo in `eero_client.py` (`dev["first_seen"]`).
-- [ ] **Nuovo Criterio di Ordinamento nella UI (`app.js`):**
-  - Aggiunta di `first_seen` in `deviceSortField` e gestione comparatore temporale decrescente (i dispositivi più recenti in cima alla tabella).
-  - Nuova opzione *"Primo Accesso / Più Recenti"* nel dropdown personalizzato di ordinamento dispositivi in `index.html`.
-- [ ] **Badge "NEW" & Filtro Rapido:**
-  - Badge visivo *"NEW"* per gli apparati rilevati per la prima volta nelle ultime 24 ore o 7 giorni.
-  - Quick pill o toggle per visualizzare istantaneamente solo i dispositivi aggiunti di recente.
-- [ ] **Localizzazione Bilingue Completa:**
-  - Aggiunta delle stringhe dedicate in `it.json` ed `en.json` (`devices.sort_first_seen`, `devices.badge_new`, `devices.filter_recent`).
+##### Modulo 6: 📦 Local Asset Bundling (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60) (In arrivo su branch `dev`)
+- [ ] Packaging e bundle locale di tutte le librerie in `app/static/vendor/` (`tailwind`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) ed eliminazione dipendenze CDN esterne (Issue #58 - @jpatchMC).
+- [ ] Self-hosting locale dei file font WOFF2 per Inter e JetBrains Mono in `app/static/fonts/` con regole `@font-face` (Issue #58).
+- [ ] Garanzia caricamento 100% offline della dashboard e gestione eero su LAN in assenza totale di connettività WAN/ISP (Issue #58).
+- [ ] Propagazione del campo `first_seen` da `known_devices` nel payload JSON dell'endpoint `/api/devices` in `eero_client.py` (Issue #60 - @DannyFeliz).
+- [ ] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown dell'elenco dispositivi in `index.html` (Issue #60).
+- [ ] Badge compatto visivo `"NEW"` e filtro rapido per dispositivi rilevati per la prima volta nelle ultime 24h / 7 giorni (Issue #60).
+- [ ] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
 
 ---
 
