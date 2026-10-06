@@ -1297,6 +1297,303 @@ async def run_all_tests():
         runner.assert_true(legacy_sync.status_code == 200, "Endpoint legacy POST /api/automations/adguard/sync risponde HTTP 200")
         runner.assert_true(legacy_sync.json().get("status") == "success", "Sync legacy AdGuard ha status 'success'")
 
+        # 7. Verifica del certificato HTTPS verso i server DNS (opzione per istanza 'insecure_tls')
+        # Nessun accesso di rete: httpx.AsyncClient è sostituito da un client con MockTransport che registra 'verify'.
+        import json
+        import ssl
+        import httpx
+        import app.services.dns_manager as dns_manager_module
+        from app.services.dns_manager import parse_insecure_tls
+
+        strict_true = [v for v in (True, False, None, "", "false", "False", "0", "no", "off", 0, "true", "TRUE ", "1", 1, "yes", "on") if parse_insecure_tls(v)]
+        runner.assert_true(strict_true == [True, "true", "TRUE ", "1", 1, "yes", "on"], f"parse_insecure_tls: solo True/'true'/'1'/'yes'/'on' disattivano la verifica (ottenuti: {strict_true})")
+        runner.assert_true(parse_insecure_tls("false") is False and parse_insecure_tls("0") is False, "parse_insecure_tls: la stringa 'false' (o '0') NON diventa True")
+
+        def _tls_dns_handler(request):
+            if request.url.host == "selfsigned.lan":
+                try:
+                    raise ssl.SSLCertVerificationError(1, "certificate verify failed: self-signed certificate")
+                except ssl.SSLCertVerificationError as ssl_exc:
+                    raise httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed", request=request) from ssl_exc
+            if request.url.host == "unreachable.lan":
+                raise httpx.ConnectError("All connection attempts failed", request=request)
+            if request.url.host == "pihole-auth.lan":
+                if request.url.path == "/api/auth":
+                    try:
+                        raise ssl.SSLCertVerificationError(1, "certificate verify failed: self-signed certificate")
+                    except ssl.SSLCertVerificationError as ssl_exc:
+                        raise httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed", request=request) from ssl_exc
+                return httpx.Response(401, json={})
+            path = request.url.path
+            if path == "/control/clients":
+                return httpx.Response(200, json={"clients": [], "auto_clients": []})
+            if path.startswith("/control/clients/"):
+                return httpx.Response(200, json={})
+            if path == "/api/config/dns/hosts":
+                return httpx.Response(200, json={"config": {"dns": {"hosts": []}}})
+            if path == "/api/config":
+                return httpx.Response(200, json={})
+            if path == "/api/zones/list":
+                return httpx.Response(200, json={"status": "ok", "response": {"zones": []}})
+            if path == "/api/zones/records/add":
+                return httpx.Response(200, json={"status": "ok"})
+            return httpx.Response(404, json={})
+
+        tls_verify_seen = []
+        real_async_client = httpx.AsyncClient
+
+        class _TlsRecordingClient(real_async_client):
+            def __init__(self, *args, **kwargs):
+                tls_verify_seen.append(kwargs.get("verify", True))
+                kwargs["transport"] = httpx.MockTransport(_tls_dns_handler)
+                super().__init__(*args, **kwargs)
+
+        tls_devices = [{"ip": "192.168.1.20", "mac": "AA:BB:CC:00:11:20", "hostname": "pc-tls-test"}]
+        tls_engines = [("tls_adguard", "adguard", "adguard.lan"), ("tls_pihole", "pihole", "pihole.lan"), ("tls_technitium", "technitium", "technitium.lan")]
+        tls_setting_keys = [
+            "dns_instances", "dns_sync_enabled", "adguard_url", "adguard_username", "adguard_password", "adguard_sync_enabled", "adguard_insecure_tls",
+            "adguard_last_sync_time", "adguard_last_sync_count", "adguard_last_sync_status",
+        ]
+        tls_saved_settings = {k: await db_service.get_setting(k) for k in tls_setting_keys}
+        tls_prev_demo = eero_client._is_demo_active
+        tls_prev_token = eero_client.user_token
+
+        async def _tls_verify_per_path(instance_ids):
+            """Esegue test e sync per ciascuna istanza e restituisce {(id, 'test'|'sync'): verify}."""
+            seen = {}
+            for inst_id in instance_ids:
+                tls_verify_seen.clear()
+                await client.post("/api/automations/dns/test", json={"instance_id": inst_id})
+                seen[(inst_id, "test")] = list(tls_verify_seen)
+                tls_verify_seen.clear()
+                await dns_service.sync_devices(tls_devices, instance_id=inst_id)
+                seen[(inst_id, "sync")] = list(tls_verify_seen)
+            return seen
+
+        def _tls_instances(insecure=None, host_override=None):
+            out = []
+            for inst_id, engine, host in tls_engines:
+                inst = {"id": inst_id, "name": f"TLS {engine}", "engine": engine, "url": f"https://{host_override or host}",
+                        "username": "admin", "password": "pw-tls", "token": "tok-tls", "enabled": True}
+                if insecure is not None:
+                    inst["insecure_tls"] = insecure
+                out.append(inst)
+            return out
+
+        async def _stored_instances():
+            return json.loads(await db_service.get_setting("dns_instances", "[]") or "[]")
+
+        httpx.AsyncClient = _TlsRecordingClient
+        try:
+            eero_client._is_demo_active = False
+            eero_client.user_token = "live_secret_user_token_sample"
+            tls_ids = [e[0] for e in tls_engines]
+
+            # a) Istanza nuova senza opzione: verifica TLS attiva sui 6 percorsi (3 test + 3 sync)
+            await db_service.set_setting("dns_instances", "[]")
+            res = await client.post("/api/automations/dns", json={"enabled": False, "instances": _tls_instances()})
+            runner.assert_true(res.status_code == 200, "Salvataggio istanze https:// senza 'insecure_tls' risponde HTTP 200")
+            stored = await _stored_instances()
+            runner.assert_true(all(i.get("insecure_tls") is False for i in stored), "Istanze nuove salvate con insecure_tls=False (booleano) di default")
+            seen = await _tls_verify_per_path(tls_ids)
+            runner.assert_true(all(v == [True] for v in seen.values()) and len(seen) == 6, f"Default: verify=True sui 6 percorsi AdGuard/Pi-hole/Technitium test+sync (visti: {seen})")
+
+            # b) Opzione attiva: verify=False sui 6 percorsi
+            res = await client.post("/api/automations/dns", json={"enabled": False, "instances": _tls_instances(insecure=True)})
+            stored = await _stored_instances()
+            runner.assert_true(all(i.get("insecure_tls") is True for i in stored), "insecure_tls=True salvato per le 3 istanze")
+            seen = await _tls_verify_per_path(tls_ids)
+            runner.assert_true(all(v == [False] for v in seen.values()) and len(seen) == 6, f"insecure_tls=True: verify=False sui 6 percorsi (visti: {seen})")
+            dns_get = (await client.get("/api/automations/dns")).json()
+            runner.assert_true(all(i.get("insecure_tls") is True for i in dns_get.get("instances", [])), "GET /api/automations/dns espone insecure_tls=True")
+            runner.assert_true(all("password" not in i for i in dns_get.get("instances", [])), "GET /api/automations/dns continua a non esporre le password")
+
+            # c) Interpretazione rigorosa: "false" (API o database) non disattiva la verifica
+            res = await client.post("/api/automations/dns", json={"enabled": False, "instances": _tls_instances(insecure="false")})
+            stored = await _stored_instances()
+            runner.assert_true(res.status_code == 200 and all(i.get("insecure_tls") is False for i in stored), "API: insecure_tls='false' salvato come False")
+            raw = _tls_instances()
+            for inst in raw:
+                inst["insecure_tls"] = "false"
+            await db_service.set_setting("dns_instances", json.dumps(raw))
+            seen = await _tls_verify_per_path(tls_ids)
+            runner.assert_true(all(v == [True] for v in seen.values()), f"Database: insecure_tls='false' (stringa) mantiene verify=True (visti: {seen})")
+            for inst in raw:
+                inst["insecure_tls"] = "yes-please"
+            await db_service.set_setting("dns_instances", json.dumps(raw))
+            seen = await _tls_verify_per_path(tls_ids)
+            runner.assert_true(all(v == [True] for v in seen.values()), f"Database: valore sconosciuto mantiene verify=True (visti: {seen})")
+
+            # d) Compatibilità: istanze salvate prima dell'opzione (nessuna chiave) — https:// resta senza verifica, http:// invariato
+            legacy_raw = [
+                {"id": "old_https", "name": "AdGuard https", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "password": "pw", "token": "", "enabled": True},
+                {"id": "old_http", "name": "Pi-hole http", "engine": "pihole", "url": "http://pihole.lan", "username": "", "password": "", "token": "tok", "enabled": True},
+            ]
+            await db_service.set_setting("dns_instances", json.dumps(legacy_raw))
+            dns_get = (await client.get("/api/automations/dns")).json()
+            by_id = {i["id"]: i for i in dns_get.get("instances", [])}
+            runner.assert_true(by_id.get("old_https", {}).get("insecure_tls") is True, "Compatibilità: istanza https:// salvata prima dell'opzione appare con insecure_tls=True (visibile e disattivabile)")
+            runner.assert_true(by_id.get("old_http", {}).get("insecure_tls") is False, "Compatibilità: istanza http:// salvata prima dell'opzione appare con insecure_tls=False")
+            seen = await _tls_verify_per_path(["old_https"])
+            runner.assert_true(seen == {("old_https", "test"): [False], ("old_https", "sync"): [False]}, f"Compatibilità: l'istanza https:// esistente continua a funzionare senza verifica (visti: {seen})")
+            stored = {i["id"]: i for i in await _stored_instances()}
+            runner.assert_true(stored.get("old_https", {}).get("insecure_tls") is True and stored.get("old_http", {}).get("insecure_tls") is False, "Compatibilità: dopo il primo sync l'opzione è salvata esplicitamente nel database")
+
+            # Salvataggio da client che non conosce l'opzione: valore conservato ; l'utente può disattivarlo (reversibile)
+            res = await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "old_https", "name": "AdGuard https", "engine": "adguard", "url": "https://adguard.lan", "username": "admin"}]})
+            stored = {i["id"]: i for i in await _stored_instances()}
+            runner.assert_true(stored.get("old_https", {}).get("insecure_tls") is True and stored.get("old_https", {}).get("password") == "pw", "Salvataggio senza 'insecure_tls' conserva il valore (e la password) già salvati")
+            tls_verify_seen.clear()
+            await client.post("/api/automations/dns/test", json={"instance": {"id": "old_https", "engine": "adguard", "url": "https://altro.lan", "username": "admin"}})
+            runner.assert_true(tls_verify_seen == [True], f"Test dello stesso id verso un altro server senza opzione: verify=True (visti: {tls_verify_seen})")
+            await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "old_https", "name": "AdGuard https", "engine": "adguard", "url": "https://altro.lan", "username": "admin"}]})
+            stored = {i["id"]: i for i in await _stored_instances()}
+            runner.assert_true(stored.get("old_https", {}).get("insecure_tls") is False, "Stesso id con un altro server e senza opzione: verifica attiva (nessuna eredità)")
+            await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "old_https", "name": "AdGuard https", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "insecure_tls": True}]})
+            res = await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "old_https", "name": "AdGuard https", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "insecure_tls": False}]})
+            seen = await _tls_verify_per_path(["old_https"])
+            runner.assert_true(seen == {("old_https", "test"): [True], ("old_https", "sync"): [True]}, f"Opzione tolta dall'utente: verifica di nuovo attiva (visti: {seen})")
+
+            # Test dall'interfaccia con valore non ancora salvato: prevale il valore inviato
+            tls_verify_seen.clear()
+            await client.post("/api/automations/dns/test", json={"instance": {"id": "old_https", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "insecure_tls": True}})
+            runner.assert_true(tls_verify_seen == [False], f"Test con insecure_tls inviato dall'interfaccia (non salvato) usa quel valore (visti: {tls_verify_seen})")
+            tls_verify_seen.clear()
+            await client.post("/api/automations/dns/test", json={"instance": {"id": "nuova", "engine": "adguard", "url": "https://adguard.lan"}})
+            runner.assert_true(tls_verify_seen == [True], f"Test di un'istanza nuova senza opzione: verify=True (visti: {tls_verify_seen})")
+
+            # Configurazione legacy a istanza singola (adguard_url senza dns_instances, salvata prima dell'opzione)
+            await db_service.set_setting("dns_instances", "")
+            async with db_service.get_connection() as tls_db:
+                await tls_db.execute("DELETE FROM app_settings WHERE key = 'adguard_insecure_tls'")
+                await tls_db.commit()
+            await db_service.set_setting("adguard_url", "https://adguard.lan")
+            await db_service.set_setting("adguard_username", "admin")
+            await db_service.set_setting("adguard_password", "pw")
+            dns_get = (await client.get("/api/automations/dns")).json()
+            legacy_inst = next((i for i in dns_get.get("instances", []) if i.get("id") == "inst-legacy-adguard"), {})
+            runner.assert_true(legacy_inst.get("insecure_tls") is True, "Compatibilità: configurazione legacy adguard_url https:// appare con insecure_tls=True")
+            tls_verify_seen.clear()
+            await dns_service.sync_devices(tls_devices)
+            runner.assert_true(tls_verify_seen == [False], f"Compatibilità: sync della configurazione legacy https:// invariato (verify=False, visti: {tls_verify_seen})")
+
+            # e) Certificato non verificabile: messaggio chiaro con l'indicazione dell'opzione
+            await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="selfsigned.lan")))
+            for inst_id, engine, _host in tls_engines:
+                test_res = (await client.post("/api/automations/dns/test", json={"instance_id": inst_id})).json()
+                runner.assert_true(test_res.get("success") is False and test_res.get("tls_error") is True and "Accetta certificato HTTPS non verificato" in test_res.get("message", ""), f"Test {engine}: certificato non verificabile → tls_error e messaggio con l'opzione da abilitare")
+                sync_res = await dns_service.sync_devices(tls_devices, instance_id=inst_id)
+                sync_item = (sync_res.get("results") or [{}])[0]
+                runner.assert_true(sync_item.get("success") is False and sync_item.get("tls_error") is True, f"Sync {engine}: certificato non verificabile → tls_error")
+            await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="unreachable.lan")))
+            test_res = (await client.post("/api/automations/dns/test", json={"instance_id": "tls_adguard"})).json()
+            runner.assert_true(test_res.get("success") is False and not test_res.get("tls_error") and "Impossibile connettersi" in test_res.get("message", ""), "Errore di connessione non TLS: messaggio invariato, nessun tls_error")
+
+            # Pi-hole: errore di certificato durante /api/auth (dopo un 401) non viene assorbito
+            await db_service.set_setting("dns_instances", json.dumps([{"id": "tls_pihole_auth", "name": "Pi-hole auth", "engine": "pihole", "url": "https://pihole-auth.lan", "token": "tok-tls", "insecure_tls": False, "enabled": True}]))
+            test_res = (await client.post("/api/automations/dns/test", json={"instance_id": "tls_pihole_auth"})).json()
+            runner.assert_true(test_res.get("tls_error") is True, f"Test Pi-hole: certificato non verificabile su /api/auth → tls_error (ottenuto: {test_res.get('message')})")
+            sync_item = ((await dns_service.sync_devices(tls_devices, instance_id="tls_pihole_auth")).get("results") or [{}])[0]
+            runner.assert_true(sync_item.get("success") is False and sync_item.get("tls_error") is True, f"Sync Pi-hole: certificato non verificabile su /api/auth → tls_error, nessun ripiego v5 (ottenuto: {sync_item.get('message')})")
+
+            # API: Pydantic non converte "t", "y", 1.0 in True (stessa regola del database)
+            for loose_value in ("t", "y", 1.0, "garbage"):
+                res = await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "tls_loose", "engine": "adguard", "url": "https://adguard.lan", "insecure_tls": loose_value}]})
+                stored = await _stored_instances()
+                runner.assert_true(res.status_code == 200 and stored and stored[0].get("insecure_tls") is False, f"API: insecure_tls={loose_value!r} salvato come False")
+
+            # Istanza senza id: non eredita l'opzione di un'istanza salvata con l'id generato ("inst-1")
+            await db_service.set_setting("dns_instances", json.dumps([{"id": "inst-1", "engine": "adguard", "url": "https://old.lan", "insecure_tls": True, "enabled": True}]))
+            await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"engine": "adguard", "url": "https://new.lan"}]})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("id") == "inst-1" and stored[0].get("insecure_tls") is False, "Istanza nuova senza id: verifica attiva (nessuna eredità dall'id generato)")
+
+            # Configurazione legacy: primo salvataggio senza il campo conserva l'opzione mostrata (True), chiave legacy rispecchiata
+            await db_service.set_setting("dns_instances", "")
+            await db_service.set_setting("adguard_url", "https://adguard.lan")
+            async with db_service.get_connection() as tls_db:
+                await tls_db.execute("DELETE FROM app_settings WHERE key = 'adguard_insecure_tls'")
+                await tls_db.commit()
+            await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "inst-legacy-adguard", "engine": "adguard", "url": "https://adguard.lan", "username": "admin"}]})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("insecure_tls") is True, "Configurazione legacy https://: primo salvataggio senza il campo conserva insecure_tls=True")
+            runner.assert_true(await db_service.get_setting("adguard_insecure_tls") == "true", "Chiave legacy adguard_insecure_tls rispecchia il primo AdGuard")
+
+            # Istanze eliminate: la copia legacy che riappare mantiene la scelta dell'utente (verifica attiva)
+            await client.post("/api/automations/dns", json={"enabled": True, "instances": [{"id": "inst-legacy-adguard", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "insecure_tls": False}]})
+            await client.post("/api/automations/dns", json={"enabled": True, "instances": []})
+            dns_get = (await client.get("/api/automations/dns")).json()
+            revived = next((i for i in dns_get.get("instances", []) if i.get("id") == "inst-legacy-adguard"), {})
+            runner.assert_true(revived.get("insecure_tls") is False, "Dopo l'eliminazione delle istanze, la configurazione legacy riapparsa resta verificata")
+            tls_verify_seen.clear()
+            await dns_service.sync_devices(tls_devices)
+            runner.assert_true(tls_verify_seen == [True], f"Sync della configurazione legacy riapparsa: verify=True (visti: {tls_verify_seen})")
+
+            # Endpoint legacy /api/automations/adguard/test: opzione dell'istanza salvata solo per lo stesso server
+            await client.post("/api/automations/dns", json={"enabled": False, "instances": [{"id": "tls_legacy_ep", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "password": "pw", "insecure_tls": True}]})
+            tls_verify_seen.clear()
+            await client.post("/api/automations/adguard/test", json={"url": "https://adguard.lan", "username": "admin", "password": "pw"})
+            runner.assert_true(tls_verify_seen == [False], f"Endpoint legacy adguard/test sullo stesso server: opzione salvata applicata (visti: {tls_verify_seen})")
+            tls_verify_seen.clear()
+            await client.post("/api/automations/adguard/test", json={"url": "https://other.lan", "username": "admin", "password": "pw"})
+            runner.assert_true(tls_verify_seen == [True], f"Endpoint legacy adguard/test verso un altro server: verify=True (visti: {tls_verify_seen})")
+
+            # Endpoint legacy POST /api/automations/adguard (istanza singola): opzione conservata solo per lo stesso server
+            await db_service.set_setting("dns_instances", json.dumps([{"id": "inst-adguard-1", "engine": "adguard", "url": "https://adguard.lan", "username": "admin", "password": "pw", "insecure_tls": True, "enabled": True}]))
+            await client.post("/api/automations/adguard", json={"enabled": False, "url": "https://adguard.lan", "username": "admin"})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("insecure_tls") is True, "Endpoint legacy adguard (stesso server): insecure_tls=True conservato")
+            await client.post("/api/automations/adguard", json={"enabled": False, "url": "https://altro.lan", "username": "admin"})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("insecure_tls") is False, "Endpoint legacy adguard (nuovo server): verifica attiva")
+            await db_service.set_setting("dns_instances", json.dumps([{"id": "tls_pihole_only", "engine": "pihole", "url": "https://adguard.lan", "token": "tok", "insecure_tls": True, "enabled": True}]))
+            tls_verify_seen.clear()
+            await client.post("/api/automations/adguard/test", json={"url": "https://adguard.lan", "username": "admin", "password": "pw"})
+            runner.assert_true(tls_verify_seen == [True], f"Endpoint legacy adguard/test: l'opzione di un Pi-hole alla stessa URL non vale per AdGuard (visti: {tls_verify_seen})")
+            await client.post("/api/automations/adguard", json={"enabled": False, "url": "https://adguard.lan", "username": "admin"})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("engine") == "adguard" and stored[0].get("insecure_tls") is False, "Endpoint legacy adguard: nuova istanza AdGuard non eredita l'opzione di un Pi-hole alla stessa URL")
+
+            # Configurazione legacy salvata prima dell'opzione: primo salvataggio dall'endpoint legacy e test per id
+            await db_service.set_setting("dns_instances", "")
+            async with db_service.get_connection() as tls_db:
+                await tls_db.execute("DELETE FROM app_settings WHERE key = 'adguard_insecure_tls'")
+                await tls_db.commit()
+            await db_service.set_setting("adguard_url", "https://adguard.lan")
+            tls_verify_seen.clear()
+            await client.post("/api/automations/dns/test", json={"instance": {"id": "inst-legacy-adguard", "engine": "adguard", "url": "https://adguard.lan", "username": "admin"}})
+            runner.assert_true(tls_verify_seen == [False], f"Test per id della configurazione legacy https:// senza opzione: comportamento invariato (visti: {tls_verify_seen})")
+            await client.post("/api/automations/adguard", json={"enabled": False, "url": "https://adguard.lan", "username": "admin"})
+            stored = await _stored_instances()
+            runner.assert_true(stored and stored[0].get("insecure_tls") is True, "Configurazione legacy https://: primo salvataggio dall'endpoint legacy conserva insecure_tls=True")
+        finally:
+            httpx.AsyncClient = real_async_client
+            eero_client._is_demo_active = tls_prev_demo
+            eero_client.user_token = tls_prev_token
+            for key, value in tls_saved_settings.items():
+                if value is None:
+                    async with db_service.get_connection() as tls_db:
+                        await tls_db.execute("DELETE FROM app_settings WHERE key = ?", (key,))
+                        await tls_db.commit()
+                else:
+                    await db_service.set_setting(key, value)
+        runner.assert_true(dns_manager_module.httpx.AsyncClient is real_async_client, "httpx.AsyncClient ripristinato dopo i test TLS")
+
+        # f) Interfaccia: casella per istanza, valore inviato al salvataggio e al test, traduzioni it/en allineate
+        from pathlib import Path
+        tls_index_html = Path("app/templates/index.html").read_text(encoding="utf-8")
+        tls_app_js = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true('x-model="inst.insecure_tls"' in tls_index_html, "index.html: casella 'insecure_tls' nel modulo dell'istanza DNS")
+        runner.assert_true('x-model="inst.url" @input="if (inst.insecure_tls && normalizeDnsUrl($event.target.value) !== inst.tls_url) inst.insecure_tls = false"' in tls_index_html, "index.html: cambiare server (URL normalizzato) toglie l'opzione (nuovo server = verifica attiva)")
+        runner.assert_true("normalizeDnsUrl(url)" in tls_app_js and "tls_url: i.insecure_tls === true ? this.normalizeDnsUrl(i.url) : ''" in tls_app_js, "app.js: URL associato all'opzione TLS memorizzato e normalizzato come nel backend")
+        runner.assert_true("controls.dns_insecure_tls_warning" in tls_index_html, "index.html: avviso mostrato quando la verifica è disattivata")
+        runner.assert_true(tls_app_js.count("insecure_tls: inst.insecure_tls === true") == 2, "app.js: insecure_tls inviato (booleano rigoroso) al salvataggio e al test")
+        runner.assert_true("insecure_tls: false" in tls_app_js, "app.js: nuova istanza con verifica attiva (insecure_tls: false)")
+        tls_it = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8")).get("controls", {})
+        tls_en = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8")).get("controls", {})
+        runner.assert_true(all(k in tls_it and k in tls_en for k in ("dns_insecure_tls", "dns_insecure_tls_warning", "dns_tls_error")), "Chiavi i18n dns_insecure_tls / _warning / dns_tls_error presenti in it.json ed en.json")
+        runner.assert_true(set(tls_it.keys()) == set(tls_en.keys()), "Parità 100% tra chiavi 'controls' di it.json ed en.json")
+
         # =====================================================================
         # 14. TEST HEALTH SCORE BREAKDOWN & DIAGNOSTICS (Issue #15)
         # =====================================================================
