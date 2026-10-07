@@ -2579,6 +2579,51 @@ async def run_all_tests():
         runner.assert_true("ipv6_badge_ula" in it_loc.get("device_modal", {}), "ipv6_badge_ula presente in it.json [device_modal]")
         runner.assert_true("ipv6_badge_ula" in en_loc.get("device_modal", {}), "ipv6_badge_ula presente in en.json [device_modal]")
 
+        # 4. Test Issue #57 (Fase 2): Reverse Client Enrichment via NDP & AdGuard API
+        from app.services.enrichment_service import enrichment_service, classify_ip, normalize_mac
+        
+        # Test 4a: Normalizzazione MAC
+        runner.assert_true(normalize_mac("aabbccddeeff") == "AA:BB:CC:DD:EE:FF", "normalize_mac da stringa compatta")
+        runner.assert_true(normalize_mac("aa-bb-cc-dd-ee-ff") == "AA:BB:CC:DD:EE:FF", "normalize_mac con trattini")
+        runner.assert_true(normalize_mac("AA:BB:CC:DD:EE:FF") == "AA:BB:CC:DD:EE:FF", "normalize_mac con due punti")
+        runner.assert_true(normalize_mac("invalid_mac") is None, "normalize_mac rifiuta stringhe invalide")
+
+        # Test 4b: Classificazione IP
+        c_ula = classify_ip("fd4c:b590:10fa:1::9390")
+        runner.assert_true(c_ula["valid"] and c_ula["type"] == "ULA", "Classificazione corretta ULA fd4c::")
+        c_gua = classify_ip("2001:db8::1234")
+        runner.assert_true(c_gua["valid"] and c_gua["type"] == "GUA", "Classificazione corretta GUA 2001::")
+        c_ll = classify_ip("fe80::1")
+        runner.assert_true(c_ll["valid"] and c_ll["type"] == "Link-Local", "Classificazione corretta Link-Local fe80::")
+        c_v4 = classify_ip("192.168.1.150")
+        runner.assert_true(c_v4["valid"] and c_v4["type"] == "IPv4", "Classificazione corretta IPv4")
+
+        # Test 4c: Ingestion API e Persistenza SQLite
+        test_mappings = [
+            {
+                "mac": "AA:BB:CC:DD:EE:FF",
+                "ip": "fd4c:b590:10fa:1::9390",
+                "type": "ULA",
+                "source": "test_adguard_ndp"
+            }
+        ]
+        ingest_res = await enrichment_service.ingest_neighbor_mappings(test_mappings, source="test_runner")
+        runner.assert_true(ingest_res["status"] == "success", "Ingestione mapping restituisce status success")
+        runner.assert_true(ingest_res["total"] >= 1, "Conteggio mapping salvati >= 1")
+
+        disc_rows = await db_service.get_discovered_ips_for_mac("AA:BB:CC:DD:EE:FF")
+        runner.assert_true(len(disc_rows) >= 1, "get_discovered_ips_for_mac trova la riga salvata")
+        runner.assert_true(disc_rows[0]["ip_address"] == "fd4c:b590:10fa:1::9390", "Indirizzo IP salvato corrisponde all'ULA")
+
+        # Test 4d: Pulizia associazione di test
+        del_ok = await db_service.delete_discovered_ip("AA:BB:CC:DD:EE:FF", "fd4c:b590:10fa:1::9390")
+        runner.assert_true(del_ok is True, "delete_discovered_ip rimuove correttamente la tupla di test")
+
+        # Test 4e: Verifica localizzazione badge ULA (NDP)
+        runner.assert_true("ipv6_badge_ula_ndp" in it_loc.get("device_modal", {}), "ipv6_badge_ula_ndp presente in it.json")
+        runner.assert_true("ipv6_badge_ula_ndp" in en_loc.get("device_modal", {}), "ipv6_badge_ula_ndp presente in en.json")
+
+
         # -----------------------------------------------------------------
         # 24. TEST SMART AUTOMATIONS, PARENTAL SCHEDULING & NIGHTLY MAINTENANCE ENGINE (v1.6.0 Modulo 1)
         # -----------------------------------------------------------------

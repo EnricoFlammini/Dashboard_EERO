@@ -272,7 +272,9 @@
     "ipv6_addresses_count": "addresses",
     "ipv6_badge_global": "SLAAC / Global",
     "ipv6_badge_ula": "ULA (Local)",
+    "ipv6_badge_ula_ndp": "ULA (NDP / AdGuard)",
     "ipv6_badge_link_local": "Link-Local",
+    "ipv6_tooltip_ndp": "Discovered via Neighbor Discovery Protocol (NDP) or AdGuard Home",
     "copy_ipv6": "Copy IPv6 address",
     "ipv6_copied": "IPv6 address copied to clipboard!",
     "close_btn": "Close"

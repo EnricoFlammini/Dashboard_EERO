@@ -396,3 +396,78 @@ async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
         logger.error(f"Error getting top bandwidth hogs: {e}")
         return {"status": "error", "message": str(e), "top_hogs": []}
 
+
+# =========================================================================
+# REVERSE CLIENT ENRICHMENT & NDP DISCOVERY (Issue #57 - @jpatchMC)
+# =========================================================================
+
+class NeighborMappingItem(BaseModel):
+    ip: str = Field(..., description="Indirizzo IPv6 (ULA/GUA) o IPv4 da associare")
+    mac: str = Field(..., description="Indirizzo MAC del dispositivo fisico")
+    type: Optional[str] = Field("ULA", description="Tipo di indirizzo: ULA, GUA, IPv4")
+    source: Optional[str] = Field("api", description="Origine della rilevazione (es. adguard_agent, cron, ndp)")
+
+
+class NeighborIngestRequest(BaseModel):
+    source: Optional[str] = Field("external_agent", description="Sorgente del feed di dati")
+    mappings: list[NeighborMappingItem] = Field(..., description="Elenco di associazioni IP-MAC rilevate")
+
+
+class DeleteNeighborMappingRequest(BaseModel):
+    mac: str = Field(..., description="MAC address dell'associazione da eliminare")
+    ip: str = Field(..., description="Indirizzo IP da rimuovere")
+
+
+@router.post("/enrichment/neighbors")
+async def ingest_neighbor_mappings(
+    payload: NeighborIngestRequest,
+    _auth=Depends(require_permission("network_control"))
+):
+    """
+    Riceve un payload di associazioni IP-MAC scoperte via NDP o da agenti esterni (AdGuard Home, cron host).
+    Valida e normalizza gli indirizzi, aggiorna SQLite ed effettua l'aggiornamento a caldo della cache RAM.
+    """
+    from app.services.enrichment_service import enrichment_service
+    raw_list = [item.model_dump() for item in payload.mappings]
+    result = await enrichment_service.ingest_neighbor_mappings(raw_list, source=payload.source or "api")
+    return result
+
+
+@router.get("/enrichment/mappings")
+async def get_discovered_mappings(limit: int = 500):
+    """Restituisce l'elenco di tutti gli indirizzi IP scoperti e arricchiti via NDP / AdGuard."""
+    rows = await db_service.get_all_discovered_ips_list(limit=limit)
+    return {
+        "status": "success",
+        "total_mappings": len(rows),
+        "mappings": rows
+    }
+
+
+@router.delete("/enrichment/mappings")
+async def delete_discovered_mapping(
+    payload: DeleteNeighborMappingRequest,
+    _auth=Depends(require_permission("network_control"))
+):
+    """Elimina una specifica associazione IP-MAC scoperta e aggiorna la cache in RAM."""
+    from app.services.enrichment_service import enrichment_service
+    deleted = await db_service.delete_discovered_ip(payload.mac, payload.ip)
+    if deleted:
+        await enrichment_service.refresh_cached_devices_enrichment()
+        return {"status": "success", "message": f"Associazione {payload.ip} <-> {payload.mac} rimossa."}
+    return {"status": "not_found", "message": "Nessuna corrispondenza trovata per l'eliminazione."}
+
+
+@router.post("/enrichment/scan-adguard")
+async def trigger_adguard_scan(
+    _auth=Depends(require_permission("network_control"))
+):
+    """
+    Avvia una scansione attiva on-demand delle istanze AdGuard Home configurate:
+    identifica i client orfani/bare IP, invia una probe NDP per risolvere il MAC e aggiorna la dashboard.
+    """
+    from app.services.enrichment_service import enrichment_service
+    res = await enrichment_service.scan_all_adguard_instances()
+    return res
+
+

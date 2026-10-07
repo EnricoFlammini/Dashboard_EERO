@@ -344,6 +344,21 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_time ON system_logs(timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level);")
 
+            # 19. Discovered Device IPs / Reverse NDP Enrichment (v1.6.0 Modulo 7 - Issue #57)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS device_discovered_ips (
+                    mac_address TEXT NOT NULL,
+                    ip_address TEXT NOT NULL,
+                    ip_type TEXT DEFAULT 'ULA',
+                    source TEXT DEFAULT 'ndp_enrichment',
+                    first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (mac_address, ip_address)
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_discovered_ips_mac ON device_discovered_ips(mac_address);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_discovered_ips_time ON device_discovered_ips(last_seen);")
+
             # Bootstrap utente admin predefinito se la tabella local_users è vuota
             async with db.execute("SELECT COUNT(*) FROM local_users;") as cur_u:
                 row_u = await cur_u.fetchone()
@@ -2911,6 +2926,145 @@ class DBService:
             logger.info(
                 f"Purged {deleted_count} expired system logs older than {cutoff_str} ({retention_days} days retention)."
             )
+        return deleted_count
+
+    # =========================================================================
+    # DISCOVERED IPS / REVERSE NDP ENRICHMENT (Issue #57)
+    # =========================================================================
+
+    async def add_discovered_ips(self, mappings: List[Dict[str, Any]]) -> Dict[str, int]:
+        """
+        Salva o aggiorna associazioni IP-MAC scoperte via NDP o inviate tramite API di ingestion.
+        Esegue un UPSERT aggiornando last_seen se la coppia esiste già.
+        Restituisce un dizionario con il conteggio di 'added' e 'updated'.
+        """
+        if not mappings:
+            return {"added": 0, "updated": 0, "total": 0}
+
+        added = 0
+        updated = 0
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+        async with self.get_connection() as db:
+            for item in mappings:
+                mac = str(item.get("mac") or item.get("mac_address") or "").strip().lower()
+                ip = str(item.get("ip") or item.get("ip_address") or "").strip().lower()
+                ip_type = str(item.get("ip_type") or item.get("type") or "ULA").strip().upper()
+                source = str(item.get("source") or "ndp_enrichment").strip()
+
+                if not mac or not ip or len(mac) < 12:
+                    continue
+
+                # Verifica se esiste già
+                cur = await db.execute(
+                    "SELECT first_seen FROM device_discovered_ips WHERE mac_address = ? AND ip_address = ?",
+                    (mac, ip)
+                )
+                existing = await cur.fetchone()
+
+                if existing:
+                    await db.execute(
+                        """
+                        UPDATE device_discovered_ips 
+                        SET last_seen = ?, ip_type = ?, source = ?
+                        WHERE mac_address = ? AND ip_address = ?
+                        """,
+                        (now_str, ip_type, source, mac, ip)
+                    )
+                    updated += 1
+                else:
+                    await db.execute(
+                        """
+                        INSERT INTO device_discovered_ips (mac_address, ip_address, ip_type, source, first_seen, last_seen)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (mac, ip, ip_type, source, now_str, now_str)
+                    )
+                    added += 1
+
+            await db.commit()
+
+        return {"added": added, "updated": updated, "total": added + updated}
+
+    async def get_discovered_ips_for_mac(self, mac_address: str) -> List[Dict[str, Any]]:
+        """Restituisce la lista degli IP scoperti per un dato MAC address."""
+        if not mac_address:
+            return []
+        mac_clean = mac_address.strip().lower()
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT mac_address, ip_address, ip_type, source, first_seen, last_seen
+                FROM device_discovered_ips
+                WHERE mac_address = ?
+                ORDER BY last_seen DESC
+                """,
+                (mac_clean,)
+            )
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def get_all_discovered_ips_map(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Restituisce una mappa { mac_address: [discovered_ip_dict, ...] } per accesso O(1)."""
+        result: Dict[str, List[Dict[str, Any]]] = {}
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT mac_address, ip_address, ip_type, source, first_seen, last_seen
+                FROM device_discovered_ips
+                ORDER BY last_seen DESC
+                """
+            )
+            rows = await cur.fetchall()
+            for r in rows:
+                m = str(r["mac_address"]).strip().lower()
+                if m not in result:
+                    result[m] = []
+                result[m].append(dict(r))
+        return result
+
+    async def get_all_discovered_ips_list(self, limit: int = 500) -> List[Dict[str, Any]]:
+        """Restituisce l'elenco completo delle associazioni scoperte per endpoint diagnostici/UI."""
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                """
+                SELECT mac_address, ip_address, ip_type, source, first_seen, last_seen
+                FROM device_discovered_ips
+                ORDER BY last_seen DESC
+                LIMIT ?
+                """,
+                (limit,)
+            )
+            rows = await cur.fetchall()
+            return [dict(r) for r in rows]
+
+    async def delete_discovered_ip(self, mac_address: str, ip_address: str) -> bool:
+        """Elimina una specifica associazione IP-MAC scoperta."""
+        mac_clean = mac_address.strip().lower()
+        ip_clean = ip_address.strip().lower()
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                "DELETE FROM device_discovered_ips WHERE mac_address = ? AND ip_address = ?",
+                (mac_clean, ip_clean)
+            )
+            await db.commit()
+            return (cur.rowcount or 0) > 0
+
+    async def cleanup_stale_discovered_ips(self, retention_days: int = 30) -> int:
+        """Elimina indirizzi scoperti la cui ultima rilevazione supera retention_days."""
+        if retention_days <= 0:
+            return 0
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                "DELETE FROM device_discovered_ips WHERE last_seen < ?",
+                (cutoff_str,)
+            )
+            deleted_count = cur.rowcount if cur.rowcount is not None else 0
+            await db.commit()
+        if deleted_count > 0:
+            logger.info(f"NDP Enrichment: Eliminati {deleted_count} IP scoperti obsoleti più vecchi di {cutoff_str}.")
         return deleted_count
 
 

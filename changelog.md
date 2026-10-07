@@ -4,7 +4,24 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.6.0] - 2026-10-04
+## [1.6.0] - 2026-10-07
+
+### 🔍 Modulo 7: Reverse Client Enrichment & ULA Discovery via NDP / AdGuard Home (Issue #57 - @jpatchMC)
+* **🔍 Superamento del Limite di Routing L2 eero sui Pacchetti DNS Locali:**
+  * Risolto il limite strutturale delle reti dual-stack in cui i client LAN interrogano server DNS locali (es. AdGuard Home) usando indirizzi IPv6 ULA (*Unique Local Address*, `fd00::/8`). Poiché quel traffico viaggia a livello Layer 2 locale e non viene mai instradato sulla WAN, il cloud eero non ha visibilità su tali indirizzi ULA.
+* **🌐 API REST di Ingestion Dedicata (`POST /api/network/enrichment/neighbors`):**
+  * Endpoint ad alte prestazioni protetto da permessi RBAC per ricevere mapping `[{"ip": "...", "mac": "..."}]` da agenti esterni, script di cron sull'host AdGuard o sidecar container, garantendo il 100% di compatibilità anche con container Docker bridge isolati o configurazioni multi-server.
+  * Endpoint di consultazione e diagnostica: `GET /api/network/enrichment/mappings` e cancellazione puntuale `DELETE /api/network/enrichment/mappings`.
+* **📡 Active Neighbor Discovery & ICMP Probe Worker (`app/services/enrichment_service.py`):**
+  * Motore di probe ICMP asincrono non bloccante e ispezione della kernel neighbour table (`ip -6 neigh show <ip>` su Linux/Docker o ARP) per risolvere automaticamente i MAC address dei client.
+  * Scanner automatico integrato per AdGuard Home (`POST /api/network/enrichment/scan-adguard`): recupera i client orfani/bare IP da `/control/clients` (`auto_clients`) e query log recenti, esegue il probe NDP locale e associa l'IP ULA al corrispondente client eero.
+* **💾 Tabella Persistente SQLite `device_discovered_ips`:**
+  * Schema indicizzato per storicizzare gli indirizzi scoperti con colonne `mac_address`, `ip_address`, `ip_type`, `source`, `first_seen`, `last_seen` e routine automatica di pulizia record obsoleti.
+* **🔄 Chiusura del Ciclo ("Full-Circle" Sync) su AdGuard Home:**
+  * Integrazione degli ULA scoperti nel payload dei dispositivi normalizzati (`ipv6_ula`, `ipv6_addresses` e `ipv6_details`).
+  * Al ciclo successivo di sincronizzazione DNS (`sync_devices`), la Dashboard invia il client ad AdGuard Home con l'ULA nei suoi `ids`, eliminando automaticamente i client orfani/anonimi da AdGuard e raggruppandoli sotto il nome amichevole ufficiale!
+* **🎨 Badge Visivo UI `#deviceModal`:**
+  * Badge distintivo color ametista/fucsia **`ULA (NDP / AdGuard)`** con tooltip bilingue (*"Rilevato tramite Neighbor Discovery Protocol (NDP) o AdGuard Home"*) per distinguere visivamente gli indirizzi scoperti da quelli nativi riportati da eero.
 
 ### 🪵 Modulo 4: Gestione Log di Sistema, Live Console & Integrazioni Homelab (v1.6.0)
 * **🪵 Gestione Log di Sistema & Profondità a Caldo:**
