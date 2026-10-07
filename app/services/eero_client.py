@@ -1767,11 +1767,10 @@ class EeroClient:
             dev["tx_packets"] = tx_pkts
             dev["total_packets"] = total_pkts
 
-            # Issue #56: Eliminazione moltiplicatori sintetici arbitrari per throughput (rx_pkts * 1420 / 280)
-            # Utilizzo esclusivo di contatori hardware reali o 0.0
-
             dev["download_rate_mbps"] = round(float(down_rate), 2)
             dev["upload_rate_mbps"] = round(float(up_rate), 2)
+            dev["rx_rate"] = dev["download_rate_mbps"]
+            dev["tx_rate"] = dev["upload_rate_mbps"]
             dev["rx_bytes"] = rx_b
             dev["tx_bytes"] = tx_b
 

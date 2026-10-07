@@ -3910,6 +3910,102 @@ async def run_all_tests():
         runner.assert_true(res_ch_en.status_code == 200, "GET /api/manual/changelog?lang=en risponde HTTP 200")
         runner.assert_true("Module 4" in res_ch_en.json().get("content", ""), "Changelog EN contiene 'Module 4'")
 
+        # -------------------------------------------------------------
+        # MODULO 6 - TEST LOCAL ASSET BUNDLING (ISSUE #58) & RECENTLY JOINED (ISSUE #60)
+        # -------------------------------------------------------------
+        print("\n📦 [MODULO 6] TEST LOCAL ASSET BUNDLING (ISSUE #58) & RECENTLY JOINED (ISSUE #60)")
+
+        # 1. Test Local Asset Bundling & 100% Offline Resilience (Issue #58)
+        vendor_dir = Path("app/static/vendor")
+        runner.assert_true(vendor_dir.is_dir(), "Directory app/static/vendor/ esiste")
+        
+        tw_path = vendor_dir / "tailwind.min.js"
+        runner.assert_true(tw_path.exists() and tw_path.stat().st_size > 100_000, "app/static/vendor/tailwind.min.js presente (> 100KB)")
+
+        alp_path = vendor_dir / "alpine.min.js"
+        runner.assert_true(alp_path.exists() and alp_path.stat().st_size > 20_000, "app/static/vendor/alpine.min.js presente (> 20KB)")
+
+        chart_path = vendor_dir / "chart.umd.min.js"
+        runner.assert_true(chart_path.exists() and chart_path.stat().st_size > 100_000, "app/static/vendor/chart.umd.min.js presente (> 100KB)")
+
+        lucide_path = vendor_dir / "lucide.min.js"
+        runner.assert_true(lucide_path.exists() and lucide_path.stat().st_size > 100_000, "app/static/vendor/lucide.min.js presente (> 100KB)")
+
+        fonts_css_path = Path("app/static/css/fonts.css")
+        runner.assert_true(fonts_css_path.exists() and fonts_css_path.stat().st_size > 1_000, "app/static/css/fonts.css presente (> 1KB)")
+
+        fonts_dir = Path("app/static/fonts")
+        runner.assert_true(fonts_dir.is_dir(), "Directory app/static/fonts/ esiste")
+        woff2_files = list(fonts_dir.glob("*.woff2"))
+        runner.assert_true(len(woff2_files) >= 10, f"Font WOFF2 locali self-hosted presenti (trovati {len(woff2_files)})")
+
+        # Verifica assenza di chiamate a CDN esterne in index.html
+        index_html_path = Path("app/templates/index.html")
+        index_html_content = index_html_path.read_text(encoding="utf-8")
+        runner.assert_true("fonts.googleapis.com" not in index_html_content, "index.html non carica font da Google Fonts (offline-first)")
+        runner.assert_true("cdn.tailwindcss.com" not in index_html_content, "index.html non carica Tailwind da cdn.tailwindcss.com")
+        runner.assert_true("cdn.jsdelivr.net" not in index_html_content, "index.html non carica librerie esterne da jsdelivr")
+        runner.assert_true("/static/vendor/tailwind.min.js" in index_html_content, "index.html carica tailwind.min.js locale")
+        runner.assert_true("/static/vendor/alpine.min.js" in index_html_content, "index.html carica alpine.min.js locale")
+        runner.assert_true("/static/vendor/chart.umd.min.js" in index_html_content, "index.html carica chart.umd.min.js locale")
+        runner.assert_true("/static/vendor/lucide.min.js" in index_html_content, "index.html carica lucide.min.js locale")
+        runner.assert_true("/static/css/fonts.css" in index_html_content, "index.html carica fonts.css locale")
+
+        # Verifica Service Worker PWA cache locale
+        sw_path = Path("app/static/sw.js")
+        sw_content = sw_path.read_text(encoding="utf-8")
+        runner.assert_true("tailwind.min.js" in sw_content, "sw.js pre-cachea tailwind.min.js locale")
+        runner.assert_true("alpine.min.js" in sw_content, "sw.js pre-cachea alpine.min.js locale")
+        runner.assert_true("chart.umd.min.js" in sw_content, "sw.js pre-cachea chart.umd.min.js locale")
+        runner.assert_true("lucide.min.js" in sw_content, "sw.js pre-cachea lucide.min.js locale")
+        runner.assert_true("fonts.css" in sw_content, "sw.js pre-cachea fonts.css locale")
+
+        # 2. Test Recently Joined Devices & Sorting (Issue #60)
+        known_map = await db_service.get_all_known_devices_map()
+        runner.assert_true(isinstance(known_map, dict), "db_service.get_all_known_devices_map() ritorna un dizionario")
+
+        res_devs = await client.get("/api/devices")
+        runner.assert_true(res_devs.status_code == 200, "GET /api/devices risponde HTTP 200")
+        dev_payload = res_devs.json()
+        dev_list = dev_payload.get("devices", []) if isinstance(dev_payload, dict) else dev_payload
+        runner.assert_true(isinstance(dev_list, list) and len(dev_list) > 0, "Lista dispositivi non vuota")
+        
+        sample_dev = dev_list[0]
+        runner.assert_true("first_seen" in sample_dev, "Dispositivo ha attributo 'first_seen'")
+        runner.assert_true("is_new" in sample_dev, "Dispositivo ha attributo 'is_new'")
+        runner.assert_true("is_new_24h" in sample_dev, "Dispositivo ha attributo 'is_new_24h'")
+
+        # Test sorting per primo accesso decrescente
+        res_sort_desc = await client.get("/api/devices?sort_by=first_seen_desc")
+        runner.assert_true(res_sort_desc.status_code == 200, "GET /api/devices?sort_by=first_seen_desc risponde HTTP 200")
+        sorted_desc = res_sort_desc.json().get("devices", [])
+        valid_seen_desc = [d.get("first_seen") for d in sorted_desc if d.get("first_seen")]
+        runner.assert_true(valid_seen_desc == sorted(valid_seen_desc, reverse=True), "Dispositivi correttamente ordinati per first_seen decrescente")
+
+        # Test sorting per primo accesso crescente
+        res_sort_asc = await client.get("/api/devices?sort_by=first_seen_asc")
+        runner.assert_true(res_sort_asc.status_code == 200, "GET /api/devices?sort_by=first_seen_asc risponde HTTP 200")
+        sorted_asc = res_sort_asc.json().get("devices", [])
+        valid_seen_asc = [d.get("first_seen") for d in sorted_asc if d.get("first_seen")]
+        runner.assert_true(valid_seen_asc == sorted(valid_seen_asc), "Dispositivi correttamente ordinati per first_seen crescente")
+
+        # Test filtro is_new_only
+        res_new_only = await client.get("/api/devices?is_new_only=true")
+        runner.assert_true(res_new_only.status_code == 200, "GET /api/devices?is_new_only=true risponde HTTP 200")
+        new_only_list = res_new_only.json().get("devices", [])
+        runner.assert_true(all(d.get("is_new") is True for d in new_only_list), "Tutti i dispositivi con is_new_only=true hanno is_new=True")
+
+        # Test chiavi internazionalizzazione
+        it_loc_path = Path("app/static/locales/it.json")
+        en_loc_path = Path("app/static/locales/en.json")
+        it_loc = json.loads(it_loc_path.read_text(encoding="utf-8"))
+        en_loc = json.loads(en_loc_path.read_text(encoding="utf-8"))
+        for req_key in ["sort_first_seen", "filter_new_devices", "filter_new_tag", "new_badge", "first_seen_badge_tooltip"]:
+            runner.assert_true(req_key in it_loc.get("devices", {}), f"Chiave devices.{req_key} presente in it.json")
+            runner.assert_true(req_key in en_loc.get("devices", {}), f"Chiave devices.{req_key} presente in en.json")
+        runner.assert_true("first_seen" in it_loc.get("device_modal", {}), "Chiave device_modal.first_seen in it.json")
+        runner.assert_true("first_seen" in en_loc.get("device_modal", {}), "Chiave device_modal.first_seen in en.json")
+
         await mqtt_service.stop()
         await log_service.stop()
 

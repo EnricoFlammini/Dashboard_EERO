@@ -921,6 +921,22 @@ class DBService:
                 )
                 await db.commit()
 
+    async def get_all_known_devices_map(self) -> Dict[str, Dict[str, Any]]:
+        """Restituisce una mappa {mac: {first_seen, hostname, ip, notified}} dei dispositivi noti (Issue #60)."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("SELECT LOWER(mac_address) as mac, first_seen, hostname, ip, notified FROM known_devices")
+            rows = await cursor.fetchall()
+            return {
+                row["mac"]: {
+                    "mac": row["mac"],
+                    "first_seen": row["first_seen"],
+                    "hostname": row["hostname"],
+                    "ip": row["ip"],
+                    "notified": bool(row["notified"])
+                }
+                for row in rows if row["mac"]
+            }
+
     # ----------------- APP SETTINGS -----------------
     async def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
         async with self.get_connection() as db:

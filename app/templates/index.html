@@ -41,13 +41,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="eero Dashboard">
   
-  <!-- Google Fonts: Inter & JetBrains Mono (Fallback per Segoe UI Variable) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Local Self-Hosted Fonts: Inter & JetBrains Mono (Offline Bundle - Issue #58) -->
+  <link rel="stylesheet" href="/static/css/fonts.css?v={{ app_version }}.b{{ build_number }}">
   
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS Local Bundle -->
+  <script src="/static/vendor/tailwind.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -76,12 +74,12 @@
   <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
   <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.b{{ build_number }}.sidebarv3">
 
-  <!-- Chart.js CDN & Alpine.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <!-- Chart.js & Alpine.js Local Bundles (Offline - Issue #58) -->
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script defer src="/static/vendor/alpine.min.js"></script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Lucide Icons Local Bundle (Offline - Issue #58) -->
+  <script src="/static/vendor/lucide.min.js"></script>
 
   <!-- App Logic -->
   <script src="/static/js/app.js?v={{ app_version }}.b{{ build_number }}"></script>
@@ -1152,6 +1150,20 @@
               <span x-text="t('devices.filter_connected_only')"></span>
             </button>
 
+            <!-- New Devices Filter Pill (Issue #60) -->
+            <button 
+              type="button"
+              @click="selectedCategoryFilter = selectedCategoryFilter === 'new' ? 'all' : 'new'"
+              :class="selectedCategoryFilter === 'new' 
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs' 
+                : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              class="device-toggle-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none"
+              :title="t('devices.filter_new_tooltip') || 'Mostra solo dispositivi rilevati per la prima volta negli ultimi 7 giorni'">
+              <span class="text-xs">✨</span>
+              <span x-text="t('devices.filter_new_tag') || 'Nuovi'"></span>
+              <span x-show="devices.filter(d => d.is_new).length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" x-text="devices.filter(d => d.is_new).length"></span>
+            </button>
+
             <!-- Refresh Dispositivi -->
             <button 
               type="button"
@@ -1179,6 +1191,15 @@
               :class="selectedBandFilter === 'all' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
               class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer"
               x-text="t('devices.filter_all_bands') || 'Tutti'">
+            </button>
+            <button 
+              type="button" 
+              @click="selectedCategoryFilter = selectedCategoryFilter === 'new' ? 'all' : 'new'"
+              :class="selectedCategoryFilter === 'new' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer flex items-center gap-1">
+              <span>✨</span>
+              <span x-text="t('devices.filter_new_tag') || 'Nuovi'"></span>
+              <span x-show="devices.filter(d => d.is_new).length > 0" class="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-white/20" x-text="devices.filter(d => d.is_new).length"></span>
             </button>
             <button 
               type="button" 
@@ -1222,6 +1243,17 @@
 
           <!-- Advanced Filters Accordion for Mobile -->
           <div x-show="showMobileDeviceFilters" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+            <!-- Sort Selector for mobile (Issue #60) -->
+            <select x-model="deviceSortField" @change="if (deviceSortField === 'first_seen') deviceSortDirection = 'desc'" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="name" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_name') || 'Nome (A-Z)')"></option>
+              <option value="first_seen" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_first_seen') || 'Primo Accesso (Più recenti)')"></option>
+              <option value="ip" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_ip') || 'IP')"></option>
+              <option value="signal" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_signal') || 'Segnale')"></option>
+              <option value="download" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_download') || 'Download')"></option>
+              <option value="upload" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_upload') || 'Upload')"></option>
+              <option value="status" x-text="(t('devices.sort_by') || 'Ordina:') + ' ' + (t('devices.sort_status') || 'Stato')"></option>
+            </select>
+
             <!-- Node Selector for mobile -->
             <select x-model="selectedNodeFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
               <option value="all" x-text="t('devices.filter_all_nodes') || 'Tutti i Nodi Mesh'"></option>
@@ -1233,6 +1265,7 @@
             <!-- Category Selector for mobile -->
             <select x-model="selectedCategoryFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
               <option value="all" x-text="t('devices.filter_all_categories') || 'Tutte le Categorie'"></option>
+              <option value="new" x-text="t('devices.filter_new_devices') || '🆕 Nuovi Dispositivi'"></option>
               <option value="favorites" x-text="t('devices.filter_favorites') || 'Preferiti'"></option>
               <option value="Computers" x-text="t('devices.cat_computer') || 'Computer'"></option>
               <option value="Entertainment" x-text="t('devices.cat_entertainment') || 'Intrattenimento'"></option>
@@ -1260,8 +1293,8 @@
           </div>
         </div>
 
-        <!-- Secondary Toolbar: The 5 Filter Dropdowns in a Balanced Full-Width Grid (Desktop Only >= md) -->
-        <div class="device-filter-grid hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-5 gap-2.5" @click.outside="closeDeviceDropdowns()" @keydown.escape.window="closeDeviceDropdowns()">
+        <!-- Secondary Toolbar: Filter & Sort Dropdowns in a Balanced Full-Width Grid (Desktop Only >= md) -->
+        <div class="device-filter-grid hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-6 gap-2.5" @click.outside="closeDeviceDropdowns()" @keydown.escape.window="closeDeviceDropdowns()">
           
           <!-- Band Filter -->
           <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
@@ -1382,6 +1415,13 @@
                 <span x-text="t('devices.filter_favorites')"></span>
                 <span x-show="selectedCategoryFilter === 'favorites'" class="text-xs">✓</span>
               </button>
+              <button type="button" @click="selectedCategoryFilter = 'new'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'new' ? 'is-selected' : ''" class="device-filter-option">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span x-text="t('devices.filter_new_tag')"></span>
+                </span>
+                <span x-show="selectedCategoryFilter === 'new'" class="text-xs">✓</span>
+              </button>
               <button type="button" @click="selectedCategoryFilter = 'Computer'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Computer' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.cat_computer')"></span>
                 <span x-show="selectedCategoryFilter === 'Computer'" class="text-xs">✓</span>
@@ -1414,7 +1454,7 @@
           </div>
 
           <!-- Profile Filter -->
-          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-3 xl:col-span-1">
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
             <button 
               type="button"
               @click.stop="toggleDeviceDropdown('profile')"
@@ -1456,7 +1496,7 @@
           </div>
 
           <!-- IP Type Filter (Static / DHCP) -->
-          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-3 xl:col-span-1">
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
             <button 
               type="button"
               @click.stop="toggleDeviceDropdown('ip')"
@@ -1479,7 +1519,7 @@
               x-transition:leave="transition ease-in duration-75"
               x-transition:leave-start="opacity-100 translate-y-0 scale-100"
               x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
-              class="device-filter-dropdown-menu xl:right-0 xl:left-auto">
+              class="device-filter-dropdown-menu">
               <button type="button" @click="selectedIpTypeFilter = 'all'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.filter_all_assignments')"></span>
                 <span x-show="selectedIpTypeFilter === 'all'" class="text-xs">✓</span>
@@ -1491,6 +1531,68 @@
               <button type="button" @click="selectedIpTypeFilter = 'dhcp'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'dhcp' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.filter_only_dhcp')"></span>
                 <span x-show="selectedIpTypeFilter === 'dhcp'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sort Dropdown (Issue #60) -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('sort')"
+              :class="[
+                deviceSortField !== 'name' ? 'is-active' : '',
+                openDeviceDropdown === 'sort' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.sort_by')"
+              :aria-expanded="openDeviceDropdown === 'sort'">
+              <span class="truncate pr-1.5 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                <span x-text="getSortLabel()"></span>
+              </span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'sort' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'sort'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu xl:right-0 xl:left-auto">
+              <button type="button" @click="deviceSortField = 'name'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'name' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_name')"></span>
+                <span x-show="deviceSortField === 'name'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'first_seen'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'first_seen' ? 'is-selected' : ''" class="device-filter-option">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span x-text="t('devices.sort_first_seen')"></span>
+                </span>
+                <span x-show="deviceSortField === 'first_seen'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'ip'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'ip' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_ip')"></span>
+                <span x-show="deviceSortField === 'ip'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'signal'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'signal' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_signal')"></span>
+                <span x-show="deviceSortField === 'signal'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'download'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'download' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_download')"></span>
+                <span x-show="deviceSortField === 'download'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'upload'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'upload' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_upload')"></span>
+                <span x-show="deviceSortField === 'upload'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'status'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'status' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_status')"></span>
+                <span x-show="deviceSortField === 'status'" class="text-xs">✓</span>
               </button>
             </div>
           </div>
@@ -1634,8 +1736,14 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       </div>
                       <div class="min-w-0">
-                        <div class="flex min-w-0 items-center gap-1.5">
+                        <div class="flex min-w-0 items-center gap-1.5 flex-wrap">
                           <div class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm" :title="dev.custom_name || dev.nickname || dev.hostname || 'Device'" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                          <template x-if="dev.is_new">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40 shadow-xs" :title="t('devices.first_seen_badge_tooltip') + (dev.first_seen ? ': ' + dev.first_seen : '')">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span x-text="t('devices.new_badge')"></span>
+                            </span>
+                          </template>
                           <template x-if="dev.is_favorite">
                             <span class="text-amber-500 dark:text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
                           </template>
@@ -1839,6 +1947,9 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="font-bold text-sm text-slate-900 dark:text-white truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Dispositivo'"></span>
+                  <template x-if="dev.is_new">
+                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40" x-text="t('devices.new_badge')"></span>
+                  </template>
                   <template x-if="dev.is_favorite">
                     <span class="text-amber-500 text-xs">⭐</span>
                   </template>
@@ -4585,6 +4696,23 @@
               <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed ? selectedDevice.ethernet_speed + ' • Ethernet' : 'Ethernet')) : '---'"></span>
             </div>
           </div>
+
+          <!-- First Seen Information (Issue #60) -->
+          <template x-if="selectedDevice && selectedDevice.first_seen">
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('device_modal.first_seen') || 'Primo accesso rilevato'"></span>
+                <template x-if="selectedDevice.is_new">
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span x-text="t('devices.new_badge') || 'NUOVO'"></span>
+                  </span>
+                </template>
+              </div>
+              <span class="font-mono text-slate-800 dark:text-slate-200 font-bold" x-text="selectedDevice.first_seen"></span>
+            </div>
+          </template>
 
           <!-- IPv6 Addresses Section (Issue #43) -->
           <template x-if="selectedDevice && (selectedDevice.ipv6 || (selectedDevice.ipv6_all && selectedDevice.ipv6_all.length))">

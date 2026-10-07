@@ -6,6 +6,27 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.0] - 2026-10-07
 
+### 📦 Modulo 6: Local Asset Bundling (Issue #58) & Ordinamento "Recently Joined" (Issue #60)
+* **📦 Local Asset Bundling & Resilienza 100% Offline (Issue #58 - @jpatchMC):**
+  * Vendoring locale completo di tutte le librerie JavaScript esterne in `app/static/vendor/`:
+    * Tailwind CSS (`tailwind.min.js`)
+    * Alpine.js (`alpine.min.js`)
+    * Chart.js (`chart.umd.min.js`)
+    * Lucide Icons (`lucide.min.js`)
+  * Self-hosting locale dei font tipografici WOFF2 per **Inter** e **JetBrains Mono** in `app/static/fonts/` con regole `@font-face` in `app/static/css/fonts.css`.
+  * Rimossa qualsiasi dipendenza da CDN esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `fonts.googleapis.com`, `fonts.gstatic.com`) in `index.html`.
+  * La Dashboard ora si avvia e renderizza fluidamente al 100% in LAN isolata anche in assenza totale di connessione Internet / WAN / blackout ISP.
+  * Aggiornato il Service Worker PWA (`app/static/sw.js`) per pre-cacheare e servire offline tutte le risorse vendor e i font locali.
+* **🆕 Ordinamento "Recently Joined" & Badge "NEW" (Issue #60 - @DannyFeliz):**
+  * Propagazione trasparente del timestamp `first_seen` (recuperato dalla tabella persistente `known_devices`) nei dispositivi esposti da `/api/devices` e `poller.py`.
+  * Calcolo dinamico dei flag temporali `is_new` (primo accesso negli ultimi 7 giorni) e `is_new_24h` (nelle ultime 24 ore).
+  * Aggiunto ordinamento per *"Primo Accesso / Più Recenti"* (`first_seen_desc` e `first_seen_asc`) via query parameter API e menu a tendina Ordinamento Desktop & Mobile.
+  * Aggiunto dropdown unificato di ordinamento nella toolbar secondaria Desktop e nei filtri veloci Mobile.
+  * Badge visivo compatto ad alta visibilità **`NEW`** (con indicatore animato verde smeraldo) su tabella desktop e schede card mobile per individuare istantaneamente nuovi client connessi alla rete mesh.
+  * Pill / chip rapido di filtro per categoria **`Nuovi`** per isolare istantaneamente i dispositivi rilevati di recente.
+  * Riga informativa dedicata nel `#deviceModal` (tab Generale) con data e ora del primo rilevamento in rete.
+  * Parità bilingue completa delle nuove stringhe in `it.json` ed `en.json`.
+
 ### 🔍 Modulo 7: Reverse Client Enrichment & ULA Discovery via NDP / AdGuard Home (Issue #57 - @jpatchMC)
 * **🔍 Superamento del Limite di Routing L2 eero sui Pacchetti DNS Locali:**
   * Risolto il limite strutturale delle reti dual-stack in cui i client LAN interrogano server DNS locali (es. AdGuard Home) usando indirizzi IPv6 ULA (*Unique Local Address*, `fd00::/8`). Poiché quel traffico viaggia a livello Layer 2 locale e non viene mai instradato sulla WAN, il cloud eero non ha visibilità su tali indirizzi ULA.
