@@ -980,6 +980,14 @@ class DNSManager:
         if not settings.get("enabled"):
             return
         try:
+            # 1. Reverse NDP Enrichment scan per recuperare client orfani ULA prima del push (Issue #57)
+            try:
+                from app.services.enrichment_service import enrichment_service
+                await enrichment_service.scan_all_adguard_instances()
+            except Exception as e_scan:
+                logger.debug(f"Pre-sync AdGuard NDP scan skipped/failed: {e_scan}")
+
+            # 2. Sincronizzazione regolare verso tutti i server DNS
             logger.info("Avvio sincronizzazione automatica Multi-DNS background...")
             res = await self.sync_devices(devices)
             logger.info(f"Esito sync Multi-DNS: {res.get('message')}")

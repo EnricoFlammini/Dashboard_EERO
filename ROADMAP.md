@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Completata al 100% - Tutti i 5 Moduli Rilasciati)* | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero) con confronto firmware flotta locale vs target release; Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema (livelli a caldo, retention, live console), Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
 
 ---
 
@@ -53,6 +53,7 @@ gantt
     Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
     Local Asset Bundling & Offline UI (Issue #58)     :active, v1_6_assets, after v1_6f, 2d
     Device Sort by First Seen & New Badge (Issue #60) :v1_6_recent, after v1_6_assets, 2d
+    Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :active, v1_6_ndp, after v1_6_recent, 2d
 ```
 
 ---
@@ -430,9 +431,15 @@ gantt
     * `gateway_ip`: mantenimento a `null` (anziché forzatura su subnet predefinita `192.168.4.1`), adeguando lo step 3 dell'elezione del primary gateway e i template UI.
     * `rx_bytes` / `tx_bytes`: rimozione della stima sintetica `packets * 1420` / `packets * 280` spacciata per contatore reale.
     * Frequenza Wi-Fi nodi: etichettatura esplicita `(stimata)` o omissione della banda qualora dedotta unicamente dal modello hardware (es. Pro 6E / Max 7) in assenza di canale operativo effettivo.
-* **Supporto & Derivazione Indirizzi IPv6 ULA vs GUA (Issue #57 - @jpatchMC):**
-  * Analisi e supporto per la visualizzazione degli indirizzi IPv6 ULA (*Unique Local Address*, RFC 4193, prefisso `fd00::/8`) accanto ai GUA (*Global Unicast Address* / SLAAC).
-  * Valutazione euristica di derivazione ULA mediante prefisso annunciato e lower 64 bits dell'interfaccia, oppure associazione tramite neighbor discovery / DNS integration con badge identificativo dedicato.
+* **Supporto & Reverse Client Enrichment Indirizzi IPv6 ULA vs GUA (Issue #57 - @jpatchMC):**
+  * **Fase 1 (Completata in v1.6.0-rc1):** Classificazione deterministica RFC 4193 e RFC 4291 in `eero_client.py` con partizionamento in `ipv6_gua`, `ipv6_ula`, `ipv6_link_local`, badges colorati in `#deviceModal` e sincronizzazione sicura sui server DNS escludendo i Link-Local `fe80::`.
+  * **Fase 2 (Reverse Client Enrichment & NDP Discovery - v1.6.0-rc2):**
+    * Risoluzione del limite di routing L2/L3 eero (i pacchetti DNS LAN verso AdGuard non attraversano la WAN e non vengono visti dal cloud eero).
+    * Ingestion API dedicata (`POST /api/network/enrichment/neighbors`) per consentire a script/cron esterni su host AdGuard di inviare coppie ULA ↔ MAC.
+    * Native Pull & Probe Worker in `dns_manager.py`: scansione dei client non assegnati (`auto_clients`) da AdGuard Home, probe ICMPv6 asincrono non bloccante e risoluzione MAC tramite tabella di vicinato (`ip -6 neigh`).
+    * Persistenza in tabella SQLite `device_discovered_ips` e arricchimento reattivo del payload dispositivi.
+    * Risincronizzazione "Full-Circle" verso AdGuard: unione automatica dell'indirizzo ULA scoperto al client nominato in AdGuard, azzerando i client anonimi.
+    * Badge visuale UI dedicato `ULA (DISCOVERED)` o `ULA (NDP)` e tooltip informativo nel `#deviceModal`.
 
 #### 8. 📦 Local Asset Bundling & Total Offline Independence (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60)
 * **Local Asset Bundling & Funzionamento 100% Offline (Issue #58 - @jpatchMC):**
@@ -520,6 +527,16 @@ gantt
 - [ ] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown dell'elenco dispositivi in `index.html` (Issue #60).
 - [ ] Badge compatto visivo `"NEW"` e filtro rapido per dispositivi rilevati per la prima volta nelle ultime 24h / 7 giorni (Issue #60).
 - [ ] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
+
+##### Modulo 7: 🔍 Reverse Client Enrichment & ULA Discovery via NDP / AdGuard (Issue #57 - @jpatchMC) (Completato al 100%)
+- [x] Creazione tabella SQLite `device_discovered_ips` in `app/services/db.py` (colonne: `mac_address`, `ip_address`, `ip_type`, `source`, `first_seen`, `last_seen`) e metodi async CRUD.
+- [x] Endpoint REST FastAPI dedicato di Ingestion: `POST /api/network/enrichment/neighbors` per ricevere mapping ULA/GUA ↔ MAC da agenti, script cron su AdGuard host o sidecar.
+- [x] Endpoint di consultazione e diagnostica: `GET /api/network/enrichment/mappings` e trigger manuale scansione `POST /api/network/enrichment/scan-adguard`.
+- [x] Worker di Pull & Probe in `enrichment_service.py` & `dns_manager.py`: recupero client non associati (`auto_clients`) dall'API AdGuard `/control/clients`, probe ICMPv6 asincrono e risoluzione MAC via kernel neighbour table (`ip -6 neigh`).
+- [x] Fusione trasparente degli IP scoperti nel modello dispositivi (`ipv6_ula`, `ipv6_addresses` e `ipv6_details` con flag `origin: "ndp_discovered"`) in `poller.py` ed `enrichment_service.py`.
+- [x] Risincronizzazione "Full-Circle" verso AdGuard: inclusione automatica degli ULA scoperti nel payload del client nominato, per eliminare i client anonimi su AdGuard Home.
+- [x] Badge UI dedicato `ULA (NDP / AdGuard)` con stile cromatico fucsia/ametista distintivo e tooltip informativo nel `#deviceModal`.
+- [x] Test di regressione automatizzati in `scripts/run_pre_release_tests.py` (Test 23.4: Ingestion API, Validazione IP, Merge e DNS Sync propagation, 1048/1048 passati).
 
 ---
 

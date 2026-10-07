@@ -39,6 +39,7 @@
    * 4.22 [Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0)](#422-homelab--home-automation-mqtt--home-assistant-auto-discovery-v160)
    * 4.23 [Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)](#423-metriche-native-prometheus--dashboard-grafana-ufficiale-v160)
    * 4.24 [Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)](#424-multi-channel-notification-dispatcher--allarmi-specializzati-v160)
+   * 4.25 [Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)](#425-reverse-client-enrichment-ipv6-ula--neighbor-discovery-v160---issue-57)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -321,6 +322,17 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
   3. **IP Conflict / Duplicate Lease Warning:** Rilevamento preventivo di conflitti di indirizzi IP statici o leasing sovrapposti.
   4. **Mesh Node Offline Alert:** Notifica tempestiva in caso di disconnessione o caduta di un nodo mesh secondario con identificazione del seriale e della posizione.
 
+### 4.25 Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)
+* **Contesto Architetturale & Causa Radice:**
+  Nelle reti dual-stack IPv6 con server DNS locale (AdGuard Home, Pi-hole), i client interrogano il DNS locale tramite il loro indirizzo ULA (*Unique Local Address*, `fd00::/8`). Poiché questo traffico è confinato a livello switch/mesh Layer 2 e non viene instradato sulla WAN, il cloud eero non ha visibilità su tali indirizzi ULA e non li include nel payload `get_devices()`.
+* **Meccanismo di Risoluzione a 2 Vie:**
+  1. **Active Probe & Pull Scanner:** Il modulo `enrichment_service.py` interroga periodicamente AdGuard Home (`/control/clients`), identifica gli indirizzi orfani in `auto_clients`, invia un probe ICMPv6 asincrono non invasivo e ispeziona la tabella di vicinato del kernel (`ip -6 neigh`) per risolvere il MAC address fisico associato.
+  2. **Ingestion REST API Universale (`POST /api/network/enrichment/neighbors`):** Permette a qualsiasi script cron, demone o agent esterno in esecuzione sull'host del server DNS di inviare le coppie `[{"ip": "...", "mac": "..."}]` direttamente alla dashboard, garantendo compatibilità anche con container Docker isolati.
+* **Full-Circle DNS Sync:**
+  Gli indirizzi ULA scoperti vengono memorizzati nella tabella persistente `device_discovered_ips` e fusi nel modello del dispositivo. Al ciclo successivo di sincronizzazione DNS verso AdGuard, il client ufficiale acquisisce l'indirizzo ULA nei suoi identificatori `ids`, eliminando automaticamente i client orfani/anonimi su AdGuard.
+* **Interfaccia Utente:**
+  Nel modale del dispositivo (`#deviceModal`), gli ULA scoperti via rete mostrano il badge fucsia/ametista `ULA (NDP / AdGuard)` con tooltip esplicativo, differenziandosi dagli indirizzi nativi comunicati dal cloud.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -400,6 +412,20 @@ Persistenza dei log applicativi e diagnostici del sistema con supporto a retenti
 * `idx_system_logs_level` (`level`)
 * `idx_system_logs_logger` (`logger_name`)
 
+#### 7. `device_discovered_ips` (v1.6.0 Modulo 7 - Issue #57)
+Associazioni IP-MAC scoperte tramite Neighbor Discovery Protocol (NDP), probe ICMPv6 asincroni o API di ingestion esterna (es. server AdGuard Home).
+* `mac_address` (TEXT NOT NULL) — Indirizzo MAC dell'apparato fisico
+* `ip_address` (TEXT NOT NULL) — Indirizzo IPv6 (ULA/GUA) o IPv4
+* `ip_type` (TEXT DEFAULT 'ULA') — Tipologia indirizzo (`ULA`, `GUA`, `IPv4`)
+* `source` (TEXT DEFAULT 'ndp_enrichment') — Sorgente della scoperta (`ndp_enrichment`, `adguard_agent`, ecc.)
+* `first_seen` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data prima rilevazione
+* `last_seen` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data ultimo rinnovo / probe riuscita
+*PRIMARY KEY (`mac_address`, `ip_address`)*
+
+*Indici:*
+* `idx_discovered_ips_mac` (`mac_address`)
+* `idx_discovered_ips_time` (`last_seen`)
+
 ---
 
 ## 6. Catalogo Completo API REST (Endpoint Reference)
@@ -420,6 +446,10 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **GET** | `/api/network/overview` | Panoramica stato WAN, nodi mesh e Health Score | Nessuno |
 | **GET** | `/api/network/top-hogs` | Classifica dispositivi con maggior consumo dati (v1.5.0) | `?period=daily|weekly|monthly&limit=5` |
 | **GET** | `/api/network/health-breakdown` | Dettaglio diagnostico a 4 pilastri dell'Health Score | Nessuno |
+| **POST** | `/api/network/enrichment/neighbors` | Ingestion esterna mapping IP-MAC da AdGuard/cron (v1.6.0) | `{"source": "...", "mappings": [...]}` |
+| **GET** | `/api/network/enrichment/mappings` | Elenco di tutti gli indirizzi ULA scoperti via NDP/AdGuard | `?limit=500` |
+| **DELETE** | `/api/network/enrichment/mappings` | Elimina una specifica associazione IP-MAC scoperta | `{"mac": "...", "ip": "..."}` |
+| **POST** | `/api/network/enrichment/scan-adguard` | Scansione attiva on-demand client orfani su AdGuard Home | Nessuno |
 | **POST** | `/api/network/refresh` | Forza re-polling immediato dai server eero Cloud | Nessuno |
 | **POST** | `/api/network/reboot` | Riavvia l'intera rete mesh eero | Nessuno |
 | **POST** | `/api/network/eeros/{serial}/reboot` | Riavvia un singolo nodo mesh specifico | Nessuno |

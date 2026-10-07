@@ -297,6 +297,23 @@ python scripts/adguard_sync.py --drop-ipv6
 # (or set environment variable EERO_DROP_IPV6=true)
 ```
 
+### 4. Reverse Client Enrichment & IPv6 ULA Neighbor Ingestion (v1.6.0 - Issue #57)
+In dual-stack networks, local devices query DNS servers using local IPv6 **ULA** addresses (`fd00::/8`). Because this local Layer 2 traffic is not routed over the WAN, eero's cloud API never sees these ULA addresses. The dashboard overcomes this with **Reverse Client Enrichment**:
+* **Automated Pull & Probe Mode:** Polls AdGuard Home (`/control/clients`) for unassigned bare IP clients (`auto_clients`), probes them via ICMPv6 and resolves their hardware MAC using the kernel neighbour table (`ip -6 neigh`).
+* **Universal Ingestion REST API:** Run a simple one-liner or cron job on your AdGuard host to push neighbour findings into the dashboard:
+  ```bash
+  # Push NDP table findings from AdGuard host to eero Dashboard
+  curl -X POST http://<dashboard-ip>:8085/api/network/enrichment/neighbors \
+    -H "Content-Type: application/json" \
+    -d '{
+      "source": "adguard-host",
+      "mappings": [
+        {"ip": "fd4c:b590:10fa:1:xxxx:xxxx:9390", "mac": "AA:BB:CC:DD:EE:FF", "type": "ULA"}
+      ]
+    }'
+  ```
+* **Full-Circle Sync:** During the next DNS sync cycle, the dashboard registers the discovered ULA under the friendly client name in AdGuard Home, automatically grouping and cleaning up bare IP clients!
+
 > 🛡️ **Native In-App AdGuard Home Integration:** You can also configure AdGuard Home directly from the **Automations & Controls** tab with one-click connection tests, continuous background synchronization, and instant "Sync Now" trigger!
 
 ---
@@ -491,6 +508,16 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    python scripts/adguard_sync.py --drop-ipv6
    # (oppure imposta la variabile d'ambiente EERO_DROP_IPV6=true)
    ```
+4. **Reverse Client Enrichment & Scoperta ULA via NDP (v1.6.0 - Issue #57):**  
+   Nelle reti dual-stack con resolver DNS locale (AdGuard Home), i client interrogano il DNS usando indirizzi IPv6 ULA (`fd00::/8`). Poiché questo traffico Layer 2 locale non attraversa il router verso la WAN, il cloud eero non ne ha visibilità. La Dashboard risolve il problema tramite:
+   * **Pull & Probe Automatico:** Scansione periodica dei client orfani/bare IP da AdGuard Home (`auto_clients`), probe ICMPv6 asincrono e risoluzione del MAC address reale tramite tabella di vicinato (`ip -6 neigh`).
+   * **API REST di Ingestion Universale:** Uno script di 1 riga o cron sull'host AdGuard può inviare direttamente le tabelle NDP alla dashboard:
+     ```bash
+     curl -X POST http://<dashboard-ip>:8085/api/network/enrichment/neighbors \
+       -H "Content-Type: application/json" \
+       -d '{"source": "adguard-host", "mappings": [{"ip": "fd4c:b590:10fa:1:xxxx:xxxx:9390", "mac": "AA:BB:CC:DD:EE:FF", "type": "ULA"}]}'
+     ```
+   * **Chiusura del Ciclo ("Full-Circle"):** Alla sincronizzazione successiva, l'indirizzo ULA scoperto viene registrato nel client ufficiale su AdGuard Home, azzerando i client anonimi!
 
 > 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!
 

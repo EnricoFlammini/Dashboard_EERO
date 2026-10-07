@@ -694,8 +694,9 @@ class BackgroundPoller:
                         device_to_profile[p_dev] = {"profile_id": p_id, "profile_name": p_name}
                         device_to_profile[p_dev.split("/")[-1]] = {"profile_id": p_id, "profile_name": p_name}
 
-            # 2. Arricchimento dispositivi con metadati locali e profilo utente cloud
+            # 2. Arricchimento dispositivi con metadati locali, profilo utente cloud e Reverse NDP IPs (Issue #57)
             metadata_map = await db_service.get_all_device_metadata()
+            discovered_ips_map = await db_service.get_all_discovered_ips_map()
             enriched_devices = []
             device_metrics_batch = []
             
@@ -776,6 +777,46 @@ class BackgroundPoller:
                 dev_copy["paused"] = is_cloud_paused
                 dev_copy["is_paused"] = is_cloud_paused
                 dev_copy["is_local_paused"] = False
+
+                # Arricchimento Reverse NDP / Discovered IPs (Issue #57)
+                disc_for_dev = discovered_ips_map.get(mac, [])
+                if disc_for_dev:
+                    existing_ula = list(dev_copy.get("ipv6_ula") or [])
+                    existing_all_v6 = list(dev_copy.get("ipv6_addresses") or [])
+                    existing_details = list(dev_copy.get("ipv6_details") or [])
+
+                    for disc in disc_for_dev:
+                        d_ip = disc.get("ip_address")
+                        d_type = (disc.get("ip_type") or "ULA").upper()
+                        d_src = disc.get("source") or "ndp_enrichment"
+                        if not d_ip:
+                            continue
+
+                        if d_ip not in existing_ula and d_type == "ULA":
+                            existing_ula.append(d_ip)
+                        if d_ip not in existing_all_v6:
+                            existing_all_v6.append(d_ip)
+
+                        if not any(entry.get("address") == d_ip for entry in existing_details):
+                            existing_details.append({
+                                "address": d_ip,
+                                "type": d_type,
+                                "scope": "local" if d_type == "ULA" else "global",
+                                "origin": "ndp_discovered",
+                                "source": d_src
+                            })
+
+                    dev_copy["ipv6_ula"] = existing_ula
+                    dev_copy["ipv6_addresses"] = existing_all_v6
+                    dev_copy["ipv6_details"] = existing_details
+                    dev_copy["has_discovered_ips"] = True
+                    dev_copy["discovered_ips"] = disc_for_dev
+
+                    # Promuovi a primario se il dispositivo non aveva IPv6 o aveva solo link-local
+                    if not dev_copy.get("ipv6") or str(dev_copy.get("ipv6")).lower().startswith("fe80:"):
+                        if existing_ula:
+                            dev_copy["ipv6"] = existing_ula[0]
+
                 enriched_devices.append(dev_copy)
 
                 # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
