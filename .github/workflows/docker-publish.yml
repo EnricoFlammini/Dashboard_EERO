@@ -39,7 +39,7 @@ jobs:
           if [ -z "$APP_VER" ]; then
             APP_VER=$(grep -E '^__version__' app/__init__.py | cut -d"'" -f2 || true)
           fi
-          if [ -z "$APP_VER" ]; then APP_VER="1.5.0"; fi
+          if [ -z "$APP_VER" ]; then APP_VER="1.6.0"; fi
 
           # Pulizia tokenizzata dei tag legacy temporanei (>= 90 o erronei) su Docker Hub se credenziali disponibili
           DH_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST \
@@ -70,12 +70,12 @@ jobs:
               BUILD_NUM=$((DH_LATEST + 1))
             fi
             echo "Build number calcolato per MAIN: ${BUILD_NUM}"
-          # 3. Rilascio su TEST: numerazione indipendente da main
+          # 3. Rilascio su TEST: numerazione progressiva specifica per versione test (es. 1.6.0-test.1)
           elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
             TAGS_JSON=$(curl -s "https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags?page_size=100")
             DH_TEST_LATEST=$(echo "$TAGS_JSON" | jq -r '.results[].name' 2>/dev/null | \
-              grep -E "^test-build\.[0-9]+$" | \
-              sed -E "s/^test-build\.//" | \
+              grep -E "^${APP_VER}-test\.[0-9]+$" | \
+              sed -E "s/^${APP_VER}-test\.//" | \
               awk '$1 < 90' | \
               sort -n | tail -n 1)
 
@@ -91,8 +91,9 @@ jobs:
 
           echo "app_version=${APP_VER}" >> $GITHUB_OUTPUT
           echo "build_number=${BUILD_NUM}" >> $GITHUB_OUTPUT
-          echo "full_version=${APP_VER} build ${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "full_version=${APP_VER} test ${BUILD_NUM}" >> $GITHUB_OUTPUT
           echo "build_tag=${APP_VER}-build.${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "test_tag=${APP_VER}-test.${BUILD_NUM}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU (Multi-Architecture Support)
         uses: docker/setup-qemu-action@v3
@@ -118,7 +119,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=${{ steps.versioning.outputs.build_tag }},enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=test,enable=${{ github.ref == 'refs/heads/test' }}
-            type=raw,value=test-build.${{ steps.versioning.outputs.build_number }},enable=${{ github.ref == 'refs/heads/test' }}
+            type=raw,value=${{ steps.versioning.outputs.test_tag }},enable=${{ github.ref == 'refs/heads/test' }}
             type=raw,value=${{ inputs.custom_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.custom_tag != '' }}
 
       - name: Build and push multi-arch Docker image
