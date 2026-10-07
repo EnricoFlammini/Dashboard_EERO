@@ -63,7 +63,8 @@
     "status_inactive": "Rete Ospiti Disattivata",
     "scan_instruction": "Inquadra il QR Code con la fotocamera del tuo smartphone per collegarti istantaneamente senza digitare la password.",
     "settings_redirect_hint": "Per configurare SSID, attivare/disattivare la rete o generare una nuova password:",
-    "go_to_settings": "Impostazioni → Controlli & Ospiti"
+    "go_to_settings": "Impostazioni → Controlli & Ospiti",
+    "open_network_label": "Rete aperta (senza password)"
   },
   "quality_analytics": {
     "page_title": "Qualità Segnale & Analytics Rete",
@@ -384,6 +385,9 @@
     "digest_title": "Report Digest Giornaliero",
     "digest_desc": "Invia automaticamente alle 21:00 il riepilogo con salute e stabilità della linea, dispositivi attivi per banda Wi-Fi, nodi mesh e velocità WAN.",
     "digest_enable_toggle": "Abilita invio automatico programmato (ore 21:00)",
+    "digest_delivery_channels": "Canali di recapito:",
+    "configure_notifications": "Configura",
+    "digest_no_channels": "Nessun canale attivo configurato",
     "digest_btn": "Genera & Invia Digest Ora",
     "docker_title": "Aggiornamenti Container & Manutenzione Docker",
     "docker_subtitle": "Verifica automatica release su Docker Hub e aggiornamento a 1-clic",

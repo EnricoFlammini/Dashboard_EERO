@@ -222,7 +222,7 @@ async def get_guest_network():
         qr_data_url = ""
         qr_data_url_light = ""
         qr_data_url_dark = ""
-        if guest.get("enabled", False) and ssid and password:
+        if guest.get("enabled", False) and ssid:
             qr_data_url_light = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=False)
             qr_data_url_dark = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=True)
             qr_data_url = qr_data_url_light
@@ -252,10 +252,11 @@ async def update_guest_network(payload: GuestNetworkRequest):
         qr_code = ""
         qr_code_light = ""
         qr_code_dark = ""
-        if payload.enabled and payload.password:
+        if payload.enabled:
             ssid = payload.name or "eero Guest"
-            qr_code_light = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=False)
-            qr_code_dark = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=True)
+            pwd = payload.password or ""
+            qr_code_light = generate_wifi_qr_code(ssid=ssid, password=pwd, dark_mode=False)
+            qr_code_dark = generate_wifi_qr_code(ssid=ssid, password=pwd, dark_mode=True)
             qr_code = qr_code_light
 
         return {

@@ -1,3 +1,4 @@
+import asyncio
 from collections import Counter
 import json
 import logging
@@ -14,11 +15,13 @@ logger = logging.getLogger(__name__)
 class DBService:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or str(settings.db_file_path)
+        self._write_lock = asyncio.Lock()
 
     @asynccontextmanager
     async def get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
-        async with aiosqlite.connect(self.db_path) as conn:
+        async with aiosqlite.connect(self.db_path, timeout=60.0) as conn:
             conn.row_factory = aiosqlite.Row
+            await conn.execute("PRAGMA busy_timeout = 60000;")
             yield conn
 
     async def init_db(self):
@@ -27,6 +30,7 @@ class DBService:
         async with self.get_connection() as db:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA synchronous = NORMAL;")
+            await db.execute("PRAGMA busy_timeout = 60000;")
             
             # Clean up obsolete bandwidth metrics tables
             await db.execute("DROP TABLE IF EXISTS wan_metrics;")
@@ -998,38 +1002,51 @@ class DBService:
             return 0
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         inserted = 0
-        async with self.get_connection() as db:
-            for s in samples:
-                mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
-                rssi = s.get("signal_rssi") or s.get("signal")
-                if not mac or rssi is None:
-                    continue
+        async with self._write_lock:
+            for attempt in range(3):
                 try:
-                    rssi_val = int(rssi)
-                except Exception:
-                    continue
-                
-                hostname = s.get("hostname") or s.get("custom_name") or s.get("nickname") or mac
-                freq_band = s.get("frequency_band") or s.get("wireless_band") or ""
-                channel = s.get("channel")
-                try:
-                    chan_val = int(channel) if channel is not None else None
-                except Exception:
-                    chan_val = None
-                eero_name = s.get("connected_eero_name") or s.get("eero_name") or ""
-                rx_rate = s.get("rx_bitrate")
-                tx_rate = s.get("tx_bitrate")
+                    async with self.get_connection() as db:
+                        for s in samples:
+                            mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
+                            rssi = s.get("signal_rssi") or s.get("signal")
+                            if not mac or rssi is None:
+                                continue
+                            try:
+                                rssi_val = int(rssi)
+                            except Exception:
+                                continue
+                            
+                            hostname = s.get("hostname") or s.get("custom_name") or s.get("nickname") or mac
+                            freq_band = s.get("frequency_band") or s.get("wireless_band") or ""
+                            channel = s.get("channel")
+                            try:
+                                chan_val = int(channel) if channel is not None else None
+                            except Exception:
+                                chan_val = None
+                            eero_name = s.get("connected_eero_name") or s.get("eero_name") or ""
+                            rx_rate = s.get("rx_bitrate")
+                            tx_rate = s.get("tx_bitrate")
 
-                await db.execute(
-                    """
-                    INSERT INTO device_signal_history 
-                    (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (now, mac, hostname, rssi_val, freq_band, chan_val, eero_name, rx_rate, tx_rate, is_demo)
-                )
-                inserted += 1
-            await db.commit()
+                            await db.execute(
+                                """
+                                INSERT INTO device_signal_history 
+                                (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (now, mac, hostname, rssi_val, freq_band, chan_val, eero_name, rx_rate, tx_rate, is_demo)
+                            )
+                            inserted += 1
+                        await db.commit()
+                    return inserted
+                except aiosqlite.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 2:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+                        continue
+                    logger.warning(f"record_device_signal_samples SQLite locked: {e}")
+                    return inserted
+                except Exception as e:
+                    logger.warning(f"record_device_signal_samples failed: {e}")
+                    return inserted
         return inserted
 
     async def get_device_signal_history(self, mac_address: str, range_hours: int = 24, is_demo: int = 0) -> List[Dict[str, Any]]:
@@ -1067,22 +1084,35 @@ class DBService:
             return 0
         cutoff_z = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
         cutoff_space = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).strftime("%Y-%m-%d %H:%M:%S")
-        async with self.get_connection() as db:
-            cursor = await db.execute(
-                """
-                DELETE FROM device_signal_history
-                WHERE mac_address = ? 
-                  AND (timestamp >= ? OR timestamp >= ?)
-                  AND signal_rssi < ?
-                  AND is_demo = ?
-                """,
-                (mac, cutoff_z, cutoff_space, threshold_rssi, is_demo)
-            )
-            deleted = cursor.rowcount
-            await db.commit()
-            if deleted > 0:
-                logger.info(f"Bonificati {deleted} campioni transitori di uscita per dispositivo {mac} (< {threshold_rssi} dBm).")
-            return deleted
+        async with self._write_lock:
+            for attempt in range(3):
+                try:
+                    async with self.get_connection() as db:
+                        cursor = await db.execute(
+                            """
+                            DELETE FROM device_signal_history
+                            WHERE mac_address = ? 
+                              AND (timestamp >= ? OR timestamp >= ?)
+                              AND signal_rssi < ?
+                              AND is_demo = ?
+                            """,
+                            (mac, cutoff_z, cutoff_space, threshold_rssi, is_demo)
+                        )
+                        deleted = cursor.rowcount
+                        await db.commit()
+                        if deleted > 0:
+                            logger.info(f"Bonificati {deleted} campioni transitori di uscita per dispositivo {mac} (< {threshold_rssi} dBm).")
+                        return deleted
+                except aiosqlite.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 2:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+                        continue
+                    logger.debug(f"prune_device_exit_transient_samples SQLite locked: {e}")
+                    return 0
+                except Exception as e:
+                    logger.debug(f"prune_device_exit_transient_samples failed: {e}")
+                    return 0
+        return 0
 
     async def get_signal_overview(
         self, 
@@ -1167,27 +1197,40 @@ class DBService:
             return 0
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         inserted = 0
-        async with self.get_connection() as db:
-            for s in samples:
-                mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
-                if not mac:
-                    continue
-                hostname = s.get("hostname") or s.get("nickname") or s.get("custom_name") or mac
-                rx_bytes = float(s.get("rx_bytes") or 0.0)
-                tx_bytes = float(s.get("tx_bytes") or 0.0)
-                down_mbps = float(s.get("download_rate_mbps") or 0.0)
-                up_mbps = float(s.get("upload_rate_mbps") or 0.0)
+        async with self._write_lock:
+            for attempt in range(3):
+                try:
+                    async with self.get_connection() as db:
+                        for s in samples:
+                            mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
+                            if not mac:
+                                continue
+                            hostname = s.get("hostname") or s.get("nickname") or s.get("custom_name") or mac
+                            rx_bytes = float(s.get("rx_bytes") or 0.0)
+                            tx_bytes = float(s.get("tx_bytes") or 0.0)
+                            down_mbps = float(s.get("download_rate_mbps") or 0.0)
+                            up_mbps = float(s.get("upload_rate_mbps") or 0.0)
 
-                await db.execute(
-                    """
-                    INSERT INTO device_usage_history
-                    (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (now, mac, str(network_id), hostname, rx_bytes, tx_bytes, down_mbps, up_mbps, is_demo)
-                )
-                inserted += 1
-            await db.commit()
+                            await db.execute(
+                                """
+                                INSERT INTO device_usage_history
+                                (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """,
+                                (now, mac, str(network_id), hostname, rx_bytes, tx_bytes, down_mbps, up_mbps, is_demo)
+                            )
+                            inserted += 1
+                        await db.commit()
+                    return inserted
+                except aiosqlite.OperationalError as e:
+                    if "locked" in str(e).lower() and attempt < 2:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+                        continue
+                    logger.warning(f"record_device_usage_samples SQLite locked: {e}")
+                    return inserted
+                except Exception as e:
+                    logger.warning(f"record_device_usage_samples failed: {e}")
+                    return inserted
         return inserted
 
     async def get_device_usage_history(self, mac_address: str, period: str = "daily", resolution_minutes: int = 15, is_demo: int = 0) -> Dict[str, Any]:

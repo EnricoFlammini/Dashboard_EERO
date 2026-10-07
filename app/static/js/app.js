@@ -2660,7 +2660,9 @@ document.addEventListener('alpine:init', () => {
     copyGuestCredentials() {
       const name = this.guestNetwork?.name || 'eero-guest';
       const password = this.guestNetwork?.password || '';
-      const text = `Wi-Fi: ${name}\nPassword: ${password}`;
+      const text = password 
+        ? `Wi-Fi: ${name}\nPassword: ${password}` 
+        : (this.currentLanguage === 'it' ? `Wi-Fi: ${name}\n(Rete aperta senza password)` : `Wi-Fi: ${name}\n(Open network, no password)`);
       const msg = this.currentLanguage === 'it' ? 'Credenziali Wi-Fi ospiti copiate negli appunti!' : 'Guest Wi-Fi credentials copied to clipboard!';
       this.copyToClipboard(text, msg);
     },
@@ -2668,7 +2670,11 @@ document.addEventListener('alpine:init', () => {
     copyGuestPassword() {
       const password = this.guestNetwork?.password || '';
       if (!password) {
-        this.showToast(this.currentLanguage === 'it' ? 'Nessuna password' : 'No password', this.currentLanguage === 'it' ? 'La rete ospiti non ha una password impostata.' : 'Guest network has no password set.', 'warning');
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Rete aperta' : 'Open network', 
+          this.currentLanguage === 'it' ? 'La rete ospiti è aperta: non è richiesta alcuna password.' : 'Guest network is open: no password required.', 
+          'info'
+        );
         return;
       }
       const msg = this.currentLanguage === 'it' ? 'Password ospiti copiata negli appunti!' : 'Guest password copied to clipboard!';
