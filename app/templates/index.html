@@ -1582,13 +1582,13 @@
                 <span x-text="t('devices.sort_signal')"></span>
                 <span x-show="deviceSortField === 'signal'" class="text-xs">✓</span>
               </button>
-              <button type="button" @click="deviceSortField = 'rx'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'rx' ? 'is-selected' : ''" class="device-filter-option">
+              <button type="button" @click="deviceSortField = 'download'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'download' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.sort_download')"></span>
-                <span x-show="deviceSortField === 'rx'" class="text-xs">✓</span>
+                <span x-show="deviceSortField === 'download'" class="text-xs">✓</span>
               </button>
-              <button type="button" @click="deviceSortField = 'tx'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'tx' ? 'is-selected' : ''" class="device-filter-option">
+              <button type="button" @click="deviceSortField = 'upload'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'upload' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.sort_upload')"></span>
-                <span x-show="deviceSortField === 'tx'" class="text-xs">✓</span>
+                <span x-show="deviceSortField === 'upload'" class="text-xs">✓</span>
               </button>
               <button type="button" @click="deviceSortField = 'status'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'status' ? 'is-selected' : ''" class="device-filter-option">
                 <span x-text="t('devices.sort_status')"></span>
