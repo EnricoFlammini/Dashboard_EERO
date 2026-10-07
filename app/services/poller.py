@@ -694,9 +694,10 @@ class BackgroundPoller:
                         device_to_profile[p_dev] = {"profile_id": p_id, "profile_name": p_name}
                         device_to_profile[p_dev.split("/")[-1]] = {"profile_id": p_id, "profile_name": p_name}
 
-            # 2. Arricchimento dispositivi con metadati locali, profilo utente cloud e Reverse NDP IPs (Issue #57)
+            # 2. Arricchimento dispositivi con metadati locali, profilo utente cloud, Reverse NDP IPs (Issue #57) e First Seen (Issue #60)
             metadata_map = await db_service.get_all_device_metadata()
             discovered_ips_map = await db_service.get_all_discovered_ips_map()
+            known_devices_map = await db_service.get_all_known_devices_map()
             enriched_devices = []
             device_metrics_batch = []
             
@@ -816,6 +817,32 @@ class BackgroundPoller:
                     if not dev_copy.get("ipv6") or str(dev_copy.get("ipv6")).lower().startswith("fe80:"):
                         if existing_ula:
                             dev_copy["ipv6"] = existing_ula[0]
+
+                # First Seen & New Device Detection (Issue #60 - @DannyFeliz)
+                known_dev_entry = known_devices_map.get(mac, {})
+                first_seen_str = known_dev_entry.get("first_seen")
+                if not first_seen_str:
+                    first_seen_str = now_utc.strftime("%Y-%m-%d %H:%M:%S")
+
+                dev_copy["first_seen"] = first_seen_str
+                is_new_24h = False
+                is_new_7d = False
+                try:
+                    fs_clean = str(first_seen_str).replace("Z", "+00:00")
+                    if "T" in fs_clean:
+                        fs_dt = datetime.fromisoformat(fs_clean)
+                    else:
+                        fs_dt = datetime.strptime(fs_clean[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    if fs_dt.tzinfo is None:
+                        fs_dt = fs_dt.replace(tzinfo=timezone.utc)
+                    age_sec = (now_utc - fs_dt).total_seconds()
+                    is_new_24h = 0 <= age_sec <= 86400
+                    is_new_7d = 0 <= age_sec <= (86400 * 7)
+                except Exception:
+                    pass
+
+                dev_copy["is_new"] = is_new_7d
+                dev_copy["is_new_24h"] = is_new_24h
 
                 enriched_devices.append(dev_copy)
 

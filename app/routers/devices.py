@@ -55,8 +55,10 @@ async def list_devices(
     connected_only: Optional[bool] = None,
     category: Optional[str] = None,
     profile: Optional[str] = None,
+    is_new_only: Optional[bool] = None,
+    sort_by: Optional[str] = None,
 ):
-    """Restituisce l'elenco dei dispositivi arricchiti con metadati locali e filtri."""
+    """Restituisce l'elenco dei dispositivi arricchiti con metadati locali, first_seen e filtri."""
     cached = background_poller.get_cached_state()
     devices = cached.get("devices", [])
 
@@ -64,6 +66,10 @@ async def list_devices(
     for d in devices:
         # Filtro connessione
         if connected_only is not None and d.get("connected") != connected_only:
+            continue
+
+        # Filtro nuovi dispositivi (Issue #60)
+        if is_new_only is True and not d.get("is_new"):
             continue
         
         # Filtro frequenza wireless
@@ -105,6 +111,12 @@ async def list_devices(
                 continue
 
         filtered.append(d)
+
+    # Ordinamento per primo accesso / più recenti (Issue #60)
+    if sort_by == "first_seen_desc":
+        filtered.sort(key=lambda x: str(x.get("first_seen") or ""), reverse=True)
+    elif sort_by == "first_seen_asc":
+        filtered.sort(key=lambda x: str(x.get("first_seen") or ""))
 
     return {
         "status": "success",

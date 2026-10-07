@@ -213,6 +213,7 @@ document.addEventListener('alpine:init', () => {
     getCategoryFilterLabel() {
       if (this.selectedCategoryFilter === 'all') return this.t('devices.filter_all_categories');
       if (this.selectedCategoryFilter === 'favorites') return this.t('devices.filter_favorites');
+      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices') || '✨ Nuovi Dispositivi';
       const map = {
         Computer: this.t('devices.cat_computer'),
         Mobile: this.t('devices.cat_mobile'),
@@ -223,6 +224,18 @@ document.addEventListener('alpine:init', () => {
         Altro: this.t('devices.cat_other')
       };
       return map[this.selectedCategoryFilter] || this.selectedCategoryFilter;
+    },
+    getSortLabel() {
+      const isIt = this.currentLanguage === 'it';
+      if (this.deviceSortField === 'first_seen') {
+        return this.t('devices.sort_first_seen') || (isIt ? 'Primo Accesso' : 'Recently Joined');
+      }
+      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip') || 'IP';
+      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal') || (isIt ? 'Segnale' : 'Signal');
+      if (this.deviceSortField === 'download') return this.t('devices.sort_download') || 'Download';
+      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload') || 'Upload';
+      if (this.deviceSortField === 'status') return this.t('devices.sort_status') || (isIt ? 'Stato' : 'Status');
+      return this.t('devices.sort_name') || (isIt ? 'Nome (A-Z)' : 'Name (A-Z)');
     },
     getProfileFilterLabel() {
       if (this.selectedProfileFilter === 'all') return this.t('devices.filter_all_profiles');
@@ -1536,7 +1549,7 @@ document.addEventListener('alpine:init', () => {
         this.deviceSortDirection = this.deviceSortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         this.deviceSortField = field;
-        this.deviceSortDirection = (field === 'signal' || field === 'status' || field === 'download' || field === 'upload') ? 'desc' : 'asc';
+        this.deviceSortDirection = (field === 'signal' || field === 'status' || field === 'download' || field === 'upload' || field === 'first_seen') ? 'desc' : 'asc';
       }
     },
 
@@ -1591,10 +1604,12 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Filtro categoria / preferiti
+        // Filtro categoria / preferiti / nuovi dispositivi (Issue #60)
         if (this.selectedCategoryFilter !== 'all') {
           if (this.selectedCategoryFilter === 'favorites') {
             if (!d.is_favorite) return false;
+          } else if (this.selectedCategoryFilter === 'new') {
+            if (!d.is_new) return false;
           } else if (this.selectedCategoryFilter === 'Altro' || this.selectedCategoryFilter === 'Other') {
             const dc = (d.category || '').toLowerCase();
             if (dc !== 'altro' && dc !== 'other' && dc !== '') return false;
@@ -1716,6 +1731,21 @@ document.addEventListener('alpine:init', () => {
             const ulA = Number(a.tx_bytes || 0);
             const ulB = Number(b.tx_bytes || 0);
             res = ulA - ulB;
+            if (res === 0) {
+              const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
+              const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
+              res = nameA.localeCompare(nameB);
+            }
+            break;
+          }
+          case 'first_seen': {
+            const getTimestamp = (d) => {
+              if (!d || !d.first_seen) return 0;
+              const s = String(d.first_seen).replace(' ', 'T');
+              const t = new Date(s).getTime();
+              return isNaN(t) ? 0 : t;
+            };
+            res = getTimestamp(a) - getTimestamp(b);
             if (res === 0) {
               const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
               const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();

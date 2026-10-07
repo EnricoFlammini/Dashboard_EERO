@@ -40,6 +40,8 @@
    * 4.23 [Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)](#423-metriche-native-prometheus--dashboard-grafana-ufficiale-v160)
    * 4.24 [Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)](#424-multi-channel-notification-dispatcher--allarmi-specializzati-v160)
    * 4.25 [Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)](#425-reverse-client-enrichment-ipv6-ula--neighbor-discovery-v160---issue-57)
+   * 4.26 [Local Asset Bundling & Resilienza 100% Offline (v1.6.0 - Issue #58)](#426-local-asset-bundling--resilienza-100-offline-v160---issue-58)
+   * 4.27 [Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60)](#427-ordinamento-recently-joined--badge-new-v160---issue-60)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -332,6 +334,34 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
   Gli indirizzi ULA scoperti vengono memorizzati nella tabella persistente `device_discovered_ips` e fusi nel modello del dispositivo. Al ciclo successivo di sincronizzazione DNS verso AdGuard, il client ufficiale acquisisce l'indirizzo ULA nei suoi identificatori `ids`, eliminando automaticamente i client orfani/anonimi su AdGuard.
 * **Interfaccia Utente:**
   Nel modale del dispositivo (`#deviceModal`), gli ULA scoperti via rete mostrano il badge fucsia/ametista `ULA (NDP / AdGuard)` con tooltip esplicativo, differenziandosi dagli indirizzi nativi comunicati dal cloud.
+
+### 4.26 Local Asset Bundling & Resilienza 100% Offline (v1.6.0 - Issue #58)
+* **Motivazione & Offline-First Philosophy (@jpatchMC):**
+  Nei casi di interruzione della connettività Internet/WAN (blackout ISP o disconnessione gateway), una dashboard per il monitoraggio della rete locale LAN deve continuare a funzionare ininterrottamente. Nelle versioni precedenti, il caricamento di risorse UI da CDN esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `fonts.googleapis.com`) causava blocchi visivi, fallback di rendering o mancata esecuzione degli script Alpine/Chart.js in assenza di WAN.
+* **Vendoring Locale Completo (`app/static/vendor/`):**
+  Tutte le librerie frontend esterne sono ora pacchettizzate e distribuite direttamente dal web server FastAPI interno:
+  * `tailwind.min.js`: Motore Tailwind standalone per styling e design system Fluent.
+  * `alpine.min.js`: Framework reattivo UI per gestione stato, drawer, modali e filtri.
+  * `chart.umd.min.js`: Libreria di rendering grafici per telemetria real-time e storici.
+  * `lucide.min.js`: Icon set vettoriale moderno.
+* **Self-Hosting Locale Font WOFF2 (`app/static/fonts/` & `fonts.css`):**
+  Tutti i pesi necessari per i font di sistema **Inter** (300, 400, 500, 600, 700, 800) e **JetBrains Mono** (400, 500, 600) sono scaricati localmente come file WOFF2 ad alta efficienza di compressione e serviti con regole `@font-face` relative da `/static/css/fonts.css`.
+* **Integrazione PWA & Service Worker (`app/static/sw.js`):**
+  Tutti gli asset vendor e font locali sono inseriti nella lista `STATIC_ASSETS` pre-cacheata dal Service Worker PWA all'installazione, garantendo avvio istantaneo da cache locale e 0 chiamate WAN verso l'esterno.
+
+### 4.27 Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60)
+* **Contesto & Risoluzione Necessità Utente (@DannyFeliz):**
+  Nelle reti mesh domestiche e aziendali con decine o centinaia di dispositivi, individuare rapidamente un nuovo dispositivo appena connesso (es. console, ospite, IoT appena installato) risultava disagevole senza poter ordinare cronologicamente per momento di primo ingresso in rete.
+* **Integrazione Backend (`poller.py` & `/api/devices`):**
+  Il background poller associa a ciascun dispositivo il rispettivo timestamp `first_seen` memorizzato nella tabella SQLite `known_devices`. Calcola inoltre in memoria i flag booleani:
+  * `is_new`: `True` se il primo accesso è avvenuto negli ultimi 7 giorni.
+  * `is_new_24h`: `True` se il primo accesso è avvenuto nelle ultime 24 ore.
+  L'endpoint `/api/devices` supporta i parametri query `sort_by=first_seen_desc`, `sort_by=first_seen_asc` e `is_new_only=true`.
+* **Esperienza Utente & UI Control:**
+  1. **Menu Ordinamento Unificato:** Dropdown di ordinamento rapido integrato nella griglia della toolbar secondaria desktop e nei filtri veloci mobile, con opzione dedicata *"Primo Accesso / Più Recenti"*.
+  2. **Badge Visivo "NEW":** Badge compatto verde smeraldo con indicatore a pulsazione visiva sia nella colonna dispositivo della tabella desktop sia nelle schede card mobile.
+  3. **Filtro Categoria "Nuovi":** Pill rapida con indicatore cromatico verde per visualizzare esclusivamente i dispositivi rilevati di recente.
+  4. **Ispezione Modale Dettagliata:** Nel `#deviceModal` (tab Generale), un blocco informativo dedicato mostra la data e ora esatta del primo rilevamento del dispositivo sulla rete mesh.
 
 ---
 

@@ -7,7 +7,12 @@ const CACHE_NAME = 'eero-dashboard-v1.6.0';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
-  '/static/css/style.css',
+  '/static/css/styles.css',
+  '/static/css/fonts.css',
+  '/static/vendor/tailwind.min.js',
+  '/static/vendor/alpine.min.js',
+  '/static/vendor/chart.umd.min.js',
+  '/static/vendor/lucide.min.js',
   '/static/js/app.js',
   '/static/locales/it.json',
   '/static/locales/en.json',

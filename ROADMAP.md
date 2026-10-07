@@ -519,14 +519,15 @@ gantt
 - [x] Supporto completo Dual-Theme (Dark/Light mode) e localizzazione bilingue IT / EN (`it.json`, `en.json`).
 - [x] Mock realistici per Demo Mode e suite di test unitari/integrazione (478 test superati al 100%).
 
-##### Modulo 6: 📦 Local Asset Bundling (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60) (In arrivo su branch `dev`)
-- [ ] Packaging e bundle locale di tutte le librerie in `app/static/vendor/` (`tailwind`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) ed eliminazione dipendenze CDN esterne (Issue #58 - @jpatchMC).
-- [ ] Self-hosting locale dei file font WOFF2 per Inter e JetBrains Mono in `app/static/fonts/` con regole `@font-face` (Issue #58).
-- [ ] Garanzia caricamento 100% offline della dashboard e gestione eero su LAN in assenza totale di connettività WAN/ISP (Issue #58).
-- [ ] Propagazione del campo `first_seen` da `known_devices` nel payload JSON dell'endpoint `/api/devices` in `eero_client.py` (Issue #60 - @DannyFeliz).
-- [ ] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown dell'elenco dispositivi in `index.html` (Issue #60).
-- [ ] Badge compatto visivo `"NEW"` e filtro rapido per dispositivi rilevati per la prima volta nelle ultime 24h / 7 giorni (Issue #60).
-- [ ] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
+##### Modulo 6: 📦 Local Asset Bundling (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60) (Completato al 100%)
+- [x] Packaging e bundle locale di tutte le librerie in `app/static/vendor/` (`tailwind.min.js`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) ed eliminazione dipendenze CDN esterne (Issue #58 - @jpatchMC).
+- [x] Self-hosting locale dei file font WOFF2 per Inter e JetBrains Mono in `app/static/fonts/` con regole `@font-face` in `app/static/css/fonts.css` (Issue #58).
+- [x] Garanzia caricamento 100% offline della dashboard e gestione eero su LAN in assenza totale di connettività WAN/ISP con pre-caching PWA Service Worker (Issue #58).
+- [x] Propagazione del campo `first_seen` da `known_devices` nel payload JSON dell'endpoint `/api/devices` e calcolo flag temporali `is_new` e `is_new_24h` (Issue #60 - @DannyFeliz).
+- [x] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown desktop della toolbar e mobile in `index.html` (Issue #60).
+- [x] Badge compatto visivo `"NEW"` su tabella desktop e card mobile, pill/chip di filtro rapido "Nuovi" e visualizzazione data primo accesso nel modal dispositivo (Issue #60).
+- [x] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
+- [x] Test di regressione automatizzati completi in `scripts/run_pre_release_tests.py` (1093/1093 test superati al 100%).
 
 ##### Modulo 7: 🔍 Reverse Client Enrichment & ULA Discovery via NDP / AdGuard (Issue #57 - @jpatchMC) (Completato al 100%)
 - [x] Creazione tabella SQLite `device_discovered_ips` in `app/services/db.py` (colonne: `mac_address`, `ip_address`, `ip_type`, `source`, `first_seen`, `last_seen`) e metodi async CRUD.
