@@ -990,7 +990,10 @@ class BackgroundPoller:
                     if d.get("connected") and d.get("wireless") and d.get("signal_rssi") is not None
                 ]
                 if wireless_samples:
-                    asyncio.create_task(db_service.record_device_signal_samples(wireless_samples, is_demo=0))
+                    try:
+                        await db_service.record_device_signal_samples(wireless_samples, is_demo=0)
+                    except Exception as sig_err:
+                        logger.warning(f"Device signal sampling error: {sig_err}")
 
                 # Rilevamento disconnessione / uscita da casa per dispositivi wireless: bonifica campioni transitori
                 current_connected_wireless_macs = {
@@ -1002,7 +1005,10 @@ class BackgroundPoller:
                     disconnected_macs = self._prev_connected_wireless_macs - current_connected_wireless_macs
                     for d_mac in disconnected_macs:
                         if d_mac:
-                            asyncio.create_task(db_service.prune_device_exit_transient_samples(d_mac, window_minutes=5, threshold_rssi=-75, is_demo=0))
+                            try:
+                                await db_service.prune_device_exit_transient_samples(d_mac, window_minutes=5, threshold_rssi=-75, is_demo=0)
+                            except Exception as prune_err:
+                                logger.debug(f"Device prune error for {d_mac}: {prune_err}")
                 self._prev_connected_wireless_macs = current_connected_wireless_macs
 
             # 3.6 Campionamento continuo Utilizzo Dati Dispositivi (v1.5.0 Insights Suite)
@@ -1014,7 +1020,7 @@ class BackgroundPoller:
                     if d.get("mac") and (d.get("rx_bytes") is not None or d.get("download_rate_mbps") is not None)
                 ]
                 if usage_samples:
-                    asyncio.create_task(db_service.record_device_usage_samples(usage_samples, network_id=curr_net, is_demo=is_demo_flag))
+                    await db_service.record_device_usage_samples(usage_samples, network_id=curr_net, is_demo=is_demo_flag)
             except Exception as usage_err:
                 logger.debug(f"Device usage sampling error: {usage_err}")
 

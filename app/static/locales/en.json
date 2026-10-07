@@ -63,7 +63,8 @@
     "status_inactive": "Guest Network Disabled",
     "scan_instruction": "Scan the QR code with your smartphone camera to connect instantly without typing the password.",
     "settings_redirect_hint": "To configure SSID, enable/disable the network or generate a new password:",
-    "go_to_settings": "Settings → Controls & Guests"
+    "go_to_settings": "Settings → Controls & Guests",
+    "open_network_label": "Open network (no password)"
   },
   "quality_analytics": {
     "page_title": "Signal Quality & Network Analytics",
@@ -384,6 +385,9 @@
     "digest_title": "Daily Digest Report",
     "digest_desc": "Automatically sends a summary at 21:00 with network health and line stability, active devices by Wi-Fi band, mesh node status, and gateway WAN speed.",
     "digest_enable_toggle": "Enable automated scheduled dispatch (at 21:00)",
+    "digest_delivery_channels": "Delivery channels:",
+    "configure_notifications": "Configure",
+    "digest_no_channels": "No active notification channel configured",
     "digest_btn": "Generate & Send Digest Now",
     "docker_title": "Container Updates & Docker Maintenance",
     "docker_subtitle": "Automatic release checking on Docker Hub and 1-click update",

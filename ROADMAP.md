@@ -539,6 +539,14 @@ gantt
 - [x] Badge UI dedicato `ULA (NDP / AdGuard)` con stile cromatico fucsia/ametista distintivo e tooltip informativo nel `#deviceModal`.
 - [x] Test di regressione automatizzati in `scripts/run_pre_release_tests.py` (Test 23.4: Ingestion API, Validazione IP, Merge e DNS Sync propagation, 1048/1048 passati).
 
+##### Modulo 8: 🛠️ Stabilità SQLite, QR Code Reti Ospiti Aperte & UX Digest (Issue #62, #63, #64) (Completato al 100%)
+- [x] Risoluzione lock contention SQLite (`database is locked` e task orfani non gestiti) con `_write_lock`, timeout 60s e `PRAGMA busy_timeout = 60000;` (Issue #62 - @jonmacdonald).
+- [x] Attesa sequenziale controllata dei campionamenti telemetrici in `poller.py` con eliminazione degli errori a stderr del container (Issue #62).
+- [x] Supporto standard Wi-Fi `T:nopass` per la generazione del QR Code su reti ospiti prive di password (Issue #63 - @WillFulmer).
+- [x] Aggiornamento pulsanti e toast di copia credenziali per reti ospiti aperte (`open_network_label`) (Issue #63).
+- [x] Card Daily Digest Report estesa con indicazione esplicita dei canali di recapito attivi (Telegram, Webhook, Discord, Pushover) e link rapido alla card di configurazione (Issue #64 - @WillFulmer).
+- [x] Test di regressione automatizzati aggiunti alla suite pre-rilascio (1104/1104 test superati al 100%).
+
 ---
 
 ## 🛠️ Note Operative per il Futuro

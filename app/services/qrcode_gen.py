@@ -5,26 +5,34 @@ from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import SolidFillColorMask
 
 
+from typing import Optional
+
+
 def generate_wifi_qr_code(
     ssid: str,
-    password: str,
+    password: Optional[str] = "",
     auth_type: str = "WPA",
     hidden: bool = False,
     dark_mode: bool = False
 ) -> str:
     """
     Genera un QR Code formattato secondo lo standard Wi-Fi universale:
-    WIFI:S:<SSID>;T:<AUTH_TYPE>;P:<PASSWORD>;H:<HIDDEN>;;
+    - Reti protette: WIFI:S:<SSID>;T:<AUTH_TYPE>;P:<PASSWORD>;H:<HIDDEN>;;
+    - Reti aperte senza password (Issue #63): WIFI:S:<SSID>;T:nopass;H:<HIDDEN>;;
     Ritorna una stringa data URL in formato PNG Base64 (data:image/png;base64,...).
     - Light Mode (dark_mode=False): Sfondo bianco puro (255, 255, 255) e moduli blu Windows 11 (0, 103, 192).
     - Dark Mode (dark_mode=True): Sfondo ardesia scuro (15, 23, 42) e moduli azzurro cielo (56, 189, 248).
     """
     # Escaping dei caratteri speciali standard Wi-Fi
-    escaped_ssid = ssid.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
-    escaped_pass = password.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
-    
+    escaped_ssid = (ssid or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
     hidden_flag = "true" if hidden else "false"
-    wifi_string = f"WIFI:S:{escaped_ssid};T:{auth_type};P:{escaped_pass};H:{hidden_flag};;"
+
+    if not password:
+        # Standard Wi-Fi Alliance / ZXing per reti aperte senza password
+        wifi_string = f"WIFI:S:{escaped_ssid};T:nopass;H:{hidden_flag};;"
+    else:
+        escaped_pass = str(password).replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
+        wifi_string = f"WIFI:S:{escaped_ssid};T:{auth_type};P:{escaped_pass};H:{hidden_flag};;"
 
     qr = qrcode.QRCode(
         version=1,

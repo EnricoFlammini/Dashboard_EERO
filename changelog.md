@@ -6,6 +6,20 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.0] - 2026-10-07
 
+### 🛠️ Modulo 8: Stabilità Concorrenza SQLite (Issue #62), QR Code Ospiti Aperti (Issue #63) & Canali Daily Digest (Issue #64)
+* **🛠️ Risoluzione Lock Contention SQLite & Errori Ripetitivi Log Container (Issue #62 - @jonmacdonald):**
+  * Introdotto semaforo di serializzazione `_write_lock` in `DBService` (`app/services/db.py`) per evitare corse critiche concorrenti tra scritture asincrone simultanee.
+  * Configurato parametro `timeout=60.0` in `aiosqlite.connect(...)` e applicato `PRAGMA busy_timeout = 60000;` sia in inizializzazione sia in ogni connessione del pool per consentire a SQLite di attendere il rilascio dei lock in caso di carichi elevati.
+  * In `app/services/poller.py`, convertiti i campionamenti asincroni slegati (`asyncio.create_task`) in chiamate sequenziali tracciate con `await` e `try/except`, azzerando i messaggi di eccezione non gestita a `stderr` (`Task exception was never retrieved`) che saturavano i registri e causavano crash del container.
+* **📱 Generazione QR Code per Reti Wi-Fi Ospiti Aperte / Senza Password (Issue #63 - @WillFulmer):**
+  * Rimosso il vincolo bloccante di password obbligatoria in `app/routers/network.py` per le reti ospiti attive.
+  * Aggiornato `app/services/qrcode_gen.py` secondo lo standard Wi-Fi Alliance / ZXing: per reti prive di password viene generata la sintassi universale `WIFI:S:<SSID>;T:nopass;H:<hidden>;;`.
+  * Aggiornati il pulsante di copia credenziali e i toast per indicare con chiarezza *"Rete aperta (senza password)"*.
+* **📊 Trasparenza Canali di Recapito Report Daily Digest (Issue #64 - @WillFulmer):**
+  * Estesa la card *Daily Digest Report* in *Controlli & Ospiti* con badge visivi in tempo reale che mostrano i canali attivi configurati per la ricezione del sommario (Telegram, Webhook, Discord, Pushover).
+  * Aggiunto avviso descrittivo qualora nessun canale di notifica risulti configurato, con link rapido per scorrere direttamente alla card di configurazione delle notifiche.
+  * Localizzazione bilingue completa in `it.json` ed `en.json`.
+
 ### 📦 Modulo 6: Local Asset Bundling (Issue #58) & Ordinamento "Recently Joined" (Issue #60)
 * **📦 Local Asset Bundling & Resilienza 100% Offline (Issue #58 - @jpatchMC):**
   * Vendoring locale completo di tutte le librerie JavaScript esterne in `app/static/vendor/`:

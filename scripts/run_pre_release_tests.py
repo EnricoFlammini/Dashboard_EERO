@@ -4006,6 +4006,39 @@ async def run_all_tests():
         runner.assert_true("first_seen" in it_loc.get("device_modal", {}), "Chiave device_modal.first_seen in it.json")
         runner.assert_true("first_seen" in en_loc.get("device_modal", {}), "Chiave device_modal.first_seen in en.json")
 
+        # -----------------------------------------------------------------
+        # TEST ISSUES #62, #63, #64
+        # -----------------------------------------------------------------
+        print("\n🔧 TEST ISSUES #62, #63, #64 (SQLITE CONCURRENCY, GUEST QR CODE NOPASS, DAILY DIGEST UI)")
+
+        # Test Issue #62: SQLite Write Lock & Concurrency Contention
+        runner.assert_true(hasattr(db_service, "_write_lock"), "db_service espone _write_lock per serializzazione scritture")
+        async with db_service.get_connection() as conn:
+            cursor = await conn.execute("PRAGMA busy_timeout;")
+            busy_row = await cursor.fetchone()
+            busy_val = busy_row[0] if busy_row else 0
+            runner.assert_true(busy_val >= 50000, f"PRAGMA busy_timeout è >= 50000ms (ottenuto: {busy_val}ms)")
+
+        # Test Issue #63: Guest QR Code Generation with Open / No Password Network
+        from app.services.qrcode_gen import generate_wifi_qr_code
+        qr_nopass = generate_wifi_qr_code(ssid="eero Open Guest", password="")
+        runner.assert_true(isinstance(qr_nopass, str) and qr_nopass.startswith("data:image/png;base64,"), "generate_wifi_qr_code genera data URL valido per rete senza password")
+        
+        qr_with_pass = generate_wifi_qr_code(ssid="eero Protected", password="SecretPassword123")
+        runner.assert_true(isinstance(qr_with_pass, str) and qr_with_pass.startswith("data:image/png;base64,"), "generate_wifi_qr_code genera data URL valido per rete protetta")
+        runner.assert_true(qr_nopass != qr_with_pass, "QR Code per rete aperta è differente da QR Code con password")
+
+        res_guest = await client.get("/api/network/guest")
+        runner.assert_true(res_guest.status_code == 200, "GET /api/network/guest risponde HTTP 200")
+        guest_json = res_guest.json()
+        runner.assert_true("guest_network" in guest_json, "Payload guest contiene 'guest_network'")
+
+        # Test Issue #64: Daily Digest Delivery Channels & Locales
+        runner.assert_true("digest_delivery_channels" in it_loc.get("controls", {}), "Chiave controls.digest_delivery_channels in it.json")
+        runner.assert_true("digest_delivery_channels" in en_loc.get("controls", {}), "Chiave controls.digest_delivery_channels in en.json")
+        runner.assert_true("open_network_label" in it_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in it.json")
+        runner.assert_true("open_network_label" in en_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in en.json")
+
         await mqtt_service.stop()
         await log_service.stop()
 

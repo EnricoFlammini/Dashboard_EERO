@@ -2168,7 +2168,7 @@
             @click="copyGuestPassword()"
             class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-            <span x-text="t('guests_page.copy_password') || 'Copia password'"></span>
+            <span x-text="guestNetwork.password ? (t('guests_page.copy_password') || 'Copia password') : (t('guests_page.open_network_label') || 'Rete aperta (senza password)')"></span>
           </button>
         </div>
 
@@ -2898,7 +2898,7 @@
         </div>
 
         <!-- 3. Telegram & Webhook Alert Configuration (Bottom-Left) -->
-        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+        <div id="notification-card" class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
           <div class="space-y-3 text-xs">
             <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
               <div class="flex items-center space-x-3">
@@ -2964,11 +2964,49 @@
             <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
 
             <!-- Toggle Abilitazione Invio Automatico Daily Digest -->
-            <div class="pt-2">
+            <div class="pt-1">
               <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
                 <input type="checkbox" x-model="digestSettings.enabled" @change="saveDigestSettings()" class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500/30 bg-white dark:bg-slate-800 w-4 h-4">
                 <span class="font-medium text-slate-800 dark:text-slate-200" x-text="t('controls.digest_enable_toggle')"></span>
               </label>
+            </div>
+
+            <!-- Canali di recapito attivi (Issue #64) -->
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 text-xs space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                <span x-text="t('controls.digest_delivery_channels') || 'Canali di recapito:'"></span>
+                <button type="button" @click="const el = document.getElementById('notification-card'); if (el) el.scrollIntoView({ behavior: 'smooth' });" class="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer text-[10px]">
+                  <span x-text="t('controls.configure_notifications') || 'Configura'"></span>
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1.5 items-center">
+                <template x-if="notificationSettings.telegram_enabled && notificationSettings.telegram_bot_token && notificationSettings.telegram_chat_id">
+                  <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-[10px] font-semibold">
+                    <span>✓ Telegram</span>
+                  </span>
+                </template>
+                <template x-if="notificationSettings.webhook_enabled && notificationSettings.webhook_url">
+                  <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold">
+                    <span>✓ Webhook</span>
+                  </span>
+                </template>
+                <template x-if="notificationSettings.discord_enabled && notificationSettings.discord_webhook_url">
+                  <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold">
+                    <span>✓ Discord</span>
+                  </span>
+                </template>
+                <template x-if="notificationSettings.pushover_enabled && notificationSettings.pushover_user_key">
+                  <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] font-semibold">
+                    <span>✓ Pushover</span>
+                  </span>
+                </template>
+                <template x-if="!(notificationSettings.telegram_enabled && notificationSettings.telegram_bot_token && notificationSettings.telegram_chat_id) && !(notificationSettings.webhook_enabled && notificationSettings.webhook_url) && !(notificationSettings.discord_enabled && notificationSettings.discord_webhook_url) && !(notificationSettings.pushover_enabled && notificationSettings.pushover_user_key)">
+                  <span class="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center space-x-1">
+                    <span>⚠️</span>
+                    <span x-text="t('controls.digest_no_channels') || 'Nessun canale attivo configurato'"></span>
+                  </span>
+                </template>
+              </div>
             </div>
           </div>
           <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
