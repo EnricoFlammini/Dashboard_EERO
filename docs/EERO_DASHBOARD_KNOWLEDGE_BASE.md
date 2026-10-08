@@ -46,6 +46,7 @@
    * 4.29 [QR Code Wi-Fi Ospiti per Reti Aperte & Gestione Stato (v1.6.0 - Issue #63)](#429-qr-code-wi-fi-ospiti-per-reti-aperte--gestione-stato-v160---issue-63)
    * 4.30 [Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)](#430-multi-channel-daily-digest-delivery-transparency-v160---issue-64)
    * 4.31 [Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)](#431-perfezionamento-discovery-ipv6-ula--filtri-tabella-client-v160---issue-65)
+   * 4.32 [Local RBAC & Setup Wizard Iniziale Amministratore (v1.6.0)](#432-local-rbac--setup-wizard-iniziale-amministratore-v160)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -401,6 +402,16 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
   2. **Badge Distintivo UI `ULA Enriched`:** Assegnazione del badge ametista/fucsia dedicato `ULA Enriched` sia nella modale dei dettagli, sia nella tabella/scheda principale dei dispositivi accanto all'indirizzo MAC.
   3. **Auto-Pruning Notturno degli Indirizzi Obsoleti:** Integrazione del metodo `cleanup_stale_discovered_ips(retention_days=30)` nel worker di manutenzione notturna programmata, rimuovendo automaticamente indirizzi transitori o dismessi dopo 30 giorni di inattività.
 
+### 4.32 Local RBAC & Setup Wizard Iniziale Amministratore (v1.6.0)
+* **Contesto & Obiettivo di Sicurezza:**
+  Nelle precedenti versioni di sviluppo, le credenziali amministrative (`admin / admin`) erano hardcoded nei file o suggerite direttamente nella schermata di login, costituendo un rischio potenziale in installazioni esposte sulla LAN o reverse proxy.
+* **Architettura Zero-Default Security & Onboarding:**
+  1. **Setup Wizard al Primo Avvio:** All'apertura della dashboard, il frontend interroga l'endpoint `GET /api/auth/local/status`. Se non esiste alcun account registrato (`setup_required: true`), viene visualizzato automaticamente il modale a tutto schermo di configurazione iniziale che obbliga l'utente a scegliere il proprio username e una password robusta con conferma.
+  2. **Rimozione Credenziali Predefinite:** Eliminati tutti i default visibili e placeholder nella UI (`admin / admin`).
+  3. **Endpoint di Inizializzazione Protetto (`POST /api/auth/local/setup`):** Consente la creazione del primo utente amministratore solo ed esclusivamente se nessun utente è presente nel database. Chiamate successive ricevono `400 Bad Request` per prevenire attacchi di re-inizializzazione.
+  4. **Supporto Headless / Automazioni Docker:** È possibile pre-configurare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o `docker-compose.yml`. Al boot, l'applicazione crea automaticamente l'account amministratore bypassando il wizard per deploy non presidiati.
+  5. **Controllo Accessi a Ruoli (RBAC):** Tre ruoli predefiniti (`admin`, `operator`, `viewer`) con matrice granulare dei permessi (modifica impostazioni, comandi di rete, sola lettura).
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -494,6 +505,15 @@ Associazioni IP-MAC scoperte tramite Neighbor Discovery Protocol (NDP), probe IC
 * `idx_discovered_ips_mac` (`mac_address`)
 * `idx_discovered_ips_time` (`last_seen`)
 
+#### 8. `local_users` (v1.6.0 Modulo 1)
+Utenti locali per autenticazione web, ruoli e permessi RBAC.
+* `username` (TEXT PRIMARY KEY) — Nome utente univoco
+* `password_hash` (TEXT NOT NULL) — Hash PBKDF2/SHA-256 della password
+* `role` (TEXT NOT NULL DEFAULT 'viewer') — Ruolo utente (`admin`, `operator`, `viewer`)
+* `permissions_json` (TEXT) — Dizionario permessi serializzato in JSON
+* `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data creazione utente
+* `last_login` (DATETIME) — Data ultimo accesso riuscito
+
 ---
 
 ## 6. Catalogo Completo API REST (Endpoint Reference)
@@ -504,7 +524,16 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | :--- | :--- | :--- | :--- |
 | **GET** | `/metrics` | Metriche native in formato OpenMetrics per scraping Prometheus (v1.6.0) | Nessuno |
 | **GET** | `/api/metrics/prometheus` | Alias endpoint Prometheus per integrazione Homelab (v1.6.0) | Nessuno |
-| **GET** | `/api/auth/status` | Stato autenticazione e modalità Demo/Live | Nessuno |
+| **GET** | `/api/auth/status` | Stato autenticazione cloud eero e modalità Demo/Live | Nessuno |
+| **GET** | `/api/auth/local/status` | Verifica se il Setup Wizard amministratore iniziale è necessario (v1.6.0) | Nessuno |
+| **POST** | `/api/auth/local/setup` | Inizializza l'account amministratore al primo avvio (Zero-Default Security) (v1.6.0) | `{"username": "...", "password": "..."}` |
+| **POST** | `/api/auth/local/login` | Accesso locale con credenziali utente e generazione token JWT sessione (v1.6.0) | `{"username": "...", "password": "..."}` |
+| **POST** | `/api/auth/local/logout` | Disconnessione sessione locale e cancellazione cookie/token (v1.6.0) | Nessuno |
+| **GET** | `/api/auth/local/me` | Profilo, ruolo e permessi dell'utente locale attualmente autenticato (v1.6.0) | Nessuno |
+| **GET** | `/api/users` | Elenco utenti locali registrati (riservato agli amministratori) (v1.6.0) | Nessuno |
+| **POST** | `/api/users` | Crea un nuovo utente locale con ruolo e permessi (v1.6.0) | `{"username": "...", "password": "...", "role": "..."}` |
+| **PUT** | `/api/users/{username}` | Aggiorna password, ruolo o permessi di un utente locale (v1.6.0) | `{"password": "...", "role": "...", "permissions": {...}}` |
+| **DELETE** | `/api/users/{username}` | Elimina un account utente locale (v1.6.0) | Nessuno |
 | **POST** | `/api/auth/login` | Avvia procedura 2FA eero inviando codice OTP | `{"identifier": "+39333..."}` |
 | **POST** | `/api/auth/verify` | Verifica codice OTP e salva sessione permanente | `{"code": "123456", "user_token": "..."}` |
 | **POST** | `/api/auth/mode` | Commuta tra Modalità Demo e Modalità Live | `{"demo": true/false}` |
@@ -571,6 +600,9 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `HISTORY_RETENTION_DAYS` | `30` | Giorni di mantenimento storico campionamenti segnale e speedtest |
 | `SPEEDTEST_INTERVAL_HOURS` | `12` | Frequenza test di velocità pianificati automatici (ore) |
 | `DEMO_MODE` | `false` | Se `true`, forza l'avvio in modalità simulazione |
+| `ADMIN_USER` | `"admin"` | Username dell'amministratore per bootstrap headless (v1.6.0) |
+| `ADMIN_PASSWORD` | `""` | Password dell'amministratore per setup headless (se vuota, si avvia il wizard web al primo avvio) (v1.6.0) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Se `true`, richiede autenticazione locale obbligatoria per le chiamate API (v1.6.0) |
 | `EERO_USER_TOKEN` | `""` | Token permanente per bypassare il login interattivo 2FA |
 | `EERO_NETWORK_ID` | `""` | ID opzionale della rete preferita da avviare come attiva |
 | `LOG_LEVEL` | `"INFO"` | Livello minimo di logging (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) (v1.6.0) |
