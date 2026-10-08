@@ -1428,6 +1428,51 @@ document.addEventListener('alpine:init', () => {
       return dt.toLocaleDateString('it-IT', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     },
 
+    formatFirstSeenRelative(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return String(ts);
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+      const isIt = this.currentLanguage === 'it';
+      if (diffSec < 0) return isIt ? 'Adesso' : 'Just now';
+      if (diffSec < 60) return isIt ? 'Adesso' : 'Just now';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return isIt ? `${diffMin}m fa` : `${diffMin}m ago`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return isIt ? `${diffHours}h fa` : `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) return isIt ? 'Ieri' : 'Yesterday';
+      if (diffDays < 7) return isIt ? `${diffDays} gg fa` : `${diffDays}d ago`;
+      if (diffDays < 30) {
+        const diffWeeks = Math.floor(diffDays / 7);
+        return isIt ? `${diffWeeks} sett. fa` : `${diffWeeks}w ago`;
+      }
+      return d.toLocaleDateString(isIt ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' });
+    },
+
+    formatFirstSeenFull(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return String(ts);
+      const isIt = this.currentLanguage === 'it';
+      return d.toLocaleString(isIt ? 'it-IT' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+
     async loadWanHistory(hours = null) {
       if (hours) this.selectedWanRange = hours;
       try {

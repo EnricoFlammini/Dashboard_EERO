@@ -209,6 +209,7 @@
     "filter_new_tooltip": "Mostra solo dispositivi rilevati per la prima volta negli ultimi 7 giorni",
     "new_badge": "NEW",
     "first_seen_badge_tooltip": "Rilevato per la prima volta sulla rete:",
+    "joined_relative": "Primo accesso",
     "badge_ula_enriched": "ULA Enriched",
     "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard"
   },
@@ -515,7 +516,7 @@
     "contrib_stevehoek": "Localizzazione Telegram Daily Digest in inglese & gestione switch multi-rete",
     "contrib_dannyfeliz": "Ottimizzazioni interfaccia responsive, filtri radio e ordinamento Recently Joined con badge NEW (Issue #60)",
     "contrib_carbones73": "Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi 0600 su session.json), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione Primary Gateway",
-    "contrib_willfulmer": "QR Code Wi-Fi per reti ospiti aperte senza password (Issue #63) & Trasparenza canali di recapito Daily Digest (Issue #64)",
+    "contrib_willfulmer": "QR Code Wi-Fi per reti ospiti aperte (Issue #63), trasparenza Daily Digest (Issue #64) e feedback su primo accesso/personalizzazione tabella (Issue #60)",
     "contrib_jonmacdonald": "Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (Issue #62) & riconciliazione switch gateway (Issue #26)",
     "contrib_bug_hunters_desc": "Grazie a @BaRaD5 (cache query DNS), @phutmacher (elezione primary gateway), @txrangersxx (network ID resolver), @nextlevel2023 (feedback login Amazon) e u/djbills (Docker tag isolation).",
     "close": "Chiudi"

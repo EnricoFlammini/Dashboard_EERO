@@ -12,8 +12,8 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.03.00** | 🚢 **Docker Hub CI/CD & 🛡️ Native AdGuard Sync** | Distribuzione automatica Docker Hub (amd64/arm64) + Sincronizzazione nativa AdGuard Home in-app |
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
-| **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
+| **v1.6.1 (Pianificata)** | 🎛️ **Table Column Customization & Advanced Visibility Picker (Issue #60)** | Selettore visuale delle colonne nella tabella dispositivi (mostra/nascondi colonne opzionali inclusa colonna dedicata 'Joined / First Seen', IP, MAC, Segnale, Velocità, Nodo Mesh) con preferenze persistite in `localStorage` e layout adattivo. |
 
 ---
 
@@ -526,6 +526,7 @@ gantt
 - [x] Propagazione del campo `first_seen` da `known_devices` nel payload JSON dell'endpoint `/api/devices` e calcolo flag temporali `is_new` e `is_new_24h` (Issue #60 - @DannyFeliz).
 - [x] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown desktop della toolbar e mobile in `index.html` (Issue #60).
 - [x] Badge compatto visivo `"NEW"` su tabella desktop e card mobile, pill/chip di filtro rapido "Nuovi" e visualizzazione data primo accesso nel modal dispositivo (Issue #60).
+- [x] Esposizione immediata del tempo relativo di primo accesso (`formatFirstSeenRelative`) e data formattata completa direttamente nella riga del dispositivo (accanto al nodo/categoria) su tabella desktop, card mobile e finestra modale dispositivo (Issue #60 - @WillFulmer).
 - [x] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
 - [x] Test di regressione automatizzati completi in `scripts/run_pre_release_tests.py` (1093/1093 test superati al 100%).
 
@@ -555,6 +556,31 @@ gantt
   - Testo di fallback quando il QR Code ospiti non è disponibile (`guests_page.qr_not_available`).
 - [x] Integrazione dell'invecchiamento e pulizia automatica `cleanup_stale_discovered_ips(retention_days=30)` nel ciclo di manutenzione notturna (`scheduler.py`) e nel worker di retention (`retention_worker.py`).
 - [x] Test di regressione automatizzati estesi (1115/1115 test superati al 100%).
+
+---
+
+### 📦 Prossima Release (v1.6.1 / Prossimo Aggiornamento) — 🎛️ Personalizzazione Colonne Tabella & Raffinamenti UX (Issue #60)
+
+> **Obiettivo:** Estendere la tabella principale dei dispositivi consentendo all'utente di scegliere liberamente quali colonne visualizzare e personalizzare la densità informativa, rispondendo al feedback della community (Issue #60 - @WillFulmer).
+
+#### 1. Selettore Colonne & Personalizzazione Visibilità (Opzione B)
+- [ ] **Menu Selettore Colonne Dinamico (Column Visibility Dropdown):**
+  - Aggiunta di un pulsante selettore colonne (`Columns` / `Colonne`) nella barra degli strumenti della tabella dispositivi.
+  - Elenco checkbox per attivare o disattivare a piacimento le singole colonne della tabella:
+    - *Stato & Categoria*
+    - *Nome & Produttore*
+    - *Indirizzo IP (IPv4 / IPv6)*
+    - *Indirizzo MAC*
+    - *Banda & Connessione (Wi-Fi 2.4/5/6 GHz, Ethernet)*
+    - *Qualità Segnale (RSSI / Barre)*
+    - *Velocità in tempo reale (Rx / Tx)*
+    - *Nodo Mesh di Connessione*
+    - *Colonna dedicata 'Primo Accesso / Connesso da' (`Joined / First Seen`)*
+- [ ] **Persistenza Locale delle Preferenze (`localStorage`):**
+  - Salvataggio delle colonne abilitate/disabilitate per mantenere le preferenze tra sessioni e ricaricamenti pagina.
+  - Pulsante di ripristino configurazione predefinita (*Reset to Default*).
+- [ ] **Layout Tabella Adattivo & Responsive:**
+  - Adattamento fluido della larghezza e compattazione coerente con il design system Windows 11 Fluent.
 
 ---
 
