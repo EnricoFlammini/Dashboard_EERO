@@ -1750,8 +1750,16 @@
                           <template x-if="dev.is_low_latency_target">
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
                           </template>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-500 flex-wrap">
+                          <span class="truncate" x-text="formatCategoryName(dev.category)"></span>
+                          <template x-if="dev.first_seen">
+                            <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-normal shrink-0" :title="(t('devices.first_seen_badge_tooltip') || 'Primo accesso:') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                              <span>•</span>
+                              <svg class="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              <span class="font-mono font-medium" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                            </span>
+                          </template>
                         </div>
-                        <div class="truncate text-[11px] text-slate-600 dark:text-slate-500" x-text="formatCategoryName(dev.category)"></div>
                       </div>
                     </div>
                   </td>
@@ -1970,6 +1978,13 @@
                   <span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 font-semibold" x-text="dev.ip || 'No IP'"></span>
                   <span>•</span>
                   <span class="truncate" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                  <template x-if="dev.first_seen && formatFirstSeenRelative(dev.first_seen)">
+                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :title="(t('device_modal.first_seen') || 'Primo accesso') + ': ' + formatFirstSeenFull(dev.first_seen)">
+                      <span>•</span>
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                    </span>
+                  </template>
                 </div>
               </div>
 
@@ -4751,7 +4766,10 @@
                   </span>
                 </template>
               </div>
-              <span class="font-mono text-slate-800 dark:text-slate-200 font-bold" x-text="selectedDevice.first_seen"></span>
+              <div class="text-right">
+                <span class="font-mono text-slate-800 dark:text-slate-200 font-bold block" x-text="formatFirstSeenFull(selectedDevice.first_seen)"></span>
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 block font-sans" x-show="formatFirstSeenRelative(selectedDevice.first_seen)" x-text="'(' + formatFirstSeenRelative(selectedDevice.first_seen) + ')'"></span>
+              </div>
             </div>
           </template>
 

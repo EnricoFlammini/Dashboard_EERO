@@ -11,7 +11,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiornati e ampliati i crediti nel modale *About & Crediti* dell'interfaccia utente e nella documentazione ufficiale:
     * **[@jpatchMC](https://github.com/jpatchMC):** Reverse Client Enrichment IPv6 ULA (#57, #65), Local Asset Bundling 100% Offline (#58) e ciclo di auto-pruning.
     * **[@DannyFeliz](https://github.com/DannyFeliz):** Ordinamento "Recently Joined" e badge dinamico ad alta visibilità "NEW" (#60).
-    * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard per reti ospiti aperte (`T:nopass`) (#63) e trasparenza dei canali di recapito nel Daily Digest Report (#64).
+    * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard per reti ospiti aperte (`T:nopass`) (#63), trasparenza dei canali di recapito nel Daily Digest Report (#64) e feedback su esposizione tempo primo accesso / personalizzazione colonne (#60).
     * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000` (#62).
 
 ### 🔍 Modulo 9: UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65 - @jpatchMC)
@@ -57,8 +57,8 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiunto ordinamento per *"Primo Accesso / Più Recenti"* (`first_seen_desc` e `first_seen_asc`) via query parameter API e menu a tendina Ordinamento Desktop & Mobile.
   * Aggiunto dropdown unificato di ordinamento nella toolbar secondaria Desktop e nei filtri veloci Mobile.
   * Badge visivo compatto ad alta visibilità **`NEW`** (con indicatore animato verde smeraldo) su tabella desktop e schede card mobile per individuare istantaneamente nuovi client connessi alla rete mesh.
-  * Pill / chip rapido di filtro per categoria **`Nuovi`** per isolare istantaneamente i dispositivi rilevati di recente.
-  * Riga informativa dedicata nel `#deviceModal` (tab Generale) con data e ora del primo rilevamento in rete.
+  * Esposizione immediata del tempo relativo di primo accesso (`Adesso`, `5m fa`, `2h fa`, `3 gg fa`) direttamente nella riga del dispositivo accanto al nodo/categoria sia su tabella desktop che mobile card, con tooltip e formato completo data/ora nel modale di dettaglio (Issue #60 - @WillFulmer).
+  * Riga informativa dedicata nel `#deviceModal` (tab Generale) con data e ora del primo rilevamento in rete e tempo trascorso relativo.
   * Parità bilingue completa delle nuove stringhe in `it.json` ed `en.json`.
 
 ### 🔍 Modulo 7: Reverse Client Enrichment & ULA Discovery via NDP / AdGuard Home (Issue #57 - @jpatchMC)

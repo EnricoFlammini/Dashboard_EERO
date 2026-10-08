@@ -209,6 +209,7 @@
     "filter_new_tooltip": "Show only devices detected for the first time in the last 7 days",
     "new_badge": "NEW",
     "first_seen_badge_tooltip": "First detected on network:",
+    "joined_relative": "First seen",
     "badge_ula_enriched": "ULA Enriched",
     "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard"
   },
@@ -515,7 +516,7 @@
     "contrib_stevehoek": "Telegram Daily Digest English localization & multi-network switching assistance",
     "contrib_dannyfeliz": "Responsive UI optimizations, frequency filters, Recently Joined device sorting & NEW badge (Issue #60)",
     "contrib_carbones73": "Security hardening (4 GHSA Advisories: CORS/CSRF protection, Wi-Fi password masking, API docs access & session.json 0600 permissions), strict telemetry without synthetic fallbacks, 5 GHz UNII-3 vs 6 GHz RF accuracy & deterministic gateway election",
-    "contrib_willfulmer": "Open Guest Wi-Fi QR codes without password (Issue #63) & Daily Digest multi-channel delivery transparency (Issue #64)",
+    "contrib_willfulmer": "Open Guest Wi-Fi QR codes (Issue #63), Daily Digest delivery transparency (Issue #64), and device first-seen/table customization feedback (Issue #60)",
     "contrib_jonmacdonald": "SQLite lock contention & concurrency resolution with 60s busy timeout (Issue #62) & switch gateway reconciliation (Issue #26)",
     "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
     "close": "Close"
