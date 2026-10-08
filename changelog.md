@@ -14,6 +14,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
     * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard per reti ospiti aperte (`T:nopass`) (#63), trasparenza dei canali di recapito nel Daily Digest Report (#64) e feedback su esposizione tempo primo accesso / personalizzazione colonne (#60).
     * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000` (#62).
 
+### 🔐 Modulo 1: Setup Wizard Iniziale Amministratore & Rimozione Credenziali Hardcoded (Zero-Default Security)
+* **🔒 Rimozione Credenziali di Default Hardcoded nell'Interfaccia Web:**
+  * Rimosso definitivamente il riquadro informativo con username e password `admin / admin` preconfigurati visibili a chiunque nel modale di login.
+  * Bonificati i placeholder dei campi di autenticazione per non suggerire credenziali preimpostate a utenti della LAN non autorizzati.
+* **✨ Setup Wizard Interattivo al Primo Avvio (First-Run Onboarding):**
+  * Introdotto modale guidato *Configurazione Iniziale Amministratore* che si apre automaticamente al primo accesso se nessun account admin è registrato.
+  * L'utente sceglie e imposta direttamente il proprio nome utente e password personale sicura (con conferma e validazione robustezza), completando il setup e accedendo in un unico passaggio.
+  * Introdotto endpoint di verifica stato `GET /api/auth/local/status` (`setup_required: true/false`) ed endpoint protetto `POST /api/auth/local/setup` con blocco rigoroso di configurazioni multiple.
+* **🐳 Supporto Parametri Docker headless via `.env`:**
+  * Aggiunte le variabili d'ambiente opzionali `ADMIN_USER` e `ADMIN_PASSWORD` in `docker-compose.yml` e `.env.example`: se valorizzate, l'account viene creato automaticamente all'avvio bypassando il wizard per deployment headless o automatizzati. Se non valorizzate, l'applicazione attende il Setup Wizard web.
+
 ### 🔍 Modulo 9: UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65 - @jpatchMC)
 * **🔍 Risoluzione Sincronizzazione UI & Visualizzazione Indirizzi ULA Arricchiti (Issue #65):**
   * Risolto il disallineamento tra backend e frontend in cui gli indirizzi scoperti venivano memorizzati in `ipv6_addresses` e `ipv6_ula` ma non in `ipv6_all`, impedendone la renderizzazione nel template del modale `#deviceModal`.
