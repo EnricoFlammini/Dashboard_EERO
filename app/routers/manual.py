@@ -25,12 +25,20 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
     },
     {
         "id": "auth-flow",
-        "title": "2. Autenticazione 2FA & Gestione Sessione",
+        "title": "2. Autenticazione & Gestione Accessi (RBAC / 2FA)",
         "icon": "key",
-        "summary": "Procedura di primo accesso OTP e mantenimento della sessione.",
+        "summary": "Setup iniziale amministratore (Zero-Default), ruoli locali RBAC e procedura di accesso 2FA eero.",
         "content": """
-### Come autenticare la Dashboard con il tuo account eero
+### Gestione degli Accessi, Setup Iniziale & Autenticazione
 
+#### 1. Setup Iniziale Amministratore (Zero-Default Security)
+Al primissimo avvio dell'applicazione, la suite adotta una rigida politica di sicurezza senza credenziali predefinite hardcoded:
+- **Wizard Guidato di Configurazione:** Se non è ancora presente alcun account nel database, si apre automaticamente un modale di onboarding a tutto schermo che richiede all'amministratore di impostare il proprio nome utente e una password sicura con conferma.
+- **Bypass Headless Docker (Opzionale):** Per installazioni automatizzate o in ambienti container senza interfaccia, è possibile pre-popolare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o in `docker-compose.yml`. Al primo avvio, l'applicazione creerà automaticamente l'utente amministratore bypassando il wizard interattivo.
+- **Ruoli & Permessi Granulari (RBAC):** Dalla sezione *Impostazioni -> Gestione Utenti & Permessi*, l'amministratore può creare ulteriori account con ruoli differenziati (`Admin`, `Operator`, `Viewer`) e attivare/disattivare specifici permessi operativi (gestione DNS, comandi di rete, export dati, visualizzazione log).
+
+#### 2. Autenticazione con il Cloud eero (2FA OTP)
+Una volta effettuato l'accesso locale (o se l'autenticazione locale non è richiesta):
 1. **Richiesta del Codice OTP:**
    - Inserisci nella schermata di login l'email o il numero di telefono associato al tuo account eero (es. `+393401234567` o `tuonome@email.com`).
    - Clicca su **"Invia Codice OTP"**.
@@ -38,7 +46,7 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
    - Riceverai un codice numerico a 6 cifre via SMS o Email da parte di eero.
    - Digita il codice nel campo e conferma.
 3. **Salvataggio Sessione:**
-   - Il token verificato viene salvato in `/app/data/session.json`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
+   - Il token verificato viene salvato in `/app/data/session.json` con permessi restrittivi `0600`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
 4. **Modalità Demo & Switch Rapido:**
    - Se desideri esplorare l'applicazione senza inserire credenziali, puoi attivare la modalità dimostrativa con il pulsante dedicato o impostando `DEMO_MODE=true` nel file `.env`.
    - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** posizionato nella parte inferiore della barra laterale sinistra per visualizzare i dati demo senza perdere la sessione. Quando la modalità demo è attiva, il pulsante assume una vivace colorazione verde smeraldo con indicatore ad alta visibilità **"DEMO ATTIVA"** (e un badge di stato sincronizzato compare nell'header superiore); cliccando nuovamente si torna all'istante alla rete live con **"⚡ Torna a Live"**.
@@ -394,12 +402,20 @@ This web application is a full-featured, self-hosted management and monitoring p
     },
     {
         "id": "auth-flow",
-        "title": "2. 2FA Authentication & Session Management",
+        "title": "2. Authentication & Access Control (RBAC / 2FA)",
         "icon": "key",
-        "summary": "Step-by-step OTP login procedure and session lifecycle.",
+        "summary": "Initial administrator setup (Zero-Default), local RBAC roles, and eero 2FA login procedure.",
         "content": """
-### Authenticating the Dashboard with your eero Account
+### Access Management, Initial Setup & Authentication
 
+#### 1. Initial Administrator Setup (Zero-Default Security)
+On first launch, the suite enforces a strict zero-default credential policy:
+- **Guided Setup Wizard:** If no user accounts exist in the local database, an interactive full-screen onboarding modal prompts you to define your administrator username and secure password with confirmation.
+- **Headless Docker Bypass (Optional):** For automated deployments or headless container environments, supply `ADMIN_USER` and `ADMIN_PASSWORD` in your `.env` or `docker-compose.yml`. On startup, the container provisions the administrator account automatically and bypasses the web setup wizard.
+- **Granular Roles & Permissions (RBAC):** From *Settings -> User Management & Permissions*, the administrator can create accounts with distinct roles (`Admin`, `Operator`, `Viewer`) and toggle individual operational permissions (DNS management, network commands, data exports, log inspection).
+
+#### 2. eero Cloud Authentication (2FA OTP)
+Once local authentication is complete (or if local authentication is not required):
 1. **Requesting the OTP Code:**
    - In the login screen, enter the phone number or email address associated with your eero account (e.g., `+1234567890` or `user@example.com`).
    - Click **"Send OTP Code"**.
@@ -407,7 +423,7 @@ This web application is a full-featured, self-hosted management and monitoring p
    - You will receive a 6-digit verification code from eero via SMS or Email.
    - Enter the code into the verification input and confirm.
 3. **Session Persistence:**
-   - The verified authentication token is saved to `/app/data/session.json`. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
+   - The verified authentication token is saved to `/app/data/session.json` with restrictive `0600` owner permissions. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
 4. **Demo Mode & Quick Switcher:**
    - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
    - If authenticated, you can switch anytime using the **"✨ Demo Mode"** button in the lower left sidebar to inspect mock telemetry without losing your live session. When active, it displays a vibrant emerald green button with an explicit **"DEMO ATTIVA"** indicator (and a top header status pill); clicking it again returns immediately to your live network.
@@ -786,6 +802,7 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **Modulo 7 - Reverse Client Enrichment & Scoperta IPv6 ULA (Issue #57):** Risoluzione del limite di routing L2 eero per query DNS locali; API REST di ingestion (`/api/network/enrichment/neighbors`), worker di probe ICMP/NDP, tabella persistente `device_discovered_ips` e chiusura del ciclo con sync "full-circle" su AdGuard Home; badge fucsia "ULA Enriched" con tooltip contestuale.
 * **Modulo 8 - Concorrenza SQLite WAL, QR Code Wi-Fi Ospiti Aperti & Trasparenza Notifiche (Issue #62, #63, #64):** Risoluzione definitiva lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000`; generazione QR Code standard Wi-Fi per reti ospiti aperte (`T:nopass;`) o protette; trasparenza canali di recapito (Telegram, Discord, Pushover, Webhook) nel Daily Digest Report.
 * **Modulo 9 - Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (Issue #65):** Risoluzione visualizzazione e sincronizzazione IPv6 ULA su client dual-stack con fallback resiliente `ipv6_all || ipv6_addresses || [ipv6]`; completamento localizzazioni mancanti in inglese; lifecycle e auto-pruning notturno degli indirizzi scoperti obsoleti dopo 30 giorni.
+* **Setup Wizard Iniziale Amministratore (Zero-Default Security):** Modale di onboarding guidato al primo accesso web per l'impostazione sicura di username e password admin; rimozione definitiva delle credenziali hardcoded da interfaccia e supporto al deploy headless Docker via `ADMIN_USER` e `ADMIN_PASSWORD`.
 
 ---
 
@@ -951,6 +968,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Module 7 - Reverse Client Enrichment & IPv6 ULA Discovery (Issue #57):** Resolving eero Layer 2 routing visibility limit for local DNS queries; ingestion REST API (`/api/network/enrichment/neighbors`), ICMP/NDP probe worker, persistent `device_discovered_ips` table, and full-circle sync to AdGuard Home; magenta "ULA Enriched" badges with context tooltips.
 * **Module 8 - SQLite WAL Concurrency, Open Guest Wi-Fi QR Codes & Notification Transparency (Issues #62, #63, #64):** Definitive resolution of SQLite lock contention via `_write_lock` serialization, 60s timeout, and `busy_timeout=60000` pragmas; ZXing-compliant Wi-Fi QR Code generation for open guest networks (`T:nopass;`) and disabled network state handling; active multi-channel delivery transparency (Telegram, Discord, Pushover, Webhook) on Daily Digest cards.
 * **Module 9 - IPv6 ULA Discovery Refinement, ULA Enriched Badge & Table Filtering (Issue #65):** Fixed IPv6 ULA display and synchronization on dual-stack devices with resilient `ipv6_all || ipv6_addresses || [ipv6]` fallback; completed missing English localization keys; nightly lifecycle auto-pruning for stale discovered addresses after 30 days.
+* **Initial Administrator Setup Wizard (Zero-Default Security):** Guided first-run web onboarding wizard for secure admin username and password configuration; complete removal of hardcoded default credentials from the UI, with optional headless Docker bypass via `ADMIN_USER` and `ADMIN_PASSWORD`.
 
 ---
 

@@ -47,6 +47,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 ## 🌟 Key Features
 
 * **📦 100% Offline-First & Local Asset Bundling (v1.6.0 - Issue #58):** Completely independent from external CDNs. Vendor libraries (Tailwind, Alpine.js, Chart.js, Lucide Icons) and local WOFF2 typography fonts (*Inter* and *JetBrains Mono*) are self-hosted inside the container, ensuring seamless operation during ISP outages or in isolated air-gapped homelabs.
+* **🔐 Local RBAC & Administrator Setup Wizard (v1.6.0):** Zero-default password policy with an interactive first-run administrator onboarding wizard. Features granular permission matrices (`Admin`, `Operator`, `Viewer`), session invalidation, and optional headless container provisioning via `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
 * **🔍 Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0 - Issue #57, #65):** Bypasses eero L2 routing limits by discovering local IPv6 ULA addresses (`fd00::/8`) via active NDP resolution and AdGuard Home sync. Features dedicated `POST /api/network/enrichment/neighbors` ingestion API, **`ULA Enriched`** UI badges, and automated 30-day stale IP pruning.
 * **🆕 "Recently Joined" Devices & "NEW" Badge (v1.6.0 - Issue #60):** Tracks network join history with persistent `first_seen` timestamps, 7-day/24h new device detection, dedicated "NEW" badges, and instant sorting/filtering for newly discovered mesh clients.
 * **🛠️ SQLite Concurrency & Robustness (v1.6.0 - Issue #62):** Serialization write lock (`_write_lock`), 60s busy timeout, and sequential telemetry polling to eliminate SQLite concurrency errors and ensure 100% stable uptime.
@@ -130,12 +131,16 @@ Access the dashboard in your browser:
 
 ## 🔑 Authentication & Login Methods
 
-1. **2FA OTP Login (Recommended):**
+1. **Local Administrator & RBAC Setup (v1.6.0):**
+   - On first launch, an interactive **Setup Wizard** prompts you to configure your administrator username and secure password (zero default credentials!).
+   - Alternatively, supply `ADMIN_USER` and `ADMIN_PASSWORD` in your Docker environment variables for unattended / headless automated deployment.
+   - Built-in multi-user Role-Based Access Control (`Admin`, `Operator`, `Viewer`) with granular permission matrices.
+2. **2FA OTP Login with eero Cloud (Recommended):**
    - Open the web interface at `http://localhost:8085`.
    - Enter your email address or phone number associated with your eero account (e.g. `+1234567890` or `user@example.com`).
    - Click **"Send OTP Code"** and type the 6-digit verification code received via SMS/Email.
-   - The session token is securely saved to `./data/session.json` and automatically restored across container restarts.
-2. **Demo Mode:**
+   - The session token is securely saved to `./data/session.json` (mode `0600`) and automatically restored across container restarts.
+3. **Demo Mode:**
    - Click **"✨ Try Demo Mode"** on the login screen or set `DEMO_MODE=true` in `.env` to explore with simulated realistic mesh data.
 
 ---
@@ -149,6 +154,13 @@ Access the dashboard in your browser:
 | `DATA_DIR` | `/app/data` | Path to persistent storage volume (SQLite DB & session) |
 | `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
 | `API_DOCS` | `false` | Serve the interactive API docs at `/docs`, `/redoc` and `/openapi.json` (the API has no authentication, so keep it off unless you need it) |
+| `ADMIN_USER` | `admin` | Initial administrator username for headless Docker setup |
+| `ADMIN_PASSWORD` | *(empty)* | Initial administrator password for headless setup (if empty, web setup wizard prompts on first run) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Require local authentication for API endpoints |
+| `MQTT_ENABLED` | `false` | Enable background MQTT client & Home Assistant Auto-Discovery |
+| `DISCORD_WEBHOOK_URL` | *(empty)* | Discord webhook URL for rich embed notifications |
+| `PUSHOVER_USER_KEY` | *(empty)* | Pushover user key for push notifications |
+| `PUSHOVER_API_TOKEN` | *(empty)* | Pushover application token for push notifications |
 | `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
@@ -380,6 +392,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 ## 🌟 Caratteristiche Principali
 
 * **📦 Architettura 100% Offline-First & Asset Locali (v1.6.0 - Issue #58):** Indipendenza totale da CDN esterne. Tutte le librerie frontend (Tailwind, Alpine.js, Chart.js, Lucide Icons) e i font WOFF2 (*Inter* e *JetBrains Mono*) sono auto-ospitati nel container, consentendo il pieno funzionamento della dashboard anche durante blackout dell'operatore o in LAN isolate.
+* **🔐 Controllo Accessi Locale (RBAC) & Setup Wizard Iniziale (v1.6.0):** Politica di sicurezza a credenziali zero-default con wizard guidato al primo avvio per la configurazione dell'account amministratore. Matrice granulare dei permessi (`Admin`, `Operator`, `Viewer`), invalidazione sessioni e supporto al deployment headless tramite variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD`.
 * **🔍 Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0 - Issue #57, #65):** Superamento dei limiti di routing L2 di eero scoprendo gli indirizzi IPv6 ULA locali (`fd00::/8`) via NDP e sincronizzazione AdGuard Home. Include API di ingestion `POST /api/network/enrichment/neighbors`, badge grafici dedicati **`ULA Enriched`** e potatura automatica di indirizzi obsoleti a 30 giorni.
 * **🆕 Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60):** Tracciamento dello storico di primo accesso con timestamp persistente `first_seen`, rilevamento dispositivi nuovi (ultimi 7 giorni / 24 ore), badge visivo smeraldo "NEW" e ordinamento/filtro immediato dei client recenti.
 * **🛠️ Stabilità e Concorrenza SQLite (v1.6.0 - Issue #62):** Semaforo di scrittura `_write_lock`, timeout 60s, `PRAGMA busy_timeout = 60000;` e campionamenti telemetrici sequenziali tracciati per azzerare conflitti di blocco e garantire continuità operativa al 100%.
@@ -461,14 +474,18 @@ Accedi alla dashboard dal browser:
 
 ---
 
-## 🔑 Creazione Account eero & Modalità di Accesso
-
-1. **Accesso Guidato 2FA OTP (Consigliato):**
+## 🔑 Modalità di Accesso & Autenticazione
+ 
+1. **Configurazione Amministratore Locale & Ruoli RBAC (v1.6.0):**
+   - Al primo accesso, un **Setup Wizard** interattivo guida l'utente nella configurazione sicura dell'account amministratore (zero credenziali preimpostate di default!).
+   - In alternativa, è possibile impostare `ADMIN_USER` e `ADMIN_PASSWORD` come variabili d'ambiente Docker per deployment automatizzati o headless.
+   - Gestione multi-utente con ruoli differenziati (`Admin`, `Operator`, `Viewer`) e permessi granulari.
+2. **Accesso Guidato 2FA OTP Cloud eero (Consigliato):**
    - Apri la schermata iniziale all'indirizzo `http://localhost:8085`.
    - Inserisci l'email o il numero di telefono associato al tuo account eero (es. `+393401234567` o `mario.rossi@email.com`).
    - Clicca su **"Invia Codice OTP"** ed inserisci il codice a 6 cifre ricevuto via SMS o Email.
-   - Il token verificato viene salvato in `./data/session.json` e ripristinato automaticamente ad ogni riavvio del container.
-2. **Modalità Demo:**
+   - Il token verificato viene salvato in `./data/session.json` (permessi `0600`) e ripristinato automaticamente ad ogni riavvio del container.
+3. **Modalità Demo:**
    - Clicca su **"✨ Prova Subito con la Modalità Demo"** nella schermata di login o imposta `DEMO_MODE=true` nel file `.env`.
 
 ---
@@ -484,6 +501,13 @@ Accedi alla dashboard dal browser:
 | `SPEEDTEST_INTERVAL_HOURS` | `12` | Intervallo di esecuzione dello Speed Test automatico (ore, 0 per disattivare) |
 | `DEMO_MODE` | `false` | Se impostato su `true`, abilita la simulazione completa di una rete eero |
 | `API_DOCS` | `false` | Abilita la documentazione interattiva delle API su `/docs`, `/redoc` e `/openapi.json` (le API non hanno autenticazione: lasciare disattivato se non serve) |
+| `ADMIN_USER` | `admin` | Nome utente iniziale per l'amministratore (setup headless) |
+| `ADMIN_PASSWORD` | *(vuoto)* | Password iniziale amministratore per setup headless (se vuoto, viene mostrato il wizard web al primo avvio) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Richiede autenticazione locale obbligatoria per le chiamate API |
+| `MQTT_ENABLED` | `false` | Abilita il client MQTT e l'auto-discovery per Home Assistant |
+| `DISCORD_WEBHOOK_URL` | *(vuoto)* | URL webhook Discord per notifiche grafiche Rich Embed |
+| `PUSHOVER_USER_KEY` | *(vuoto)* | User Key dell'account Pushover per notifiche push |
+| `PUSHOVER_API_TOKEN` | *(vuoto)* | Token applicativo per notifiche push Pushover |
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |

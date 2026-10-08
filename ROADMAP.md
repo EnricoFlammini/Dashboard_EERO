@@ -51,9 +51,9 @@ gantt
     Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
     Home Assistant MQTT Auto-Discovery & Prometheus    :done, v1_6e, after v1_6g, 5d
     Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
-    Local Asset Bundling & Offline UI (Issue #58)     :active, v1_6_assets, after v1_6f, 2d
-    Device Sort by First Seen & New Badge (Issue #60) :v1_6_recent, after v1_6_assets, 2d
-    Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :active, v1_6_ndp, after v1_6_recent, 2d
+    Local Asset Bundling & Offline UI (Issue #58)     :done, v1_6_assets, after v1_6f, 2d
+    Device Sort by First Seen & New Badge (Issue #60) :done, v1_6_recent, after v1_6_assets, 2d
+    Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :done, v1_6_ndp, after v1_6_recent, 2d
 ```
 
 ---
@@ -469,6 +469,7 @@ gantt
 - [x] Gestione esplicita errori HTTP cloud eero, flag data_stale e contatore fallimenti poller (Issue #55 - @carbones73).
 - [x] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
 - [x] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
+- [x] Wizard visuale di primo avvio per Setup Amministratore (Zero-Default Security) con rotte `GET /api/auth/local/status` e `POST /api/auth/local/setup`, bonifica credenziali hardcoded da UI e supporto headless bypass Docker con `ADMIN_USER` / `ADMIN_PASSWORD`.
 
 ##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`) (Completato)
 - [x] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
@@ -555,7 +556,7 @@ gantt
   - Sottotitolo della card Pianificazioni Orarie (`schedules.empty_desc`).
   - Testo di fallback quando il QR Code ospiti non è disponibile (`guests_page.qr_not_available`).
 - [x] Integrazione dell'invecchiamento e pulizia automatica `cleanup_stale_discovered_ips(retention_days=30)` nel ciclo di manutenzione notturna (`scheduler.py`) e nel worker di retention (`retention_worker.py`).
-- [x] Test di regressione automatizzati estesi (1115/1115 test superati al 100%).
+- [x] Test di regressione automatizzati estesi (1123/1123 test superati al 100%, inclusi test su rotte di Setup Amministratore e Zero-Default Security).
 
 ---
 
