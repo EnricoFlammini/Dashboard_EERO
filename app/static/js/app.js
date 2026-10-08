@@ -439,7 +439,7 @@ document.addEventListener('alpine:init', () => {
     showAdminSetupModal: false,
     adminSetupRequired: false,
     localSetupData: {
-      username: 'admin',
+      username: '',
       password: '',
       passwordConfirm: '',
       error: '',
@@ -925,7 +925,7 @@ document.addEventListener('alpine:init', () => {
           this.currentLanguage === 'it' ? 'Effettua l\'accesso per consultare questa sezione.' : 'Please sign in to access this section.',
           'info'
         );
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         if (this.currentTab !== 'guests' && this.currentTab !== 'news') {
           tab = 'guests';
         } else {
@@ -940,7 +940,7 @@ document.addEventListener('alpine:init', () => {
           this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere alla gestione utenti.' : 'Please sign in as Admin to access user management.',
           'warning'
         );
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       if (tab === 'settings-backup' && !this.can('action_system_backup')) {
@@ -949,7 +949,7 @@ document.addEventListener('alpine:init', () => {
           this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere a backup e ripristino.' : 'Please sign in as Admin to access backup & restore.',
           'warning'
         );
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       if (!this.routes[tab]) tab = 'overview';
@@ -4546,13 +4546,13 @@ document.addEventListener('alpine:init', () => {
       return false;
     },
 
-    openLocalLoginModal(defaultUsername = '') {
+    openLocalLoginModal() {
       if (this.adminSetupRequired) {
         this.openAdminSetupModal();
         return;
       }
       this.localLoginData = {
-        username: defaultUsername || '',
+        username: '',
         password: '',
         error: ''
       };
@@ -4561,7 +4561,7 @@ document.addEventListener('alpine:init', () => {
 
     openAdminSetupModal() {
       this.localSetupData = {
-        username: 'admin',
+        username: '',
         password: '',
         passwordConfirm: '',
         error: '',
@@ -4869,7 +4869,7 @@ document.addEventListener('alpine:init', () => {
           this.currentLanguage === 'it' ? 'Accedi come amministratore per creare nuovi utenti.' : 'Log in as administrator to create new users.',
           'warning'
         );
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       this.userForm = {
@@ -4886,7 +4886,7 @@ document.addEventListener('alpine:init', () => {
 
     startEditUser(u) {
       if (!this.localAuthToken) {
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       this.userForm = {
@@ -4948,7 +4948,7 @@ document.addEventListener('alpine:init', () => {
           this.currentLanguage === 'it' ? 'Accedi con l\'account amministratore per salvare gli utenti.' : 'Log in as administrator to save users.',
           'warning'
         );
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       if (!this.userForm.username) {
@@ -5007,7 +5007,7 @@ document.addEventListener('alpine:init', () => {
             this.localAuthToken = null;
             if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
             this.currentUser = null;
-            this.openLocalLoginModal('admin');
+            this.openLocalLoginModal();
           }
           this.showToast(
             this.currentLanguage === 'it' ? 'Errore' : 'Error',
@@ -5022,7 +5022,7 @@ document.addEventListener('alpine:init', () => {
 
     async deleteLocalUser(userId, username) {
       if (!this.localAuthToken) {
-        this.openLocalLoginModal('admin');
+        this.openLocalLoginModal();
         return;
       }
       const confirmMsg = this.currentLanguage === 'it'

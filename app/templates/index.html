@@ -239,7 +239,7 @@
         <!-- Local Admin / User Login Button (when not logged in) -->
         <template x-if="!currentUser">
           <button 
-            @click="openLocalLoginModal('admin')"
+            @click="openLocalLoginModal()"
             class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0067c0]/10 hover:bg-[#0067c0]/20 text-[#0067c0] dark:text-sky-400 border border-[#0067c0]/30 dark:border-sky-500/30 transition-all active:scale-95 cursor-pointer shadow-xs"
             title="Accedi come Amministratore o Utente Locale">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -729,7 +729,7 @@
           <!-- Login Button (when not logged in) -->
           <button 
             x-show="!currentUser"
-            @click="openLocalLoginModal('admin')"
+            @click="openLocalLoginModal()"
             class="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition cursor-pointer shrink-0"
             :title="t('auth_local.login_btn') || 'Accedi'">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
@@ -764,7 +764,7 @@
           <!-- Login Button (when not logged in) -->
           <button 
             x-show="!currentUser"
-            @click="openLocalLoginModal('admin')" 
+            @click="openLocalLoginModal()" 
             class="w-10 h-8 rounded-lg flex items-center justify-center text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition cursor-pointer" 
             :title="t('auth_local.login_btn') || 'Accedi'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
@@ -3616,7 +3616,7 @@
           </div>
           <button 
             type="button" 
-            @click="openLocalLoginModal('admin')"
+            @click="openLocalLoginModal()"
             class="shrink-0 px-4 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-sm shadow-sky-500/20 cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto active:scale-95">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
             <span x-text="t('auth_local.login_as_admin_btn') || 'Accedi come Admin'"></span>
@@ -3829,7 +3829,7 @@
         </div>
         <button 
           type="button" 
-          @click="openLocalLoginModal('admin')"
+          @click="openLocalLoginModal()"
           class="shrink-0 px-4 py-2.5 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-sm shadow-sky-500/20 cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto active:scale-95">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
           <span x-text="t('auth_local.login_as_admin_btn') || 'Accedi come Admin'"></span>
@@ -6301,15 +6301,15 @@
       </div>
 
       <!-- Login Form -->
-      <form @submit.prevent="performLocalLogin()" class="space-y-4 text-xs">
+      <form @submit.prevent="performLocalLogin()" class="space-y-4 text-xs" autocomplete="off">
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username') || 'Nome Utente'"></label>
-          <input type="text" x-model="localLoginData.username" required :placeholder="t('auth_local.username_placeholder') || 'Nome utente'" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="text" x-model="localLoginData.username" required placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="off">
         </div>
 
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password') || 'Password'"></label>
-          <input type="password" x-model="localLoginData.password" required placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="password" x-model="localLoginData.password" required placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <template x-if="localLoginData.error">
@@ -6365,20 +6365,20 @@
       </div>
 
       <!-- Setup Form -->
-      <form @submit.prevent="performAdminSetup()" class="space-y-4 text-xs">
+      <form @submit.prevent="performAdminSetup()" class="space-y-4 text-xs" autocomplete="off">
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username') || 'Nome Utente'"></label>
-          <input type="text" x-model="localSetupData.username" required minlength="3" placeholder="admin" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="text" x-model="localSetupData.username" required minlength="3" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="off">
         </div>
 
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password') || 'Password'"></label>
-          <input type="password" x-model="localSetupData.password" required minlength="6" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="password" x-model="localSetupData.password" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm') || 'Conferma Password'"></label>
-          <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <template x-if="localSetupData.error">
@@ -7315,7 +7315,7 @@
           <!-- Login Button (when unauthenticated) -->
           <button 
             x-show="!currentUser"
-            @click="openLocalLoginModal('admin'); closeMobileMenu()"
+            @click="openLocalLoginModal(); closeMobileMenu()"
             class="p-2.5 rounded-xl bg-[#0067c0]/10 text-[#0067c0] dark:text-sky-400 hover:bg-[#0067c0]/20 transition cursor-pointer flex items-center space-x-1"
             title="Accedi">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
