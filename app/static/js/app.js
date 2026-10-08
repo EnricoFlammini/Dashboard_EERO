@@ -436,6 +436,15 @@ document.addEventListener('alpine:init', () => {
     currentUser: null,
     localAuthToken: (typeof localStorage !== 'undefined') ? (localStorage.getItem('eero_local_auth_token') || null) : null,
     showLocalLoginModal: false,
+    showAdminSetupModal: false,
+    adminSetupRequired: false,
+    localSetupData: {
+      username: 'admin',
+      password: '',
+      passwordConfirm: '',
+      error: '',
+      loading: false
+    },
     localLoginData: { username: '', password: '', error: '' },
     isLocalAuthChecking: false,
     sessionTimeoutMinutes: (typeof localStorage !== 'undefined' && localStorage.getItem('eero_session_timeout') !== null) ? Number(localStorage.getItem('eero_session_timeout')) : 15,
@@ -4537,16 +4546,47 @@ document.addEventListener('alpine:init', () => {
       return false;
     },
 
-    openLocalLoginModal(defaultUsername = 'admin') {
+    openLocalLoginModal(defaultUsername = '') {
+      if (this.adminSetupRequired) {
+        this.openAdminSetupModal();
+        return;
+      }
       this.localLoginData = {
-        username: defaultUsername || 'admin',
+        username: defaultUsername || '',
         password: '',
         error: ''
       };
       this.showLocalLoginModal = true;
     },
 
+    openAdminSetupModal() {
+      this.localSetupData = {
+        username: 'admin',
+        password: '',
+        passwordConfirm: '',
+        error: '',
+        loading: false
+      };
+      this.showLocalLoginModal = false;
+      this.showAdminSetupModal = true;
+    },
+
     async checkLocalAuthSession() {
+      // 1. Verifica preventiva se è necessario il Setup Iniziale Amministratore (primo avvio)
+      try {
+        const statusRes = await fetch('/api/auth/local/status');
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          this.adminSetupRequired = !!statusData.setup_required;
+          if (this.adminSetupRequired && !this.currentUser && !this.localAuthToken) {
+            // Primo avvio: apri automaticamente il Setup Wizard per invitare l'admin a configurarsi
+            this.showAdminSetupModal = true;
+          }
+        }
+      } catch (e) {
+        console.debug("Local auth status check error:", e);
+      }
+
       if (!this.localAuthToken) {
         try {
           const res = await fetch('/api/auth/local/me');
@@ -4571,6 +4611,64 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (e) {
         console.error("Local auth check error:", e);
+      }
+    },
+
+    async performAdminSetup() {
+      this.localSetupData.error = '';
+      const u = (this.localSetupData.username || '').trim();
+      const p = this.localSetupData.password || '';
+      const pc = this.localSetupData.passwordConfirm || '';
+
+      if (u.length < 3) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'Lo username deve contenere almeno 3 caratteri.' 
+          : 'Username must be at least 3 characters.';
+        return;
+      }
+      if (p.length < 6) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'La password deve contenere almeno 6 caratteri.' 
+          : 'Password must be at least 6 characters.';
+        return;
+      }
+      if (p !== pc) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'Le password inserite non coincidono.' 
+          : 'Passwords do not match.';
+        return;
+      }
+
+      this.localSetupData.loading = true;
+      try {
+        const res = await fetch('/api/auth/local/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: u,
+            password: p,
+            display_name: u.charAt(0).toUpperCase() + u.slice(1)
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          this.localAuthToken = data.token;
+          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          this.currentUser = data.user;
+          this.adminSetupRequired = false;
+          this.showAdminSetupModal = false;
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Setup Amministratore Completato' : 'Administrator Setup Complete',
+            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            'success'
+          );
+        } else {
+          this.localSetupData.error = data.detail || (this.currentLanguage === 'it' ? 'Errore durante la configurazione' : 'Setup failed');
+        }
+      } catch (err) {
+        this.localSetupData.error = String(err);
+      } finally {
+        this.localSetupData.loading = false;
       }
     },
 

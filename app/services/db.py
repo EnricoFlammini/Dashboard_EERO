@@ -363,25 +363,28 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_discovered_ips_mac ON device_discovered_ips(mac_address);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_discovered_ips_time ON device_discovered_ips(last_seen);")
 
-            # Bootstrap utente admin predefinito se la tabella local_users è vuota
+            # Bootstrap utente admin se la tabella local_users è vuota
             async with db.execute("SELECT COUNT(*) FROM local_users;") as cur_u:
                 row_u = await cur_u.fetchone()
                 user_cnt = row_u[0] if row_u else 0
 
+            admin_p = str(getattr(settings, "admin_password", "") or "").strip()
             if user_cnt == 0:
-                from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
-                admin_u = str(getattr(settings, "admin_user", "admin") or "admin").strip()
-                admin_p = str(getattr(settings, "admin_password", "admin") or "admin").strip()
-                p_hash, p_salt = auth_service.hash_password(admin_p)
-                all_perms_json = json.dumps(ALL_PERMISSION_KEYS)
-                await db.execute(
-                    """
-                    INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
-                    VALUES (?, 'Admin', 'admin', ?, ?, 1, 1, ?, CURRENT_TIMESTAMP);
-                    """,
-                    (admin_u, p_hash, p_salt, all_perms_json)
-                )
-                logger.info(f"Local Auth: Inizializzato utente admin predefinito '{admin_u}'.")
+                if admin_p:
+                    from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
+                    admin_u = str(getattr(settings, "admin_user", "admin") or "admin").strip()
+                    p_hash, p_salt = auth_service.hash_password(admin_p)
+                    all_perms_json = json.dumps(ALL_PERMISSION_KEYS)
+                    await db.execute(
+                        """
+                        INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json, created_at)
+                        VALUES (?, 'Admin', 'admin', ?, ?, 1, 1, ?, CURRENT_TIMESTAMP);
+                        """,
+                        (admin_u, p_hash, p_salt, all_perms_json)
+                    )
+                    logger.info(f"Local Auth: Inizializzato utente admin predefinito '{admin_u}' da variabile d'ambiente ADMIN_PASSWORD.")
+                else:
+                    logger.info("Local Auth: Nessun utente configurato. In attesa del Setup Iniziale Amministratore via Web o tramite variabile ADMIN_PASSWORD.")
             else:
                 from app.services.auth_service import ALL_PERMISSION_KEYS
                 # Sincronizza permessi completi per gli amministratori se sono state introdotte nuove chiavi RBAC
@@ -2156,6 +2159,14 @@ class DBService:
     # =========================================================================
     # LOCAL USERS & SESSIONS (v1.6.0 Module 1 & 2)
     # =========================================================================
+    async def is_admin_setup_required(self) -> bool:
+        """Verifica se il database richiede la configurazione iniziale dell'amministratore (nessun admin attivo presente)."""
+        async with self.get_connection() as db:
+            cursor = await db.execute("SELECT COUNT(*) FROM local_users WHERE is_admin = 1 AND (is_active = 1 OR is_active IS NULL);")
+            row = await cursor.fetchone()
+            cnt = row[0] if row else 0
+            return cnt == 0
+
     async def get_local_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
         """Recupera un utente locale in base allo username (case-insensitive)."""
         u = str(username).strip().lower()

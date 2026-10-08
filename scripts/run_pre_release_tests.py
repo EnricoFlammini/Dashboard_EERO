@@ -15,6 +15,7 @@ Covers:
 import sys
 import os
 import asyncio
+import aiosqlite
 from datetime import date, datetime, timedelta, timezone
 
 # Configure UTF-8 stdout for Windows console
@@ -2297,11 +2298,43 @@ async def run_all_tests():
         runner.assert_true("action_run_speedtest" in catalog.get("all_keys", []), "action_run_speedtest presente tra i permessi supportati")
         runner.assert_true("action_reboot_nodes" in catalog.get("all_keys", []), "action_reboot_nodes presente tra i permessi supportati")
 
-        # 2. Test Inizializzazione e Bootstrap Database SQLite
+        # 2. Test Inizializzazione e Bootstrap Database SQLite / Setup Wizard
+        # Reset pulito di local_users e user_sessions per validare il flusso reale del Setup Wizard
+        async with db_service._write_lock:
+            async with aiosqlite.connect(db_service.db_path, timeout=60.0) as db_clean:
+                await db_clean.execute("DELETE FROM user_sessions;")
+                await db_clean.execute("DELETE FROM local_users;")
+                await db_clean.commit()
+
+        res_status = await client.get("/api/auth/local/status")
+        runner.assert_true(res_status.status_code == 200, "GET /api/auth/local/status risponde HTTP 200")
+        status_payload = res_status.json()
+        runner.assert_true(status_payload.get("setup_required") is True, "Al primo avvio setup_required è True")
+
+        # Esegui il Setup Wizard iniziale
+        res_setup = await client.post("/api/auth/local/setup", json={
+            "username": "admin",
+            "password": "AdminPassword123!",
+            "display_name": "Admin"
+        })
+        runner.assert_true(res_setup.status_code == 200, "POST /api/auth/local/setup completa il primo setup con successo")
+        setup_json = res_setup.json()
+        runner.assert_true(setup_json.get("status") == "success", "Setup restituisce status 'success'")
+        admin_pwd = "AdminPassword123!"
+        runner.admin_test_pwd = admin_pwd
         admin_user = await db_service.get_local_user_by_username("admin")
-        runner.assert_true(admin_user is not None, "Bootstrap trasparente: utente 'admin' predefinito presente nel database")
+
+        # Verifica che setup_required sia ora False
+        res_status_after = await client.get("/api/auth/local/status")
+        runner.assert_true(res_status_after.json().get("setup_required") is False, "Dopo setup, setup_required è False")
+
+        runner.assert_true(admin_user is not None, "Utente 'admin' presente nel database")
         runner.assert_true(admin_user.get("is_admin") is True, "Utente admin possiede flag is_admin=True")
         runner.assert_true(len(admin_user.get("permissions", [])) >= len(ALL_PERMISSION_KEYS), "Utente admin possiede tutti i permessi granulari RBAC")
+
+        # Verifica rifiuto doppi setup
+        res_dup_setup = await client.post("/api/auth/local/setup", json={"username": "hacker", "password": "PasswordHacker123!"})
+        runner.assert_true(res_dup_setup.status_code == 400, "POST /api/auth/local/setup rifiuta ulteriori setup una volta completato")
 
         # 3. Test Chiamate Non Autenticate e Login API
         client.cookies.clear()
@@ -2315,8 +2348,7 @@ async def run_all_tests():
         res_login_bad = await client.post("/api/auth/local/login", json={"username": "admin", "password": "WrongPassword123"})
         runner.assert_true(res_login_bad.status_code == 401, "POST /api/auth/local/login con password errata restituisce HTTP 401 Unauthorized")
 
-        # Successo con admin predefinito
-        admin_pwd = getattr(settings, "admin_password", "admin") or "admin"
+        # Successo con admin configurato
         res_login_ok = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
         runner.assert_true(res_login_ok.status_code == 200, "POST /api/auth/local/login con credenziali corrette risponde HTTP 200 OK")
         login_json = res_login_ok.json()
@@ -2747,7 +2779,7 @@ async def run_all_tests():
 
         # 3. Test API REST /api/schedules & RBAC
         # 3a. Login come Admin per ottenere token di autenticazione
-        admin_pwd = getattr(settings, "admin_password", "admin") or "admin"
+        admin_pwd = getattr(runner, "admin_test_pwd", getattr(settings, "admin_password", "") or "AdminPassword123!")
         res_adm_login = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
         adm_token = res_adm_login.json().get("token")
         adm_hdr = {"Authorization": f"Bearer {adm_token}"}
@@ -3070,7 +3102,7 @@ async def run_all_tests():
 
         # 3. Test Esecuzione Speedtest & Router API
         # Admin login per testare rotte protette
-        admin_pwd = getattr(settings, "admin_password", "admin") or "admin"
+        admin_pwd = getattr(runner, "admin_test_pwd", getattr(settings, "admin_password", "") or "AdminPassword123!")
         res_adm_login = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
         adm_token = res_adm_login.json().get("token")
         adm_hdr = {"Authorization": f"Bearer {adm_token}"}

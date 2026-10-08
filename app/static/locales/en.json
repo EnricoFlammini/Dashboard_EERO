@@ -895,5 +895,28 @@
     "show_details": "Error Details",
     "hide_details": "Hide Details",
     "saved_success": "Logging configuration updated successfully."
+  },
+  "auth_local": {
+    "login_title": "Administration Sign In",
+    "login_subtitle": "RBAC role-based access control authentication",
+    "username": "Username",
+    "username_placeholder": "Enter username",
+    "password": "Password",
+    "password_placeholder": "Enter password",
+    "login_btn": "Sign In",
+    "logging_in": "Signing in...",
+    "setup_title": "Initial Administrator Setup",
+    "setup_subtitle": "Create the administrator account to securely protect your dashboard",
+    "setup_badge": "First Run",
+    "setup_desc": "Zero default passwords: the credentials chosen here will secure your local dashboard.",
+    "display_name": "Display Name (optional)",
+    "display_name_placeholder": "e.g. Administrator",
+    "password_confirm": "Confirm Password",
+    "setup_btn": "Create Administrator & Sign In",
+    "setting_up": "Creating account...",
+    "password_mismatch": "Passwords do not match",
+    "password_min_length": "Password must be at least 6 characters",
+    "username_min_length": "Username must be at least 3 characters",
+    "setup_success": "Administrator setup completed successfully!"
   }
 }

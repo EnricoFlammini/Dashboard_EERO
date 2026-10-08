@@ -895,5 +895,28 @@
     "show_details": "Dettagli Errore",
     "hide_details": "Nascondi Dettagli",
     "saved_success": "Configurazione log aggiornata con successo."
+  },
+  "auth_local": {
+    "login_title": "Accesso Amministrazione",
+    "login_subtitle": "Autenticazione con controllo accessi RBAC",
+    "username": "Nome Utente",
+    "username_placeholder": "Inserisci username",
+    "password": "Password",
+    "password_placeholder": "Inserisci password",
+    "login_btn": "Accedi",
+    "logging_in": "Accesso in corso...",
+    "setup_title": "Configurazione Iniziale Amministratore",
+    "setup_subtitle": "Crea l'account di amministrazione per proteggere la dashboard in sicurezza",
+    "setup_badge": "Primo Avvio",
+    "setup_desc": "Nessuna password predefinita: le credenziali configurate qui proteggeranno la tua dashboard locale.",
+    "display_name": "Nome Visualizzato (opzionale)",
+    "display_name_placeholder": "es. Amministratore",
+    "password_confirm": "Conferma Password",
+    "setup_btn": "Crea Account Amministratore & Accedi",
+    "setting_up": "Creazione account...",
+    "password_mismatch": "Le password inserite non coincidono",
+    "password_min_length": "La password deve contenere almeno 6 caratteri",
+    "username_min_length": "Lo username deve contenere almeno 3 caratteri",
+    "setup_success": "Configurazione completata con successo!"
   }
 }

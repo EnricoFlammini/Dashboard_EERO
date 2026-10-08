@@ -6304,16 +6304,12 @@
       <form @submit.prevent="performLocalLogin()" class="space-y-4 text-xs">
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username') || 'Nome Utente'"></label>
-          <input type="text" x-model="localLoginData.username" required placeholder="admin" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="text" x-model="localLoginData.username" required :placeholder="t('auth_local.username_placeholder') || 'Nome utente'" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
         </div>
 
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password') || 'Password'"></label>
           <input type="password" x-model="localLoginData.password" required placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
-        </div>
-
-        <div class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-500/20 text-[11px] text-slate-600 dark:text-slate-400">
-          <span class="font-bold text-[#0067c0] dark:text-sky-300">💡 Credenziali iniziali:</span> username <code class="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] font-mono font-bold text-slate-900 dark:text-white">admin</code> e password <code class="px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.08] font-mono font-bold text-slate-900 dark:text-white">admin</code>
         </div>
 
         <template x-if="localLoginData.error">
@@ -6325,6 +6321,74 @@
           <button type="submit" :disabled="isLocalAuthChecking" class="px-5 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-md shadow-sky-500/20 cursor-pointer disabled:opacity-50 flex items-center space-x-1.5">
             <span x-show="isLocalAuthChecking" class="animate-spin text-xs">⏳</span>
             <span x-text="isLocalAuthChecking ? (t('auth_local.logging_in') || 'Accesso...') : (t('auth_local.login_btn') || 'Accedi')"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL: INITIAL ADMIN SETUP WIZARD (First Run) -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showAdminSetupModal" 
+    x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true">
+    
+    <div class="glass-panel-elevated w-full max-w-md rounded-2xl p-6 space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-sky-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('auth_local.setup_title') || 'Configurazione Iniziale Amministratore'"></h3>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40" x-text="t('auth_local.setup_badge') || 'PRIMO AVVIO'"></span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_subtitle') || 'Crea l\'account di amministrazione per proteggere la dashboard'"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informative Security Callout -->
+      <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+        <div class="flex items-center space-x-1.5 font-bold text-emerald-700 dark:text-emerald-400">
+          <span>🔒</span>
+          <span>Sicurezza Zero-Default</span>
+        </div>
+        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc') || 'Nessuna password predefinita: le credenziali configurate qui proteggeranno la tua dashboard locale.'"></p>
+      </div>
+
+      <!-- Setup Form -->
+      <form @submit.prevent="performAdminSetup()" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username') || 'Nome Utente'"></label>
+          <input type="text" x-model="localSetupData.username" required minlength="3" placeholder="admin" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password') || 'Password'"></label>
+          <input type="password" x-model="localSetupData.password" required minlength="6" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm') || 'Conferma Password'"></label>
+          <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+        </div>
+
+        <template x-if="localSetupData.error">
+          <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold" x-text="localSetupData.error"></div>
+        </template>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button type="submit" :disabled="localSetupData.loading" class="w-full px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-bold transition shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1.5">
+            <span x-show="localSetupData.loading" class="animate-spin text-xs">⏳</span>
+            <span x-text="localSetupData.loading ? (t('auth_local.setting_up') || 'Creazione...') : (t('auth_local.setup_btn') || 'Crea Account Amministratore & Accedi')"></span>
           </button>
         </div>
       </form>
