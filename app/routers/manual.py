@@ -326,6 +326,52 @@ Il motore di notifica supporta una strategia di inoltro multi-canale per avvisi 
   - **Allarme Sicurezza Autenticazione (Brute-Force):** Segnalazione di tentativi consecutivi di login fallito da indirizzi IP sospetti.
   - **Esito Backup Notturno:** Conferma di avvenuto backup dei dati SQLite e dei file di log o notifica di errore.
         """
+    },
+    {
+        "id": "offline-first",
+        "title": "15. Architettura Offline-First & Asset Locali",
+        "icon": "shield-check",
+        "summary": "Resilienza totale della dashboard con font e librerie salvati in locale, zero dipendenze CDN esterne e funzionamento air-gapped.",
+        "content": """
+### Architettura Offline-First & Asset Locali (v1.6.0)
+
+La dashboard adotta un'architettura 100% offline-first per garantire privacy assoluta, velocità istantanea di rendering e operatività anche in assenza di connettività internet o in blackout WAN:
+
+* **Vendoring Locale Completo delle Dipendenze:**
+  - Tutte le librerie client-side (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons e generatori QR Code) sono archiviate e servite direttamente dalla directory locale `/app/static/vendor/`.
+  - Nessuna richiesta verso CDN pubbliche esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): zero tracking da parte di terzi e immunità totale rispetto a blocchi DNS, filtri parental control o ad-blocker aggressivi.
+* **Self-Hosting dei Font Tipografici:**
+  - I font ad alta leggibilità **Inter** (interfaccia utente) e **JetBrains Mono** / **Fira Code** (console terminale e tabelle telemetriche) sono inclusi nel container in formato WOFF2 ad alte prestazioni in `/app/static/fonts/`.
+  - Caricamento istantaneo senza alcun contatto con Google Fonts o server esterni.
+* **Resilienza Air-Gapped & Homelab Isolati:**
+  - La dashboard si avvia, carica e renderizza con fluidità al 100% all'interno di reti LAN isolate, VLAN di gestione o server homelab senza accesso alla rete internet pubblica.
+* **Progressive Web App (PWA) & Service Worker:**
+  - Il Service Worker integrato (`sw.js`) effettua il pre-caching di tutte le risorse essenziali, consentendo l'apertura e la consultazione della dashboard anche durante interruzioni temporanee della rete locale.
+        """
+    },
+    {
+        "id": "reverse-enrichment",
+        "title": "16. Reverse Client Enrichment & Scoperta IPv6 ULA",
+        "icon": "arrows-right-left",
+        "summary": "Arricchimento bidirezionale delle interfacce secondarie dai server DNS locali, discovery IPv6 Unique Local Address (ULA) e client Recently Joined.",
+        "content": """
+### Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0)
+
+Nelle reti dual-stack, i dispositivi interrogano spesso i server DNS locali (AdGuard Home, Pi-hole, Technitium) utilizzando indirizzi **IPv6 ULA** (*Unique Local Address*, prefissi `fc00::/7` e `fd00::/8`). Poiché questo traffico rimane confinato a livello Layer 2 locale e non attraversa la WAN, il cloud eero non ha visibilità su tali indirizzi.
+
+* **Reverse Client Enrichment via NDP & Ingestion REST:**
+  - **Worker di Scansione Automatica:** Il servizio di enrichment esegue periodicamente la scansione della tabella di vicinato (Neighbor Discovery Protocol - NDP / ARP del kernel) e interroga le API dei server DNS locali per mappare gli indirizzi ULA orfani ai relativi indirizzi MAC fisici.
+  - **API di Ingestion Esterna (`POST /api/network/enrichment/neighbors`):** Consente a script di cron, container sidecar o server DNS esterni di inviare associazioni IP-MAC in tempo reale.
+  - **Sincronizzazione Completa (Full-Circle):** Gli indirizzi ULA scoperti vengono integrati nel profilo del client e propagati nei cicli successivi di sincronizzazione DNS, raggruppando automaticamente i record sotto il nome del dispositivo.
+* **Badge Distintivo UI & Ispezione Dettagliata:**
+  - La tabella dispositivi e il modale di dettaglio evidenziano gli indirizzi scoperti con il badge distintivo fucsia/ametista **`ULA Enriched`** o **`ULA (NDP / AdGuard)`**.
+  - Ricerca fulminea nella tabella dispositivi per prefisso o indirizzo IPv6 ULA completo.
+* **Dispositivi "Recently Joined" & Badge "NEW":**
+  - La dashboard traccia la data di prima apparizione (`first_seen`) di ciascun apparato nella tabella persistente `known_devices`.
+  - I dispositivi rilevati nelle ultime 24-48 ore vengono evidenziati con il badge visivo ad alta visibilità **`NEW`** con indicatore animato verde smeraldo, ed è disponibile un ordinamento rapido per data di primo accesso.
+* **Ciclo di Pulizia & Auto-Pruning:**
+  - Una routine programmata di manutenzione notturna rimuove automaticamente gli indirizzi ULA transitori non più rinnovati dopo 30 giorni di inattività, preservando le prestazioni del database SQLite.
+        """
     }
 ]
 
@@ -649,6 +695,52 @@ The notification engine features a unified multi-channel dispatch architecture f
   - **Authentication Security Alert (Brute-Force):** Security warning upon repeated failed local login attempts from specific IPs.
   - **Nightly Backup Report:** Automated success/failure reporting for database and configuration archives.
         """
+    },
+    {
+        "id": "offline-first",
+        "title": "15. Offline-First Architecture & Local Assets",
+        "icon": "shield-check",
+        "summary": "Total dashboard resilience with 100% locally bundled fonts and libraries, zero external CDN dependencies, and air-gapped operation.",
+        "content": """
+### Offline-First Architecture & Local Assets (v1.6.0)
+
+The dashboard adopts a 100% offline-first architecture to deliver maximum privacy, instant page rendering, and uninterrupted reliability even during internet outages or WAN blackouts:
+
+* **Complete Local Dependency Vendoring:**
+  - All client-side libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons, and QR Code generation engines) are bundled locally and served directly from `/app/static/vendor/`.
+  - Zero requests to external public CDNs (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): absolute third-party tracking immunity and resilience against DNS filters or aggressive ad-blockers.
+* **Self-Hosted Typography Fonts:**
+  - High-legibility web fonts **Inter** (UI design system) and **JetBrains Mono** / **Fira Code** (Live Log Console and data tables) are packaged inside the container as high-performance WOFF2 files in `/app/static/fonts/`.
+  - Instant typography rendering with zero round-trips to Google Fonts or remote providers.
+* **Air-Gapped & Isolated Homelab Readiness:**
+  - The dashboard starts, initializes, and functions flawlessly inside isolated management VLANs, air-gapped lab servers, or offline local networks without outbound WAN access.
+* **Progressive Web App (PWA) & Service Worker:**
+  - Built-in Service Worker (`sw.js`) pre-caches core assets, enabling seamless dashboard launch and offline status review during transient local connectivity hiccups.
+        """
+    },
+    {
+        "id": "reverse-enrichment",
+        "title": "16. Reverse Client Enrichment & IPv6 ULA Discovery",
+        "icon": "arrows-right-left",
+        "summary": "Bidirectional secondary interface enrichment from local DNS engines, IPv6 Unique Local Address (ULA) discovery, and Recently Joined clients.",
+        "content": """
+### Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0)
+
+In dual-stack home networks, connected devices frequently query local DNS resolvers (such as AdGuard Home, Pi-hole, Technitium) using **IPv6 ULA** (*Unique Local Address*, prefixes `fc00::/7` and `fd00::/8`). Because this traffic remains strictly on local Layer 2 switches and never traverses the WAN gateway, the eero cloud platform has zero visibility into these ULA assignments.
+
+* **Reverse Client Enrichment via NDP & Ingestion REST:**
+  - **Automated Scan Worker:** The background enrichment service regularly inspects the kernel neighbor cache (Neighbor Discovery Protocol - NDP / ARP) and polls local DNS resolver APIs to map orphan ULA addresses back to their physical MAC addresses.
+  - **External Ingestion REST API (`POST /api/network/enrichment/neighbors`):** Allows custom cron jobs, sidecar containers, or external script engines to submit live IP-to-MAC associations.
+  - **Full-Circle DNS Synchronization:** Discovered ULA addresses are merged into client records and synced back to DNS resolvers, automatically associating bare IP queries with friendly device hostnames.
+* **Distinctive UI Badges & Deep Inspection:**
+  - The client table and device modal sheet prominently highlight discovered addresses with a magenta/amethyst **`ULA Enriched`** or **`ULA (NDP / AdGuard)`** badge with rich context tooltips.
+  - Instant live filtering in the devices table by ULA prefix or complete IPv6 address strings.
+* **"Recently Joined" Devices & "NEW" Badge:**
+  - The system tracks first discovery timestamps (`first_seen`) within the persistent `known_devices` SQLite table.
+  - Newly joined clients in the last 24-48 hours display an eye-catching **`NEW`** badge with an emerald pulsing dot, accompanied by quick "Recently Joined" sorting options.
+* **Automated Maintenance & Pruning:**
+  - Nightly maintenance tasks periodically prune stale or decommissioned ULA addresses that have not been observed in 30 days, keeping the SQLite database lean and responsive.
+        """
     }
 ]
 
@@ -690,6 +782,10 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 * **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
 * **Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45):** Routing completo con sincronizzazione bidirezionale dell'URL hash/query e supporto cronologia browser.
 * **Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46):** Sidebar scorrevole con scrim su schermi mobile, header responsive con menu impostazioni Fluent, tabella dispositivi a schede su schermi piccoli e frame grafici ad altezza dinamica.
+* **Modulo 6 - 100% Offline-First & Asset Locali (Issue #58) & Dispositivi "Recently Joined" (Issue #60):** Vendoring locale completo di librerie (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) e font WOFF2 (`Inter`, `JetBrains Mono`) per funzionamento 100% offline e air-gapped; tracciamento data primo accesso (`first_seen`), badge animato smeraldo "NEW" e ordinamento per data d'ingresso.
+* **Modulo 7 - Reverse Client Enrichment & Scoperta IPv6 ULA (Issue #57):** Risoluzione del limite di routing L2 eero per query DNS locali; API REST di ingestion (`/api/network/enrichment/neighbors`), worker di probe ICMP/NDP, tabella persistente `device_discovered_ips` e chiusura del ciclo con sync "full-circle" su AdGuard Home; badge fucsia "ULA Enriched" con tooltip contestuale.
+* **Modulo 8 - Concorrenza SQLite WAL, QR Code Wi-Fi Ospiti Aperti & Trasparenza Notifiche (Issue #62, #63, #64):** Risoluzione definitiva lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000`; generazione QR Code standard Wi-Fi per reti ospiti aperte (`T:nopass;`) o protette; trasparenza canali di recapito (Telegram, Discord, Pushover, Webhook) nel Daily Digest Report.
+* **Modulo 9 - Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (Issue #65):** Risoluzione visualizzazione e sincronizzazione IPv6 ULA su client dual-stack con fallback resiliente `ipv6_all || ipv6_addresses || [ipv6]`; completamento localizzazioni mancanti in inglese; lifecycle e auto-pruning notturno degli indirizzi scoperti obsoleti dopo 30 giorni.
 
 ---
 
@@ -851,6 +947,10 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
 * **Navigation Deep-Linking & URL State Synchronization (PR #28 / Issue #45):** Bidirectional URL hash and query parameter synchronization with browser history support and shareable direct links.
 * **Responsive App Shell, Windows 11 Fluent Header & Mobile Drawer (PR #29 / Issue #46):** Sliding mobile drawer sidebar with scrim backdrop, responsive header with Fluent settings menu, responsive device table cards on small screens, and clamp-height dynamic chart frames.
+* **Module 6 - 100% Offline-First & Local Asset Bundling (Issue #58) & "Recently Joined" Devices (Issue #60):** Complete local vendoring of client libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) and self-hosted WOFF2 fonts (`Inter`, `JetBrains Mono`) for 100% offline and air-gapped readiness; persistent `first_seen` tracking with animated emerald "NEW" badges and dedicated "Recently Joined" sorting.
+* **Module 7 - Reverse Client Enrichment & IPv6 ULA Discovery (Issue #57):** Resolving eero Layer 2 routing visibility limit for local DNS queries; ingestion REST API (`/api/network/enrichment/neighbors`), ICMP/NDP probe worker, persistent `device_discovered_ips` table, and full-circle sync to AdGuard Home; magenta "ULA Enriched" badges with context tooltips.
+* **Module 8 - SQLite WAL Concurrency, Open Guest Wi-Fi QR Codes & Notification Transparency (Issues #62, #63, #64):** Definitive resolution of SQLite lock contention via `_write_lock` serialization, 60s timeout, and `busy_timeout=60000` pragmas; ZXing-compliant Wi-Fi QR Code generation for open guest networks (`T:nopass;`) and disabled network state handling; active multi-channel delivery transparency (Telegram, Discord, Pushover, Webhook) on Daily Digest cards.
+* **Module 9 - IPv6 ULA Discovery Refinement, ULA Enriched Badge & Table Filtering (Issue #65):** Fixed IPv6 ULA display and synchronization on dual-stack devices with resilient `ipv6_all || ipv6_addresses || [ipv6]` fallback; completed missing English localization keys; nightly lifecycle auto-pruning for stale discovered addresses after 30 days.
 
 ---
 

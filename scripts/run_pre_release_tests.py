@@ -3887,17 +3887,19 @@ async def run_all_tests():
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
         man_it_data = res_man_it.json()
-        runner.assert_true(man_it_data.get("count") == 14, f"Manuale IT ha 14 capitoli (trovati {man_it_data.get('count')})")
+        runner.assert_true(man_it_data.get("count") == 16, f"Manuale IT ha 16 capitoli (trovati {man_it_data.get('count')})")
         it_sec_ids = [s["id"] for s in man_it_data.get("sections", [])]
         runner.assert_true("system-logs" in it_sec_ids, "Capitolo 'system-logs' presente nel manuale IT")
         runner.assert_true("homelab-mqtt" in it_sec_ids, "Capitolo 'homelab-mqtt' presente nel manuale IT")
         runner.assert_true("prometheus-grafana" in it_sec_ids, "Capitolo 'prometheus-grafana' presente nel manuale IT")
         runner.assert_true("multi-channel-alerts" in it_sec_ids, "Capitolo 'multi-channel-alerts' presente nel manuale IT")
+        runner.assert_true("offline-first" in it_sec_ids, "Capitolo 'offline-first' presente nel manuale IT")
+        runner.assert_true("reverse-enrichment" in it_sec_ids, "Capitolo 'reverse-enrichment' presente nel manuale IT")
 
         res_man_en = await client.get("/api/manual/sections?lang=en")
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
         man_en_data = res_man_en.json()
-        runner.assert_true(man_en_data.get("count") == 14, f"Manuale EN ha 14 capitoli (trovati {man_en_data.get('count')})")
+        runner.assert_true(man_en_data.get("count") == 16, f"Manuale EN ha 16 capitoli (trovati {man_en_data.get('count')})")
         en_sec_ids = [s["id"] for s in man_en_data.get("sections", [])]
         runner.assert_true(it_sec_ids == en_sec_ids, "Parità 100% degli ID capitoli tra manuale IT ed EN")
 
