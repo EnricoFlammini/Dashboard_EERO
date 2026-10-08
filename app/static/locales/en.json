@@ -509,13 +509,15 @@
     "credits_desc": "A sincere thank you to all community members who shaped and refined the dashboard through issues, testing, and feature proposals:",
     "credits_features_subtitle": "Community Feature Proposals & Feedback",
     "credits_bugs_subtitle": "Bug Hunters & Valued Contributors",
-    "contrib_jpatchmc": "Multi-DNS Sync, Intelligent Address Pruning, AdGuard client rules preservation & Layer 2 switching",
+    "contrib_jpatchmc": "Multi-DNS Sync, Intelligent Address Pruning, Reverse Client Enrichment ULA & NDP (Issue #57, #65), Local Asset Bundling 100% Offline (Issue #58)",
     "contrib_hatton920": "Health Score & Penalty Engine, PHY Link Speed, offline node detection & speedtest leak sanitization",
     "contrib_jimcampbell100": "Inspiration for Multi-Network Fleet Management for multi-mesh eero accounts",
     "contrib_stevehoek": "Telegram Daily Digest English localization & multi-network switching assistance",
-    "contrib_dannyfeliz": "Responsive UI optimizations, frequency filters & navigation state persistence",
+    "contrib_dannyfeliz": "Responsive UI optimizations, frequency filters, Recently Joined device sorting & NEW badge (Issue #60)",
     "contrib_carbones73": "Security hardening (4 GHSA Advisories: CORS/CSRF protection, Wi-Fi password masking, API docs access & session.json 0600 permissions), strict telemetry without synthetic fallbacks, 5 GHz UNII-3 vs 6 GHz RF accuracy & deterministic gateway election",
-    "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @jonmacdonald (switch gateway reconciliation), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
+    "contrib_willfulmer": "Open Guest Wi-Fi QR codes without password (Issue #63) & Daily Digest multi-channel delivery transparency (Issue #64)",
+    "contrib_jonmacdonald": "SQLite lock contention & concurrency resolution with 60s busy timeout (Issue #62) & switch gateway reconciliation (Issue #26)",
+    "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
     "close": "Close"
   },
   "update_modal": {

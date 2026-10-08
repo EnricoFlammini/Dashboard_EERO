@@ -261,12 +261,15 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
 
 ### 4.18 Community Hall of Fame & Crediti Open Source
 * **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici:
-  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43).
+  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment ULA via NDP (#57, #65) e Local Asset Bundling 100% Offline (#58).
   * `@Hatton920`: Health Score Breakdown, velocità link PHY, stato nodi rebooting vs offline, sanitizzazione speedtest (#14, #15, #34, #35, #41).
   * `@jimcampbell100`: Multi-Network Fleet Management (#22).
   * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38).
-  * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46).
+  * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46), ordinamento "Recently Joined" e badge "NEW" (#60).
   * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53); 4 GitHub Security Advisories (hardening CORS/CSRF, sanitizzazione password Wi-Fi, switch documentazione interattiva API_DOCS, permessi 0600 per session.json).
+  * `@WillFulmer`: Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (#63) e trasparenza canali di recapito Daily Digest (#64).
+  * `@jonmacdonald`: Risoluzione lock contention SQLite, concorrenza asincrona con busy timeout a 60s (#62) ed elezione switch gateway in topologie complesse (#26).
+  * *Bug Hunters & Tester:* `@BaRaD5` (cache DNS locale), `@phutmacher` (elezione gateway), `@txrangersxx` (network ID resolver), `@nextlevel2023` (feedback login Amazon) e `u/djbills` (isolamento tag Docker Hub).
 * **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
 
 ### 4.19 Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)
