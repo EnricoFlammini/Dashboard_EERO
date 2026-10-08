@@ -42,6 +42,10 @@
    * 4.25 [Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)](#425-reverse-client-enrichment-ipv6-ula--neighbor-discovery-v160---issue-57)
    * 4.26 [Local Asset Bundling & Resilienza 100% Offline (v1.6.0 - Issue #58)](#426-local-asset-bundling--resilienza-100-offline-v160---issue-58)
    * 4.27 [Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60)](#427-ordinamento-recently-joined--badge-new-v160---issue-60)
+   * 4.28 [Concorrenza SQLite WAL, Busy Timeout & Transazioni Atomiche (v1.6.0 - Issue #62)](#428-concorrenza-sqlite-wal-busy-timeout--transazioni-atomiche-v160---issue-62)
+   * 4.29 [QR Code Wi-Fi Ospiti per Reti Aperte & Gestione Stato (v1.6.0 - Issue #63)](#429-qr-code-wi-fi-ospiti-per-reti-aperte--gestione-stato-v160---issue-63)
+   * 4.30 [Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)](#430-multi-channel-daily-digest-delivery-transparency-v160---issue-64)
+   * 4.31 [Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)](#431-perfezionamento-discovery-ipv6-ula--filtri-tabella-client-v160---issue-65)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -363,11 +367,42 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
   3. **Filtro Categoria "Nuovi":** Pill rapida con indicatore cromatico verde per visualizzare esclusivamente i dispositivi rilevati di recente.
   4. **Ispezione Modale Dettagliata:** Nel `#deviceModal` (tab Generale), un blocco informativo dedicato mostra la data e ora esatta del primo rilevamento del dispositivo sulla rete mesh.
 
+### 4.28 Concorrenza SQLite WAL, Busy Timeout & Transazioni Atomiche (v1.6.0 - Issue #62)
+* **Contesto & Causa Radice (@jonmacdonald):**
+  Nei deployment Docker sotto carichi elevati (polling ad alta frequenza, scritture concorrenti di telemetria RSSI, throughput e log applicativi), le chiamate concorrenti a SQLite generavano sporadicamente l'eccezione `sqlite3.OperationalError: database is locked`, oltre a generare messaggi di errore non tracciati a `stderr` (`Task exception was never retrieved`) quando task in background venivano lanciati con `asyncio.create_task` senza gestione errori.
+* **Architettura di Serializzazione e Resilienza:**
+  1. **Semaforo di Scrittura `_write_lock`:** In `DBService` (`app/services/db.py`), tutte le transazioni di scrittura concorrenti vengono serializzate tramite `asyncio.Lock()`, azzerando il rischio di collisione scritture tra thread asincroni.
+  2. **Configurazione Connessione & Pragmi WAL:** Il timeout di connessione di `aiosqlite.connect(...)` è elevato a 60.0 secondi, con esecuzione preventiva dei pragmi `PRAGMA journal_mode = WAL;`, `PRAGMA busy_timeout = 60000;` e `PRAGMA synchronous = NORMAL;` su ogni connessione del pool.
+  3. **Sequential Poller Execution:** Nel ciclo del poller (`poller.py`), i compiti di campionamento e persistenza storici vengono eseguiti sequenzialmente con blocchi `try/except` protetti, prevenendo task pendenti o eccezioni non intercettate.
+
+### 4.29 QR Code Wi-Fi Ospiti per Reti Aperte (WPA:nopass) & Gestione Stato (v1.6.0 - Issue #63)
+* **Contesto & Requisito Utente (@WillFulmer):**
+  Nelle reti eero con rete Ospiti abilitata ma priva di password di protezione (rete aperta pubblica o per visitatori), il generatore QR Code falliva o sollevava eccezione richiedendo obbligatoriamente una chiave WPA. Inoltre, quando la rete ospiti era disabilitata, veniva comunque generato un QR Code non valido.
+* **Risoluzione & Standard ZXing / Wi-Fi Alliance:**
+  1. **Sintassi Universale Reti Aperte:** Il servizio `qrcode_gen.py` genera ora la stringa standard `WIFI:S:<SSID>;T:nopass;H:<hidden>;;` quando il parametro password è vuoto o non impostato.
+  2. **Gestione Stato Rete Ospiti Disabilitata:** Se la rete ospiti è spenta dall'app o dalla dashboard, la UI nasconde il codice e mostra un messaggio contestuale localizzato (`guests_page.qr_not_available`) con avviso per l'amministratore.
+  3. **Copia Credenziali e Feedback Visivo:** Il pulsante di copia negli appunti e i toast informativi indicano esplicitamente lo stato *"Rete aperta (senza password)"*.
+
+### 4.30 Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)
+* **Contesto & Requisito Utente (@WillFulmer):**
+  L'utente non aveva immediata visibilità visiva su quali canali di notifica (Telegram, Webhook, Discord, Pushover) fossero effettivamente abilitati e pronti a ricevere il report giornaliero serale *Daily Digest*.
+* **Risoluzione UI & Trasparenza Recapito:**
+  1. **Badge di Stato Canali Attivi:** Nella card *Daily Digest Report* in *Controlli & Ospiti*, sono visualizzati badge distintivi colorati per ciascun canale configurato e pronto (Telegram, Webhook, Discord, Pushover).
+  2. **Avviso & Link Rapido di Configurazione:** Se nessun canale di notifica risulta configurato, la card espone un messaggio descrittivo con pulsante/link diretto che scorre all'istante l'utente alla sezione di configurazione notifiche.
+
+### 4.31 Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)
+* **Contesto & Causa Radice (@jpatchMC):**
+  Su client dual-stack con lease DHCP locali su AdGuard Home, gli indirizzi IPv6 ULA scoperti via NDP venivano associati nel modello dati (`ipv6_ula` e `ipv6_addresses`) ma non sempre convergevano in `ipv6_all`, causando la mancata visualizzazione all'interno della modale `#deviceModal` e rendendo impossibile la ricerca testuale nella tabella dispositivi.
+* **Risoluzione & Auto-Pruning:**
+  1. **Fallback Resiliente Modale:** Nel rendering del modale client, il template itera su `ipv6_all || ipv6_addresses || [ipv6]`, garantendo la visualizzazione completa di tutti gli indirizzi noti o scoperti.
+  2. **Badge Distintivo UI `ULA Enriched`:** Assegnazione del badge ametista/fucsia dedicato `ULA Enriched` sia nella modale dei dettagli, sia nella tabella/scheda principale dei dispositivi accanto all'indirizzo MAC.
+  3. **Auto-Pruning Notturno degli Indirizzi Obsoleti:** Integrazione del metodo `cleanup_stale_discovered_ips(retention_days=30)` nel worker di manutenzione notturna programmata, rimuovendo automaticamente indirizzi transitori o dismessi dopo 30 giorni di inattività.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
 
-Il database si trova in `data/metrics.db` (percorso configurabile via `DATA_DIR`). Viene aperto in modalità WAL (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;`) per garantire massima concorrenza tra letture e scritture asincrone.
+Il database si trova in `data/metrics.db` (percorso configurabile via `DATA_DIR`). Viene aperto in modalità WAL con parametri ad alta concorrenza (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=60000; PRAGMA synchronous=NORMAL;`) e serializzazione scritture tramite semaforo `asyncio.Lock()` per garantire massima resilienza tra letture e scritture asincrone.
 
 ### Tabelle dello Schema
 
@@ -651,6 +686,26 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **GHSA-pqh9-q8vm-x9mh (Permessi Troppo Ampi su session.json):**
   * *Sintomo:* Il file `session.json` contenente il token eero veniva creato con i permessi predefiniti del processo (`0644`), risultando leggibile da altri utenti locali sull'host.
   * *Risoluzione:* Creazione atomica con flag `0o600` e invocazione di `os.fchmod` prima del troncamento del file.
+
+### Issue #62 — SQLite Database Locked Concurrency under Heavy Load (@jonmacdonald)
+* **Sintomo:** Errori ripetitivi `sqlite3.OperationalError: database is locked` nei log del container Docker durante cicli di campionamento ad alta frequenza, con eccezioni non intercettate su `stderr` (`Task exception was never retrieved`) che saturavano i registri.
+* **Causa Radice:** Più coroutine asincrone tentavano di eseguire transazioni di scrittura contemporaneamente su SQLite, superando il breve `busy_timeout` predefinito (5000ms). Inoltre, `poller.py` invocava operazioni in background con `asyncio.create_task` senza gestione degli errori `try/except`.
+* **Risoluzione:** Introdotto `_write_lock` serializzato in `DBService`, impostato timeout connessione a 60s, applicato `PRAGMA busy_timeout = 60000;` e riscritti i task del poller in modalità sequenziale protetta da `try/except`.
+
+### Issue #63 — Open Guest Network QR Code Generation & Disabled State (@WillFulmer)
+* **Sintomo:** Tentando di generare il QR Code per una rete Wi-Fi Ospiti abilitata ma priva di password, la dashboard sollevava errore richiedendo una chiave. Inoltre, con rete ospiti disabilitata, veniva mostrato un codice non valido.
+* **Causa Radice:** Validazione restrittiva della password in `app/routers/network.py` e assenza del tipo di crittografia `nopass` nel generatore QR Code.
+* **Risoluzione:** Rimosso il vincolo di password obbligatoria per reti aperte, implementata la sintassi standard Wi-Fi Alliance `WIFI:S:<SSID>;T:nopass;H:<hidden>;;` e gestito lo stato di rete disabilitata nascondendo il QR Code con avviso esplicito.
+
+### Issue #64 — Multi-Channel Daily Digest Delivery Feedback (@WillFulmer)
+* **Sintomo:** Gli utenti non avevano indicazione visiva immediata su quali canali di notifica (Telegram, Webhook, Discord, Pushover) avrebbero ricevuto il report serale Daily Digest.
+* **Causa Radice:** La card UI esponeva unicamente l'orario di invio programmato senza interrogare lo stato di attivazione dei connettori di notifica.
+* **Risoluzione:** Aggiunti badge dinamici in tempo reale che indicano i canali attivi configurati per la ricezione del report, con messaggio informativo e pulsante di reindirizzamento rapido qualora nessun canale risulti abilitato.
+
+### Issue #65 — IPv6 ULA Neighbor Discovery Table Filtering & Display (@jpatchMC)
+* **Sintomo:** Gli indirizzi IPv6 ULA scoperti via NDP non venivano visualizzati nella finestra modale del dispositivo e non era possibile trovarli cercando nella tabella client.
+* **Causa Radice:** Gli ULA venivano memorizzati in `ipv6_ula` e `ipv6_addresses` ma non sincronizzati in `ipv6_all` utilizzato dal template. Mancavano inoltre chiavi di localizzazione inglese per le pianificazioni orarie e il messaggio segnaposto del QR Code.
+* **Risoluzione:** Implementato fallback di iterazione su `ipv6_all || ipv6_addresses || [ipv6]`, introdotto badge dedicato `ULA Enriched` in tabella e modale, completate le traduzioni inglesi e collegata la funzione `cleanup_stale_discovered_ips(30)` al ciclo di manutenzione notturna per l'auto-pruning periodico.
 
 ---
 
