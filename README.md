@@ -332,6 +332,18 @@ This project stands on the shoulders of the open-source networking community and
 * **[Home Assistant Community](https://github.com/home-assistant/core):** For valuable historical insights into eero authentication flows, device tracker models, and API stability.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** For inspiring clean local DNS resolution and client discovery patterns.
 
+### 🏆 Community Hall of Fame & Special Thanks
+A heartfelt thank you to the open-source contributors and community members whose testing, issue reports, and technical insights shaped this suite:
+* **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync, Intelligent Address Pruning, dual-stack IPv6 discovery & instant search (#43), Reverse Client Enrichment IPv6 ULA (#57, #65), and 100% Offline-First Local Asset Bundling (#58).
+* **[@carbones73](https://github.com/carbones73):** Security hardening (4 GHSA Advisories: CORS/CSRF middleware, Wi-Fi password masking, API docs access toggle & `0600` permissions on `session.json`), strict hardware telemetry without synthetic fallbacks, 5 GHz UNII-3 vs 6 GHz radio spectrum accuracy, and deterministic primary gateway election (#47–#53).
+* **[@Hatton920](https://github.com/Hatton920):** Interactive Network Health Score breakdown & penalty engine, PHY link speed metrics, rebooting vs offline node detection, and speedtest sanitization (#14, #15, #34, #35, #41).
+* **[@DannyFeliz](https://github.com/DannyFeliz):** Responsive UI layouts, frequency filters, "Recently Joined" device sorting, and emerald pulsing "NEW" badges (#60).
+* **[@WillFulmer](https://github.com/WillFulmer):** Universal Wi-Fi Alliance QR codes for open guest networks (`T:nopass`) (#63) and multi-channel Daily Digest delivery transparency (#64).
+* **[@jonmacdonald](https://github.com/jonmacdonald):** SQLite concurrency & lock contention resolution via write locks and 60s busy timeout (#62), and primary gateway switch reconciliation (#26).
+* **[@jimcampbell100](https://github.com/jimcampbell100):** Inspiration for Multi-Network Fleet Management (#22).
+* **[@stevehoek](https://github.com/stevehoek):** Multi-network switching and English localization of Telegram Daily Digest (#37, #38).
+* **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
+
 ---
 
 <a name="italiano"></a>
@@ -542,6 +554,18 @@ Questo progetto si basa e si ispira al lavoro pionieristico della community open
 * **[`343max/eero-client`](https://github.com/343max/eero-client):** La libreria di riferimento originaria per il reverse-engineering e l'esplorazione delle REST API private del cloud eero.
 * **[Home Assistant Community](https://github.com/home-assistant/core):** Per gli studi approfonditi sui flussi di autenticazione 2FA e la stabilità delle chiamate di telemetria.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** Per gli standard e l'ispirazione nella gestione della risoluzione DNS locale e mappatura host.
+
+### 🏆 Ringraziamenti Speciali & Community Hall of Fame
+Un ringraziamento sincero a tutti gli utenti e contributori open-source che con issue, test e proposte hanno reso possibile l'evoluzione della suite:
+* **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync, Intelligent Address Pruning, visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment IPv6 ULA (#57, #65) e Architettura 100% Offline-First con Asset Locali (#58).
+* **[@carbones73](https://github.com/carbones73):** Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi `0600` su `session.json`), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione deterministica Primary Gateway (#47–#53).
+* **[@Hatton920](https://github.com/Hatton920):** Diagnostica interattiva a 4 pilastri dell'Health Score, velocità link PHY, rilevamento nodi in reboot vs offline e sanitizzazione speedtest (#14, #15, #34, #35, #41).
+* **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive mobile/tablet, filtri frequenze radio, ordinamento "Recently Joined" e badge "NEW" (#60).
+* **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (`T:nopass`) (#63) e trasparenza canali di recapito Daily Digest (#64).
+* **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
+* **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
+* **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione inglese del Telegram Daily Digest (#38).
+* **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---
 

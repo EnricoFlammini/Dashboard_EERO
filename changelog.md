@@ -6,6 +6,14 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.0] - 2026-10-07
 
+### 🏆 Community Hall of Fame & Ringraziamenti Speciali nel Modale About
+* **🏆 Aggiornamento Crediti & Riconoscimenti Community:**
+  * Aggiornati e ampliati i crediti nel modale *About & Crediti* dell'interfaccia utente e nella documentazione ufficiale:
+    * **[@jpatchMC](https://github.com/jpatchMC):** Reverse Client Enrichment IPv6 ULA (#57, #65), Local Asset Bundling 100% Offline (#58) e ciclo di auto-pruning.
+    * **[@DannyFeliz](https://github.com/DannyFeliz):** Ordinamento "Recently Joined" e badge dinamico ad alta visibilità "NEW" (#60).
+    * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard per reti ospiti aperte (`T:nopass`) (#63) e trasparenza dei canali di recapito nel Daily Digest Report (#64).
+    * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000` (#62).
+
 ### 🔍 Modulo 9: UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65 - @jpatchMC)
 * **🔍 Risoluzione Sincronizzazione UI & Visualizzazione Indirizzi ULA Arricchiti (Issue #65):**
   * Risolto il disallineamento tra backend e frontend in cui gli indirizzi scoperti venivano memorizzati in `ipv6_addresses` e `ipv6_ula` ma non in `ipv6_all`, impedendone la renderizzazione nel template del modale `#deviceModal`.
