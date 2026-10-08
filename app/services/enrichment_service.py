@@ -404,6 +404,7 @@ class EnrichmentService:
 
             dev["ipv6_ula"] = existing_ula
             dev["ipv6_addresses"] = existing_all_v6
+            dev["ipv6_all"] = existing_all_v6
             dev["ipv6_details"] = existing_details
             dev["has_discovered_ips"] = True
             dev["discovered_ips"] = disc_list

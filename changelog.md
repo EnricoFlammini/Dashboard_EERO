@@ -6,6 +6,18 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.0] - 2026-10-07
 
+### 🔍 Modulo 9: UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65 - @jpatchMC)
+* **🔍 Risoluzione Sincronizzazione UI & Visualizzazione Indirizzi ULA Arricchiti (Issue #65):**
+  * Risolto il disallineamento tra backend e frontend in cui gli indirizzi scoperti venivano memorizzati in `ipv6_addresses` e `ipv6_ula` ma non in `ipv6_all`, impedendone la renderizzazione nel template del modale `#deviceModal`.
+  * Integrato il fallback di iterazione su `ipv6_all || ipv6_addresses || [ipv6]` per garantire la visualizzazione resiliente di tutti gli indirizzi IPv6 noti o scoperti.
+  * Introdotto badge visivo dedicato **`ULA Enriched`** (fucsia/ametista) con tooltip esplicativo sia nel modale dei dettagli, sia nella tabella/scheda principale dei dispositivi accanto all'indirizzo MAC.
+* **🌐 Traduzioni Mancanti in Lingua Inglese (Issue #65):**
+  * Tradotto il sottotitolo informativo della card *Pianificazioni Orarie* (`schedules.empty_desc`) in inglese.
+  * Localizzato il messaggio segnaposto del QR Code Wi-Fi Ospiti (`guests_page.qr_not_available`) quando il codice non è disponibile.
+* **🧹 Lifecycle & Auto-Pruning Periodico degli Indirizzi Scoperti Obsoleti:**
+  * Collegata la funzione di pulizia `cleanup_stale_discovered_ips(retention_days=30)` al ciclo di manutenzione notturna automatica (`scheduler.py`) e al worker di aggregazione telemetrica (`retention_worker.py`), garantendo che eventuali indirizzi ULA transitori o dismessi non rimangano indefinitamente nel database.
+  * Tracciamento accurato del multi-homing IPv6 (supporto di indirizzi multipli per singolo MAC con registrazione puntuale di `first_seen` e `last_seen`).
+
 ### 🛠️ Modulo 8: Stabilità Concorrenza SQLite (Issue #62), QR Code Ospiti Aperti (Issue #63) & Canali Daily Digest (Issue #64)
 * **🛠️ Risoluzione Lock Contention SQLite & Errori Ripetitivi Log Container (Issue #62 - @jonmacdonald):**
   * Introdotto semaforo di serializzazione `_write_lock` in `DBService` (`app/services/db.py`) per evitare corse critiche concorrenti tra scritture asincrone simultanee.

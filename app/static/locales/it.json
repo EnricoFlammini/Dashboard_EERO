@@ -64,7 +64,8 @@
     "scan_instruction": "Inquadra il QR Code con la fotocamera del tuo smartphone per collegarti istantaneamente senza digitare la password.",
     "settings_redirect_hint": "Per configurare SSID, attivare/disattivare la rete o generare una nuova password:",
     "go_to_settings": "Impostazioni → Controlli & Ospiti",
-    "open_network_label": "Rete aperta (senza password)"
+    "open_network_label": "Rete aperta (senza password)",
+    "qr_not_available": "QR Code non disponibile"
   },
   "quality_analytics": {
     "page_title": "Qualità Segnale & Analytics Rete",
@@ -207,7 +208,9 @@
     "filter_new_tag": "Nuovi",
     "filter_new_tooltip": "Mostra solo dispositivi rilevati per la prima volta negli ultimi 7 giorni",
     "new_badge": "NEW",
-    "first_seen_badge_tooltip": "Rilevato per la prima volta sulla rete:"
+    "first_seen_badge_tooltip": "Rilevato per la prima volta sulla rete:",
+    "badge_ula_enriched": "ULA Enriched",
+    "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard"
   },
   "device_modal": {
     "title": "Dettaglio Dispositivo",
@@ -287,7 +290,7 @@
     "ipv6_addresses_count": "indirizzi",
     "ipv6_badge_global": "SLAAC / Global",
     "ipv6_badge_ula": "ULA (Locale)",
-    "ipv6_badge_ula_ndp": "ULA (NDP / AdGuard)",
+    "ipv6_badge_ula_ndp": "ULA Enriched",
     "ipv6_badge_link_local": "Link-Local",
     "ipv6_tooltip_ndp": "Rilevato tramite Neighbor Discovery Protocol (NDP) o AdGuard Home",
     "copy_ipv6": "Copia indirizzo IPv6",
@@ -790,6 +793,7 @@
     "all_nodes_desc": "Tutti i nodi mesh eero",
     "target_id": "Target",
     "no_schedules": "Nessuna pianificazione oraria attiva. Clicca su 'Nuova Regola Oraria' per crearne una.",
+    "empty_desc": "Crea una regola oraria per gestire automaticamente l'accesso Wi-Fi durante le ore serali o scolastiche.",
     "save_btn": "Salva Regola",
     "cancel": "Annulla",
     "delete": "Elimina"

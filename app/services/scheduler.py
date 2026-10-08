@@ -277,6 +277,7 @@ class MaintenanceEngine:
 
         # 1. Manutenzione e compattazione SQLite (PRAGMA optimize e VACUUM opzionale)
         db_res = await db_service.run_database_maintenance(vacuum=cfg.get("vacuum", False))
+        await db_service.cleanup_stale_discovered_ips(retention_days=30)
 
         # 2. Diagnostica stato di salute Mesh e valutazione riavvio
         from app.services.poller import background_poller

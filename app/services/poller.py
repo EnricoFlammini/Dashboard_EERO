@@ -820,6 +820,7 @@ class BackgroundPoller:
 
                     dev_copy["ipv6_ula"] = existing_ula
                     dev_copy["ipv6_addresses"] = existing_all_v6
+                    dev_copy["ipv6_all"] = existing_all_v6
                     dev_copy["ipv6_details"] = existing_details
                     dev_copy["has_discovered_ips"] = True
                     dev_copy["discovered_ips"] = disc_for_dev
