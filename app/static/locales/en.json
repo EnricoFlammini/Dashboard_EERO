@@ -454,7 +454,10 @@
     "subtitle": "Built-in documentation for complete management of eero Dashboard",
     "search_placeholder": "Search topics in manual...",
     "chapters_title": "Manual Chapters",
-    "close_guide": "Close Guide"
+    "close_guide": "Close Guide",
+    "prev_chapter": "Previous",
+    "next_chapter": "Next",
+    "no_results": "No chapters found."
   },
   "auth": {
     "title": "eero Mesh Suite Login",

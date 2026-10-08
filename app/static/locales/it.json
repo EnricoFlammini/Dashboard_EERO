@@ -454,7 +454,10 @@
     "subtitle": "Documentazione integrata per la gestione completa di eero Dashboard",
     "search_placeholder": "Cerca argomenti nel manuale...",
     "chapters_title": "Capitoli del Manuale",
-    "close_guide": "Chiudi Guida"
+    "close_guide": "Chiudi Guida",
+    "prev_chapter": "Precedente",
+    "next_chapter": "Successivo",
+    "no_results": "Nessun capitolo trovato."
   },
   "auth": {
     "title": "Accesso eero Mesh Suite",
