@@ -4039,6 +4039,41 @@ async def run_all_tests():
         runner.assert_true("open_network_label" in it_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in it.json")
         runner.assert_true("open_network_label" in en_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in en.json")
 
+        # Test Issue #65: UI improvement for enriched ULA addresses & missing English translations
+        print("\n🔍 TEST ISSUE #65 (ULA ENRICHED UI & ENGLISH TRANSLATIONS)")
+        runner.assert_true("qr_not_available" in it_loc.get("guests_page", {}), "Chiave guests_page.qr_not_available in it.json")
+        runner.assert_true("qr_not_available" in en_loc.get("guests_page", {}), "Chiave guests_page.qr_not_available in en.json")
+        runner.assert_true("empty_desc" in it_loc.get("schedules", {}), "Chiave schedules.empty_desc in it.json")
+        runner.assert_true("empty_desc" in en_loc.get("schedules", {}), "Chiave schedules.empty_desc in en.json")
+        runner.assert_true("badge_ula_enriched" in it_loc.get("devices", {}), "Chiave devices.badge_ula_enriched in it.json")
+        runner.assert_true("badge_ula_enriched" in en_loc.get("devices", {}), "Chiave devices.badge_ula_enriched in en.json")
+        runner.assert_true(it_loc.get("device_modal", {}).get("ipv6_badge_ula_ndp") == "ULA Enriched", "Badge ULA Enriched in it.json")
+        runner.assert_true(en_loc.get("device_modal", {}).get("ipv6_badge_ula_ndp") == "ULA Enriched", "Badge ULA Enriched in en.json")
+        
+        # Test cleanup_stale_discovered_ips execution
+        cleanup_res = await db_service.cleanup_stale_discovered_ips(retention_days=30)
+        runner.assert_true(isinstance(cleanup_res, int) and cleanup_res >= 0, "cleanup_stale_discovered_ips eseguito con successo")
+
+        # Test enrichment_service refreshes ipv6_all
+        test_mac_ula = "00:11:22:33:44:55"
+        await db_service.add_discovered_ips([{
+            "mac_address": test_mac_ula,
+            "ip_address": "fd12:3456:789a:1::99",
+            "ip_type": "ULA",
+            "source": "ndp_enrichment"
+        }])
+        background_poller.cached_devices = [{
+            "mac": test_mac_ula,
+            "ipv6": "fe80::1",
+            "ipv6_addresses": ["fe80::1"],
+            "ipv6_all": ["fe80::1"]
+        }]
+        from app.services.enrichment_service import enrichment_service
+        await enrichment_service.refresh_cached_devices_enrichment()
+        enriched_dev = background_poller.cached_devices[0]
+        runner.assert_true("fd12:3456:789a:1::99" in (enriched_dev.get("ipv6_all") or []), "enriched_dev popola correttamente ipv6_all con ULA")
+        runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
+
         await mqtt_service.stop()
         await log_service.stop()
 

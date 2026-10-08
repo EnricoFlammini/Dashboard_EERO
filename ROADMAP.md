@@ -547,6 +547,15 @@ gantt
 - [x] Card Daily Digest Report estesa con indicazione esplicita dei canali di recapito attivi (Telegram, Webhook, Discord, Pushover) e link rapido alla card di configurazione (Issue #64 - @WillFulmer).
 - [x] Test di regressione automatizzati aggiunti alla suite pre-rilascio (1104/1104 test superati al 100%).
 
+##### Modulo 9: 🔍 UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65) (Completato al 100%)
+- [x] Sincronizzazione dinamica degli indirizzi ULA scoperti nel campo `ipv6_all` del modello dati dispositivi (`poller.py` ed `enrichment_service.py`), consentendo la corretta visualizzazione di tutti gli IP arricchiti nel modale `#deviceModal` (Issue #65 - @jpatchMC).
+- [x] Badge dedicato ad alta visibilità `ULA Enriched` (fucsia) sia nell'elenco indirizzi IPv6 del modale dettagli, sia nella tabella dispositivi per i client che presentano IP arricchiti via Reverse NDP / AdGuard.
+- [x] Correzione traduzioni mancanti in lingua inglese:
+  - Sottotitolo della card Pianificazioni Orarie (`schedules.empty_desc`).
+  - Testo di fallback quando il QR Code ospiti non è disponibile (`guests_page.qr_not_available`).
+- [x] Integrazione dell'invecchiamento e pulizia automatica `cleanup_stale_discovered_ips(retention_days=30)` nel ciclo di manutenzione notturna (`scheduler.py`) e nel worker di retention (`retention_worker.py`).
+- [x] Test di regressione automatizzati estesi (1115/1115 test superati al 100%).
+
 ---
 
 ## 🛠️ Note Operative per il Futuro

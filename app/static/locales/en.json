@@ -64,7 +64,8 @@
     "scan_instruction": "Scan the QR code with your smartphone camera to connect instantly without typing the password.",
     "settings_redirect_hint": "To configure SSID, enable/disable the network or generate a new password:",
     "go_to_settings": "Settings → Controls & Guests",
-    "open_network_label": "Open network (no password)"
+    "open_network_label": "Open network (no password)",
+    "qr_not_available": "QR Code not available"
   },
   "quality_analytics": {
     "page_title": "Signal Quality & Network Analytics",
@@ -207,7 +208,9 @@
     "filter_new_tag": "New",
     "filter_new_tooltip": "Show only devices detected for the first time in the last 7 days",
     "new_badge": "NEW",
-    "first_seen_badge_tooltip": "First detected on network:"
+    "first_seen_badge_tooltip": "First detected on network:",
+    "badge_ula_enriched": "ULA Enriched",
+    "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard"
   },
   "device_modal": {
     "title": "Device Details",
@@ -287,9 +290,9 @@
     "ipv6_addresses_count": "addresses",
     "ipv6_badge_global": "SLAAC / Global",
     "ipv6_badge_ula": "ULA (Local)",
-    "ipv6_badge_ula_ndp": "ULA (NDP / AdGuard)",
+    "ipv6_badge_ula_ndp": "ULA Enriched",
     "ipv6_badge_link_local": "Link-Local",
-    "ipv6_tooltip_ndp": "Discovered via Neighbor Discovery Protocol (NDP) or AdGuard Home",
+    "ipv6_tooltip_ndp": "IPv6 ULA address discovered via Reverse NDP / AdGuard Home",
     "copy_ipv6": "Copy IPv6 address",
     "ipv6_copied": "IPv6 address copied to clipboard!",
     "close_btn": "Close"
@@ -790,6 +793,7 @@
     "all_nodes_desc": "All eero mesh nodes",
     "target_id": "Target",
     "no_schedules": "No active schedules. Click 'New Time Rule' to create one.",
+    "empty_desc": "Create a time rule to automatically manage Wi-Fi access during evening or school hours.",
     "save_btn": "Save Rule",
     "cancel": "Cancel",
     "delete": "Delete"

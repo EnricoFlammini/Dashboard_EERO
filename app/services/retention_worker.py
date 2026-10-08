@@ -170,6 +170,7 @@ class RetentionWorker:
             hourly_purged = await db_service.purge_expired_hourly_samples()
             daily_purged = await db_service.purge_expired_daily_samples()
             logs_purged = await db_service.purge_expired_system_logs()
+            await db_service.cleanup_stale_discovered_ips(retention_days=30)
 
             # 4. Ottimizzazione SQLite WAL & statistiche
             await db_service.run_database_maintenance(vacuum=vacuum)
