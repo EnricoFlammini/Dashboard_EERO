@@ -5177,27 +5177,158 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL: CONTEXTUAL HELP & QUICK MANUAL POPUP -->
+  <!-- MODAL: CONTEXTUAL HELP & USER MANUAL SUITE -->
   <!-- ===================================================================== -->
   <div 
     x-show="showHelpModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-md"
     style="display: none;"
     x-transition:enter="transition ease-out duration-200"
     x-transition:enter-start="opacity-0 scale-95"
     x-transition:enter-end="opacity-100 scale-100">
     
-    <div @click.away="showHelpModal = false" class="glass-panel-elevated w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[85vh] flex flex-col">
-      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-        <h3 class="text-base font-bold text-sky-600 dark:text-sky-400" x-text="helpModalTitle"></h3>
-        <button @click="showHelpModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+    <div @click.away="showHelpModal = false" class="glass-panel-elevated w-full max-w-5xl rounded-2xl p-0 overflow-hidden max-h-[92vh] h-[85vh] flex flex-col border border-sky-500/30 shadow-2xl shadow-sky-950/50">
+      
+      <!-- Modal Header -->
+      <div class="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-sm shrink-0">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-500/20 shadow-sm shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white" x-text="t('manual.title') || 'Manuale Utente & Guida Interattiva'"></h3>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-semibold" x-text="(manualSections ? manualSections.length : 16) + ' ' + (currentLanguage === 'it' ? 'Capitoli' : 'Chapters')"></span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate max-w-md" x-text="t('manual.subtitle') || 'Documentazione integrata per la gestione completa di eero Dashboard'"></p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button @click="showHelpModal = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 rounded-xl hover:bg-slate-200/50 dark:hover:bg-slate-800 transition cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="overflow-y-auto manual-content text-xs pr-2" x-html="helpModalContent"></div>
-      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-        <button @click="showHelpModal = false" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent transition shadow-sm dark:shadow-none cursor-pointer" x-text="t('manual.close_guide')"></button>
+
+      <!-- Modal Body (Two-Column Layout) -->
+      <div class="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+        
+        <!-- Left Sidebar: Chapter List & Search -->
+        <div class="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
+          
+          <!-- Search Box -->
+          <div class="p-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
+            <div class="relative">
+              <input 
+                type="text" 
+                x-model="manualSearchQuery" 
+                :placeholder="t('manual.search_placeholder') || 'Cerca argomenti nel manuale...'" 
+                class="w-full text-xs pl-8 pr-7 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition placeholder:text-slate-400">
+              <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <button 
+                x-show="manualSearchQuery" 
+                @click="manualSearchQuery = ''" 
+                class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Selector (visible on small screens) -->
+          <div class="p-2.5 md:hidden border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1" x-text="t('manual.chapters_title') || 'Capitoli del Manuale'"></label>
+            <select 
+              :value="selectedManualSection ? selectedManualSection.id : ''"
+              @change="selectManualSectionById($event.target.value)"
+              class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium">
+              <template x-for="sec in manualSections" :key="sec.id">
+                <option :value="sec.id" x-text="sec.title"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Desktop Chapter List (scrollable) -->
+          <div class="hidden md:flex flex-1 flex-col overflow-y-auto p-2 space-y-1">
+            <template x-for="(sec, idx) in filteredManualSections" :key="sec.id">
+              <button 
+                @click="selectManualSection(sec)"
+                :class="selectedManualSection && selectedManualSection.id === sec.id 
+                  ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-semibold border-sky-500/30 dark:border-sky-500/40 shadow-sm' 
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200 border-transparent'"
+                class="w-full text-left p-2.5 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer group">
+                <span 
+                  :class="selectedManualSection && selectedManualSection.id === sec.id
+                    ? 'bg-sky-500 text-white' 
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-sky-500/20 group-hover:text-sky-500'"
+                  class="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 transition-colors"
+                  x-text="(manualSections.findIndex(s => s.id === sec.id) + 1)"></span>
+                <div class="min-w-0 flex-1">
+                  <div class="text-xs truncate font-medium" :class="selectedManualSection && selectedManualSection.id === sec.id ? 'font-bold' : ''" x-text="sec.title"></div>
+                  <div class="text-[11px] opacity-75 truncate text-slate-500 dark:text-slate-400" x-text="sec.summary"></div>
+                </div>
+              </button>
+            </template>
+            <div x-show="filteredManualSections.length === 0" class="p-4 text-center text-xs text-slate-400">
+              <p x-text="t('manual.no_results') || (currentLanguage === 'it' ? 'Nessun capitolo trovato.' : 'No chapters found.')"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Content Area -->
+        <div class="flex-1 flex flex-col min-w-0 bg-white/60 dark:bg-slate-900/60 overflow-hidden">
+          
+          <!-- Chapter Banner -->
+          <div class="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 flex items-start justify-between gap-4 shrink-0">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20" x-text="(currentLanguage === 'it' ? 'Capitolo ' : 'Chapter ') + (currentManualSectionIndex + 1) + ' / ' + (manualSections.length)"></span>
+              </div>
+              <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" x-text="selectedManualSection ? selectedManualSection.title : helpModalTitle"></h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="selectedManualSection ? selectedManualSection.summary : ''"></p>
+            </div>
+          </div>
+
+          <!-- Chapter Markdown Content -->
+          <div class="flex-1 overflow-y-auto px-5 sm:px-7 py-5 leading-relaxed">
+            <div class="manual-content text-xs sm:text-sm text-slate-700 dark:text-slate-300 max-w-none space-y-3" x-html="helpModalContent"></div>
+          </div>
+        </div>
       </div>
+
+      <!-- Modal Footer with Prev / Next Navigation -->
+      <div class="px-5 sm:px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/70 backdrop-blur-sm shrink-0">
+        
+        <!-- Prev / Next Controls -->
+        <div class="flex items-center space-x-2">
+          <button 
+            @click="prevManualSection()" 
+            :disabled="currentManualSectionIndex <= 0"
+            :class="currentManualSectionIndex <= 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer'"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5 shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span x-text="t('manual.prev_chapter') || (currentLanguage === 'it' ? 'Precedente' : 'Previous')"></span>
+          </button>
+
+          <button 
+            @click="nextManualSection()" 
+            :disabled="currentManualSectionIndex >= (manualSections.length - 1)"
+            :class="currentManualSectionIndex >= (manualSections.length - 1) ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer'"
+            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5 shadow-sm">
+            <span x-text="t('manual.next_chapter') || (currentLanguage === 'it' ? 'Successivo' : 'Next')"></span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <span class="text-xs text-slate-400 font-mono ml-2 hidden sm:inline" x-text="(currentManualSectionIndex + 1) + ' / ' + (manualSections.length)"></span>
+        </div>
+
+        <!-- Close Guide Button -->
+        <button 
+          @click="showHelpModal = false" 
+          class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-semibold text-white shadow-md shadow-sky-600/30 transition cursor-pointer" 
+          x-text="t('manual.close_guide') || (currentLanguage === 'it' ? 'Chiudi Guida' : 'Close Guide')"></button>
+      </div>
+
     </div>
   </div>
 

@@ -3325,7 +3325,8 @@ document.addEventListener('alpine:init', () => {
         if (json.status === 'success') {
           this.manualSections = json.sections || [];
           if (this.manualSections.length > 0) {
-            this.selectedManualSection = this.manualSections.find(s => s.id === currentId) || this.manualSections[0];
+            const found = currentId ? this.manualSections.find(s => s.id === currentId) : null;
+            this.selectManualSection(found || this.manualSections[0]);
           }
         }
       } catch (err) {
@@ -3333,26 +3334,69 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    selectManualSection(section) {
+      if (!section) return;
+      this.selectedManualSection = section;
+      this.helpModalTitle = section.title || '';
+      this.helpModalContent = this.renderSimpleMarkdown(section.content || '');
+    },
+
+    selectManualSectionById(sectionId) {
+      if (!this.manualSections || !this.manualSections.length) return;
+      const found = this.manualSections.find(s => s.id === sectionId);
+      if (found) {
+        this.selectManualSection(found);
+      }
+    },
+
+    get currentManualSectionIndex() {
+      if (!this.selectedManualSection || !this.manualSections || !this.manualSections.length) return 0;
+      const idx = this.manualSections.findIndex(s => s.id === this.selectedManualSection.id);
+      return idx >= 0 ? idx : 0;
+    },
+
+    prevManualSection() {
+      const idx = this.currentManualSectionIndex;
+      if (idx > 0 && this.manualSections && this.manualSections[idx - 1]) {
+        this.selectManualSection(this.manualSections[idx - 1]);
+      }
+    },
+
+    nextManualSection() {
+      const idx = this.currentManualSectionIndex;
+      if (this.manualSections && idx < this.manualSections.length - 1 && this.manualSections[idx + 1]) {
+        this.selectManualSection(this.manualSections[idx + 1]);
+      }
+    },
+
     get filteredManualSections() {
+      if (!this.manualSections) return [];
       if (!this.manualSearchQuery) return this.manualSections;
-      const q = this.manualSearchQuery.toLowerCase();
+      const q = this.manualSearchQuery.toLowerCase().trim();
       return this.manualSections.filter(s => 
-        s.title.toLowerCase().includes(q) || 
-        s.summary.toLowerCase().includes(q) ||
-        s.content.toLowerCase().includes(q)
+        (s.title && s.title.toLowerCase().includes(q)) || 
+        (s.summary && s.summary.toLowerCase().includes(q)) ||
+        (s.content && s.content.toLowerCase().includes(q))
       );
     },
 
-    async openContextHelp(sectionId) {
+    async openContextHelp(sectionId = null) {
       try {
-        const res = await fetch(`/api/manual/sections/${sectionId}?lang=${this.currentLanguage || 'en'}`);
-        const json = await res.json();
-        if (json.status === 'success' && json.section) {
-          this.helpModalTitle = json.section.title;
-          // Simple markdown-to-html converter
-          this.helpModalContent = this.renderSimpleMarkdown(json.section.content);
-          this.showHelpModal = true;
+        if (!this.manualSections || this.manualSections.length === 0) {
+          await this.loadManualSections();
         }
+        if (sectionId && this.manualSections && this.manualSections.length > 0) {
+          const found = this.manualSections.find(s => s.id === sectionId);
+          if (found) {
+            this.selectManualSection(found);
+          } else {
+            this.selectManualSection(this.manualSections[0]);
+          }
+        } else if (this.manualSections && this.manualSections.length > 0 && !this.selectedManualSection) {
+          this.selectManualSection(this.manualSections[0]);
+        }
+        this.manualSearchQuery = '';
+        this.showHelpModal = true;
       } catch (err) {
         console.error("Open context help error:", err);
       }
