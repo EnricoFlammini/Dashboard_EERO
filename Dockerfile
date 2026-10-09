@@ -24,7 +24,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 
 # Copia e installa le dipendenze Python con tooling di build aggiornato
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+RUN pip install --no-cache-dir --upgrade "pip>=26.2.0" "setuptools>=83.0.0" wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copia il codice sorgente e la documentazione
