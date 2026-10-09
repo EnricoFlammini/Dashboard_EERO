@@ -944,24 +944,38 @@ html.dark .sidebar-btn-inactive:hover {
 }
 
 .device-table {
-  min-width: 68rem;
+  min-width: 76rem;
   table-layout: fixed;
 }
 
-.device-table .device-col-name { width: 14rem; }
+.device-table .device-col-name { width: 13.5rem; }
 .device-table .device-col-address { width: 11rem; }
-.device-table .device-col-profile { width: 8.5rem; }
-.device-table .device-col-node { width: 8.5rem; }
-.device-table .device-col-band { width: 7.5rem; }
+.device-table .device-col-profile { width: 8rem; }
+.device-table .device-col-node { width: 8rem; }
+.device-table .device-col-band { width: 7rem; }
 .device-table .device-col-signal { width: 7rem; }
-.device-table .device-col-traffic { width: 6.5rem; }
-.device-table .device-col-status { width: 5.5rem; }
+.device-table .device-col-traffic { width: 11rem; }
+.device-table .device-col-status { width: 6.5rem; }
 .device-table .device-col-actions { width: 3.5rem; }
 
 .device-table th,
 .device-table td {
   padding: 0.75rem 0.875rem;
   vertical-align: middle;
+}
+
+.device-table th.device-th-traffic,
+.device-table td.device-traffic-cell {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.device-table td.device-traffic-cell {
+  overflow: hidden;
+}
+
+.device-table td.device-status-cell {
+  white-space: nowrap;
 }
 
 .device-table th {

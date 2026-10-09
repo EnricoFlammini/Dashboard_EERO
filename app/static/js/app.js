@@ -3773,6 +3773,14 @@ document.addEventListener('alpine:init', () => {
       return parseFloat((bytes / Math.pow(k, idx)).toFixed(dm)) + ' ' + sizes[idx];
     },
 
+    formatTrafficRate(mbps) {
+      if (mbps === undefined || mbps === null || isNaN(mbps)) return '';
+      const num = Number(mbps);
+      if (num <= 0.05) return '';
+      if (num >= 100) return Math.round(num) + 'M';
+      return num.toFixed(1) + 'M';
+    },
+
     async fetchAvailableNetworks() {
       try {
         const res = await fetch('/api/network/list');

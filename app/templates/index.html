@@ -1692,7 +1692,7 @@
                 </th>
 
                 <!-- Col: Traffic (Download & Upload) -->
-                <th class="py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th class="device-th-traffic py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1 text-[11px]">
                     <div @click="toggleDeviceSort('download')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'download' ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400'" title="Download">
                       <span>↓DL</span>
@@ -1710,7 +1710,7 @@
                 </th>
 
                 <!-- Col: Status -->
-                <th @click="toggleDeviceSort('status')" class="py-3.5 px-4 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('status')" class="device-th-status py-3.5 px-3 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center justify-center space-x-1.5">
                     <span x-text="t('devices.col_status')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1861,16 +1861,16 @@
                   </td>
 
                   <!-- Traffic (Download & Upload) -->
-                  <td class="py-2.5 px-2 font-mono whitespace-nowrap" :data-label="t('devices.col_traffic') || 'Traffic'">
+                  <td class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic') || 'Traffic'">
                     <template x-if="(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05)">
                       <div class="flex flex-col leading-tight">
                         <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="'DL Cumulativo: ' + formatBytes(dev.rx_bytes || 0) + ' (~ Stima hardware Wi-Fi)' + (dev.download_rate_mbps > 0.05 ? ' • Real-Time: ' + dev.download_rate_mbps + ' Mbps' : '')">
                           ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
-                          <span x-show="dev.download_rate_mbps > 0.05" class="text-[10px] text-sky-500 dark:text-sky-400 font-medium ml-1" x-text="'(' + dev.download_rate_mbps + 'M)'"></span>
+                          <span x-show="dev.download_rate_mbps > 0.05" class="text-[10px] text-sky-500 dark:text-sky-400 font-medium ml-1" x-text="'(' + formatTrafficRate(dev.download_rate_mbps) + ')'"></span>
                         </span>
                         <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="'UL Cumulativo: ' + formatBytes(dev.tx_bytes || 0) + ' (~ Stima hardware Wi-Fi)' + (dev.upload_rate_mbps > 0.05 ? ' • Real-Time: ' + dev.upload_rate_mbps + ' Mbps' : '')">
                           ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
-                          <span x-show="dev.upload_rate_mbps > 0.05" class="text-[9px] text-emerald-500 dark:text-emerald-400 font-normal ml-1" x-text="'(' + dev.upload_rate_mbps + 'M)'"></span>
+                          <span x-show="dev.upload_rate_mbps > 0.05" class="text-[9px] text-emerald-500 dark:text-emerald-400 font-normal ml-1" x-text="'(' + formatTrafficRate(dev.upload_rate_mbps) + ')'"></span>
                         </span>
                       </div>
                     </template>
@@ -1897,7 +1897,7 @@
                   </td>
 
                   <!-- Status (Online/Offline) -->
-                  <td class="py-3 px-4 text-center" :data-label="t('devices.col_status')">
+                  <td class="device-status-cell py-3 px-3 text-center whitespace-nowrap" :data-label="t('devices.col_status')">
                     <template x-if="dev.connected">
                       <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 shadow-xs dark:shadow-none" x-text="t('devices.status_online')"></span>
                     </template>
