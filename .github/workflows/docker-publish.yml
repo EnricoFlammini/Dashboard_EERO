@@ -41,15 +41,6 @@ jobs:
           fi
           if [ -z "$APP_VER" ]; then APP_VER="1.6.0"; fi
 
-          # Pulizia tokenizzata dei tag legacy temporanei (>= 90 o erronei) su Docker Hub se credenziali disponibili
-          DH_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST \
-            -d "{\"username\": \"${{ secrets.DOCKERHUB_USERNAME }}\", \"password\": \"${{ secrets.DOCKERHUB_TOKEN }}\"}" \
-            https://hub.docker.com/v2/users/login/ | jq -r .token 2>/dev/null || true)
-          if [ -n "$DH_TOKEN" ] && [ "$DH_TOKEN" != "null" ]; then
-            for old_tag in 1.5.0 v1.5.0 1.5.0-build.93 1.5.0-build.96 v1.5.0-build.94 v1.5.0-build.97 test-build.92 test-build.95 1.6.0-build.1; do
-              curl -s -X DELETE -H "Authorization: JWT $DH_TOKEN" "https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags/${old_tag}/" >/dev/null 2>&1 || true
-            done
-          fi
 
           # 1. Override manuale via workflow_dispatch
           if [ -n "${{ inputs.custom_build_number }}" ]; then
@@ -135,3 +126,13 @@ jobs:
             BUILD_NUMBER=${{ steps.versioning.outputs.build_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Prune Docker Hub Tags (Keep 5 Main, 1 Test)
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          MAX_MAIN_TAGS: 5
+          MAX_TEST_TAGS: 1
+        run: python3 scripts/prune_docker_tags.py
