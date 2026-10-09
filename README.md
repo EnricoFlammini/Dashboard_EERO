@@ -24,19 +24,23 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ---
 
-## 📸 Screenshots Showcase
+## 📸 Screenshots Showcase (v1.6.0)
 
 <div align="center">
 
-| Dashboard & Mesh Topology (v1.4.0 Fluent UI) | Devices Table, Filters & Telemetry |
+| 🌐 Dashboard & Mesh Topology (Fluent UI) | 💻 Devices Table, Live Throughput & Telemetry |
 | :---: | :---: |
 | <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Speed Test, Analytics & Wi-Fi Signal Coverage (RSSI) | Multi-Engine DNS, Automations & Docker Maintenance |
+| ⚡ Speed Test, History & Bufferbloat | 📶 Wi-Fi Signal Quality & Spectrum Analytics |
 | :---: | :---: |
-| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/speedtest_signal_quality.png" width="480" /> |
 
-| Device Details, Static IP (DHCP) & Port Forwarding |
+| ⚙️ Multi-Engine DNS, HomeLab & Alerts | 📖 Built-in 2-Column Technical Manual |
+| :---: | :---: |
+| <img src="docs/screenshots/automations_dns_docker.png" width="480" /> | <img src="docs/screenshots/manual_reader.png" width="480" /> |
+
+| 🔧 Device Details, Static IP & Port Forwarding |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
@@ -369,19 +373,23 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ---
 
-## 📸 Galleria Screenshot
+## 📸 Galleria Screenshot (v1.6.0)
 
 <div align="center">
 
-| Panoramica Dashboard & Topologia Mesh (v1.4.0) | Tabella Dispositivi, Filtri & Telemetria |
+| 🌐 Panoramica Dashboard & Topologia Mesh | 💻 Tabella Dispositivi, Throughput & Telemetria |
 | :---: | :---: |
 | <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Speed Test, Statistiche & Qualità Segnale Wi-Fi (RSSI) | Multi-Engine DNS, Automazioni & Manutenzione Docker |
+| ⚡ Speed Test, Storico & Valutazione Bufferbloat | 📶 Qualità Segnale Wi-Fi & Analisi Spettro |
 | :---: | :---: |
-| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/speedtest_signal_quality.png" width="480" /> |
 
-| Dettaglio Dispositivo, Prenotazione IP DHCP & Port Forwarding |
+| ⚙️ Multi-Engine DNS, HomeLab & Notifiche | 📖 Manuale Tecnico Integrato a 2 Colonne |
+| :---: | :---: |
+| <img src="docs/screenshots/automations_dns_docker.png" width="480" /> | <img src="docs/screenshots/manual_reader.png" width="480" /> |
+
+| 🔧 Dettaglio Dispositivo, Prenotazione IP DHCP & Regole Porte |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
