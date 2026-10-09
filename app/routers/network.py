@@ -2,8 +2,10 @@ import logging
 import secrets
 import string
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
 from app.services.eero_client import eero_client, EERO_API_BASE
@@ -52,6 +54,31 @@ async def get_health_breakdown():
             "health_details": cached.get("health_details") or {}
         }
     }
+
+
+@router.get("/diagnostics/iot-anomalies")
+async def get_iot_night_anomalies(limit: int = 50, days: int = 7):
+    """Restituisce le anomalie di traffico notturno registrate per apparati IoT (v1.6.0 Modulo 1)."""
+    try:
+        from app.services.db import db_service
+        cached_anomalies = getattr(background_poller, "cached_iot_anomalies", [])
+        db_anomalies = await db_service.get_iot_anomalies(limit=limit, days=days)
+        
+        # Unifica con priorità a quelle in memoria se in demo mode
+        if getattr(eero_client, "is_demo_mode", False) or settings.demo_mode:
+            all_anomalies = cached_anomalies or db_anomalies
+        else:
+            all_anomalies = db_anomalies or cached_anomalies
+
+        return {
+            "status": "success",
+            "count": len(all_anomalies),
+            "data": all_anomalies,
+            "anomalies": all_anomalies,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching IoT anomalies: {e}")
+        return {"status": "error", "message": str(e), "data": []}
 
 
 @router.post("/refresh")
@@ -139,7 +166,7 @@ async def get_mesh_nodes():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/reboot")
+@router.post("/reboot", dependencies=[Depends(require_permission("action_reboot_nodes"))])
 async def reboot_network():
     """Invia il comando di riavvio all'intera rete mesh."""
     try:
@@ -150,7 +177,7 @@ async def reboot_network():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/eeros/{eero_id}/reboot")
+@router.post("/eeros/{eero_id}/reboot", dependencies=[Depends(require_permission("action_reboot_nodes"))])
 async def reboot_single_eero(eero_id: str):
     """Riavvia un singolo nodo eero mesh."""
     try:
@@ -195,7 +222,7 @@ async def get_guest_network():
         qr_data_url = ""
         qr_data_url_light = ""
         qr_data_url_dark = ""
-        if guest.get("enabled", False) and ssid and password:
+        if guest.get("enabled", False) and ssid:
             qr_data_url_light = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=False)
             qr_data_url_dark = generate_wifi_qr_code(ssid=ssid, password=password, dark_mode=True)
             qr_data_url = qr_data_url_light
@@ -212,7 +239,7 @@ async def get_guest_network():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/guest")
+@router.post("/guest", dependencies=[Depends(require_permission("action_toggle_guest"))])
 async def update_guest_network(payload: GuestNetworkRequest):
     """Aggiorna le impostazioni della rete ospiti (Attiva/Disattiva, SSID, Password)."""
     try:
@@ -225,10 +252,11 @@ async def update_guest_network(payload: GuestNetworkRequest):
         qr_code = ""
         qr_code_light = ""
         qr_code_dark = ""
-        if payload.enabled and payload.password:
+        if payload.enabled:
             ssid = payload.name or "eero Guest"
-            qr_code_light = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=False)
-            qr_code_dark = generate_wifi_qr_code(ssid=ssid, password=payload.password, dark_mode=True)
+            pwd = payload.password or ""
+            qr_code_light = generate_wifi_qr_code(ssid=ssid, password=pwd, dark_mode=False)
+            qr_code_dark = generate_wifi_qr_code(ssid=ssid, password=pwd, dark_mode=True)
             qr_code = qr_code_light
 
         return {
@@ -368,4 +396,79 @@ async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
     except Exception as e:
         logger.error(f"Error getting top bandwidth hogs: {e}")
         return {"status": "error", "message": str(e), "top_hogs": []}
+
+
+# =========================================================================
+# REVERSE CLIENT ENRICHMENT & NDP DISCOVERY (Issue #57 - @jpatchMC)
+# =========================================================================
+
+class NeighborMappingItem(BaseModel):
+    ip: str = Field(..., description="Indirizzo IPv6 (ULA/GUA) o IPv4 da associare")
+    mac: str = Field(..., description="Indirizzo MAC del dispositivo fisico")
+    type: Optional[str] = Field("ULA", description="Tipo di indirizzo: ULA, GUA, IPv4")
+    source: Optional[str] = Field("api", description="Origine della rilevazione (es. adguard_agent, cron, ndp)")
+
+
+class NeighborIngestRequest(BaseModel):
+    source: Optional[str] = Field("external_agent", description="Sorgente del feed di dati")
+    mappings: list[NeighborMappingItem] = Field(..., description="Elenco di associazioni IP-MAC rilevate")
+
+
+class DeleteNeighborMappingRequest(BaseModel):
+    mac: str = Field(..., description="MAC address dell'associazione da eliminare")
+    ip: str = Field(..., description="Indirizzo IP da rimuovere")
+
+
+@router.post("/enrichment/neighbors")
+async def ingest_neighbor_mappings(
+    payload: NeighborIngestRequest,
+    _auth=Depends(require_permission("network_control"))
+):
+    """
+    Riceve un payload di associazioni IP-MAC scoperte via NDP o da agenti esterni (AdGuard Home, cron host).
+    Valida e normalizza gli indirizzi, aggiorna SQLite ed effettua l'aggiornamento a caldo della cache RAM.
+    """
+    from app.services.enrichment_service import enrichment_service
+    raw_list = [item.model_dump() for item in payload.mappings]
+    result = await enrichment_service.ingest_neighbor_mappings(raw_list, source=payload.source or "api")
+    return result
+
+
+@router.get("/enrichment/mappings")
+async def get_discovered_mappings(limit: int = 500):
+    """Restituisce l'elenco di tutti gli indirizzi IP scoperti e arricchiti via NDP / AdGuard."""
+    rows = await db_service.get_all_discovered_ips_list(limit=limit)
+    return {
+        "status": "success",
+        "total_mappings": len(rows),
+        "mappings": rows
+    }
+
+
+@router.delete("/enrichment/mappings")
+async def delete_discovered_mapping(
+    payload: DeleteNeighborMappingRequest,
+    _auth=Depends(require_permission("network_control"))
+):
+    """Elimina una specifica associazione IP-MAC scoperta e aggiorna la cache in RAM."""
+    from app.services.enrichment_service import enrichment_service
+    deleted = await db_service.delete_discovered_ip(payload.mac, payload.ip)
+    if deleted:
+        await enrichment_service.refresh_cached_devices_enrichment()
+        return {"status": "success", "message": f"Associazione {payload.ip} <-> {payload.mac} rimossa."}
+    return {"status": "not_found", "message": "Nessuna corrispondenza trovata per l'eliminazione."}
+
+
+@router.post("/enrichment/scan-adguard")
+async def trigger_adguard_scan(
+    _auth=Depends(require_permission("network_control"))
+):
+    """
+    Avvia una scansione attiva on-demand delle istanze AdGuard Home configurate:
+    identifica i client orfani/bare IP, invia una probe NDP per risolvere il MAC e aggiorna la dashboard.
+    """
+    from app.services.enrichment_service import enrichment_service
+    res = await enrichment_service.scan_all_adguard_instances()
+    return res
+
 

@@ -1,3 +1,4 @@
+import ipaddress
 import json
 import logging
 import os
@@ -15,6 +16,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 EERO_API_BASE = "https://api-user.e2ro.com/2.2"
+_IPV6_ULA_NET = ipaddress.IPv6Network("fc00::/7")
 
 
 def parse_speed_mbps(val: Any) -> int:
@@ -629,22 +631,30 @@ class EeroClient:
     def _normalize_network_details(self, raw: Dict[str, Any]) -> Dict[str, Any]:
         data = dict(raw)
         
-        # IP Pubblico / WAN IP
+        # IP Pubblico / WAN IP (Issue #56: nessun placeholder fittizio 0.0.0.0 né fallback a gateway_ip LAN)
         pub_ip = (
             data.get("public_ip") or 
             data.get("wan_ip") or 
             (data.get("ip_settings") or {}).get("public_ip") or 
-            (data.get("gateway_ip")) or 
-            ""
+            None
         )
-        data["public_ip"] = pub_ip if pub_ip else "0.0.0.0"
+        if pub_ip:
+            pub_ip_str = str(pub_ip).strip()
+            data["public_ip"] = pub_ip_str if pub_ip_str not in ("0.0.0.0", "None", "") else None
+        else:
+            data["public_ip"] = None
 
-        # Gateway IP & Gateway Network Metadata
-        data["gateway_ip"] = (
+        # Gateway IP & Gateway Network Metadata (Issue #56: nessun default 192.168.4.1 hardcoded)
+        gw_ip = (
             data.get("gateway_ip") or 
             (data.get("ip_settings") or {}).get("ip") or 
-            "192.168.4.1"
+            None
         )
+        if gw_ip:
+            gw_ip_str = str(gw_ip).strip()
+            data["gateway_ip"] = gw_ip_str if gw_ip_str not in ("None", "") else None
+        else:
+            data["gateway_ip"] = None
 
         gw_raw = raw.get("gateway")
         gw_id = ""
@@ -744,8 +754,9 @@ class EeroClient:
                     pass
 
         if not clean_dns:
-            gw_fallback = data.get("gateway_ip") or "192.168.4.1"
-            clean_dns = [gw_fallback]
+            gw_fallback = data.get("gateway_ip")
+            if gw_fallback:
+                clean_dns = [gw_fallback]
 
         data["dns_servers"] = clean_dns
 
@@ -1208,9 +1219,10 @@ class EeroClient:
                 node["backhaul_type"] = f"Wireless Mesh (2.4 GHz{signal_str})"
             elif is_5ghz_link:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
-            # Nessun canale né frequenza: stima dal modello (ogni canale noto è già classificato sopra)
+            # Nessun canale né frequenza: stima dal modello (Issue #56: trasparenza sulle bande dedotte da hardware)
             elif is_6e_or_7_hardware and channel == 0:
-                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str})"
+                node["backhaul_estimated"] = True
+                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (stimata)"
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
@@ -1315,8 +1327,10 @@ class EeroClient:
                 all_ips_raw.append(dev["ipv6"])
 
             ipv4_candidates = []
-            ipv6_candidates = []
+            ipv6_gua = []
+            ipv6_ula = []
             ipv6_link_local = []
+            ipv6_details = []
 
             for raw_item in all_ips_raw:
                 ip_str = _clean_ip(raw_item)
@@ -1326,21 +1340,73 @@ class EeroClient:
                 if "." in ip_str and ":" not in ip_str and not ip_str.startswith("169.254."):
                     if ip_str not in ipv4_candidates:
                         ipv4_candidates.append(ip_str)
-                # IPv6 check (must contain colon, exclude mesh gateway/loopback ::1)
-                elif ":" in ip_str and not ip_str.endswith("::1"):
-                    if ip_str.lower().startswith("fe80:"):
+                # IPv6 check (must contain colon, exclude loopback ::1 or unspecified ::)
+                elif ":" in ip_str and ip_str.strip() not in ("::", "::1", "0:0:0:0:0:0:0:1"):
+                    # Classificazione RFC 4291 / RFC 4193 (Issue #57)
+                    addr_type = "GUA"
+                    addr_scope = "global"
+                    is_ll = False
+                    is_ula = False
+
+                    try:
+                        v6_obj = ipaddress.IPv6Address(ip_str)
+                        if v6_obj.is_loopback or v6_obj.is_unspecified:
+                            continue
+                        if v6_obj.is_link_local:
+                            is_ll = True
+                        elif v6_obj in _IPV6_ULA_NET:
+                            is_ula = True
+                    except ValueError:
+                        # Fallback parsing stringa se indirizzo non normalizzato
+                        lower_v6 = ip_str.lower()
+                        if lower_v6.startswith(("fe80:", "fe90:", "fea0:", "feb0:")):
+                            is_ll = True
+                        elif lower_v6.startswith(("fc", "fd")):
+                            is_ula = True
+
+                    if is_ll:
+                        addr_type = "Link-Local"
+                        addr_scope = "link"
                         if ip_str not in ipv6_link_local:
                             ipv6_link_local.append(ip_str)
+                    elif is_ula:
+                        addr_type = "ULA"
+                        addr_scope = "local"
+                        if ip_str not in ipv6_ula:
+                            ipv6_ula.append(ip_str)
                     else:
-                        if ip_str not in ipv6_candidates:
-                            ipv6_candidates.append(ip_str)
+                        addr_type = "GUA"
+                        addr_scope = "global"
+                        if ip_str not in ipv6_gua:
+                            ipv6_gua.append(ip_str)
+
+                    detail_entry = {"address": ip_str, "type": addr_type, "scope": addr_scope}
+                    if not any(d["address"] == ip_str for d in ipv6_details):
+                        ipv6_details.append(detail_entry)
 
             raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") if isinstance(dev.get("ip"), str) else None)
             dev["ip"] = str(raw_ip).strip() if raw_ip else None
-            dev["ipv6_addresses"] = ipv6_candidates  # Routable / Global unicast / SLAAC (sent to AdGuard/DNS)
-            dev["ipv6_link_local"] = ipv6_link_local  # Link-local addresses (fe80::, displayed in UI)
-            dev["ipv6_all"] = ipv6_candidates + ipv6_link_local  # Complete list for UI display and search
-            dev["ipv6"] = ipv6_candidates[0] if ipv6_candidates else (ipv6_link_local[0] if ipv6_link_local else None)
+
+            # Struttura completa IPv6 (Issue #57)
+            dev["ipv6_gua"] = ipv6_gua
+            dev["ipv6_ula"] = ipv6_ula
+            dev["ipv6_link_local"] = ipv6_link_local
+            dev["ipv6_details"] = ipv6_details
+
+            # Indirizzi routabili (GUA + ULA) per propagazione verso AdGuard Home e DNS locale
+            routable_v6 = ipv6_gua + ipv6_ula
+            dev["ipv6_addresses"] = routable_v6
+            dev["ipv6_all"] = routable_v6 + ipv6_link_local
+
+            # Indirizzo IPv6 primario (priorità GUA > ULA > Link-Local)
+            if ipv6_gua:
+                dev["ipv6"] = ipv6_gua[0]
+            elif ipv6_ula:
+                dev["ipv6"] = ipv6_ula[0]
+            elif ipv6_link_local:
+                dev["ipv6"] = ipv6_link_local[0]
+            else:
+                dev["ipv6"] = None
 
             # Connection Status (Online / Offline / Paused)
             conn_val = dev.get("connected")
@@ -1701,16 +1767,10 @@ class EeroClient:
             dev["tx_packets"] = tx_pkts
             dev["total_packets"] = total_pkts
 
-            # Calcolo contatori hardware byte reali dai pacchetti fisici
-            # Pacchetto dati RX (download standard MTU Ethernet/Wi-Fi): ~1420 bytes
-            # Pacchetto dati TX (uplink ACK/request/upload): ~280 bytes
-            if rx_pkts > 0 and rx_b == 0.0:
-                rx_b = float(rx_pkts * 1420.0)
-            if tx_pkts > 0 and tx_b == 0.0:
-                tx_b = float(tx_pkts * 280.0)
-
             dev["download_rate_mbps"] = round(float(down_rate), 2)
             dev["upload_rate_mbps"] = round(float(up_rate), 2)
+            dev["rx_rate"] = dev["download_rate_mbps"]
+            dev["tx_rate"] = dev["upload_rate_mbps"]
             dev["rx_bytes"] = rx_b
             dev["tx_bytes"] = tx_b
 
@@ -1796,10 +1856,11 @@ class EeroClient:
                     if gw_cached_name:
                         primary_gw = next((n for n in nodes if str(n.get("name") or "").lower() == str(gw_cached_name).lower()), None)
 
-                # 3. Corrispondenza IP con gateway_ip di rete (default 192.168.4.1 o subnet router IP - Issue #36)
+                # 3. Corrispondenza IP con gateway_ip di rete (se noto da /2.2/networks/{id} - Issue #36, #56)
                 if not primary_gw:
-                    gw_cached_ip = getattr(self, "current_gateway_ip", None) or "192.168.4.1"
-                    primary_gw = next((n for n in nodes if n.get("ip") and n.get("ip") == gw_cached_ip), None)
+                    gw_cached_ip = getattr(self, "current_gateway_ip", None)
+                    if gw_cached_ip:
+                        primary_gw = next((n for n in nodes if n.get("ip") and n.get("ip") == gw_cached_ip), None)
 
                 # 4. Nodo con flag is_gateway già impostato da _is_gateway_node
                 if not primary_gw:
@@ -1807,8 +1868,12 @@ class EeroClient:
                     if len(gw_nodes) == 1:
                         primary_gw = gw_nodes[0]
                     elif len(gw_nodes) > 1:
-                        # Se più nodi hanno il flag, priorità a quello con IP gateway
-                        primary_gw = next((n for n in gw_nodes if n.get("ip") == (getattr(self, "current_gateway_ip", None) or "192.168.4.1")), gw_nodes[0])
+                        # Se più nodi hanno il flag, priorità a quello con IP gateway se noto
+                        gw_cached_ip = getattr(self, "current_gateway_ip", None)
+                        if gw_cached_ip:
+                            primary_gw = next((n for n in gw_nodes if n.get("ip") == gw_cached_ip), gw_nodes[0])
+                        else:
+                            primary_gw = gw_nodes[0]
 
                 # 5. Nodo con porta WAN reale attiva / collegata all'ONT/modem (fallback in assenza di IP/metadati)
                 if not primary_gw:
@@ -1843,6 +1908,36 @@ class EeroClient:
 
             self._last_eeros = nodes
             return nodes
+
+    async def get_network_updates(self, network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Recupera lo stato di aggiornamento firmware della rete (/2.2/networks/{id}/updates)."""
+        target_id = network_id or self.current_network_id
+        if settings.demo_mode or not self.is_authenticated or (self.user_token and self.user_token.startswith("demo_")):
+            return {
+                "has_update": True,
+                "can_update_now": False,
+                "target_firmware": "v7.16.0-9483",
+                "update_status": "rolling_release"
+            }
+
+        if not target_id:
+            await self.fetch_account_info()
+            target_id = self.current_network_id
+
+        if not target_id:
+            return {}
+
+        try:
+            async with self._client_session() as client:
+                resp = await client.get(f"{EERO_API_BASE}/networks/{target_id}/updates", headers=self._get_headers())
+                if resp.status_code == 200:
+                    return resp.json().get("data", {})
+                else:
+                    logger.debug(f"Updates endpoint returned {resp.status_code}: {resp.text}")
+                    return {}
+        except Exception as e:
+            logger.debug(f"Error querying network updates: {e}")
+            return {}
 
     async def get_devices(self) -> List[Dict[str, Any]]:
         """Recupera l'elenco dei dispositivi connessi/noti e il loro stato di banda."""
@@ -3619,6 +3714,29 @@ class EeroClient:
                     "upload_rate_mbps": 0.2,
                     "rx_bytes": 6700500100,
                     "tx_bytes": 230100200,
+                    "paused": False,
+                },
+                {
+                    "id": "dev_11",
+                    "mac": "3C:22:FB:99:88:77",
+                    "hostname": "Galaxy-Tab-S9",
+                    "nickname": "Tablet Studio & Lettura",
+                    "ip": "192.168.4.160",
+                    "connected": True,
+                    "wireless": True,
+                    "connection_type": "wireless",
+                    "wireless_band": "5GHz",
+                    "frequency_band": "5 GHz",
+                    "channel": 36,
+                    "signal_rssi": -79,
+                    "rx_bitrate": "54.0 MBit/s",
+                    "phy_rate": "54.0 MBit/s",
+                    "connected_eero_id": "eero_01_gateway",
+                    "connected_eero_name": "Gateway Soggiorno",
+                    "download_rate_mbps": 1.2,
+                    "upload_rate_mbps": 0.1,
+                    "rx_bytes": 18500200100,
+                    "tx_bytes": 3400100200,
                     "paused": False,
                 }
             ],

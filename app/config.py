@@ -22,7 +22,7 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = os.getenv("APP_VERSION", "1.5.0")
+        app_version: str = os.getenv("APP_VERSION", "1.6.0")
         build_number: str = _get_default_build_number()
         debug: bool = False
         
@@ -58,6 +58,35 @@ try:
         watchtower_url: str = os.getenv("WATCHTOWER_URL", "")
         update_check_interval_hours: int = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
 
+        # Local Authentication & Admin Bootstrap (v1.6.0 Module 1)
+        admin_user: str = os.getenv("ADMIN_USER", "admin")
+        admin_password: str = os.getenv("ADMIN_PASSWORD", "")
+        require_local_auth: bool = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
+
+        # Data Retention & Multi-Tier Compaction (v1.6.0 Module 2)
+        retention_raw_hours: int = int(os.getenv("RETENTION_RAW_HOURS", "48"))
+        retention_hourly_days: int = int(os.getenv("RETENTION_HOURLY_DAYS", "30"))
+        retention_daily_days: int = int(os.getenv("RETENTION_DAILY_DAYS", "365"))
+        retention_worker_interval_minutes: int = int(os.getenv("RETENTION_WORKER_INTERVAL_MINUTES", "60"))
+
+        # MQTT & Home Assistant Integration (v1.6.0 Module 4)
+        mqtt_enabled: bool = os.getenv("MQTT_ENABLED", "false").lower() in ("true", "1", "yes")
+        mqtt_broker_host: str = os.getenv("MQTT_BROKER_HOST", "localhost")
+        mqtt_broker_port: int = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+        mqtt_username: str = os.getenv("MQTT_USERNAME", "")
+        mqtt_password: str = os.getenv("MQTT_PASSWORD", "")
+        mqtt_base_topic: str = os.getenv("MQTT_BASE_TOPIC", "eero_dashboard")
+        mqtt_ha_discovery_prefix: str = os.getenv("MQTT_HA_DISCOVERY_PREFIX", "homeassistant")
+        mqtt_discovery_enabled: bool = os.getenv("MQTT_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
+        mqtt_publish_interval: int = int(os.getenv("MQTT_PUBLISH_INTERVAL", "30"))
+
+        # Multi-Channel Alerts: Discord & Pushover (v1.6.0 Module 4)
+        discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
+        discord_alerts_enabled: bool = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+        pushover_user_key: str = os.getenv("PUSHOVER_USER_KEY", "")
+        pushover_api_token: str = os.getenv("PUSHOVER_API_TOKEN", "")
+        pushover_alerts_enabled: bool = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -86,12 +115,16 @@ try:
         def db_file_path(self) -> Path:
             return self.data_path / "metrics.db"
 
+        @property
+        def log_file_path(self) -> Path:
+            return self.data_path / "system.log"
+
 except ImportError:
     # Standalone lightweight fallback if running outside Docker without pydantic-settings
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = os.getenv("APP_VERSION", "1.5.0")
+            self.app_version = os.getenv("APP_VERSION", "1.6.0")
             self.build_number = _get_default_build_number()
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
@@ -108,6 +141,27 @@ except ImportError:
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
             self.cors_origins = os.getenv("CORS_ORIGINS", "")
+            self.admin_user = os.getenv("ADMIN_USER", "admin")
+            self.admin_password = os.getenv("ADMIN_PASSWORD", "")
+            self.require_local_auth = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")
+            self.retention_raw_hours = int(os.getenv("RETENTION_RAW_HOURS", "48"))
+            self.retention_hourly_days = int(os.getenv("RETENTION_HOURLY_DAYS", "30"))
+            self.retention_daily_days = int(os.getenv("RETENTION_DAILY_DAYS", "365"))
+            self.retention_worker_interval_minutes = int(os.getenv("RETENTION_WORKER_INTERVAL_MINUTES", "60"))
+            self.mqtt_enabled = os.getenv("MQTT_ENABLED", "false").lower() in ("true", "1", "yes")
+            self.mqtt_broker_host = os.getenv("MQTT_BROKER_HOST", "localhost")
+            self.mqtt_broker_port = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+            self.mqtt_username = os.getenv("MQTT_USERNAME", "")
+            self.mqtt_password = os.getenv("MQTT_PASSWORD", "")
+            self.mqtt_base_topic = os.getenv("MQTT_BASE_TOPIC", "eero_dashboard")
+            self.mqtt_ha_discovery_prefix = os.getenv("MQTT_HA_DISCOVERY_PREFIX", "homeassistant")
+            self.mqtt_discovery_enabled = os.getenv("MQTT_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
+            self.mqtt_publish_interval = int(os.getenv("MQTT_PUBLISH_INTERVAL", "30"))
+            self.discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "")
+            self.discord_alerts_enabled = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+            self.pushover_user_key = os.getenv("PUSHOVER_USER_KEY", "")
+            self.pushover_api_token = os.getenv("PUSHOVER_API_TOKEN", "")
+            self.pushover_alerts_enabled = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
         @property
         def full_version(self) -> str:
@@ -130,6 +184,10 @@ except ImportError:
         @property
         def db_file_path(self) -> Path:
             return self.data_path / "metrics.db"
+
+        @property
+        def log_file_path(self) -> Path:
+            return self.data_path / "system.log"
 
 
 settings = Settings()

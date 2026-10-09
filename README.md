@@ -24,19 +24,23 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ---
 
-## 📸 Screenshots Showcase
+## 📸 Screenshots Showcase (v1.6.0)
 
 <div align="center">
 
-| Dashboard & Mesh Topology (v1.4.0 Fluent UI) | Devices Table, Filters & Telemetry |
+| 🌐 Dashboard & Mesh Topology (Fluent UI) | 💻 Devices Table, Live Throughput & Telemetry |
 | :---: | :---: |
 | <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Speed Test, Analytics & Wi-Fi Signal Coverage (RSSI) | Multi-Engine DNS, Automations & Docker Maintenance |
+| ⚡ Speed Test, History & Bufferbloat | 📶 Wi-Fi Signal Quality & Spectrum Analytics |
 | :---: | :---: |
-| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/speedtest_signal_quality.png" width="480" /> |
 
-| Device Details, Static IP (DHCP) & Port Forwarding |
+| ⚙️ Multi-Engine DNS, HomeLab & Alerts | 📖 Built-in 2-Column Technical Manual |
+| :---: | :---: |
+| <img src="docs/screenshots/automations_dns_docker.png" width="480" /> | <img src="docs/screenshots/manual_reader.png" width="480" /> |
+
+| 🔧 Device Details, Static IP & Port Forwarding |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
@@ -46,6 +50,17 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **📦 100% Offline-First & Local Asset Bundling (v1.6.0 - Issue #58):** Completely independent from external CDNs. Vendor libraries (Tailwind, Alpine.js, Chart.js, Lucide Icons) and local WOFF2 typography fonts (*Inter* and *JetBrains Mono*) are self-hosted inside the container, ensuring seamless operation during ISP outages or in isolated air-gapped homelabs.
+* **🔐 Local RBAC & Administrator Setup Wizard (v1.6.0):** Zero-default password policy with an interactive first-run administrator onboarding wizard. Features granular permission matrices (`Admin`, `Operator`, `Viewer`), session invalidation, and optional headless container provisioning via `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
+* **🔍 Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0 - Issue #57, #65):** Bypasses eero L2 routing limits by discovering local IPv6 ULA addresses (`fd00::/8`) via active NDP resolution and AdGuard Home sync. Features dedicated `POST /api/network/enrichment/neighbors` ingestion API, **`ULA Enriched`** UI badges, and automated 30-day stale IP pruning.
+* **🆕 "Recently Joined" Devices & "NEW" Badge (v1.6.0 - Issue #60):** Tracks network join history with persistent `first_seen` timestamps, 7-day/24h new device detection, dedicated "NEW" badges, and instant sorting/filtering for newly discovered mesh clients.
+* **🛠️ SQLite Concurrency & Robustness (v1.6.0 - Issue #62):** Serialization write lock (`_write_lock`), 60s busy timeout, and sequential telemetry polling to eliminate SQLite concurrency errors and ensure 100% stable uptime.
+* **📱 Open Guest Wi-Fi QR Codes (v1.6.0 - Issue #63):** Universal Wi-Fi Alliance `T:nopass` QR code generation for passwordless guest networks with contextual copy toasts.
+* **🖥️ System Monitoring & Live Log Viewer Console (v1.6.0):** Zero-I/O in-memory ring buffer (1,000–10,000 records) paired with SQLite persistence, dynamic on-the-fly log level switching (`DEBUG` to `CRITICAL`), real-time auto-refreshing terminal console with color coding and instant text search, RFC-5424 raw log export, and safe two-step log purging.
+* **🏠 Homelab & Home Automation Hub: MQTT & Home Assistant Discovery (v1.6.0):** Resilient async MQTT client (`aiomqtt`) with automatic exponential backoff reconnection, publishing real-time mesh node health, WAN throughput/latency, client statistics, and Home Assistant MQTT Auto-Discovery entities for effortless dashboard integration.
+* **📈 Native Prometheus Metrics & Official Grafana Dashboard (v1.6.0):** Standard OpenMetrics endpoint (`/metrics` and `/api/metrics/prometheus`) exposing 15+ counters and gauges (health score, bandwidth, nodes, speedtest, clients by band) plus a pre-configured 13-panel Grafana dashboard (`deploy/grafana/eero_dashboard.json`).
+* **🔔 Multi-Channel Notification Dispatcher & Specialized Alerts (v1.6.0 - Issue #64):** Unified alerting dispatcher extended to **Discord Webhooks** (rich embeds with color severity) and **Pushover** (priority push alerts), featuring 4 intelligent specialized alarms: Low Wi-Fi Signal Threshold, ISP Speedtest Degradation, IP Conflict/Duplicate Lease, and Mesh Node Offline, with transparent delivery channels in the Daily Digest report.
+* **📰 eeroOS Official Firmware Hub & AI Diagnostics (v1.6.0 - Issue #55, #56):** Firmware tracking via Zendesk & Reddit RSS, local fleet version comparison, bilingual natural-language network diagnostics, and Roaming Advisor for sticky clients.
 * **🌐 Multi-Network Fleet Management & Dynamic Hot-Swap (v1.5.0 - Issue #22):** Multi-network eero account management with instant switching between different mesh networks/locations under the same user credentials. Features persistent network election across polling cycles (preventing automatic resets to default networks), instant in-memory cache invalidation, and an interactive Windows 11 Fluent header dropdown selector with real-time node and client counts. Includes dual simulated mesh networks in Demo Mode.
 * **🧹 Intelligent Address Pruning & IPv6 Exclusions (v1.5.0 - Issue #31 & #30):** Automated reconciliation for AdGuard Home and multi-DNS synchronizers, safely pruning obsolete IP addresses and expired SLAAC IPv6 privacy leases while preserving hardware MACs, user CIDR subnet blocks, and custom domain aliases (`custom-alias.lan`). Includes per-instance toggles to prune stale IPs or drop IPv6 addresses completely.
 * **📈 Device Data Usage Insights Suite & Top Bandwidth Hogs (v1.5.0):** Comprehensive activity monitoring per client device with time-range filtering (Last 24h, 7 Days, 30 Days) backed by optimized SQLite time-series storage (`device_usage_history`), dynamic Chart.js download/upload throughput graphs, sleep/roaming-resilient incremental delta calculation, contextual `?` help buttons, dedicated transparent estimation guidance modal, and a real-time "Top Bandwidth Hogs" dashboard card with 1-click drill-down into device analytics.
@@ -120,12 +135,16 @@ Access the dashboard in your browser:
 
 ## 🔑 Authentication & Login Methods
 
-1. **2FA OTP Login (Recommended):**
+1. **Local Administrator & RBAC Setup (v1.6.0):**
+   - On first launch, an interactive **Setup Wizard** prompts you to configure your administrator username and secure password (zero default credentials!).
+   - Alternatively, supply `ADMIN_USER` and `ADMIN_PASSWORD` in your Docker environment variables for unattended / headless automated deployment.
+   - Built-in multi-user Role-Based Access Control (`Admin`, `Operator`, `Viewer`) with granular permission matrices.
+2. **2FA OTP Login with eero Cloud (Recommended):**
    - Open the web interface at `http://localhost:8085`.
    - Enter your email address or phone number associated with your eero account (e.g. `+1234567890` or `user@example.com`).
    - Click **"Send OTP Code"** and type the 6-digit verification code received via SMS/Email.
-   - The session token is securely saved to `./data/session.json` and automatically restored across container restarts.
-2. **Demo Mode:**
+   - The session token is securely saved to `./data/session.json` (mode `0600`) and automatically restored across container restarts.
+3. **Demo Mode:**
    - Click **"✨ Try Demo Mode"** on the login screen or set `DEMO_MODE=true` in `.env` to explore with simulated realistic mesh data.
 
 ---
@@ -139,6 +158,13 @@ Access the dashboard in your browser:
 | `DATA_DIR` | `/app/data` | Path to persistent storage volume (SQLite DB & session) |
 | `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
 | `API_DOCS` | `false` | Serve the interactive API docs at `/docs`, `/redoc` and `/openapi.json` (the API has no authentication, so keep it off unless you need it) |
+| `ADMIN_USER` | `admin` | Initial administrator username for headless Docker setup |
+| `ADMIN_PASSWORD` | *(empty)* | Initial administrator password for headless setup (if empty, web setup wizard prompts on first run) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Require local authentication for API endpoints |
+| `MQTT_ENABLED` | `false` | Enable background MQTT client & Home Assistant Auto-Discovery |
+| `DISCORD_WEBHOOK_URL` | *(empty)* | Discord webhook URL for rich embed notifications |
+| `PUSHOVER_USER_KEY` | *(empty)* | Pushover user key for push notifications |
+| `PUSHOVER_API_TOKEN` | *(empty)* | Pushover application token for push notifications |
 | `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
@@ -293,6 +319,23 @@ python scripts/adguard_sync.py --drop-ipv6
 # (or set environment variable EERO_DROP_IPV6=true)
 ```
 
+### 4. Reverse Client Enrichment & IPv6 ULA Neighbor Ingestion (v1.6.0 - Issue #57)
+In dual-stack networks, local devices query DNS servers using local IPv6 **ULA** addresses (`fd00::/8`). Because this local Layer 2 traffic is not routed over the WAN, eero's cloud API never sees these ULA addresses. The dashboard overcomes this with **Reverse Client Enrichment**:
+* **Automated Pull & Probe Mode:** Polls AdGuard Home (`/control/clients`) for unassigned bare IP clients (`auto_clients`), probes them via ICMPv6 and resolves their hardware MAC using the kernel neighbour table (`ip -6 neigh`).
+* **Universal Ingestion REST API:** Run a simple one-liner or cron job on your AdGuard host to push neighbour findings into the dashboard:
+  ```bash
+  # Push NDP table findings from AdGuard host to eero Dashboard
+  curl -X POST http://<dashboard-ip>:8085/api/network/enrichment/neighbors \
+    -H "Content-Type: application/json" \
+    -d '{
+      "source": "adguard-host",
+      "mappings": [
+        {"ip": "fd4c:b590:10fa:1:xxxx:xxxx:9390", "mac": "AA:BB:CC:DD:EE:FF", "type": "ULA"}
+      ]
+    }'
+  ```
+* **Full-Circle Sync:** During the next DNS sync cycle, the dashboard registers the discovered ULA under the friendly client name in AdGuard Home, automatically grouping and cleaning up bare IP clients!
+
 > 🛡️ **Native In-App AdGuard Home Integration:** You can also configure AdGuard Home directly from the **Automations & Controls** tab with one-click connection tests, continuous background synchronization, and instant "Sync Now" trigger!
 
 ---
@@ -304,6 +347,18 @@ This project stands on the shoulders of the open-source networking community and
 * **[`343max/eero-client`](https://github.com/343max/eero-client):** The foundational pioneer library for reverse-engineering and exploring the private eero cloud REST API.
 * **[Home Assistant Community](https://github.com/home-assistant/core):** For valuable historical insights into eero authentication flows, device tracker models, and API stability.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** For inspiring clean local DNS resolution and client discovery patterns.
+
+### 🏆 Community Hall of Fame & Special Thanks
+A heartfelt thank you to the open-source contributors and community members whose testing, issue reports, and technical insights shaped this suite:
+* **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync, Intelligent Address Pruning, dual-stack IPv6 discovery & instant search (#43), Reverse Client Enrichment IPv6 ULA (#57, #65), and 100% Offline-First Local Asset Bundling (#58).
+* **[@carbones73](https://github.com/carbones73):** Security hardening (4 GHSA Advisories: CORS/CSRF middleware, Wi-Fi password masking, API docs access toggle & `0600` permissions on `session.json`), strict hardware telemetry without synthetic fallbacks, 5 GHz UNII-3 vs 6 GHz radio spectrum accuracy, and deterministic primary gateway election (#47–#53).
+* **[@Hatton920](https://github.com/Hatton920):** Interactive Network Health Score breakdown & penalty engine, PHY link speed metrics, rebooting vs offline node detection, and speedtest sanitization (#14, #15, #34, #35, #41).
+* **[@DannyFeliz](https://github.com/DannyFeliz):** Responsive UI layouts, frequency filters, "Recently Joined" device sorting, and emerald pulsing "NEW" badges (#60).
+* **[@WillFulmer](https://github.com/WillFulmer):** Universal Wi-Fi Alliance QR codes for open guest networks (`T:nopass`) (#63) and multi-channel Daily Digest delivery transparency (#64).
+* **[@jonmacdonald](https://github.com/jonmacdonald):** SQLite concurrency & lock contention resolution via write locks and 60s busy timeout (#62), and primary gateway switch reconciliation (#26).
+* **[@jimcampbell100](https://github.com/jimcampbell100):** Inspiration for Multi-Network Fleet Management (#22).
+* **[@stevehoek](https://github.com/stevehoek):** Multi-network switching and English localization of Telegram Daily Digest (#37, #38).
+* **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
 
 ---
 
@@ -318,19 +373,23 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ---
 
-## 📸 Galleria Screenshot
+## 📸 Galleria Screenshot (v1.6.0)
 
 <div align="center">
 
-| Panoramica Dashboard & Topologia Mesh (v1.4.0) | Tabella Dispositivi, Filtri & Telemetria |
+| 🌐 Panoramica Dashboard & Topologia Mesh | 💻 Tabella Dispositivi, Throughput & Telemetria |
 | :---: | :---: |
 | <img src="docs/screenshots/dashboard_overview.png" width="480" /> | <img src="docs/screenshots/devices_management.png" width="480" /> |
 
-| Speed Test, Statistiche & Qualità Segnale Wi-Fi (RSSI) | Multi-Engine DNS, Automazioni & Manutenzione Docker |
+| ⚡ Speed Test, Storico & Valutazione Bufferbloat | 📶 Qualità Segnale Wi-Fi & Analisi Spettro |
 | :---: | :---: |
-| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/automations_dns_docker.png" width="480" /> |
+| <img src="docs/screenshots/speedtest_analytics.png" width="480" /> | <img src="docs/screenshots/speedtest_signal_quality.png" width="480" /> |
 
-| Dettaglio Dispositivo, Prenotazione IP DHCP & Port Forwarding |
+| ⚙️ Multi-Engine DNS, HomeLab & Notifiche | 📖 Manuale Tecnico Integrato a 2 Colonne |
+| :---: | :---: |
+| <img src="docs/screenshots/automations_dns_docker.png" width="480" /> | <img src="docs/screenshots/manual_reader.png" width="480" /> |
+
+| 🔧 Dettaglio Dispositivo, Prenotazione IP DHCP & Regole Porte |
 | :---: |
 | <img src="docs/screenshots/device_dhcp_modal.png" width="550" /> |
 
@@ -340,6 +399,17 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **📦 Architettura 100% Offline-First & Asset Locali (v1.6.0 - Issue #58):** Indipendenza totale da CDN esterne. Tutte le librerie frontend (Tailwind, Alpine.js, Chart.js, Lucide Icons) e i font WOFF2 (*Inter* e *JetBrains Mono*) sono auto-ospitati nel container, consentendo il pieno funzionamento della dashboard anche durante blackout dell'operatore o in LAN isolate.
+* **🔐 Controllo Accessi Locale (RBAC) & Setup Wizard Iniziale (v1.6.0):** Politica di sicurezza a credenziali zero-default con wizard guidato al primo avvio per la configurazione dell'account amministratore. Matrice granulare dei permessi (`Admin`, `Operator`, `Viewer`), invalidazione sessioni e supporto al deployment headless tramite variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD`.
+* **🔍 Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0 - Issue #57, #65):** Superamento dei limiti di routing L2 di eero scoprendo gli indirizzi IPv6 ULA locali (`fd00::/8`) via NDP e sincronizzazione AdGuard Home. Include API di ingestion `POST /api/network/enrichment/neighbors`, badge grafici dedicati **`ULA Enriched`** e potatura automatica di indirizzi obsoleti a 30 giorni.
+* **🆕 Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60):** Tracciamento dello storico di primo accesso con timestamp persistente `first_seen`, rilevamento dispositivi nuovi (ultimi 7 giorni / 24 ore), badge visivo smeraldo "NEW" e ordinamento/filtro immediato dei client recenti.
+* **🛠️ Stabilità e Concorrenza SQLite (v1.6.0 - Issue #62):** Semaforo di scrittura `_write_lock`, timeout 60s, `PRAGMA busy_timeout = 60000;` e campionamenti telemetrici sequenziali tracciati per azzerare conflitti di blocco e garantire continuità operativa al 100%.
+* **📱 QR Code Wi-Fi per Reti Ospiti Aperte (v1.6.0 - Issue #63):** Generazione di QR Code conformi allo standard Wi-Fi Alliance `T:nopass` per reti ospiti prive di password con etichette contestuali aggiornate.
+* **🖥️ System Monitoring & Live Log Viewer Console (v1.6.0):** Buffer circolare RAM a zero I/O su disco (1.000–10.000 voci) e persistenza SQLite, cambio dinamico a caldo del livello di logging (`DEBUG` ... `CRITICAL`), console interattiva in stile terminale con aggiornamento automatico, ricerca testuale istantanea, export log grezzo RFC-5424 e svuotamento sicuro con modale di conferma a due passaggi.
+* **🏠 Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0):** Client MQTT asincrono resiliente (`aiomqtt`) con riconnessione a backoff esponenziale, pubblicazione della telemetria dei nodi mesh, stato WAN, traffico di rete e supporto completo a Home Assistant MQTT Auto-Discovery.
+* **📈 Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0):** Endpoint OpenMetrics standard (`/metrics` e `/api/metrics/prometheus`) con oltre 15 metriche hardware e di rete, corredato dalla dashboard Grafana ufficiale a 13 pannelli pronti all'uso (`deploy/grafana/eero_dashboard.json`).
+* **🔔 Multi-Channel Alerting: Discord Webhooks & Pushover con Allarmi Specializzati (v1.6.0 - Issue #64):** Dispatcher multicanale esteso a webhook Discord (messaggi ricchi Embed) e Pushover (notifiche push su smartphone), con 4 allarmi intelligenti specializzati (Segnale Wi-Fi Debole, Degradazione Speedtest ISP, Conflitto Indirizzi IP e Nodo Mesh Offline) e trasparenza dei canali nel report Daily Digest.
+* **📰 Hub Firmware Ufficiale eeroOS & Diagnostica IA (v1.6.0 - Issue #55, #56):** Monitoraggio release eero via Zendesk e Reddit RSS, comparatore versioni flotta mesh, diagnostica in linguaggio naturale e Roaming Advisor per sticky client.
 * **🌐 Multi-Network Fleet Management & Hot-Swap Dinamico (v1.5.0 - Issue #22):** Gestione di account eero multi-sede o con più reti configurate sotto lo stesso account (casa, ufficio, parenti). Garantisce la persistenza dell'elezione della rete attiva tra i cicli di polling (azzerando i reset forzati alla prima rete), invalidazione immediata della RAM cache e selettore a tendina Windows 11 Fluent nell'header con conteggio nodi mesh e client attivi. Include simulatore multi-rete duale in Demo Mode.
 * **🧹 Intelligent Address Pruning & Esclusione IPv6 DNS (v1.5.0 - Issue #31 & #30):** Riconciliazione intelligente dei client sincronizzati con AdGuard Home e server DNS multipli: potatura automatica di vecchi lease DHCP scaduti e indirizzi IPv6 SLAAC temporanei non più attivi, preservando MAC fisici, subnet CIDR e alias host personalizzati (`custom-alias.lan`). Include opzioni dedicate per istanza DNS per il pruning e l'esclusione di IPv6.
 * **📈 Device Data Usage Insights Suite & Widget Top Bandwidth Hogs (v1.5.0):** Suite completa di telemetria e storicizzazione consumi dati per singolo dispositivo (Ultime 24h, 7 Giorni, 30 Giorni) su tabella SQLite ad alte prestazioni (`device_usage_history`), grafici interattivi Chart.js a doppia linea (Download/Upload Mbps) nella scheda "Consumo Dati" del modale dispositivo, algoritmo di calcolo delta resiliente a standby/roaming, pulsanti `?` di aiuto contestuale, modale informativo per la trasparenza del calcolo stimato e widget "Top Bandwidth Hogs" nella dashboard con accesso diretto in un clic.
@@ -412,14 +482,18 @@ Accedi alla dashboard dal browser:
 
 ---
 
-## 🔑 Creazione Account eero & Modalità di Accesso
-
-1. **Accesso Guidato 2FA OTP (Consigliato):**
+## 🔑 Modalità di Accesso & Autenticazione
+ 
+1. **Configurazione Amministratore Locale & Ruoli RBAC (v1.6.0):**
+   - Al primo accesso, un **Setup Wizard** interattivo guida l'utente nella configurazione sicura dell'account amministratore (zero credenziali preimpostate di default!).
+   - In alternativa, è possibile impostare `ADMIN_USER` e `ADMIN_PASSWORD` come variabili d'ambiente Docker per deployment automatizzati o headless.
+   - Gestione multi-utente con ruoli differenziati (`Admin`, `Operator`, `Viewer`) e permessi granulari.
+2. **Accesso Guidato 2FA OTP Cloud eero (Consigliato):**
    - Apri la schermata iniziale all'indirizzo `http://localhost:8085`.
    - Inserisci l'email o il numero di telefono associato al tuo account eero (es. `+393401234567` o `mario.rossi@email.com`).
    - Clicca su **"Invia Codice OTP"** ed inserisci il codice a 6 cifre ricevuto via SMS o Email.
-   - Il token verificato viene salvato in `./data/session.json` e ripristinato automaticamente ad ogni riavvio del container.
-2. **Modalità Demo:**
+   - Il token verificato viene salvato in `./data/session.json` (permessi `0600`) e ripristinato automaticamente ad ogni riavvio del container.
+3. **Modalità Demo:**
    - Clicca su **"✨ Prova Subito con la Modalità Demo"** nella schermata di login o imposta `DEMO_MODE=true` nel file `.env`.
 
 ---
@@ -435,6 +509,13 @@ Accedi alla dashboard dal browser:
 | `SPEEDTEST_INTERVAL_HOURS` | `12` | Intervallo di esecuzione dello Speed Test automatico (ore, 0 per disattivare) |
 | `DEMO_MODE` | `false` | Se impostato su `true`, abilita la simulazione completa di una rete eero |
 | `API_DOCS` | `false` | Abilita la documentazione interattiva delle API su `/docs`, `/redoc` e `/openapi.json` (le API non hanno autenticazione: lasciare disattivato se non serve) |
+| `ADMIN_USER` | `admin` | Nome utente iniziale per l'amministratore (setup headless) |
+| `ADMIN_PASSWORD` | *(vuoto)* | Password iniziale amministratore per setup headless (se vuoto, viene mostrato il wizard web al primo avvio) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Richiede autenticazione locale obbligatoria per le chiamate API |
+| `MQTT_ENABLED` | `false` | Abilita il client MQTT e l'auto-discovery per Home Assistant |
+| `DISCORD_WEBHOOK_URL` | *(vuoto)* | URL webhook Discord per notifiche grafiche Rich Embed |
+| `PUSHOVER_USER_KEY` | *(vuoto)* | User Key dell'account Pushover per notifiche push |
+| `PUSHOVER_API_TOKEN` | *(vuoto)* | Token applicativo per notifiche push Pushover |
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
@@ -483,6 +564,16 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    python scripts/adguard_sync.py --drop-ipv6
    # (oppure imposta la variabile d'ambiente EERO_DROP_IPV6=true)
    ```
+4. **Reverse Client Enrichment & Scoperta ULA via NDP (v1.6.0 - Issue #57):**  
+   Nelle reti dual-stack con resolver DNS locale (AdGuard Home), i client interrogano il DNS usando indirizzi IPv6 ULA (`fd00::/8`). Poiché questo traffico Layer 2 locale non attraversa il router verso la WAN, il cloud eero non ne ha visibilità. La Dashboard risolve il problema tramite:
+   * **Pull & Probe Automatico:** Scansione periodica dei client orfani/bare IP da AdGuard Home (`auto_clients`), probe ICMPv6 asincrono e risoluzione del MAC address reale tramite tabella di vicinato (`ip -6 neigh`).
+   * **API REST di Ingestion Universale:** Uno script di 1 riga o cron sull'host AdGuard può inviare direttamente le tabelle NDP alla dashboard:
+     ```bash
+     curl -X POST http://<dashboard-ip>:8085/api/network/enrichment/neighbors \
+       -H "Content-Type: application/json" \
+       -d '{"source": "adguard-host", "mappings": [{"ip": "fd4c:b590:10fa:1:xxxx:xxxx:9390", "mac": "AA:BB:CC:DD:EE:FF", "type": "ULA"}]}'
+     ```
+   * **Chiusura del Ciclo ("Full-Circle"):** Alla sincronizzazione successiva, l'indirizzo ULA scoperto viene registrato nel client ufficiale su AdGuard Home, azzerando i client anonimi!
 
 > 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!
 
@@ -495,6 +586,18 @@ Questo progetto si basa e si ispira al lavoro pionieristico della community open
 * **[`343max/eero-client`](https://github.com/343max/eero-client):** La libreria di riferimento originaria per il reverse-engineering e l'esplorazione delle REST API private del cloud eero.
 * **[Home Assistant Community](https://github.com/home-assistant/core):** Per gli studi approfonditi sui flussi di autenticazione 2FA e la stabilità delle chiamate di telemetria.
 * **[AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) & [Pi-hole](https://github.com/pi-hole/pi-hole):** Per gli standard e l'ispirazione nella gestione della risoluzione DNS locale e mappatura host.
+
+### 🏆 Ringraziamenti Speciali & Community Hall of Fame
+Un ringraziamento sincero a tutti gli utenti e contributori open-source che con issue, test e proposte hanno reso possibile l'evoluzione della suite:
+* **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync, Intelligent Address Pruning, visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment IPv6 ULA (#57, #65) e Architettura 100% Offline-First con Asset Locali (#58).
+* **[@carbones73](https://github.com/carbones73):** Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi `0600` su `session.json`), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione deterministica Primary Gateway (#47–#53).
+* **[@Hatton920](https://github.com/Hatton920):** Diagnostica interattiva a 4 pilastri dell'Health Score, velocità link PHY, rilevamento nodi in reboot vs offline e sanitizzazione speedtest (#14, #15, #34, #35, #41).
+* **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive mobile/tablet, filtri frequenze radio, ordinamento "Recently Joined" e badge "NEW" (#60).
+* **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (`T:nopass`) (#63) e trasparenza canali di recapito Daily Digest (#64).
+* **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
+* **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
+* **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione inglese del Telegram Daily Digest (#38).
+* **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---
 

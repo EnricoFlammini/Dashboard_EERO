@@ -25,12 +25,20 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
     },
     {
         "id": "auth-flow",
-        "title": "2. Autenticazione 2FA & Gestione Sessione",
+        "title": "2. Autenticazione & Gestione Accessi (RBAC / 2FA)",
         "icon": "key",
-        "summary": "Procedura di primo accesso OTP e mantenimento della sessione.",
+        "summary": "Setup iniziale amministratore (Zero-Default), ruoli locali RBAC e procedura di accesso 2FA eero.",
         "content": """
-### Come autenticare la Dashboard con il tuo account eero
+### Gestione degli Accessi, Setup Iniziale & Autenticazione
 
+#### 1. Setup Iniziale Amministratore (Zero-Default Security)
+Al primissimo avvio dell'applicazione, la suite adotta una rigida politica di sicurezza senza credenziali predefinite hardcoded:
+- **Wizard Guidato di Configurazione:** Se non è ancora presente alcun account nel database, si apre automaticamente un modale di onboarding a tutto schermo che richiede all'amministratore di impostare il proprio nome utente e una password sicura con conferma.
+- **Bypass Headless Docker (Opzionale):** Per installazioni automatizzate o in ambienti container senza interfaccia, è possibile pre-popolare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o in `docker-compose.yml`. Al primo avvio, l'applicazione creerà automaticamente l'utente amministratore bypassando il wizard interattivo.
+- **Ruoli & Permessi Granulari (RBAC):** Dalla sezione *Impostazioni -> Gestione Utenti & Permessi*, l'amministratore può creare ulteriori account con ruoli differenziati (`Admin`, `Operator`, `Viewer`) e attivare/disattivare specifici permessi operativi (gestione DNS, comandi di rete, export dati, visualizzazione log).
+
+#### 2. Autenticazione con il Cloud eero (2FA OTP)
+Una volta effettuato l'accesso locale (o se l'autenticazione locale non è richiesta):
 1. **Richiesta del Codice OTP:**
    - Inserisci nella schermata di login l'email o il numero di telefono associato al tuo account eero (es. `+393401234567` o `tuonome@email.com`).
    - Clicca su **"Invia Codice OTP"**.
@@ -38,7 +46,7 @@ Questa applicazione web è un sistema completo e self-hosted per il monitoraggio
    - Riceverai un codice numerico a 6 cifre via SMS o Email da parte di eero.
    - Digita il codice nel campo e conferma.
 3. **Salvataggio Sessione:**
-   - Il token verificato viene salvato in `/app/data/session.json`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
+   - Il token verificato viene salvato in `/app/data/session.json` con permessi restrittivi `0600`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
 4. **Modalità Demo & Switch Rapido:**
    - Se desideri esplorare l'applicazione senza inserire credenziali, puoi attivare la modalità dimostrativa con il pulsante dedicato o impostando `DEMO_MODE=true` nel file `.env`.
    - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** posizionato nella parte inferiore della barra laterale sinistra per visualizzare i dati demo senza perdere la sessione. Quando la modalità demo è attiva, il pulsante assume una vivace colorazione verde smeraldo con indicatore ad alta visibilità **"DEMO ATTIVA"** (e un badge di stato sincronizzato compare nell'header superiore); cliccando nuovamente si torna all'istante alla rete live con **"⚡ Torna a Live"**.
@@ -215,6 +223,163 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
 * **Centro Esportazione Dati (RFC 4180 CSV & JSON):**
   - Esportazione rapida e standardizzata dell'inventario dispositivi, storico speedtest, campionamenti del segnale RSSI e storico consumo dati per integrazione con fogli di calcolo, Grafana o Home Assistant.
         """
+    },
+    {
+        "id": "system-logs",
+        "title": "11. Gestione Log di Sistema & Diagnostica Avanzata",
+        "icon": "terminal",
+        "summary": "Console live dei log, livelli di dettaglio dinamici (DEBUG/INFO/WARNING/ERROR), retention, esportazione e svuotamento sicuro.",
+        "content": """
+### Gestione Log di Sistema & Diagnostica Avanzata (v1.6.0)
+
+La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestione Log & Diagnostica**:
+
+* **Master Switch Logging:**
+  - Toggle rapido per attivare o sospendere la scrittura degli eventi nel database locale SQLite (`system_logs`) e nel file rotativo su disco (`data/system.log`).
+* **Profondità di Analisi (Livelli di Dettaglio a Caldo):**
+  - Seleziona istantaneamente il livello di severità senza riavviare il container:
+    - `DEBUG`: Dettagliato. Traccia tutte le chiamate API interne, le risposte del cloud e le sincronizzazioni di rete.
+    - `INFO`: Normale (predefinito). Registra gli eventi significativi, variazioni di stato dei nodi e connessioni client.
+    - `WARNING`: Avvisi. Segnala degradi di latenza, disconnessioni temporanee e anomalie di sincronizzazione.
+    - `ERROR`: Critico. Limita i log esclusivamente alle eccezioni bloccanti e agli errori di comunicazione.
+* **Periodo di Conservazione (Retention Temporale):**
+  - Imposta il periodo di persistenza: **24 Ore**, **7 Giorni**, **15 Giorni**, **1 Mese (30gg)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
+  - Un worker di background compila e rimuove periodicamente i log obsoleti garantendo che lo storage non si saturi mai.
+* **Console Live Log Viewer:**
+  - Box terminale ad alto contrasto con font monospazio (`Fira Code`).
+  - Ricerca rapida full-text sul testo dei messaggi e sul nome del modulo (`logger_name`).
+  - Filtro rapido a chip per livello di gravità (`TUTTI`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+  - Esplorazione interattiva dei dettagli JSON per ogni record (chiamate HTTP, payload, audit di sicurezza).
+  - Toggle per **Auto-Refresh ogni 10s**.
+* **Strumenti di Esportazione & Svuotamento:**
+  - **Download Log:** Esportazione del log completo in formato testo `.log` standard RFC 5424 oppure in formato strutturato `.json`.
+  - **Svuotamento Sicuro (Clear Logs):** Pulsante protetto da permessi RBAC con modale di conferma per azzerare tabella e file di log in un clic.
+        """
+    },
+    {
+        "id": "homelab-mqtt",
+        "title": "12. Integrazione Homelab via MQTT & Home Assistant Discovery",
+        "icon": "share",
+        "summary": "Connessione a broker MQTT, Home Assistant MQTT Auto-Discovery, sensori telemetrici e device tracking dei client.",
+        "content": """
+### Integrazione Homelab via MQTT & Home Assistant Discovery (v1.6.0)
+
+La dashboard si integra nativamente nel tuo ambiente HomeLab tramite il protocollo **MQTT**:
+
+* **Home Assistant MQTT Auto-Discovery:**
+  - Rilevamento istantaneo senza configurazioni YAML manuali: tutte le entità vengono create automaticamente sotto il prefisso standard `homeassistant/`.
+  - **Sensori Telemetrici:**
+    - `eero WAN Download` & `eero WAN Upload` (Velocità in Mbps con `device_class: data_rate`).
+    - `eero Network Health` (Punteggio di salute 0-100%).
+    - `eero Connected Clients` (Conteggio client attivi con icona `mdi:devices`).
+    - `eero Mesh Nodes Online` (Nodi mesh operativi).
+    - `eero Bufferbloat Grade` (Voto di reattività linea da A+ a F).
+  - **Sensori Binari di Connettività:**
+    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
+    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
+  - **Device Tracker dei Client di Rete:**
+    - Generazione automatica di entità `device_tracker` per ciascun dispositivo della rete.
+    - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di attestazione e interfaccia radio (5 GHz / 6 GHz / Ethernet).
+* **Configurazione Broker & Sicurezza:**
+  - Supporta broker locali e remoti (Mosquitto, EMQX, HiveMQ) con autenticazione via username e password.
+  - Riconnessione asincrona automatica e gestione trasparente in modalità Demo.
+        """
+    },
+    {
+        "id": "prometheus-grafana",
+        "title": "13. Metriche Prometheus & Dashboard Grafana",
+        "icon": "presentation-chart-line",
+        "summary": "Scraping OpenMetrics nativo (/metrics), time-series esposte e template Grafana preconfigurato.",
+        "content": """
+### Metriche Prometheus & Dashboard Grafana (v1.6.0)
+
+La dashboard espone un endpoint nativo conforme alle specifiche **Prometheus / OpenMetrics** per consentire il monitoraggio centralizzato dell'infrastruttura mesh:
+
+* **Endpoint di Scraping:**
+  - Accessibile direttamente all'indirizzo `GET /metrics` (o `/api/metrics/prometheus`).
+  - Risponde in formato `text/plain; version=0.0.4; charset=utf-8`.
+* **Serie Temporali Esposte:**
+  - `eero_info`: Metadati della dashboard, versione e nome della rete mesh.
+  - `eero_clients_total`: Client rilevati con etichetta `status="connected"` o `"disconnected"`.
+  - `eero_clients_band_total`: Client attivi raggruppati per banda (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
+  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Throughput istantaneo aggregato della WAN.
+  - `eero_wan_ping_ms`: Latenza gateway verso l'esterno.
+  - `eero_health_score`: Punteggio sintetico di efficienza della rete (0-100).
+  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Stato e conteggio dei nodi mesh.
+  - `eero_bufferbloat_grade_numeric` & latenze (`unloaded`, `download`, `upload` in ms).
+  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Contatori cumulativi di traffico.
+* **Template Dashboard Grafana Incluso:**
+  - File pronto all'uso disponibile in `deploy/grafana/eero_dashboard.json`.
+  - Comprende 13 pannelli grafici (gauge di salute, grafici di velocità, ripartizione bande Wi-Fi, metriche bufferbloat e stato nodi).
+        """
+    },
+    {
+        "id": "multi-channel-alerts",
+        "title": "14. Allarmi Multi-Canale & Notifiche Emergenza",
+        "icon": "bell",
+        "summary": "Dispatcher multi-canale (Telegram, Discord, Webhook, Pushover) e allarmi specializzati di sicurezza, degradamento linea e backup.",
+        "content": """
+### Allarmi Multi-Canale & Notifiche di Emergenza (v1.6.0)
+
+Il motore di notifica supporta una strategia di inoltro multi-canale per avvisi critici ed eventi di rete:
+
+* **Canali Supportati:**
+  - **Telegram Bot:** Messaggistica istantanea formattata HTML con pulsanti di interazione rapida.
+  - **Discord Webhook:** Notifiche ricche con embed card grafiche, codici colore e metadati evento.
+  - **Pushover:** Notifiche push prioritarie per smartphone con supporto alert di emergenza.
+  - **Generic Webhook:** Payload JSON per l'integrazione con Node-RED, Home Assistant automations o script custom.
+* **Allarmi Specializzati Integrati:**
+  - **Degrado Bufferbloat:** Notifica tempestiva quando la latenza sotto carico peggiora (Grade D o F, o latenza caricata > 100ms).
+  - **Anomalie Qualità Nodo Mesh:** Avviso su canali DFS radar o degrado del backhaul wireless di un nodo mesh.
+  - **Allarme Sicurezza Autenticazione (Brute-Force):** Segnalazione di tentativi consecutivi di login fallito da indirizzi IP sospetti.
+  - **Esito Backup Notturno:** Conferma di avvenuto backup dei dati SQLite e dei file di log o notifica di errore.
+        """
+    },
+    {
+        "id": "offline-first",
+        "title": "15. Architettura Offline-First & Asset Locali",
+        "icon": "shield-check",
+        "summary": "Resilienza totale della dashboard con font e librerie salvati in locale, zero dipendenze CDN esterne e funzionamento air-gapped.",
+        "content": """
+### Architettura Offline-First & Asset Locali (v1.6.0)
+
+La dashboard adotta un'architettura 100% offline-first per garantire privacy assoluta, velocità istantanea di rendering e operatività anche in assenza di connettività internet o in blackout WAN:
+
+* **Vendoring Locale Completo delle Dipendenze:**
+  - Tutte le librerie client-side (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons e generatori QR Code) sono archiviate e servite direttamente dalla directory locale `/app/static/vendor/`.
+  - Nessuna richiesta verso CDN pubbliche esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): zero tracking da parte di terzi e immunità totale rispetto a blocchi DNS, filtri parental control o ad-blocker aggressivi.
+* **Self-Hosting dei Font Tipografici:**
+  - I font ad alta leggibilità **Inter** (interfaccia utente) e **JetBrains Mono** / **Fira Code** (console terminale e tabelle telemetriche) sono inclusi nel container in formato WOFF2 ad alte prestazioni in `/app/static/fonts/`.
+  - Caricamento istantaneo senza alcun contatto con Google Fonts o server esterni.
+* **Resilienza Air-Gapped & Homelab Isolati:**
+  - La dashboard si avvia, carica e renderizza con fluidità al 100% all'interno di reti LAN isolate, VLAN di gestione o server homelab senza accesso alla rete internet pubblica.
+* **Progressive Web App (PWA) & Service Worker:**
+  - Il Service Worker integrato (`sw.js`) effettua il pre-caching di tutte le risorse essenziali, consentendo l'apertura e la consultazione della dashboard anche durante interruzioni temporanee della rete locale.
+        """
+    },
+    {
+        "id": "reverse-enrichment",
+        "title": "16. Reverse Client Enrichment & Scoperta IPv6 ULA",
+        "icon": "arrows-right-left",
+        "summary": "Arricchimento bidirezionale delle interfacce secondarie dai server DNS locali, discovery IPv6 Unique Local Address (ULA) e client Recently Joined.",
+        "content": """
+### Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0)
+
+Nelle reti dual-stack, i dispositivi interrogano spesso i server DNS locali (AdGuard Home, Pi-hole, Technitium) utilizzando indirizzi **IPv6 ULA** (*Unique Local Address*, prefissi `fc00::/7` e `fd00::/8`). Poiché questo traffico rimane confinato a livello Layer 2 locale e non attraversa la WAN, il cloud eero non ha visibilità su tali indirizzi.
+
+* **Reverse Client Enrichment via NDP & Ingestion REST:**
+  - **Worker di Scansione Automatica:** Il servizio di enrichment esegue periodicamente la scansione della tabella di vicinato (Neighbor Discovery Protocol - NDP / ARP del kernel) e interroga le API dei server DNS locali per mappare gli indirizzi ULA orfani ai relativi indirizzi MAC fisici.
+  - **API di Ingestion Esterna (`POST /api/network/enrichment/neighbors`):** Consente a script di cron, container sidecar o server DNS esterni di inviare associazioni IP-MAC in tempo reale.
+  - **Sincronizzazione Completa (Full-Circle):** Gli indirizzi ULA scoperti vengono integrati nel profilo del client e propagati nei cicli successivi di sincronizzazione DNS, raggruppando automaticamente i record sotto il nome del dispositivo.
+* **Badge Distintivo UI & Ispezione Dettagliata:**
+  - La tabella dispositivi e il modale di dettaglio evidenziano gli indirizzi scoperti con il badge distintivo fucsia/ametista **`ULA Enriched`** o **`ULA (NDP / AdGuard)`**.
+  - Ricerca fulminea nella tabella dispositivi per prefisso o indirizzo IPv6 ULA completo.
+* **Dispositivi "Recently Joined" & Badge "NEW":**
+  - La dashboard traccia la data di prima apparizione (`first_seen`) di ciascun apparato nella tabella persistente `known_devices`.
+  - I dispositivi rilevati nelle ultime 24-48 ore vengono evidenziati con il badge visivo ad alta visibilità **`NEW`** con indicatore animato verde smeraldo, ed è disponibile un ordinamento rapido per data di primo accesso.
+* **Ciclo di Pulizia & Auto-Pruning:**
+  - Una routine programmata di manutenzione notturna rimuove automaticamente gli indirizzi ULA transitori non più rinnovati dopo 30 giorni di inattività, preservando le prestazioni del database SQLite.
+        """
     }
 ]
 
@@ -237,12 +402,20 @@ This web application is a full-featured, self-hosted management and monitoring p
     },
     {
         "id": "auth-flow",
-        "title": "2. 2FA Authentication & Session Management",
+        "title": "2. Authentication & Access Control (RBAC / 2FA)",
         "icon": "key",
-        "summary": "Step-by-step OTP login procedure and session lifecycle.",
+        "summary": "Initial administrator setup (Zero-Default), local RBAC roles, and eero 2FA login procedure.",
         "content": """
-### Authenticating the Dashboard with your eero Account
+### Access Management, Initial Setup & Authentication
 
+#### 1. Initial Administrator Setup (Zero-Default Security)
+On first launch, the suite enforces a strict zero-default credential policy:
+- **Guided Setup Wizard:** If no user accounts exist in the local database, an interactive full-screen onboarding modal prompts you to define your administrator username and secure password with confirmation.
+- **Headless Docker Bypass (Optional):** For automated deployments or headless container environments, supply `ADMIN_USER` and `ADMIN_PASSWORD` in your `.env` or `docker-compose.yml`. On startup, the container provisions the administrator account automatically and bypasses the web setup wizard.
+- **Granular Roles & Permissions (RBAC):** From *Settings -> User Management & Permissions*, the administrator can create accounts with distinct roles (`Admin`, `Operator`, `Viewer`) and toggle individual operational permissions (DNS management, network commands, data exports, log inspection).
+
+#### 2. eero Cloud Authentication (2FA OTP)
+Once local authentication is complete (or if local authentication is not required):
 1. **Requesting the OTP Code:**
    - In the login screen, enter the phone number or email address associated with your eero account (e.g., `+1234567890` or `user@example.com`).
    - Click **"Send OTP Code"**.
@@ -250,7 +423,7 @@ This web application is a full-featured, self-hosted management and monitoring p
    - You will receive a 6-digit verification code from eero via SMS or Email.
    - Enter the code into the verification input and confirm.
 3. **Session Persistence:**
-   - The verified authentication token is saved to `/app/data/session.json`. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
+   - The verified authentication token is saved to `/app/data/session.json` with restrictive `0600` owner permissions. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
 4. **Demo Mode & Quick Switcher:**
    - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
    - If authenticated, you can switch anytime using the **"✨ Demo Mode"** button in the lower left sidebar to inspect mock telemetry without losing your live session. When active, it displays a vibrant emerald green button with an explicit **"DEMO ATTIVA"** indicator (and a top header status pill); clicking it again returns immediately to your live network.
@@ -427,6 +600,163 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 * **Data Export Center (RFC 4180 CSV & Structured JSON):**
   - One-click standard data export for client devices inventory, WAN speedtest logs, wireless RSSI signal samples, and device bandwidth usage for external reporting or Grafana/Home Assistant ingestion.
         """
+    },
+    {
+        "id": "system-logs",
+        "title": "11. System Logging & Advanced Diagnostics",
+        "icon": "terminal",
+        "summary": "Live log viewer console, dynamic log levels (DEBUG/INFO/WARNING/ERROR), retention policies, export and secure clearing.",
+        "content": """
+### System Logging & Advanced Diagnostics (v1.6.0)
+
+The **Controls & Guest QR** tab now features Card 7 dedicated to **System Logs & Diagnostics**:
+
+* **Master Logging Switch:**
+  - Instant toggle to enable or suspend event logging into the local SQLite database (`system_logs`) and rotating disk file (`data/system.log`).
+* **Dynamic Log Levels (Runtime Depth):**
+  - Switch log verbosity instantly without restarting the container:
+    - `DEBUG`: Verbose. Records detailed API calls, cloud round-trips, and background synchronization events.
+    - `INFO`: Normal (default). Records significant network lifecycle events, node states, and device connections.
+    - `WARNING`: Alerts. Captures latency spikes, intermittent disconnects, and DNS synchronization warnings.
+    - `ERROR`: Critical. Restricts logging strictly to unexpected exceptions and fatal connection failures.
+* **Retention Policies:**
+  - Configure automatic log lifecycle: **24 Hours**, **7 Days**, **15 Days**, **1 Month (30d)**, or **Custom** (specific day count, or `0` for unlimited).
+  - An automated background retention worker purges expired records periodically to safeguard flash storage.
+* **Live Log Viewer Console:**
+  - Acrylic terminal box styled with monospace typography.
+  - Real-time text search filtering by log message or logger module name.
+  - Severity chip filters (`ALL`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
+  - Expandable JSON structured details for each log entry (HTTP calls, request parameters, security audits).
+  - Optional **Auto-Refresh (10s)** toggle.
+* **Export & Maintenance Actions:**
+  - **Download Logs:** Export the full log stream in standard RFC 5424 `.log` format or structured `.json`.
+  - **Secure Purge (Clear Logs):** RBAC-protected action with confirmation modal to zero disk files and database records.
+        """
+    },
+    {
+        "id": "homelab-mqtt",
+        "title": "12. Homelab Integration via MQTT & Home Assistant Discovery",
+        "icon": "share",
+        "summary": "MQTT broker connectivity, Home Assistant MQTT Auto-Discovery, telemetry sensors and client device tracking.",
+        "content": """
+### Homelab Integration via MQTT & Home Assistant Discovery (v1.6.0)
+
+The dashboard natively integrates into your HomeLab ecosystem via **MQTT**:
+
+* **Home Assistant MQTT Auto-Discovery:**
+  - Zero-configuration discovery: all entities are automatically declared under the standard `homeassistant/` discovery prefix.
+  - **Telemetry Sensors:**
+    - `eero WAN Download` & `eero WAN Upload` (Speed in Mbps with `device_class: data_rate`).
+    - `eero Network Health` (Health score from 0 to 100%).
+    - `eero Connected Clients` (Active client count with `mdi:devices`).
+    - `eero Mesh Nodes Online` (Operational mesh nodes count).
+    - `eero Bufferbloat Grade` (Line responsiveness grade from A+ to F).
+  - **Connectivity Binary Sensors:**
+    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
+    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
+  - **Client Device Trackers:**
+    - Automatic `device_tracker` creation for client devices on the network.
+    - Reports `home` / `not_home` state, local IP, MAC address, connected mesh node, and connection medium (5 GHz / 6 GHz / Wired).
+* **Broker Configuration & Reliability:**
+  - Compatible with standard brokers (Eclipse Mosquitto, EMQX, HiveMQ) with username/password authentication.
+  - Asynchronous background reconnection with exponential backoff and seamless Demo mode simulation.
+        """
+    },
+    {
+        "id": "prometheus-grafana",
+        "title": "13. Prometheus Metrics & Grafana Dashboard",
+        "icon": "presentation-chart-line",
+        "summary": "Native OpenMetrics scraping (/metrics), exported time-series and ready-to-import Grafana dashboard template.",
+        "content": """
+### Prometheus Metrics & Grafana Dashboard (v1.6.0)
+
+The dashboard provides a native **Prometheus / OpenMetrics** export endpoint for centralized homelab observability:
+
+* **Scraping Endpoint:**
+  - Directly accessible at `GET /metrics` (or `/api/metrics/prometheus`).
+  - Serves standard OpenMetrics text (`text/plain; version=0.0.4; charset=utf-8`).
+* **Exported Metrics Series:**
+  - `eero_info`: Metadata, version tag, and active mesh network name.
+  - `eero_clients_total`: Client counts tagged with `status="connected"` or `"disconnected"`.
+  - `eero_clients_band_total`: Active clients partitioned by band (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
+  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Real-time aggregated WAN throughput.
+  - `eero_wan_ping_ms`: Gateway round-trip latency in milliseconds.
+  - `eero_health_score`: Comprehensive health index (0 to 100).
+  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Mesh node operational counts.
+  - `eero_bufferbloat_grade_numeric` & latency breakdown (`unloaded`, `download`, `upload` in ms).
+  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Monotonic transfer counters.
+* **Prebuilt Grafana Dashboard Template:**
+  - Ready-to-import dashboard located at `deploy/grafana/eero_dashboard.json`.
+  - Features 13 preconfigured panels covering speed gauges, historical bandwidth curves, frequency breakdowns, and mesh node statuses.
+        """
+    },
+    {
+        "id": "multi-channel-alerts",
+        "title": "14. Multi-Channel Alerts & Emergency Notifications",
+        "icon": "bell",
+        "summary": "Multi-channel dispatcher (Telegram, Discord, Webhook, Pushover) and specialized alerts for bufferbloat, mesh quality and security.",
+        "content": """
+### Multi-Channel Alerts & Emergency Notifications (v1.6.0)
+
+The notification engine features a unified multi-channel dispatch architecture for critical alerts and network events:
+
+* **Supported Channels:**
+  - **Telegram Bot:** Instant HTML-formatted alerts with direct node and client details.
+  - **Discord Webhook:** Rich embed cards with color-coded severity bars and structured fields.
+  - **Pushover:** High-priority mobile push notifications for immediate delivery.
+  - **Generic Webhook:** Raw JSON payloads for custom pipelines (Node-RED, n8n, Home Assistant).
+* **Integrated Specialized Alerts:**
+  - **Bufferbloat Degradation Warning:** Triggered when loaded latency degrades significantly (Grade D or F, or loaded delta > 100ms).
+  - **Mesh Node Signal Anomaly:** Proactive notice on DFS radar interference or weak wireless backhaul.
+  - **Authentication Security Alert (Brute-Force):** Security warning upon repeated failed local login attempts from specific IPs.
+  - **Nightly Backup Report:** Automated success/failure reporting for database and configuration archives.
+        """
+    },
+    {
+        "id": "offline-first",
+        "title": "15. Offline-First Architecture & Local Assets",
+        "icon": "shield-check",
+        "summary": "Total dashboard resilience with 100% locally bundled fonts and libraries, zero external CDN dependencies, and air-gapped operation.",
+        "content": """
+### Offline-First Architecture & Local Assets (v1.6.0)
+
+The dashboard adopts a 100% offline-first architecture to deliver maximum privacy, instant page rendering, and uninterrupted reliability even during internet outages or WAN blackouts:
+
+* **Complete Local Dependency Vendoring:**
+  - All client-side libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons, and QR Code generation engines) are bundled locally and served directly from `/app/static/vendor/`.
+  - Zero requests to external public CDNs (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): absolute third-party tracking immunity and resilience against DNS filters or aggressive ad-blockers.
+* **Self-Hosted Typography Fonts:**
+  - High-legibility web fonts **Inter** (UI design system) and **JetBrains Mono** / **Fira Code** (Live Log Console and data tables) are packaged inside the container as high-performance WOFF2 files in `/app/static/fonts/`.
+  - Instant typography rendering with zero round-trips to Google Fonts or remote providers.
+* **Air-Gapped & Isolated Homelab Readiness:**
+  - The dashboard starts, initializes, and functions flawlessly inside isolated management VLANs, air-gapped lab servers, or offline local networks without outbound WAN access.
+* **Progressive Web App (PWA) & Service Worker:**
+  - Built-in Service Worker (`sw.js`) pre-caches core assets, enabling seamless dashboard launch and offline status review during transient local connectivity hiccups.
+        """
+    },
+    {
+        "id": "reverse-enrichment",
+        "title": "16. Reverse Client Enrichment & IPv6 ULA Discovery",
+        "icon": "arrows-right-left",
+        "summary": "Bidirectional secondary interface enrichment from local DNS engines, IPv6 Unique Local Address (ULA) discovery, and Recently Joined clients.",
+        "content": """
+### Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0)
+
+In dual-stack home networks, connected devices frequently query local DNS resolvers (such as AdGuard Home, Pi-hole, Technitium) using **IPv6 ULA** (*Unique Local Address*, prefixes `fc00::/7` and `fd00::/8`). Because this traffic remains strictly on local Layer 2 switches and never traverses the WAN gateway, the eero cloud platform has zero visibility into these ULA assignments.
+
+* **Reverse Client Enrichment via NDP & Ingestion REST:**
+  - **Automated Scan Worker:** The background enrichment service regularly inspects the kernel neighbor cache (Neighbor Discovery Protocol - NDP / ARP) and polls local DNS resolver APIs to map orphan ULA addresses back to their physical MAC addresses.
+  - **External Ingestion REST API (`POST /api/network/enrichment/neighbors`):** Allows custom cron jobs, sidecar containers, or external script engines to submit live IP-to-MAC associations.
+  - **Full-Circle DNS Synchronization:** Discovered ULA addresses are merged into client records and synced back to DNS resolvers, automatically associating bare IP queries with friendly device hostnames.
+* **Distinctive UI Badges & Deep Inspection:**
+  - The client table and device modal sheet prominently highlight discovered addresses with a magenta/amethyst **`ULA Enriched`** or **`ULA (NDP / AdGuard)`** badge with rich context tooltips.
+  - Instant live filtering in the devices table by ULA prefix or complete IPv6 address strings.
+* **"Recently Joined" Devices & "NEW" Badge:**
+  - The system tracks first discovery timestamps (`first_seen`) within the persistent `known_devices` SQLite table.
+  - Newly joined clients in the last 24-48 hours display an eye-catching **`NEW`** badge with an emerald pulsing dot, accompanied by quick "Recently Joined" sorting options.
+* **Automated Maintenance & Pruning:**
+  - Nightly maintenance tasks periodically prune stale or decommissioned ULA addresses that have not been observed in 30 days, keeping the SQLite database lean and responsive.
+        """
     }
 ]
 
@@ -458,6 +788,23 @@ async def get_manual_section(section_id: str, lang: Optional[str] = Query("en"))
 CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
+
+## v1.6.0
+* **Modulo 1 - Autenticazione Locale, RBAC & Smart Automations:** Gestione accessi multi-utente con ruoli `Admin`, `Operator` e `Viewer`, parental scheduling avanzato a fasce orarie e giorni della settimana, motore di manutenzione notturna programmata e backup di emergenza.
+* **Modulo 2 - Compattazione Dati Multi-Tier, Bufferbloat & PWA Offline-First:** Compattazione scalabile SQLite (Raw 48h -> Oraria 30gg -> Giornaliera 365gg), indicatore analitico Bufferbloat con grading da A+ a F e latenze a riposo/carico, supporto Progressive Web App (PWA) con Service Worker per consultazione offline.
+* **Modulo 3 - Notifiche & Disaster Recovery Snapshot:** Sistema di esportazione e ripristino snapshot crittografati/validati della configurazione, gestione scheduler parentale interattivo da interfaccia.
+* **Modulo 4 - Gestione Log di Sistema, Live Console & Integrazioni Homelab:** Card di controllo per profondità di logging a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`), retention temporale configurabile (24h, 7gg, 15gg, 1m, custom), Live Console Viewer acrilica con ricerca e filtri per severità, download log (.log / .json) e svuotamento sicuro con modale di conferma; integrazione MQTT con Home Assistant Auto-Discovery e device tracking; esportazione metrica nativa Prometheus/OpenMetrics (`/metrics`) con dashboard Grafana (13 pannelli); dispatcher notifiche multi-canale esteso a Discord Webhook e Pushover con allarmi per degrado bufferbloat, interferenze mesh, brute-force e backup.
+* **Hub Note di Rilascio eeroOS & Community Feedback (Issue #55):** Monitoraggio firmware ufficiale via Zendesk REST API e feed Reddit r/amazoneero, con confronto allineamento flotta locale vs release cloud (Up-to-date, Update Available, Newer than published).
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
+* **Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45):** Routing completo con sincronizzazione bidirezionale dell'URL hash/query e supporto cronologia browser.
+* **Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46):** Sidebar scorrevole con scrim su schermi mobile, header responsive con menu impostazioni Fluent, tabella dispositivi a schede su schermi piccoli e frame grafici ad altezza dinamica.
+* **Modulo 6 - 100% Offline-First & Asset Locali (Issue #58) & Dispositivi "Recently Joined" (Issue #60):** Vendoring locale completo di librerie (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) e font WOFF2 (`Inter`, `JetBrains Mono`) per funzionamento 100% offline e air-gapped; tracciamento data primo accesso (`first_seen`), badge animato smeraldo "NEW" e ordinamento per data d'ingresso.
+* **Modulo 7 - Reverse Client Enrichment & Scoperta IPv6 ULA (Issue #57):** Risoluzione del limite di routing L2 eero per query DNS locali; API REST di ingestion (`/api/network/enrichment/neighbors`), worker di probe ICMP/NDP, tabella persistente `device_discovered_ips` e chiusura del ciclo con sync "full-circle" su AdGuard Home; badge fucsia "ULA Enriched" con tooltip contestuale.
+* **Modulo 8 - Concorrenza SQLite WAL, QR Code Wi-Fi Ospiti Aperti & Trasparenza Notifiche (Issue #62, #63, #64):** Risoluzione definitiva lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000`; generazione QR Code standard Wi-Fi per reti ospiti aperte (`T:nopass;`) o protette; trasparenza canali di recapito (Telegram, Discord, Pushover, Webhook) nel Daily Digest Report.
+* **Modulo 9 - Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (Issue #65):** Risoluzione visualizzazione e sincronizzazione IPv6 ULA su client dual-stack con fallback resiliente `ipv6_all || ipv6_addresses || [ipv6]`; completamento localizzazioni mancanti in inglese; lifecycle e auto-pruning notturno degli indirizzi scoperti obsoleti dopo 30 giorni.
+* **Setup Wizard Iniziale Amministratore (Zero-Default Security):** Modale di onboarding guidato al primo accesso web per l'impostazione sicura di username e password admin; rimozione definitiva delle credenziali hardcoded da interfaccia e supporto al deploy headless Docker via `ADMIN_USER` e `ADMIN_PASSWORD`.
+
+---
 
 ## v1.5.0
 * **Statistiche & Analytics di Rete, Analisi SLA ISP & Data Export Center:** Nuova vista con grafici di ripartizione frequenze, carico nodi mesh, categorie, vendor e trend SLA con esportazione CSV/JSON.
@@ -607,6 +954,23 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+## v1.6.0
+* **Module 1 - Local Authentication, RBAC & Smart Automations:** Multi-user authentication with `Admin`, `Operator`, and `Viewer` roles, advanced parental time scheduling with day-of-week matrices, nightly maintenance engine, and disaster recovery emergency backups.
+* **Module 2 - Multi-Tier Data Compaction, Bufferbloat & PWA Offline-First:** Scalable multi-tier SQLite archiving (Raw 48h -> Hourly 30d -> Daily 365d), analytical Bufferbloat rating gauge (A+ to F with loaded/unloaded latencies), Progressive Web App (PWA) offline-first service worker support.
+* **Module 3 - Notifications & Disaster Recovery Snapshot:** Validated and encrypted configuration snapshots export/restore suite, interactive parental control schedule editor.
+* **Module 4 - System Logging, Live Console & Homelab Integrations:** Runtime log depth controls (`DEBUG`, `INFO`, `WARNING`, `ERROR`), configurable retention policies (24h, 7d, 15d, 1m, custom), acrylic Live Console Viewer with full-text search and severity chips, full stream download (.log / .json) and secure purge modal; MQTT integration with Home Assistant Auto-Discovery and device trackers; native Prometheus/OpenMetrics (`/metrics`) endpoint with 13-panel prebuilt Grafana dashboard; multi-channel notification dispatcher extended to Discord Webhooks and Pushover with dedicated alerts for bufferbloat degradation, mesh anomalies, brute-force attempts and backup status.
+* **Official eeroOS Release Notes Hub & Community Feedback (Issue #55):** Real-time firmware tracking via Zendesk REST API and r/amazoneero Reddit feed, with local fleet firmware alignment comparison (Up-to-date, Update Available, Newer than published).
+* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
+* **Navigation Deep-Linking & URL State Synchronization (PR #28 / Issue #45):** Bidirectional URL hash and query parameter synchronization with browser history support and shareable direct links.
+* **Responsive App Shell, Windows 11 Fluent Header & Mobile Drawer (PR #29 / Issue #46):** Sliding mobile drawer sidebar with scrim backdrop, responsive header with Fluent settings menu, responsive device table cards on small screens, and clamp-height dynamic chart frames.
+* **Module 6 - 100% Offline-First & Local Asset Bundling (Issue #58) & "Recently Joined" Devices (Issue #60):** Complete local vendoring of client libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) and self-hosted WOFF2 fonts (`Inter`, `JetBrains Mono`) for 100% offline and air-gapped readiness; persistent `first_seen` tracking with animated emerald "NEW" badges and dedicated "Recently Joined" sorting.
+* **Module 7 - Reverse Client Enrichment & IPv6 ULA Discovery (Issue #57):** Resolving eero Layer 2 routing visibility limit for local DNS queries; ingestion REST API (`/api/network/enrichment/neighbors`), ICMP/NDP probe worker, persistent `device_discovered_ips` table, and full-circle sync to AdGuard Home; magenta "ULA Enriched" badges with context tooltips.
+* **Module 8 - SQLite WAL Concurrency, Open Guest Wi-Fi QR Codes & Notification Transparency (Issues #62, #63, #64):** Definitive resolution of SQLite lock contention via `_write_lock` serialization, 60s timeout, and `busy_timeout=60000` pragmas; ZXing-compliant Wi-Fi QR Code generation for open guest networks (`T:nopass;`) and disabled network state handling; active multi-channel delivery transparency (Telegram, Discord, Pushover, Webhook) on Daily Digest cards.
+* **Module 9 - IPv6 ULA Discovery Refinement, ULA Enriched Badge & Table Filtering (Issue #65):** Fixed IPv6 ULA display and synchronization on dual-stack devices with resilient `ipv6_all || ipv6_addresses || [ipv6]` fallback; completed missing English localization keys; nightly lifecycle auto-pruning for stale discovered addresses after 30 days.
+* **Initial Administrator Setup Wizard (Zero-Default Security):** Guided first-run web onboarding wizard for secure admin username and password configuration; complete removal of hardcoded default credentials from the UI, with optional headless Docker bypass via `ADMIN_USER` and `ADMIN_PASSWORD`.
+
+---
 
 ## v1.5.0
 * **Network Statistics & Analytics, ISP SLA Analysis & Data Export Center:** New main view with frequency breakdown, mesh node load, device categories, vendors, and SLA trends with CSV/JSON export.

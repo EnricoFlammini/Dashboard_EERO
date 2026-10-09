@@ -6,12 +6,15 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
-from app.routers import analytics, auth, automations, devices, manual, metrics, network, profiles, speedtest, system
+from app.routers import (
+    analytics, auth, automations, devices, local_auth, logs, manual,
+    metrics, network, profiles, schedules, speedtest, system, users
+)
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -39,19 +42,34 @@ async def lifespan(app: FastAPI):
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
 
+    # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
+    from app.services.log_service import log_service
+    await log_service.start()
+
     # 2. Caricamento Sessione eero
     eero_client.load_session()
 
     # 3. Avvio Poller Asincrono in Background
     await background_poller.start()
 
+    # 4. Avvio Retention Worker di Compattazione & Tiering (v1.6.0 Module 2)
+    from app.services.retention_worker import retention_worker
+    await retention_worker.start()
+
+    # 5. Avvio Servizio MQTT & Home Assistant Discovery (v1.6.0 Module 4)
+    from app.services.mqtt_client import mqtt_service
+    await mqtt_service.start()
+
     yield
 
     # Chiusura pulita dei processi in background
     logger.info("Chiusura in corso dei servizi in background...")
+    await mqtt_service.stop()
+    await retention_worker.stop()
     await background_poller.stop()
     await eero_client.close()
     disable_dns_cache()
+    await log_service.stop()
     logger.info("Applicazione terminata correttamente.")
 
 
@@ -124,14 +142,18 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Registrazione Router API
 app.include_router(auth.router)
+app.include_router(local_auth.router)
+app.include_router(users.router)
 app.include_router(network.router)
 app.include_router(devices.router)
 app.include_router(profiles.router)
 app.include_router(metrics.router)
 app.include_router(speedtest.router)
 app.include_router(automations.router)
+app.include_router(schedules.router)
 app.include_router(manual.router)
 app.include_router(system.router)
+app.include_router(logs.router)
 app.include_router(analytics.router)
 
 
@@ -149,6 +171,38 @@ async def healthcheck():
     }
 
 
+@app.get("/api/diagnostics/iot-anomalies")
+async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
+    """Alias diretto per l'interrogazione delle anomalie IoT notturne."""
+    from app.routers.network import get_iot_night_anomalies
+    return await get_iot_night_anomalies(limit=limit, days=days)
+
+
+@app.get("/metrics")
+async def prometheus_metrics_root():
+    """Endpoint standard Prometheus / OpenMetrics per lo scraping dei dati di telemetria."""
+    from app.routers.metrics import generate_prometheus_metrics
+    content = await generate_prometheus_metrics()
+    return Response(content=content, media_type="text/plain; version=0.0.4; charset=utf-8")
+
+
+@app.get("/settings/updates", response_class=HTMLResponse)
+@app.get("/settings/export", response_class=HTMLResponse)
+@app.get("/settings/backup", response_class=HTMLResponse)
+@app.get("/settings/users", response_class=HTMLResponse)
+@app.get("/settings/controls", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
+@app.get("/export", response_class=HTMLResponse)
+@app.get("/quality-analytics", response_class=HTMLResponse)
+@app.get("/guests", response_class=HTMLResponse)
+@app.get("/eero-news", response_class=HTMLResponse)
+@app.get("/news", response_class=HTMLResponse)
+@app.get("/manual", response_class=HTMLResponse)
+@app.get("/automations", response_class=HTMLResponse)
+@app.get("/analytics", response_class=HTMLResponse)
+@app.get("/speedtest", response_class=HTMLResponse)
+@app.get("/devices", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
     """Serve la Single Page Application (SPA) della Dashboard."""

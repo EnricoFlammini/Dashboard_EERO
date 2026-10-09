@@ -12,8 +12,8 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.03.00** | 🚢 **Docker Hub CI/CD & 🛡️ Native AdGuard Sync** | Distribuzione automatica Docker Hub (amd64/arm64) + Sincronizzazione nativa AdGuard Home in-app |
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
-| **v1.5.00 (v1.5.0)** | 🌐 **Multi-Network Switching & 📊 Device Data Usage Insights Suite (Issue #22)** *(Completata)* | Gestione account multi-rete e switch a caldo tra sedi mesh (Issue #22) + Storico consumo dati per dispositivo (Daily/Weekly/Monthly), statistiche aggregate ed export CSV/JSON |
-| **v1.6.0** | 🤖 **AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge** *(Prossima Release)* | Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare (Read/Write scopes), Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Home Assistant MQTT Auto-Discovery, Metriche Prometheus (/metrics), Multi-Notifier e Compattazione SQLite |
+| **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
+| **v1.6.1 (Pianificata)** | 🎛️ **Table Column Customization & Advanced Visibility Picker (Issue #60)** | Selettore visuale delle colonne nella tabella dispositivi (mostra/nascondi colonne opzionali inclusa colonna dedicata 'Joined / First Seen', IP, MAC, Segnale, Velocità, Nodo Mesh) con preferenze persistite in `localStorage` e layout adattivo. |
 
 ---
 
@@ -43,13 +43,17 @@ gantt
     Diagnostica SLA ISP & Export CSV/JSON :done, v1_5d, after v1_5c, 3d
     Tooltip Dispositivi Grafici Analytics :done, v1_5e, after v1_5d, 1d
     section v1.6.0 - AI Diagnostics, RBAC, Automations & Homelab
-    Local RBAC & User Management Engine               :active, v1_6a, 2026-09-24, 4d
-    AI Natural Language Diagnostics & Roaming Advisor :v1_6b, after v1_6a, 4d
-    Anomaly Detection Traffico Notturno IoT           :v1_6c, after v1_6b, 3d
-    Parental Scheduling & Speedtest Bufferbloat Engine :v1_6d, after v1_6c, 4d
-    Home Assistant MQTT Auto-Discovery & Prometheus    :v1_6e, after v1_6d, 5d
-    Multi-Notifier Dispatcher (Discord, Gotify, NTFY)  :v1_6f, after v1_6e, 3d
-    Data Retention Worker, PWA & Backup Wizard         :v1_6g, after v1_6f, 4d
+    eeroOS Release Notes & Community Hub :done, v1_6_news, 2026-09-25, 2d
+    Local RBAC & User Management Engine               :done, v1_6a, 2026-09-24, 4d
+    AI Natural Language Diagnostics & Roaming Advisor :done, v1_6b, after v1_6a, 4d
+    Anomaly Detection Traffico Notturno IoT           :done, v1_6c, after v1_6b, 3d
+    Parental Scheduling & Speedtest Bufferbloat Engine :done, v1_6d, after v1_6c, 4d
+    Data Retention Worker, PWA & Backup Wizard         :done, v1_6g, after v1_6d, 4d
+    Home Assistant MQTT Auto-Discovery & Prometheus    :done, v1_6e, after v1_6g, 5d
+    Multi-Notifier Dispatcher & System Logs Engine     :done, v1_6f, after v1_6e, 3d
+    Local Asset Bundling & Offline UI (Issue #58)     :done, v1_6_assets, after v1_6f, 2d
+    Device Sort by First Seen & New Badge (Issue #60) :done, v1_6_recent, after v1_6_assets, 2d
+    Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :done, v1_6_ndp, after v1_6_recent, 2d
 ```
 
 ---
@@ -295,21 +299,22 @@ gantt
 
 ### 🤖 Release v1.6.0 — 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations & 🏡 Homelab Bridge
 
-> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **ottimizzazioni layout responsive & persistenza filtri (PR #28 e #29 - @DannyFeliz)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
+> **Obiettivo:** Trasformare la suite in un sistema diagnostico e operativo completo per ambienti Homelab e Small Business, introducendo un motore di **diagnostica euristica e in linguaggio naturale** per l'analisi di rete, un modulo avanzato di **Controllo degli Accessi Basato sui Ruoli (Local RBAC & User Management - Issue #39)** con permessi granulari di lettura e azione per proteggere la rete senza esporre le credenziali Amazon/eero, un sistema di **pianificazione profili e automazioni (Parental Scheduling & Bufferbloat SLA)**, l'integrazione nativa con **Home Assistant (MQTT Discovery) e Prometheus (`/metrics`)**, il supporto a **nuovi canali di notifica self-hosted (Discord, Gotify, NTFY, Pushover)**, **routing URL persistente & layout responsive (PR #28 e PR #29 - @DannyFeliz)**, **resilienza cloud poller & bonifica valori placeholder (Issue #55 e #56 - @carbones73, Issue #57 - @jpatchMC)** e un **worker asincrono di compattazione e data retention** per mantenere il database SQLite snello e performante nel lungo periodo.
 
 #### 1. 🤖 AI Network Diagnostics & Intelligent Health Score
-* **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
+* [x] **Natural Language Health Analysis (Diagnosi Descrittiva Dinamica):**
   * Generazione dinamica di sintesi diagnostiche descrittive e contestuali all'interno del modale *Network Health Score*.
   * Spiegazione discorsiva dei fattori di penalità: attenuazione RSSI anomala ($< -75\text{ dBm}$), sovraffollamento della banda 2.4 GHz rispetto a 5/6 GHz, link PHY sottodimensionati o negoziazioni Ethernet degradate a 100 Mbps anziché 1 Gbps / 2.5 Gbps su porte e switch cablati.
   * Generazione di consigli guidati e pratici (es. *"Il nodo Studio negozia a 100 Mbps: verificare il cavo Ethernet Cat5e/Cat6 o la porta dello switch intermedio"*).
-* **Sticky Clients & Roaming Advisor (Issue #43 - @jpatchMC):**
+* [x] **Sticky Clients & Roaming Advisor (Issue #43 - @jpatchMC):**
   * Riscontro alla richiesta di roaming client sollevata in Issue #43: non potendo forzare la de-autenticazione dal cloud eero (gestita autonomamente dal firmware TrueMesh 802.11k/v), introduzione di un'euristica mirata per identificare i dispositivi mobili agganciati a nodi mesh distanti con RSSI debole pur essendo in prossimità di nodi con segnale nettamente superiore ($\Delta \text{RSSI} \ge 20\text{ dBm}$).
   * Badge visuale *"Roaming Sub-Ottimale"* nel modale apparato e nella lista client con suggerimenti operativi per favorire il riposizionamento beacon o il roaming.
-* **Anomaly Detection sul Traffico Notturno IoT:**
+* [x] **Anomaly Detection sul Traffico Notturno IoT:**
   * Analizzatore statistico su serie storiche SQLite (`device_usage_history`) durante le ore notturne (01:00 - 06:00).
   * Rilevamento automatico di anomalie (outlier statistici) per download/upload anomali su telecamere IP, sensori domotici o smart TV, con notifica immediata di potenziale compromissione o loop di rete.
 
-#### 2. 🔐 Local Role-Based Access Control (RBAC) & User Management
+#### 2. 🔐 Local Role-Based Access Control (RBAC) & User Management (Issue #39)
+*(In risposta alla richiesta della community in Issue #39: "Read-Only Mode / Role-Based Access Control (RBAC) for Local Dashboard")*
 * **Architettura a Sessione Cloud Unificata & Utenti Locali Indipendenti:**
   * Mantenimento della connessione a monte verso eero Cloud imperniata sull'unico token principale già autenticato con 2FA dall'amministratore di rete (`session.json`).
   * Nessuna necessità di distribuire credenziali Amazon/eero o codici OTP secondari a familiari, colleghi o ospiti.
@@ -381,58 +386,202 @@ gantt
   * Manutenzione periodica programmata del database SQLite in modalità WAL con esecuzione di `PRAGMA optimize;` e `VACUUM;` notturno per garantire dimensioni del database contenute (< 100 MB).
 * **Activity Log Multi-Filtro (Top Bandwidth Hogs):**
   * Filtri avanzati e interattivi per la classifica e il grafico dei consumi per dispositivo: filtraggio simultaneo per categoria apparato (Computer, Smartphone, IoT, Entertainment), per banda di frequenza (2.4 GHz, 5 GHz, 6 GHz, Cablato) o per nodo mesh di attestazione.
-* **Ottimizzazioni Layout Responsive UI (PR #28 / Issue #45 - @DannyFeliz):**
-  * Perfezionamento del layout e dei drawer per visualizzazione ottimale su schermi smartphone e tablet.
-  * Adattamento dinamico di tabelle, KPI card e touch targets accessibili.
-* **Persistenza Stato Navigazione & Filtri Frequenza Radio (PR #29 / Issue #46 - @DannyFeliz):**
-  * Memorizzazione persistente nel `localStorage` del browser per la sezione attiva (Dashboard, Dispositivi, Analytics, Controlli) e per l'ultimo filtro frequenza radio selezionato (2.4 GHz, 5 GHz, 6 GHz, Ethernet, Tutti), prevenendo reset indesiderati al ricaricamento della pagina.
+* **Ottimizzazioni Layout Responsive UI (PR #29 / Issue #46 - @DannyFeliz):**
+  * Riorganizzazione dell'header con menu a comparsa (gear menu) su smartphone e tablet per eliminare l'affollamento dei comandi.
+  * Sidebar collassabile e reflow della tabella apparati in card responsive leggibili su schermi stretti (320px–1024px) senza scroll orizzontale forzato.
+  * Adattamento touch-friendly per KPI card, grafici, modali di dettaglio, prenotazioni IP statici e inoltro porte.
+* **Persistenza Stato Navigazione & Filtri Dispositivi via URL (PR #28 / Issue #45 - @DannyFeliz):**
+  * Percorsi stabili serviti per ciascuna vista principale (`/`, `/devices`, `/speedtest`, `/controls`, `/manual`) con routing sincronizzato tramite HTML5 History API.
+  * Sincronizzazione real-time dei filtri di ricerca e frequenza con la query string dell'URL (inclusi caratteri Unicode ed emoji), con piena persistenza su ricaricamento pagina (F5) e navigazione con i tasti *Avanti* e *Indietro* del browser.
+  * Prevenzione del flash visivo di righe non filtrate durante il caricamento asincrono iniziale di profili e dispositivi.
 * **Progressive Web App (PWA) & Backup Wizard:**
   * Aggiunta di Web App Manifest (`manifest.json`), service worker per caching offline degli asset statici (CSS, JS, icone SVG) e supporto alla modalità *standalone* a tutto schermo su pannelli touch a parete (Wall Dashboard), tablet e smartphone.
   * Wizard guidato di esportazione e importazione configurazione JSON (`GET /api/system/backup`, `POST /api/system/restore`) per salvataggio e ripristino sicuro di alias personalizzati, impostazioni DNS, preferenze notifiche e parametri di automazione senza richiedere dump manuali del database.
+
+#### 6. 📰 Hub "Novità e Note di Rilascio eeroOS" & Community Updates (Zendesk & Reddit Public Hub)
+* **Backend Poller & Scraping Autonomo (`app/services/eero_news_service.py`):**
+  * Client HTTP asincrono che interroga periodicamente l'API pubblica e non autenticata del centro supporto eero: `GET https://eero.zendesk.com/api/v2/help_center/en-us/articles/209636523.json` (con fallback su `https://support.eero.com/...`).
+  * Parsing HTML avanzato con regex/parser mirato privo di dipendenze esterne: estrazione automatica di versione, data di rilascio, elenco puntato delle novità, highlights di sicurezza e classificazione semantica automatica dei tag (*Sicurezza*, *Wi-Fi 7 / 6 GHz*, *Stabilità*, *Prestazioni*, *Smart Home*).
+  * Cache a lunga durata con poller di background programmato ogni 6 ore, garantendo impatto nullo sul traffico di rete e zero rate limiting.
+* **Correlazione Firmware Locale (eero Client API):**
+  * Interrogazione e monitoraggio della versione firmware attualmente installata su ciascun nodo del mesh locale (`/2.2/networks/{id}/updates` e `get_eeros()`).
+  * Rilevamento in tempo reale dell'allineamento della rete rispetto all'ultima release ufficiale eero (`is_up_to_date`) e dello stato di roll-out graduale (`update_available`).
+* **Feed Community Resiliente (Reddit r/amazoneero):**
+  * Integrazione con l'endpoint pubblico Reddit (`r/amazoneero`) per recuperare gli ultimi thread di discussione e benchmark su stabilità e bug dei firmware appena rilasciati.
+  * Gestione trasparente e tollerante ai fallimenti: fallback immediato su feed interno curato in caso di restrizioni 403 o assenza di connettività.
+* **Persistenza Dedicata SQLite (`metrics.db`):**
+  * Nuova tabella `eero_release_notes` per l'archiviazione persistente delle versioni, date, array JSON dei contenuti e flag di sicurezza.
+  * Endpoint REST dedicati: `GET /api/system/eero-news` e `POST /api/system/eero-news/refresh`.
+* **Frontend Alpine.js Windows 11 Fluent Design:**
+  * Nuova voce di navigazione nella sidebar collassabile con icona SVG a tema giornale/feed (coerente con lo stile senza emoji dell'interfaccia) e badge pulsante per update disponibili.
+  * Banner di stato acrilico superiore: Card verde acrilica se la rete è allineata all'ultima versione; Card ambra/blu con avviso di rolling release graduale se è disponibile un firmware più recente.
+  * Accordion espandibili per ogni release con badge colorati, lista puntata, barra di ricerca istantanea e filtri rapidi (*Tutte*, *Sicurezza*, *Wi-Fi 7*, *Stabilità*).
+  * Supporto Dual-Theme (Light & Dark Mode) e localizzazione bilingue IT / EN completa (`it.json`, `en.json`).
+
+#### 7. 🛡️ Resilienza Cloud Poller, Trasparenza Dati & IPv6 ULA (Issue #55, #56 - @carbones73 & Issue #57 - @jpatchMC)
+* **Gestione Resiliente Fallimenti Cloud eero & Stale State (Issue #55 - @carbones73):**
+  * Rilevamento esplicito delle mancate risposte o errori HTTP (401 Unauthorized, 503 Outage) in `get_network_details()` e `get_eeros()`.
+  * Blocco dell'avanzamento fasullo del timestamp `last_poll_time` in caso di errore, esposizione del flag `data_stale: true`, timestamp `last_successful_poll` e contatore `consecutive_failed_polls`.
+  * Sospensione dei falsi allarmi `node_offline` su dati non aggiornati durante un'interruzione cloud.
+  * Banner UI informativo per avviso di rete non raggiungibile e prompt di re-autenticazione immediata in caso di sessione scaduta (HTTP 401).
+  * Notifica automatica multi-canale (`cloud_unreachable` / `cloud_recovered`) dopo N fallimenti consecutivi.
+* **Bonifica Valori Placeholder e Normalizzazione Rigorosa (Issue #56 - @carbones73):**
+  * Eliminazione dei fallback hardcoded arbitrari che simulano misurazioni reali:
+    * `public_ip`: mantenimento a `null` (anziché `0.0.0.0` o IP LAN gateway) con visualizzazione "n/a" nell'interfaccia.
+    * `gateway_ip`: mantenimento a `null` (anziché forzatura su subnet predefinita `192.168.4.1`), adeguando lo step 3 dell'elezione del primary gateway e i template UI.
+    * `rx_bytes` / `tx_bytes`: rimozione della stima sintetica `packets * 1420` / `packets * 280` spacciata per contatore reale.
+    * Frequenza Wi-Fi nodi: etichettatura esplicita `(stimata)` o omissione della banda qualora dedotta unicamente dal modello hardware (es. Pro 6E / Max 7) in assenza di canale operativo effettivo.
+* **Supporto & Reverse Client Enrichment Indirizzi IPv6 ULA vs GUA (Issue #57 - @jpatchMC):**
+  * **Fase 1 (Completata in v1.6.0-rc1):** Classificazione deterministica RFC 4193 e RFC 4291 in `eero_client.py` con partizionamento in `ipv6_gua`, `ipv6_ula`, `ipv6_link_local`, badges colorati in `#deviceModal` e sincronizzazione sicura sui server DNS escludendo i Link-Local `fe80::`.
+  * **Fase 2 (Reverse Client Enrichment & NDP Discovery - v1.6.0-rc2):**
+    * Risoluzione del limite di routing L2/L3 eero (i pacchetti DNS LAN verso AdGuard non attraversano la WAN e non vengono visti dal cloud eero).
+    * Ingestion API dedicata (`POST /api/network/enrichment/neighbors`) per consentire a script/cron esterni su host AdGuard di inviare coppie ULA ↔ MAC.
+    * Native Pull & Probe Worker in `dns_manager.py`: scansione dei client non assegnati (`auto_clients`) da AdGuard Home, probe ICMPv6 asincrono non bloccante e risoluzione MAC tramite tabella di vicinato (`ip -6 neigh`).
+    * Persistenza in tabella SQLite `device_discovered_ips` e arricchimento reattivo del payload dispositivi.
+    * Risincronizzazione "Full-Circle" verso AdGuard: unione automatica dell'indirizzo ULA scoperto al client nominato in AdGuard, azzerando i client anonimi.
+    * Badge visuale UI dedicato `ULA (DISCOVERED)` o `ULA (NDP)` e tooltip informativo nel `#deviceModal`.
+
+#### 8. 📦 Local Asset Bundling & Total Offline Independence (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60)
+* **Local Asset Bundling & Funzionamento 100% Offline (Issue #58 - @jpatchMC):**
+  * Eliminazione di tutte le dipendenze da CDN esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`, `fonts.googleapis.com`) che impediscono il caricamento dell'interfaccia durante i blackout Internet o outage dell'operatore (ISP outage).
+  * Packaging e distribuzione locale delle librerie in `app/static/vendor/` (`tailwind`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) e self-hosting dei font (Inter, JetBrains Mono WOFF2) in `app/static/fonts/`.
+  * Garanzia di caricamento istantaneo e consultazione della dashboard locale sulla LAN anche con linea WAN scollegata.
+* **Ordinamento e Filtro Dispositivi per "Primo Accesso / Più Recenti" (Issue #60 - @DannyFeliz):**
+  * Propagazione del timestamp `first_seen` (già presente e storicizzato nella tabella `known_devices`) all'interno del payload dell'endpoint `/api/devices`.
+  * Aggiunta del criterio di ordinamento *"Primo Accesso / Più Recenti"* (`first_seen` decrescente) nel dropdown personalizzato dei dispositivi in `index.html` e `app.js`.
+  * Badge visivo compatto `"NEW"` per gli apparati visti per la prima volta nelle ultime 24 ore o 7 giorni e toggle filtro rapido per isolare i nuovi arrivati.
 
 ---
 
 #### 📋 Checklist di Sviluppo Modulare per la Release v1.6.0
 
-##### Modulo 1: Backend FastAPI, Auth & Engine Core
-- [ ] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
-- [ ] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
-- [ ] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
-- [ ] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/ai_diagnostics.py`).
-- [ ] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
-- [ ] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
-- [ ] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
-- [ ] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
-- [ ] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
-- [ ] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
+##### Modulo 1: Backend FastAPI, Auth & Engine Core (Completato)
+- [x] Implementazione modulo di autenticazione locale e sessioni utente (`app/routers/local_auth.py`).
+- [x] Router CRUD di gestione utenti locali riservato all'amministratore (`app/routers/users.py`).
+- [x] Dependency injection `require_permission(perm_key)` con blocco `HTTP 403 Forbidden` per protezione rotte API.
+- [x] Implementazione del motore diagnostico euristico in linguaggio naturale (`app/services/diagnostics_service.py`).
+- [x] Algoritmo di rilevamento *Sticky Clients & Roaming Advisor* basato su differenziale RSSI nodi mesh vicini (Issue #43).
+- [x] Analizzatore euristico notturno per rilevamento anomalie di traffico su dispositivi IoT/telecamere.
+- [x] Motore di scheduling orario (`app/services/scheduler.py`) per automazioni e gruppi dispositivi (Parental Control).
+- [x] Calcolo e tracciamento dell'indice di bufferbloat nei cicli di speedtest (`ping_under_load` vs `ping_idle`).
+- [x] Routine di manutenzione notturna automatica con monitoraggio drop rate e riavvio opzionale programmato.
+- [x] Endpoint REST dedicati per backup/ripristino (`/api/system/backup` e `/api/system/restore`).
+- [x] Gestione esplicita errori HTTP cloud eero, flag data_stale e contatore fallimenti poller (Issue #55 - @carbones73).
+- [x] Bonifica dei fallback placeholder fittizi (0.0.0.0, 192.168.4.1, stime byte e presunzioni frequenze) a favore di valori null / (stimati) reali (Issue #56 - @carbones73).
+- [x] Estensione modello IPv6 per rilevamento/derivazione indirizzi ULA in coesistenza con GUA (Issue #57 - @jpatchMC).
+- [x] Wizard visuale di primo avvio per Setup Amministratore (Zero-Default Security) con rotte `GET /api/auth/local/status` e `POST /api/auth/local/setup`, bonifica credenziali hardcoded da UI e supporto headless bypass Docker con `ADMIN_USER` / `ADMIN_PASSWORD`.
 
-##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`)
-- [ ] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
-- [ ] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
-- [ ] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
-- [ ] Nuova tabella `traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
-- [ ] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
-- [ ] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
+##### Modulo 2: Database SQLite & Data Retention Engine (`metrics.db`) (Completato)
+- [x] Nuova tabella `local_users` per account locali con hashing PBKDF2/SHA-256 e schema permessi JSON.
+- [x] Routine di bootstrap trasparente al primo avvio per utente `admin` predefinito (supporto env `ADMIN_USER`/`ADMIN_PASSWORD`).
+- [x] Nuova tabella `device_schedules` per profili, finestre temporali e regole di accensione/spegnimento connettività.
+- [x] Nuova tabella `iot_traffic_anomalies` per la storicizzazione delle anomalie di traffico rilevate.
+- [x] Worker asincrono di compattazione tiering (`retention_worker.py`): rollup orario/giornaliero e pulizia campioni grezzi.
+- [x] Job periodico di compattazione e manutenzione SQLite WAL (`PRAGMA optimize` e `VACUUM`).
 
-##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA
-- [ ] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
-- [ ] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato.
-- [ ] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
-- [ ] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
-- [ ] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
-- [ ] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
-- [ ] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
-- [ ] Ottimizzazioni layout responsive mobile e tablet, touch targets e tabelle adattive (PR #28 / Issue #45 - @DannyFeliz).
-- [ ] Persistenza stato navigazione e filtri frequenza radio nel `localStorage` (PR #29 / Issue #46 - @DannyFeliz).
-- [ ] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
-- [ ] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
+##### Modulo 3: Frontend Alpine.js, Tailwind CSS & PWA (Completato)
+- [x] Menu di navigazione unificato (desktop sidebar e mobile drawer) senza titoli di categoria e rimozione ingranaggio header.
+- [x] Riorganizzazione barra di navigazione laterale (Sidebar) e mobile drawer con gerarchia a 6 sezioni fisse: 1. Dashboard & Mesh, 2. Dispositivi, 3. Speed test, 4. Ospiti, 5. Qualità e analytics, 6. Impostazioni (Accordion espandibile).
+- [x] Ristrutturazione viste e separazione delle responsabilità: vista pura 'Speed test' (prestazioni e bufferbloat, senza metriche segnale), vista 'Ospiti' rapida per condivisione (QR code acrilico e copia credenziali negli appunti), vista unificata 'Qualità e analytics' (KPI segnale, grafici distribuzione e SLA ISP senza Data Export Center).
+- [x] Menu ad albero 'Impostazioni' con animazione Fluent chevron e 4 sub-rotte dedicate: Controlli & Ospiti (`/settings/controls`), Gestione Utenti & Permessi (`/settings/users`), Backup & Ripristino (`/settings/backup`), Verifica aggiornamenti (`/settings/updates`) con monitoraggio SQLite e Docker Hub.
+- [x] Modale dedicato *"Gestione Utenti & Permessi"* con tabella utenti e switch a griglia (toggle iOS-style) per ciascun permesso.
+- [x] Condizionamento reattivo della UI (visibilità voci sidebar e pulsanti operativi) in base ai claim autorizzativi dell'utente loggato (`can(...)`).
+- [x] Interfaccia di login locale per sessioni multi-utente con gestione scadenza token e logout pulito.
+- [x] Integrazione delle diagnosi descrittive dinamiche in linguaggio naturale nel modale *Network Health Score*.
+- [x] Badge *"Roaming Sub-Ottimale"* e schede consiglio per dispositivi con connessione non ideale (Issue #43).
+- [x] Interfaccia visuale drag-and-drop / griglia oraria per la gestione delle pianificazioni (Parental Scheduling).
+- [x] Selettori multi-filtro avanzati per la classifica Top Bandwidth Hogs (per categoria, frequenza e nodo mesh).
+- [x] Ottimizzazioni layout responsive mobile e tablet, menu unificato e schede apparati adattive (PR #29 / Issue #46).
+- [x] Persistenza stato navigazione, routing stabile e filtri dispositivi via URL e HTML5 History API (PR #28 / Issue #45).
+- [x] Banner visivo per stato telemetria stale / cloud disconnesso e notifica di ri-autenticazione per token scaduto 401 (Issue #55).
+- [x] Aggiornamento UI per visualizzazione trasparente di valori non disponibili ("n/a") al posto dei fallback arbitrari (Issue #56).
+- [x] PWA Manifest (`manifest.json`), icone responsive e service worker per installazione su pannelli a parete / tablet.
+- [x] Modale guidato per l'esportazione e il ripristino con 1 clic del backup di configurazione in formato JSON.
 
-##### Modulo 4: Integrazioni Ecosistema Homelab & Notifiche Esterne
-- [ ] Client MQTT asincrono con Home Assistant Auto-Discovery per device tracking, sensori nodi e switch ospiti/gaming.
-- [ ] Endpoint nativo OpenMetrics/Prometheus (`GET /metrics`) e template dashboard Grafana incluso in repository.
-- [ ] Dispatcher multi-canale di notifica con connettori nativi per Discord, Gotify, NTFY e Pushover.
-- [ ] Driver di sincronizzazione DNS per istanze Blocky e server ricorsivi Unbound in `DNSManager`.
-- [ ] Aggiornamento documentazione tecnica, manuale integrato (`app/routers/manual.py`) e test pre-release (385+ test previsti).
+##### Modulo 4: Gestione Log di Sistema, Live Console & Integrazioni Homelab (Completato)
+- [x] Logger asincrono unificato (`app/services/log_service.py`), tabella SQLite `system_logs` e file rotativo `data/system.log`.
+- [x] Configurazione profondità log a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`), retention temporale flessibile (24h, 7gg, 15gg, 1m, custom) e worker di pulizia `retention_worker.py`.
+- [x] UI Card 7 in Controlli & Ospiti con Live Console Viewer, ricerca full-text, chip per severità, download log (.log/.json) e modale di svuotamento sicuro.
+- [x] Client MQTT asincrono con Home Assistant Auto-Discovery (`app/services/mqtt_client.py`) per telemetria WAN/Mesh, sensori binari e device tracking.
+- [x] Endpoint nativo OpenMetrics/Prometheus (`GET /metrics` e `GET /api/metrics/prometheus`) e template dashboard Grafana (13 pannelli) in `deploy/grafana/eero_dashboard.json`.
+- [x] Dispatcher multi-canale di notifica con connettori nativi per Discord Webhook e Pushover, allarmi per degrado bufferbloat, interferenze mesh, brute-force e backup.
+- [x] Aggiornamento documentazione tecnica, 4 nuovi capitoli manuale integrato (`app/routers/manual.py`) e test pre-release (1033 test superati al 100%).
+
+##### Modulo 5: 📰 eeroOS Release Notes & Community Updates Hub (Completato)
+- [x] Client HTTP asincrono e parser HTML Zendesk (`app/services/eero_news_service.py`).
+- [x] Correlazione firmware locale e calcolo stato di allineamento flotta mesh (`is_up_to_date` / `update_available`).
+- [x] Connettore feed community Reddit (`r/amazoneero`) con gestione resiliente di fallback su blocco 403 / offline.
+- [x] Tabella dedicata SQLite `eero_release_notes` con indici, serializzazione JSON e salvataggio automatico.
+- [x] Poller periodico di background a intervallo di 6 ore integrato in `BackgroundPoller`.
+- [x] Endpoint REST FastAPI: `GET /api/system/eero-news` e `POST /api/system/eero-news/refresh`.
+- [x] Nuova voce di navigazione nella sidebar con icona SVG Windows 11 Fluent (senza emoji) e badge dinamico.
+- [x] Vista dedicata con banner di stato acrilico (Verde per rete allineata, Ambra/Blu per rolling release disponibile).
+- [x] Accordion espandibile per ciascuna release con chip tag (Sicurezza, Wi-Fi 7 / 6 GHz, Stabilità, Prestazioni) e ricerca real-time.
+- [x] Supporto completo Dual-Theme (Dark/Light mode) e localizzazione bilingue IT / EN (`it.json`, `en.json`).
+- [x] Mock realistici per Demo Mode e suite di test unitari/integrazione (478 test superati al 100%).
+
+##### Modulo 6: 📦 Local Asset Bundling (Issue #58) & 🆕 Ordinamento "Recently Joined" (Issue #60) (Completato al 100%)
+- [x] Packaging e bundle locale di tutte le librerie in `app/static/vendor/` (`tailwind.min.js`, `alpine.min.js`, `chart.umd.min.js`, `lucide.min.js`) ed eliminazione dipendenze CDN esterne (Issue #58 - @jpatchMC).
+- [x] Self-hosting locale dei file font WOFF2 per Inter e JetBrains Mono in `app/static/fonts/` con regole `@font-face` in `app/static/css/fonts.css` (Issue #58).
+- [x] Garanzia caricamento 100% offline della dashboard e gestione eero su LAN in assenza totale di connettività WAN/ISP con pre-caching PWA Service Worker (Issue #58).
+- [x] Propagazione del campo `first_seen` da `known_devices` nel payload JSON dell'endpoint `/api/devices` e calcolo flag temporali `is_new` e `is_new_24h` (Issue #60 - @DannyFeliz).
+- [x] Implementazione del sorting per *"Primo Accesso / Più Recenti"* in `app.js` e aggiunta dell'opzione nel dropdown desktop della toolbar e mobile in `index.html` (Issue #60).
+- [x] Badge compatto visivo `"NEW"` su tabella desktop e card mobile, pill/chip di filtro rapido "Nuovi" e visualizzazione data primo accesso nel modal dispositivo (Issue #60).
+- [x] Esposizione immediata del tempo relativo di primo accesso (`formatFirstSeenRelative`) e data formattata completa direttamente nella riga del dispositivo (accanto al nodo/categoria) su tabella desktop, card mobile e finestra modale dispositivo (Issue #60 - @WillFulmer).
+- [x] Localizzazione bilingue completa delle nuove stringhe in `it.json` ed `en.json` (Issue #60).
+- [x] Test di regressione automatizzati completi in `scripts/run_pre_release_tests.py` (1093/1093 test superati al 100%).
+
+##### Modulo 7: 🔍 Reverse Client Enrichment & ULA Discovery via NDP / AdGuard (Issue #57 - @jpatchMC) (Completato al 100%)
+- [x] Creazione tabella SQLite `device_discovered_ips` in `app/services/db.py` (colonne: `mac_address`, `ip_address`, `ip_type`, `source`, `first_seen`, `last_seen`) e metodi async CRUD.
+- [x] Endpoint REST FastAPI dedicato di Ingestion: `POST /api/network/enrichment/neighbors` per ricevere mapping ULA/GUA ↔ MAC da agenti, script cron su AdGuard host o sidecar.
+- [x] Endpoint di consultazione e diagnostica: `GET /api/network/enrichment/mappings` e trigger manuale scansione `POST /api/network/enrichment/scan-adguard`.
+- [x] Worker di Pull & Probe in `enrichment_service.py` & `dns_manager.py`: recupero client non associati (`auto_clients`) dall'API AdGuard `/control/clients`, probe ICMPv6 asincrono e risoluzione MAC via kernel neighbour table (`ip -6 neigh`).
+- [x] Fusione trasparente degli IP scoperti nel modello dispositivi (`ipv6_ula`, `ipv6_addresses` e `ipv6_details` con flag `origin: "ndp_discovered"`) in `poller.py` ed `enrichment_service.py`.
+- [x] Risincronizzazione "Full-Circle" verso AdGuard: inclusione automatica degli ULA scoperti nel payload del client nominato, per eliminare i client anonimi su AdGuard Home.
+- [x] Badge UI dedicato `ULA (NDP / AdGuard)` con stile cromatico fucsia/ametista distintivo e tooltip informativo nel `#deviceModal`.
+- [x] Test di regressione automatizzati in `scripts/run_pre_release_tests.py` (Test 23.4: Ingestion API, Validazione IP, Merge e DNS Sync propagation, 1048/1048 passati).
+
+##### Modulo 8: 🛠️ Stabilità SQLite, QR Code Reti Ospiti Aperte & UX Digest (Issue #62, #63, #64) (Completato al 100%)
+- [x] Risoluzione lock contention SQLite (`database is locked` e task orfani non gestiti) con `_write_lock`, timeout 60s e `PRAGMA busy_timeout = 60000;` (Issue #62 - @jonmacdonald).
+- [x] Attesa sequenziale controllata dei campionamenti telemetrici in `poller.py` con eliminazione degli errori a stderr del container (Issue #62).
+- [x] Supporto standard Wi-Fi `T:nopass` per la generazione del QR Code su reti ospiti prive di password (Issue #63 - @WillFulmer).
+- [x] Aggiornamento pulsanti e toast di copia credenziali per reti ospiti aperte (`open_network_label`) (Issue #63).
+- [x] Card Daily Digest Report estesa con indicazione esplicita dei canali di recapito attivi (Telegram, Webhook, Discord, Pushover) e link rapido alla card di configurazione (Issue #64 - @WillFulmer).
+- [x] Test di regressione automatizzati aggiunti alla suite pre-rilascio (1104/1104 test superati al 100%).
+
+##### Modulo 9: 🔍 UI ULA Enriched, Traduzioni Inglese & Lifecycle Pruning (Issue #65) (Completato al 100%)
+- [x] Sincronizzazione dinamica degli indirizzi ULA scoperti nel campo `ipv6_all` del modello dati dispositivi (`poller.py` ed `enrichment_service.py`), consentendo la corretta visualizzazione di tutti gli IP arricchiti nel modale `#deviceModal` (Issue #65 - @jpatchMC).
+- [x] Badge dedicato ad alta visibilità `ULA Enriched` (fucsia) sia nell'elenco indirizzi IPv6 del modale dettagli, sia nella tabella dispositivi per i client che presentano IP arricchiti via Reverse NDP / AdGuard.
+- [x] Correzione traduzioni mancanti in lingua inglese:
+  - Sottotitolo della card Pianificazioni Orarie (`schedules.empty_desc`).
+  - Testo di fallback quando il QR Code ospiti non è disponibile (`guests_page.qr_not_available`).
+- [x] Integrazione dell'invecchiamento e pulizia automatica `cleanup_stale_discovered_ips(retention_days=30)` nel ciclo di manutenzione notturna (`scheduler.py`) e nel worker di retention (`retention_worker.py`).
+- [x] Test di regressione automatizzati estesi (1123/1123 test superati al 100%, inclusi test su rotte di Setup Amministratore e Zero-Default Security).
+
+---
+
+### 📦 Prossima Release (v1.6.1 / Prossimo Aggiornamento) — 🎛️ Personalizzazione Colonne Tabella & Raffinamenti UX (Issue #60)
+
+> **Obiettivo:** Estendere la tabella principale dei dispositivi consentendo all'utente di scegliere liberamente quali colonne visualizzare e personalizzare la densità informativa, rispondendo al feedback della community (Issue #60 - @WillFulmer).
+
+#### 1. Selettore Colonne & Personalizzazione Visibilità (Opzione B)
+- [ ] **Menu Selettore Colonne Dinamico (Column Visibility Dropdown):**
+  - Aggiunta di un pulsante selettore colonne (`Columns` / `Colonne`) nella barra degli strumenti della tabella dispositivi.
+  - Elenco checkbox per attivare o disattivare a piacimento le singole colonne della tabella:
+    - *Stato & Categoria*
+    - *Nome & Produttore*
+    - *Indirizzo IP (IPv4 / IPv6)*
+    - *Indirizzo MAC*
+    - *Banda & Connessione (Wi-Fi 2.4/5/6 GHz, Ethernet)*
+    - *Qualità Segnale (RSSI / Barre)*
+    - *Velocità in tempo reale (Rx / Tx)*
+    - *Nodo Mesh di Connessione*
+    - *Colonna dedicata 'Primo Accesso / Connesso da' (`Joined / First Seen`)*
+- [ ] **Persistenza Locale delle Preferenze (`localStorage`):**
+  - Salvataggio delle colonne abilitate/disabilitate per mantenere le preferenze tra sessioni e ricaricamenti pagina.
+  - Pulsante di ripristino configurazione predefinita (*Reset to Default*).
+- [ ] **Layout Tabella Adattivo & Responsive:**
+  - Adattamento fluido della larghezza e compattazione coerente con il design system Windows 11 Fluent.
 
 ---
 

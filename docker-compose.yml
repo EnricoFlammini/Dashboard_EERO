@@ -31,6 +31,9 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       - WATCHTOWER_URL=${WATCHTOWER_URL:-}
+      # Opzionale: credenziali admin (se vuote, primo avvio richiede Setup Wizard web)
+      - ADMIN_USER=${ADMIN_USER:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
       interval: 30s

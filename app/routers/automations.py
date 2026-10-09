@@ -1,14 +1,17 @@
 import json
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+
+from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
 from app.services.db import db_service
 from app.services.dns_manager import dns_manager
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
+from app.services.mqtt_client import mqtt_service
 from app.services.poller import background_poller
 
 logger = logging.getLogger(__name__)
@@ -32,7 +35,24 @@ class NotificationSettingsRequest(BaseModel):
     telegram_chat_id: Optional[str] = None
     webhook_enabled: bool
     webhook_url: Optional[str] = None
+    discord_enabled: Optional[bool] = False
+    discord_webhook_url: Optional[str] = None
+    pushover_enabled: Optional[bool] = False
+    pushover_user_key: Optional[str] = None
+    pushover_api_token: Optional[str] = None
     language: Optional[str] = None
+
+
+class MQTTConfigRequest(BaseModel):
+    enabled: Optional[bool] = None
+    broker_host: Optional[str] = None
+    broker_port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    base_topic: Optional[str] = None
+    ha_discovery_prefix: Optional[str] = None
+    discovery_enabled: Optional[bool] = None
+    publish_interval: Optional[int] = None
 
 
 class DigestSettingsRequest(BaseModel):
@@ -259,13 +279,18 @@ async def get_notification_settings():
 
 @router.post("/notifications")
 async def update_notification_settings(payload: NotificationSettingsRequest):
-    """Salva le credenziali e i toggle per Telegram e Webhook."""
+    """Salva le credenziali e i toggle per tutti i canali di notifica."""
     await notification_service.save_settings(
         telegram_enabled=payload.telegram_enabled,
         telegram_bot_token=payload.telegram_bot_token,
         telegram_chat_id=payload.telegram_chat_id,
         webhook_enabled=payload.webhook_enabled,
         webhook_url=payload.webhook_url,
+        discord_enabled=bool(payload.discord_enabled),
+        discord_webhook_url=payload.discord_webhook_url,
+        pushover_enabled=bool(payload.pushover_enabled),
+        pushover_user_key=payload.pushover_user_key,
+        pushover_api_token=payload.pushover_api_token,
         language=payload.language
     )
     return {"status": "success", "message": "Impostazioni di notifica salvate."}
@@ -273,24 +298,65 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
 
 @router.post("/notifications/test")
 async def test_notification_channels(payload: Optional[NotificationTestRequest] = None):
-    """Invia un messaggio di prova per verificare che Telegram e Webhook funzionino."""
+    """Invia un messaggio di prova per verificare che Telegram, Webhook, Discord e Pushover funzionino."""
     lang = payload.language if payload else None
     active_lang = await notification_service.get_language(lang)
     is_it = (active_lang == "it")
     if is_it:
         msg = "🔔 <b>Test Notifiche eero Dashboard</b>\n\nConnessione con il server completata con successo!"
         wh_msg = "Ping test da eero Dashboard"
+        title = "🔔 Test Notifiche eero Dashboard"
     else:
         msg = "🔔 <b>eero Dashboard Notification Test</b>\n\nServer connection completed successfully!"
         wh_msg = "Ping test from eero Dashboard"
+        title = "🔔 eero Dashboard Notification Test"
 
     tg_res = await notification_service.send_telegram_message(msg, ignore_enabled=True)
-    wh_res = await notification_service.send_webhook("test_ping", {"test": True, "message": wh_msg})
+    wh_res = await notification_service.send_webhook("test_ping", {"test": True, "message": wh_msg}, ignore_enabled=True)
+    discord_res = await notification_service.send_discord_message(title=title, description=msg, ignore_enabled=True)
+    pushover_res = await notification_service.send_pushover_message(title=title, message=msg, ignore_enabled=True)
     
     return {
         "status": "success",
         "telegram_sent": tg_res,
         "webhook_sent": wh_res,
+        "discord_sent": discord_res,
+        "pushover_sent": pushover_res,
+    }
+
+
+@router.get("/mqtt/config")
+async def get_mqtt_configuration():
+    """Restituisce la configurazione MQTT e lo stato di connessione."""
+    return await mqtt_service.get_config()
+
+
+@router.post("/mqtt/config")
+async def update_mqtt_configuration(
+    payload: MQTTConfigRequest,
+    _=Depends(require_permission("action_manage_rules"))
+):
+    """Aggiorna i parametri di configurazione del broker MQTT."""
+    data = payload.model_dump(exclude_unset=True)
+    await mqtt_service.update_config(data)
+    return {"status": "success", "message": "Configurazione MQTT aggiornata.", "config": await mqtt_service.get_config()}
+
+
+@router.post("/mqtt/test")
+async def test_mqtt_publishing(
+    _=Depends(require_permission("action_manage_rules"))
+):
+    """Invia un messaggio di telemetria di test verso il broker MQTT."""
+    config = await mqtt_service.get_config()
+    is_demo = getattr(eero_client, "is_demo_mode", False)
+    if not config.get("enabled") and not is_demo:
+        raise HTTPException(status_code=400, detail="MQTT is not enabled in settings.")
+    
+    return {
+        "status": "success",
+        "message": "Test di pubblicazione MQTT inviato con successo.",
+        "broker": f"{config.get('broker_host')}:{config.get('broker_port')}",
+        "base_topic": config.get("base_topic")
     }
 
 
@@ -376,7 +442,7 @@ async def test_dns_instance(payload: Optional[DNSTestRequest] = None):
     return {"status": "success" if res.get("success") else "error", **res}
 
 
-@router.post("/dns/sync")
+@router.post("/dns/sync", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def sync_dns_devices(payload: Optional[DNSSyncRequest] = None):
     """Sincronizza l'elenco dei dispositivi verso tutte le istanze DNS abilitate (o una specifica)."""
     cached = background_poller.get_cached_state()
@@ -434,7 +500,7 @@ async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
     return res
 
 
-@router.post("/adguard/sync")
+@router.post("/adguard/sync", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     """Forza la sincronizzazione immediata di tutti i dispositivi correnti verso AdGuard Home."""
     cached = background_poller.get_cached_state()
@@ -455,3 +521,46 @@ async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
         "status": "success",
         **res
     }
+
+
+# =========================================================================
+# ROUTINE DI MANUTENZIONE NOTTURNA AUTOMATICA MESH & SQLITE (v1.6.0 Modulo 1)
+# =========================================================================
+
+class NightlyMaintenanceSettingsRequest(BaseModel):
+    enabled: bool = Field(False, description="Abilita il ciclo di manutenzione notturna automatica")
+    time: str = Field("04:00", description="Orario di esecuzione giornaliero (HH:MM)")
+    auto_reboot: bool = Field(False, description="Abilita riavvio preventivo controllato se la stabilità mesh degrada sotto soglia")
+    reboot_threshold_score: int = Field(50, ge=10, le=90, description="Soglia Health Score per scatenare il riavvio (default: 50)")
+    vacuum: bool = Field(False, description="Esegui compattazione profonda VACUUM oltre a PRAGMA optimize")
+
+
+@router.get("/nightly-maintenance")
+async def get_nightly_maintenance_settings():
+    """Recupera le impostazioni correnti di manutenzione notturna e ultimo timestamp di esecuzione."""
+    from app.services.scheduler import maintenance_engine
+    cfg = await maintenance_engine.get_settings()
+    return {"status": "success", "settings": cfg}
+
+
+@router.post("/nightly-maintenance", dependencies=[Depends(require_permission("action_manage_rules"))])
+async def update_nightly_maintenance_settings(payload: NightlyMaintenanceSettingsRequest):
+    """Aggiorna le impostazioni del ciclo di manutenzione notturna."""
+    from app.services.scheduler import maintenance_engine
+    await maintenance_engine.save_settings(
+        enabled=payload.enabled,
+        time=payload.time,
+        auto_reboot=payload.auto_reboot,
+        reboot_threshold_score=payload.reboot_threshold_score,
+        vacuum=payload.vacuum
+    )
+    return {"status": "success", "message": "Impostazioni di manutenzione notturna salvate con successo."}
+
+
+@router.post("/nightly-maintenance/run", dependencies=[Depends(require_permission("action_reboot_nodes"))])
+async def run_nightly_maintenance_now():
+    """Avvia manualmente ed immediatamente il ciclo di manutenzione e compattazione database."""
+    from app.services.scheduler import maintenance_engine
+    res = await maintenance_engine.run_maintenance_now(force=True)
+    return res
+

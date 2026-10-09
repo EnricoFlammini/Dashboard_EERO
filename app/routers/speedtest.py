@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.speedtest_service import speedtest_service
 
@@ -18,7 +19,7 @@ async def get_speedtest_status():
     }
 
 
-@router.post("/run")
+@router.post("/run", dependencies=[Depends(require_permission("action_run_speedtest"))])
 async def trigger_manual_speedtest():
     """Avvia manualmente una sessione di Speed Test."""
     if speedtest_service.is_running:

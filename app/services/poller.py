@@ -50,6 +50,7 @@ class BackgroundPoller:
         self.cached_profiles: List[Dict[str, Any]] = []
         self.cached_health_score: int = 100
         self.cached_health_details: Dict[str, Any] = {}
+        self.cached_iot_anomalies: List[Dict[str, Any]] = []
         
         # Tracking states for alert detection
         self._known_macs: Set[str] = set()
@@ -60,9 +61,17 @@ class BackgroundPoller:
         self._last_scheduled_speedtest: Optional[datetime] = None
         self._last_digest_date: Optional[str] = None
         self._last_adguard_sync: Optional[datetime] = None
+        self._last_eero_news_run: Optional[datetime] = None
         self._prev_device_metrics: Dict[str, Dict[str, Any]] = {}
         self._prev_poll_time: Optional[datetime] = None
         self._prev_connected_wireless_macs: Set[str] = set()
+
+        # Cloud Resilience & Graceful Disconnection (Issue #55)
+        self._consecutive_failed_polls: int = 0
+        self._last_successful_poll: Optional[datetime] = None
+        self.data_stale: bool = False
+        self.cloud_status: str = "connected"
+        self._cloud_alert_sent: bool = False
 
     async def start(self):
         if self._running:
@@ -89,6 +98,7 @@ class BackgroundPoller:
         self.cached_profiles = []
         self.cached_health_score = 100
         self.cached_health_details = {}
+        self.cached_iot_anomalies = []
         self._prev_device_metrics = {}
         logger.info("Poller RAM cache invalidated.")
 
@@ -101,7 +111,12 @@ class BackgroundPoller:
             "profiles": self.cached_profiles,
             "health_score": self.cached_health_score,
             "health_details": self.cached_health_details,
-            "last_poll_time": self._last_poll_time.isoformat() if self._last_poll_time else None,
+            "iot_anomalies": self.cached_iot_anomalies,
+            "last_poll_time": self._last_successful_poll.isoformat() if self._last_successful_poll else (self._last_poll_time.isoformat() if self._last_poll_time else None),
+            "last_successful_poll": self._last_successful_poll.isoformat() if self._last_successful_poll else None,
+            "data_stale": self.data_stale,
+            "cloud_status": self.cloud_status,
+            "consecutive_failed_polls": self._consecutive_failed_polls,
             "is_authenticated": eero_client.is_authenticated,
             "demo_mode": settings.demo_mode or (eero_client.user_token and eero_client.user_token.startswith("demo_")),
             "active_network_id": eero_client.current_network_id,
@@ -457,6 +472,24 @@ class BackgroundPoller:
                 "en": "All eero mesh stability parameters are optimal. No corrective action needed."
             })
 
+        # Diagnostica Intelligente AI & Roaming Advisor (v1.6.0 Modulo 1)
+        from app.services.diagnostics_service import diagnostics_service
+
+        roaming_info = diagnostics_service.analyze_roaming_advisor(enriched_devices, eeros)
+        recent_anomalies = getattr(self, "cached_iot_anomalies", [])
+        ai_summary = diagnostics_service.generate_health_summary(
+            health_details={
+                "score": final_score,
+                "status": overall_status,
+                "penalties": penalties,
+            },
+            network_details=network_details,
+            eeros=eeros,
+            devices=enriched_devices,
+            roaming_info=roaming_info,
+            recent_anomalies=recent_anomalies,
+        )
+
         return {
             "score": final_score,
             "status": overall_status,
@@ -516,6 +549,10 @@ class BackgroundPoller:
             },
             "recommendations": recommendations,
             "recommendations_i18n": recommendations_i18n,
+            "ai_summary": ai_summary,
+            "roaming_advisor": roaming_info,
+            "iot_anomalies": recent_anomalies,
+            "action_checklist": ai_summary.get("checklist", []),
             "metrics": {
                 "total_nodes": len(eeros),
                 "online_nodes": len(eeros) - len(offline_nodes),
@@ -523,7 +560,9 @@ class BackgroundPoller:
                 "connected_clients": len(connected_clients),
                 "wireless_clients": len(wireless_connected),
                 "weak_signal_clients": total_degraded,
-                "ping_ms": float(network_details.get("speedtest", {}).get("ping_ms") or 0.0)
+                "ping_ms": float(network_details.get("speedtest", {}).get("ping_ms") or 0.0),
+                "sticky_roaming_clients": roaming_info.get("sticky_count", 0),
+                "iot_anomalies_count": len(recent_anomalies),
             }
         }
 
@@ -533,7 +572,12 @@ class BackgroundPoller:
         
         while self._running:
             try:
-                poll_interval = int(await db_service.get_setting("poll_interval", str(settings.poll_interval)))
+                base_interval = int(await db_service.get_setting("poll_interval", str(settings.poll_interval)))
+                if self._consecutive_failed_polls > 0:
+                    # Progressive backoff durante disconnessione o indisponibilità cloud (max 120s)
+                    poll_interval = min(120, base_interval * min(self._consecutive_failed_polls + 1, 4))
+                else:
+                    poll_interval = base_interval
                 await asyncio.sleep(poll_interval)
                 await self._poll_and_cache()
                 await self._run_periodic_jobs()
@@ -554,10 +598,44 @@ class BackgroundPoller:
                 except Exception as e:
                     logger.warning(f"Error loading known MACs from DB: {e}")
 
-            # 1. Recupero dati da eero client
-            network_details = await eero_client.get_network_details()
-            eeros = await eero_client.get_eeros()
-            devices = await eero_client.get_devices()
+            # 1. Recupero dati da eero client con resilienza ad outage/timeout cloud (Issue #55)
+            try:
+                network_details = await eero_client.get_network_details()
+                eeros = await eero_client.get_eeros()
+                devices = await eero_client.get_devices()
+            except Exception as e:
+                self._consecutive_failed_polls += 1
+                self.data_stale = True
+                err_str = str(e).lower()
+                status_code = getattr(getattr(e, "response", None), "status_code", None)
+                if status_code == 401 or "401" in err_str or "unauthorized" in err_str or "expired" in err_str:
+                    self.cloud_status = "unauthorized"
+                else:
+                    self.cloud_status = "unreachable"
+
+                logger.warning(
+                    f"Cloud poll attempt failed ({self._consecutive_failed_polls} consecutive failure(s), "
+                    f"cloud_status='{self.cloud_status}'): {e}"
+                )
+
+                if self._consecutive_failed_polls >= 3 and not self._cloud_alert_sent:
+                    self._cloud_alert_sent = True
+                    asyncio.create_task(notification_service.notify_cloud_unreachable(
+                        reason=self.cloud_status,
+                        consecutive_failures=self._consecutive_failed_polls
+                    ))
+                # Interrompi il ciclo senza aggiornare il timestamp di poll né i nodi/allarmi falsi
+                return
+
+            # Se la chiamata ha avuto successo e l'allarme era attivo, notifica il ripristino
+            if self._cloud_alert_sent:
+                asyncio.create_task(notification_service.notify_cloud_recovered())
+                self._cloud_alert_sent = False
+
+            self._consecutive_failed_polls = 0
+            self.data_stale = False
+            self.cloud_status = "connected"
+
             try:
                 profiles = await eero_client.get_profiles()
             except Exception as ep:
@@ -616,8 +694,10 @@ class BackgroundPoller:
                         device_to_profile[p_dev] = {"profile_id": p_id, "profile_name": p_name}
                         device_to_profile[p_dev.split("/")[-1]] = {"profile_id": p_id, "profile_name": p_name}
 
-            # 2. Arricchimento dispositivi con metadati locali e profilo utente cloud
+            # 2. Arricchimento dispositivi con metadati locali, profilo utente cloud, Reverse NDP IPs (Issue #57) e First Seen (Issue #60)
             metadata_map = await db_service.get_all_device_metadata()
+            discovered_ips_map = await db_service.get_all_discovered_ips_map()
+            known_devices_map = await db_service.get_all_known_devices_map()
             enriched_devices = []
             device_metrics_batch = []
             
@@ -627,9 +707,8 @@ class BackgroundPoller:
             total_tx = 0.0
 
             now_utc = datetime.now(timezone.utc)
-            dt_sec = (now_utc - self._prev_poll_time).total_seconds() if self._prev_poll_time else float(settings.poll_interval)
-            dt_sec = max(1.0, min(120.0, dt_sec))
-            self._prev_poll_time = now_utc
+            dt_poll = (now_utc - self._prev_poll_time).total_seconds() if self._prev_poll_time else float(settings.poll_interval)
+            dt_poll = max(1.0, min(120.0, dt_poll))
 
             is_initial_discovery = len(self._known_macs) == 0
 
@@ -698,6 +777,85 @@ class BackgroundPoller:
                 dev_copy["paused"] = is_cloud_paused
                 dev_copy["is_paused"] = is_cloud_paused
                 dev_copy["is_local_paused"] = False
+
+                # Contatori hardware e calcolo volumi da pacchetti fisici reali (Stima Hardware in Tempo Reale)
+                rx_b = float(dev_copy.get("rx_bytes") or 0.0)
+                tx_b = float(dev_copy.get("tx_bytes") or 0.0)
+                rx_pkts = int(dev_copy.get("rx_packets") or 0)
+                tx_pkts = int(dev_copy.get("tx_packets") or 0)
+                if rx_b == 0.0 and rx_pkts > 0:
+                    rx_b = float(rx_pkts * 1420.0)
+                    dev_copy["rx_bytes"] = rx_b
+                if tx_b == 0.0 and tx_pkts > 0:
+                    tx_b = float(tx_pkts * 280.0)
+                    dev_copy["tx_bytes"] = tx_b
+
+                # Arricchimento Reverse NDP / Discovered IPs (Issue #57)
+                disc_for_dev = discovered_ips_map.get(mac, [])
+                if disc_for_dev:
+                    existing_ula = list(dev_copy.get("ipv6_ula") or [])
+                    existing_all_v6 = list(dev_copy.get("ipv6_addresses") or [])
+                    existing_details = list(dev_copy.get("ipv6_details") or [])
+
+                    for disc in disc_for_dev:
+                        d_ip = disc.get("ip_address")
+                        d_type = (disc.get("ip_type") or "ULA").upper()
+                        d_src = disc.get("source") or "ndp_enrichment"
+                        if not d_ip:
+                            continue
+
+                        if d_ip not in existing_ula and d_type == "ULA":
+                            existing_ula.append(d_ip)
+                        if d_ip not in existing_all_v6:
+                            existing_all_v6.append(d_ip)
+
+                        if not any(entry.get("address") == d_ip for entry in existing_details):
+                            existing_details.append({
+                                "address": d_ip,
+                                "type": d_type,
+                                "scope": "local" if d_type == "ULA" else "global",
+                                "origin": "ndp_discovered",
+                                "source": d_src
+                            })
+
+                    dev_copy["ipv6_ula"] = existing_ula
+                    dev_copy["ipv6_addresses"] = existing_all_v6
+                    dev_copy["ipv6_all"] = existing_all_v6
+                    dev_copy["ipv6_details"] = existing_details
+                    dev_copy["has_discovered_ips"] = True
+                    dev_copy["discovered_ips"] = disc_for_dev
+
+                    # Promuovi a primario se il dispositivo non aveva IPv6 o aveva solo link-local
+                    if not dev_copy.get("ipv6") or str(dev_copy.get("ipv6")).lower().startswith("fe80:"):
+                        if existing_ula:
+                            dev_copy["ipv6"] = existing_ula[0]
+
+                # First Seen & New Device Detection (Issue #60 - @DannyFeliz)
+                known_dev_entry = known_devices_map.get(mac, {})
+                first_seen_str = known_dev_entry.get("first_seen")
+                if not first_seen_str:
+                    first_seen_str = now_utc.strftime("%Y-%m-%d %H:%M:%S")
+
+                dev_copy["first_seen"] = first_seen_str
+                is_new_24h = False
+                is_new_7d = False
+                try:
+                    fs_clean = str(first_seen_str).replace("Z", "+00:00")
+                    if "T" in fs_clean:
+                        fs_dt = datetime.fromisoformat(fs_clean)
+                    else:
+                        fs_dt = datetime.strptime(fs_clean[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    if fs_dt.tzinfo is None:
+                        fs_dt = fs_dt.replace(tzinfo=timezone.utc)
+                    age_sec = (now_utc - fs_dt).total_seconds()
+                    is_new_24h = 0 <= age_sec <= 86400
+                    is_new_7d = 0 <= age_sec <= (86400 * 7)
+                except Exception:
+                    pass
+
+                dev_copy["is_new"] = is_new_7d
+                dev_copy["is_new_24h"] = is_new_24h
+
                 enriched_devices.append(dev_copy)
 
                 # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
@@ -790,7 +948,8 @@ class BackgroundPoller:
 
             # 3.5.1 Calcolo Throughput Real-Time effettivo basato sui delta dei contatori hardware (rx_bytes / tx_bytes)
             now_dt = datetime.now(timezone.utc)
-            dt_sec = (now_dt - self._prev_poll_time).total_seconds() if self._prev_poll_time else 0.0
+            dt_sec = (now_dt - self._prev_poll_time).total_seconds() if self._prev_poll_time else dt_poll
+            dt_sec = max(0.5, min(120.0, dt_sec))
 
             for dev_copy in enriched_devices:
                 mac_key = (dev_copy.get("mac") or "").lower().strip()
@@ -819,6 +978,8 @@ class BackgroundPoller:
 
                 dev_copy["download_rate_mbps"] = round(calc_down, 2)
                 dev_copy["upload_rate_mbps"] = round(calc_up, 2)
+                dev_copy["rx_rate"] = dev_copy["download_rate_mbps"]
+                dev_copy["tx_rate"] = dev_copy["upload_rate_mbps"]
                 self._prev_device_metrics[mac_key] = {"rx_bytes": rx_now, "tx_bytes": tx_now, "timestamp": now_dt}
 
             self._prev_poll_time = now_dt
@@ -830,7 +991,10 @@ class BackgroundPoller:
                     if d.get("connected") and d.get("wireless") and d.get("signal_rssi") is not None
                 ]
                 if wireless_samples:
-                    asyncio.create_task(db_service.record_device_signal_samples(wireless_samples, is_demo=0))
+                    try:
+                        await db_service.record_device_signal_samples(wireless_samples, is_demo=0)
+                    except Exception as sig_err:
+                        logger.warning(f"Device signal sampling error: {sig_err}")
 
                 # Rilevamento disconnessione / uscita da casa per dispositivi wireless: bonifica campioni transitori
                 current_connected_wireless_macs = {
@@ -842,7 +1006,10 @@ class BackgroundPoller:
                     disconnected_macs = self._prev_connected_wireless_macs - current_connected_wireless_macs
                     for d_mac in disconnected_macs:
                         if d_mac:
-                            asyncio.create_task(db_service.prune_device_exit_transient_samples(d_mac, window_minutes=5, threshold_rssi=-75, is_demo=0))
+                            try:
+                                await db_service.prune_device_exit_transient_samples(d_mac, window_minutes=5, threshold_rssi=-75, is_demo=0)
+                            except Exception as prune_err:
+                                logger.debug(f"Device prune error for {d_mac}: {prune_err}")
                 self._prev_connected_wireless_macs = current_connected_wireless_macs
 
             # 3.6 Campionamento continuo Utilizzo Dati Dispositivi (v1.5.0 Insights Suite)
@@ -854,21 +1021,32 @@ class BackgroundPoller:
                     if d.get("mac") and (d.get("rx_bytes") is not None or d.get("download_rate_mbps") is not None)
                 ]
                 if usage_samples:
-                    asyncio.create_task(db_service.record_device_usage_samples(usage_samples, network_id=curr_net, is_demo=is_demo_flag))
+                    await db_service.record_device_usage_samples(usage_samples, network_id=curr_net, is_demo=is_demo_flag)
             except Exception as usage_err:
                 logger.debug(f"Device usage sampling error: {usage_err}")
 
-            # Rilevamento nodi eero offline (Issue #34)
-            for node in eeros:
-                node_id = str(node.get("id") or node.get("serial"))
-                node_status = str(node.get("status") or "").lower()
-                status = "online" if node_status in ("online", "green") else ("rebooting" if node_status == "rebooting" else "offline")
-                if node_id in self._known_eeros_status:
-                    prev_status = self._known_eeros_status[node_id]
-                    # Allarme disconnessione solo per cadute impreviste (non per riavvii intenzionali)
-                    if prev_status == "online" and status == "offline":
-                        asyncio.create_task(notification_service.notify_node_offline(node))
-                self._known_eeros_status[node_id] = status
+            # Rilevamento nodi eero offline (Issue #34) - Soppressione falsi allarmi durante interruzioni cloud (Issue #55)
+            if self._consecutive_failed_polls == 0 and not self.data_stale:
+                for node in eeros:
+                    node_id = str(node.get("id") or node.get("serial"))
+                    node_status = str(node.get("status") or "").lower()
+                    status = "online" if node_status in ("online", "green") else ("rebooting" if node_status == "rebooting" else "offline")
+                    if node_id in self._known_eeros_status:
+                        prev_status = self._known_eeros_status[node_id]
+                        # Allarme disconnessione solo per cadute impreviste (non per riavvii intenzionali)
+                        if prev_status == "online" and status == "offline":
+                            asyncio.create_task(notification_service.notify_node_offline(node))
+                    self._known_eeros_status[node_id] = status
+
+            # 3.7 Rilevamento / Aggiornamento Anomalie Traffico Notturno IoT (v1.6.0 Modulo 1)
+            try:
+                from app.services.diagnostics_service import diagnostics_service
+                if getattr(eero_client, "is_demo_mode", False) or settings.demo_mode:
+                    self.cached_iot_anomalies = diagnostics_service.detect_iot_night_anomalies(enriched_devices, [], is_demo=True)
+                else:
+                    self.cached_iot_anomalies = await db_service.get_iot_anomalies(limit=20)
+            except Exception as anom_err:
+                logger.debug(f"IoT anomalies loading error: {anom_err}")
 
             # 4. Calcolo Network Health Score & Breakdown Dettagliato (Issue #15)
             health_details = self.calculate_health_details(network_details, eeros, enriched_devices)
@@ -884,7 +1062,8 @@ class BackgroundPoller:
                 self.cached_devices = enriched_devices
             if profiles or not self.cached_profiles:
                 self.cached_profiles = profiles
-            self._last_poll_time = datetime.now(timezone.utc)
+            self._last_successful_poll = datetime.now(timezone.utc)
+            self._last_poll_time = self._last_successful_poll
 
             # 6. Sincronizzazione automatica Speed Test reale da eero Gateway
             sp = network_details.get("speedtest") if isinstance(network_details, dict) else None
@@ -991,6 +1170,31 @@ class BackgroundPoller:
         if self.cached_devices and (not self._last_adguard_sync or (now - self._last_adguard_sync).total_seconds() > 1800):
             self._last_adguard_sync = now
             asyncio.create_task(adguard_service.auto_sync_if_enabled(self.cached_devices))
+
+        # F. Sincronizzazione periodica Note di Rilascio eeroOS (ogni 6 ore)
+        if not self._last_eero_news_run or (now - self._last_eero_news_run).total_seconds() > 21600:
+            self._last_eero_news_run = now
+            async def _safe_news_refresh():
+                try:
+                    from app.services.eero_news_service import eero_news_service
+                    await eero_news_service.fetch_official_release_notes()
+                except Exception as err:
+                    logger.debug(f"Periodic eero release notes refresh skipped/failed: {err}")
+            asyncio.create_task(_safe_news_refresh())
+
+        # G. Parental Scheduling & Regole Temporali (v1.6.0 Modulo 1)
+        try:
+            from app.services.scheduler import schedule_engine
+            asyncio.create_task(schedule_engine.evaluate_schedules(now))
+        except Exception as sch_err:
+            logger.debug(f"Periodic schedule evaluation error: {sch_err}")
+
+        # H. Manutenzione Notturna Mesh & Compattazione SQLite (v1.6.0 Modulo 1)
+        try:
+            from app.services.scheduler import maintenance_engine
+            asyncio.create_task(maintenance_engine.check_and_run_nightly_maintenance(now))
+        except Exception as maint_err:
+            logger.debug(f"Periodic maintenance check error: {maint_err}")
 
     async def _send_daily_digest(self, lang: Optional[str] = None) -> Dict[str, Any]:
         try:

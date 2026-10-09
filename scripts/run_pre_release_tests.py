@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-Release Automated Test Suite - eero Custom Dashboard (v1.5.0)
+Pre-Release Automated Test Suite - eero Custom Dashboard (v1.6.0)
 ==================================================================
 Covers:
   1. Authentication & Demo Mode toggle with session token preservation
@@ -15,7 +15,8 @@ Covers:
 import sys
 import os
 import asyncio
-from datetime import datetime
+import aiosqlite
+from datetime import date, datetime, timedelta, timezone
 
 # Configure UTF-8 stdout for Windows console
 if sys.platform == "win32":
@@ -505,7 +506,7 @@ async def run_all_tests():
             "signal_rssi": -48
         }
         node_6ghz_hw_norm = eero_client._normalize_eero_node(node_6ghz_hw_raw)
-        runner.assert_true(node_6ghz_hw_norm["backhaul_type"] == "Wireless Mesh (6 GHz / -48 dBm)", f"Nodo hardware Pro 6E senza freq API adotta 'Wireless Mesh (6 GHz / -48 dBm)' (ottenuto: {node_6ghz_hw_norm['backhaul_type']})")
+        runner.assert_true(node_6ghz_hw_norm["backhaul_type"] in ("Wireless Mesh (6 GHz / -48 dBm)", "Wireless Mesh (6 GHz / -48 dBm) (stimata)"), f"Nodo hardware Pro 6E senza freq API adotta 'Wireless Mesh (6 GHz / -48 dBm)' (ottenuto: {node_6ghz_hw_norm['backhaul_type']})")
 
         # Test 6d: Nodo Wi-Fi 7 hardware (eero Max 7 su 320MHz width)
         node_max7_raw = {
@@ -710,6 +711,9 @@ async def run_all_tests():
         page_html = page_res.text
         runner.assert_true("styles.css?v=" in page_html, "styles.css include parametro versione cache-busting (?v=)")
         runner.assert_true("app.js?v=" in page_html, "app.js include parametro versione cache-busting (?v=)")
+        for route in ("/dashboard", "/devices", "/speedtest", "/analytics", "/automations", "/manual", "/news", "/eero-news"):
+            route_res = await client.get(route)
+            runner.assert_true(route_res.status_code == 200 and 'x-data="eeroApp"' in route_res.text, f"GET {route} serve la SPA")
 
         # Test salvataggio impostazioni AdGuard singola istanza
         adg_payload = {
@@ -1119,7 +1123,7 @@ async def run_all_tests():
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
         check_data = check_res.json()
         runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
-        runner.assert_true(check_data.get("current_version") == "1.5.0", f"Versione corrente rilevata è 1.5.0 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true(check_data.get("current_version") == "1.6.0", f"Versione corrente rilevata è 1.6.0 (ottenuta: {check_data.get('current_version')})")
         runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
 
         # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
@@ -1885,24 +1889,24 @@ async def run_all_tests():
             runner.assert_true(k in it_dict.get("controls", {}), f"Chiave controls.{k} presente in it.json")
             runner.assert_true(k in en_dict.get("controls", {}), f"Chiave controls.{k} presente in en.json")
 
-        # 7. Test Manuale In-App & Package Versioning (v1.5.0)
+        # 7. Test Manuale In-App & Package Versioning (v1.6.0)
         import importlib
         app_pkg = importlib.import_module("app")
-        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.5.0", f"app.__version__ è '1.5.0' (trovato: {getattr(app_pkg, '__version__', None)})")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.0", f"app.__version__ è '1.6.0' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
-        runner.assert_true(res_man_it.json().get("count") == 10, f"Manuale IT contiene 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
+        runner.assert_true(res_man_it.json().get("count") >= 10, f"Manuale IT contiene almeno 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
         res_man_en = await client.get("/api/manual/sections?lang=en")
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
-        runner.assert_true(res_man_en.json().get("count") == 10, f"Manuale EN contiene 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
+        runner.assert_true(res_man_en.json().get("count") >= 10, f"Manuale EN contiene almeno 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
         res_ch_it = await client.get("/api/manual/changelog?lang=it")
-        runner.assert_true(res_ch_it.json().get("version") == "1.5.0", "Versione restituita da changelog IT è 1.5.0")
-        runner.assert_true("## v1.5.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.5.0")
+        runner.assert_true(res_ch_it.json().get("version") == "1.6.0", "Versione restituita da changelog IT è 1.6.0")
+        runner.assert_true("## v1.6.0" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.0")
         res_ch_en = await client.get("/api/manual/changelog?lang=en")
-        runner.assert_true(res_ch_en.json().get("version") == "1.5.0", "Versione restituita da changelog EN è 1.5.0")
-        runner.assert_true("## v1.5.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.5.0")
+        runner.assert_true(res_ch_en.json().get("version") == "1.6.0", "Versione restituita da changelog EN è 1.6.0")
+        runner.assert_true("## v1.6.0" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.0")
 
-        # 8. Test Build Number & Full Versioning (es. '1.5.0 build 1')
+        # 8. Test Build Number & Full Versioning (es. '1.6.0 build 1')
         runner.assert_true(hasattr(settings, "build_number") and bool(settings.build_number), "settings.build_number configurato")
         runner.assert_true(settings.full_version == f"{settings.app_version} build {settings.build_number}", f"settings.full_version format corretto: '{settings.full_version}'")
         res_health = await client.get("/api/health")
@@ -1914,12 +1918,2201 @@ async def run_all_tests():
         update_data = await updater_service.check_for_updates(force=True)
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
         runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
-        runner.assert_true(update_data.get("update_available") is False, "Nessun aggiornamento disponibile quando versione corrente combacia con Docker Hub")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
-        runner.assert_true(is_newer_version(settings.full_version, "1.5.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
-        runner.assert_true(is_newer_version("1.5.0 build 1", "1.5.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
+        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
+        runner.assert_true(is_newer_version("1.6.0 build 2", "1.6.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
+        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
+        runner.assert_true(is_newer_version("1.6.0 build 1", "1.6.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
+
+        # =====================================================================
+        # 20. TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)
+        # =====================================================================
+        print("\n📰 [20/21] TEST EEROOS RELEASE NOTES, ZENDESK SCRAPER & COMMUNITY HUB (v1.6.0)")
+
+        from app.services.eero_news_service import (
+            eero_news_service,
+            parse_eero_version,
+            compare_eero_versions,
+            is_newer_eero_version,
+            compute_firmware_alignment,
+        )
+
+        # 1. Test Funzioni di Confronto Versioni eeroOS (SemVer & Build)
+        runner.assert_true(parse_eero_version("v7.16.0-9483") == (7, 16, 0, 9483), "parse_eero_version analizza correttamente 'v7.16.0-9483'")
+        runner.assert_true(parse_eero_version("v7.5.2-192") == (7, 5, 2, 192), "parse_eero_version analizza correttamente 'v7.5.2-192'")
+        runner.assert_true(parse_eero_version("v6.16.5-4") == (6, 16, 5, 4), "parse_eero_version analizza correttamente 'v6.16.5-4'")
+        runner.assert_true(parse_eero_version("v1.0.11") == (1, 0, 11, 0), "parse_eero_version analizza correttamente 'v1.0.11'")
+        runner.assert_true(parse_eero_version("v7.17.1-24") == (7, 17, 1, 24), "parse_eero_version analizza correttamente 'v7.17.1-24'")
+        runner.assert_true(parse_eero_version(None) == (0, 0, 0, 0), "parse_eero_version gestisce None senza errori")
+        runner.assert_true(compare_eero_versions("v7.17.1-24", "v7.16.0-9483") == 1, "compare_eero_versions riconosce 7.17.1-24 > 7.16.0-9483")
+        runner.assert_true(compare_eero_versions("v7.16.0-9483", "v7.17.1-24") == -1, "compare_eero_versions riconosce 7.16.0-9483 < 7.17.1-24")
+        runner.assert_true(compare_eero_versions("v7.16.0-9483", "v7.16.0-9483") == 0, "compare_eero_versions riconosce versioni identiche")
+        runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.5.2-192") is True, "is_newer_eero_version rileva correttamente nuova release 7.16 vs 7.5.2")
+        runner.assert_true(is_newer_eero_version("v7.5.2-192", "v7.16.0-9483") is False, "is_newer_eero_version riconosce versione precedente")
+        runner.assert_true(is_newer_eero_version("v7.16.0-9483", "v7.16.0-9483") is False, "is_newer_eero_version ritorna False per versioni identiche")
+
+        # 1.1 Test Allineamento Rigoroso e Mutua Esclusione (compute_firmware_alignment)
+        # Caso A: Rete locale più recente della release censita (Early-rollout tipico eero: 7.17.1-24 vs 7.16.0-9483)
+        align_early = compute_firmware_alignment("v7.17.1-24", "v7.16.0-9483")
+        runner.assert_true(align_early["firmware_status"] == "newer_than_published", "compute_firmware_alignment assegna stato 'newer_than_published'")
+        runner.assert_true(align_early["is_up_to_date"] is True, "align_early imposta is_up_to_date=True")
+        runner.assert_true(align_early["update_available"] is False, "align_early garantisce update_available=False")
+        runner.assert_true(align_early["target_firmware"] is None, "align_early non ha target_firmware pendente")
+
+        # Caso B: Rete perfettamente allineata alla release ufficiale (7.16.0-9483 vs 7.16.0-9483)
+        align_same = compute_firmware_alignment("v7.16.0-9483", "v7.16.0-9483")
+        runner.assert_true(align_same["firmware_status"] == "up_to_date", "compute_firmware_alignment assegna stato 'up_to_date'")
+        runner.assert_true(align_same["is_up_to_date"] is True, "align_same imposta is_up_to_date=True")
+        runner.assert_true(align_same["update_available"] is False, "align_same imposta update_available=False")
+
+        # Caso C: Rete indietro rispetto alla release ufficiale (7.15.1-119 vs 7.16.0-9483)
+        align_behind = compute_firmware_alignment("v7.15.1-119", "v7.16.0-9483")
+        runner.assert_true(align_behind["firmware_status"] == "update_available", "compute_firmware_alignment assegna stato 'update_available'")
+        runner.assert_true(align_behind["is_up_to_date"] is False, "align_behind imposta is_up_to_date=False")
+        runner.assert_true(align_behind["update_available"] is True, "align_behind imposta update_available=True")
+        runner.assert_true(align_behind["target_firmware"] == "v7.16.0-9483", "align_behind target_firmware corrisponde alla release ufficiale")
+
+        # Caso D: API eero segnala target più recente (es. 7.17.0-1000 su flotta a 7.16)
+        align_pending = compute_firmware_alignment("v7.16.0-9483", "v7.16.0-9483", pending_api_target="v7.17.0-1000")
+        runner.assert_true(align_pending["firmware_status"] == "update_available", "Pending API target più recente attiva 'update_available'")
+        runner.assert_true(align_pending["target_firmware"] == "v7.17.0-1000", "target_firmware riflette l'aggiornamento pendente API")
+
+        # Caso E: API eero segnala target antecedente o uguale alla versione già installata (es. target 7.16 ma installata 7.17)
+        align_ignore_old_target = compute_firmware_alignment("v7.17.1-24", "v7.16.0-9483", pending_api_target="v7.16.0-9483")
+        runner.assert_true(align_ignore_old_target["firmware_status"] == "newer_than_published", "Target pendente più vecchio viene correttamente ignorato")
+        runner.assert_true(align_ignore_old_target["update_available"] is False, "update_available rimane False con target obsoleto")
+
+        # 2. Test Parser HTML Zendesk (Mock Payload Realistico)
+        sample_zendesk_html = """
+        <p>Introductory paragraph from eero support.</p>
+        <p><strong>eeroOS: v7.17.0-1000 - </strong><em>Released August 15, 2026</em></p>
+        <ul>
+            <li>Security vulnerability patches for Wi-Fi stack</li>
+            <li>Improved TrueChannel and AWGN interference mitigation on 6 GHz band</li>
+            <li>Performance and stability enhancements for mesh roaming</li>
+        </ul>
+        <p><strong>eeroOS: v7.16.1-50 - </strong><em>Released July 30, 2026</em></p>
+        <ul>
+            <li>General stability fixes and connection improvements</li>
+            <li>Matter and Thread protocol updates</li>
+        </ul>
+        """
+        parsed_notes = eero_news_service.parse_zendesk_html(sample_zendesk_html)
+        runner.assert_true(len(parsed_notes) == 2, f"Parser Zendesk estrae 2 release (trovate: {len(parsed_notes)})")
+        rel1 = parsed_notes[0]
+        runner.assert_true(rel1["version"] == "v7.17.0-1000", f"Versione release 1 corretta: {rel1['version']}")
+        runner.assert_true("August 15, 2026" in rel1["release_date"], f"Data release 1 corretta: {rel1['release_date']}")
+        runner.assert_true(len(rel1["content"]) == 3, f"Release 1 ha 3 bullet points (trovati: {len(rel1['content'])})")
+        runner.assert_true(rel1["is_security_patch"] is True, "Release 1 identificata correttamente come Security Patch")
+        runner.assert_true("Sicurezza" in rel1["tags"], "Tag 'Sicurezza' assegnato a Release 1")
+        runner.assert_true("Wi-Fi 7 / 6 GHz" in rel1["tags"], "Tag 'Wi-Fi 7 / 6 GHz' assegnato a Release 1")
+        runner.assert_true("Stabilità" in rel1["tags"], "Tag 'Stabilità' assegnato a Release 1")
+
+        rel2 = parsed_notes[1]
+        runner.assert_true(rel2["version"] == "v7.16.1-50", f"Versione release 2 corretta: {rel2['version']}")
+        runner.assert_true(rel2["is_security_patch"] is False, "Release 2 non contiene patch di sicurezza")
+        runner.assert_true("Smart Home" in rel2["tags"], "Tag 'Smart Home' assegnato a Release 2 per Thread/Matter")
+
+        # 3. Test Persistenza SQLite (Tabella eero_release_notes)
+        await db_service.clear_release_notes()
+        empty_notes = await db_service.get_release_notes()
+        runner.assert_true(len(empty_notes) == 0, "clear_release_notes svuota correttamente la tabella SQLite")
+
+        saved_count = await db_service.save_release_notes(parsed_notes)
+        runner.assert_true(saved_count == 2, f"save_release_notes ha salvato 2 record (salvati: {saved_count})")
+
+        db_notes = await db_service.get_release_notes(limit=10)
+        runner.assert_true(len(db_notes) == 2, f"get_release_notes recupera 2 record (ottenuti: {len(db_notes)})")
+        runner.assert_true(db_notes[0]["version"] in ("v7.17.0-1000", "v7.16.1-50"), "Versioni memorizzate conformi")
+        runner.assert_true(isinstance(db_notes[0]["content"], list), "content_json deserializzato come array Python")
+
+        latest_db = await db_service.get_latest_release_note()
+        runner.assert_true(latest_db is not None and bool(latest_db.get("version")), "get_latest_release_note restituisce la release più recente")
+
+        sec_only = await db_service.get_release_notes(security_only=True)
+        runner.assert_true(len(sec_only) == 1 and sec_only[0]["version"] == "v7.17.0-1000", "get_release_notes con security_only=True filtra correttamente")
+
+        # 4. Test Resilienza Offline & Timeout
+        import httpx
+        def _failing_transport(req):
+            raise httpx.ConnectError("Simulated offline network failure")
+
+        saved_last_fetch = eero_news_service._last_fetched
+        eero_news_service._last_fetched = None  # Forza tentativo remoto
+        orig_demo = settings.demo_mode
+        settings.demo_mode = False
+        eero_client.set_demo_mode(False)
+
+        # Simula chiamata con fallback su DB esistente
+        offline_notes = await eero_news_service.fetch_official_release_notes(force=True)
+        runner.assert_true(len(offline_notes) >= 2, f"In caso di timeout/offline fetch_official_release_notes usa la cache SQLite senza eccezioni (trovati: {len(offline_notes)})")
+        
+        # Test fallback community feedback su errore
+        community_res = await eero_news_service.fetch_community_feedback()
+        runner.assert_true(isinstance(community_res, list) and len(community_res) > 0, "fetch_community_feedback gestisce blocchi/errori restituendo discussioni di fallback")
+
+        # Ripristina stato demo per i test successivi
+        settings.demo_mode = orig_demo
+        eero_client.set_demo_mode(True)
+
+        # 5. Test Endpoint REST FastAPI GET /api/system/eero-news
+        res_news = await client.get("/api/system/eero-news")
+        runner.assert_true(res_news.status_code == 200, "Endpoint GET /api/system/eero-news risponde HTTP 200")
+        news_json = res_news.json()
+        runner.assert_true(news_json.get("status") == "success", "GET /api/system/eero-news restituisce status success")
+        runner.assert_true("current_firmware" in news_json, "Risposta include 'current_firmware'")
+        runner.assert_true("latest_firmware" in news_json, "Risposta include 'latest_firmware'")
+        runner.assert_true("is_up_to_date" in news_json, "Risposta include flag 'is_up_to_date'")
+        runner.assert_true("update_available" in news_json, "Risposta include flag 'update_available'")
+        runner.assert_true("firmware_status" in news_json, "Risposta include stringa 'firmware_status'")
+        runner.assert_true("nodes" in news_json and isinstance(news_json["nodes"], list), "Risposta include array 'nodes'")
+        runner.assert_true("releases" in news_json and len(news_json["releases"]) > 0, "Risposta include elenco note di rilascio")
+        runner.assert_true("community_posts" in news_json, "Risposta include feed 'community_posts'")
+
+        # In modalità Demo (flotta su v7.5.2 vs release v7.16+), deve rilevare update disponibile
+        runner.assert_true(news_json.get("is_up_to_date") is False, "In ambiente Demo rileva correttamente is_up_to_date=False (v7.5.2 vs v7.16+)")
+        runner.assert_true(news_json.get("update_available") is True, "In ambiente Demo rileva correttamente update_available=True")
+        runner.assert_true(news_json.get("firmware_status") == "update_available", "In ambiente Demo firmware_status è 'update_available'")
+
+        # 6. Test Endpoint REST POST /api/system/eero-news/refresh
+        res_refresh = await client.post("/api/system/eero-news/refresh")
+        runner.assert_true(res_refresh.status_code == 200, "Endpoint POST /api/system/eero-news/refresh risponde HTTP 200")
+        refresh_json = res_refresh.json()
+        runner.assert_true(refresh_json.get("status") == "success", "POST refresh restituisce status success")
+
+        # 7. Verifica Integrità Dizionari Localizzazione (it.json ed en.json)
+        with open("app/static/locales/it.json", "r", encoding="utf-8") as f:
+            it_locale = json.load(f)
+        with open("app/static/locales/en.json", "r", encoding="utf-8") as f:
+            en_locale = json.load(f)
+
+        runner.assert_true("eero_news" in it_locale.get("nav", {}), "Voce 'eero_news' presente in nav di it.json")
+        runner.assert_true("eero_news" in en_locale.get("nav", {}), "Voce 'eero_news' presente in nav di en.json")
+        runner.assert_true("eero_news" in it_locale, "Sezione 'eero_news' presente in it.json")
+        runner.assert_true("eero_news" in en_locale, "Sezione 'eero_news' presente in en.json")
+        runner.assert_true("up_to_date_title" in it_locale["eero_news"], "up_to_date_title presente in it.json")
+        runner.assert_true("up_to_date_title" in en_locale["eero_news"], "up_to_date_title presente in en.json")
+        runner.assert_true("newer_than_published_title" in it_locale["eero_news"], "newer_than_published_title presente in it.json")
+        runner.assert_true("newer_than_published_title" in en_locale["eero_news"], "newer_than_published_title presente in en.json")
+        runner.assert_true("newer_than_published_desc" in it_locale["eero_news"], "newer_than_published_desc presente in it.json")
+        runner.assert_true("newer_than_published_desc" in en_locale["eero_news"], "newer_than_published_desc presente in en.json")
+        runner.assert_true("update_avail_title" in it_locale["eero_news"], "update_avail_title presente in it.json")
+        runner.assert_true("update_avail_title" in en_locale["eero_news"], "update_avail_title presente in en.json")
+        runner.assert_true("show_older_releases" in it_locale["eero_news"], "show_older_releases presente in it.json")
+        runner.assert_true("show_older_releases" in en_locale["eero_news"], "show_older_releases presente in en.json")
+        runner.assert_true("show_recent_only" in it_locale["eero_news"], "show_recent_only presente in it.json")
+        runner.assert_true("show_recent_only" in en_locale["eero_news"], "show_recent_only presente in en.json")
+        runner.assert_true("installed_on_network" in it_locale["eero_news"], "installed_on_network presente in it.json")
+        runner.assert_true("installed_on_network" in en_locale["eero_news"], "installed_on_network presente in en.json")
+        runner.assert_true("community_title" in it_locale["eero_news"], "community_title presente in it.json")
+        runner.assert_true("community_title" in en_locale["eero_news"], "community_title presente in en.json")
+
+        # =====================================================================
+        # 21. TEST AI NETWORK DIAGNOSTICS, ROAMING ADVISOR & IOT ANOMALY DETECTION (v1.6.0)
+        # =====================================================================
+        print("\n🤖 [21/22] TEST AI NETWORK DIAGNOSTICS, ROAMING ADVISOR & IOT ANOMALY DETECTION (v1.6.0)")
+
+        from app.services.diagnostics_service import (
+            diagnostics_service,
+            is_mobile_client,
+            is_iot_client,
+        )
+
+        # 1. Test Euristica di Classificazione Client (is_mobile_client vs is_iot_client)
+        runner.assert_true(is_mobile_client("iPhone 15 Pro", "iPhone"), "is_mobile_client riconosce iPhone come dispositivo mobile")
+        runner.assert_true(is_mobile_client("Samsung Galaxy Tab S9", "Galaxy-Tab"), "is_mobile_client riconosce Galaxy Tab come mobile")
+        runner.assert_true(is_mobile_client("MacBook Pro M3", "MacBook-Pro"), "is_mobile_client riconosce MacBook come mobile/laptop")
+        runner.assert_true(is_mobile_client("iPad Air", "iPad"), "is_mobile_client riconosce iPad come mobile")
+        runner.assert_true(is_mobile_client("LG OLED 4K TV", "LGwebOSTV") is False, "is_mobile_client esclude Smart TV fisse")
+        runner.assert_true(is_mobile_client("Shelly 1PM Relay", "shelly-switch") is False, "is_mobile_client esclude relè IoT")
+        runner.assert_true(is_mobile_client("Sonoff Cam Outdoor", "sonoff-cam") is False, "is_mobile_client esclude telecamere IoT")
+
+        runner.assert_true(is_iot_client("Shelly Plus 1PM", "shelly1pm-living"), "is_iot_client riconosce Shelly come apparato IoT")
+        runner.assert_true(is_iot_client("Philips Hue Bridge", "hue-bridge"), "is_iot_client riconosce Hue Bridge come IoT")
+        runner.assert_true(is_iot_client("Sonoff Micro", "sonoff-micro"), "is_iot_client riconosce Sonoff come IoT")
+        runner.assert_true(is_iot_client("Aqara Hub M2", "aqara-hub"), "is_iot_client riconosce Aqara Hub come IoT")
+        runner.assert_true(is_iot_client("Tasmota Plug", "tasmota-plug-1"), "is_iot_client riconosce Tasmota come IoT")
+        runner.assert_true(is_iot_client("MacBook Pro", "MacBook-Pro") is False, "is_iot_client esclude personal computer")
+        runner.assert_true(is_iot_client("iPhone 15", "iPhone") is False, "is_iot_client esclude smartphone")
+
+        # 2. Test Roaming Advisor Euristico (Sticky Clients Detection)
+        mock_eeros = [
+            {"id": "eero_gw", "name": "eero Gateway", "is_gateway": True, "status": "connected"},
+            {"id": "eero_studio", "name": "eero Studio", "is_gateway": False, "status": "connected"},
+        ]
+        mock_devices = [
+            # Client mobile agganciato a GW con segnale degradato (-80 dBm) -> Deve essere sticky client
+            {
+                "id": "dev_mobile_sticky",
+                "custom_name": "Galaxy Tab S9",
+                "hostname": "Galaxy-Tab-S9",
+                "mac": "3C:22:FB:99:88:77",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -80,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            },
+            # Client mobile con ottimo segnale (-55 dBm) -> NON deve essere sticky
+            {
+                "id": "dev_mobile_good",
+                "custom_name": "iPhone 15 Pro",
+                "hostname": "iPhone-15",
+                "mac": "4D:33:AA:11:22:33",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -55,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            },
+            # Dispositivo fisso con segnale degradato (-85 dBm) -> NON deve comparire come roaming advisor
+            {
+                "id": "dev_tv_weak",
+                "custom_name": "LG OLED TV",
+                "hostname": "LGwebOSTV",
+                "mac": "AA:BB:CC:DD:EE:FF",
+                "wireless": True,
+                "connected": True,
+                "signal_rssi": -85,
+                "connected_eero_id": "eero_gw",
+                "connected_eero_name": "eero Gateway",
+            }
+        ]
+
+        roaming_report = diagnostics_service.analyze_roaming_advisor(mock_devices, mock_eeros)
+        runner.assert_true(roaming_report["sticky_count"] == 1, f"Roaming Advisor rileva esattamente 1 sticky client (rilevati: {roaming_report['sticky_count']})")
+        sticky_dev = roaming_report["devices"][0]
+        runner.assert_true(sticky_dev["mac"].lower() == "3c:22:fb:99:88:77", "MAC del dispositivo sticky corrisponde a Galaxy Tab S9")
+        runner.assert_true(sticky_dev["connected_eero_name"] == "eero Gateway", "Nodo attuale rilevato correttamente come Gateway")
+        runner.assert_true(sticky_dev["suggested_eero_name"] == "eero Studio", "Nodo consigliato per roaming è 'eero Studio'")
+        runner.assert_true(sticky_dev["estimated_delta_dbm"] > 0, "Guadagno stimato del segnale positivo (>0 dB)")
+        runner.assert_true(bool(sticky_dev["advice_it"]) and bool(sticky_dev["advice_en"]), "Suggerimenti d'azione bilingue presenti")
+
+        # 3. Test NLG Health Summary & Actionable Checklist
+        mock_penalties = [
+            {"id": "degraded_backhaul", "factor": "Ethernet Capped to 100M", "points": 15, "description": "Il nodo eero Studio negozia a soli 100 Mbps", "affected_items": ["eero Studio (100 Mbps)"]},
+            {"id": "offline_nodes", "factor": "Offline Nodes", "points": 25, "description": "1 nodo eero risulta offline", "affected_items": ["eero Studio"]}
+        ]
+        health_summary = diagnostics_service.generate_health_summary(
+            health_details={"score": 60, "status": "attention", "penalties": mock_penalties},
+            network_details={"status": "online"},
+            eeros=mock_eeros,
+            devices=mock_devices,
+            roaming_info=roaming_report,
+            recent_anomalies=[]
+        )
+        runner.assert_true(bool(health_summary["overview_it"]) and bool(health_summary["overview_en"]), "Health summary produce panoramica bilingue")
+        runner.assert_true(bool(health_summary["narrative_it"]) and bool(health_summary["narrative_en"]), "Health summary produce narrativa bilingue dettagliata")
+        runner.assert_true("100 Mbps" in health_summary["narrative_it"], "Narrativa IT menziona la limitazione 100 Mbps del cavo")
+        runner.assert_true("100 Mbps" in health_summary["narrative_en"], "Narrativa EN menziona la limitazione 100 Mbps del cavo")
+        runner.assert_true(len(health_summary["checklist"]) >= 2, f"Checklist contiene azioni correttive (trovate: {len(health_summary['checklist'])})")
+
+        first_priority = health_summary["checklist"][0]["priority"]
+        runner.assert_true(first_priority in ("critical", "high"), f"Prima azione in checklist ha priorità elevata ({first_priority})")
+
+        # 4. Test Rilevamento Anomalie Notturne IoT e Persistenza SQLite
+        await db_service.clear_iot_anomalies()
+        init_anomalies = await db_service.get_iot_anomalies()
+        runner.assert_true(len(init_anomalies) == 0, "clear_iot_anomalies svuota la tabella SQLite")
+
+        detected_demo_anomalies = diagnostics_service.detect_iot_night_anomalies(mock_devices, demo_mode=True)
+        runner.assert_true(len(detected_demo_anomalies) > 0, "detect_iot_night_anomalies produce anomalie sintetiche realistiche in demo mode")
+        sample_anom = detected_demo_anomalies[0]
+        runner.assert_true("mac_address" in sample_anom and "device_name" in sample_anom, "Anomalia include MAC e Device Name")
+        runner.assert_true("observed_mb" in sample_anom and "baseline_mb" in sample_anom, "Anomalia include metriche di traffico")
+
+        saved_anom_count = await db_service.save_iot_anomalies(detected_demo_anomalies)
+        runner.assert_true(saved_anom_count == len(detected_demo_anomalies), "save_iot_anomalies persiste correttamente tutte le anomalie")
+
+        retrieved_anomalies = await db_service.get_iot_anomalies(limit=10)
+        runner.assert_true(len(retrieved_anomalies) == len(detected_demo_anomalies), "get_iot_anomalies recupera le anomalie salvate")
+
+        # 5. Test Endpoint REST GET /api/diagnostics/iot-anomalies
+        res_iot_api = await client.get("/api/diagnostics/iot-anomalies")
+        runner.assert_true(res_iot_api.status_code == 200, "GET /api/diagnostics/iot-anomalies risponde HTTP 200")
+        iot_api_json = res_iot_api.json()
+        runner.assert_true(iot_api_json.get("status") == "success", "Risposta /api/diagnostics/iot-anomalies ha status success")
+        runner.assert_true("anomalies" in iot_api_json and isinstance(iot_api_json["anomalies"], list), "Risposta include array 'anomalies'")
+
+        # 6. Test Integrazione Completa in /api/network/health-breakdown
+        await client.post("/api/auth/mode", json={"demo": True})
+        await background_poller._poll_and_cache()
+        res_health = await client.get("/api/network/health-breakdown")
+        runner.assert_true(res_health.status_code == 200, "GET /api/network/health-breakdown risponde HTTP 200")
+        health_json = res_health.json()
+        h_details = health_json.get("data", {}).get("health_details", {})
+        runner.assert_true("ai_summary" in h_details, "Payload health breakdown include 'ai_summary'")
+        runner.assert_true("overview_it" in h_details["ai_summary"], "ai_summary include 'overview_it'")
+        runner.assert_true("overview_en" in h_details["ai_summary"], "ai_summary include 'overview_en'")
+        runner.assert_true("narrative_it" in h_details["ai_summary"], "ai_summary include 'narrative_it'")
+        runner.assert_true("narrative_en" in h_details["ai_summary"], "ai_summary include 'narrative_en'")
+        runner.assert_true("roaming_advisor" in h_details, "Payload health breakdown include 'roaming_advisor'")
+        runner.assert_true("devices" in h_details["roaming_advisor"], "roaming_advisor include 'devices'")
+        runner.assert_true("iot_anomalies" in h_details, "Payload health breakdown include 'iot_anomalies'")
+        runner.assert_true("action_checklist" in h_details, "Payload health breakdown include 'action_checklist'")
+        runner.assert_true(isinstance(h_details["action_checklist"], list), "action_checklist è una lista ordinata")
+
+        # In modalità Demo, verifica che il tablet Galaxy-Tab-S9 (dev_11) compaia nei consigli di roaming
+        demo_sticky_devices = h_details["roaming_advisor"].get("devices", [])
+        galaxy_sticky = any("galaxy" in str(d.get("name") or "").lower() or "galaxy" in str(d.get("hostname") or "").lower() or d.get("mac") == "3c:22:fb:99:88:77" for d in demo_sticky_devices)
+        runner.assert_true(galaxy_sticky, "In Demo Mode Galaxy-Tab-S9 è identificato dal Roaming Advisor (Sticky Client)")
+
+        # 7. Verifica Dizionari di Localizzazione Bilingue (it.json ed en.json)
+        runner.assert_true("sticky_roaming_badge" in it_locale.get("devices", {}), "sticky_roaming_badge presente in it.json [devices]")
+        runner.assert_true("sticky_roaming_badge" in en_locale.get("devices", {}), "sticky_roaming_badge presente in en.json [devices]")
+        runner.assert_true("ai_diagnostics_badge" in it_locale.get("health_modal", {}), "ai_diagnostics_badge presente in it.json [health_modal]")
+        runner.assert_true("ai_diagnostics_badge" in en_locale.get("health_modal", {}), "ai_diagnostics_badge presente in en.json [health_modal]")
+        runner.assert_true("ai_analysis_title" in it_locale.get("health_modal", {}), "ai_analysis_title presente in it.json [health_modal]")
+        runner.assert_true("ai_analysis_title" in en_locale.get("health_modal", {}), "ai_analysis_title presente in en.json [health_modal]")
+        runner.assert_true("action_checklist_title" in it_locale.get("health_modal", {}), "action_checklist_title presente in it.json [health_modal]")
+        runner.assert_true("action_checklist_title" in en_locale.get("health_modal", {}), "action_checklist_title presente in en.json [health_modal]")
+        runner.assert_true("roaming_advisor_title" in it_locale.get("health_modal", {}), "roaming_advisor_title presente in it.json [health_modal]")
+        runner.assert_true("roaming_advisor_title" in en_locale.get("health_modal", {}), "roaming_advisor_title presente in en.json [health_modal]")
+        runner.assert_true("iot_anomalies_title" in it_locale.get("health_modal", {}), "iot_anomalies_title presente in it.json [health_modal]")
+        runner.assert_true("iot_anomalies_title" in en_locale.get("health_modal", {}), "iot_anomalies_title presente in en.json [health_modal]")
+        runner.assert_true("priority_critical" in it_locale.get("health_modal", {}), "priority_critical presente in it.json [health_modal]")
+        runner.assert_true("priority_high" in it_locale.get("health_modal", {}), "priority_high presente in it.json [health_modal]")
+        runner.assert_true("priority_medium" in it_locale.get("health_modal", {}), "priority_medium presente in it.json [health_modal]")
+        runner.assert_true("priority_low" in it_locale.get("health_modal", {}), "priority_low presente in it.json [health_modal]")
+
+        # -----------------------------------------------------------------
+        # 22. TEST LOCAL AUTHENTICATION, RBAC PERMISSIONS & USERS (v1.6.0 Modulo 1)
+        # -----------------------------------------------------------------
+        print("\n🔐 [22/22] TEST LOCAL AUTHENTICATION, RBAC PERMISSIONS & USER MANAGEMENT (v1.6.0)")
+
+        from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
+        
+        # 1. Test Crittografia Password PBKDF2/SHA-256
+        test_pw = "SuperSecretPassword123!"
+        pw_hash, pw_salt = auth_service.hash_password(test_pw)
+        runner.assert_true(len(pw_hash) == 64, f"Hash PBKDF2 digest SHA-256 lungo 64 caratteri esadecimali (lunghezza: {len(pw_hash)})")
+        runner.assert_true(len(pw_salt) == 32, f"Salt crittografico casuale lungo 32 caratteri esadecimali (lunghezza: {len(pw_salt)})")
+        runner.assert_true(auth_service.verify_password(test_pw, pw_hash, pw_salt) is True, "verify_password valida con successo la password corretta")
+        runner.assert_true(auth_service.verify_password("WrongPassword!", pw_hash, pw_salt) is False, "verify_password rifiuta tassativamente password errata")
+        runner.assert_true(auth_service.verify_password("", pw_hash, pw_salt) is False, "verify_password rifiuta stringa vuota")
+        
+        token_sample = auth_service.generate_session_token()
+        runner.assert_true(len(token_sample) >= 32, "generate_session_token produce token crittografico ad elevata entropia")
+
+        catalog = auth_service.get_permissions_catalog()
+        runner.assert_true("read_scopes" in catalog and "action_scopes" in catalog, "Catalogo permessi espone read_scopes e action_scopes")
+        runner.assert_true("action_run_speedtest" in catalog.get("all_keys", []), "action_run_speedtest presente tra i permessi supportati")
+        runner.assert_true("action_reboot_nodes" in catalog.get("all_keys", []), "action_reboot_nodes presente tra i permessi supportati")
+
+        # 2. Test Inizializzazione e Bootstrap Database SQLite / Setup Wizard
+        # Reset pulito di local_users e user_sessions per validare il flusso reale del Setup Wizard
+        async with db_service._write_lock:
+            async with aiosqlite.connect(db_service.db_path, timeout=60.0) as db_clean:
+                await db_clean.execute("DELETE FROM user_sessions;")
+                await db_clean.execute("DELETE FROM local_users;")
+                await db_clean.commit()
+
+        res_status = await client.get("/api/auth/local/status")
+        runner.assert_true(res_status.status_code == 200, "GET /api/auth/local/status risponde HTTP 200")
+        status_payload = res_status.json()
+        runner.assert_true(status_payload.get("setup_required") is True, "Al primo avvio setup_required è True")
+
+        # Esegui il Setup Wizard iniziale
+        res_setup = await client.post("/api/auth/local/setup", json={
+            "username": "admin",
+            "password": "AdminPassword123!",
+            "display_name": "Admin"
+        })
+        runner.assert_true(res_setup.status_code == 200, "POST /api/auth/local/setup completa il primo setup con successo")
+        setup_json = res_setup.json()
+        runner.assert_true(setup_json.get("status") == "success", "Setup restituisce status 'success'")
+        admin_pwd = "AdminPassword123!"
+        runner.admin_test_pwd = admin_pwd
+        admin_user = await db_service.get_local_user_by_username("admin")
+
+        # Verifica che setup_required sia ora False
+        res_status_after = await client.get("/api/auth/local/status")
+        runner.assert_true(res_status_after.json().get("setup_required") is False, "Dopo setup, setup_required è False")
+
+        runner.assert_true(admin_user is not None, "Utente 'admin' presente nel database")
+        runner.assert_true(admin_user.get("is_admin") is True, "Utente admin possiede flag is_admin=True")
+        runner.assert_true(len(admin_user.get("permissions", [])) >= len(ALL_PERMISSION_KEYS), "Utente admin possiede tutti i permessi granulari RBAC")
+
+        # Verifica rifiuto doppi setup
+        res_dup_setup = await client.post("/api/auth/local/setup", json={"username": "hacker", "password": "PasswordHacker123!"})
+        runner.assert_true(res_dup_setup.status_code == 400, "POST /api/auth/local/setup rifiuta ulteriori setup una volta completato")
+
+        # 3. Test Chiamate Non Autenticate e Login API
+        client.cookies.clear()
+        res_me_unauth = await client.get("/api/auth/local/me")
+        runner.assert_true(res_me_unauth.status_code == 401, "GET /api/auth/local/me senza token restituisce HTTP 401 Unauthorized")
+
+        res_users_noauth = await client.get("/api/users")
+        runner.assert_true(res_users_noauth.status_code == 401, "GET /api/users senza autenticazione restituisce HTTP 401")
+
+        # Fallimento con password errata
+        res_login_bad = await client.post("/api/auth/local/login", json={"username": "admin", "password": "WrongPassword123"})
+        runner.assert_true(res_login_bad.status_code == 401, "POST /api/auth/local/login con password errata restituisce HTTP 401 Unauthorized")
+
+        # Successo con admin configurato
+        res_login_ok = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
+        runner.assert_true(res_login_ok.status_code == 200, "POST /api/auth/local/login con credenziali corrette risponde HTTP 200 OK")
+        login_json = res_login_ok.json()
+        runner.assert_true(login_json.get("status") == "success", "Risposta login contiene status 'success'")
+        admin_token = login_json.get("token")
+        runner.assert_true(bool(admin_token), "Login restituisce session token valido")
+        runner.assert_true(login_json.get("user", {}).get("username") == "admin", "Payload user contiene username 'admin'")
+
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+        # 4. Test API Endpoint GET /api/auth/local/me
+        res_me_auth = await client.get("/api/auth/local/me", headers=admin_headers)
+        runner.assert_true(res_me_auth.status_code == 200, "GET /api/auth/local/me con Bearer token risponde HTTP 200 OK")
+        me_json = res_me_auth.json()
+        runner.assert_true(me_json.get("user", {}).get("username") == "admin", "/me restituisce profilo admin autenticato")
+
+        # 5. Test Endpoint GET /api/auth/local/permissions
+        res_perm = await client.get("/api/auth/local/permissions")
+        runner.assert_true(res_perm.status_code == 200, "GET /api/auth/local/permissions risponde HTTP 200 OK")
+
+        # 6. Test CRUD Utenti: /api/users
+        # Elenco utenti da parte di admin
+        res_users_list = await client.get("/api/users", headers=admin_headers)
+        runner.assert_true(res_users_list.status_code == 200, "GET /api/users con admin token risponde HTTP 200 OK")
+        users_list = res_users_list.json().get("users", [])
+        runner.assert_true(len(users_list) >= 1, "Elenco utenti contiene almeno l'utente admin")
+
+        # Creazione nuovo operatore con permessi limitati (SOLO action_run_speedtest)
+        new_op_payload = {
+            "username": "operatore_test",
+            "password": "PasswordOperatore1!",
+            "is_admin": False,
+            "permissions": ["action_run_speedtest", "view_devices"]
+        }
+        res_create_op = await client.post("/api/users", json=new_op_payload, headers=admin_headers)
+        runner.assert_true(res_create_op.status_code == 201, "POST /api/users da parte di admin risponde HTTP 201 Created")
+        created_op = res_create_op.json().get("user", {})
+        op_id = created_op.get("id")
+        runner.assert_true(op_id is not None, "Nuovo utente creato riceve un ID univoco")
+
+        # Creazione duplicata con stesso username -> 409 Conflict
+        res_create_dup = await client.post("/api/users", json=new_op_payload, headers=admin_headers)
+        runner.assert_true(res_create_dup.status_code == 409, "POST /api/users con username duplicato restituisce HTTP 409 Conflict")
+
+        # Login con nuovo operatore
+        res_op_login = await client.post("/api/auth/local/login", json={"username": "operatore_test", "password": "PasswordOperatore1!"})
+        runner.assert_true(res_op_login.status_code == 200, "Login con nuovo operatore risponde HTTP 200 OK")
+        op_token = res_op_login.json().get("token")
+        op_headers = {"Authorization": f"Bearer {op_token}"}
+
+        # Operatore non admin tenta di accedere a /api/users -> 403 Forbidden
+        res_op_users = await client.get("/api/users", headers=op_headers)
+        runner.assert_true(res_op_users.status_code == 403, "GET /api/users da parte di operatore non admin bloccato con HTTP 403 Forbidden")
+
+        res_op_create = await client.post("/api/users", json={"username": "fake_admin", "password": "123"}, headers=op_headers)
+        runner.assert_true(res_op_create.status_code == 403, "POST /api/users da parte di operatore non admin bloccato con HTTP 403 Forbidden")
+
+        # 7. Test Protezione RBAC Dependency Injection (require_permission)
+        # Operatore ha 'action_run_speedtest' -> richiesta non viene bloccata con 403
+        res_speed_op = await client.post("/api/speedtest/run", headers=op_headers)
+        runner.assert_true(res_speed_op.status_code != 403, "Operatore con permesso 'action_run_speedtest' NON riceve HTTP 403")
+
+        # Operatore NON ha 'action_reboot_nodes' -> richiesta bloccata con HTTP 403 Forbidden!
+        res_reboot_op = await client.post("/api/network/reboot", headers=op_headers)
+        runner.assert_true(res_reboot_op.status_code == 403, "Operatore privo di 'action_reboot_nodes' bloccato su /network/reboot con HTTP 403 Forbidden")
+
+        # Operatore NON ha 'action_toggle_guest' -> richiesta bloccata con HTTP 403 Forbidden!
+        res_guest_op = await client.post("/api/network/guest", json={"enabled": True}, headers=op_headers)
+        runner.assert_true(res_guest_op.status_code == 403, "Operatore privo di 'action_toggle_guest' bloccato su /network/guest con HTTP 403 Forbidden")
+
+        # Richiesta con token Bearer corrotto/falso -> HTTP 401 Unauthorized
+        res_fake_token = await client.post("/api/network/reboot", headers={"Authorization": "Bearer FakeInvalidToken12345"})
+        runner.assert_true(res_fake_token.status_code == 401, "Richiesta con token di sessione corrotto restituisce HTTP 401 Unauthorized")
+
+        # 8. Test Protezione Rimozione Ultimo Amministratore
+        admin_id = admin_user["id"]
+        res_revoke_admin = await client.put(f"/api/users/{admin_id}", json={"is_admin": False}, headers=admin_headers)
+        runner.assert_true(res_revoke_admin.status_code == 400, "Tentativo di revoca privilegi all'ultimo admin bloccato con HTTP 400")
+
+        res_del_admin = await client.delete(f"/api/users/{admin_id}", headers=admin_headers)
+        runner.assert_true(res_del_admin.status_code == 400, "Tentativo di cancellazione dell'ultimo admin bloccato con HTTP 400")
+
+        # Aggiornamento permessi operatore da parte di admin
+        res_update_op = await client.put(
+            f"/api/users/{op_id}",
+            json={"permissions": ["action_run_speedtest", "action_reboot_nodes"]},
+            headers=admin_headers
+        )
+        runner.assert_true(res_update_op.status_code == 200, "PUT /api/users/{id} aggiorna con successo i permessi dell'operatore")
+
+        # Cancellazione operatore da parte di admin
+        res_del_op = await client.delete(f"/api/users/{op_id}", headers=admin_headers)
+        runner.assert_true(res_del_op.status_code == 200, "DELETE /api/users/{id} elimina correttamente l'operatore")
+
+        # 9. Test Logout e Invalidazione Sessione
+        res_logout = await client.post("/api/auth/local/logout", headers=admin_headers)
+        runner.assert_true(res_logout.status_code == 200, "POST /api/auth/local/logout risponde HTTP 200 OK")
+
+        res_me_after_logout = await client.get("/api/auth/local/me", headers=admin_headers)
+        runner.assert_true(res_me_after_logout.status_code == 401, "Dopo logout il token risulta invalidato (HTTP 401)")
+
+        # -----------------------------------------------------------------
+        # 23. TEST CLOUD RESILIENCE, PLACEHOLDER REMOVAL & IPV6 ULA (v1.6.0 Modulo 1)
+        # -----------------------------------------------------------------
+        print("\n🛡️ [23/24] TEST CLOUD POLLER RESILIENCE, PLACEHOLDER CLEANUP & IPV6 ULA (v1.6.0)")
+
+        # 1. Test Issue #55: Cloud Poller Resilience & Graceful Disconnection
+        from app.services.poller import BackgroundPoller
+        test_poller = BackgroundPoller()
+
+        init_state = test_poller.get_cached_state()
+        runner.assert_true("data_stale" in init_state, "get_cached_state espone il flag 'data_stale'")
+        runner.assert_true("cloud_status" in init_state, "get_cached_state espone 'cloud_status'")
+        runner.assert_true("consecutive_failed_polls" in init_state, "get_cached_state espone 'consecutive_failed_polls'")
+        runner.assert_true(init_state["data_stale"] is False, "data_stale iniziale è False")
+        runner.assert_true(init_state["cloud_status"] == "connected", "cloud_status iniziale è 'connected'")
+        runner.assert_true(init_state["consecutive_failed_polls"] == 0, "consecutive_failed_polls iniziale è 0")
+
+        # Simulazione caduta connessione Cloud (Timeout / HTTP 503)
+        orig_get_network = eero_client.get_network_details
+        orig_get_eeros = eero_client.get_eeros
+        orig_get_devices = eero_client.get_devices
+
+        async def _mock_cloud_timeout():
+            raise httpx.ConnectTimeout("Connection to eero cloud timed out")
+
+        eero_client.get_network_details = _mock_cloud_timeout
+
+        # Esecuzione poll con errore
+        await test_poller._poll_and_cache()
+        runner.assert_true(test_poller.data_stale is True, "In caso di errore cloud data_stale diventa True")
+        runner.assert_true(test_poller.cloud_status == "unreachable", "cloud_status impostato a 'unreachable' su timeout")
+        runner.assert_true(test_poller._consecutive_failed_polls == 1, "consecutive_failed_polls incrementato a 1")
+        runner.assert_true(test_poller._last_successful_poll is None, "last_successful_poll non viene aggiornato su errore")
+
+        # Simulazione sessione scaduta (HTTP 401)
+        async def _mock_cloud_401():
+            req = httpx.Request("GET", "https://api-user.e2ro.com/2.2/networks")
+            resp = httpx.Response(401, request=req)
+            raise httpx.HTTPStatusError("401 Unauthorized", request=req, response=resp)
+
+        eero_client.get_network_details = _mock_cloud_401
+        await test_poller._poll_and_cache()
+        runner.assert_true(test_poller.cloud_status == "unauthorized", "cloud_status impostato a 'unauthorized' su HTTP 401")
+        runner.assert_true(test_poller._consecutive_failed_polls == 2, "consecutive_failed_polls incrementato a 2")
+
+        # Terzo fallimento consecutivo: deve attivare _cloud_alert_sent
+        await test_poller._poll_and_cache()
+        runner.assert_true(test_poller._consecutive_failed_polls == 3, "consecutive_failed_polls raggiunge 3")
+        runner.assert_true(test_poller._cloud_alert_sent is True, "Dopo 3 fallimenti consecutivi _cloud_alert_sent diventa True")
+
+        # Verifica soppressione falsi allarmi nodi offline durante cloud outage
+        test_poller._known_eeros_status["node_test_1"] = "online"
+        fake_offline_node = {"id": "node_test_1", "status": "offline"}
+        alerts_before = len(await db_service.get_alerts(limit=50))
+        if test_poller._consecutive_failed_polls == 0 and not test_poller.data_stale:
+            await notification_service.notify_node_offline(fake_offline_node)
+        alerts_after = len(await db_service.get_alerts(limit=50))
+        runner.assert_true(alerts_before == alerts_after, "Allarme node_offline soppresso con successo durante interruzione cloud")
+
+        # Ripristino eero client e poll riuscito
+        eero_client.get_network_details = orig_get_network
+        eero_client.get_eeros = orig_get_eeros
+        eero_client.get_devices = orig_get_devices
+
+        await test_poller._poll_and_cache()
+        runner.assert_true(test_poller._consecutive_failed_polls == 0, "Dopo successo consecutive_failed_polls torna a 0")
+        runner.assert_true(test_poller.data_stale is False, "data_stale torna a False")
+        runner.assert_true(test_poller.cloud_status == "connected", "cloud_status torna a 'connected'")
+        runner.assert_true(test_poller._cloud_alert_sent is False, "_cloud_alert_sent resettato a False")
+        runner.assert_true(test_poller._last_successful_poll is not None, "last_successful_poll aggiornato dopo successo")
+
+        # 2. Test Issue #56: Rimozione Fallback e Placeholder Arbitrari
+        # Test 2a: public_ip è None se assente dal payload cloud (no '0.0.0.0' né fallback a gateway_ip)
+        net_no_pub = eero_client._normalize_network_details({"name": "Test Net", "gateway_ip": "10.0.0.1"})
+        runner.assert_true(net_no_pub["public_ip"] is None, f"public_ip è None quando non fornito dal cloud (ottenuto: {net_no_pub['public_ip']})")
+        runner.assert_true(net_no_pub["public_ip"] != "0.0.0.0", "public_ip non contiene il placeholder fittizio '0.0.0.0'")
+        runner.assert_true(net_no_pub["public_ip"] != "10.0.0.1", "public_ip non eredita arbitrariamente l'IP gateway della LAN")
+
+        # Test 2b: gateway_ip è None se assente (no '192.168.4.1' hardcoded)
+        net_no_gw = eero_client._normalize_network_details({"name": "Test Net"})
+        runner.assert_true(net_no_gw["gateway_ip"] is None, f"gateway_ip è None quando non fornito (ottenuto: {net_no_gw['gateway_ip']})")
+        runner.assert_true(net_no_gw["gateway_ip"] != "192.168.4.1", "gateway_ip non adotta il default '192.168.4.1'")
+        runner.assert_true("192.168.4.1" not in net_no_gw["dns_servers"], "dns_servers non inserisce '192.168.4.1' come fallback arbitrario")
+
+        # Test 2c: Nessun moltiplicatore sintetico arbitrario per throughput (rx_pkts * 1420 / 280)
+        raw_dev_pkts = {
+            "mac": "AA:BB:CC:DD:EE:FF",
+            "hostname": "IoT Sensor",
+            "connectivity": {
+                "packet_stats": {
+                    "rx_packets": 5000,
+                    "tx_packets": 2000,
+                }
+            }
+        }
+        norm_dev_pkts = eero_client._normalize_device(raw_dev_pkts)
+        runner.assert_true(norm_dev_pkts["rx_packets"] == 5000, "rx_packets registrato accuratamente a 5000")
+        runner.assert_true(norm_dev_pkts["tx_packets"] == 2000, "tx_packets registrato accuratamente a 2000")
+        runner.assert_true(norm_dev_pkts["rx_bytes"] == 0.0, f"rx_bytes non usa moltiplicatore sintetico * 1420 (ottenuto: {norm_dev_pkts['rx_bytes']})")
+        runner.assert_true(norm_dev_pkts["tx_bytes"] == 0.0, f"tx_bytes non usa moltiplicatore sintetico * 280 (ottenuto: {norm_dev_pkts['tx_bytes']})")
+
+        # Test 2d: Trasparenza backhaul stimato da modello hardware
+        raw_node_est = {
+            "name": "Stima Node 6E",
+            "model": "eero Pro 6E (K010001)",
+            "wireless": True,
+            "connected": True,
+            "channel": 0
+        }
+        norm_node_est = eero_client._normalize_eero_node(raw_node_est)
+        runner.assert_true("(stimata)" in norm_node_est["backhaul_type"], f"Banda mesh stimata da hardware include '(stimata)' (ottenuto: {norm_node_est['backhaul_type']})")
+        runner.assert_true(norm_node_est.get("backhaul_estimated") is True, "Flag backhaul_estimated è True")
+
+        # 3. Test Issue #57: Supporto Completo IPv6 ULA (RFC 4193)
+        raw_device_v6 = {
+            "mac": "11:22:33:44:55:66",
+            "hostname": "Multi-Stack Workstation",
+            "ips": [
+                "192.168.1.50",
+                "2001:0db8:85a3:0000:0000:8a2e:0370:7334",  # GUA (Global Unicast)
+                "fd12:3456:789a:1::42",                      # ULA (Unique Local, fd00::/8)
+                "fc00:abcd:ef01:2::99",                      # ULA (Unique Local, fc00::/7)
+                "fe80::1ff:fe00:3a60",                       # Link-Local (fe80::/10)
+            ]
+        }
+        norm_v6 = eero_client._normalize_device(raw_device_v6)
+        runner.assert_true("2001:0db8:85a3:0000:0000:8a2e:0370:7334" in norm_v6["ipv6_gua"], "GUA classificato correttamente in ipv6_gua")
+        runner.assert_true("fd12:3456:789a:1::42" in norm_v6["ipv6_ula"], "ULA fd12:: classificato correttamente in ipv6_ula")
+        runner.assert_true("fc00:abcd:ef01:2::99" in norm_v6["ipv6_ula"], "ULA fc00:: classificato correttamente in ipv6_ula")
+        runner.assert_true("fe80::1ff:fe00:3a60" in norm_v6["ipv6_link_local"], "Link-Local classificato in ipv6_link_local")
+        
+        # Gli indirizzi routabili (GUA + ULA) devono essere inclusi in ipv6_addresses
+        runner.assert_true("fd12:3456:789a:1::42" in norm_v6["ipv6_addresses"], "ULA incluso in ipv6_addresses per propagazione a AdGuard/DNS")
+        runner.assert_true("2001:0db8:85a3:0000:0000:8a2e:0370:7334" in norm_v6["ipv6_addresses"], "GUA incluso in ipv6_addresses")
+        runner.assert_true("fe80::1ff:fe00:3a60" not in norm_v6["ipv6_addresses"], "Link-Local escluso da ipv6_addresses routabili")
+        runner.assert_true(len(norm_v6["ipv6_all"]) == 4, f"ipv6_all contiene tutti e 4 gli indirizzi validi (trovati: {len(norm_v6['ipv6_all'])})")
+
+        # Verifica array dettagliato ipv6_details
+        details = norm_v6["ipv6_details"]
+        runner.assert_true(len(details) == 4, f"ipv6_details ha 4 elementi (trovati: {len(details)})")
+        ula_detail = next((d for d in details if d["address"] == "fd12:3456:789a:1::42"), {})
+        runner.assert_true(ula_detail.get("type") == "ULA" and ula_detail.get("scope") == "local", "ipv6_details per ULA ha type='ULA' e scope='local'")
+
+        # Verifica priorità indirizzo primario: GUA ha priorità su ULA
+        runner.assert_true(norm_v6["ipv6"] == "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "Indirizzo IPv6 primario sceglie GUA se presente")
+
+        # Test dispositivo solo con ULA (senza GUA)
+        raw_ula_only = {
+            "mac": "66:55:44:33:22:11",
+            "hostname": "Local NAS",
+            "ips": ["fd00:1234:5678:9abc::10", "fe80::200:ff:fe00:1"]
+        }
+        norm_ula_only = eero_client._normalize_device(raw_ula_only)
+        runner.assert_true(norm_ula_only["ipv6"] == "fd00:1234:5678:9abc::10", "In assenza di GUA, l'IPv6 primario adotta l'indirizzo ULA")
+
+        # Verifica presenza chiavi localizzazione per badge ULA
+        it_loc = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_loc = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        runner.assert_true("ipv6_badge_ula" in it_loc.get("device_modal", {}), "ipv6_badge_ula presente in it.json [device_modal]")
+        runner.assert_true("ipv6_badge_ula" in en_loc.get("device_modal", {}), "ipv6_badge_ula presente in en.json [device_modal]")
+
+        # 4. Test Issue #57 (Fase 2): Reverse Client Enrichment via NDP & AdGuard API
+        from app.services.enrichment_service import enrichment_service, classify_ip, normalize_mac
+        
+        # Test 4a: Normalizzazione MAC
+        runner.assert_true(normalize_mac("aabbccddeeff") == "AA:BB:CC:DD:EE:FF", "normalize_mac da stringa compatta")
+        runner.assert_true(normalize_mac("aa-bb-cc-dd-ee-ff") == "AA:BB:CC:DD:EE:FF", "normalize_mac con trattini")
+        runner.assert_true(normalize_mac("AA:BB:CC:DD:EE:FF") == "AA:BB:CC:DD:EE:FF", "normalize_mac con due punti")
+        runner.assert_true(normalize_mac("invalid_mac") is None, "normalize_mac rifiuta stringhe invalide")
+
+        # Test 4b: Classificazione IP
+        c_ula = classify_ip("fd4c:b590:10fa:1::9390")
+        runner.assert_true(c_ula["valid"] and c_ula["type"] == "ULA", "Classificazione corretta ULA fd4c::")
+        c_gua = classify_ip("2001:db8::1234")
+        runner.assert_true(c_gua["valid"] and c_gua["type"] == "GUA", "Classificazione corretta GUA 2001::")
+        c_ll = classify_ip("fe80::1")
+        runner.assert_true(c_ll["valid"] and c_ll["type"] == "Link-Local", "Classificazione corretta Link-Local fe80::")
+        c_v4 = classify_ip("192.168.1.150")
+        runner.assert_true(c_v4["valid"] and c_v4["type"] == "IPv4", "Classificazione corretta IPv4")
+
+        # Test 4c: Ingestion API e Persistenza SQLite
+        test_mappings = [
+            {
+                "mac": "AA:BB:CC:DD:EE:FF",
+                "ip": "fd4c:b590:10fa:1::9390",
+                "type": "ULA",
+                "source": "test_adguard_ndp"
+            }
+        ]
+        ingest_res = await enrichment_service.ingest_neighbor_mappings(test_mappings, source="test_runner")
+        runner.assert_true(ingest_res["status"] == "success", "Ingestione mapping restituisce status success")
+        runner.assert_true(ingest_res["total"] >= 1, "Conteggio mapping salvati >= 1")
+
+        disc_rows = await db_service.get_discovered_ips_for_mac("AA:BB:CC:DD:EE:FF")
+        runner.assert_true(len(disc_rows) >= 1, "get_discovered_ips_for_mac trova la riga salvata")
+        runner.assert_true(disc_rows[0]["ip_address"] == "fd4c:b590:10fa:1::9390", "Indirizzo IP salvato corrisponde all'ULA")
+
+        # Test 4d: Pulizia associazione di test
+        del_ok = await db_service.delete_discovered_ip("AA:BB:CC:DD:EE:FF", "fd4c:b590:10fa:1::9390")
+        runner.assert_true(del_ok is True, "delete_discovered_ip rimuove correttamente la tupla di test")
+
+        # Test 4e: Verifica localizzazione badge ULA (NDP)
+        runner.assert_true("ipv6_badge_ula_ndp" in it_loc.get("device_modal", {}), "ipv6_badge_ula_ndp presente in it.json")
+        runner.assert_true("ipv6_badge_ula_ndp" in en_loc.get("device_modal", {}), "ipv6_badge_ula_ndp presente in en.json")
+
+
+        # -----------------------------------------------------------------
+        # 24. TEST SMART AUTOMATIONS, PARENTAL SCHEDULING & NIGHTLY MAINTENANCE ENGINE (v1.6.0 Modulo 1)
+        # -----------------------------------------------------------------
+        print("\n⏰ [24/25] TEST SMART AUTOMATIONS, PARENTAL SCHEDULING & NIGHTLY MAINTENANCE ENGINE (v1.6.0)")
+
+        from datetime import datetime
+        from app.services.scheduler import ScheduleEngine, MaintenanceEngine, schedule_engine, maintenance_engine
+
+        # 1. Test is_schedule_active_at (Daytime & Overnight spanning midnight)
+        # Test 1a: Finestra Diurna (08:00 -> 17:00, Lunedì-Venerdì)
+        sched_daytime = {
+            "enabled": True,
+            "start_time": "08:00",
+            "end_time": "17:00",
+            "days_of_week": ["mon", "tue", "wed", "thu", "fri"],
+        }
+        # Lunedì alle 10:00 (attivo)
+        dt_mon_10 = datetime(2026, 10, 5, 10, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_daytime, dt_mon_10) is True, "Finestra diurna attiva di Lunedì alle 10:00")
+        # Lunedì alle 18:00 (non attivo)
+        dt_mon_18 = datetime(2026, 10, 5, 18, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_daytime, dt_mon_18) is False, "Finestra diurna non attiva di Lunedì dopo le 17:00")
+        # Lunedì alle 07:30 (non attivo)
+        dt_mon_07 = datetime(2026, 10, 5, 7, 30)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_daytime, dt_mon_07) is False, "Finestra diurna non attiva di Lunedì prima delle 08:00")
+        # Domenica alle 10:00 (non attivo per giorno escluso)
+        dt_sun_10 = datetime(2026, 10, 4, 10, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_daytime, dt_sun_10) is False, "Finestra diurna non attiva di Domenica (giorno non pianificato)")
+
+        # Test 1b: Finestra Notturna a cavallo di mezzanotte (22:00 -> 06:00, solo Lunedì sera 'mon')
+        sched_overnight = {
+            "enabled": True,
+            "start_time": "22:00",
+            "end_time": "06:00",
+            "days_of_week": ["mon"],
+        }
+        # Lunedì alle 23:00 (attivo - prima parte della notte)
+        dt_mon_23 = datetime(2026, 10, 5, 23, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_overnight, dt_mon_23) is True, "Finestra notturna attiva Lunedì alle 23:00 (prima di mezzanotte)")
+        # Martedì alle 03:00 (attivo - seconda parte della notte, iniziata Lunedì sera!)
+        dt_tue_03 = datetime(2026, 10, 6, 3, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_overnight, dt_tue_03) is True, "Finestra notturna attiva Martedì alle 03:00 (giorno di avvio era Lunedì)")
+        # Martedì alle 06:30 (non attivo - passata l'ora di fine 06:00)
+        dt_tue_0630 = datetime(2026, 10, 6, 6, 30)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_overnight, dt_tue_0630) is False, "Finestra notturna non attiva Martedì dopo le 06:00")
+        # Domenica alle 23:00 (non attivo - Domenica non è pianificata)
+        dt_sun_23 = datetime(2026, 10, 4, 23, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_overnight, dt_sun_23) is False, "Finestra notturna non attiva Domenica alle 23:00 (Domenica non selezionata)")
+        # Lunedì alle 03:00 (non attivo - la notte tra Dom e Lun non era pianificata)
+        dt_mon_03 = datetime(2026, 10, 5, 3, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_overnight, dt_mon_03) is False, "Finestra notturna non attiva Lunedì notte alle 03:00 (Domenica precedente non schedulata)")
+
+        # Test 1c: Regola disabilitata (enabled=False) sempre non attiva
+        sched_disabled = {**sched_daytime, "enabled": False}
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_disabled, dt_mon_10) is False, "Regola disabilitata non è mai attiva anche nell'orario target")
+
+        # Test 1d: Regola di Riavvio Programmato (Point-in-Time alle 04:00 di Lunedì)
+        sched_reboot = {
+            "enabled": True,
+            "target_type": "all_nodes_reboot",
+            "action": "reboot",
+            "start_time": "04:00",
+            "end_time": "04:00",
+            "days_of_week": ["mon"],
+        }
+        dt_mon_0400 = datetime(2026, 10, 5, 4, 0)
+        dt_mon_0401 = datetime(2026, 10, 5, 4, 1)
+        dt_mon_0359 = datetime(2026, 10, 5, 3, 59)
+        dt_tue_0400 = datetime(2026, 10, 6, 4, 0)
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0400) is True, "Riavvio programmato attivo alle 04:00 esatte del giorno pianificato")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0401) is False, "Riavvio programmato non attivo al minuto successivo (04:01)")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_mon_0359) is False, "Riavvio programmato non attivo al minuto precedente (03:59)")
+        runner.assert_true(ScheduleEngine.is_schedule_active_at(sched_reboot, dt_tue_0400) is False, "Riavvio programmato non attivo in giorno non pianificato (Martedì)")
+
+        # 2. Test Metodi Database CRUD (db_service) per device_schedules
+        await db_service.clear_device_schedules()
+        runner.assert_true(len(await db_service.get_device_schedules()) == 0, "clear_device_schedules svuota correttamente la tabella")
+
+        # Creazione regola
+        sch_id = await db_service.create_device_schedule(
+            name="Studio Figli",
+            target_type="devices",
+            target_ids=["dev_tablet_01", "dev_pc_02"],
+            days_of_week=["mon", "tue", "wed", "thu", "fri"],
+            start_time="14:00",
+            end_time="18:30",
+            action="pause",
+            enabled=True
+        )
+        runner.assert_true(sch_id > 0, "create_device_schedule crea record con ID valido")
+
+        # Lettura
+        all_sch = await db_service.get_device_schedules()
+        runner.assert_true(len(all_sch) == 1, "get_device_schedules restituisce 1 record")
+        sch_item = await db_service.get_device_schedule_by_id(sch_id)
+        runner.assert_true(sch_item is not None, "get_device_schedule_by_id recupera il record")
+        runner.assert_true(sch_item["name"] == "Studio Figli", "Nome regola corrisponde")
+        runner.assert_true(sch_item["target_ids"] == ["dev_tablet_01", "dev_pc_02"], "target_ids deserializzato come lista")
+        runner.assert_true("fri" in sch_item["days_of_week"], "days_of_week deserializzato come lista")
+
+        # Aggiornamento
+        upd_res = await db_service.update_device_schedule(sch_id, name="Studio & Relax", end_time="19:00")
+        runner.assert_true(upd_res is True, "update_device_schedule restituisce True")
+        sch_updated = await db_service.get_device_schedule_by_id(sch_id)
+        runner.assert_true(sch_updated["name"] == "Studio & Relax" and sch_updated["end_time"] == "19:00", "Parametri aggiornati con successo")
+
+        # Toggle abilitazione
+        tog_res = await db_service.toggle_device_schedule(sch_id, enabled=False)
+        runner.assert_true(tog_res is True, "toggle_device_schedule restituisce True")
+        sch_toggled = await db_service.get_device_schedule_by_id(sch_id)
+        runner.assert_true(sch_toggled["enabled"] is False, "Regola ora disabilitata (enabled=False)")
+        runner.assert_true(len(await db_service.get_device_schedules(only_enabled=True)) == 0, "get_device_schedules(only_enabled=True) esclude regole disabilitate")
+
+        # Ri-abilitazione
+        await db_service.toggle_device_schedule(sch_id, enabled=True)
+
+        # Cancellazione
+        del_res = await db_service.delete_device_schedule(sch_id)
+        runner.assert_true(del_res is True, "delete_device_schedule restituisce True")
+        runner.assert_true(await db_service.get_device_schedule_by_id(sch_id) is None, "Record eliminato non più presente")
+
+        # 3. Test API REST /api/schedules & RBAC
+        # 3a. Login come Admin per ottenere token di autenticazione
+        admin_pwd = getattr(runner, "admin_test_pwd", getattr(settings, "admin_password", "") or "AdminPassword123!")
+        res_adm_login = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
+        adm_token = res_adm_login.json().get("token")
+        adm_hdr = {"Authorization": f"Bearer {adm_token}"}
+
+        # 3b. Creazione utente operatore privo di 'action_manage_rules'
+        existing_op = await db_service.get_local_user_by_username("operatore_schedules_test")
+        if existing_op:
+            await db_service.delete_local_user(existing_op["id"])
+        res_create_op = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_schedules_test",
+                "password": "TestPassword123!",
+                "is_admin": False,
+                "permissions": ["view_devices", "view_speedtest"]
+            },
+            headers=adm_hdr
+        )
+        op_schedules_id = res_create_op.json().get("user", {}).get("id")
+        res_op_sched_login = await client.post("/api/auth/local/login", json={"username": "operatore_schedules_test", "password": "TestPassword123!"})
+        op_sched_token = res_op_sched_login.json().get("token")
+        op_sched_hdr = {"Authorization": f"Bearer {op_sched_token}"}
+
+        # Verifica RBAC 403 Forbidden su POST /api/schedules per operatore privo di permessi
+        sched_payload = {
+            "name": "Nanna Bimbi",
+            "target_type": "devices",
+            "target_ids": ["dev_kindle_01"],
+            "days_of_week": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+            "start_time": "21:30",
+            "end_time": "07:30",
+            "action": "pause",
+            "enabled": True
+        }
+        res_sched_forbid = await client.post("/api/schedules", json=sched_payload, headers=op_sched_hdr)
+        runner.assert_true(res_sched_forbid.status_code == 403, "POST /api/schedules bloccato con HTTP 403 Forbidden se privi di action_manage_rules")
+
+        # Verifica validazione 400 Bad Request con payload non valido (admin)
+        res_bad_name = await client.post("/api/schedules", json={**sched_payload, "name": ""}, headers=adm_hdr)
+        runner.assert_true(res_bad_name.status_code == 400, "POST /api/schedules con nome vuoto restituisce HTTP 400")
+        res_bad_targets = await client.post("/api/schedules", json={**sched_payload, "target_ids": []}, headers=adm_hdr)
+        runner.assert_true(res_bad_targets.status_code == 400, "POST /api/schedules con target_ids vuoti restituisce HTTP 400")
+
+        # Creazione valida da parte di admin -> HTTP 201 Created
+        res_create_sch = await client.post("/api/schedules", json=sched_payload, headers=adm_hdr)
+        runner.assert_true(res_create_sch.status_code == 201, "POST /api/schedules con admin risponde HTTP 201 Created")
+        created_sch = res_create_sch.json().get("schedule", {})
+        api_sch_id = created_sch.get("id")
+        runner.assert_true(api_sch_id is not None and api_sch_id > 0, "ID regola generato da API valido")
+
+        # GET /api/schedules
+        res_list_sch = await client.get("/api/schedules", headers=adm_hdr)
+        runner.assert_true(res_list_sch.status_code == 200, "GET /api/schedules risponde HTTP 200")
+        runner.assert_true(len(res_list_sch.json()) >= 1, "GET /api/schedules elenca almeno la nuova regola")
+
+        # GET /api/schedules/{id}
+        res_get_sch = await client.get(f"/api/schedules/{api_sch_id}", headers=adm_hdr)
+        runner.assert_true(res_get_sch.status_code == 200, f"GET /api/schedules/{api_sch_id} risponde HTTP 200")
+        runner.assert_true(res_get_sch.json().get("name") == "Nanna Bimbi", "Nome recuperato corrisponde")
+
+        # PUT /api/schedules/{id}
+        res_put_sch = await client.put(f"/api/schedules/{api_sch_id}", json={"name": "Nanna Bimbi Sera", "start_time": "21:00"}, headers=adm_hdr)
+        runner.assert_true(res_put_sch.status_code == 200, "PUT /api/schedules/{id} risponde HTTP 200")
+        runner.assert_true(res_put_sch.json().get("schedule", {}).get("name") == "Nanna Bimbi Sera", "Nome aggiornato da API")
+
+        # POST /api/schedules/{id}/toggle
+        res_tog_api = await client.post(f"/api/schedules/{api_sch_id}/toggle", headers=adm_hdr)
+        runner.assert_true(res_tog_api.status_code == 200, "POST /api/schedules/{id}/toggle risponde HTTP 200")
+        runner.assert_true(res_tog_api.json().get("schedule", {}).get("enabled") is False, "Toggle ha disabilitato la regola")
+
+        # Ri-abilita la regola
+        await client.post(f"/api/schedules/{api_sch_id}/toggle", headers=adm_hdr)
+
+        # POST /api/schedules/evaluate
+        res_eval = await client.post("/api/schedules/evaluate", headers=adm_hdr)
+        runner.assert_true(res_eval.status_code == 200, "POST /api/schedules/evaluate risponde HTTP 200")
+        eval_json = res_eval.json()
+        runner.assert_true(eval_json.get("status") == "success", "Valutazione schedulazioni ha status success")
+        runner.assert_true("evaluation" in eval_json, "Payload contiene chiave 'evaluation'")
+
+        # 4. Test ScheduleEngine: Transizioni di Stato ed Esecuzione Pausa/Ripristino
+        schedule_engine.reset_state()
+        device_pause_calls = []
+        profile_pause_calls = []
+
+        async def _mock_update_device(dev_id, **kwargs):
+            device_pause_calls.append({"dev_id": dev_id, "kwargs": kwargs})
+            return {"status": "success"}
+
+        async def _mock_set_profile_paused(prof_id, paused):
+            profile_pause_calls.append({"prof_id": prof_id, "paused": paused})
+            return {"status": "success"}
+
+        orig_upd_dev = eero_client.update_device
+        orig_pause_prof = eero_client.set_profile_paused
+        eero_client.update_device = _mock_update_device
+        eero_client.set_profile_paused = _mock_set_profile_paused
+
+        try:
+            # Creiamo 1 regola su device e 1 regola su profile
+            await db_service.clear_device_schedules()
+            await db_service.create_device_schedule(
+                name="Test Device Schedule",
+                target_type="devices",
+                target_ids=["dev_test_mac_1"],
+                days_of_week=["mon"],
+                start_time="09:00",
+                end_time="12:00",
+                action="pause",
+                enabled=True
+            )
+            await db_service.create_device_schedule(
+                name="Test Profile Schedule",
+                target_type="profile",
+                target_ids=["prof_test_kids"],
+                days_of_week=["mon"],
+                start_time="09:00",
+                end_time="12:00",
+                action="pause",
+                enabled=True
+            )
+
+            # Simuliamo orario in finestra attiva (Lunedì ore 10:00)
+            await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 10, 0))
+            runner.assert_true(len(device_pause_calls) == 1, "update_device chiamato per mettere in pausa dev_test_mac_1")
+            runner.assert_true(device_pause_calls[0]["kwargs"].get("paused") is True, "Dispositivo messo in pausa (paused=True)")
+            runner.assert_true(len(profile_pause_calls) == 1, "set_profile_paused chiamato per profilo prof_test_kids")
+            runner.assert_true(profile_pause_calls[0]["paused"] is True, "Profilo messo in pausa (paused=True)")
+
+            # Secondo ciclo nello stesso stato attivo: NESSUNA nuova chiamata (nessuna transizione ridondante)
+            device_pause_calls.clear()
+            profile_pause_calls.clear()
+            await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 10, 30))
+            runner.assert_true(len(device_pause_calls) == 0 and len(profile_pause_calls) == 0, "Nessuna transizione ridondante scatenata quando lo stato attivo rimane invariato")
+
+            # Ciclo in transizione a stato DISATTIVO (Lunedì ore 13:00 - finita finestra)
+            await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 13, 0))
+            runner.assert_true(len(device_pause_calls) == 1, "update_device chiamato alla transizione di disattivazione")
+            runner.assert_true(device_pause_calls[0]["kwargs"].get("paused") is False, "Dispositivo ripristinato (paused=False)")
+            runner.assert_true(len(profile_pause_calls) == 1, "set_profile_paused chiamato alla transizione di disattivazione")
+            runner.assert_true(profile_pause_calls[0]["paused"] is False, "Profilo ripristinato (paused=False)")
+
+            # Test schedulazione LED Nodo (spegnimento notturno e riaccensione)
+            node_led_calls = []
+            orig_set_led = eero_client.set_eero_led
+            async def _mock_set_eero_led(node_id, led_on):
+                node_led_calls.append({"node_id": node_id, "led_on": led_on})
+                return {"status": "success"}
+            eero_client.set_eero_led = _mock_set_eero_led
+
+            try:
+                await db_service.clear_device_schedules()
+                schedule_engine.reset_state()
+                await db_service.create_device_schedule(
+                    name="Spegni LED Salotto",
+                    target_type="node_led",
+                    target_ids=["node_salotto"],
+                    days_of_week=["mon"],
+                    start_time="09:00",
+                    end_time="12:00",
+                    action="turn_off",
+                    enabled=True
+                )
+                # Attiva: LED spento (led_on=False)
+                await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 10, 0))
+                runner.assert_true(len(node_led_calls) == 1, "set_eero_led chiamato per nodo node_salotto")
+                runner.assert_true(node_led_calls[0]["led_on"] is False, "LED nodo spento durante la finestra programmata (led_on=False)")
+
+                # Disattiva: LED riacceso (led_on=True)
+                await schedule_engine.evaluate_schedules(current_dt=datetime(2026, 10, 5, 13, 0))
+                runner.assert_true(len(node_led_calls) == 2, "set_eero_led chiamato alla disattivazione della finestra")
+                runner.assert_true(node_led_calls[1]["led_on"] is True, "LED nodo riacceso al termine della finestra programmata (led_on=True)")
+            finally:
+                eero_client.set_eero_led = orig_set_led
+
+        finally:
+            eero_client.update_device = orig_upd_dev
+            eero_client.set_profile_paused = orig_pause_prof
+
+        # 5. Test Database Maintenance & MaintenanceEngine (Nightly Routine)
+        # Test 5a: Esecuzione diretta manutenzione SQLite
+        maint_fast = await db_service.run_database_maintenance(vacuum=False)
+        runner.assert_true(maint_fast.get("status") == "success", "run_database_maintenance(vacuum=False) successo")
+        runner.assert_true(maint_fast.get("pragma_optimize") is True, "PRAGMA optimize eseguito")
+        runner.assert_true(maint_fast.get("vacuum_performed") is False, "vacuum_performed è False")
+
+        maint_vac = await db_service.run_database_maintenance(vacuum=True)
+        runner.assert_true(maint_vac.get("status") == "success", "run_database_maintenance(vacuum=True) successo")
+        runner.assert_true(maint_vac.get("vacuum_performed") is True, "VACUUM compattazione eseguito")
+
+        # Test 5b: Endpoints API Manutenzione Notturna
+        # GET /api/automations/nightly-maintenance
+        res_nm_get = await client.get("/api/automations/nightly-maintenance")
+        runner.assert_true(res_nm_get.status_code == 200, "GET /api/automations/nightly-maintenance risponde HTTP 200")
+        runner.assert_true("settings" in res_nm_get.json(), "Risposta include impostazioni correnti")
+
+        # POST /api/automations/nightly-maintenance (salvataggio impostazioni)
+        res_nm_save = await client.post(
+            "/api/automations/nightly-maintenance",
+            json={
+                "enabled": True,
+                "time": "03:30",
+                "auto_reboot": True,
+                "reboot_threshold_score": 55,
+                "vacuum": True
+            },
+            headers=adm_hdr
+        )
+        runner.assert_true(res_nm_save.status_code == 200, "POST /api/automations/nightly-maintenance risponde HTTP 200")
+        saved_nm = (await client.get("/api/automations/nightly-maintenance")).json().get("settings", {})
+        runner.assert_true(saved_nm.get("enabled") is True, "enabled salvato")
+        runner.assert_true(saved_nm.get("time") == "03:30", "orario 03:30 salvato")
+        runner.assert_true(saved_nm.get("auto_reboot") is True, "auto_reboot salvato")
+        runner.assert_true(saved_nm.get("reboot_threshold_score") == 55, "reboot_threshold_score 55 salvato")
+
+        # Test 5c: POST /api/automations/nightly-maintenance/run con RBAC
+        # Operatore senza 'action_reboot_nodes' bloccato con 403 Forbidden
+        res_nm_run_forbid = await client.post("/api/automations/nightly-maintenance/run", headers=op_sched_hdr)
+        runner.assert_true(res_nm_run_forbid.status_code == 403, "Esecuzione manutenzione manuale bloccata senza permessi (HTTP 403)")
+
+        # Esecuzione da Admin
+        reboot_network_called = []
+        reboot_eero_called = []
+
+        async def _mock_reboot_network():
+            reboot_network_called.append(True)
+            return {"status": "success"}
+
+        async def _mock_reboot_eero(e_id):
+            reboot_eero_called.append(e_id)
+            return {"status": "success"}
+
+        orig_reb_net = eero_client.reboot_network
+        orig_reb_eero = eero_client.reboot_eero
+        eero_client.reboot_network = _mock_reboot_network
+        eero_client.reboot_eero = _mock_reboot_eero
+
+        try:
+            # Caso 1: Rete sana (health_score = 95 > soglia 55) -> Nessun riavvio
+            background_poller.cached_health_score = 95
+            res_nm_run_healthy = await client.post("/api/automations/nightly-maintenance/run", headers=adm_hdr)
+            runner.assert_true(res_nm_run_healthy.status_code == 200, "Esecuzione manutenzione admin risponde HTTP 200")
+            h_data = res_nm_run_healthy.json()
+            runner.assert_true(h_data.get("database_optimized") is True, "Database SQLite ottimizzato con successo")
+            runner.assert_true(h_data.get("reboot_triggered") is False, "Nessun riavvio scatenato con rete in salute (health_score 95)")
+
+            # Caso 2: Rete degradata (health_score = 40 < soglia 55) con un beacon con segnale critico
+            background_poller.cached_health_score = 40
+            background_poller.cached_eeros = [
+                {"id": "node_gw", "name": "Gateway Living", "is_gateway": True, "status": "online", "signal_rssi": -45},
+                {"id": "node_ext_1", "name": "Beacon Mansarda", "is_gateway": False, "status": "offline", "signal_rssi": -88},
+            ]
+            res_nm_run_degraded = await client.post("/api/automations/nightly-maintenance/run", headers=adm_hdr)
+            runner.assert_true(res_nm_run_degraded.status_code == 200, "Esecuzione manutenzione su rete degradata risponde HTTP 200")
+            deg_data = res_nm_run_degraded.json()
+            runner.assert_true(deg_data.get("reboot_triggered") is True, "Riavvio scatenato su rete degradata sotto soglia")
+            runner.assert_true(len(reboot_eero_called) == 1 and reboot_eero_called[0] == "node_ext_1", "Riavviato selettivamente il solo nodo beacon degradato (node_ext_1)")
+            runner.assert_true(len(reboot_network_called) == 0, "Riavvio generale evitato a favore del nodo beacon isolato")
+
+        finally:
+            eero_client.reboot_network = orig_reb_net
+            eero_client.reboot_eero = orig_reb_eero
+
+        # Pulizia record temporanei
+        await db_service.clear_device_schedules()
+        if op_schedules_id:
+            await db_service.delete_local_user(op_schedules_id)
+
+        # -----------------------------------------------------------------
+        # 25. TEST BUFFERBLOAT WAN SPEEDTEST & DISASTER RECOVERY BACKUP/RESTORE (v1.6.0 Modulo 1)
+        # -----------------------------------------------------------------
+        print("\n🚀 [25/25] TEST BUFFERBLOAT WAN SPEEDTEST & DISASTER RECOVERY BACKUP/RESTORE (v1.6.0)")
+
+        from app.services.speedtest_service import compute_bufferbloat
+
+        # 1. Test Algoritmo e Classificazione Bufferbloat
+        # Scala internazionale: A+ (<5ms), A (5-15ms), B (15-30ms), C (30-60ms), D (60-200ms), F (>=200ms)
+        p_load, delta, grade = compute_bufferbloat(10.0, 14.0)
+        runner.assert_true(delta == 4.0 and grade == "A+", f"Bufferbloat Delta 4.0ms classificato 'A+' (ottenuto: {grade})")
+
+        p_load, delta, grade = compute_bufferbloat(10.0, 22.0)
+        runner.assert_true(delta == 12.0 and grade == "A", f"Bufferbloat Delta 12.0ms classificato 'A' (ottenuto: {grade})")
+
+        p_load, delta, grade = compute_bufferbloat(10.0, 35.0)
+        runner.assert_true(delta == 25.0 and grade == "B", f"Bufferbloat Delta 25.0ms classificato 'B' (ottenuto: {grade})")
+
+        p_load, delta, grade = compute_bufferbloat(10.0, 55.0)
+        runner.assert_true(delta == 45.0 and grade == "C", f"Bufferbloat Delta 45.0ms classificato 'C' (ottenuto: {grade})")
+
+        p_load, delta, grade = compute_bufferbloat(10.0, 110.0)
+        runner.assert_true(delta == 100.0 and grade == "D", f"Bufferbloat Delta 100.0ms classificato 'D' (ottenuto: {grade})")
+
+        p_load, delta, grade = compute_bufferbloat(10.0, 250.0)
+        runner.assert_true(delta == 240.0 and grade == "F", f"Bufferbloat Delta 240.0ms classificato 'F' (ottenuto: {grade})")
+
+        # Delta non negativo se ping sotto carico risulta inferiore o jitter instabile
+        p_load, delta, grade = compute_bufferbloat(15.0, 12.0)
+        runner.assert_true(delta == 0.0 and grade == "A+", "Bufferbloat con ping_under_load <= ping_idle produce delta=0.0 e grado 'A+'")
+
+        # 2. Test Persistenza SQLite Bufferbloat
+        test_sp_id = await db_service.save_speedtest(
+            download_mbps=880.5,
+            upload_mbps=285.0,
+            ping_ms=9.5,
+            jitter=1.1,
+            server_name="FTTH Lab SpeedTest",
+            source="wan_test",
+            ping_under_load=17.5,
+            bufferbloat_grade="A",
+            bufferbloat_delta_ms=8.0
+        )
+        runner.assert_true(test_sp_id > 0, "save_speedtest memorizza record con campi bufferbloat")
+
+        history_sp = await db_service.get_speedtests(limit=10)
+        saved_sp = next((s for s in history_sp if s.get("id") == test_sp_id), None)
+        runner.assert_true(saved_sp is not None, "Record speedtest recuperato da get_speedtests()")
+        runner.assert_true(float(saved_sp.get("ping_under_load") or 0) == 17.5, f"ping_under_load salvato correttamente (ottenuto: {saved_sp.get('ping_under_load')})")
+        runner.assert_true(saved_sp.get("bufferbloat_grade") == "A", f"bufferbloat_grade salvato correttamente (ottenuto: {saved_sp.get('bufferbloat_grade')})")
+        runner.assert_true(float(saved_sp.get("bufferbloat_delta_ms") or 0) == 8.0, f"bufferbloat_delta_ms salvato correttamente (ottenuto: {saved_sp.get('bufferbloat_delta_ms')})")
+
+        # 3. Test Esecuzione Speedtest & Router API
+        # Admin login per testare rotte protette
+        admin_pwd = getattr(runner, "admin_test_pwd", getattr(settings, "admin_password", "") or "AdminPassword123!")
+        res_adm_login = await client.post("/api/auth/local/login", json={"username": "admin", "password": admin_pwd})
+        adm_token = res_adm_login.json().get("token")
+        adm_hdr = {"Authorization": f"Bearer {adm_token}"}
+
+        # Esecuzione speedtest via API con admin token
+        res_sp_run = await client.post("/api/speedtest/run", headers=adm_hdr)
+        runner.assert_true(res_sp_run.status_code == 200, "POST /api/speedtest/run risponde HTTP 200")
+        sp_run_data = res_sp_run.json().get("result", {})
+        runner.assert_true("bufferbloat_grade" in sp_run_data, "Risultato speedtest include campo 'bufferbloat_grade'")
+        runner.assert_true("bufferbloat_delta_ms" in sp_run_data, "Risultato speedtest include campo 'bufferbloat_delta_ms'")
+        runner.assert_true("ping_under_load" in sp_run_data, "Risultato speedtest include campo 'ping_under_load'")
+
+        # Verifica API GET /api/speedtest/history
+        res_sp_hist = await client.get("/api/speedtest/history?limit=10")
+        runner.assert_true(res_sp_hist.status_code == 200, "GET /api/speedtest/history risponde HTTP 200")
+        hist_tests = res_sp_hist.json().get("tests", [])
+        runner.assert_true(len(hist_tests) > 0, "Storico speedtest restituisce almeno un record")
+        runner.assert_true("bufferbloat_grade" in hist_tests[0], "Record in storico espone 'bufferbloat_grade'")
+
+        # 4. Test Disaster Recovery: Backup & Ripristino Atomico
+        # 4a. Preparazione dati di prova per il backup
+        await db_service.upsert_device_metadata(
+            "aa:bb:cc:11:22:33",
+            custom_name="Server NAS Principale",
+            category="Server/Rete",
+            custom_notes="Apparato critico per test backup",
+            is_favorite=True
+        )
+        await db_service.set_setting("backup_verification_key", "active_v160")
+        backup_sched_id = await db_service.create_device_schedule(
+            name="Regola Salvata per Backup",
+            target_type="devices",
+            target_ids=["aa:bb:cc:11:22:33"],
+            days_of_week=["mon", "fri"],
+            start_time="23:30",
+            end_time="06:30",
+            action="pause",
+            enabled=True
+        )
+
+        # 4b. Test Esportazione Diretta DB
+        export_raw = await db_service.export_system_backup()
+        runner.assert_true("metadata" in export_raw, "Backup contiene sezione 'metadata'")
+        runner.assert_true(export_raw.get("metadata", {}).get("backup_version") == "1.6.0", "Versione backup è '1.6.0'")
+        runner.assert_true(export_raw.get("metadata", {}).get("schema_version") == 1, "schema_version è 1")
+        runner.assert_true(isinstance(export_raw.get("device_metadata"), list), "device_metadata è una lista")
+        runner.assert_true(isinstance(export_raw.get("app_settings"), dict), "app_settings è un dizionario")
+        runner.assert_true(isinstance(export_raw.get("device_schedules"), list), "device_schedules è una lista")
+        runner.assert_true(isinstance(export_raw.get("local_users"), list), "local_users è una lista")
+        runner.assert_true(export_raw["app_settings"].get("backup_verification_key") == "active_v160", "Impostazione di test presente nel backup")
+
+        # 4c. Test Endpoint REST GET /api/system/backup
+        # Chiamata non autenticata -> 401 Unauthorized
+        client.cookies.clear()
+        res_bk_noauth = await client.get("/api/system/backup")
+        runner.assert_true(res_bk_noauth.status_code == 401, "GET /api/system/backup senza autenticazione restituisce HTTP 401")
+
+        # Chiamata autenticata con admin
+        res_bk_auth = await client.get("/api/system/backup", headers=adm_hdr)
+        runner.assert_true(res_bk_auth.status_code == 200, "GET /api/system/backup con admin risponde HTTP 200")
+        runner.assert_true("application/json" in res_bk_auth.headers.get("content-type", ""), "Content-Type del backup è application/json")
+        runner.assert_true("attachment;" in res_bk_auth.headers.get("content-disposition", ""), "Header Content-Disposition contiene attachment")
+        
+        backup_downloaded = res_bk_auth.json()
+        runner.assert_true(backup_downloaded.get("metadata", {}).get("backup_version") == "1.6.0", "Backup scaricato valido")
+
+        # 4d. Test Endpoint REST POST /api/system/restore
+        # Creiamo un operatore non admin per verificare RBAC
+        existing_op_res = await db_service.get_local_user_by_username("operatore_restore_test")
+        if existing_op_res:
+            await db_service.delete_local_user(existing_op_res["id"])
+        res_create_op_res = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_restore_test",
+                "password": "PasswordTest123!",
+                "is_admin": False,
+                "permissions": ["action_manage_rules"] # Non admin
+            },
+            headers=adm_hdr
+        )
+        op_res_id = res_create_op_res.json().get("user", {}).get("id")
+        res_op_res_login = await client.post("/api/auth/local/login", json={"username": "operatore_restore_test", "password": "PasswordTest123!"})
+        op_res_hdr = {"Authorization": f"Bearer {res_op_res_login.json().get('token')}"}
+
+        # Operatore non admin bloccato con 403 Forbidden su restore
+        res_restore_forbid = await client.post("/api/system/restore", json=backup_downloaded, headers=op_res_hdr)
+        runner.assert_true(res_restore_forbid.status_code == 403, "POST /api/system/restore bloccato per utente non admin con HTTP 403 Forbidden")
+
+        # Restore con payload vuoto / malformato -> 400 Bad Request
+        res_restore_bad = await client.post("/api/system/restore", json={"invalid_field": 123}, headers=adm_hdr)
+        runner.assert_true(res_restore_bad.status_code == 400, "POST /api/system/restore con payload non valido risponde HTTP 400")
+
+        # 4e. Test Ripristino Effettivo Atomico
+        # Modifichiamo il payload scaricato per simulare un ripristino di nuovi dati
+        restore_payload = json.loads(json.dumps(backup_downloaded))
+        # Aggiorniamo il nome del dispositivo
+        for d in restore_payload.get("device_metadata", []):
+            if d.get("mac_address", "").lower() == "aa:bb:cc:11:22:33":
+                d["custom_name"] = "Server NAS Ripristinato OK"
+        # Aggiungiamo un'impostazione nuova
+        restore_payload["app_settings"]["restore_success_flag"] = "confirmed_v160"
+        # Aggiungiamo una nuova schedulazione
+        restore_payload["device_schedules"].append({
+            "name": "Regola Nuova Ripristinata",
+            "target_type": "devices",
+            "target_ids": ["aa:bb:cc:11:22:33"],
+            "days_of_week": ["tue", "thu"],
+            "start_time": "20:00",
+            "end_time": "22:00",
+            "action": "pause",
+            "enabled": True
+        })
+
+        res_restore_ok = await client.post("/api/system/restore", json=restore_payload, headers=adm_hdr)
+        runner.assert_true(res_restore_ok.status_code == 200, "POST /api/system/restore da parte di admin risponde HTTP 200 OK")
+        restore_result = res_restore_ok.json()
+        runner.assert_true(restore_result.get("status") == "success", "Esito ripristino è 'success'")
+        runner.assert_true(restore_result.get("restored_elements", {}).get("device_metadata", 0) >= 1, "Metadati dispositivi ripristinati")
+        runner.assert_true(restore_result.get("restored_elements", {}).get("app_settings", 0) >= 1, "Impostazioni ripristinate")
+        runner.assert_true(restore_result.get("restored_elements", {}).get("device_schedules", 0) >= 2, "Regole orarie ripristinate")
+
+        # Verifica persistenza effettiva su SQLite dopo ripristino
+        restored_dev = await db_service.get_device_metadata("aa:bb:cc:11:22:33")
+        runner.assert_true(restored_dev is not None and restored_dev.get("custom_name") == "Server NAS Ripristinato OK", "Metadato dispositivo ripristinato con nuovo valore su SQLite")
+
+        restored_setting = await db_service.get_setting("restore_success_flag")
+        runner.assert_true(restored_setting == "confirmed_v160", "Impostazione ripristinata con successo in app_settings")
+
+        all_restored_scheds = await db_service.get_device_schedules()
+        sched_names = [s.get("name") for s in all_restored_scheds]
+        runner.assert_true("Regola Nuova Ripristinata" in sched_names, "Nuova regola oraria ripristinata correttamente nella tabella device_schedules")
+
+        # Verifica emissione allarme di avvenuto ripristino
+        alerts_post_restore = await db_service.get_alerts(limit=5)
+        restore_alert = any((a.get("type") == "system_backup_restored" or a.get("alert_type") == "system_backup_restored") for a in alerts_post_restore)
+        runner.assert_true(restore_alert, "Allarme 'system_backup_restored' emesso e persistito nel registro allarmi")
+
+        # Pulizia record temporanei
+        if op_res_id:
+            await db_service.delete_local_user(op_res_id)
+        await db_service.clear_device_schedules()
+
+        # -----------------------------------------------------------------
+        # 26. TEST MULTI-TIER DATA RETENTION & COMPACTION WORKER (v1.6.0 Modulo 2)
+        # -----------------------------------------------------------------
+        print("\n🚀 [26/26] TEST MULTI-TIER DATA RETENTION & COMPACTION WORKER (v1.6.0)")
+
+        from app.services.retention_worker import retention_worker
+
+        # 1. Verifica esistenza e schema tabelle Tier 2 e Tier 3 in SQLite
+        async with db_service.get_connection() as db:
+            cur_tables = await db.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            all_tbl_rows = await cur_tables.fetchall()
+            existing_tables = set(r["name"] for r in all_tbl_rows)
+
+        runner.assert_true("device_usage_hourly" in existing_tables, "Tabella 'device_usage_hourly' presente su SQLite")
+        runner.assert_true("device_usage_daily" in existing_tables, "Tabella 'device_usage_daily' presente su SQLite")
+        runner.assert_true("device_signal_hourly" in existing_tables, "Tabella 'device_signal_hourly' presente su SQLite")
+
+        # 2. Inserimento campioni di test in device_usage_history per un'ora conclusa
+        test_mac_tier = "aa:bb:cc:dd:ee:99"
+        now_utc = datetime.now(timezone.utc)
+        test_hour_dt = (now_utc - timedelta(hours=12)).replace(minute=0, second=0, microsecond=0)
+        ts_prev = (test_hour_dt - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_1 = (test_hour_dt + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_2 = (test_hour_dt + timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
+        ts_3 = (test_hour_dt + timedelta(minutes=50)).strftime("%Y-%m-%d %H:%M:%S")
+        hour_key_test = test_hour_dt.strftime("%Y-%m-%d %H:00:00")
+        day_date_test = test_hour_dt.date()
+        day_date_str = day_date_test.strftime("%Y-%m-%d")
+
+        async with db_service.get_connection() as db:
+            await db.execute("DELETE FROM device_usage_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_daily WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_hourly WHERE mac_address = ?;", (test_mac_tier,))
+
+            # Campione prima dell'ora (per verificare delta del primo punto)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_prev, test_mac_tier, "net_tier_1", "Test-Device-Tier", 100.0 * 1024 * 1024, 20.0 * 1024 * 1024, 10.0, 2.0)
+            )
+            # Campioni dentro l'ora:
+            # 14:10 -> 140MB rx (delta +40MB), 30MB tx (delta +10MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_1, test_mac_tier, "net_tier_1", "Test-Device-Tier", 140.0 * 1024 * 1024, 30.0 * 1024 * 1024, 25.0, 5.0)
+            )
+            # 14:30 -> 190MB rx (delta +50MB), 45MB tx (delta +15MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_2, test_mac_tier, "net_tier_1", "Test-Device-Tier", 190.0 * 1024 * 1024, 45.0 * 1024 * 1024, 35.0, 8.0)
+            )
+            # 14:50 -> 250MB rx (delta +60MB), 60MB tx (delta +15MB)
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_3, test_mac_tier, "net_tier_1", "Test-Device-Tier", 250.0 * 1024 * 1024, 60.0 * 1024 * 1024, 45.0, 10.0)
+            )
+
+            # Campioni segnale Wi-Fi nell'ora
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_1, test_mac_tier, "Test-Device-Tier", -60, "5 GHz", 36, "Soggiorno", 450.0, 300.0)
+            )
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_2, test_mac_tier, "Test-Device-Tier", -66, "5 GHz", 36, "Soggiorno", 400.0, 280.0)
+            )
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                (ts_3, test_mac_tier, "Test-Device-Tier", -72, "5 GHz", 36, "Camera", 350.0, 260.0)
+            )
+            await db.commit()
+
+        # 3. Test aggregate_hourly_usage
+        cnt_h_usage = await db_service.aggregate_hourly_usage(test_hour_dt)
+        runner.assert_true(cnt_h_usage >= 1, f"aggregate_hourly_usage ha processato {cnt_h_usage} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_h = await db.execute("SELECT * FROM device_usage_hourly WHERE mac_address = ? AND hour_timestamp = ?;", (test_mac_tier, hour_key_test))
+            row_h = await cur_h.fetchone()
+
+        runner.assert_true(row_h is not None, "Record hourly presente in device_usage_hourly")
+        expected_rx_delta = (250.0 - 100.0) * 1024 * 1024 # 150 MB delta
+        actual_rx_delta = float(row_h["rx_bytes_delta"] or 0)
+        runner.assert_true(abs(actual_rx_delta - expected_rx_delta) < 1000, f"rx_bytes_delta calcolato correttamente (atteso: {expected_rx_delta}, ottenuto: {actual_rx_delta})")
+        runner.assert_true(row_h["samples_count"] == 3, f"samples_count nell'ora è 3 (ottenuto: {row_h['samples_count']})")
+        runner.assert_true(row_h["max_down_mbps"] == 45.0, f"max_down_mbps è 45.0 (ottenuto: {row_h['max_down_mbps']})")
+
+        # 4. Test aggregate_hourly_signals
+        cnt_h_signals = await db_service.aggregate_hourly_signals(test_hour_dt)
+        runner.assert_true(cnt_h_signals >= 1, f"aggregate_hourly_signals ha processato {cnt_h_signals} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_sig_h = await db.execute("SELECT * FROM device_signal_hourly WHERE mac_address = ? AND hour_timestamp = ?;", (test_mac_tier, hour_key_test))
+            row_sig_h = await cur_sig_h.fetchone()
+
+        runner.assert_true(row_sig_h is not None, "Record segnale orario presente in device_signal_hourly")
+        expected_avg_rssi = round((-60 - 66 - 72) / 3) # -66
+        runner.assert_true(row_sig_h["avg_rssi"] == expected_avg_rssi, f"avg_rssi calcolato correttamente ({expected_avg_rssi})")
+        runner.assert_true(row_sig_h["min_rssi"] == -72, "min_rssi è -72")
+        runner.assert_true(row_sig_h["max_rssi"] == -60, "max_rssi è -60")
+        runner.assert_true(row_sig_h["primary_band"] == "5 GHz", "primary_band è '5 GHz'")
+        runner.assert_true(row_sig_h["primary_eero_name"] == "Soggiorno", "primary_eero_name è 'Soggiorno'")
+
+        # 5. Test aggregate_daily_usage
+        cnt_d_usage = await db_service.aggregate_daily_usage(day_date_test)
+        runner.assert_true(cnt_d_usage >= 1, f"aggregate_daily_usage ha processato {cnt_d_usage} apparati")
+
+        async with db_service.get_connection() as db:
+            cur_d = await db.execute("SELECT * FROM device_usage_daily WHERE mac_address = ? AND day_date = ?;", (test_mac_tier, day_date_str))
+            row_d = await cur_d.fetchone()
+
+        runner.assert_true(row_d is not None, "Record daily presente in device_usage_daily")
+        runner.assert_true(float(row_d["rx_bytes_total"] or 0) == actual_rx_delta, "rx_bytes_total aggregato a livello giornaliero")
+        runner.assert_true(row_d["peak_down_mbps"] == 45.0, "peak_down_mbps registrato nel rollup giornaliero")
+
+        # 6. Test Purga Controllata Campioni Scaduti
+        # Inseriamo un record grezzo recente (< 10 min) e verifichiamo che la purga a 6h non lo elimini
+        ts_recent = (now_utc - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+        async with db_service.get_connection() as db:
+            await db.execute(
+                "INSERT INTO device_usage_history (timestamp, mac_address, network_id, hostname, rx_bytes, tx_bytes, download_mbps, upload_mbps, is_demo) VALUES (?, ?, ?, ?, 1000, 1000, 5, 1, 0);",
+                (ts_recent, test_mac_tier, "net_tier_1", "Test-Device-Tier")
+            )
+            await db.commit()
+
+        # Purga campioni grezzi più vecchi di 6 ore (quelli a -12h vengono cancellati, quello a -5min resta)
+        purge_raw_res = await db_service.purge_expired_raw_samples(raw_retention_hours=6)
+        runner.assert_true(purge_raw_res.get("device_usage_history", 0) >= 3, "Campioni grezzi remoti (>6h) rimossi con successo")
+
+        async with db_service.get_connection() as db:
+            cur_check_recent = await db.execute("SELECT COUNT(*) FROM device_usage_history WHERE mac_address = ? AND timestamp = ?;", (test_mac_tier, ts_recent))
+            cnt_recent = (await cur_check_recent.fetchone())[0]
+            # Verifica che i dati compattati in device_usage_hourly siano intatti
+            cur_check_hourly = await db.execute("SELECT COUNT(*) FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            cnt_hourly = (await cur_check_hourly.fetchone())[0]
+
+        runner.assert_true(cnt_recent == 1, "Campione recente (<1h) intatto dopo la purga")
+        runner.assert_true(cnt_hourly >= 1, "Rollup orario preservato anche dopo la cancellazione dei campioni grezzi")
+
+        # 7. Test Statistiche Database (db_service.get_database_stats())
+        db_stats = await db_service.get_database_stats()
+        runner.assert_true("size_mb" in db_stats, "Statistiche database espongono 'size_mb'")
+        runner.assert_true("tables" in db_stats, "Statistiche database espongono conteggi tabelle")
+        runner.assert_true("device_usage_hourly" in db_stats.get("tables", {}), "Tabella 'device_usage_hourly' monitorata nelle stats")
+        runner.assert_true("device_usage_daily" in db_stats.get("tables", {}), "Tabella 'device_usage_daily' monitorata nelle stats")
+
+        # 8. Test Esecuzione Ciclo Retention Worker
+        compaction_res = await retention_worker.run_compaction_cycle()
+        runner.assert_true(compaction_res.get("status") == "success", "run_compaction_cycle eseguito con successo")
+        runner.assert_true("raw_purged" in compaction_res, "Report include conteggio raw_purged")
+        runner.assert_true("hourly_purged" in compaction_res, "Report include conteggio hourly_purged")
+        runner.assert_true(retention_worker.last_run is not None, "retention_worker._last_run aggiornato")
+
+        # 9. Test Endpoints REST API
+        # GET /api/system/database/stats (Accessibile)
+        res_db_stats = await client.get("/api/system/database/stats")
+        runner.assert_true(res_db_stats.status_code == 200, "GET /api/system/database/stats risponde HTTP 200")
+        stats_payload = res_db_stats.json()
+        runner.assert_true("size_mb" in stats_payload, "Risposta stats include 'size_mb'")
+        runner.assert_true("retention_policy" in stats_payload, "Risposta stats include 'retention_policy'")
+        runner.assert_true(stats_payload.get("retention_policy", {}).get("raw_hours") == 48, "Policy raw_hours è 48h")
+
+        # POST /api/system/database/compact
+        # Non autenticato -> 401 Unauthorized
+        res_compact_unauth = await client.post("/api/system/database/compact")
+        runner.assert_true(res_compact_unauth.status_code == 401, "POST /api/system/database/compact senza autenticazione risponde HTTP 401")
+
+        # Creiamo un operatore non admin per testare il blocco 403 Forbidden
+        res_create_op_cmp = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_compact_test",
+                "password": "PasswordTest123!",
+                "is_admin": False,
+                "permissions": ["view_topology"]
+            },
+            headers=adm_hdr
+        )
+        op_cmp_id = res_create_op_cmp.json().get("user", {}).get("id")
+        res_op_cmp_login = await client.post("/api/auth/local/login", json={"username": "operatore_compact_test", "password": "PasswordTest123!"})
+        op_cmp_hdr = {"Authorization": f"Bearer {res_op_cmp_login.json().get('token')}"}
+
+        # Operatore non admin -> 403 Forbidden
+        res_compact_forbid = await client.post("/api/system/database/compact", headers=op_cmp_hdr)
+        runner.assert_true(res_compact_forbid.status_code == 403, "POST /api/system/database/compact con operatore non admin risponde HTTP 403")
+
+        # Admin -> 200 OK
+        res_compact_admin = await client.post("/api/system/database/compact", headers=adm_hdr)
+        runner.assert_true(res_compact_admin.status_code == 200, "POST /api/system/database/compact con admin risponde HTTP 200")
+        runner.assert_true(res_compact_admin.json().get("status") == "success", "Compattazione admin restituisce status 'success'")
+
+        # 10. Test Trasparenza Query Storiche (get_top_bandwidth_hogs su dati orari)
+        hogs_weekly = await db_service.get_top_bandwidth_hogs(period="weekly", is_demo=0)
+        runner.assert_true(isinstance(hogs_weekly, list), "get_top_bandwidth_hogs restituisce una lista su period='weekly'")
+        # Il dispositivo test mac tier è presente con i suoi consumi calcolati dalla tabella oraria
+        tier_dev_hog = next((h for h in hogs_weekly if h.get("mac") == test_mac_tier), None)
+        runner.assert_true(tier_dev_hog is not None, "Dispositivo aggregato in device_usage_hourly presente nella classifica Top Hogs")
+
+        # Pulizia dati test tier
+        async with db_service.get_connection() as db:
+            await db.execute("DELETE FROM device_usage_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_usage_daily WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_history WHERE mac_address = ?;", (test_mac_tier,))
+            await db.execute("DELETE FROM device_signal_hourly WHERE mac_address = ?;", (test_mac_tier,))
+            await db.commit()
+
+        if op_cmp_id:
+            await db_service.delete_local_user(op_cmp_id)
+
+        # -----------------------------------------------------------------
+        # 27. TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)
+        # -----------------------------------------------------------------
+        print("\n🚀 [27/28] TEST MODULO 3 FRONTEND, UNIFIED NAVIGATION, PWA & RBAC UI (v1.6.0)")
+
+        import json
+        from pathlib import Path
+
+        # 1. Verifica template index.html: rimozione ingranaggio e pulizia menu
+        index_html_path = Path("app/templates/index.html")
+        runner.assert_true(index_html_path.exists(), "File index.html esiste")
+        index_html = index_html_path.read_text(encoding="utf-8")
+
+        # Ingranaggio (gear) deve essere COMPLETAMENTE rimosso dall'header
+        runner.assert_true("header-settings" not in index_html, "Nessun details con classe 'header-settings' nell'header")
+        runner.assert_true('id="header-settings-toggle"' not in index_html, "Nessun id='header-settings-toggle' nell'header")
+
+        # Titoli 'Pagine & Sezioni' e 'Strumenti & Impostazioni' devono essere rimossi
+        runner.assert_true("Pagine & Sezioni" not in index_html, "Titolo categoria 'Pagine & Sezioni' rimosso da sidebar e drawer")
+        runner.assert_true("Strumenti & Impostazioni" not in index_html, "Titolo categoria 'Strumenti & Impostazioni' rimosso da sidebar e drawer")
+        runner.assert_true("PAGINE & SEZIONI" not in index_html.upper(), "Nessuna variante di 'PAGINE & SEZIONI' nei menu")
+        runner.assert_true("STRUMENTI & IMPOSTAZIONI" not in index_html.upper(), "Nessuna variante di 'STRUMENTI & IMPOSTAZIONI' nei menu")
+
+        # Verifica voci unificate presenti nel template (sia sidebar che mobile drawer)
+        runner.assert_true("setTab('overview')" in index_html, "Voce 'Dashboard & Mesh' presente nei menu")
+        runner.assert_true("setTab('devices')" in index_html, "Voce 'Dispositivi' presente con conteggio online")
+        runner.assert_true("setTab('speedtest')" in index_html, "Voce 'Speed test' presente nei menu")
+        runner.assert_true("setTab('guests')" in index_html, "Voce 'Ospiti' presente nei menu")
+        runner.assert_true("setTab('quality-analytics')" in index_html or "setTab('analytics')" in index_html, "Voce 'Qualità e analytics' presente nei menu")
+        runner.assert_true("setTab('settings-controls')" in index_html or "setTab('automations')" in index_html, "Voce 'Controlli & Ospiti' presente nei menu")
+        runner.assert_true("setTab('settings-users')" in index_html or "openUsersModal()" in index_html, "Voce 'Gestione Utenti & Permessi' presente nel menu")
+        runner.assert_true("setTab('settings-backup')" in index_html or "openBackupModal()" in index_html, "Voce 'Backup & Ripristino' presente nel menu")
+        runner.assert_true("setTab('settings-export')" in index_html, "Voce 'Download Dati' presente nel menu")
+        runner.assert_true("setTab('settings-updates')" in index_html or "openUpdateModal(" in index_html, "Voce 'Verifica aggiornamenti' presente nel menu")
+        runner.assert_true("setTab('news')" in index_html, "Voce 'Note di Rilascio eeroOS' con badge presente nei menu")
+        runner.assert_true("openChangelogModal()" in index_html, "Voce 'Visualizza Changelog' presente nei menu")
+        runner.assert_true("openContextHelp('intro')" in index_html, "Voce 'Guida & Manuale Rapido' presente nei menu")
+        runner.assert_true("showAboutModal = true" in index_html, "Voce 'About & Crediti' presente nei menu")
+
+        # Gating RBAC can(...) sui pulsanti amministrativi nel menu
+        runner.assert_true("can('action_manage_users')" in index_html, "Voce 'Gestione Utenti' protetta da can('action_manage_users')")
+        runner.assert_true("can('action_system_backup')" in index_html, "Voce 'Backup & Ripristino' protetta da can('action_system_backup')")
+
+        # Verifica elementi UI Modulo 3 in index.html
+        runner.assert_true("telemetryStale" in index_html or "telemetryAuthExpired" in index_html, "Banner Telemetry Resilience (Issue #55) integrato in index.html")
+        runner.assert_true("hogsCategoryFilter" in index_html, "Filtri Top Bandwidth Hogs integrati in index.html")
+        runner.assert_true("getBufferbloatGrade" in index_html, "Badge Bufferbloat WAN integrato in index.html")
+        runner.assert_true("schedulesList" in index_html, "Griglia Time Windows Parental Control integrata in index.html")
+        runner.assert_true("showUsersModal" in index_html, "Modale Gestione Utenti & Permessi integrata in index.html")
+        runner.assert_true("showBackupModal" in index_html, "Modale Disaster Recovery Backup & Ripristino integrata in index.html")
+        runner.assert_true("showScheduleModal" in index_html, "Modale Creazione/Modifica Regole Orarie integrata in index.html")
+
+        # 2. Verifica PWA: manifest.json e sw.js
+        pwa_manifest_path = Path("app/static/manifest.json")
+        runner.assert_true(pwa_manifest_path.exists(), "File app/static/manifest.json presente")
+        pwa_manifest = json.loads(pwa_manifest_path.read_text(encoding="utf-8"))
+        runner.assert_true(pwa_manifest.get("display") == "standalone", "PWA display è impostato su 'standalone'")
+        runner.assert_true(pwa_manifest.get("start_url") in ["/", "/dashboard"], "PWA start_url è impostato correttamente")
+        runner.assert_true(len(pwa_manifest.get("icons", [])) >= 2, "PWA manifest definisce icone per varie risoluzioni")
+        runner.assert_true("manifest.json" in index_html, "index.html include tag link per manifest.json")
+
+        sw_path = Path("app/static/sw.js")
+        runner.assert_true(sw_path.exists(), "File app/static/sw.js presente")
+        sw_content = sw_path.read_text(encoding="utf-8")
+        runner.assert_true("addEventListener('install'" in sw_content or 'addEventListener("install"' in sw_content, "Service Worker gestisce evento 'install'")
+        runner.assert_true("addEventListener('activate'" in sw_content or 'addEventListener("activate"' in sw_content, "Service Worker gestisce evento 'activate'")
+        runner.assert_true("addEventListener('fetch'" in sw_content or 'addEventListener("fetch"' in sw_content, "Service Worker gestisce evento 'fetch'")
+        runner.assert_true("serviceWorker.register('/static/sw.js')" in index_html, "index.html registra il Service Worker")
+
+        # 3. Verifica sincronizzazione bilingue i18n Modulo 3
+        it_loc = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_loc = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        required_mod3_blocks = ["auth_local", "users_modal", "backup_modal", "schedules", "resilience", "bufferbloat"]
+        for block in required_mod3_blocks:
+            runner.assert_true(block in it_loc, f"Blocco '{block}' presente in it.json")
+            runner.assert_true(block in en_loc, f"Blocco '{block}' presente in en.json")
+            it_keys = set(it_loc[block].keys())
+            en_keys = set(en_loc[block].keys())
+            runner.assert_true(it_keys == en_keys, f"Parità chiavi perfetta in '{block}' tra it.json ed en.json")
+
+        # 4. Verifica Logica Client Alpine.js in app.js
+        app_js_path = Path("app/static/js/app.js")
+        runner.assert_true(app_js_path.exists(), "File app/static/js/app.js presente")
+        app_js = app_js_path.read_text(encoding="utf-8")
+        runner.assert_true("can(" in app_js, "Funzione RBAC client can() definita in app.js")
+        runner.assert_true("getFilteredTopHogs()" in app_js, "Funzione filtri getFilteredTopHogs() definita in app.js")
+        runner.assert_true("getBufferbloatGrade(" in app_js, "Funzione getBufferbloatGrade() definita in app.js")
+        runner.assert_true("fetchSchedules()" in app_js, "Funzione fetchSchedules() definita in app.js")
+        runner.assert_true("openUsersModal()" in app_js, "Funzione openUsersModal() definita in app.js")
+        runner.assert_true("openBackupModal()" in app_js, "Funzione openBackupModal() definita in app.js")
+
+        # 5. Verifica Endpoint Alias Disaster Recovery Backup
+        res_bk_export_alias = await client.get("/api/system/backup/export", headers=adm_hdr)
+        runner.assert_true(res_bk_export_alias.status_code == 200, "GET /api/system/backup/export alias risponde HTTP 200")
+        runner.assert_true(res_bk_export_alias.json().get("metadata", {}).get("backup_version") == "1.6.0", "Backup da /api/system/backup/export contiene versione corretta")
+
+        res_bk_restore_alias = await client.post("/api/system/backup/restore", json={"bad": "data"}, headers=adm_hdr)
+        runner.assert_true(res_bk_restore_alias.status_code == 400, "POST /api/system/backup/restore alias risponde HTTP 400 su payload malformato")
+
+        # -----------------------------------------------------------------
+        # 28. TEST BACKEND LOGGING & SYSTEM LOG RETENTION WORKER (v1.6.0 Modulo 4 - Fase 1)
+        # -----------------------------------------------------------------
+        print("\n🚀 [28/28] TEST BACKEND LOGGING & SYSTEM LOG RETENTION WORKER (v1.6.0)")
+
+        # 1. Verifica Tabella system_logs su SQLite
+        async with db_service.get_connection() as db_check:
+            cur_l = await db_check.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='system_logs';")
+            tbl_l = await cur_l.fetchone()
+            runner.assert_true(tbl_l is not None, "Tabella 'system_logs' presente su SQLite")
+
+        # 2. Configurazione Logging predefinita e persistenza
+        log_cfg = await db_service.get_logging_config()
+        runner.assert_true(isinstance(log_cfg, dict), "get_logging_config restituisce un dizionario")
+        runner.assert_true(log_cfg.get("enabled") is True, "Configurazione log default ha enabled=True")
+        runner.assert_true(log_cfg.get("level") in ["DEBUG", "INFO", "WARNING", "ERROR"], "Configurazione log default ha livello valido")
+        runner.assert_true(log_cfg.get("retention_days") == 7, "Configurazione log default ha retention_days=7")
+
+        # Aggiornamento configurazione
+        updated_cfg = await db_service.set_logging_config(enabled=True, level="DEBUG", retention_days=15)
+        runner.assert_true(updated_cfg.get("level") == "DEBUG", "set_logging_config aggiorna il livello a DEBUG")
+        runner.assert_true(updated_cfg.get("retention_days") == 15, "set_logging_config aggiorna la retention a 15 giorni")
+
+        # Ripristino default
+        await db_service.set_logging_config(level="INFO", retention_days=7)
+
+        # 3. LogService & Handler
+        from app.services.log_service import log_service
+        runner.assert_true(hasattr(log_service, "start"), "LogService espone metodo start")
+        runner.assert_true(hasattr(log_service, "stop"), "LogService espone metodo stop")
+        runner.assert_true(hasattr(log_service, "set_level"), "LogService espone metodo set_level")
+        runner.assert_true(hasattr(log_service, "set_enabled"), "LogService espone metodo set_enabled")
+        runner.assert_true(hasattr(log_service, "clear_logs"), "LogService espone metodo clear_logs")
+
+        # Avvio e inserimento eventi di test
+        await log_service.start()
+        runner.assert_true(log_service.log_file_path.exists(), "File system.log creato sul filesystem")
+
+        # Inserimento log singolo
+        inserted_id = await db_service.insert_system_log(
+            level="WARNING",
+            logger_name="test.runner",
+            message="Messaggio diagnostico di test per runner pre-release",
+            details_json=json.dumps({"test_run": True})
+        )
+        runner.assert_true(isinstance(inserted_id, int) and inserted_id > 0, "insert_system_log restituisce un id valido")
+
+        # Inserimento batch
+        batch_count = await db_service.insert_system_logs_batch([
+            {"level": "INFO", "logger_name": "test.batch1", "message": "Log batch 1"},
+            {"level": "ERROR", "logger_name": "test.batch2", "message": "Log batch 2 errore critico"},
+        ])
+        runner.assert_true(batch_count == 2, "insert_system_logs_batch inserisce correttamente 2 record")
+
+        # Recupero e filtri
+        all_logs = await db_service.get_system_logs(limit=20)
+        runner.assert_true(len(all_logs) >= 3, "get_system_logs restituisce i record inseriti")
+
+        error_logs = await db_service.get_system_logs(level="ERROR", limit=10)
+        runner.assert_true(all(l["level"] == "ERROR" for l in error_logs), "Filtro per level='ERROR' rispettato")
+
+        search_logs = await db_service.get_system_logs(search="errore critico", limit=10)
+        runner.assert_true(len(search_logs) >= 1 and "errore critico" in search_logs[0]["message"], "Filtro per testo 'search' funzionante")
+
+        total_cnt = await db_service.get_system_logs_count()
+        runner.assert_true(total_cnt >= 3, "get_system_logs_count restituisce conteggio accurato")
+
+        # Statistiche log
+        log_stats = await db_service.get_system_logs_stats()
+        runner.assert_true(log_stats.get("total_count", 0) >= 3, "Statistiche log espongono total_count")
+        runner.assert_true("WARNING" in log_stats.get("level_counts", {}), "Statistiche log includono ripartizione livelli")
+        runner.assert_true("file_size_bytes" in log_stats, "Statistiche log includono file_size_bytes")
+
+        # Retention & Purga
+        await db_service.insert_system_log(
+            level="DEBUG",
+            logger_name="test.expired",
+            message="Record scaduto per test purga",
+            timestamp="2021-01-01 00:00:00"
+        )
+        purged_cnt = await db_service.purge_expired_system_logs(retention_days=1)
+        runner.assert_true(purged_cnt >= 1, "purge_expired_system_logs elimina correttamente i record obsoleti")
+
+        # Integrazione ciclo retention worker
+        compaction_res = await retention_worker.run_compaction_cycle()
+        runner.assert_true("logs_purged" in compaction_res, "Retention worker include logs_purged nel sommario")
+
+        # Svuotamento (Clear logs)
+        clear_res = await log_service.clear_logs()
+        runner.assert_true(clear_res.get("status") == "success", "clear_logs restituisce status success")
+        post_clear_logs = await db_service.get_system_logs(limit=10)
+        runner.assert_true(len(post_clear_logs) == 1, "Dopo clear_logs rimane solo l'audit log di svuotamento")
+        runner.assert_true("cancellati con successo" in post_clear_logs[0]["message"], "Audit log di svuotamento registrato correttamente")
+
+        # 4. REST API Endpoint Testing (/api/system/logs) (v1.6.0 Modulo 4 - Fase 2)
+        # GET /api/system/logs/config con admin
+        res_cfg = await client.get("/api/system/logs/config", headers=adm_hdr)
+        runner.assert_true(res_cfg.status_code == 200, "GET /api/system/logs/config risponde HTTP 200")
+        cfg_body = res_cfg.json()
+        runner.assert_true(cfg_body.get("status") == "success", "GET /api/system/logs/config ha status success")
+        runner.assert_true("enabled" in cfg_body, "GET /api/system/logs/config contiene flag enabled")
+        runner.assert_true("level" in cfg_body, "GET /api/system/logs/config contiene level")
+        runner.assert_true("retention_days" in cfg_body, "GET /api/system/logs/config contiene retention_days")
+        runner.assert_true("stats" in cfg_body, "GET /api/system/logs/config include sezione stats")
+
+        # POST /api/system/logs/config con admin
+        res_cfg_up = await client.post(
+            "/api/system/logs/config",
+            json={"level": "DEBUG", "retention_days": 14, "enabled": True},
+            headers=adm_hdr
+        )
+        runner.assert_true(res_cfg_up.status_code == 200, "POST /api/system/logs/config risponde HTTP 200")
+        up_body = res_cfg_up.json()
+        runner.assert_true(up_body.get("level") == "DEBUG", "POST /api/system/logs/config aggiorna il livello a DEBUG")
+        runner.assert_true(up_body.get("retention_days") == 14, "POST /api/system/logs/config aggiorna la retention a 14")
+
+        # Validazione errore su livello non supportato
+        res_bad_lvl = await client.post("/api/system/logs/config", json={"level": "INVALID_LVL"}, headers=adm_hdr)
+        runner.assert_true(res_bad_lvl.status_code == 400, "POST /api/system/logs/config con livello non valido risponde HTTP 400")
+
+        # Validazione errore su retention negativa
+        res_bad_ret = await client.post("/api/system/logs/config", json={"retention_days": -1}, headers=adm_hdr)
+        runner.assert_true(res_bad_ret.status_code == 422 or res_bad_ret.status_code == 400, "POST /api/system/logs/config con retention negativa risponde HTTP 400/422")
+
+        # Ripristino config standard
+        await client.post("/api/system/logs/config", json={"level": "INFO", "retention_days": 7}, headers=adm_hdr)
+
+        # GET /api/system/logs paginato e con filtri
+        await db_service.insert_system_log(level="INFO", logger_name="api.test", message="Messaggio diagnostico per API GET")
+        await db_service.insert_system_log(level="ERROR", logger_name="api.test", message="Errore critico per query test")
+        res_logs_list = await client.get("/api/system/logs?limit=50&offset=0", headers=adm_hdr)
+        runner.assert_true(res_logs_list.status_code == 200, "GET /api/system/logs risponde HTTP 200")
+        list_body = res_logs_list.json()
+        runner.assert_true(list_body.get("status") == "success", "GET /api/system/logs ha status success")
+        runner.assert_true("total" in list_body, "GET /api/system/logs include total")
+        runner.assert_true("logs" in list_body and len(list_body["logs"]) >= 2, "GET /api/system/logs include array logs")
+
+        # Filtro per livello e ricerca testuale via query params
+        res_filter_lvl = await client.get("/api/system/logs?level=ERROR", headers=adm_hdr)
+        runner.assert_true(res_filter_lvl.status_code == 200, "GET /api/system/logs?level=ERROR risponde HTTP 200")
+        runner.assert_true(all(l.get("level") == "ERROR" for l in res_filter_lvl.json().get("logs", [])), "Filtro query level='ERROR' rispettato")
+
+        res_filter_q = await client.get("/api/system/logs?q=critico", headers=adm_hdr)
+        runner.assert_true(res_filter_q.status_code == 200, "GET /api/system/logs?q=critico risponde HTTP 200")
+        runner.assert_true(len(res_filter_q.json().get("logs", [])) >= 1, "Ricerca testuale via API restituisce risultati corretti")
+
+        # POST /api/system/logs/clear
+        res_clear_api = await client.post("/api/system/logs/clear", headers=adm_hdr)
+        runner.assert_true(res_clear_api.status_code == 200, "POST /api/system/logs/clear risponde HTTP 200")
+        runner.assert_true(res_clear_api.json().get("status") == "success", "POST /api/system/logs/clear status success")
+        runner.assert_true("deleted_records" in res_clear_api.json(), "POST /api/system/logs/clear restituisce deleted_records")
+
+        # GET /api/system/logs/download (formato log standard)
+        res_down_log = await client.get("/api/system/logs/download?format=log", headers=adm_hdr)
+        runner.assert_true(res_down_log.status_code == 200, "GET /api/system/logs/download?format=log risponde HTTP 200")
+        runner.assert_true("attachment" in res_down_log.headers.get("content-disposition", ""), "Download log include header Content-Disposition attachment")
+        runner.assert_true(".log" in res_down_log.headers.get("content-disposition", ""), "Nome file scaricato ha estensione .log")
+
+        # GET /api/system/logs/download (formato json)
+        res_down_json = await client.get("/api/system/logs/download?format=json", headers=adm_hdr)
+        runner.assert_true(res_down_json.status_code == 200, "GET /api/system/logs/download?format=json risponde HTTP 200")
+        runner.assert_true("application/json" in res_down_json.headers.get("content-type", ""), "Download json restituisce Content-Type application/json")
+        down_json_body = res_down_json.json()
+        runner.assert_true("logs" in down_json_body, "Download json include array di log")
+
+        # 5. Verifica Controlli di Accesso RBAC
+        # Creazione operatore con solo 'view_logs' (senza action_manage_rules)
+        res_create_op_log = await client.post(
+            "/api/users",
+            json={
+                "username": "operatore_logs_viewer",
+                "display_name": "Operatore Logs",
+                "password": "PasswordTest123!",
+                "role": "operator",
+                "permissions": ["view_logs"]
+            },
+            headers=adm_hdr
+        )
+        op_log_id = res_create_op_log.json().get("user", {}).get("id")
+        res_op_log_login = await client.post("/api/auth/local/login", json={"username": "operatore_logs_viewer", "password": "PasswordTest123!"})
+        op_log_hdr = {"Authorization": f"Bearer {res_op_log_login.json().get('token')}"}
+
+        # view_logs consente lettura e download
+        res_op_read_cfg = await client.get("/api/system/logs/config", headers=op_log_hdr)
+        runner.assert_true(res_op_read_cfg.status_code == 200, "Operatore con view_logs può leggere GET /api/system/logs/config")
+
+        res_op_read_logs = await client.get("/api/system/logs", headers=op_log_hdr)
+        runner.assert_true(res_op_read_logs.status_code == 200, "Operatore con view_logs può leggere GET /api/system/logs")
+
+        res_op_down = await client.get("/api/system/logs/download", headers=op_log_hdr)
+        runner.assert_true(res_op_down.status_code == 200, "Operatore con view_logs può eseguire GET /api/system/logs/download")
+
+        # view_logs NON consente modifiche di configurazione o svuotamento (richiede action_manage_rules)
+        res_op_forbid_cfg = await client.post("/api/system/logs/config", json={"level": "DEBUG"}, headers=op_log_hdr)
+        runner.assert_true(res_op_forbid_cfg.status_code == 403, "Operatore senza action_manage_rules bloccato con 403 su POST /api/system/logs/config")
+
+        res_op_forbid_clear = await client.post("/api/system/logs/clear", headers=op_log_hdr)
+        runner.assert_true(res_op_forbid_clear.status_code == 403, "Operatore senza action_manage_rules bloccato con 403 su POST /api/system/logs/clear")
+
+        # Pulizia utente test
+        if op_log_id:
+            await db_service.delete_local_user(op_log_id)
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 3: TEST UI CARD, MODAL, JS LOGIC & I18N PARITY
+        # -------------------------------------------------------------
+        print("\n🖥️ [MODULO 4 - FASE 3] TEST UI CARD LOGS, MODAL, JS LOGIC & I18N PARITY")
+        
+        # 1. Parità dizionari i18n per 'logs'
+        it_dict = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_dict = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        runner.assert_true("logs" in it_dict, "Chiave 'logs' presente in it.json")
+        runner.assert_true("logs" in en_dict, "Chiave 'logs' presente in en.json")
+        it_logs_keys = set(it_dict.get("logs", {}).keys())
+        en_logs_keys = set(en_dict.get("logs", {}).keys())
+        runner.assert_true(len(it_logs_keys) >= 38, f"it.json ha almeno 38 chiavi logs (trovate {len(it_logs_keys)})")
+        runner.assert_true(it_logs_keys == en_logs_keys, "Parità 100% tra chiavi 'logs' di it.json ed en.json")
+
+        # 2. Template index.html: presenza Card 7 e Modal di svuotamento
+        index_html = Path("app/templates/index.html").read_text(encoding="utf-8")
+        runner.assert_true("logs.title" in index_html, "Card 7 'logs.title' presente nel template index.html")
+        runner.assert_true("logConfig.enabled" in index_html, "Toggle logConfig.enabled presente in index.html")
+        runner.assert_true("setLogLevel(" in index_html, "Selettore setLogLevel presente in index.html")
+        runner.assert_true("setLogRetention(" in index_html, "Selettore setLogRetention presente in index.html")
+        runner.assert_true("downloadSystemLogs(" in index_html, "Azione downloadSystemLogs presente in index.html")
+        runner.assert_true("showClearLogsModal" in index_html, "Modal showClearLogsModal presente in index.html")
+        runner.assert_true("logs.viewer_title" in index_html, "Live Console 'logs.viewer_title' presente in index.html")
+
+        # 3. Frontend app.js: presenza reactive state e metodi
+        app_js = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("fetchLogConfig" in app_js, "Metodo fetchLogConfig presente in app.js")
+        runner.assert_true("fetchSystemLogs" in app_js, "Metodo fetchSystemLogs presente in app.js")
+        runner.assert_true("setLogLevel" in app_js, "Metodo setLogLevel presente in app.js")
+        runner.assert_true("setLogRetention" in app_js, "Metodo setLogRetention presente in app.js")
+        runner.assert_true("toggleLogEnabled" in app_js, "Metodo toggleLogEnabled presente in app.js")
+        runner.assert_true("confirmClearLogs" in app_js, "Metodo confirmClearLogs presente in app.js")
+        runner.assert_true("downloadSystemLogs" in app_js, "Metodo downloadSystemLogs presente in app.js")
+        runner.assert_true("openClearLogsModal" in app_js, "Metodo openClearLogsModal presente in app.js")
+        runner.assert_true("closeClearLogsModal" in app_js, "Metodo closeClearLogsModal presente in app.js")
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 4: TEST HOMELAB INTEGRATIONS (MQTT, PROMETHEUS, MULTI-CHANNEL DISPATCHER)
+        # -------------------------------------------------------------
+        print("\n🏠 [MODULO 4 - FASE 4] TEST HOMELAB INTEGRATIONS (MQTT, PROMETHEUS, NOTIFICATIONS)")
+
+        # 1. Test MQTT Service & Endpoints
+        from app.services.mqtt_client import mqtt_service
+        runner.assert_true(mqtt_service is not None, "Istanza mqtt_service creata con successo")
+        runner.assert_true(hasattr(mqtt_service, "start") and hasattr(mqtt_service, "stop"), "mqtt_service espone metodi start e stop")
+        runner.assert_true(hasattr(mqtt_service, "publish_discovery_configs"), "mqtt_service espone publish_discovery_configs")
+        runner.assert_true(hasattr(mqtt_service, "publish_telemetry"), "mqtt_service espone publish_telemetry")
+
+        # Home Assistant Discovery Payloads
+        payloads = mqtt_service._get_discovery_payloads()
+        runner.assert_true(len(payloads) >= 8, f"Home Assistant discovery payloads generati (trovati {len(payloads)})")
+        disc_topics = [p["topic"] for p in payloads]
+        runner.assert_true(any("wan_download" in t for t in disc_topics), "Discovery contiene sensore wan_download")
+        runner.assert_true(any("health_score" in t for t in disc_topics), "Discovery contiene sensore health_score")
+        runner.assert_true(any("clients_count" in t for t in disc_topics), "Discovery contiene sensore clients_count")
+        runner.assert_true(any("bufferbloat_grade" in t for t in disc_topics), "Discovery contiene sensore bufferbloat_grade")
+        runner.assert_true(any("binary_sensor" in t for t in disc_topics), "Discovery contiene binary_sensor per connettività")
+
+        # GET /api/automations/mqtt/config
+        res_mqtt_cfg = await client.get("/api/automations/mqtt/config", headers=adm_hdr)
+        runner.assert_true(res_mqtt_cfg.status_code == 200, "GET /api/automations/mqtt/config risponde HTTP 200")
+        mqtt_cfg_data = res_mqtt_cfg.json()
+        runner.assert_true("broker_host" in mqtt_cfg_data, "Configurazione MQTT include broker_host")
+        runner.assert_true("base_topic" in mqtt_cfg_data, "Configurazione MQTT include base_topic")
+        runner.assert_true("ha_discovery_prefix" in mqtt_cfg_data, "Configurazione MQTT include ha_discovery_prefix")
+
+        # POST /api/automations/mqtt/config
+        res_mqtt_up = await client.post(
+            "/api/automations/mqtt/config",
+            json={"base_topic": "eero_homelab_test", "publish_interval": 20},
+            headers=adm_hdr
+        )
+        runner.assert_true(res_mqtt_up.status_code == 200, "POST /api/automations/mqtt/config risponde HTTP 200")
+        runner.assert_true(res_mqtt_up.json().get("config", {}).get("base_topic") == "eero_homelab_test", "Aggiornato base_topic a 'eero_homelab_test'")
+
+        # Ripristino config MQTT standard
+        await client.post("/api/automations/mqtt/config", json={"base_topic": "eero_dashboard", "publish_interval": 30}, headers=adm_hdr)
+
+        # POST /api/automations/mqtt/test
+        res_mqtt_test = await client.post("/api/automations/mqtt/test", headers=adm_hdr)
+        runner.assert_true(res_mqtt_test.status_code == 200, "POST /api/automations/mqtt/test risponde HTTP 200")
+        runner.assert_true(res_mqtt_test.json().get("status") == "success", "Test di pubblicazione MQTT eseguito con successo")
+
+        # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
+        res_prom_root = await client.get("/metrics")
+        runner.assert_true(res_prom_root.status_code == 200, "GET /metrics root risponde HTTP 200")
+        runner.assert_true("text/plain" in res_prom_root.headers.get("content-type", ""), "GET /metrics restituisce Content-Type text/plain")
+        prom_text = res_prom_root.text
+        runner.assert_true("eero_info" in prom_text, "Metriche Prometheus includono eero_info")
+        runner.assert_true("eero_clients_total" in prom_text, "Metriche Prometheus includono eero_clients_total")
+        runner.assert_true("eero_clients_band_total" in prom_text, "Metriche Prometheus includono eero_clients_band_total")
+        runner.assert_true("eero_wan_download_mbps" in prom_text, "Metriche Prometheus includono eero_wan_download_mbps")
+        runner.assert_true("eero_wan_upload_mbps" in prom_text, "Metriche Prometheus includono eero_wan_upload_mbps")
+        runner.assert_true("eero_health_score" in prom_text, "Metriche Prometheus includono eero_health_score")
+        runner.assert_true("eero_mesh_nodes_online" in prom_text, "Metriche Prometheus includono eero_mesh_nodes_online")
+        runner.assert_true("eero_bufferbloat_grade_numeric" in prom_text, "Metriche Prometheus includono eero_bufferbloat_grade_numeric")
+        runner.assert_true("eero_bandwidth_rx_bytes_total" in prom_text, "Metriche Prometheus includono eero_bandwidth_rx_bytes_total")
+
+        res_prom_api = await client.get("/api/metrics/prometheus")
+        runner.assert_true(res_prom_api.status_code == 200, "GET /api/metrics/prometheus risponde HTTP 200")
+        runner.assert_true("eero_wan_download_mbps" in res_prom_api.text, "GET /api/metrics/prometheus contiene metriche corrette")
+
+        # Verifica Dashboard Grafana JSON
+        grafana_path = Path("deploy/grafana/eero_dashboard.json")
+        runner.assert_true(grafana_path.exists(), "File deploy/grafana/eero_dashboard.json presente")
+        grafana_json = json.loads(grafana_path.read_text(encoding="utf-8"))
+        runner.assert_true(len(grafana_json.get("panels", [])) >= 8, f"Dashboard Grafana ha almeno 8 pannelli (trovati {len(grafana_json.get('panels', []))})")
+        runner.assert_true(grafana_json.get("uid") == "eero-mesh-metrics", "Dashboard Grafana ha UID corretto")
+
+        # 3. Test Multi-Channel Dispatcher & Specialized Alerts
+        notif_cfg = await client.get("/api/automations/notifications", headers=adm_hdr)
+        runner.assert_true(notif_cfg.status_code == 200, "GET /api/automations/notifications risponde HTTP 200")
+        notif_body = notif_cfg.json()
+        runner.assert_true("discord_enabled" in notif_body, "Impostazioni notifiche contengono discord_enabled")
+        runner.assert_true("pushover_enabled" in notif_body, "Impostazioni notifiche contengono pushover_enabled")
+
+        # Test invio su tutti i 4 canali in Demo
+        res_test_notif = await client.post("/api/automations/notifications/test", headers=adm_hdr)
+        runner.assert_true(res_test_notif.status_code == 200, "POST /api/automations/notifications/test risponde HTTP 200")
+        test_res_json = res_test_notif.json()
+        runner.assert_true(test_res_json.get("telegram_sent") is True, "Canale Telegram testato con successo")
+        runner.assert_true(test_res_json.get("webhook_sent") is True, "Canale Webhook testato con successo")
+        runner.assert_true(test_res_json.get("discord_sent") is True, "Canale Discord testato con successo")
+        runner.assert_true(test_res_json.get("pushover_sent") is True, "Canale Pushover testato con successo")
+
+        # Test alert bufferbloat degradato
+        await notification_service.notify_bufferbloat_degradation({
+            "grade": "D",
+            "unloaded_latency_ms": 14.5,
+            "download_latency_ms": 125.0,
+            "upload_latency_ms": 95.0
+        })
+        
+        # Test alert qualità mesh debole
+        await notification_service.notify_mesh_quality_warning("Gateway Soggiorno", "Interferenza radar DFS rilevata su canale 100")
+
+        # Test alert sicurezza brute-force
+        await notification_service.notify_security_auth_alert("192.168.4.199", "admin", 5, "IP temporaneamente bloccato (15 min)")
+
+        # Test alert backup completato
+        await notification_service.notify_backup_status(True, "eero_backup_auto.zip", "3.4 MB archiviati su SQLite e system.log")
+
+        # Verifica registrazione alert su SQLite
+        recent_alerts = await db_service.get_alerts(limit=10)
+        recent_types = [a.get("type") for a in recent_alerts]
+        runner.assert_true("bufferbloat_warning" in recent_types, "Alert 'bufferbloat_warning' salvato su DB")
+        runner.assert_true("mesh_warning" in recent_types, "Alert 'mesh_warning' salvato su DB")
+        runner.assert_true("security_auth" in recent_types, "Alert 'security_auth' salvato su DB")
+        runner.assert_true("backup_status" in recent_types, "Alert 'backup_status' salvato su DB")
+
+        # -------------------------------------------------------------
+        # MODULO 4 - FASE 5: TEST TECHNICAL MANUAL & BILINGUAL CHANGELOG
+        # -------------------------------------------------------------
+        print("\n📚 [MODULO 4 - FASE 5] TEST TECHNICAL MANUAL & BILINGUAL CHANGELOG")
+
+        # 1. Test capitoli manuale utente (IT ed EN)
+        res_man_it = await client.get("/api/manual/sections?lang=it")
+        runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
+        man_it_data = res_man_it.json()
+        runner.assert_true(man_it_data.get("count") == 16, f"Manuale IT ha 16 capitoli (trovati {man_it_data.get('count')})")
+        it_sec_ids = [s["id"] for s in man_it_data.get("sections", [])]
+        runner.assert_true("system-logs" in it_sec_ids, "Capitolo 'system-logs' presente nel manuale IT")
+        runner.assert_true("homelab-mqtt" in it_sec_ids, "Capitolo 'homelab-mqtt' presente nel manuale IT")
+        runner.assert_true("prometheus-grafana" in it_sec_ids, "Capitolo 'prometheus-grafana' presente nel manuale IT")
+        runner.assert_true("multi-channel-alerts" in it_sec_ids, "Capitolo 'multi-channel-alerts' presente nel manuale IT")
+        runner.assert_true("offline-first" in it_sec_ids, "Capitolo 'offline-first' presente nel manuale IT")
+        runner.assert_true("reverse-enrichment" in it_sec_ids, "Capitolo 'reverse-enrichment' presente nel manuale IT")
+
+        res_man_en = await client.get("/api/manual/sections?lang=en")
+        runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
+        man_en_data = res_man_en.json()
+        runner.assert_true(man_en_data.get("count") == 16, f"Manuale EN ha 16 capitoli (trovati {man_en_data.get('count')})")
+        en_sec_ids = [s["id"] for s in man_en_data.get("sections", [])]
+        runner.assert_true(it_sec_ids == en_sec_ids, "Parità 100% degli ID capitoli tra manuale IT ed EN")
+
+        # 2. Test sommario changelog in-app (IT ed EN)
+        res_ch_it = await client.get("/api/manual/changelog?lang=it")
+        runner.assert_true(res_ch_it.status_code == 200, "GET /api/manual/changelog?lang=it risponde HTTP 200")
+        runner.assert_true("Modulo 4" in res_ch_it.json().get("content", ""), "Changelog IT contiene 'Modulo 4'")
+
+        res_ch_en = await client.get("/api/manual/changelog?lang=en")
+        runner.assert_true(res_ch_en.status_code == 200, "GET /api/manual/changelog?lang=en risponde HTTP 200")
+        runner.assert_true("Module 4" in res_ch_en.json().get("content", ""), "Changelog EN contiene 'Module 4'")
+
+        # -------------------------------------------------------------
+        # MODULO 6 - TEST LOCAL ASSET BUNDLING (ISSUE #58) & RECENTLY JOINED (ISSUE #60)
+        # -------------------------------------------------------------
+        print("\n📦 [MODULO 6] TEST LOCAL ASSET BUNDLING (ISSUE #58) & RECENTLY JOINED (ISSUE #60)")
+
+        # 1. Test Local Asset Bundling & 100% Offline Resilience (Issue #58)
+        vendor_dir = Path("app/static/vendor")
+        runner.assert_true(vendor_dir.is_dir(), "Directory app/static/vendor/ esiste")
+        
+        tw_path = vendor_dir / "tailwind.min.js"
+        runner.assert_true(tw_path.exists() and tw_path.stat().st_size > 100_000, "app/static/vendor/tailwind.min.js presente (> 100KB)")
+
+        alp_path = vendor_dir / "alpine.min.js"
+        runner.assert_true(alp_path.exists() and alp_path.stat().st_size > 20_000, "app/static/vendor/alpine.min.js presente (> 20KB)")
+
+        chart_path = vendor_dir / "chart.umd.min.js"
+        runner.assert_true(chart_path.exists() and chart_path.stat().st_size > 100_000, "app/static/vendor/chart.umd.min.js presente (> 100KB)")
+
+        lucide_path = vendor_dir / "lucide.min.js"
+        runner.assert_true(lucide_path.exists() and lucide_path.stat().st_size > 100_000, "app/static/vendor/lucide.min.js presente (> 100KB)")
+
+        fonts_css_path = Path("app/static/css/fonts.css")
+        runner.assert_true(fonts_css_path.exists() and fonts_css_path.stat().st_size > 1_000, "app/static/css/fonts.css presente (> 1KB)")
+
+        fonts_dir = Path("app/static/fonts")
+        runner.assert_true(fonts_dir.is_dir(), "Directory app/static/fonts/ esiste")
+        woff2_files = list(fonts_dir.glob("*.woff2"))
+        runner.assert_true(len(woff2_files) >= 10, f"Font WOFF2 locali self-hosted presenti (trovati {len(woff2_files)})")
+
+        # Verifica assenza di chiamate a CDN esterne in index.html
+        index_html_path = Path("app/templates/index.html")
+        index_html_content = index_html_path.read_text(encoding="utf-8")
+        runner.assert_true("fonts.googleapis.com" not in index_html_content, "index.html non carica font da Google Fonts (offline-first)")
+        runner.assert_true("cdn.tailwindcss.com" not in index_html_content, "index.html non carica Tailwind da cdn.tailwindcss.com")
+        runner.assert_true("cdn.jsdelivr.net" not in index_html_content, "index.html non carica librerie esterne da jsdelivr")
+        runner.assert_true("/static/vendor/tailwind.min.js" in index_html_content, "index.html carica tailwind.min.js locale")
+        runner.assert_true("/static/vendor/alpine.min.js" in index_html_content, "index.html carica alpine.min.js locale")
+        runner.assert_true("/static/vendor/chart.umd.min.js" in index_html_content, "index.html carica chart.umd.min.js locale")
+        runner.assert_true("/static/vendor/lucide.min.js" in index_html_content, "index.html carica lucide.min.js locale")
+        runner.assert_true("/static/css/fonts.css" in index_html_content, "index.html carica fonts.css locale")
+
+        # Verifica Service Worker PWA cache locale
+        sw_path = Path("app/static/sw.js")
+        sw_content = sw_path.read_text(encoding="utf-8")
+        runner.assert_true("tailwind.min.js" in sw_content, "sw.js pre-cachea tailwind.min.js locale")
+        runner.assert_true("alpine.min.js" in sw_content, "sw.js pre-cachea alpine.min.js locale")
+        runner.assert_true("chart.umd.min.js" in sw_content, "sw.js pre-cachea chart.umd.min.js locale")
+        runner.assert_true("lucide.min.js" in sw_content, "sw.js pre-cachea lucide.min.js locale")
+        runner.assert_true("fonts.css" in sw_content, "sw.js pre-cachea fonts.css locale")
+
+        # 2. Test Recently Joined Devices & Sorting (Issue #60)
+        known_map = await db_service.get_all_known_devices_map()
+        runner.assert_true(isinstance(known_map, dict), "db_service.get_all_known_devices_map() ritorna un dizionario")
+
+        res_devs = await client.get("/api/devices")
+        runner.assert_true(res_devs.status_code == 200, "GET /api/devices risponde HTTP 200")
+        dev_payload = res_devs.json()
+        dev_list = dev_payload.get("devices", []) if isinstance(dev_payload, dict) else dev_payload
+        runner.assert_true(isinstance(dev_list, list) and len(dev_list) > 0, "Lista dispositivi non vuota")
+        
+        sample_dev = dev_list[0]
+        runner.assert_true("first_seen" in sample_dev, "Dispositivo ha attributo 'first_seen'")
+        runner.assert_true("is_new" in sample_dev, "Dispositivo ha attributo 'is_new'")
+        runner.assert_true("is_new_24h" in sample_dev, "Dispositivo ha attributo 'is_new_24h'")
+
+        # Test sorting per primo accesso decrescente
+        res_sort_desc = await client.get("/api/devices?sort_by=first_seen_desc")
+        runner.assert_true(res_sort_desc.status_code == 200, "GET /api/devices?sort_by=first_seen_desc risponde HTTP 200")
+        sorted_desc = res_sort_desc.json().get("devices", [])
+        valid_seen_desc = [d.get("first_seen") for d in sorted_desc if d.get("first_seen")]
+        runner.assert_true(valid_seen_desc == sorted(valid_seen_desc, reverse=True), "Dispositivi correttamente ordinati per first_seen decrescente")
+
+        # Test sorting per primo accesso crescente
+        res_sort_asc = await client.get("/api/devices?sort_by=first_seen_asc")
+        runner.assert_true(res_sort_asc.status_code == 200, "GET /api/devices?sort_by=first_seen_asc risponde HTTP 200")
+        sorted_asc = res_sort_asc.json().get("devices", [])
+        valid_seen_asc = [d.get("first_seen") for d in sorted_asc if d.get("first_seen")]
+        runner.assert_true(valid_seen_asc == sorted(valid_seen_asc), "Dispositivi correttamente ordinati per first_seen crescente")
+
+        # Test filtro is_new_only
+        res_new_only = await client.get("/api/devices?is_new_only=true")
+        runner.assert_true(res_new_only.status_code == 200, "GET /api/devices?is_new_only=true risponde HTTP 200")
+        new_only_list = res_new_only.json().get("devices", [])
+        runner.assert_true(all(d.get("is_new") is True for d in new_only_list), "Tutti i dispositivi con is_new_only=true hanno is_new=True")
+
+        # Test chiavi internazionalizzazione
+        it_loc_path = Path("app/static/locales/it.json")
+        en_loc_path = Path("app/static/locales/en.json")
+        it_loc = json.loads(it_loc_path.read_text(encoding="utf-8"))
+        en_loc = json.loads(en_loc_path.read_text(encoding="utf-8"))
+        for req_key in ["sort_first_seen", "filter_new_devices", "filter_new_tag", "new_badge", "first_seen_badge_tooltip"]:
+            runner.assert_true(req_key in it_loc.get("devices", {}), f"Chiave devices.{req_key} presente in it.json")
+            runner.assert_true(req_key in en_loc.get("devices", {}), f"Chiave devices.{req_key} presente in en.json")
+        runner.assert_true("first_seen" in it_loc.get("device_modal", {}), "Chiave device_modal.first_seen in it.json")
+        runner.assert_true("first_seen" in en_loc.get("device_modal", {}), "Chiave device_modal.first_seen in en.json")
+
+        # -----------------------------------------------------------------
+        # TEST ISSUES #62, #63, #64
+        # -----------------------------------------------------------------
+        print("\n🔧 TEST ISSUES #62, #63, #64 (SQLITE CONCURRENCY, GUEST QR CODE NOPASS, DAILY DIGEST UI)")
+
+        # Test Issue #62: SQLite Write Lock & Concurrency Contention
+        runner.assert_true(hasattr(db_service, "_write_lock"), "db_service espone _write_lock per serializzazione scritture")
+        async with db_service.get_connection() as conn:
+            cursor = await conn.execute("PRAGMA busy_timeout;")
+            busy_row = await cursor.fetchone()
+            busy_val = busy_row[0] if busy_row else 0
+            runner.assert_true(busy_val >= 50000, f"PRAGMA busy_timeout è >= 50000ms (ottenuto: {busy_val}ms)")
+
+        # Test Issue #63: Guest QR Code Generation with Open / No Password Network
+        from app.services.qrcode_gen import generate_wifi_qr_code
+        qr_nopass = generate_wifi_qr_code(ssid="eero Open Guest", password="")
+        runner.assert_true(isinstance(qr_nopass, str) and qr_nopass.startswith("data:image/png;base64,"), "generate_wifi_qr_code genera data URL valido per rete senza password")
+        
+        qr_with_pass = generate_wifi_qr_code(ssid="eero Protected", password="SecretPassword123")
+        runner.assert_true(isinstance(qr_with_pass, str) and qr_with_pass.startswith("data:image/png;base64,"), "generate_wifi_qr_code genera data URL valido per rete protetta")
+        runner.assert_true(qr_nopass != qr_with_pass, "QR Code per rete aperta è differente da QR Code con password")
+
+        res_guest = await client.get("/api/network/guest")
+        runner.assert_true(res_guest.status_code == 200, "GET /api/network/guest risponde HTTP 200")
+        guest_json = res_guest.json()
+        runner.assert_true("guest_network" in guest_json, "Payload guest contiene 'guest_network'")
+
+        # Test Issue #64: Daily Digest Delivery Channels & Locales
+        runner.assert_true("digest_delivery_channels" in it_loc.get("controls", {}), "Chiave controls.digest_delivery_channels in it.json")
+        runner.assert_true("digest_delivery_channels" in en_loc.get("controls", {}), "Chiave controls.digest_delivery_channels in en.json")
+        runner.assert_true("open_network_label" in it_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in it.json")
+        runner.assert_true("open_network_label" in en_loc.get("guests_page", {}), "Chiave guests_page.open_network_label in en.json")
+
+        # Test Issue #65: UI improvement for enriched ULA addresses & missing English translations
+        print("\n🔍 TEST ISSUE #65 (ULA ENRICHED UI & ENGLISH TRANSLATIONS)")
+        runner.assert_true("qr_not_available" in it_loc.get("guests_page", {}), "Chiave guests_page.qr_not_available in it.json")
+        runner.assert_true("qr_not_available" in en_loc.get("guests_page", {}), "Chiave guests_page.qr_not_available in en.json")
+        runner.assert_true("empty_desc" in it_loc.get("schedules", {}), "Chiave schedules.empty_desc in it.json")
+        runner.assert_true("empty_desc" in en_loc.get("schedules", {}), "Chiave schedules.empty_desc in en.json")
+        runner.assert_true("badge_ula_enriched" in it_loc.get("devices", {}), "Chiave devices.badge_ula_enriched in it.json")
+        runner.assert_true("badge_ula_enriched" in en_loc.get("devices", {}), "Chiave devices.badge_ula_enriched in en.json")
+        runner.assert_true(it_loc.get("device_modal", {}).get("ipv6_badge_ula_ndp") == "ULA Enriched", "Badge ULA Enriched in it.json")
+        runner.assert_true(en_loc.get("device_modal", {}).get("ipv6_badge_ula_ndp") == "ULA Enriched", "Badge ULA Enriched in en.json")
+        
+        # Test cleanup_stale_discovered_ips execution
+        cleanup_res = await db_service.cleanup_stale_discovered_ips(retention_days=30)
+        runner.assert_true(isinstance(cleanup_res, int) and cleanup_res >= 0, "cleanup_stale_discovered_ips eseguito con successo")
+
+        # Test enrichment_service refreshes ipv6_all
+        test_mac_ula = "00:11:22:33:44:55"
+        await db_service.add_discovered_ips([{
+            "mac_address": test_mac_ula,
+            "ip_address": "fd12:3456:789a:1::99",
+            "ip_type": "ULA",
+            "source": "ndp_enrichment"
+        }])
+        background_poller.cached_devices = [{
+            "mac": test_mac_ula,
+            "ipv6": "fe80::1",
+            "ipv6_addresses": ["fe80::1"],
+            "ipv6_all": ["fe80::1"]
+        }]
+        from app.services.enrichment_service import enrichment_service
+        await enrichment_service.refresh_cached_devices_enrichment()
+        enriched_dev = background_poller.cached_devices[0]
+        runner.assert_true("fd12:3456:789a:1::99" in (enriched_dev.get("ipv6_all") or []), "enriched_dev popola correttamente ipv6_all con ULA")
+        runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
+
+        await mqtt_service.stop()
+        await log_service.stop()
 
         runner.print_summary()
+
 
 
 

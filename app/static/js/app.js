@@ -6,9 +6,9 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.5.0',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.0',
     buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.5.0 build 1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.0 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
@@ -19,11 +19,75 @@ document.addEventListener('alpine:init', () => {
     translationsLoaded: false,
 
     // Navigation & Sidebar State
+    routes: {
+      overview: '/dashboard',
+      devices: '/devices',
+      speedtest: '/speedtest',
+      guests: '/guests',
+      'quality-analytics': '/quality-analytics',
+      'settings-controls': '/settings/controls',
+      'settings-users': '/settings/users',
+      'settings-backup': '/settings/backup',
+      'settings-export': '/settings/export',
+      'settings-updates': '/settings/updates',
+      analytics: '/quality-analytics',
+      automations: '/settings/controls',
+      controls: '/settings/controls',
+      export: '/settings/export',
+      manual: '/manual',
+      news: '/news'
+    },
     currentTab: 'overview',
-    sidebarCollapsed: localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    settingsExpanded: false,
+    isSettingsTab() {
+      return ['settings-controls', 'settings-users', 'settings-backup', 'settings-export', 'settings-updates'].includes(this.currentTab);
+    },
+    toggleSettingsMenu() {
+      if (this.sidebarCollapsed) {
+        this.sidebarCollapsed = false;
+        this.settingsExpanded = true;
+        if (!this.isSettingsTab()) {
+          this.setTab('settings-controls');
+        }
+        return;
+      }
+      this.settingsExpanded = !this.settingsExpanded;
+      if (this.settingsExpanded && !this.isSettingsTab()) {
+        this.setTab('settings-controls');
+      }
+    },
+    sidebarCollapsed: (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 1199px)').matches) || localStorage.getItem('eero_sidebar_collapsed') === 'true',
+    showMobileMenu: false,
+    showMobileDeviceFilters: false,
+    toggleMobileMenu() {
+      this.showMobileMenu = !this.showMobileMenu;
+    },
+    closeMobileMenu() {
+      this.showMobileMenu = false;
+    },
     toggleSidebar() {
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+        this.toggleMobileMenu();
+        return;
+      }
       this.sidebarCollapsed = !this.sidebarCollapsed;
       localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
+    },
+    getDeviceIconPath(cat) {
+      const c = (cat || '').toLowerCase();
+      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
+        return 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z';
+      }
+      if (c.includes('tablet') || c.includes('ipad')) {
+        return 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z';
+      }
+      if (c.includes('tv') || c.includes('media') || c.includes('entertainment')) {
+        return 'M7 4h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm-3 16h16';
+      }
+      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay')) {
+        return 'M13 10V3L4 14h7v7l9-11h-7z';
+      }
+      return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
     
     // Auth & Session State
@@ -121,8 +185,79 @@ document.addEventListener('alpine:init', () => {
     selectedProfileFilter: 'all',
     selectedIpTypeFilter: 'all',
     showConnectedOnly: false,
+    deviceFiltersReady: false,
     deviceSortField: 'name',
     deviceSortDirection: 'asc',
+    openDeviceDropdown: null,
+    toggleDeviceDropdown(name) {
+      this.openDeviceDropdown = this.openDeviceDropdown === name ? null : name;
+    },
+    closeDeviceDropdowns() {
+      this.openDeviceDropdown = null;
+    },
+    getBandFilterLabel() {
+      const map = {
+        all: this.t('devices.filter_all_bands'),
+        '6GHz': this.t('devices.filter_band_6ghz'),
+        '5GHz': this.t('devices.filter_band_5ghz'),
+        '2.4GHz': this.t('devices.filter_band_24ghz'),
+        wired: this.t('devices.filter_band_wired')
+      };
+      return map[this.selectedBandFilter] || this.t('devices.filter_all_bands');
+    },
+    getNodeFilterLabel() {
+      if (this.selectedNodeFilter === 'all') return this.t('devices.filter_all_nodes');
+      const node = (this.eeros || []).find(e => (e.id || e.serial) === this.selectedNodeFilter);
+      return node ? node.name : this.t('devices.filter_all_nodes');
+    },
+    getCategoryFilterLabel() {
+      if (this.selectedCategoryFilter === 'all') return this.t('devices.filter_all_categories');
+      if (this.selectedCategoryFilter === 'favorites') return this.t('devices.filter_favorites');
+      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices') || '✨ Nuovi Dispositivi';
+      const map = {
+        Computer: this.t('devices.cat_computer'),
+        Mobile: this.t('devices.cat_mobile'),
+        'Smart Home': this.t('devices.cat_smarthome'),
+        Intrattenimento: this.t('devices.cat_entertainment'),
+        Gaming: this.t('devices.cat_gaming'),
+        'Server/Rete': this.t('devices.cat_server'),
+        Altro: this.t('devices.cat_other')
+      };
+      return map[this.selectedCategoryFilter] || this.selectedCategoryFilter;
+    },
+    getSortLabel() {
+      const isIt = this.currentLanguage === 'it';
+      if (this.deviceSortField === 'first_seen') {
+        return this.t('devices.sort_first_seen') || (isIt ? 'Primo Accesso' : 'Recently Joined');
+      }
+      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip') || 'IP';
+      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal') || (isIt ? 'Segnale' : 'Signal');
+      if (this.deviceSortField === 'download') return this.t('devices.sort_download') || 'Download';
+      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload') || 'Upload';
+      if (this.deviceSortField === 'status') return this.t('devices.sort_status') || (isIt ? 'Stato' : 'Status');
+      return this.t('devices.sort_name') || (isIt ? 'Nome (A-Z)' : 'Name (A-Z)');
+    },
+    getProfileFilterLabel() {
+      if (this.selectedProfileFilter === 'all') return this.t('devices.filter_all_profiles');
+      if (this.selectedProfileFilter === 'unassigned') return this.t('devices.filter_unassigned');
+      const prof = (this.profiles || []).find(p => p.id === this.selectedProfileFilter);
+      return prof ? ('👤 ' + prof.name) : this.t('devices.filter_all_profiles');
+    },
+    getIpTypeFilterLabel() {
+      if (this.selectedIpTypeFilter === 'static') return this.t('devices.filter_only_static');
+      if (this.selectedIpTypeFilter === 'dhcp') return this.t('devices.filter_only_dhcp');
+      return this.t('devices.filter_all_assignments');
+    },
+
+    // eeroOS Release Notes & Community Updates State (v1.6.0)
+    eeroNewsLoading: false,
+    eeroNewsError: null,
+    eeroNewsData: null,
+    eeroNewsSearchQuery: '',
+    eeroNewsFilter: 'all', // 'all', 'security', 'wifi7', 'stability'
+    eeroNewsExpandedVersions: {},
+    eeroNewsShowAllReleases: false,
+    eeroNewsDefaultLimit: 5,
 
     // Profiles & Cloud Users State
     profiles: [],
@@ -185,6 +320,9 @@ document.addEventListener('alpine:init', () => {
     guestQrCodeUrl: '',
     guestQrCodeUrlLight: '',
     guestQrCodeUrlDark: '',
+    get activeGuestQrCodeUrl() {
+      return this.guestQrCodeUrl;
+    },
     focusModeActive: false,
     focusModeTargetCount: 0,
     
@@ -243,7 +381,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.5.0',
+    changelogVersion: '1.6.0',
     changelogLoading: false,
 
     // About Modal State
@@ -252,13 +390,13 @@ document.addEventListener('alpine:init', () => {
     // Estimated Data Usage Info Modal State
     showUsageInfoModal: false,
 
-    // Auto-Update State (v1.5.0)
+    // Auto-Update State (v1.6.0)
     updateInfo: {
       update_available: false,
-      current_version: '1.5.0',
-      latest_version: '1.5.0',
+      current_version: '1.6.0',
+      latest_version: '1.6.0',
       latest_build_number: '1',
-      latest_full_version: '1.5.0 build 1',
+      latest_full_version: '1.6.0 build 1',
       release_title: '',
       release_notes: '',
       docker_socket_available: false,
@@ -292,6 +430,83 @@ document.addEventListener('alpine:init', () => {
     signalChartInstance: null,
     signalLoading: false,
 
+    // =========================================================================
+    // MODULE 3: LOCAL AUTHENTICATION & RBAC STATE
+    // =========================================================================
+    currentUser: null,
+    localAuthToken: (typeof localStorage !== 'undefined') ? (localStorage.getItem('eero_local_auth_token') || null) : null,
+    showLocalLoginModal: false,
+    showAdminSetupModal: false,
+    adminSetupRequired: false,
+    localSetupData: {
+      username: '',
+      password: '',
+      passwordConfirm: '',
+      error: '',
+      loading: false
+    },
+    localLoginData: { username: '', password: '', error: '' },
+    isLocalAuthChecking: false,
+    sessionTimeoutMinutes: (typeof localStorage !== 'undefined' && localStorage.getItem('eero_session_timeout') !== null) ? Number(localStorage.getItem('eero_session_timeout')) : 15,
+    lastUserActivity: Date.now(),
+    inactivityWatchdogStarted: false,
+
+    // =========================================================================
+    // MODULE 3: USERS & GRANULAR PERMISSIONS MANAGEMENT
+    // =========================================================================
+    showUsersModal: false,
+    usersLoading: false,
+    localUsersList: [],
+    permissionsCatalog: [],
+    userModalMode: 'list', // 'list' | 'create' | 'edit'
+    userForm: {
+      id: '',
+      username: '',
+      display_name: '',
+      role: 'operator',
+      password: '',
+      is_active: true,
+      permissions: []
+    },
+
+    // =========================================================================
+    // MODULE 3: BACKUP & ATOMIC RESTORE
+    // =========================================================================
+    showBackupModal: false,
+    backupLoading: false,
+    backupRestoreStatus: '',
+    dbStats: null,
+    dbStatsLoading: false,
+    dbCompacting: false,
+
+    // =========================================================================
+    // MODULE 3: PARENTAL SCHEDULING & TIME WINDOWS
+    // =========================================================================
+    schedulesList: [],
+    schedulesLoading: false,
+    showScheduleModal: false,
+    scheduleModalMode: 'create', // 'create' | 'edit'
+    scheduleForm: {
+      id: '',
+      name: '',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      start_time: '21:00',
+      end_time: '07:00',
+      action: 'pause',
+      target_type: 'category',
+      target_id: 'gaming',
+      is_active: true
+    },
+
+    // =========================================================================
+    // MODULE 3: BANDWIDTH HOGS MULTI-FILTERS & RESILIENCE
+    // =========================================================================
+    hogsCategoryFilter: 'all',
+    hogsBandFilter: 'all',
+    hogsNodeFilter: 'all',
+    telemetryStale: false,
+    telemetryAuthExpired: false,
+
     // Toast Notification System
     toasts: [],
 
@@ -300,7 +515,22 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
+      this.currentTab = this.tabFromPath();
+      if (typeof window !== 'undefined' && window.location && window.location.pathname === '/') {
+        window.history.replaceState({}, '', this.routes.overview);
+      }
+      if (this.currentTab === 'devices') {
+        this.loadDeviceFiltersFromUrl();
+      }
       this.initTheme();
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const mql = window.matchMedia('(max-width: 1199px)');
+        if (mql && mql.addEventListener) {
+          mql.addEventListener('change', ({ matches }) => {
+            this.sidebarCollapsed = matches || localStorage.getItem('eero_sidebar_collapsed') === 'true';
+          });
+        }
+      }
 
       // Sincronizza dinamicamente versione e build number con /api/health
       try {
@@ -315,38 +545,89 @@ document.addEventListener('alpine:init', () => {
 
       await this.setLanguage(this.currentLanguage);
       await this.checkAuthStatus();
+      await this.checkLocalAuthSession();
+      await this.loadSessionTimeoutSetting();
+      this.initInactivityWatchdog();
+
+      // Se l'utente non è loggato, limita la visualizzazione solo a ospiti (QR) o release notes (news)
+      if (!this.currentUser && this.currentTab !== 'guests' && this.currentTab !== 'news') {
+        this.currentTab = 'guests';
+        if (typeof window !== 'undefined' && window.history) {
+          window.history.replaceState({}, '', this.routes.guests);
+        }
+      }
+
       await this.loadManualSections();
 
       if (this.isAuthenticated) {
         await this.refreshAllData();
         this.startPolling();
         this.checkForUpdates(false);
+        this.fetchEeroNews(false);
+      } else {
+        this.deviceFiltersReady = true;
       }
 
       // Reattività cambio tab con rendering forzato e resize automatico
       this.$watch('currentTab', (tab) => {
         if (tab === 'speedtest') {
           this.loadSpeedtestData();
-          setTimeout(() => {
-            this.loadSignalOverview();
-          }, 50);
-        } else if (tab === 'analytics') {
+        } else if (tab === 'quality-analytics' || tab === 'analytics') {
           if (this.$nextTick) {
             this.$nextTick(() => {
+              this.loadSignalOverview();
               this.loadAnalyticsData();
             });
           } else {
+            this.loadSignalOverview();
             this.loadAnalyticsData();
           }
-        } else if (tab === 'automations' || tab === 'controls') {
+        } else if (tab === 'guests') {
+          this.fetchGuestNetwork();
+        } else if (tab === 'settings-controls' || tab === 'automations' || tab === 'controls') {
           this.fetchNightMode();
           this.fetchNotificationSettings();
           this.fetchDigestSettings();
           this.fetchDnsSettings();
           this.fetchAdGuardSettings();
           this.fetchAlerts();
+          this.fetchSchedules();
+          this.fetchGuestNetwork();
+          this.fetchLogConfig();
+          this.fetchSystemLogs();
+        } else if (tab === 'settings-users') {
+          this.loadPermissionsCatalog();
+          this.loadLocalUsers();
+        } else if (tab === 'settings-backup') {
+          this.fetchDbStats();
+        } else if (tab === 'settings-updates') {
+          this.checkForUpdates(false);
+        } else if (tab === 'news') {
+          this.fetchEeroNews();
         }
       });
+
+      if (this.$watch) {
+        for (const filter of ['deviceSearchQuery', 'selectedBandFilter', 'selectedNodeFilter', 'selectedCategoryFilter', 'selectedProfileFilter', 'selectedIpTypeFilter', 'showConnectedOnly']) {
+          this.$watch(filter, () => this.syncDeviceFiltersToUrl());
+        }
+        this.$watch('logLevelFilter', () => this.fetchSystemLogs());
+        this.$watch('logSearchQuery', () => this.fetchSystemLogs());
+        this.$watch('logAutoRefresh', () => this.toggleLogAutoRefresh());
+      }
+
+      if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('popstate', () => {
+          const tab = this.tabFromPath();
+          if (!this.currentUser && tab !== 'guests' && tab !== 'news') {
+            this.setTab('guests', false);
+            return;
+          }
+          if (tab === 'devices') this.loadDeviceFiltersFromUrl();
+          this.setTab(tab, false);
+        });
+      }
+      await this.setTab(this.currentTab, false);
     },
 
     async setLanguage(lang) {
@@ -374,7 +655,7 @@ document.addEventListener('alpine:init', () => {
       if (this.showChangelogModal) {
         await this.openChangelogModal();
       }
-      if (this.currentTab === 'analytics') {
+      if (this.currentTab === 'analytics' || this.currentTab === 'quality-analytics') {
         this.renderAnalyticsCharts();
       }
     },
@@ -580,7 +861,7 @@ document.addEventListener('alpine:init', () => {
         }
       }
       if (typeof val !== 'string') {
-        return path;
+        return '';
       }
       let res = val;
       for (const [k, v] of Object.entries(params)) {
@@ -589,25 +870,132 @@ document.addEventListener('alpine:init', () => {
       return res;
     },
 
-    async setTab(tab) {
+    tabFromPath() {
+      const path = (typeof window !== 'undefined' && window.location ? window.location.pathname : '').replace(/\/$/, '') || '/dashboard';
+      if (path === '/eero-news') return 'news';
+      if (path === '/settings') return 'settings-controls';
+      if (path === '/settings/export' || path === '/export') return 'settings-export';
+      if (path === '/automations' || path === '/controls') return 'settings-controls';
+      if (path === '/analytics') return 'quality-analytics';
+      return Object.keys(this.routes).find(tab => this.routes[tab] === path) || 'overview';
+    },
+
+    loadDeviceFiltersFromUrl() {
+      if (typeof window === 'undefined' || !window.location) return;
+      const params = new URLSearchParams(window.location.search);
+      this.deviceSearchQuery = params.get('search') || '';
+      this.selectedBandFilter = params.get('band') || 'all';
+      this.selectedNodeFilter = params.get('node') || 'all';
+      this.selectedCategoryFilter = params.get('category') || 'all';
+      this.selectedProfileFilter = params.get('profile') || 'all';
+      this.selectedIpTypeFilter = params.get('assignment') || 'all';
+      this.showConnectedOnly = params.get('connected') === 'true';
+    },
+
+    deviceFiltersUrl() {
+      const params = new URLSearchParams();
+      for (const [key, value, defaultValue] of [
+        ['search', this.deviceSearchQuery, ''],
+        ['band', this.selectedBandFilter, 'all'],
+        ['node', this.selectedNodeFilter, 'all'],
+        ['category', this.selectedCategoryFilter, 'all'],
+        ['profile', this.selectedProfileFilter, 'all'],
+        ['assignment', this.selectedIpTypeFilter, 'all']
+      ]) {
+        if (value !== defaultValue) params.set(key, value);
+      }
+      if (this.showConnectedOnly) params.set('connected', 'true');
+      const query = params.toString();
+      return `${this.routes.devices}${query ? `?${query}` : ''}`;
+    },
+
+    syncDeviceFiltersToUrl() {
+      if (this.currentTab !== 'devices' || typeof window === 'undefined' || !window.location) return;
+      const url = this.deviceFiltersUrl();
+      if (`${window.location.pathname}${window.location.search}` !== url) {
+        window.history.replaceState({}, '', url);
+      }
+    },
+
+    async setTab(tab, updateUrl = true) {
+      // Se non autenticato, sono permesse solo la visualizzazione Wi-Fi ospiti (QR code) e note di rilascio
+      if (!this.currentUser && tab !== 'guests' && tab !== 'news') {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Richiesto' : 'Login Required',
+          this.currentLanguage === 'it' ? 'Effettua l\'accesso per consultare questa sezione.' : 'Please sign in to access this section.',
+          'info'
+        );
+        this.openLocalLoginModal();
+        if (this.currentTab !== 'guests' && this.currentTab !== 'news') {
+          tab = 'guests';
+        } else {
+          return;
+        }
+      }
+
+      // Protezione accessi per tab amministrative riservate
+      if (tab === 'settings-users' && !this.can('action_manage_users')) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
+          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere alla gestione utenti.' : 'Please sign in as Admin to access user management.',
+          'warning'
+        );
+        this.openLocalLoginModal();
+        return;
+      }
+      if (tab === 'settings-backup' && !this.can('action_system_backup')) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
+          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere a backup e ripristino.' : 'Please sign in as Admin to access backup & restore.',
+          'warning'
+        );
+        this.openLocalLoginModal();
+        return;
+      }
+      if (!this.routes[tab]) tab = 'overview';
       this.currentTab = tab;
+      if (this.isSettingsTab()) {
+        this.settingsExpanded = true;
+      }
+      this.showMobileMenu = false;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+        this.sidebarCollapsed = true;
+      }
+      const url = tab === 'devices' ? this.deviceFiltersUrl() : this.routes[tab];
+      if (updateUrl && typeof window !== 'undefined' && window.history && `${window.location.pathname}${window.location.search}` !== url) {
+        window.history.pushState({}, '', url);
+      }
       if (tab === 'speedtest') {
         setTimeout(async () => {
           await this.loadSpeedtestData();
-          await this.loadSignalOverview();
         }, 50);
-      } else if (tab === 'analytics') {
+      } else if (tab === 'quality-analytics' || tab === 'analytics') {
         setTimeout(async () => {
+          await this.loadSignalOverview();
           await this.loadAnalyticsData(true);
         }, 50);
+      } else if (tab === 'guests') {
+        await this.fetchGuestNetwork();
       } else if (tab === 'devices') {
         await this.fetchDevices();
-      } else if (tab === 'automations' || tab === 'controls') {
+      } else if (tab === 'settings-controls' || tab === 'automations' || tab === 'controls') {
         await this.fetchNightMode();
         await this.fetchNotificationSettings();
         await this.fetchDigestSettings();
+        await this.fetchDnsSettings();
         await this.fetchAdGuardSettings();
         await this.fetchAlerts();
+        await this.fetchSchedules();
+        await this.fetchGuestNetwork();
+      } else if (tab === 'settings-users') {
+        await this.loadPermissionsCatalog();
+        await this.loadLocalUsers();
+      } else if (tab === 'settings-backup') {
+        await this.fetchDbStats();
+      } else if (tab === 'settings-updates') {
+        await this.checkForUpdates(false);
+      } else if (tab === 'news') {
+        await this.fetchEeroNews();
       }
     },
 
@@ -797,6 +1185,13 @@ document.addEventListener('alpine:init', () => {
         this.fetchAdGuardSettings(),
         this.fetchAlerts(),
       ]);
+      if (this.currentTab === 'devices') {
+        if (this.$nextTick) {
+          await this.$nextTick();
+        }
+        this.loadDeviceFiltersFromUrl();
+      }
+      this.deviceFiltersReady = true;
     },
 
     async fetchOverview() {
@@ -1042,6 +1437,51 @@ document.addEventListener('alpine:init', () => {
       return dt.toLocaleDateString('it-IT', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     },
 
+    formatFirstSeenRelative(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return String(ts);
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+      const isIt = this.currentLanguage === 'it';
+      if (diffSec < 0) return isIt ? 'Adesso' : 'Just now';
+      if (diffSec < 60) return isIt ? 'Adesso' : 'Just now';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return isIt ? `${diffMin}m fa` : `${diffMin}m ago`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return isIt ? `${diffHours}h fa` : `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays === 1) return isIt ? 'Ieri' : 'Yesterday';
+      if (diffDays < 7) return isIt ? `${diffDays} gg fa` : `${diffDays}d ago`;
+      if (diffDays < 30) {
+        const diffWeeks = Math.floor(diffDays / 7);
+        return isIt ? `${diffWeeks} sett. fa` : `${diffWeeks}w ago`;
+      }
+      return d.toLocaleDateString(isIt ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' });
+    },
+
+    formatFirstSeenFull(ts) {
+      if (!ts) return '';
+      let str = String(ts).trim();
+      if (!str.endsWith('Z') && !str.includes('+')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return String(ts);
+      const isIt = this.currentLanguage === 'it';
+      return d.toLocaleString(isIt ? 'it-IT' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+
     async loadWanHistory(hours = null) {
       if (hours) this.selectedWanRange = hours;
       try {
@@ -1163,7 +1603,7 @@ document.addEventListener('alpine:init', () => {
         this.deviceSortDirection = this.deviceSortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         this.deviceSortField = field;
-        this.deviceSortDirection = (field === 'signal' || field === 'status' || field === 'download' || field === 'upload') ? 'desc' : 'asc';
+        this.deviceSortDirection = (field === 'signal' || field === 'status' || field === 'download' || field === 'upload' || field === 'first_seen') ? 'desc' : 'asc';
       }
     },
 
@@ -1218,10 +1658,12 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Filtro categoria / preferiti
+        // Filtro categoria / preferiti / nuovi dispositivi (Issue #60)
         if (this.selectedCategoryFilter !== 'all') {
           if (this.selectedCategoryFilter === 'favorites') {
             if (!d.is_favorite) return false;
+          } else if (this.selectedCategoryFilter === 'new') {
+            if (!d.is_new) return false;
           } else if (this.selectedCategoryFilter === 'Altro' || this.selectedCategoryFilter === 'Other') {
             const dc = (d.category || '').toLowerCase();
             if (dc !== 'altro' && dc !== 'other' && dc !== '') return false;
@@ -1343,6 +1785,21 @@ document.addEventListener('alpine:init', () => {
             const ulA = Number(a.tx_bytes || 0);
             const ulB = Number(b.tx_bytes || 0);
             res = ulA - ulB;
+            if (res === 0) {
+              const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
+              const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
+              res = nameA.localeCompare(nameB);
+            }
+            break;
+          }
+          case 'first_seen': {
+            const getTimestamp = (d) => {
+              if (!d || !d.first_seen) return 0;
+              const s = String(d.first_seen).replace(' ', 'T');
+              const t = new Date(s).getTime();
+              return isNaN(t) ? 0 : t;
+            };
+            res = getTimestamp(a) - getTimestamp(b);
             if (res === 0) {
               const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
               const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
@@ -2254,6 +2711,30 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    copyGuestCredentials() {
+      const name = this.guestNetwork?.name || 'eero-guest';
+      const password = this.guestNetwork?.password || '';
+      const text = password 
+        ? `Wi-Fi: ${name}\nPassword: ${password}` 
+        : (this.currentLanguage === 'it' ? `Wi-Fi: ${name}\n(Rete aperta senza password)` : `Wi-Fi: ${name}\n(Open network, no password)`);
+      const msg = this.currentLanguage === 'it' ? 'Credenziali Wi-Fi ospiti copiate negli appunti!' : 'Guest Wi-Fi credentials copied to clipboard!';
+      this.copyToClipboard(text, msg);
+    },
+
+    copyGuestPassword() {
+      const password = this.guestNetwork?.password || '';
+      if (!password) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Rete aperta' : 'Open network', 
+          this.currentLanguage === 'it' ? 'La rete ospiti è aperta: non è richiesta alcuna password.' : 'Guest network is open: no password required.', 
+          'info'
+        );
+        return;
+      }
+      const msg = this.currentLanguage === 'it' ? 'Password ospiti copiata negli appunti!' : 'Guest password copied to clipboard!';
+      this.copyToClipboard(password, msg);
+    },
+
     async fetchFocusMode() {
       try {
         const res = await fetch('/api/automations/focus-mode');
@@ -2844,7 +3325,8 @@ document.addEventListener('alpine:init', () => {
         if (json.status === 'success') {
           this.manualSections = json.sections || [];
           if (this.manualSections.length > 0) {
-            this.selectedManualSection = this.manualSections.find(s => s.id === currentId) || this.manualSections[0];
+            const found = currentId ? this.manualSections.find(s => s.id === currentId) : null;
+            this.selectManualSection(found || this.manualSections[0]);
           }
         }
       } catch (err) {
@@ -2852,29 +3334,163 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    selectManualSection(section) {
+      if (!section) return;
+      this.selectedManualSection = section;
+      this.helpModalTitle = section.title || '';
+      this.helpModalContent = this.renderSimpleMarkdown(section.content || '');
+    },
+
+    selectManualSectionById(sectionId) {
+      if (!this.manualSections || !this.manualSections.length) return;
+      const found = this.manualSections.find(s => s.id === sectionId);
+      if (found) {
+        this.selectManualSection(found);
+      }
+    },
+
+    get currentManualSectionIndex() {
+      if (!this.selectedManualSection || !this.manualSections || !this.manualSections.length) return 0;
+      const idx = this.manualSections.findIndex(s => s.id === this.selectedManualSection.id);
+      return idx >= 0 ? idx : 0;
+    },
+
+    prevManualSection() {
+      const idx = this.currentManualSectionIndex;
+      if (idx > 0 && this.manualSections && this.manualSections[idx - 1]) {
+        this.selectManualSection(this.manualSections[idx - 1]);
+      }
+    },
+
+    nextManualSection() {
+      const idx = this.currentManualSectionIndex;
+      if (this.manualSections && idx < this.manualSections.length - 1 && this.manualSections[idx + 1]) {
+        this.selectManualSection(this.manualSections[idx + 1]);
+      }
+    },
+
     get filteredManualSections() {
+      if (!this.manualSections) return [];
       if (!this.manualSearchQuery) return this.manualSections;
-      const q = this.manualSearchQuery.toLowerCase();
+      const q = this.manualSearchQuery.toLowerCase().trim();
       return this.manualSections.filter(s => 
-        s.title.toLowerCase().includes(q) || 
-        s.summary.toLowerCase().includes(q) ||
-        s.content.toLowerCase().includes(q)
+        (s.title && s.title.toLowerCase().includes(q)) || 
+        (s.summary && s.summary.toLowerCase().includes(q)) ||
+        (s.content && s.content.toLowerCase().includes(q))
       );
     },
 
-    async openContextHelp(sectionId) {
+    async openContextHelp(sectionId = null) {
       try {
-        const res = await fetch(`/api/manual/sections/${sectionId}?lang=${this.currentLanguage || 'en'}`);
-        const json = await res.json();
-        if (json.status === 'success' && json.section) {
-          this.helpModalTitle = json.section.title;
-          // Simple markdown-to-html converter
-          this.helpModalContent = this.renderSimpleMarkdown(json.section.content);
-          this.showHelpModal = true;
+        if (!this.manualSections || this.manualSections.length === 0) {
+          await this.loadManualSections();
         }
+        if (sectionId && this.manualSections && this.manualSections.length > 0) {
+          const found = this.manualSections.find(s => s.id === sectionId);
+          if (found) {
+            this.selectManualSection(found);
+          } else {
+            this.selectManualSection(this.manualSections[0]);
+          }
+        } else if (this.manualSections && this.manualSections.length > 0 && !this.selectedManualSection) {
+          this.selectManualSection(this.manualSections[0]);
+        }
+        this.manualSearchQuery = '';
+        this.showHelpModal = true;
       } catch (err) {
         console.error("Open context help error:", err);
       }
+    },
+
+    // =========================================================================
+    // eeroOS RELEASE NOTES & COMMUNITY UPDATES (v1.6.0)
+    // =========================================================================
+    async fetchEeroNews(force = false) {
+      this.eeroNewsLoading = true;
+      this.eeroNewsError = null;
+      try {
+        const url = force ? '/api/system/eero-news/refresh' : '/api/system/eero-news';
+        const method = force ? 'POST' : 'GET';
+        const res = await fetch(url, { method });
+        if (res.ok) {
+          const data = await res.json();
+          this.eeroNewsData = data;
+          if (data.releases && data.releases.length > 0 && Object.keys(this.eeroNewsExpandedVersions).length === 0) {
+            this.eeroNewsExpandedVersions[data.releases[0].version] = true;
+          }
+        } else {
+          this.eeroNewsError = "Impossibile caricare le novità eeroOS";
+        }
+      } catch (err) {
+        console.error("fetchEeroNews error:", err);
+        this.eeroNewsError = err.message || "Errore di connessione";
+      } finally {
+        this.eeroNewsLoading = false;
+      }
+    },
+
+    setEeroNewsFilter(filterName) {
+      this.eeroNewsFilter = filterName;
+      this.eeroNewsShowAllReleases = false;
+    },
+
+    toggleShowAllReleases() {
+      this.eeroNewsShowAllReleases = !this.eeroNewsShowAllReleases;
+    },
+
+    toggleReleaseAccordion(version) {
+      this.eeroNewsExpandedVersions[version] = !this.eeroNewsExpandedVersions[version];
+    },
+
+    expandAllReleases() {
+      if (this.eeroNewsData && this.eeroNewsData.releases) {
+        const expanded = {};
+        this.eeroNewsData.releases.forEach(r => {
+          expanded[r.version] = true;
+        });
+        this.eeroNewsExpandedVersions = expanded;
+        this.eeroNewsShowAllReleases = true;
+      }
+    },
+
+    collapseAllReleases() {
+      this.eeroNewsExpandedVersions = {};
+    },
+
+    get filteredEeroReleases() {
+      if (!this.eeroNewsData || !this.eeroNewsData.releases) return [];
+      let list = this.eeroNewsData.releases;
+      const q = (this.eeroNewsSearchQuery || '').toLowerCase().trim();
+      if (q) {
+        list = list.filter(r => {
+          const verMatch = (r.version || '').toLowerCase().includes(q);
+          const dateMatch = (r.release_date || '').toLowerCase().includes(q);
+          const summaryMatch = (r.summary || '').toLowerCase().includes(q);
+          const contentMatch = (r.content || []).some(c => c.toLowerCase().includes(q));
+          return verMatch || dateMatch || summaryMatch || contentMatch;
+        });
+      }
+      if (this.eeroNewsFilter === 'security') {
+        list = list.filter(r => r.is_security_patch || (r.tags || []).includes('Sicurezza') || (r.tags || []).includes('Security'));
+      } else if (this.eeroNewsFilter === 'wifi7') {
+        list = list.filter(r => (r.tags || []).includes('Wi-Fi 7 / 6 GHz'));
+      } else if (this.eeroNewsFilter === 'stability') {
+        list = list.filter(r => (r.tags || []).includes('Stabilità') || (r.tags || []).includes('Stability'));
+      }
+      return list;
+    },
+
+    get visibleEeroReleases() {
+      const list = this.filteredEeroReleases;
+      if (this.eeroNewsShowAllReleases) {
+        return list;
+      }
+      return list.slice(0, this.eeroNewsDefaultLimit);
+    },
+
+    get remainingEeroReleasesCount() {
+      const total = this.filteredEeroReleases.length;
+      return Math.max(0, total - this.eeroNewsDefaultLimit);
     },
 
     async openChangelogModal() {
@@ -2886,7 +3502,7 @@ document.addEventListener('alpine:init', () => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.status === 'success' && json.content) {
-          this.changelogVersion = json.version || '1.5.0';
+          this.changelogVersion = json.version || '1.6.0';
           this.changelogContent = this.renderSimpleMarkdown(json.content);
         } else {
           throw new Error(json.message || "Failed to load");
@@ -3155,6 +3771,14 @@ document.addEventListener('alpine:init', () => {
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       const idx = Math.min(i, sizes.length - 1);
       return parseFloat((bytes / Math.pow(k, idx)).toFixed(dm)) + ' ' + sizes[idx];
+    },
+
+    formatTrafficRate(mbps) {
+      if (mbps === undefined || mbps === null || isNaN(mbps)) return '';
+      const num = Number(mbps);
+      if (num <= 0.05) return '';
+      if (num >= 100) return Math.round(num) + 'M';
+      return num.toFixed(1) + 'M';
     },
 
     async fetchAvailableNetworks() {
@@ -3952,6 +4576,1246 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.exportLoading = false;
       }
+    },
+
+    // =========================================================================
+    // MODULE 3: LOCAL AUTHENTICATION & RBAC LOGIC
+    // =========================================================================
+    can(permKey) {
+      if (!this.currentUser) {
+        // Modalità Viewer / Non autenticato (Read-Only Guest Mode):
+        // NESSUN permesso di tipo action_* o amministrativo è consentito se non loggati
+        if (!permKey) return false;
+        if (permKey.startsWith('action_')) return false;
+        // Consente la consultazione in sola lettura per gli scope view_*
+        return true;
+      }
+      if (this.currentUser.role === 'admin' || this.currentUser.is_admin) return true;
+      if (Array.isArray(this.currentUser.permissions)) {
+        if (this.currentUser.permissions.includes('*')) return true;
+        return this.currentUser.permissions.includes(permKey);
+      }
+      return false;
+    },
+
+    openLocalLoginModal() {
+      if (this.adminSetupRequired) {
+        this.openAdminSetupModal();
+        return;
+      }
+      this.localLoginData = {
+        username: '',
+        password: '',
+        error: ''
+      };
+      this.showLocalLoginModal = true;
+    },
+
+    openAdminSetupModal() {
+      this.localSetupData = {
+        username: '',
+        password: '',
+        passwordConfirm: '',
+        error: '',
+        loading: false
+      };
+      this.showLocalLoginModal = false;
+      this.showAdminSetupModal = true;
+    },
+
+    async checkLocalAuthSession() {
+      // 1. Verifica preventiva se è necessario il Setup Iniziale Amministratore (primo avvio)
+      try {
+        const statusRes = await fetch('/api/auth/local/status');
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          this.adminSetupRequired = !!statusData.setup_required;
+          if (this.adminSetupRequired && !this.currentUser && !this.localAuthToken) {
+            // Primo avvio: apri automaticamente il Setup Wizard per invitare l'admin a configurarsi
+            this.showAdminSetupModal = true;
+          }
+        }
+      } catch (e) {
+        console.debug("Local auth status check error:", e);
+      }
+
+      if (!this.localAuthToken) {
+        try {
+          const res = await fetch('/api/auth/local/me');
+          if (res.ok) {
+            const data = await res.json();
+            this.currentUser = data.user;
+          }
+        } catch (e) {}
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/local/me', {
+          headers: { 'Authorization': `Bearer ${this.localAuthToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.currentUser = data.user;
+        } else {
+          this.localAuthToken = null;
+          if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+          this.currentUser = null;
+        }
+      } catch (e) {
+        console.error("Local auth check error:", e);
+      }
+    },
+
+    async performAdminSetup() {
+      this.localSetupData.error = '';
+      const u = (this.localSetupData.username || '').trim();
+      const p = this.localSetupData.password || '';
+      const pc = this.localSetupData.passwordConfirm || '';
+
+      if (u.length < 3) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'Lo username deve contenere almeno 3 caratteri.' 
+          : 'Username must be at least 3 characters.';
+        return;
+      }
+      if (p.length < 6) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'La password deve contenere almeno 6 caratteri.' 
+          : 'Password must be at least 6 characters.';
+        return;
+      }
+      if (p !== pc) {
+        this.localSetupData.error = this.currentLanguage === 'it' 
+          ? 'Le password inserite non coincidono.' 
+          : 'Passwords do not match.';
+        return;
+      }
+
+      this.localSetupData.loading = true;
+      try {
+        const res = await fetch('/api/auth/local/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: u,
+            password: p,
+            display_name: u.charAt(0).toUpperCase() + u.slice(1)
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          this.localAuthToken = data.token;
+          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          this.currentUser = data.user;
+          this.adminSetupRequired = false;
+          this.showAdminSetupModal = false;
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Setup Amministratore Completato' : 'Administrator Setup Complete',
+            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            'success'
+          );
+        } else {
+          this.localSetupData.error = data.detail || (this.currentLanguage === 'it' ? 'Errore durante la configurazione' : 'Setup failed');
+        }
+      } catch (err) {
+        this.localSetupData.error = String(err);
+      } finally {
+        this.localSetupData.loading = false;
+      }
+    },
+
+    async performLocalLogin() {
+      this.localLoginData.error = '';
+      if (!this.localLoginData.username || !this.localLoginData.password) {
+        this.localLoginData.error = this.currentLanguage === 'it' ? 'Inserisci username e password' : 'Username and password required';
+        return;
+      }
+      this.isLocalAuthChecking = true;
+      try {
+        const res = await fetch('/api/auth/local/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: this.localLoginData.username,
+            password: this.localLoginData.password
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          this.localAuthToken = data.token;
+          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          this.currentUser = data.user;
+          this.lastUserActivity = Date.now();
+          this.showLocalLoginModal = false;
+          this.localLoginData = { username: '', password: '', error: '' };
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Accesso Eseguito' : 'Login Successful',
+            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            'success'
+          );
+          if (this.currentTab === 'guests') {
+            await this.setTab('overview');
+          } else if (this.currentTab === 'settings-users') {
+            await this.loadPermissionsCatalog();
+            await this.loadLocalUsers();
+          }
+        } else {
+          this.localLoginData.error = data.detail || (this.currentLanguage === 'it' ? 'Credenziali non valide' : 'Invalid credentials');
+        }
+      } catch (err) {
+        this.localLoginData.error = String(err);
+      } finally {
+        this.isLocalAuthChecking = false;
+      }
+    },
+
+    async performLocalLogout() {
+      if (this.localAuthToken) {
+        try {
+          await fetch('/api/auth/local/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${this.localAuthToken}` }
+          });
+        } catch (e) {}
+      }
+      this.localAuthToken = null;
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+      this.currentUser = null;
+      await this.setTab('guests');
+      this.showToast(
+        this.currentLanguage === 'it' ? 'Disconnesso' : 'Logged Out',
+        this.currentLanguage === 'it' ? 'Sessione locale terminata' : 'Local session terminated',
+        'info'
+      );
+    },
+
+    // =========================================================================
+    // INACTIVITY AUTO-LOGOUT WATCHDOG & CONFIGURATION
+    // =========================================================================
+    initInactivityWatchdog() {
+      if (this.inactivityWatchdogStarted) return;
+      this.inactivityWatchdogStarted = true;
+      this.lastUserActivity = Date.now();
+
+      if (typeof window !== 'undefined' && window.addEventListener) {
+        let lastThrottle = 0;
+        const onActivity = () => {
+          const now = Date.now();
+          if (now - lastThrottle > 2000) {
+            lastThrottle = now;
+            this.lastUserActivity = now;
+          }
+        };
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+          window.addEventListener(evt, onActivity, { passive: true });
+        });
+      }
+
+      setInterval(() => {
+        if (!this.currentUser) return;
+        const timeout = Number(this.sessionTimeoutMinutes);
+        if (!timeout || timeout <= 0) return;
+        const elapsedMinutes = (Date.now() - this.lastUserActivity) / (60 * 1000);
+        if (elapsedMinutes >= timeout) {
+          console.warn(`Auto-logout: user inactive for ${elapsedMinutes.toFixed(1)}m (timeout: ${timeout}m)`);
+          this.performLocalLogout();
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Sessione Scaduta' : 'Session Expired',
+            this.currentLanguage === 'it' 
+              ? `Disconnessione automatica eseguita dopo ${timeout} minuti di inattività.` 
+              : `Automatically logged out after ${timeout} minutes of inactivity.`,
+            'warning'
+          );
+        }
+      }, 10000);
+    },
+
+    async loadSessionTimeoutSetting() {
+      try {
+        const res = await fetch('/api/auth/local/session-timeout');
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.session_timeout_minutes !== 'undefined') {
+            this.sessionTimeoutMinutes = Number(data.session_timeout_minutes);
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('eero_session_timeout', String(this.sessionTimeoutMinutes));
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback already loaded from localStorage
+      }
+    },
+
+    async saveSessionTimeout(minutes) {
+      const val = Number(minutes);
+      this.sessionTimeoutMinutes = val;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('eero_session_timeout', String(val));
+      }
+      this.lastUserActivity = Date.now();
+      try {
+        await fetch('/api/auth/local/session-timeout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.localAuthToken ? { 'Authorization': `Bearer ${this.localAuthToken}` } : {})
+          },
+          body: JSON.stringify({ minutes: val })
+        });
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Impostazione Salvata' : 'Setting Saved',
+          this.currentLanguage === 'it' 
+            ? (val > 0 ? `Timeout inattività impostato a ${val} minuti.` : 'Disconnessione automatica disattivata.')
+            : (val > 0 ? `Inactivity timeout set to ${val} minutes.` : 'Automatic logout disabled.'),
+          'success'
+        );
+      } catch (e) {
+        console.error("Error saving session timeout:", e);
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: USERS & GRANULAR PERMISSIONS MODAL
+    // =========================================================================
+    async openUsersModal() {
+      this.showUsersModal = true;
+      this.userModalMode = 'list';
+      await this.loadPermissionsCatalog();
+      await this.loadLocalUsers();
+    },
+
+    async loadPermissionsCatalog() {
+      try {
+        const res = await fetch('/api/auth/local/permissions');
+        if (res.ok) {
+          const data = await res.json();
+          this.permissionsCatalog = data.permissions || (data.data && data.data.permissions) || [];
+        }
+      } catch (e) {
+        console.error("Failed to load permissions catalog:", e);
+      }
+    },
+
+    async loadLocalUsers() {
+      this.usersLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/users', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.localUsersList = data.users || [];
+        }
+      } catch (e) {
+        console.error("Failed to load users:", e);
+      } finally {
+        this.usersLoading = false;
+      }
+    },
+
+    startCreateUser() {
+      if (!this.localAuthToken) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
+          this.currentLanguage === 'it' ? 'Accedi come amministratore per creare nuovi utenti.' : 'Log in as administrator to create new users.',
+          'warning'
+        );
+        this.openLocalLoginModal();
+        return;
+      }
+      this.userForm = {
+        id: '',
+        username: '',
+        display_name: '',
+        role: 'operator',
+        password: '',
+        is_active: true,
+        permissions: ['view_topology', 'view_clients', 'view_analytics', 'view_logs']
+      };
+      this.userModalMode = 'create';
+    },
+
+    startEditUser(u) {
+      if (!this.localAuthToken) {
+        this.openLocalLoginModal();
+        return;
+      }
+      this.userForm = {
+        id: u.id,
+        username: u.username,
+        display_name: u.display_name || '',
+        role: u.role || (u.is_admin ? 'admin' : 'operator'),
+        password: '',
+        is_active: u.is_active !== undefined ? Boolean(u.is_active) : true,
+        permissions: Array.isArray(u.permissions) ? [...u.permissions] : []
+      };
+      this.userModalMode = 'edit';
+    },
+
+    toggleUserPermission(permKey) {
+      const idx = this.userForm.permissions.indexOf(permKey);
+      if (idx > -1) {
+        this.userForm.permissions.splice(idx, 1);
+      } else {
+        this.userForm.permissions.push(permKey);
+      }
+    },
+
+    applyPermissionPreset(preset) {
+      if (preset === 'all') {
+        const allKeys = this.permissionsCatalog.length 
+          ? this.permissionsCatalog.map(p => p.key) 
+          : ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns', 'action_manage_users', 'action_system_backup'];
+        this.userForm.permissions = allKeys;
+        this.userForm.role = 'admin';
+      } else if (preset === 'readonly') {
+        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs'];
+        this.userForm.role = 'viewer';
+      } else if (preset === 'operator') {
+        this.userForm.permissions = ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns'];
+        this.userForm.role = 'operator';
+      } else if (preset === 'none') {
+        this.userForm.permissions = [];
+      }
+    },
+
+    formatUserPermissionsCount(u) {
+      if (!u) return '';
+      const total = (this.permissionsCatalog && this.permissionsCatalog.length) ? this.permissionsCatalog.length : 10;
+      const isIt = this.currentLanguage === 'it';
+      if (u.is_admin || u.role === 'admin') {
+        return isIt ? `Tutti (${total} attivi)` : `All (${total} active)`;
+      }
+      const activeCount = (this.permissionsCatalog && this.permissionsCatalog.length)
+        ? this.permissionsCatalog.filter(p => (u.permissions || []).includes(p.key)).length
+        : (u.permissions ? u.permissions.length : 0);
+      return `${activeCount} / ${total} ` + (isIt ? 'attivi' : 'active');
+    },
+
+    async saveLocalUser() {
+      if (!this.localAuthToken) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
+          this.currentLanguage === 'it' ? 'Accedi con l\'account amministratore per salvare gli utenti.' : 'Log in as administrator to save users.',
+          'warning'
+        );
+        this.openLocalLoginModal();
+        return;
+      }
+      if (!this.userForm.username) {
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Errore' : 'Error',
+          this.currentLanguage === 'it' ? 'Username obbligatorio' : 'Username is required',
+          'warning'
+        );
+        return;
+      }
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+      try {
+        let res;
+        const isAdm = this.userForm.role === 'admin';
+        if (this.userModalMode === 'create') {
+          res = await fetch('/api/users', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              username: this.userForm.username,
+              display_name: this.userForm.display_name,
+              role: this.userForm.role,
+              is_admin: isAdm,
+              password: this.userForm.password || 'password123',
+              is_active: Boolean(this.userForm.is_active),
+              permissions: this.userForm.permissions
+            })
+          });
+        } else {
+          const payload = {
+            display_name: this.userForm.display_name,
+            role: this.userForm.role,
+            is_admin: isAdm,
+            is_active: Boolean(this.userForm.is_active),
+            permissions: this.userForm.permissions
+          };
+          if (this.userForm.password) payload.password = this.userForm.password;
+          res = await fetch(`/api/users/${encodeURIComponent(this.userForm.id)}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(payload)
+          });
+        }
+        if (res.ok) {
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Successo' : 'Success',
+            this.currentLanguage === 'it' ? 'Utente salvato correttamente' : 'User saved successfully',
+            'success'
+          );
+          this.userModalMode = 'list';
+          await this.loadLocalUsers();
+        } else {
+          const err = await res.json();
+          if (res.status === 401) {
+            this.localAuthToken = null;
+            if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+            this.currentUser = null;
+            this.openLocalLoginModal();
+          }
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore' : 'Error',
+            err.detail || (this.currentLanguage === 'it' ? 'Operazione fallita' : 'Operation failed'),
+            'error'
+          );
+        }
+      } catch (e) {
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
+      }
+    },
+
+    async deleteLocalUser(userId, username) {
+      if (!this.localAuthToken) {
+        this.openLocalLoginModal();
+        return;
+      }
+      const confirmMsg = this.currentLanguage === 'it'
+        ? `Sei sicuro di voler eliminare l'utente "${username}"?`
+        : `Are you sure you want to delete user "${username}"?`;
+      if (!confirm(confirmMsg)) return;
+      const headers = {};
+      if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+      try {
+        const res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+          method: 'DELETE',
+          headers
+        });
+        if (res.ok) {
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Successo' : 'Success',
+            this.currentLanguage === 'it' ? `Utente ${username} eliminato` : `User ${username} deleted`,
+            'success'
+          );
+          await this.loadLocalUsers();
+        } else {
+          const err = await res.json();
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore' : 'Error',
+            err.detail || (this.currentLanguage === 'it' ? 'Impossibile eliminare utente' : 'Failed to delete user'),
+            'error'
+          );
+        }
+      } catch (e) {
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: BACKUP & ATOMIC RESTORE LOGIC
+    // =========================================================================
+    openBackupModal() {
+      this.showBackupModal = true;
+      this.backupRestoreStatus = '';
+    },
+
+    async downloadBackup() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/backup/export', { headers });
+        if (!res.ok) throw new Error(this.currentLanguage === 'it' ? 'Errore durante esportazione backup' : 'Error during backup export');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eero_dashboard_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Backup Esportato' : 'Backup Exported',
+          this.currentLanguage === 'it' ? 'Download del file JSON completato' : 'JSON file download completed',
+          'success'
+        );
+      } catch (e) {
+        this.showToast(this.currentLanguage === 'it' ? 'Errore Backup' : 'Backup Error', String(e), 'error');
+      }
+    },
+
+    async uploadBackup(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      this.backupLoading = true;
+      this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Ripristino in corso...' : 'Restoring in progress...';
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/backup/restore', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(json)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Configurazione ripristinata con successo!' : 'Configuration restored successfully!';
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Ripristino Completato' : 'Restore Completed',
+            this.currentLanguage === 'it' ? 'I dati sono stati ripristinati correttamente' : 'Data restored successfully',
+            'success'
+          );
+          setTimeout(() => {
+            window.location.reload();
+          }, 1200);
+        } else {
+          this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore' : 'Error'}: ${data.detail || (this.currentLanguage === 'it' ? 'Impossibile ripristinare il file' : 'Unable to restore file')}`;
+          this.showToast(
+            this.currentLanguage === 'it' ? 'Errore Ripristino' : 'Restore Error',
+            data.detail || (this.currentLanguage === 'it' ? 'Errore ripristino' : 'Restore error'),
+            'error'
+          );
+        }
+      } catch (e) {
+        this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore di parsing' : 'Parsing error'}: ${e.message}`;
+        this.showToast(
+          this.currentLanguage === 'it' ? 'Errore File' : 'File Error',
+          this.currentLanguage === 'it' ? 'Il file selezionato non è un JSON valido' : 'Selected file is not valid JSON',
+          'error'
+        );
+      } finally {
+        this.backupLoading = false;
+        event.target.value = '';
+      }
+    },
+
+    async fetchDbStats() {
+      this.dbStatsLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/database/stats', { headers });
+        if (res.ok) {
+          this.dbStats = await res.json();
+        }
+      } catch (err) {
+        console.error("Failed to load db stats:", err);
+      } finally {
+        this.dbStatsLoading = false;
+      }
+    },
+
+    async triggerDbCompaction() {
+      this.dbCompacting = true;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/database/compact', {
+          method: 'POST',
+          headers
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.showToast(this.currentLanguage === 'it' ? 'Database Compattato' : 'Database Compacted', this.currentLanguage === 'it' ? 'Compattazione e ottimizzazione completate con successo.' : 'Compaction and optimization completed successfully.', 'success');
+          await this.fetchDbStats();
+        } else {
+          this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', data.detail || 'Errore durante la compattazione', 'error');
+        }
+      } catch (err) {
+        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(err), 'error');
+      } finally {
+        this.dbCompacting = false;
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: PARENTAL SCHEDULING LOGIC
+    // =========================================================================
+    async fetchSchedules() {
+      this.schedulesLoading = true;
+      try {
+        const res = await fetch('/api/schedules');
+        if (res.ok) {
+          const data = await res.json();
+          const rawList = Array.isArray(data) ? data : (data.schedules || []);
+          this.schedulesList = rawList.map(s => {
+            const daysArr = Array.isArray(s.days) ? s.days : (Array.isArray(s.days_of_week) ? s.days_of_week : []);
+            const targetId = s.target_id || (Array.isArray(s.target_ids) && s.target_ids.length ? s.target_ids[0] : '');
+            const isActive = s.is_active !== undefined ? Boolean(s.is_active) : (s.enabled !== undefined ? Boolean(s.enabled) : true);
+            return {
+              ...s,
+              days: daysArr,
+              days_of_week: daysArr,
+              target_id: targetId,
+              is_active: isActive,
+              enabled: isActive
+            };
+          });
+        }
+      } catch (e) {
+        console.error("Failed to fetch schedules:", e);
+      } finally {
+        this.schedulesLoading = false;
+      }
+    },
+
+    isRebootSchedule(item = null) {
+      const obj = item || this.scheduleForm;
+      if (!obj) return false;
+      const tt = obj.target_type;
+      const act = obj.action;
+      return tt === 'node_reboot' || tt === 'all_nodes_reboot' || act === 'reboot';
+    },
+
+    openScheduleModal(s = null) {
+      if (s) {
+        const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids.length ? s.target_ids[0] : '');
+        const isReboot = s.target_type === 'node_reboot' || s.target_type === 'all_nodes_reboot' || s.action === 'reboot';
+        this.scheduleForm = {
+          id: s.id,
+          name: s.name,
+          days: Array.isArray(s.days) ? [...s.days] : (Array.isArray(s.days_of_week) ? [...s.days_of_week] : ['mon', 'tue', 'wed', 'thu', 'fri']),
+          start_time: s.start_time || '21:00',
+          end_time: isReboot ? (s.start_time || '04:00') : (s.end_time || '07:00'),
+          action: s.action || 'pause',
+          target_type: s.target_type || 'profile',
+          target_id: tid,
+          is_active: s.is_active !== undefined ? Boolean(s.is_active) : (s.enabled !== undefined ? Boolean(s.enabled) : true)
+        };
+        this.scheduleModalMode = 'edit';
+      } else {
+        const defaultProf = (this.profiles && this.profiles.length > 0) ? (this.profiles[0].id || this.profiles[0].name) : '';
+        this.scheduleForm = {
+          id: '',
+          name: '',
+          days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+          start_time: '21:00',
+          end_time: '07:00',
+          action: 'pause',
+          target_type: 'profile',
+          target_id: defaultProf,
+          is_active: true
+        };
+        this.scheduleModalMode = 'create';
+      }
+      this.showScheduleModal = true;
+    },
+
+    onScheduleTargetTypeChange() {
+      const tt = this.scheduleForm.target_type;
+      if (tt === 'profile') {
+        this.scheduleForm.action = 'pause';
+        if (!this.scheduleForm.target_id && this.profiles && this.profiles.length > 0) {
+          this.scheduleForm.target_id = this.profiles[0].id || this.profiles[0].name;
+        }
+      } else if (tt === 'all_profiles') {
+        this.scheduleForm.action = 'pause';
+        this.scheduleForm.target_id = 'all';
+      } else if (tt === 'node_led') {
+        this.scheduleForm.action = 'turn_off';
+        if ((!this.scheduleForm.target_id || this.scheduleForm.target_id === 'all') && this.eeros && this.eeros.length > 0) {
+          this.scheduleForm.target_id = this.eeros[0].id || this.eeros[0].serial;
+        }
+      } else if (tt === 'all_nodes_led') {
+        this.scheduleForm.action = 'turn_off';
+        this.scheduleForm.target_id = 'all';
+      } else if (tt === 'node_reboot') {
+        this.scheduleForm.action = 'reboot';
+        this.scheduleForm.end_time = this.scheduleForm.start_time || '04:00';
+        if ((!this.scheduleForm.target_id || this.scheduleForm.target_id === 'all') && this.eeros && this.eeros.length > 0) {
+          this.scheduleForm.target_id = this.eeros[0].id || this.eeros[0].serial;
+        }
+      } else if (tt === 'all_nodes_reboot') {
+        this.scheduleForm.action = 'reboot';
+        this.scheduleForm.end_time = this.scheduleForm.start_time || '04:00';
+        this.scheduleForm.target_id = 'all';
+      }
+    },
+
+    getScheduleActionOptions() {
+      const tt = this.scheduleForm.target_type;
+      const isIt = this.currentLanguage === 'it';
+      if (tt === 'node_led' || tt === 'all_nodes_led') {
+        return [
+          { value: 'turn_off', label: isIt ? 'Spegni Luce LED (durante l\'intervallo)' : 'Turn Off Status Light (during window)' },
+          { value: 'turn_on', label: isIt ? 'Accendi Luce LED (durante l\'intervallo)' : 'Turn On Status Light (during window)' }
+        ];
+      }
+      if (tt === 'node_reboot' || tt === 'all_nodes_reboot') {
+        return [
+          { value: 'reboot', label: isIt ? 'Riavvia all\'orario di inizio' : 'Reboot at start time' }
+        ];
+      }
+      return [
+        { value: 'pause', label: isIt ? 'Sospendi Connessione (Pausa)' : 'Pause Connection' },
+        { value: 'unpause', label: isIt ? 'Ripristina Connessione' : 'Resume Connection' }
+      ];
+    },
+
+    formatScheduleTarget(s) {
+      if (!s) return '';
+      const tt = s.target_type;
+      const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids[0]) || '';
+      const isIt = this.currentLanguage === 'it';
+      if (tt === 'profile') {
+        const prof = (this.profiles || []).find(p => String(p.id) === String(tid) || String(p.url || '').endsWith(String(tid)) || p.name === tid);
+        return (isIt ? 'Utente: ' : 'User: ') + (prof ? prof.name : tid);
+      }
+      if (tt === 'all_profiles') {
+        return isIt ? 'Tutti gli Utenti' : 'All Users';
+      }
+      if (tt === 'node_led') {
+        const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
+        return (isIt ? 'Luce LED: ' : 'LED: ') + (node ? (node.name || node.location || 'eero') : tid);
+      }
+      if (tt === 'all_nodes_led') {
+        return isIt ? 'Luce LED: Tutti i Nodi' : 'LED: All Nodes';
+      }
+      if (tt === 'node_reboot') {
+        const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
+        return (isIt ? 'Riavvio: ' : 'Reboot: ') + (node ? (node.name || node.location || 'eero') : tid);
+      }
+      if (tt === 'all_nodes_reboot') {
+        return isIt ? 'Riavvio: Tutta la Rete' : 'Reboot: Entire Mesh';
+      }
+      if (tt === 'category') {
+        return (isIt ? 'Categoria: ' : 'Category: ') + tid;
+      }
+      if (tt === 'device') {
+        const dev = (this.devices || []).find(d => String(d.id) === String(tid) || String(d.mac).toLowerCase() === String(tid).toLowerCase());
+        return (isIt ? 'Dispositivo: ' : 'Device: ') + (dev ? (dev.custom_name || dev.nickname || dev.hostname || tid) : tid);
+      }
+      return isIt ? 'Tutta la Rete' : 'Entire Network';
+    },
+
+    formatScheduleAction(s) {
+      if (!s) return '';
+      const isIt = this.currentLanguage === 'it';
+      switch (s.action) {
+        case 'pause': return isIt ? 'Pausa Connessione' : 'Pause Connection';
+        case 'unpause': return isIt ? 'Ripristino Connessione' : 'Resume Connection';
+        case 'turn_off': return isIt ? 'Spegnimento LED' : 'LED Off';
+        case 'turn_on': return isIt ? 'Accensione LED' : 'LED On';
+        case 'reboot': return isIt ? 'Riavvio Programmato' : 'Scheduled Reboot';
+        default: return s.action;
+      }
+    },
+
+    toggleScheduleDay(day) {
+      const idx = this.scheduleForm.days.indexOf(day);
+      if (idx > -1) {
+        if (this.scheduleForm.days.length > 1) {
+          this.scheduleForm.days.splice(idx, 1);
+        }
+      } else {
+        this.scheduleForm.days.push(day);
+      }
+    },
+
+    async saveSchedule() {
+      if (!this.scheduleForm.name) {
+        this.showToast('Errore', 'Inserisci un nome per la regola', 'warning');
+        return;
+      }
+      const isSpecialAll = ['all_profiles', 'all_nodes_led', 'all_nodes_reboot'].includes(this.scheduleForm.target_type);
+      const tid = this.scheduleForm.target_id || (isSpecialAll ? 'all' : '');
+      if (!tid && !isSpecialAll) {
+        this.showToast('Errore', 'Seleziona un destinatario valido per la regola', 'warning');
+        return;
+      }
+      if (this.isRebootSchedule()) {
+        this.scheduleForm.end_time = this.scheduleForm.start_time;
+      }
+      try {
+        let res;
+        const payload = {
+          name: this.scheduleForm.name,
+          days: this.scheduleForm.days,
+          start_time: this.scheduleForm.start_time,
+          end_time: this.scheduleForm.end_time,
+          action: this.scheduleForm.action,
+          target_type: this.scheduleForm.target_type,
+          target_id: tid,
+          target_ids: [tid],
+          is_active: this.scheduleForm.is_active
+        };
+        if (this.scheduleModalMode === 'create') {
+          res = await fetch('/api/schedules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await fetch(`/api/schedules/${encodeURIComponent(this.scheduleForm.id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+        if (res.ok) {
+          this.showToast('Successo', 'Regola oraria salvata', 'success');
+          this.showScheduleModal = false;
+          await this.fetchSchedules();
+        } else {
+          const err = await res.json();
+          this.showToast('Errore', err.detail || 'Impossibile salvare la regola', 'error');
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    async toggleSchedule(id) {
+      try {
+        const res = await fetch(`/api/schedules/${encodeURIComponent(id)}/toggle`, {
+          method: 'POST'
+        });
+        if (res.ok) {
+          await this.fetchSchedules();
+        }
+      } catch (e) {
+        console.error("Toggle schedule error:", e);
+      }
+    },
+
+    async deleteSchedule(id) {
+      if (!confirm('Vuoi eliminare questa regola di pianificazione?')) return;
+      try {
+        const res = await fetch(`/api/schedules/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          this.showToast('Successo', 'Regola eliminata', 'info');
+          await this.fetchSchedules();
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    async evaluateSchedulesNow() {
+      try {
+        const res = await fetch('/api/schedules/evaluate', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          this.showToast(
+            'Valutazione Completata',
+            `Regole attive: ${data.evaluated || 0}, azioni eseguite: ${data.actions_taken || 0}`,
+            'success'
+          );
+        }
+      } catch (e) {
+        this.showToast('Errore', String(e), 'error');
+      }
+    },
+
+    // =========================================================================
+    // MODULE 3: BANDWIDTH HOGS MULTI-FILTERS COMPUTED
+    // =========================================================================
+    getFilteredTopHogs() {
+      if (!this.topHogsList || !Array.isArray(this.topHogsList)) return [];
+      return this.topHogsList.filter(hog => {
+        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === (hog.mac || '').toLowerCase()) || d.id === hog.device_id);
+        
+        // Category filter
+        if (this.hogsCategoryFilter !== 'all') {
+          const cat = dev ? (dev.category || '') : (hog.category || '');
+          if (cat !== this.hogsCategoryFilter) return false;
+        }
+
+        // Frequency band filter
+        if (this.hogsBandFilter !== 'all' && dev) {
+          if (this.hogsBandFilter === 'wired') {
+            if (dev.connection_type !== 'wired' && dev.wireless) return false;
+          } else if (this.hogsBandFilter === '6ghz') {
+            const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
+            if (!is6) return false;
+          } else if (this.hogsBandFilter === '5ghz') {
+            const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
+            if (!is5) return false;
+          } else if (this.hogsBandFilter === '2.4ghz') {
+            const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
+            if (!is24) return false;
+          }
+        }
+
+        // Mesh Node filter
+        if (this.hogsNodeFilter !== 'all' && dev) {
+          if (dev.connected_eero_id !== this.hogsNodeFilter && dev.connected_eero_name !== this.hogsNodeFilter) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    },
+
+    // =========================================================================
+    // MODULE 3: BUFFERBLOAT RATING HELPER
+    // =========================================================================
+    getBufferbloatGrade(speedtestObj) {
+      const st = speedtestObj || this.latestSpeedtest || {};
+      const ping = Number(st.ping_ms || st.ping || 0);
+      const loadedLatency = Number(st.loaded_latency_ms || st.loaded_ping || 0);
+      const delta = loadedLatency > 0 ? (loadedLatency - ping) : 0;
+
+      if (loadedLatency > 0) {
+        if (delta <= 5) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (delta <= 15) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (delta <= 30) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
+        if (delta <= 60) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
+        if (delta <= 120) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
+        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+      }
+
+      if (ping > 0) {
+        if (ping <= 12) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (ping <= 20) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
+        if (ping <= 35) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
+        if (ping <= 55) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
+        if (ping <= 85) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
+        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+      }
+
+      return { grade: 'n/a', label: 'Non Disponibile', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30' };
+    },
+
+    // =========================================================================
+    // MODULE 4: SYSTEM LOGGING & DIAGNOSTICS (v1.6.0)
+    // =========================================================================
+    logConfig: {
+      enabled: true,
+      level: 'INFO',
+      retention_days: 7
+    },
+    logStats: {
+      total_count: 0,
+      level_counts: { DEBUG: 0, INFO: 0, WARNING: 0, ERROR: 0, CRITICAL: 0 },
+      oldest_timestamp: null,
+      newest_timestamp: null,
+      file_size_bytes: 0,
+      file_size_mb: 0.0
+    },
+    logsList: [],
+    logTotalCount: 0,
+    logLoading: false,
+    logLevelFilter: 'ALL',
+    logSearchQuery: '',
+    logAutoRefresh: false,
+    logAutoRefreshTimer: null,
+    customRetentionInput: 7,
+    showCustomRetention: false,
+    showClearLogsModal: false,
+    isClearingLogs: false,
+    expandedLogDetails: {},
+
+    async fetchLogConfig() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig = {
+            enabled: Boolean(data.enabled),
+            level: data.level || 'INFO',
+            retention_days: Number(data.retention_days) || 7
+          };
+          this.logStats = data.stats || this.logStats;
+          this.showCustomRetention = ![1, 7, 15, 30].includes(this.logConfig.retention_days);
+          if (this.showCustomRetention) {
+            this.customRetentionInput = this.logConfig.retention_days;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch log config:", e);
+      }
+    },
+
+    async fetchSystemLogs() {
+      this.logLoading = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        let url = `/api/system/logs?limit=150&offset=0`;
+        if (this.logLevelFilter && this.logLevelFilter !== 'ALL') {
+          url += `&level=${encodeURIComponent(this.logLevelFilter)}`;
+        }
+        if (this.logSearchQuery && this.logSearchQuery.trim()) {
+          url += `&q=${encodeURIComponent(this.logSearchQuery.trim())}`;
+        }
+        const res = await fetch(url, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          this.logsList = data.logs || [];
+          this.logTotalCount = data.total || this.logsList.length;
+        }
+      } catch (e) {
+        console.error("Failed to fetch system logs:", e);
+      } finally {
+        this.logLoading = false;
+      }
+    },
+
+    async toggleLogEnabled() {
+      if (!this.can('action_manage_rules')) return;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ enabled: this.logConfig.enabled })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.enabled = data.enabled;
+          this.showToast(this.t('logs.saved_success') || 'Configurazione log aggiornata.', 'success');
+        } else {
+          this.logConfig.enabled = !this.logConfig.enabled;
+          this.showToast("Errore aggiornamento stato log.", 'error');
+        }
+      } catch (e) {
+        this.logConfig.enabled = !this.logConfig.enabled;
+        console.error("Failed to toggle log enabled:", e);
+      }
+    },
+
+    async setLogLevel(lvl) {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ level: lvl })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.level = data.level;
+          this.showToast(this.t('logs.saved_success') || 'Livello log aggiornato.', 'success');
+          await this.fetchSystemLogs();
+        }
+      } catch (e) {
+        console.error("Failed to set log level:", e);
+      }
+    },
+
+    async setLogRetention(days) {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      if (days === 'custom') {
+        this.showCustomRetention = true;
+        return;
+      }
+      this.showCustomRetention = false;
+      const d = parseInt(days, 10);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ retention_days: d })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.retention_days = data.retention_days;
+          this.showToast(this.t('logs.saved_success') || 'Periodo di retention aggiornato.', 'success');
+        }
+      } catch (e) {
+        console.error("Failed to set log retention:", e);
+      }
+    },
+
+    async applyCustomRetention() {
+      if (!this.can('action_manage_rules') || !this.logConfig.enabled) return;
+      const d = Math.max(0, parseInt(this.customRetentionInput, 10) || 0);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/config', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ retention_days: d })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.logConfig.retention_days = data.retention_days;
+          this.showToast(this.t('logs.saved_success') || 'Periodo di retention personalizzato applicato.', 'success');
+        }
+      } catch (e) {
+        console.error("Failed to apply custom retention:", e);
+      }
+    },
+
+    openClearLogsModal() {
+      this.showClearLogsModal = true;
+    },
+
+    closeClearLogsModal() {
+      this.showClearLogsModal = false;
+    },
+
+    async confirmClearLogs() {
+      if (!this.can('action_manage_rules')) return;
+      this.isClearingLogs = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/logs/clear', {
+          method: 'POST',
+          headers
+        });
+        if (res.ok) {
+          const data = await res.json();
+          this.showClearLogsModal = false;
+          this.showToast(data.message || 'Log di sistema cancellati con successo.', 'success');
+          await this.fetchLogConfig();
+          await this.fetchSystemLogs();
+        } else {
+          this.showToast("Errore durante la cancellazione dei log.", 'error');
+        }
+      } catch (e) {
+        console.error("Failed to clear system logs:", e);
+      } finally {
+        this.isClearingLogs = false;
+      }
+    },
+
+    downloadSystemLogs(format = 'log') {
+      let url = `/api/system/logs/download?format=${format}`;
+      if (this.localAuthToken) {
+        url += `&token=${encodeURIComponent(this.localAuthToken)}`;
+      }
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },
+
+    toggleLogAutoRefresh() {
+      if (this.logAutoRefresh) {
+        if (!this.logAutoRefreshTimer) {
+          this.logAutoRefreshTimer = setInterval(() => {
+            if (this.currentTab === 'settings-controls' || this.currentTab === 'automations' || this.currentTab === 'controls') {
+              this.fetchSystemLogs();
+              this.fetchLogConfig();
+            }
+          }, 10000);
+        }
+      } else {
+        if (this.logAutoRefreshTimer) {
+          clearInterval(this.logAutoRefreshTimer);
+          this.logAutoRefreshTimer = null;
+        }
+      }
+    },
+
+    toggleLogDetail(id) {
+      this.expandedLogDetails[id] = !this.expandedLogDetails[id];
     },
 
     // =========================================================================

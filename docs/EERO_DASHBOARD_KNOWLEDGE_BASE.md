@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.5.0)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.0)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.5.0**  
+> *Versione di riferimento del software:* **v1.6.0**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -35,6 +35,18 @@
    * 4.18 [Community Hall of Fame & Crediti Open Source](#418-community-hall-of-fame--crediti-open-source)
    * 4.19 [Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)](#419-hardening-di-sicurezza--vulnerability-remediation-4-ghsa-advisories)
    * 4.20 [Visibilità & Ricerca Indirizzi IPv6 Dispositivi (Issue #43)](#420-visibilità--ricerca-indirizzi-ipv6-dispositivi-issue-43)
+   * 4.21 [System Monitoring & Live Log Viewer Console (v1.6.0)](#421-system-monitoring--live-log-viewer-console-v160)
+   * 4.22 [Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0)](#422-homelab--home-automation-mqtt--home-assistant-auto-discovery-v160)
+   * 4.23 [Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)](#423-metriche-native-prometheus--dashboard-grafana-ufficiale-v160)
+   * 4.24 [Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)](#424-multi-channel-notification-dispatcher--allarmi-specializzati-v160)
+   * 4.25 [Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)](#425-reverse-client-enrichment-ipv6-ula--neighbor-discovery-v160---issue-57)
+   * 4.26 [Local Asset Bundling & Resilienza 100% Offline (v1.6.0 - Issue #58)](#426-local-asset-bundling--resilienza-100-offline-v160---issue-58)
+   * 4.27 [Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60)](#427-ordinamento-recently-joined--badge-new-v160---issue-60)
+   * 4.28 [Concorrenza SQLite WAL, Busy Timeout & Transazioni Atomiche (v1.6.0 - Issue #62)](#428-concorrenza-sqlite-wal-busy-timeout--transazioni-atomiche-v160---issue-62)
+   * 4.29 [QR Code Wi-Fi Ospiti per Reti Aperte & Gestione Stato (v1.6.0 - Issue #63)](#429-qr-code-wi-fi-ospiti-per-reti-aperte--gestione-stato-v160---issue-63)
+   * 4.30 [Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)](#430-multi-channel-daily-digest-delivery-transparency-v160---issue-64)
+   * 4.31 [Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)](#431-perfezionamento-discovery-ipv6-ula--filtri-tabella-client-v160---issue-65)
+   * 4.32 [Local RBAC & Setup Wizard Iniziale Amministratore (v1.6.0)](#432-local-rbac--setup-wizard-iniziale-amministratore-v160)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -250,12 +262,15 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
 
 ### 4.18 Community Hall of Fame & Crediti Open Source
 * **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici:
-  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43).
+  * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment ULA via NDP (#57, #65) e Local Asset Bundling 100% Offline (#58).
   * `@Hatton920`: Health Score Breakdown, velocità link PHY, stato nodi rebooting vs offline, sanitizzazione speedtest (#14, #15, #34, #35, #41).
   * `@jimcampbell100`: Multi-Network Fleet Management (#22).
   * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38).
-  * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46).
+  * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46), ordinamento "Recently Joined" e badge "NEW" (#60).
   * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53); 4 GitHub Security Advisories (hardening CORS/CSRF, sanitizzazione password Wi-Fi, switch documentazione interattiva API_DOCS, permessi 0600 per session.json).
+  * `@WillFulmer`: Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (#63) e trasparenza canali di recapito Daily Digest (#64).
+  * `@jonmacdonald`: Risoluzione lock contention SQLite, concorrenza asincrona con busy timeout a 60s (#62) ed elezione switch gateway in topologie complesse (#26).
+  * *Bug Hunters & Tester:* `@BaRaD5` (cache DNS locale), `@phutmacher` (elezione gateway), `@txrangersxx` (network ID resolver), `@nextlevel2023` (feedback login Amazon) e `u/djbills` (isolamento tag Docker Hub).
 * **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
 
 ### 4.19 Hardening di Sicurezza & Vulnerability Remediation (4 GHSA Advisories)
@@ -273,11 +288,135 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
 * **Badge Discreto & Tooltip:** Badge visivo compatto `IPv6` nella tabella client con tooltip al passaggio del mouse contenente l'elenco completo degli indirizzi.
 * **Box Dedicato con Copia Rapida:** Scheda Generale del modale dispositivo con conteggio indirizzi, categorizzazione visiva (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo (`copyToClipboard`).
 
+### 4.21 System Monitoring & Live Log Viewer Console (v1.6.0)
+* **Buffer Circolare RAM a Zero I/O:** `LogService` mantiene in memoria un ring buffer (`collections.deque`) da 1.000 a 10.000 record con lock asincrono thread-safe per servire le interrogazioni della UI in **0 ms** senza impattare il disco.
+* **Persistenza Selettiva SQLite:** Salvataggio asincrono batch dei record di log nella tabella `system_logs` di `metrics.db`.
+* **Criteri di Retention Integrati:** Configurazione flessibile per giorni (`LOG_RETENTION_DAYS`, default: 7 giorni) o conteggio massimo righe (`LOG_MAX_ENTRIES`, default: 5.000 righe). Il worker periodico `RetentionWorker` esegue automaticamente la pulizia a ogni ciclo senza bloccare le altre operazioni del database.
+* **Switch Dinamico a Caldo del Log Level:** Possibilità di modificare al volo il livello di cattura (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) dall'interfaccia o via REST (`POST /api/system/logs/config`) senza riavviare il container Docker.
+* **Console UI Interattiva (Card 7 in Controlli):**
+  * Console in stile terminale con font monospace, timestamp precisi e color-coding semantico (blu per INFO, ambra per WARNING, rosso per ERROR, viola per DEBUG).
+  * Auto-refresh a frequenza personalizzabile (2s, 5s, 10s, disattivato) con indicatore di stato e contatore record.
+  * Filtro per livello minimo e barra di ricerca full-text istantanea.
+  * Download del file di log grezzo formattato RFC-5424 (`/api/system/logs/download`) con timestamp nel nome file.
+  * Modale di sicurezza a 2 passaggi con conferma per lo svuotamento chirurgico dei log memorizzati (`DELETE /api/system/logs/clear`).
+
+### 4.22 Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0)
+* **Client MQTT Asincrono Resiliente (`aiomqtt` / `paho-mqtt`):** Connessione verso qualsiasi broker locale o cloud (es. Mosquitto, EMQX) con riconnessione automatica con backoff esponenziale in caso di caduta temporanea del broker.
+* **Home Assistant MQTT Auto-Discovery:** Pubblicazione automatica dei payload JSON di autoconfigurazione sul prefisso standard (default: `homeassistant/sensor/...`) all'avvio e ad ogni cambio rete.
+* **Entità Registrate su Home Assistant:**
+  * Sensori di stato WAN: Download Speed, Upload Speed, Ping Gateway, IP Pubblico, Uptime rete.
+  * Sensori per Nodi Mesh eero: Connettività nodo, backhaul (cablato/wireless), IP nodo, modello hardware e versione firmware.
+  * Sensori aggregati: Numero client online, dispositivi per frequenza (2.4/5/6 GHz, Ethernet), Health Score globale di rete.
+* **Telemetria Periodica & Event-Driven:** Invio telemetria a ogni ciclo del poller (`POLL_INTERVAL`), sincronizzato con gli stati di standby e riavvio.
+
+### 4.23 Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0)
+* **Endpoint Root & API Prometheus:** Esposizione del formato ufficiale OpenMetrics su `GET /metrics` e `GET /api/metrics/prometheus` con `Content-Type: text/plain; version=0.0.4; charset=utf-8`.
+* **Metriche Esportate (Gauges e Counters):**
+  * `eero_network_health_score`: Punteggio di salute complessivo calcolato a 4 pilastri.
+  * `eero_wan_status` & `eero_wan_ip_info`: Stato di connessione Internet e metadati ISP.
+  * `eero_speedtest_download_mbps`, `eero_speedtest_upload_mbps`, `eero_speedtest_ping_ms`: Ultimi valori certificati dal gateway hardware.
+  * `eero_devices_total`, `eero_devices_online`, `eero_devices_wired`, `eero_devices_guest`: Censimento dispositivi per tipologia.
+  * `eero_devices_by_band{band="2.4ghz|5ghz|6ghz"}`: Client distribuiti sulle singole frequenze radio.
+  * `eero_mesh_node_status{serial="...", model="..."}`: Stato operativo di ciascun access point mesh.
+  * `eero_device_bandwidth_mbps{mac="...", name="..."}`: Throughput istantaneo dei singoli client monitorati.
+* **Dashboard Grafana Pre-Configurata (`deploy/grafana/eero_dashboard.json`):**
+  * 13 pannelli pronti all'uso divisi in sezioni logiche: Stato WAN & SLA Gateway, Mesh Topology & Node Health, Client Inventory & Band Distribution, Top Bandwidth Hogs & Live Gauges.
+
+### 4.24 Multi-Channel Notification Dispatcher & Allarmi Specializzati (v1.6.0)
+* **Nuovi Canali di Notifica Integrati:**
+  * **Discord Webhooks:** Notifiche ricche con formattazione Embed, avatar del bot, timestamp ISO e bordi colorati in base alla gravità dell'evento (verde per ripristini, arancione per warning, rosso per emergenze).
+  * **Pushover API:** Notifiche push ad alta priorità verso smartphone, smartwatch e desktop, con supporto per parametri `priority` e suoni di avviso personalizzati.
+* **Nuovi Allarmi Intelligenti Specializzati:**
+  1. **Low Wi-Fi Signal Threshold:** Avviso immediato quando un dispositivo critico registra una degradazione prolungata dell'RSSI al di sotto della soglia impostata (es. < -80 dBm).
+  2. **ISP Speedtest Degradation Alert:** Notifica automatica se la velocità WAN scende sotto una soglia critica definita rispetto al contratto dell'utente.
+  3. **IP Conflict / Duplicate Lease Warning:** Rilevamento preventivo di conflitti di indirizzi IP statici o leasing sovrapposti.
+  4. **Mesh Node Offline Alert:** Notifica tempestiva in caso di disconnessione o caduta di un nodo mesh secondario con identificazione del seriale e della posizione.
+
+### 4.25 Reverse Client Enrichment IPv6 ULA & Neighbor Discovery (v1.6.0 - Issue #57)
+* **Contesto Architetturale & Causa Radice:**
+  Nelle reti dual-stack IPv6 con server DNS locale (AdGuard Home, Pi-hole), i client interrogano il DNS locale tramite il loro indirizzo ULA (*Unique Local Address*, `fd00::/8`). Poiché questo traffico è confinato a livello switch/mesh Layer 2 e non viene instradato sulla WAN, il cloud eero non ha visibilità su tali indirizzi ULA e non li include nel payload `get_devices()`.
+* **Meccanismo di Risoluzione a 2 Vie:**
+  1. **Active Probe & Pull Scanner:** Il modulo `enrichment_service.py` interroga periodicamente AdGuard Home (`/control/clients`), identifica gli indirizzi orfani in `auto_clients`, invia un probe ICMPv6 asincrono non invasivo e ispeziona la tabella di vicinato del kernel (`ip -6 neigh`) per risolvere il MAC address fisico associato.
+  2. **Ingestion REST API Universale (`POST /api/network/enrichment/neighbors`):** Permette a qualsiasi script cron, demone o agent esterno in esecuzione sull'host del server DNS di inviare le coppie `[{"ip": "...", "mac": "..."}]` direttamente alla dashboard, garantendo compatibilità anche con container Docker isolati.
+* **Full-Circle DNS Sync:**
+  Gli indirizzi ULA scoperti vengono memorizzati nella tabella persistente `device_discovered_ips` e fusi nel modello del dispositivo. Al ciclo successivo di sincronizzazione DNS verso AdGuard, il client ufficiale acquisisce l'indirizzo ULA nei suoi identificatori `ids`, eliminando automaticamente i client orfani/anonimi su AdGuard.
+* **Interfaccia Utente:**
+  Nel modale del dispositivo (`#deviceModal`), gli ULA scoperti via rete mostrano il badge fucsia/ametista `ULA (NDP / AdGuard)` con tooltip esplicativo, differenziandosi dagli indirizzi nativi comunicati dal cloud.
+
+### 4.26 Local Asset Bundling & Resilienza 100% Offline (v1.6.0 - Issue #58)
+* **Motivazione & Offline-First Philosophy (@jpatchMC):**
+  Nei casi di interruzione della connettività Internet/WAN (blackout ISP o disconnessione gateway), una dashboard per il monitoraggio della rete locale LAN deve continuare a funzionare ininterrottamente. Nelle versioni precedenti, il caricamento di risorse UI da CDN esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `fonts.googleapis.com`) causava blocchi visivi, fallback di rendering o mancata esecuzione degli script Alpine/Chart.js in assenza di WAN.
+* **Vendoring Locale Completo (`app/static/vendor/`):**
+  Tutte le librerie frontend esterne sono ora pacchettizzate e distribuite direttamente dal web server FastAPI interno:
+  * `tailwind.min.js`: Motore Tailwind standalone per styling e design system Fluent.
+  * `alpine.min.js`: Framework reattivo UI per gestione stato, drawer, modali e filtri.
+  * `chart.umd.min.js`: Libreria di rendering grafici per telemetria real-time e storici.
+  * `lucide.min.js`: Icon set vettoriale moderno.
+* **Self-Hosting Locale Font WOFF2 (`app/static/fonts/` & `fonts.css`):**
+  Tutti i pesi necessari per i font di sistema **Inter** (300, 400, 500, 600, 700, 800) e **JetBrains Mono** (400, 500, 600) sono scaricati localmente come file WOFF2 ad alta efficienza di compressione e serviti con regole `@font-face` relative da `/static/css/fonts.css`.
+* **Integrazione PWA & Service Worker (`app/static/sw.js`):**
+  Tutti gli asset vendor e font locali sono inseriti nella lista `STATIC_ASSETS` pre-cacheata dal Service Worker PWA all'installazione, garantendo avvio istantaneo da cache locale e 0 chiamate WAN verso l'esterno.
+
+### 4.27 Ordinamento "Recently Joined" & Badge "NEW" (v1.6.0 - Issue #60)
+* **Contesto & Risoluzione Necessità Utente (@DannyFeliz):**
+  Nelle reti mesh domestiche e aziendali con decine o centinaia di dispositivi, individuare rapidamente un nuovo dispositivo appena connesso (es. console, ospite, IoT appena installato) risultava disagevole senza poter ordinare cronologicamente per momento di primo ingresso in rete.
+* **Integrazione Backend (`poller.py` & `/api/devices`):**
+  Il background poller associa a ciascun dispositivo il rispettivo timestamp `first_seen` memorizzato nella tabella SQLite `known_devices`. Calcola inoltre in memoria i flag booleani:
+  * `is_new`: `True` se il primo accesso è avvenuto negli ultimi 7 giorni.
+  * `is_new_24h`: `True` se il primo accesso è avvenuto nelle ultime 24 ore.
+  L'endpoint `/api/devices` supporta i parametri query `sort_by=first_seen_desc`, `sort_by=first_seen_asc` e `is_new_only=true`.
+* **Esperienza Utente & UI Control:**
+  1. **Menu Ordinamento Unificato:** Dropdown di ordinamento rapido integrato nella griglia della toolbar secondaria desktop e nei filtri veloci mobile, con opzione dedicata *"Primo Accesso / Più Recenti"*.
+  2. **Badge Visivo "NEW":** Badge compatto verde smeraldo con indicatore a pulsazione visiva sia nella colonna dispositivo della tabella desktop sia nelle schede card mobile.
+  3. **Filtro Categoria "Nuovi":** Pill rapida con indicatore cromatico verde per visualizzare esclusivamente i dispositivi rilevati di recente.
+  4. **Ispezione Modale Dettagliata:** Nel `#deviceModal` (tab Generale), un blocco informativo dedicato mostra la data e ora esatta del primo rilevamento del dispositivo sulla rete mesh.
+
+### 4.28 Concorrenza SQLite WAL, Busy Timeout & Transazioni Atomiche (v1.6.0 - Issue #62)
+* **Contesto & Causa Radice (@jonmacdonald):**
+  Nei deployment Docker sotto carichi elevati (polling ad alta frequenza, scritture concorrenti di telemetria RSSI, throughput e log applicativi), le chiamate concorrenti a SQLite generavano sporadicamente l'eccezione `sqlite3.OperationalError: database is locked`, oltre a generare messaggi di errore non tracciati a `stderr` (`Task exception was never retrieved`) quando task in background venivano lanciati con `asyncio.create_task` senza gestione errori.
+* **Architettura di Serializzazione e Resilienza:**
+  1. **Semaforo di Scrittura `_write_lock`:** In `DBService` (`app/services/db.py`), tutte le transazioni di scrittura concorrenti vengono serializzate tramite `asyncio.Lock()`, azzerando il rischio di collisione scritture tra thread asincroni.
+  2. **Configurazione Connessione & Pragmi WAL:** Il timeout di connessione di `aiosqlite.connect(...)` è elevato a 60.0 secondi, con esecuzione preventiva dei pragmi `PRAGMA journal_mode = WAL;`, `PRAGMA busy_timeout = 60000;` e `PRAGMA synchronous = NORMAL;` su ogni connessione del pool.
+  3. **Sequential Poller Execution:** Nel ciclo del poller (`poller.py`), i compiti di campionamento e persistenza storici vengono eseguiti sequenzialmente con blocchi `try/except` protetti, prevenendo task pendenti o eccezioni non intercettate.
+
+### 4.29 QR Code Wi-Fi Ospiti per Reti Aperte (WPA:nopass) & Gestione Stato (v1.6.0 - Issue #63)
+* **Contesto & Requisito Utente (@WillFulmer):**
+  Nelle reti eero con rete Ospiti abilitata ma priva di password di protezione (rete aperta pubblica o per visitatori), il generatore QR Code falliva o sollevava eccezione richiedendo obbligatoriamente una chiave WPA. Inoltre, quando la rete ospiti era disabilitata, veniva comunque generato un QR Code non valido.
+* **Risoluzione & Standard ZXing / Wi-Fi Alliance:**
+  1. **Sintassi Universale Reti Aperte:** Il servizio `qrcode_gen.py` genera ora la stringa standard `WIFI:S:<SSID>;T:nopass;H:<hidden>;;` quando il parametro password è vuoto o non impostato.
+  2. **Gestione Stato Rete Ospiti Disabilitata:** Se la rete ospiti è spenta dall'app o dalla dashboard, la UI nasconde il codice e mostra un messaggio contestuale localizzato (`guests_page.qr_not_available`) con avviso per l'amministratore.
+  3. **Copia Credenziali e Feedback Visivo:** Il pulsante di copia negli appunti e i toast informativi indicano esplicitamente lo stato *"Rete aperta (senza password)"*.
+
+### 4.30 Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)
+* **Contesto & Requisito Utente (@WillFulmer):**
+  L'utente non aveva immediata visibilità visiva su quali canali di notifica (Telegram, Webhook, Discord, Pushover) fossero effettivamente abilitati e pronti a ricevere il report giornaliero serale *Daily Digest*.
+* **Risoluzione UI & Trasparenza Recapito:**
+  1. **Badge di Stato Canali Attivi:** Nella card *Daily Digest Report* in *Controlli & Ospiti*, sono visualizzati badge distintivi colorati per ciascun canale configurato e pronto (Telegram, Webhook, Discord, Pushover).
+  2. **Avviso & Link Rapido di Configurazione:** Se nessun canale di notifica risulta configurato, la card espone un messaggio descrittivo con pulsante/link diretto che scorre all'istante l'utente alla sezione di configurazione notifiche.
+
+### 4.31 Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)
+* **Contesto & Causa Radice (@jpatchMC):**
+  Su client dual-stack con lease DHCP locali su AdGuard Home, gli indirizzi IPv6 ULA scoperti via NDP venivano associati nel modello dati (`ipv6_ula` e `ipv6_addresses`) ma non sempre convergevano in `ipv6_all`, causando la mancata visualizzazione all'interno della modale `#deviceModal` e rendendo impossibile la ricerca testuale nella tabella dispositivi.
+* **Risoluzione & Auto-Pruning:**
+  1. **Fallback Resiliente Modale:** Nel rendering del modale client, il template itera su `ipv6_all || ipv6_addresses || [ipv6]`, garantendo la visualizzazione completa di tutti gli indirizzi noti o scoperti.
+  2. **Badge Distintivo UI `ULA Enriched`:** Assegnazione del badge ametista/fucsia dedicato `ULA Enriched` sia nella modale dei dettagli, sia nella tabella/scheda principale dei dispositivi accanto all'indirizzo MAC.
+  3. **Auto-Pruning Notturno degli Indirizzi Obsoleti:** Integrazione del metodo `cleanup_stale_discovered_ips(retention_days=30)` nel worker di manutenzione notturna programmata, rimuovendo automaticamente indirizzi transitori o dismessi dopo 30 giorni di inattività.
+
+### 4.32 Local RBAC & Setup Wizard Iniziale Amministratore (v1.6.0)
+* **Contesto & Obiettivo di Sicurezza:**
+  Nelle precedenti versioni di sviluppo, le credenziali amministrative (`admin / admin`) erano hardcoded nei file o suggerite direttamente nella schermata di login, costituendo un rischio potenziale in installazioni esposte sulla LAN o reverse proxy.
+* **Architettura Zero-Default Security & Onboarding:**
+  1. **Setup Wizard al Primo Avvio:** All'apertura della dashboard, il frontend interroga l'endpoint `GET /api/auth/local/status`. Se non esiste alcun account registrato (`setup_required: true`), viene visualizzato automaticamente il modale a tutto schermo di configurazione iniziale che obbliga l'utente a scegliere il proprio username e una password robusta con conferma.
+  2. **Rimozione Credenziali Predefinite:** Eliminati tutti i default visibili e placeholder nella UI (`admin / admin`).
+  3. **Endpoint di Inizializzazione Protetto (`POST /api/auth/local/setup`):** Consente la creazione del primo utente amministratore solo ed esclusivamente se nessun utente è presente nel database. Chiamate successive ricevono `400 Bad Request` per prevenire attacchi di re-inizializzazione.
+  4. **Supporto Headless / Automazioni Docker:** È possibile pre-configurare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o `docker-compose.yml`. Al boot, l'applicazione crea automaticamente l'account amministratore bypassando il wizard per deploy non presidiati.
+  5. **Controllo Accessi a Ruoli (RBAC):** Tre ruoli predefiniti (`admin`, `operator`, `viewer`) con matrice granulare dei permessi (modifica impostazioni, comandi di rete, sola lettura).
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
 
-Il database si trova in `data/metrics.db` (percorso configurabile via `DATA_DIR`). Viene aperto in modalità WAL (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;`) per garantire massima concorrenza tra letture e scritture asincrone.
+Il database si trova in `data/metrics.db` (percorso configurabile via `DATA_DIR`). Viene aperto in modalità WAL con parametri ad alta concorrenza (`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=60000; PRAGMA synchronous=NORMAL;`) e serializzazione scritture tramite semaforo `asyncio.Lock()` per garantire massima resilienza tra letture e scritture asincrone.
 
 ### Tabelle dello Schema
 
@@ -338,15 +477,63 @@ Campionamento del volume dati e throughput per singolo client.
 * `idx_device_usage_net_time` (`network_id`, `timestamp`)
 * `idx_device_usage_time` (`timestamp`)
 
+#### 6. `system_logs` (v1.6.0)
+Persistenza dei log applicativi e diagnostici del sistema con supporto a retention per data e numero massimo di record.
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+* `level` (TEXT NOT NULL) — `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+* `logger_name` (TEXT NOT NULL) — modulo o router generatore (es. `app.services.poller`)
+* `message` (TEXT NOT NULL) — corpo del messaggio di log
+* `context_json` (TEXT) — metadati opzionali serializzati in JSON
+
+*Indici:*
+* `idx_system_logs_timestamp` (`timestamp`)
+* `idx_system_logs_level` (`level`)
+* `idx_system_logs_logger` (`logger_name`)
+
+#### 7. `device_discovered_ips` (v1.6.0 Modulo 7 - Issue #57)
+Associazioni IP-MAC scoperte tramite Neighbor Discovery Protocol (NDP), probe ICMPv6 asincroni o API di ingestion esterna (es. server AdGuard Home).
+* `mac_address` (TEXT NOT NULL) — Indirizzo MAC dell'apparato fisico
+* `ip_address` (TEXT NOT NULL) — Indirizzo IPv6 (ULA/GUA) o IPv4
+* `ip_type` (TEXT DEFAULT 'ULA') — Tipologia indirizzo (`ULA`, `GUA`, `IPv4`)
+* `source` (TEXT DEFAULT 'ndp_enrichment') — Sorgente della scoperta (`ndp_enrichment`, `adguard_agent`, ecc.)
+* `first_seen` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data prima rilevazione
+* `last_seen` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data ultimo rinnovo / probe riuscita
+*PRIMARY KEY (`mac_address`, `ip_address`)*
+
+*Indici:*
+* `idx_discovered_ips_mac` (`mac_address`)
+* `idx_discovered_ips_time` (`last_seen`)
+
+#### 8. `local_users` (v1.6.0 Modulo 1)
+Utenti locali per autenticazione web, ruoli e permessi RBAC.
+* `username` (TEXT PRIMARY KEY) — Nome utente univoco
+* `password_hash` (TEXT NOT NULL) — Hash PBKDF2/SHA-256 della password
+* `role` (TEXT NOT NULL DEFAULT 'viewer') — Ruolo utente (`admin`, `operator`, `viewer`)
+* `permissions_json` (TEXT) — Dizionario permessi serializzato in JSON
+* `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data creazione utente
+* `last_login` (DATETIME) — Data ultimo accesso riuscito
+
 ---
 
 ## 6. Catalogo Completo API REST (Endpoint Reference)
 
-Tutti gli endpoint rispondono in formato JSON con intestazione `application/json`.
+Tutti gli endpoint rispondono in formato JSON con intestazione `application/json` (eccetto `/metrics` che risponde in formato OpenMetrics testo standard `text/plain`).
 
 | Metodo | Endpoint | Descrizione | Parametri / Payload |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/api/auth/status` | Stato autenticazione e modalità Demo/Live | Nessuno |
+| **GET** | `/metrics` | Metriche native in formato OpenMetrics per scraping Prometheus (v1.6.0) | Nessuno |
+| **GET** | `/api/metrics/prometheus` | Alias endpoint Prometheus per integrazione Homelab (v1.6.0) | Nessuno |
+| **GET** | `/api/auth/status` | Stato autenticazione cloud eero e modalità Demo/Live | Nessuno |
+| **GET** | `/api/auth/local/status` | Verifica se il Setup Wizard amministratore iniziale è necessario (v1.6.0) | Nessuno |
+| **POST** | `/api/auth/local/setup` | Inizializza l'account amministratore al primo avvio (Zero-Default Security) (v1.6.0) | `{"username": "...", "password": "..."}` |
+| **POST** | `/api/auth/local/login` | Accesso locale con credenziali utente e generazione token JWT sessione (v1.6.0) | `{"username": "...", "password": "..."}` |
+| **POST** | `/api/auth/local/logout` | Disconnessione sessione locale e cancellazione cookie/token (v1.6.0) | Nessuno |
+| **GET** | `/api/auth/local/me` | Profilo, ruolo e permessi dell'utente locale attualmente autenticato (v1.6.0) | Nessuno |
+| **GET** | `/api/users` | Elenco utenti locali registrati (riservato agli amministratori) (v1.6.0) | Nessuno |
+| **POST** | `/api/users` | Crea un nuovo utente locale con ruolo e permessi (v1.6.0) | `{"username": "...", "password": "...", "role": "..."}` |
+| **PUT** | `/api/users/{username}` | Aggiorna password, ruolo o permessi di un utente locale (v1.6.0) | `{"password": "...", "role": "...", "permissions": {...}}` |
+| **DELETE** | `/api/users/{username}` | Elimina un account utente locale (v1.6.0) | Nessuno |
 | **POST** | `/api/auth/login` | Avvia procedura 2FA eero inviando codice OTP | `{"identifier": "+39333..."}` |
 | **POST** | `/api/auth/verify` | Verifica codice OTP e salva sessione permanente | `{"code": "123456", "user_token": "..."}` |
 | **POST** | `/api/auth/mode` | Commuta tra Modalità Demo e Modalità Live | `{"demo": true/false}` |
@@ -356,6 +543,10 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **GET** | `/api/network/overview` | Panoramica stato WAN, nodi mesh e Health Score | Nessuno |
 | **GET** | `/api/network/top-hogs` | Classifica dispositivi con maggior consumo dati (v1.5.0) | `?period=daily|weekly|monthly&limit=5` |
 | **GET** | `/api/network/health-breakdown` | Dettaglio diagnostico a 4 pilastri dell'Health Score | Nessuno |
+| **POST** | `/api/network/enrichment/neighbors` | Ingestion esterna mapping IP-MAC da AdGuard/cron (v1.6.0) | `{"source": "...", "mappings": [...]}` |
+| **GET** | `/api/network/enrichment/mappings` | Elenco di tutti gli indirizzi ULA scoperti via NDP/AdGuard | `?limit=500` |
+| **DELETE** | `/api/network/enrichment/mappings` | Elimina una specifica associazione IP-MAC scoperta | `{"mac": "...", "ip": "..."}` |
+| **POST** | `/api/network/enrichment/scan-adguard` | Scansione attiva on-demand client orfani su AdGuard Home | Nessuno |
 | **POST** | `/api/network/refresh` | Forza re-polling immediato dai server eero Cloud | Nessuno |
 | **POST** | `/api/network/reboot` | Riavvia l'intera rete mesh eero | Nessuno |
 | **POST** | `/api/network/eeros/{serial}/reboot` | Riavvia un singolo nodo mesh specifico | Nessuno |
@@ -377,19 +568,24 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **POST** | `/api/automations/gaming/toggle` | Attiva o disattiva la Gaming Mode | `{"enabled": true/false}` |
 | **GET** | `/api/automations/guest` | Dati e stato rete Wi-Fi Ospiti e QR Code | Nessuno |
 | **POST** | `/api/automations/guest` | Aggiorna configurazione rete ospiti (SSID, password, abilitazione) | `{"enabled": true, "name": "...", "password": "..."}` |
-| **POST** | `/api/automations/notifications/test` | Invia notifica di test su Telegram o Webhook | Nessuno |
+| **POST** | `/api/automations/notifications/test` | Invia notifica di test su Telegram, Webhook, Discord o Pushover (v1.6.0) | `{"channel": "telegram"\|"webhook"\|"discord"\|"pushover"}` |
 | **GET** | `/api/metrics/speedtest` | Storico misurazioni speed test e statistiche aggregate | Nessuno |
 | **POST** | `/api/metrics/speedtest/run` | Avvia un nuovo test di velocità sul gateway eero | Nessuno |
 | **GET** | `/api/metrics/signal/overview` | Panoramica potenza segnale Wi-Fi e Watchlist deboli | Nessuno |
 | **GET** | `/api/metrics/signal/history` | Storico temporale potenza RSSI per un client | `?mac_address=...&hours=24` |
 | **GET** | `/api/system/update/check` | Verifica disponibilità aggiornamenti Docker/GitHub | `?force=true` |
 | **POST** | `/api/system/update/trigger` | Avvia aggiornamento automatico 1-clic del container | Nessuno |
+| **GET** | `/api/system/logs/config` | Restituisce livello logging attivo e parametri retention (v1.6.0) | Nessuno |
+| **POST** | `/api/system/logs/config` | Aggiorna a caldo livello di log e retention (v1.6.0) | `{"level": "INFO", "retention_days": 7, "max_entries": 5000}` |
+| **GET** | `/api/system/logs` | Interroga log di sistema filtrati (RAM / SQLite) (v1.6.0) | `?level=INFO&search=...&limit=100&offset=0&source=all` |
+| **DELETE** | `/api/system/logs/clear` | Svuota chirurgicamente i log in RAM e su database (v1.6.0) | Nessuno |
+| **GET** | `/api/system/logs/download` | Esporta file .log grezzo testuale (RFC-5424) (v1.6.0) | `?level=DEBUG&limit=5000` |
 | **GET** | `/api/analytics/distribution` | Distribuzione frequenze Wi-Fi, carico nodi mesh, categorie e vendor OUI con campo `devices: [...]` per ciascuna categoria (v1.5.0) | Nessuno |
 | **GET** | `/api/analytics/isp-sla` | Trend temporale e indice SLA affidabilità provider internet (v1.5.0) | `?days=7|30` |
 | **GET** | `/api/analytics/export/{data_type}` | Esportazione dataset (devices, speedtest, signal, usage) in formato CSV o JSON (v1.5.0) | `?format=csv|json&limit=500` |
 | **GET** | `/api/manual/chapters` | Elenco capitoli e argomenti del manuale integrato | `?lang=it|en` |
 | **GET** | `/api/manual/chapter/{id}` | Contenuto HTML formattato di un capitolo del manuale | `?lang=it|en` |
-| **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.5.0) | `?lang=it|en` |
+| **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.6.0) | `?lang=it|en` |
 | **GET** | `/api/system/language` | Restituisce la preferenza di lingua attiva e persistita su SQLite (v1.5.0) | Nessuno |
 | **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "en"\|"it"}` |
 
@@ -404,8 +600,24 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `HISTORY_RETENTION_DAYS` | `30` | Giorni di mantenimento storico campionamenti segnale e speedtest |
 | `SPEEDTEST_INTERVAL_HOURS` | `12` | Frequenza test di velocità pianificati automatici (ore) |
 | `DEMO_MODE` | `false` | Se `true`, forza l'avvio in modalità simulazione |
+| `ADMIN_USER` | `"admin"` | Username dell'amministratore per bootstrap headless (v1.6.0) |
+| `ADMIN_PASSWORD` | `""` | Password dell'amministratore per setup headless (se vuota, si avvia il wizard web al primo avvio) (v1.6.0) |
+| `REQUIRE_LOCAL_AUTH` | `false` | Se `true`, richiede autenticazione locale obbligatoria per le chiamate API (v1.6.0) |
 | `EERO_USER_TOKEN` | `""` | Token permanente per bypassare il login interattivo 2FA |
 | `EERO_NETWORK_ID` | `""` | ID opzionale della rete preferita da avviare come attiva |
+| `LOG_LEVEL` | `"INFO"` | Livello minimo di logging (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) (v1.6.0) |
+| `LOG_RETENTION_DAYS` | `7` | Giorni di conservazione dei log applicativi nel database SQLite (v1.6.0) |
+| `LOG_MAX_ENTRIES` | `5000` | Numero massimo di righe conservate nella tabella `system_logs` (v1.6.0) |
+| `MQTT_ENABLED` | `false` | Se `true`, avvia il client MQTT e l'auto-discovery per Home Assistant (v1.6.0) |
+| `MQTT_BROKER` | `""` | Hostname o IP del broker MQTT (es. `192.168.4.10`) (v1.6.0) |
+| `MQTT_PORT` | `1883` | Porta TCP del broker MQTT (v1.6.0) |
+| `MQTT_USERNAME` | `""` | Username opzionale per autenticazione broker MQTT (v1.6.0) |
+| `MQTT_PASSWORD` | `""` | Password opzionale per autenticazione broker MQTT (v1.6.0) |
+| `MQTT_TOPIC_PREFIX` | `"eero"` | Prefisso dei topic MQTT per la pubblicazione telemetria (v1.6.0) |
+| `MQTT_DISCOVERY_PREFIX` | `"homeassistant"` | Prefisso per Home Assistant MQTT Discovery (v1.6.0) |
+| `DISCORD_WEBHOOK_URL` | `""` | URL webhook Discord per notifiche ricche con messaggi Embed (v1.6.0) |
+| `PUSHOVER_USER_KEY` | `""` | User Key dell'account Pushover per notifiche push mobili (v1.6.0) |
+| `PUSHOVER_API_TOKEN` | `""` | API Application Token per l'integrazione Pushover (v1.6.0) |
 | `TELEGRAM_BOT_TOKEN` | `""` | Token API Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | `""` | ID numerico chat/canale Telegram destinatario delle notifiche |
 | `WEBHOOK_URL` | `""` | Endpoint HTTP POST per eventi JSON verso Home Assistant / script |
@@ -509,6 +721,26 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **GHSA-pqh9-q8vm-x9mh (Permessi Troppo Ampi su session.json):**
   * *Sintomo:* Il file `session.json` contenente il token eero veniva creato con i permessi predefiniti del processo (`0644`), risultando leggibile da altri utenti locali sull'host.
   * *Risoluzione:* Creazione atomica con flag `0o600` e invocazione di `os.fchmod` prima del troncamento del file.
+
+### Issue #62 — SQLite Database Locked Concurrency under Heavy Load (@jonmacdonald)
+* **Sintomo:** Errori ripetitivi `sqlite3.OperationalError: database is locked` nei log del container Docker durante cicli di campionamento ad alta frequenza, con eccezioni non intercettate su `stderr` (`Task exception was never retrieved`) che saturavano i registri.
+* **Causa Radice:** Più coroutine asincrone tentavano di eseguire transazioni di scrittura contemporaneamente su SQLite, superando il breve `busy_timeout` predefinito (5000ms). Inoltre, `poller.py` invocava operazioni in background con `asyncio.create_task` senza gestione degli errori `try/except`.
+* **Risoluzione:** Introdotto `_write_lock` serializzato in `DBService`, impostato timeout connessione a 60s, applicato `PRAGMA busy_timeout = 60000;` e riscritti i task del poller in modalità sequenziale protetta da `try/except`.
+
+### Issue #63 — Open Guest Network QR Code Generation & Disabled State (@WillFulmer)
+* **Sintomo:** Tentando di generare il QR Code per una rete Wi-Fi Ospiti abilitata ma priva di password, la dashboard sollevava errore richiedendo una chiave. Inoltre, con rete ospiti disabilitata, veniva mostrato un codice non valido.
+* **Causa Radice:** Validazione restrittiva della password in `app/routers/network.py` e assenza del tipo di crittografia `nopass` nel generatore QR Code.
+* **Risoluzione:** Rimosso il vincolo di password obbligatoria per reti aperte, implementata la sintassi standard Wi-Fi Alliance `WIFI:S:<SSID>;T:nopass;H:<hidden>;;` e gestito lo stato di rete disabilitata nascondendo il QR Code con avviso esplicito.
+
+### Issue #64 — Multi-Channel Daily Digest Delivery Feedback (@WillFulmer)
+* **Sintomo:** Gli utenti non avevano indicazione visiva immediata su quali canali di notifica (Telegram, Webhook, Discord, Pushover) avrebbero ricevuto il report serale Daily Digest.
+* **Causa Radice:** La card UI esponeva unicamente l'orario di invio programmato senza interrogare lo stato di attivazione dei connettori di notifica.
+* **Risoluzione:** Aggiunti badge dinamici in tempo reale che indicano i canali attivi configurati per la ricezione del report, con messaggio informativo e pulsante di reindirizzamento rapido qualora nessun canale risulti abilitato.
+
+### Issue #65 — IPv6 ULA Neighbor Discovery Table Filtering & Display (@jpatchMC)
+* **Sintomo:** Gli indirizzi IPv6 ULA scoperti via NDP non venivano visualizzati nella finestra modale del dispositivo e non era possibile trovarli cercando nella tabella client.
+* **Causa Radice:** Gli ULA venivano memorizzati in `ipv6_ula` e `ipv6_addresses` ma non sincronizzati in `ipv6_all` utilizzato dal template. Mancavano inoltre chiavi di localizzazione inglese per le pianificazioni orarie e il messaggio segnaposto del QR Code.
+* **Risoluzione:** Implementato fallback di iterazione su `ipv6_all || ipv6_addresses || [ipv6]`, introdotto badge dedicato `ULA Enriched` in tabella e modale, completate le traduzioni inglesi e collegata la funzione `cleanup_stale_discovered_ips(30)` al ciclo di manutenzione notturna per l'auto-pruning periodico.
 
 ---
 
