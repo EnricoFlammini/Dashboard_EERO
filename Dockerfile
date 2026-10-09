@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM python:3.12-slim-bookworm
 
 # Build arguments per versionamento e build number (iniettato automaticamente in CI/CD)
