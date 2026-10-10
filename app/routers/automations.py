@@ -404,7 +404,7 @@ async def generate_immediate_digest(payload: Optional[DigestGenerateRequest] = N
 # MULTI-ENGINE DNS SYNCHRONIZER (AdGuard, Pi-hole, Technitium)
 # =========================================================================
 
-@router.get("/dns")
+@router.get("/dns", dependencies=[Depends(require_permission("view_dns_sync"))])
 async def get_multi_dns_settings():
     """Restituisce lo stato globale e l'elenco delle istanze DNS configurate."""
     settings = await dns_manager.get_settings()
@@ -414,7 +414,7 @@ async def get_multi_dns_settings():
     }
 
 
-@router.post("/dns")
+@router.post("/dns", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def update_multi_dns_settings(payload: DNSSettingsRequest):
     """Salva la configurazione globale e l'elenco delle istanze DNS."""
     inst_dicts = [i.dict() for i in payload.instances]
@@ -426,7 +426,7 @@ async def update_multi_dns_settings(payload: DNSSettingsRequest):
     }
 
 
-@router.post("/dns/test")
+@router.post("/dns/test", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def test_dns_instance(payload: Optional[DNSTestRequest] = None):
     """Testa la connettività di una specifica istanza DNS o di tutte le istanze contemporaneamente."""
     if payload and payload.instance:
@@ -465,7 +465,7 @@ async def sync_dns_devices(payload: Optional[DNSSyncRequest] = None):
 # ADGUARD HOME DNS INTEGRATION (Retrocompatibilità)
 # =========================================================================
 
-@router.get("/adguard")
+@router.get("/adguard", dependencies=[Depends(require_permission("view_dns_sync"))])
 async def get_adguard_settings():
     """Restituisce la configurazione corrente dell'integrazione AdGuard Home."""
     settings = await adguard_service.get_settings()
@@ -475,7 +475,7 @@ async def get_adguard_settings():
     }
 
 
-@router.post("/adguard")
+@router.post("/adguard", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def update_adguard_settings(payload: AdGuardSettingsRequest):
     """Salva le impostazioni di connessione verso AdGuard Home (singola o multiple istanze)."""
     insts = [i.dict() for i in payload.instances] if payload.instances is not None else None
@@ -489,7 +489,7 @@ async def update_adguard_settings(payload: AdGuardSettingsRequest):
     return {"status": "success", "message": "Impostazioni AdGuard Home salvate con successo."}
 
 
-@router.post("/adguard/test")
+@router.post("/adguard/test", dependencies=[Depends(require_permission("action_sync_dns"))])
 async def test_adguard_connection(payload: Optional[AdGuardTestRequest] = None):
     """Verifica la connessione e l'autenticazione con l'istanza o le istanze AdGuard Home."""
     url = payload.url if payload else None

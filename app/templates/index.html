@@ -2819,7 +2819,7 @@
                       <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <div class="sm:col-span-8">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / WebPassword:'"></label>
-                          <input type="password" x-model="inst.token" :placeholder="inst.has_password ? (t('controls.dns_password_unchanged') || '•••••••••••• (Invariato)') : 'Token WEBPASSWORD / Session SID'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? (t('controls.dns_password_unchanged') || '•••••••••••• (Invariato)') : 'Token WEBPASSWORD / Session SID'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona (es. lan):'"></label>
@@ -2837,7 +2837,7 @@
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token') || 'API Token / Password:'"></label>
-                          <input type="password" x-model="inst.token" :placeholder="inst.has_password ? (t('controls.dns_password_unchanged') || '•••••••••••• (Invariato)') : 'Token API o Password'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? (t('controls.dns_password_unchanged') || '•••••••••••• (Invariato)') : 'Token API o Password'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone') || 'Zona PTR (es. lan):'"></label>

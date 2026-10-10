@@ -26,6 +26,23 @@ def normalize_dns_url(url: str) -> str:
     return clean
 
 
+def _same_registered_instance(saved: Dict[str, Any], engine: str, normalized_url: str, username: str) -> bool:
+    """True solo se la richiesta di test punta ESATTAMENTE all'istanza già registrata.
+
+    Serve a non riutilizzare mai un segreto salvato (password AdGuard, token Pi-hole/Technitium)
+    quando l'URL, il motore o l'account della richiesta differiscono da quelli memorizzati: così chi
+    chiama non può far recapitare il segreto a una destinazione che ha scelto lui.
+    """
+    if normalize_dns_url(saved.get("url", "")) != normalized_url:
+        return False
+    if str(saved.get("engine") or "adguard").strip().lower() != engine:
+        return False
+    # AdGuard invia l'username nella Basic auth: un username diverso non deve riutilizzare la password salvata
+    if engine == "adguard" and str(saved.get("username") or "").strip() != str(username or "").strip():
+        return False
+    return True
+
+
 class DNSManager:
     """
     Gestore unificato Multi-Engine DNS per eero Dashboard.
@@ -134,12 +151,14 @@ class DNSManager:
                     "last_sync_status": all_s.get("adguard_last_sync_status", "")
                 })
 
-        # Maschera le password nella risposta
+        # Maschera i segreti nella risposta: espone solo i flag has_password / has_token (mai password/token in chiaro)
         sanitized_instances = []
         for inst in instances:
             inst_copy = dict(inst)
             inst_copy["has_password"] = bool(inst_copy.get("password") or inst_copy.get("has_password"))
+            inst_copy["has_token"] = bool(inst_copy.get("token"))
             inst_copy.pop("password", None)
+            inst_copy.pop("token", None)
             sanitized_instances.append(inst_copy)
 
         return {
@@ -183,12 +202,16 @@ class DNSManager:
             old_inst = existing_map.get(inst_id, {})
 
             clean_url = normalize_dns_url(inst.get("url", ""))
+            # Il segreto salvato si conserva solo se l'istanza punta ancora allo stesso server (URL, motore, account):
+            # cambiare l'URL senza ridigitare password/token non deve portare il segreto verso il nuovo indirizzo.
+            keep_secret = bool(old_inst) and _same_registered_instance(
+                old_inst, str(inst.get("engine") or "adguard").strip().lower(), clean_url, inst.get("username", ""))
             pwd = inst.get("password")
-            if not pwd and old_inst.get("password"):
+            if not pwd and keep_secret and old_inst.get("password"):
                 pwd = old_inst["password"]
 
             tok = inst.get("token")
-            if not tok and old_inst.get("token"):
+            if not tok and keep_secret and old_inst.get("token"):
                 tok = old_inst["token"]
 
             processed_instances.append({
@@ -214,10 +237,11 @@ class DNSManager:
         first_adguard = next((i for i in processed_instances if i["engine"] == "adguard"), None)
         if first_adguard:
             await db_service.set_setting("adguard_sync_enabled", "true" if (enabled and first_adguard["enabled"]) else "false")
+            # Copia legacy della password: azzerata se l'URL cambia senza nuova password (stessa regola delle istanze)
+            if first_adguard["password"] or normalize_dns_url(all_s.get("adguard_url", "")) != first_adguard["url"]:
+                await db_service.set_setting("adguard_password", first_adguard["password"])
             await db_service.set_setting("adguard_url", first_adguard["url"])
             await db_service.set_setting("adguard_username", first_adguard["username"])
-            if first_adguard["password"]:
-                await db_service.set_setting("adguard_password", first_adguard["password"])
 
     # =========================================================================
     # INSTANCE TESTING
@@ -244,7 +268,9 @@ class DNSManager:
         if not url:
             return {"success": False, "message": "URL mancante o non specificato."}
 
-        # Se la password o token non sono passati, cercali nei setting salvati
+        # Se la password o il token non sono passati, cercali nei setting salvati, ma SOLO se la richiesta
+        # punta alla stessa istanza registrata (stesso id, URL, motore e account): un URL o un account
+        # diversi non devono mai riutilizzare il segreto salvato e recapitarlo a una destinazione scelta da chi chiama.
         inst_id = instance_data.get("id")
         password = instance_data.get("password")
         token = instance_data.get("token")
@@ -253,7 +279,7 @@ class DNSManager:
             try:
                 saved = json.loads(all_s.get("dns_instances", "[]"))
                 target = next((x for x in saved if x.get("id") == inst_id), None)
-                if target:
+                if target and _same_registered_instance(target, engine, url, instance_data.get("username", "")):
                     if not password:
                         password = target.get("password")
                     if not token:

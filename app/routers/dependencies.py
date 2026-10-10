@@ -114,6 +114,7 @@ def require_permission(perm_key: str) -> Callable:
                 "view_devices": {"view_devices", "view_clients"},
                 "view_analytics": {"view_analytics", "view_speedtest"},
                 "view_speedtest": {"view_speedtest", "view_analytics"},
+                "view_dns_sync": {"view_dns_sync", "action_sync_dns"},
             }
             allowed_keys = alias_map.get(perm_key, {perm_key})
             if perms.intersection(allowed_keys) or "*" in perms:
