@@ -4108,6 +4108,199 @@ async def run_all_tests():
         runner.assert_true("fd12:3456:789a:1::99" in (enriched_dev.get("ipv6_all") or []), "enriched_dev popola correttamente ipv6_all con ULA")
         runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
 
+        # =====================================================================
+        # [SICUREZZA DNS] AUTORIZZAZIONE ENDPOINT DNS & NON RIUTILIZZO DEI SEGRETI
+        # Regressione per: endpoint DNS/AdGuard di lettura, scrittura e /test privi di
+        # require_permission, e /dns/test che riutilizzava il segreto salvato verso un
+        # URL scelto da chi chiama (esfiltrazione della password AdGuard / token Pi-hole).
+        # =====================================================================
+        print("\n🔒 [SICUREZZA DNS] AUTORIZZAZIONE ENDPOINT & NON RIUTILIZZO SEGRETI DNS")
+
+        import httpx as _sec_httpx
+        import base64 as _sec_b64
+        import app.services.dns_manager as _sec_dnsmod
+
+        _sec_pw = "FAKE_ADGUARD_PW_7x!"
+        _sec_tok = "FAKE_PIHOLE_TOKEN_42"
+        _sec_attacker = "http://127.0.0.1:59999"   # destinazione scelta dall'attaccante
+        _sec_legit_adg = "http://127.0.0.1:50080"
+        _sec_legit_pih = "http://127.0.0.1:50081"
+
+        class _SecRecorder:
+            def __init__(self):
+                self.reqs = []
+
+            def handler(self, request):
+                self.reqs.append(request)
+                p = request.url.path
+                if p.endswith("/control/clients"):
+                    return _sec_httpx.Response(200, json={"clients": [], "auto_clients": []})
+                if p.endswith("/api/config/dns/hosts"):
+                    return _sec_httpx.Response(200, json={"config": {"dns": {"hosts": []}}})
+                return _sec_httpx.Response(200, json={})
+
+            def leaked(self, secret):
+                for r in self.reqs:
+                    if secret in str(r.url):
+                        return True
+                    for k, v in r.headers.items():
+                        if secret in v:
+                            return True
+                        if k.lower() == "authorization" and v.lower().startswith("basic "):
+                            try:
+                                if secret in _sec_b64.b64decode(v.split(None, 1)[1]).decode("utf-8", "replace"):
+                                    return True
+                            except Exception:
+                                pass
+                    try:
+                        if secret.encode() in (r.content or b""):
+                            return True
+                    except Exception:
+                        pass
+                return False
+
+        _sec_real_client = _sec_httpx.AsyncClient
+
+        def _sec_patch(rec):
+            def _fake(*a, **k):
+                k.pop("verify", None)
+                k["transport"] = _sec_httpx.MockTransport(rec.handler)
+                return _sec_real_client(*a, **k)
+            _sec_dnsmod.httpx.AsyncClient = _fake
+
+        def _sec_unpatch():
+            _sec_dnsmod.httpx.AsyncClient = _sec_real_client
+
+        _sec_saved = (settings.demo_mode, eero_client._is_demo_active, eero_client.user_token,
+                      getattr(settings, "require_local_auth", False))
+        # Modalità reale (non demo) per esercitare il vero percorso di test DNS
+        settings.demo_mode = False
+        eero_client._is_demo_active = False
+        eero_client.user_token = None
+        try:
+            await dns_service.save_settings(enabled=True, instances=[
+                {"id": "sec-adguard-1", "name": "AdGuard", "engine": "adguard",
+                 "url": _sec_legit_adg, "username": "admin", "password": _sec_pw, "enabled": True},
+                {"id": "sec-pihole-1", "name": "Pi-hole", "engine": "pihole",
+                 "url": _sec_legit_pih, "token": _sec_tok, "enabled": True},
+            ])
+
+            # 1. /dns/test con URL dell'attaccante NON deve riutilizzare il segreto salvato
+            _rec = _SecRecorder(); _sec_patch(_rec)
+            try:
+                await dns_service.test_instance({"id": "sec-adguard-1", "engine": "adguard",
+                                                 "url": _sec_attacker, "username": "admin"})
+            finally:
+                _sec_unpatch()
+            runner.assert_true(not _rec.leaked(_sec_pw),
+                "Password AdGuard NON esfiltrata verso un URL scelto da chi chiama in /dns/test (id noto, URL diverso)")
+
+            _rec2 = _SecRecorder(); _sec_patch(_rec2)
+            try:
+                await dns_service.test_instance({"id": "sec-pihole-1", "engine": "pihole", "url": _sec_attacker})
+            finally:
+                _sec_unpatch()
+            runner.assert_true(not _rec2.leaked(_sec_tok),
+                "Token Pi-hole NON esfiltrato verso un URL scelto da chi chiama in /dns/test (id noto, URL diverso)")
+
+            # 2. Il test legittimo verso lo stesso server riusa ancora il segreto salvato (nessuna regressione)
+            _rec3 = _SecRecorder(); _sec_patch(_rec3)
+            try:
+                await dns_service.test_instance({"id": "sec-adguard-1", "engine": "adguard",
+                                                 "url": _sec_legit_adg, "username": "admin"})
+            finally:
+                _sec_unpatch()
+            runner.assert_true(_rec3.leaked(_sec_pw),
+                "Password AdGuard ancora riutilizzata verso il server registrato (stesso URL/motore/account)")
+
+            # 3. GET /api/automations/dns non espone segreti: solo i flag has_password / has_token
+            _sec_settings = await dns_service.get_settings()
+            _sec_map = {i.get("id"): i for i in _sec_settings.get("instances", [])}
+            _sec_adg = _sec_map.get("sec-adguard-1", {})
+            _sec_pih = _sec_map.get("sec-pihole-1", {})
+            runner.assert_true("password" not in _sec_adg and "password" not in _sec_pih,
+                "GET /api/automations/dns non include il campo 'password'")
+            runner.assert_true("token" not in _sec_adg and "token" not in _sec_pih,
+                "GET /api/automations/dns non include il campo 'token'")
+            runner.assert_true(_sec_adg.get("has_password") is True,
+                "GET /api/automations/dns espone has_password per l'istanza AdGuard")
+            runner.assert_true(_sec_pih.get("has_token") is True,
+                "GET /api/automations/dns espone has_token per l'istanza Pi-hole")
+
+            async def _sec_reregister():
+                await dns_service.save_settings(enabled=True, instances=[
+                    {"id": "sec-adguard-1", "name": "AdGuard", "engine": "adguard",
+                     "url": _sec_legit_adg, "username": "admin", "password": _sec_pw, "enabled": True},
+                    {"id": "sec-pihole-1", "name": "Pi-hole", "engine": "pihole",
+                     "url": _sec_legit_pih, "token": _sec_tok, "enabled": True},
+                ])
+
+            # 3b. Attacco in due passi (config di default, require_permission fail-open): riscrivere l'URL con
+            #     lo stesso id e senza segreto NON deve portare il segreto salvato al nuovo indirizzo.
+            await dns_service.save_settings(enabled=True, instances=[
+                {"id": "sec-adguard-1", "name": "AdGuard", "engine": "adguard",
+                 "url": _sec_attacker, "username": "admin", "enabled": True},
+                {"id": "sec-pihole-1", "name": "Pi-hole", "engine": "pihole",
+                 "url": _sec_attacker, "enabled": True},
+            ])
+            _rec4 = _SecRecorder(); _sec_patch(_rec4)
+            try:
+                await dns_service.test_instance({"id": "sec-adguard-1", "engine": "adguard", "url": _sec_attacker, "username": "admin"})
+                await dns_service.test_instance({"id": "sec-pihole-1", "engine": "pihole", "url": _sec_attacker})
+            finally:
+                _sec_unpatch()
+            runner.assert_true(not _rec4.leaked(_sec_pw) and not _rec4.leaked(_sec_tok),
+                "Attacco in due passi: riscrivere l'URL via POST /dns (stesso id, senza segreto) non porta password/token al nuovo indirizzo")
+            await _sec_reregister()
+
+            # 3c. Non regressione: ri-registrare lo stesso server (URL con/senza slash finale) senza segreto lo conserva
+            await dns_service.save_settings(enabled=True, instances=[
+                {"id": "sec-adguard-1", "name": "AdGuard", "engine": "adguard",
+                 "url": _sec_legit_adg + "/", "username": "admin", "enabled": True},
+                {"id": "sec-pihole-1", "name": "Pi-hole", "engine": "pihole",
+                 "url": _sec_legit_pih, "enabled": True},
+            ])
+            _rec5 = _SecRecorder(); _sec_patch(_rec5)
+            try:
+                await dns_service.test_instance({"id": "sec-adguard-1", "engine": "adguard", "url": _sec_legit_adg, "username": "admin"})
+            finally:
+                _sec_unpatch()
+            runner.assert_true(_rec5.leaked(_sec_pw),
+                "Ri-registrazione dello stesso server (URL con/senza slash finale) senza segreto: la password resta utilizzabile")
+            await _sec_reregister()
+
+            # 4. Autorizzazione: con REQUIRE_LOCAL_AUTH attivo gli endpoint DNS richiedono una sessione
+            settings.demo_mode = True  # evita qualunque chiamata di rete in /test e /sync
+            eero_client._is_demo_active = True
+            settings.require_local_auth = True
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as sc:
+                sc.cookies.clear()
+                r = await sc.get("/api/automations/dns")
+                runner.assert_true(r.status_code == 401, "GET /api/automations/dns senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+                r = await sc.get("/api/automations/adguard")
+                runner.assert_true(r.status_code == 401, "GET /api/automations/adguard senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+                r = await sc.post("/api/automations/dns", json={"enabled": False, "instances": []})
+                runner.assert_true(r.status_code == 401, "POST /api/automations/dns senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+                r = await sc.post("/api/automations/dns/test",
+                                  json={"instance": {"id": "sec-adguard-1", "engine": "adguard", "url": _sec_attacker, "username": "admin"}})
+                runner.assert_true(r.status_code == 401, "POST /api/automations/dns/test senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+                r = await sc.post("/api/automations/adguard", json={"enabled": False})
+                runner.assert_true(r.status_code == 401, "POST /api/automations/adguard senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+                r = await sc.post("/api/automations/adguard/test", json={"url": _sec_attacker, "username": "admin"})
+                runner.assert_true(r.status_code == 401, "POST /api/automations/adguard/test senza sessione -> 401 (REQUIRE_LOCAL_AUTH)")
+
+            # 5. In modalità legacy (REQUIRE_LOCAL_AUTH assente) la SPA continua a leggere senza sessione
+            settings.require_local_auth = False
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as sc2:
+                sc2.cookies.clear()
+                r = await sc2.get("/api/automations/dns")
+                runner.assert_true(r.status_code == 200,
+                    "GET /api/automations/dns in modalità legacy resta accessibile senza sessione (SPA non bloccata)")
+        finally:
+            _sec_unpatch()
+            (settings.demo_mode, eero_client._is_demo_active, eero_client.user_token,
+             settings.require_local_auth) = _sec_saved
+
         await mqtt_service.stop()
         await log_service.stop()
 
