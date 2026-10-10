@@ -162,8 +162,8 @@ def prune_tags(
     """Main pruning logic."""
     print("=" * 65)
     print(f"[POLICY] DOCKER HUB TAG RETENTION - {image_name}")
-    print(f"   - Mantieni versioni Main: {keep_main} piu' recenti")
-    print(f"   - Mantieni versioni Test: {keep_test} piu' recente")
+    print(f"   - Mantieni versioni Main: {keep_main} piu' recenti (+ 'latest')")
+    print(f"   - Mantieni versioni Test: solo tag flottante 'test'")
     print(f"   - Tag protetti permanenti: {sorted(PROTECTED_TAGS)}")
     print(f"   - Modalita': {'DRY-RUN (Simulazione)' if dry_run else 'PRODUZIONE'}")
     print("=" * 65)
@@ -176,7 +176,6 @@ def prune_tags(
     print(f"[INFO] Trovati {len(tags)} tag totali su Docker Hub.")
 
     main_candidates: List[Tuple[Tuple[int, int, int, int], str, str]] = []
-    test_candidates: List[Tuple[Tuple[int, int, int, int], str, str]] = []
     tags_to_delete: List[str] = []
 
     for t in tags:
@@ -190,7 +189,7 @@ def prune_tags(
             tags_to_delete.append(name)
             continue
 
-        # Check main versioned build tags
+        # Check main versioned build tags (<major>.<minor>.<patch>-build.<num>)
         v_main = parse_semver_build(name)
         if v_main:
             # Check if experimental build number >= 90
@@ -200,33 +199,26 @@ def prune_tags(
                 main_candidates.append((v_main, pushed, name))
             continue
 
-        # Check test versioned tags
+        # Check test versioned tags (<version>-test.<num> o test-build.<num>)
+        # Policy: il branch test usa solo il tag 'test'; tutti i tag test versionati vengono rimossi.
         v_test = parse_semver_test(name)
         if v_test:
-            if v_test[3] >= 90:
-                tags_to_delete.append(name)
-            else:
-                test_candidates.append((v_test, pushed, name))
+            tags_to_delete.append(name)
             continue
 
     # Sort descending by semver, then pushed date
     main_candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
-    test_candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
 
     kept_main = [c[2] for c in main_candidates[:keep_main]]
     excess_main = [c[2] for c in main_candidates[keep_main:]]
 
-    kept_test = [c[2] for c in test_candidates[:keep_test]]
-    excess_test = [c[2] for c in test_candidates[keep_test:]]
-
     tags_to_delete.extend(excess_main)
-    tags_to_delete.extend(excess_test)
 
     # Deduplicate while preserving order
     unique_to_delete = list(dict.fromkeys(tags_to_delete))
 
     print(f"\n[OK] Tag Main conservati ({len(kept_main)}/{keep_main}): {kept_main}")
-    print(f"[OK] Tag Test conservati ({len(kept_test)}/{keep_test}): {kept_test}")
+    print(f"[OK] Tag Test conservati: ['test'] (unico tag flottante)")
     print(f"[INFO] Tag protetti: {sorted(PROTECTED_TAGS)}")
 
     if not unique_to_delete:
