@@ -45,6 +45,15 @@ services:
       - TELEGRAM_BOT_TOKEN=
       - TELEGRAM_CHAT_ID=
       - WEBHOOK_URL=
+      - DISCORD_WEBHOOK_URL=
+      - PUSHOVER_USER_KEY=
+      - PUSHOVER_API_TOKEN=
+      # Optional: MQTT & Home Assistant Auto-Discovery
+      - MQTT_ENABLED=false
+      - MQTT_BROKER_HOST=
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USERNAME=
+      - MQTT_PASSWORD=
       - CORS_ORIGINS=
       - WATCHTOWER_URL=
     healthcheck:

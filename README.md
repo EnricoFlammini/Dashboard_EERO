@@ -59,6 +59,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 * **🖥️ System Monitoring & Live Log Viewer Console (v1.6.0):** Zero-I/O in-memory ring buffer (1,000–10,000 records) paired with SQLite persistence, dynamic on-the-fly log level switching (`DEBUG` to `CRITICAL`), real-time auto-refreshing terminal console with color coding and instant text search, RFC-5424 raw log export, and safe two-step log purging.
 * **🏠 Homelab & Home Automation Hub: MQTT & Home Assistant Discovery (v1.6.0):** Resilient async MQTT client (`aiomqtt`) with automatic exponential backoff reconnection, publishing real-time mesh node health, WAN throughput/latency, client statistics, and Home Assistant MQTT Auto-Discovery entities for effortless dashboard integration.
 * **📈 Native Prometheus Metrics & Official Grafana Dashboard (v1.6.0):** Standard OpenMetrics endpoint (`/metrics` and `/api/metrics/prometheus`) exposing 15+ counters and gauges (health score, bandwidth, nodes, speedtest, clients by band) plus a pre-configured 13-panel Grafana dashboard (`deploy/grafana/eero_dashboard.json`).
+* **🗄️ Synology DSM 7.2+ Container Manager Template (PR #66):** Ready-to-paste [`docker-compose.yml`](deploy/synology/docker-compose.yml) designed for Synology Container Manager projects. Uses persistent `/volume1/docker/eero-dashboard/data` bind mount (Hyper Backup friendly) and safe update workflow via *Action → Build*. See the [Synology deployment guide](deploy/synology/README.md).
 * **🔔 Multi-Channel Notification Dispatcher & Specialized Alerts (v1.6.0 - Issue #64):** Unified alerting dispatcher extended to **Discord Webhooks** (rich embeds with color severity) and **Pushover** (priority push alerts), featuring 4 intelligent specialized alarms: Low Wi-Fi Signal Threshold, ISP Speedtest Degradation, IP Conflict/Duplicate Lease, and Mesh Node Offline, with transparent delivery channels in the Daily Digest report.
 * **📰 eeroOS Official Firmware Hub & AI Diagnostics (v1.6.0 - Issue #55, #56):** Firmware tracking via Zendesk & Reddit RSS, local fleet version comparison, bilingual natural-language network diagnostics, and Roaming Advisor for sticky clients.
 * **🌐 Multi-Network Fleet Management & Dynamic Hot-Swap (v1.5.0 - Issue #22):** Multi-network eero account management with instant switching between different mesh networks/locations under the same user credentials. Features persistent network election across polling cycles (preventing automatic resets to default networks), instant in-memory cache invalidation, and an interactive Windows 11 Fluent header dropdown selector with real-time node and client counts. Includes dual simulated mesh networks in Demo Mode.
@@ -72,7 +73,6 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 * **❤️ Interactive Network Health Score Breakdown & Diagnostics (v1.4.0 - Issue #15):** Clickable radial health badge opening a comprehensive diagnostics modal based on 4 health pillars (**Mesh Topology & Nodes, WAN Gateway & Internet, Client Wi-Fi Signal Quality, Channel Distribution & Density**), tracking active point deductions/penalties with affected devices/nodes and actionable recommendations.
 * **🛡️ Multi-Engine DNS Synchronizer Suite (v1.4.0):** Unified synchronizer supporting simultaneous heterogeneous instances (e.g. 2 AdGuard Home + 1 Pi-hole / Technitium) with per-instance testing and 1-click global sync.
 * **🔄 1-Click Docker In-App Auto-Update & Version Checker (v1.4.0):** Continuous background and manual version checking against Docker Hub and GitHub Releases, animated update alert badge in the header, and 1-click in-app container recreation via Docker socket (`/var/run/docker.sock`), Watchtower webhooks, or assisted terminal commands.
-* **🗄️ 1-Click Synology Container Manager Project:** A ready-to-paste [`docker-compose.yml`](deploy/synology/docker-compose.yml) for Synology DSM 7.2+ **Container Manager → Project**. It pulls the published Docker Hub image, so there's nothing to clone or build on the NAS. It keeps data in a Hyper Backup-friendly bind mount and updates with **Action → Build**. See the [Synology install guide](deploy/synology/README.md).
 * **📶 Wi-Fi Signal Quality & Mesh Coverage Analytics (v1.4.0):** Continuous SQLite storicization (`device_signal_history`) of client RSSI levels (dBm), frequencies and PHY rates, household average signal score, interactive Chart.js time-series analysis (24h/7d), and a Weak Signal Watchlist with mesh repositioning suggestions.
 * **🖥️ Certified Hardware Telemetry & Interactive Sorting:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, **Static IP vs Dynamic DHCP indicators**, **interactive column sorting (Name, IPv4, Node, Band, Signal, Status)**, and a **locked sticky header bar**.
 * **🛡️ Native In-App Multi-Instance AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, official tags (`device_laptop`, `device_phone`, `device_pc`, `device_tv`, etc.), and static/dynamic IP leases directly to **one or multiple AdGuard Home DNS servers** (e.g. Primary and Secondary DNS) with automatic background synchronization.
@@ -127,6 +127,11 @@ docker compose up -d
 
 Access the dashboard in your browser:
 👉 **`http://localhost:8085`** (or your server's IP, e.g. `http://192.168.1.100:8085`).
+
+### Option C: Synology NAS (Container Manager DSM 7.2+)
+
+A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+ Container Manager (no git clone required, Hyper Backup friendly):  
+👉 Follow the [Synology Deployment Guide](deploy/synology/README.md) and use [`deploy/synology/docker-compose.yml`](deploy/synology/docker-compose.yml).
 
 > [!TIP]
 > **🔄 Container Update & Browser Cache Notice:**
@@ -359,6 +364,7 @@ A heartfelt thank you to the open-source contributors and community members whos
 * **[@jonmacdonald](https://github.com/jonmacdonald):** SQLite concurrency & lock contention resolution via write locks and 60s busy timeout (#62), and primary gateway switch reconciliation (#26).
 * **[@jimcampbell100](https://github.com/jimcampbell100):** Inspiration for Multi-Network Fleet Management (#22).
 * **[@stevehoek](https://github.com/stevehoek):** Multi-network switching and English localization of Telegram Daily Digest (#37, #38).
+* **[@todddube](https://github.com/todddube):** Official Synology DSM 7.2+ Container Manager deployment guide and ready-to-paste Docker Compose template (#66).
 * **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
 
 ---
@@ -409,6 +415,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 * **🖥️ System Monitoring & Live Log Viewer Console (v1.6.0):** Buffer circolare RAM a zero I/O su disco (1.000–10.000 voci) e persistenza SQLite, cambio dinamico a caldo del livello di logging (`DEBUG` ... `CRITICAL`), console interattiva in stile terminale con aggiornamento automatico, ricerca testuale istantanea, export log grezzo RFC-5424 e svuotamento sicuro con modale di conferma a due passaggi.
 * **🏠 Homelab & Home Automation: MQTT & Home Assistant Auto-Discovery (v1.6.0):** Client MQTT asincrono resiliente (`aiomqtt`) con riconnessione a backoff esponenziale, pubblicazione della telemetria dei nodi mesh, stato WAN, traffico di rete e supporto completo a Home Assistant MQTT Auto-Discovery.
 * **📈 Metriche Native Prometheus & Dashboard Grafana Ufficiale (v1.6.0):** Endpoint OpenMetrics standard (`/metrics` e `/api/metrics/prometheus`) con oltre 15 metriche hardware e di rete, corredato dalla dashboard Grafana ufficiale a 13 pannelli pronti all'uso (`deploy/grafana/eero_dashboard.json`).
+* **🗄️ Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66):** Configurazione [`docker-compose.yml`](deploy/synology/docker-compose.yml) pronta all'uso per la gestione tramite *Container Manager → Progetto* su NAS Synology. Persistenza compatibile con Hyper Backup (`/volume1/docker/eero-dashboard/data`) e procedura di aggiornamento sicura via *Azione → Compila*. Consulta la [guida di installazione Synology](deploy/synology/README.md).
 * **🔔 Multi-Channel Alerting: Discord Webhooks & Pushover con Allarmi Specializzati (v1.6.0 - Issue #64):** Dispatcher multicanale esteso a webhook Discord (messaggi ricchi Embed) e Pushover (notifiche push su smartphone), con 4 allarmi intelligenti specializzati (Segnale Wi-Fi Debole, Degradazione Speedtest ISP, Conflitto Indirizzi IP e Nodo Mesh Offline) e trasparenza dei canali nel report Daily Digest.
 * **📰 Hub Firmware Ufficiale eeroOS & Diagnostica IA (v1.6.0 - Issue #55, #56):** Monitoraggio release eero via Zendesk e Reddit RSS, comparatore versioni flotta mesh, diagnostica in linguaggio naturale e Roaming Advisor per sticky client.
 * **🌐 Multi-Network Fleet Management & Hot-Swap Dinamico (v1.5.0 - Issue #22):** Gestione di account eero multi-sede o con più reti configurate sotto lo stesso account (casa, ufficio, parenti). Garantisce la persistenza dell'elezione della rete attiva tra i cicli di polling (azzerando i reset forzati alla prima rete), invalidazione immediata della RAM cache e selettore a tendina Windows 11 Fluent nell'header con conteggio nodi mesh e client attivi. Include simulatore multi-rete duale in Demo Mode.
@@ -476,6 +483,11 @@ docker compose up -d
 
 Accedi alla dashboard dal browser:
 👉 **`http://localhost:8085`** (o l'IP del tuo server Linux/NAS, es. `http://192.168.1.100:8085`).
+
+### Opzione C: NAS Synology (Container Manager DSM 7.2+)
+
+Template Docker Compose preconfigurato e guida passo-passo per Synology DSM 7.2+ Container Manager (nessuna clonazione Git necessaria, compatibile con Hyper Backup):  
+👉 Consulta la [Guida di Installazione Synology](deploy/synology/README.md) e il template [`deploy/synology/docker-compose.yml`](deploy/synology/docker-compose.yml).
 
 > [!TIP]
 > **🔄 Nota sull'Aggiornamento del Container & Cache Browser:**
@@ -598,6 +610,7 @@ Un ringraziamento sincero a tutti gli utenti e contributori open-source che con 
 * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
 * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
 * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione inglese del Telegram Daily Digest (#38).
+* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose preconfigurato per Synology DSM 7.2+ Container Manager (#66).
 * **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---

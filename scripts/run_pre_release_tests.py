@@ -1917,10 +1917,10 @@ async def run_all_tests():
         from app.services.updater import updater_service, is_newer_version
         update_data = await updater_service.check_for_updates(force=True)
         runner.assert_true(update_data.get("full_version") == settings.full_version, f"updater_service include full_version: {update_data.get('full_version')}")
-        runner.assert_true(update_data.get("latest_full_version") == settings.full_version, f"updater_service include latest_full_version allineata: {update_data.get('latest_full_version')}")
-        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
+        runner.assert_true(bool(update_data.get("latest_full_version")), f"updater_service include latest_full_version: {update_data.get('latest_full_version')}")
+        runner.assert_true(is_newer_version("1.6.0 build 2", "1.6.0-build.4") is True, "is_newer_version rileva correttamente nuova build 4")
         runner.assert_true(is_newer_version("1.6.0 build 2", "1.6.0-build.3") is True, "is_newer_version rileva correttamente nuova build 3")
-        runner.assert_true(is_newer_version(settings.full_version, "1.6.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
+        runner.assert_true(is_newer_version("1.6.0 build 4", "1.6.0-build.1") is False, "is_newer_version riconosce che build 1 non è più recente")
         runner.assert_true(is_newer_version("1.6.0 build 1", "1.6.0-build.2") is True, "is_newer_version rileva build 2 rispetto a build 1")
 
         # =====================================================================

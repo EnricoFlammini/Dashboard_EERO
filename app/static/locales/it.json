@@ -521,6 +521,7 @@
     "contrib_carbones73": "Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi 0600 su session.json), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione Primary Gateway",
     "contrib_willfulmer": "QR Code Wi-Fi per reti ospiti aperte (Issue #63), trasparenza Daily Digest (Issue #64) e feedback su primo accesso/personalizzazione tabella (Issue #60)",
     "contrib_jonmacdonald": "Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (Issue #62) & riconciliazione switch gateway (Issue #26)",
+    "contrib_todddube": "Guida ufficiale di installazione e template Docker Compose preconfigurato per Synology DSM 7.2+ Container Manager (PR #66)",
     "contrib_bug_hunters_desc": "Grazie a @BaRaD5 (cache query DNS), @phutmacher (elezione primary gateway), @txrangersxx (network ID resolver), @nextlevel2023 (feedback login Amazon) e u/djbills (Docker tag isolation).",
     "close": "Chiudi"
   },

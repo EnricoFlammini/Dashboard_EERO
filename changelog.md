@@ -4,6 +4,17 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.6.1] - Unreleased
+
+### 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66 - @todddube)
+* **🗄️ Template Docker Compose & Guida Ufficiale Synology:**
+  * Introdotto template pronto all'uso `deploy/synology/docker-compose.yml` preconfigurato per Synology DSM 7.2+ Container Manager (funzione "Progetti").
+  * Configurato percorso di storage persistente compatibile con Synology Hyper Backup (`/volume1/docker/eero-dashboard/data:/app/data`).
+  * Inclusa guida passo-passo `deploy/synology/README.md` con accorgimenti specifici per DSM (nomi progetto in minuscolo, creazione preventiva cartella in File Station, aggiornamento sicuro con *Azione -> Compila* senza esporre il socket Docker dell'host).
+  * Estese le variabili d'ambiente opzionali del template Synology con le nuove integrazioni introdotte in v1.6.0 (MQTT broker, Discord Webhook, notifiche push Pushover).
+* **🏆 Community Credits:**
+  * Aggiunto **@todddube** alla Community Hall of Fame nel modale About dell'interfaccia web e nella documentazione ufficiale `README.md`.
+
 ## [1.6.0] - 2026-10-07
 
 ### 🩹 Patch Fix: Ingestione e Invalidation Cache Live vs Demo (Bridge Mode & OTP Login)

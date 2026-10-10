@@ -59,7 +59,7 @@ gantt
     Pannello Visuale Configurazione MQTT & HA Discovery: v1_61_mqtt, after v1_61_cols, 2d
     Hardening Immagine Docker & Mitigazione CVE Scout  : v1_61_sec, after v1_61_mqtt, 2d
     Gestione Sessioni e Opzione 'Ricordami' Auth       : v1_61_auth, after v1_61_sec, 2d
-    Template Deploy Synology DSM 7.2 (PR #66)          : v1_61_syno, after v1_61_auth, 1d
+    Template Deploy Synology DSM 7.2 (PR #66)          :done, v1_61_syno, 2026-10-10, 1d
 ```
 
 ---
@@ -631,14 +631,14 @@ gantt
   - All'apertura della pagina, se l'utente non possiede una sessione valida attiva per la scheda corrente, presentazione automatica del modale di login per autenticarsi prima di sbloccare la consultazione dei nodi e dei dispositivi della dashboard.
 
 #### 5. 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66)
-- [ ] **Template Ufficiale `deploy/synology/docker-compose.yml`:**
+- [x] **Template Ufficiale `deploy/synology/docker-compose.yml`:**
   - File Docker Compose *ready-to-paste* per la funzione "Progetti" di Synology Container Manager.
   - Mappatura persistente `/volume1/docker/eero-dashboard/data:/app/data` compatibile con Synology Hyper Backup.
   - Integrazione completa delle variabili d'ambiente (incluse quelle di v1.6.0: MQTT, Discord, Pushover).
   - Healthcheck Docker e raccomandazioni di sicurezza (aggiornamento tramite *Azione → Compila* senza esporre `/var/run/docker.sock` su NAS).
-- [ ] **Guida Passo-Passo DSM 7.2+ (`deploy/synology/README.md`):**
+- [x] **Guida Passo-Passo DSM 7.2+ (`deploy/synology/README.md`):**
   - Istruzioni dedicate per File Station, restrizioni di naming (solo minuscole per Container Manager), e porte alternative (8085).
-- [ ] **Documentazione [README.md](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/README.md) & Crediti Community:**
+- [x] **Documentazione [README.md](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/README.md) & Crediti Community:**
   - Sezione dedicata e link in italiano e inglese nella documentazione generale e citazione di Todd Dube nei riconoscimenti della community.
 
 ---

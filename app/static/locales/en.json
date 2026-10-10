@@ -521,6 +521,7 @@
     "contrib_carbones73": "Security hardening (4 GHSA Advisories: CORS/CSRF protection, Wi-Fi password masking, API docs access & session.json 0600 permissions), strict telemetry without synthetic fallbacks, 5 GHz UNII-3 vs 6 GHz RF accuracy & deterministic gateway election",
     "contrib_willfulmer": "Open Guest Wi-Fi QR codes (Issue #63), Daily Digest delivery transparency (Issue #64), and device first-seen/table customization feedback (Issue #60)",
     "contrib_jonmacdonald": "SQLite lock contention & concurrency resolution with 60s busy timeout (Issue #62) & switch gateway reconciliation (Issue #26)",
+    "contrib_todddube": "Official Synology DSM 7.2+ Container Manager deployment guide and ready-to-paste Docker Compose template (PR #66)",
     "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
     "close": "Close"
   },
