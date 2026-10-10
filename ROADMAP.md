@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
-| **v1.6.1 (Pianificata)** | 🎛️ **Table Columns, 🏠 MQTT UI & 🛡️ Docker Hub Security Hardening** | Selettore visuale colonne tabella dispositivi (Issue #60) + Modale e form visuale per MQTT / Home Assistant + Risoluzione vulnerabilità Docker Scout (2 Critical, 17 High) con base image hardening, dependency audit e scansione CI/CD. |
+| **v1.6.1 (Pianificata)** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 
 ---
 
@@ -54,10 +54,12 @@ gantt
     Local Asset Bundling & Offline UI (Issue #58)     :done, v1_6_assets, after v1_6f, 2d
     Device Sort by First Seen & New Badge (Issue #60) :done, v1_6_recent, after v1_6_assets, 2d
     Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :done, v1_6_ndp, after v1_6_recent, 2d
-    section v1.6.1 - Column Picker, MQTT UI & Security Hardening
+    section v1.6.1 - Columns, MQTT, Security, Auth & Deploy
     Selettore Colonne Tabella Dispositivi (Issue #60) :active, v1_61_cols, 2026-10-10, 2d
     Pannello Visuale Configurazione MQTT & HA Discovery: v1_61_mqtt, after v1_61_cols, 2d
     Hardening Immagine Docker & Mitigazione CVE Scout  : v1_61_sec, after v1_61_mqtt, 2d
+    Gestione Sessioni e Opzione 'Ricordami' Auth       : v1_61_auth, after v1_61_sec, 2d
+    Template Deploy Synology DSM 7.2 (PR #66)          : v1_61_syno, after v1_61_auth, 1d
 ```
 
 ---
@@ -615,6 +617,29 @@ gantt
   - Configurazione dei permessi e della proprietà dei volumi persistenti (`/app/data`) per prevenire privilege escalation dal container all'host server.
 - [ ] **Integrazione Security Scanner Automatico nella CI/CD (`docker-publish.yml`):**
   - Aggiunta di un job automatizzato con **Docker Scout Action** o **Aqua Security Trivy** nel workflow GitHub Actions per verificare le vulnerabilità prima o in concomitanza del push su Docker Hub e generare il report SARIF di sicurezza.
+
+#### 4. 🔐 Gestione Sessioni Locali: Opzione "Ricordami" & Chiusura Sessione al Riavvio Browser
+- [ ] **Checkbox "Ricordami / Remember Me" nel Modale di Login Locale:**
+  - Aggiunta di un'opzione checkbox *"Resta connesso / Ricordami"* nel form di login (`#localLoginModal`).
+- [ ] **Modalità Predefinita a Sessione Volatile (Session-Only by Default):**
+  - **Comportamento predefinito (senza "Ricordami"):**
+    - Il session token viene salvato unicamente in `sessionStorage` (anziché `localStorage`) e il cookie HTTP `session_token` viene configurato come **session cookie** (privo di `max_age` o `expires`), venendo distrutto dal browser alla chiusura della finestra/scheda.
+    - Ad ogni riapertura dell'applicazione o nuovo avvio del browser, l'utente deve inserire obbligatoriamente le proprie credenziali per accedere.
+  - **Comportamento con "Ricordami" abilitato:**
+    - Persistenza estesa nel `localStorage` del browser e cookie con durata definita (es. 7 giorni).
+- [ ] **Gatekeeping Immediato all'Avvio (Strict Login Prompt):**
+  - All'apertura della pagina, se l'utente non possiede una sessione valida attiva per la scheda corrente, presentazione automatica del modale di login per autenticarsi prima di sbloccare la consultazione dei nodi e dei dispositivi della dashboard.
+
+#### 5. 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66)
+- [ ] **Template Ufficiale `deploy/synology/docker-compose.yml`:**
+  - File Docker Compose *ready-to-paste* per la funzione "Progetti" di Synology Container Manager.
+  - Mappatura persistente `/volume1/docker/eero-dashboard/data:/app/data` compatibile con Synology Hyper Backup.
+  - Integrazione completa delle variabili d'ambiente (incluse quelle di v1.6.0: MQTT, Discord, Pushover).
+  - Healthcheck Docker e raccomandazioni di sicurezza (aggiornamento tramite *Azione → Compila* senza esporre `/var/run/docker.sock` su NAS).
+- [ ] **Guida Passo-Passo DSM 7.2+ (`deploy/synology/README.md`):**
+  - Istruzioni dedicate per File Station, restrizioni di naming (solo minuscole per Container Manager), e porte alternative (8085).
+- [ ] **Documentazione [README.md](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/README.md) & Crediti Community:**
+  - Sezione dedicata e link in italiano e inglese nella documentazione generale e citazione di Todd Dube nei riconoscimenti della community.
 
 ---
 
