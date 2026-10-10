@@ -13,7 +13,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
-| **v1.6.1 (Pianificata)** | 🎛️ **Table Column Customization & Advanced Visibility Picker (Issue #60)** | Selettore visuale delle colonne nella tabella dispositivi (mostra/nascondi colonne opzionali inclusa colonna dedicata 'Joined / First Seen', IP, MAC, Segnale, Velocità, Nodo Mesh) con preferenze persistite in `localStorage` e layout adattivo. |
+| **v1.6.1 (Pianificata)** | 🎛️ **Table Columns, 🏠 MQTT UI & 🛡️ Docker Hub Security Hardening** | Selettore visuale colonne tabella dispositivi (Issue #60) + Modale e form visuale per MQTT / Home Assistant + Risoluzione vulnerabilità Docker Scout (2 Critical, 17 High) con base image hardening, dependency audit e scansione CI/CD. |
 
 ---
 
@@ -54,6 +54,10 @@ gantt
     Local Asset Bundling & Offline UI (Issue #58)     :done, v1_6_assets, after v1_6f, 2d
     Device Sort by First Seen & New Badge (Issue #60) :done, v1_6_recent, after v1_6_assets, 2d
     Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :done, v1_6_ndp, after v1_6_recent, 2d
+    section v1.6.1 - Column Picker, MQTT UI & Security Hardening
+    Selettore Colonne Tabella Dispositivi (Issue #60) :active, v1_61_cols, 2026-10-10, 2d
+    Pannello Visuale Configurazione MQTT & HA Discovery: v1_61_mqtt, after v1_61_cols, 2d
+    Hardening Immagine Docker & Mitigazione CVE Scout  : v1_61_sec, after v1_61_mqtt, 2d
 ```
 
 ---
@@ -557,7 +561,6 @@ gantt
   - Testo di fallback quando il QR Code ospiti non è disponibile (`guests_page.qr_not_available`).
 - [x] Integrazione dell'invecchiamento e pulizia automatica `cleanup_stale_discovered_ips(retention_days=30)` nel ciclo di manutenzione notturna (`scheduler.py`) e nel worker di retention (`retention_worker.py`).
 - [x] Test di regressione automatizzati estesi (1123/1123 test superati al 100%, inclusi test su rotte di Setup Amministratore e Zero-Default Security).
-
 ---
 
 ### 📦 Prossima Release (v1.6.1 / Prossimo Aggiornamento) — 🎛️ Personalizzazione Colonne Tabella & Raffinamenti UX (Issue #60)
@@ -582,6 +585,36 @@ gantt
   - Pulsante di ripristino configurazione predefinita (*Reset to Default*).
 - [ ] **Layout Tabella Adattivo & Responsive:**
   - Adattamento fluido della larghezza e compattazione coerente con il design system Windows 11 Fluent.
+
+#### 2. 🏠 Pannello & Modale di Configurazione Visuale MQTT / Home Assistant Auto-Discovery
+- [ ] **Modale / Form di Configurazione UI per MQTT:**
+  - Card e modale dedicati per configurare i parametri del broker MQTT direttamente dal browser, senza dover modificare a mano il `docker-compose.yml`:
+    - Toggle On/Off Client MQTT (`mqtt_enabled`)
+    - Broker Host (IP o hostname del broker, es. Mosquitto o Home Assistant) e Porta (default: `1883`)
+    - Credenziali opzionali (Username / Password con campo password oscurabile)
+    - Base Topic (default: `eero_dashboard`)
+    - Toggle Home Assistant Auto-Discovery (`mqtt_discovery_enabled`) e prefisso discovery (default: `homeassistant`)
+    - Intervallo di pubblicazione telemetria in secondi (default: `30`s)
+- [ ] **Pulsante "Test Connessione Broker" in Tempo Reale:**
+  - Chiamata diretta all'endpoint `POST /api/automations/mqtt/test` con feedback visivo immediato (badge di connessione riuscita con riepilogo broker/topic o messaggio d'errore contestuale).
+- [ ] **Persistenza & Ricaricamento a Caldo (Hot-Reload):**
+  - Salvataggio dei parametri nel database SQLite via `POST /api/automations/mqtt/config` e aggiornamento a caldo del client asincrono `mqtt_service` senza necessità di riavviare il container Docker.
+
+#### 3. 🛡️ Hardening Immagine Docker & Mitigazione Vulnerabilità Docker Hub (Docker Scout / Trivy)
+- [ ] **Risoluzione Vulnerabilità Immagine Multi-Arch (`linux/amd64` & `linux/arm64`):**
+  - Bonifica delle CVE segnalate dal Docker Hub Scanner (Docker Scout) sulla tag `1.6.0-build.3` (**2 Critical, 17 High, 10 Medium, 56 Low**).
+- [ ] **Hardening Base Image & Pacchetti di Sistema (OS-Level):**
+  - Aggiornamento della base image `python:3.12-slim-bookworm` alla build upstream più recente con allineamento dei security update Debian (`debian-security`).
+  - Ottimizzazione layer `apt-get`: rimozione di strumenti e librerie non necessarie in fase di runtime (minimizzazione attack surface) e pulizia cache aggressiva.
+  - Valutazione adozione di **multi-stage build** per separare i tool di compilazione (`gcc`, wheel build tooling) dai binari finali del runtime.
+- [ ] **Audit di Sicurezza Dipendenze Python (`pip-audit` / Snyk / Dependabot):**
+  - Analisi delle dipendenze dirette e transitive in `requirements.txt` (`fastapi`, `uvicorn`, `httpx`, `jinja2`, `python-multipart`, `urllib3`, `qrcode[pil]`).
+  - Upgrade dei pacchetti con versioni minime corrette contro CVE note (es. buffer handling in imaging/pil, multipart parser vulnerabilities, urllib3 connection pooling).
+- [ ] **Esecuzione Container con Utente Non-Root (Principle of Least Privilege):**
+  - Introduzione di un utente non privilegiato di sistema (`appuser:appgroup` con UID/GID 10001) nel `Dockerfile`.
+  - Configurazione dei permessi e della proprietà dei volumi persistenti (`/app/data`) per prevenire privilege escalation dal container all'host server.
+- [ ] **Integrazione Security Scanner Automatico nella CI/CD (`docker-publish.yml`):**
+  - Aggiunta di un job automatizzato con **Docker Scout Action** o **Aqua Security Trivy** nel workflow GitHub Actions per verificare le vulnerabilità prima o in concomitanza del push su Docker Hub e generare il report SARIF di sicurezza.
 
 ---
 

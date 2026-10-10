@@ -1092,9 +1092,12 @@ document.addEventListener('alpine:init', () => {
         if (!res.ok) throw new Error(data.detail || (this.currentLanguage === 'it' ? 'Verifica OTP fallita' : 'OTP verification failed'));
         
         this.isAuthenticated = true;
+        this.isDemoMode = false;
+        this.hasSavedLiveToken = true;
         this.otpSent = false;
         this.otpCode = '';
         this.tempUserToken = null;
+        await this.checkAuthStatus();
         const title = this.currentLanguage === 'it' ? "Accesso Riuscito" : "Login Successful";
         const msg = this.currentLanguage === 'it' ? "Connessione con eero stabilita." : "Connected to eero mesh network.";
         this.showToast(title, msg, "success");

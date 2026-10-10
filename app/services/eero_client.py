@@ -529,10 +529,15 @@ class EeroClient:
             data = resp.json().get("data", {})
             if "user_token" in data:
                 self.user_token = data["user_token"]
+                self.saved_live_token = data["user_token"]
+                self._is_demo_active = False
 
             # Salvataggio sessione definitiva e fetch rete
-            self.save_session()
             account = await self.fetch_account_info()
+            self.saved_live_network_id = self.current_network_id
+            self.saved_live_account_info = account
+            self.saved_live_networks = list(self.available_networks)
+            self.save_session()
             return {"status": "success", "account": account}
 
     async def fetch_account_info(self) -> Dict[str, Any]:
