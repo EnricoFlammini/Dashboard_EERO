@@ -1,0 +1,55 @@
+# eero Custom Dashboard - Synology Container Manager (DSM 7.2+)
+#
+# 1. File Station: create the folder  docker/eero-dashboard/data
+#    (Container Manager will not create missing bind-mount folders).
+# 2. Container Manager -> Project -> Create
+#      Project name: eero-dashboard            (lowercase only)
+#      Path:         /volume1/docker/eero-dashboard
+#      Source:       Create docker-compose.yml -> paste this file
+# 3. Open http://<NAS-IP>:8085
+#
+# If your shared "docker" folder is on another volume (e.g. /volume2),
+# update the path under "volumes" below.
+
+services:
+  eero-dashboard:
+    image: enricoflammini/eero-dashboard:latest
+    container_name: eero_custom_dashboard
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+      - 9.9.9.9
+    ports:
+      - "8085:8000"            # change 8085 if the port is already in use on the NAS
+    volumes:
+      - /volume1/docker/eero-dashboard/data:/app/data
+      # Optional 1-click in-app update. Grants the container root-level control
+      # of Docker on the NAS; prefer Container Manager -> Action -> Build to update.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=UTC                 # e.g. Europe/Rome, America/New_York
+      - DATA_DIR=/app/data
+      - POLL_INTERVAL=30
+      - HISTORY_RETENTION_DAYS=30
+      - SPEEDTEST_INTERVAL_HOURS=12   # 0 disables scheduled speed tests
+      - DEMO_MODE=false
+      - API_DOCS=false
+      # Optional: leave blank to use the setup wizard on first launch
+      - ADMIN_USER=
+      - ADMIN_PASSWORD=
+      # Optional: skip OTP login with user_token from data/session.json
+      - EERO_USER_TOKEN=
+      - EERO_NETWORK_ID=
+      # Optional notifications / integrations
+      - TELEGRAM_BOT_TOKEN=
+      - TELEGRAM_CHAT_ID=
+      - WEBHOOK_URL=
+      - CORS_ORIGINS=
+      - WATCHTOWER_URL=
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
