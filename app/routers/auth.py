@@ -55,9 +55,10 @@ async def switch_mode(payload: ModeSwitchRequest):
     """Passa istantaneamente tra Demo Mode e Live Network preservando il token reale."""
     eero_client.set_demo_mode(payload.demo)
     
-    # Forza un ciclo di polling immediato
+    # Invalida completamente la cache RAM per non mostrare dati della modalità precedente
     try:
         from app.services.poller import background_poller
+        background_poller.invalidate_cache()
         await background_poller.poll_once()
     except Exception as e:
         logger.warning(f"Poller refresh after mode switch: {e}")
@@ -88,6 +89,12 @@ async def verify_otp(payload: VerifyOTPRequest):
     """Verifica il codice OTP e salva il session token persistente."""
     try:
         res = await eero_client.verify_login_code(payload.code.strip(), payload.user_token)
+        try:
+            from app.services.poller import background_poller
+            background_poller.invalidate_cache()
+            await background_poller.poll_once()
+        except Exception as ep:
+            logger.warning(f"Poller refresh after OTP verification: {ep}")
         return res
     except Exception as e:
         logger.error(f"OTP verification failed: {e}")

@@ -1056,12 +1056,9 @@ class BackgroundPoller:
             # 5. Aggiornamento Cache RAM
             if network_details:
                 self.cached_network = _without_wifi_passwords(network_details)
-            if eeros or not self.cached_eeros:
-                self.cached_eeros = eeros
-            if enriched_devices or not self.cached_devices:
-                self.cached_devices = enriched_devices
-            if profiles or not self.cached_profiles:
-                self.cached_profiles = profiles
+            self.cached_eeros = eeros
+            self.cached_devices = enriched_devices
+            self.cached_profiles = profiles
             self._last_successful_poll = datetime.now(timezone.utc)
             self._last_poll_time = self._last_successful_poll
 

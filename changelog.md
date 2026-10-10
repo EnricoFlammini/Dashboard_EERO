@@ -6,6 +6,12 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.0] - 2026-10-07
 
+### 🩹 Patch Fix: Ingestione e Invalidation Cache Live vs Demo (Bridge Mode & OTP Login)
+* **🔄 Invalidation Cache RAM al Cambio Modalità e Login OTP:**
+  * Risolto un problema di mancata invalidazione della cache in-memory (`background_poller.invalidate_cache()`) durante il passaggio tra Demo Mode e Live Network (`POST /api/auth/mode`) e al completamento del login con codice SMS OTP (`POST /api/auth/verify`).
+  * In `eero_client.verify_login_code()`, garantito il reset immediato del flag demo (`_is_demo_active = False`) e la persistenza del session token live in `saved_live_token`.
+  * Rimosso il vincolo di mancata sovrascrittura in `poller.py` quando una rete reale riporta 0 dispositivi, eliminando la persistenza dei dispositivi fittizi demo su reti eero in Bridge Mode.
+
 ### 🏆 Community Hall of Fame & Ringraziamenti Speciali nel Modale About
 * **🏆 Aggiornamento Crediti & Riconoscimenti Community:**
   * Aggiornati e ampliati i crediti nel modale *About & Crediti* dell'interfaccia utente e nella documentazione ufficiale:
