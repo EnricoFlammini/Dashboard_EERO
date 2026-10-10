@@ -4111,6 +4111,29 @@ async def run_all_tests():
         await mqtt_service.stop()
         await log_service.stop()
 
+        # =====================================================================
+        # TEST DOCKER HUB RETENTION POLICY & PRUNING SCRIPT
+        # =====================================================================
+        print("\n🧹 TEST DOCKER HUB RETENTION POLICY & PRUNING SCRIPT")
+        from scripts.prune_docker_tags import (
+            parse_semver_build,
+            parse_semver_test,
+            PROTECTED_TAGS,
+            LEGACY_TAGS_TO_REMOVE,
+            prune_tags,
+        )
+
+        runner.assert_true(parse_semver_build("1.6.0-build.2") == (1, 6, 0, 2), "parse_semver_build analizza '1.6.0-build.2'")
+        runner.assert_true(parse_semver_build("1.5.0-build.10") == (1, 5, 0, 10), "parse_semver_build analizza '1.5.0-build.10'")
+        runner.assert_true(parse_semver_build("invalid-tag") is None, "parse_semver_build rifiuta tag non valido")
+        runner.assert_true(parse_semver_test("1.6.0-test.1") == (1, 6, 0, 1), "parse_semver_test analizza '1.6.0-test.1'")
+        runner.assert_true(parse_semver_test("test-build.92") == (0, 0, 0, 92), "parse_semver_test analizza legacy 'test-build.92'")
+        runner.assert_true("latest" in PROTECTED_TAGS, "'latest' e' nei tag protetti permanenti")
+        runner.assert_true("test" in PROTECTED_TAGS, "'test' e' nei tag protetti permanenti")
+        runner.assert_true("1.6.0-build.1" in LEGACY_TAGS_TO_REMOVE, "'1.6.0-build.1' e' nella lista legacy cleanup")
+        dry_run_count = prune_tags("enricoflammini/eero-dashboard", keep_main=5, keep_test=1, dry_run=True)
+        runner.assert_true(isinstance(dry_run_count, int) and dry_run_count >= 0, "prune_tags dry_run eseguito con successo")
+
         runner.print_summary()
 
 
