@@ -351,19 +351,27 @@ async def update_mqtt_configuration(
 
 @router.post("/mqtt/test")
 async def test_mqtt_publishing(
+    payload: Optional[MQTTConfigRequest] = None,
     _=Depends(require_permission("action_manage_rules"))
 ):
-    """Invia un messaggio di telemetria di test verso il broker MQTT."""
-    config = await mqtt_service.get_config()
-    is_demo = getattr(eero_client, "is_demo_mode", False)
-    if not config.get("enabled") and not is_demo:
-        raise HTTPException(status_code=400, detail="MQTT is not enabled in settings.")
-    
+    """Verifica la connessione verso il broker MQTT (con parametri correnti o temporanei forniti)."""
+    host = payload.broker_host if payload and payload.broker_host else None
+    port = payload.broker_port if payload and payload.broker_port else None
+    user = payload.username if payload and payload.username is not None else None
+    pw = payload.password if payload and payload.password is not None else None
+
+    result = await mqtt_service.test_connection(host=host, port=port, username=user, password=pw)
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error") or "Impossibile connettersi al broker MQTT specificato."
+        )
     return {
         "status": "success",
-        "message": "Test di pubblicazione MQTT inviato con successo.",
-        "broker": f"{config.get('broker_host')}:{config.get('broker_port')}",
-        "base_topic": config.get("base_topic")
+        "message": result.get("message") or "Test di connessione MQTT riuscito con successo.",
+        "broker": result.get("broker"),
+        "base_topic": result.get("base_topic") or mqtt_service._base_topic,
+        "simulated": result.get("simulated", False)
     }
 
 

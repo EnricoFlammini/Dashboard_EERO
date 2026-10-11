@@ -4135,10 +4135,51 @@ async def run_all_tests():
         # Ripristino config MQTT standard
         await client.post("/api/automations/mqtt/config", json={"base_topic": "eero_dashboard", "publish_interval": 30}, headers=adm_hdr)
 
-        # POST /api/automations/mqtt/test
+        # POST /api/automations/mqtt/test (senza payload - parametri correnti)
         res_mqtt_test = await client.post("/api/automations/mqtt/test", headers=adm_hdr)
         runner.assert_true(res_mqtt_test.status_code == 200, "POST /api/automations/mqtt/test risponde HTTP 200")
         runner.assert_true(res_mqtt_test.json().get("status") == "success", "Test di pubblicazione MQTT eseguito con successo")
+
+        # POST /api/automations/mqtt/test (con payload parametri non salvati del modale)
+        res_mqtt_custom = await client.post(
+            "/api/automations/mqtt/test",
+            json={"broker_host": "127.0.0.1", "broker_port": 1883, "username": "test_user"},
+            headers=adm_hdr
+        )
+        runner.assert_true(res_mqtt_custom.status_code == 200, "POST /api/automations/mqtt/test con parametri modale risponde HTTP 200")
+        runner.assert_true("127.0.0.1:1883" in res_mqtt_custom.json().get("broker", ""), "Parametri modale utilizzati per il test")
+
+        # Verifica sicurezza password in config
+        runner.assert_true("has_password" in mqtt_cfg_data, "Configurazione MQTT include flag has_password")
+        runner.assert_true("password" not in mqtt_cfg_data, "Configurazione MQTT non espone password in chiaro")
+
+        # Verifica localizzazione e interfaccia Modulo 2 (MQTT)
+        it_loc_path = Path("app/static/locales/it.json")
+        en_loc_path = Path("app/static/locales/en.json")
+        runner.assert_true(it_loc_path.exists() and en_loc_path.exists(), "File di localizzazione it.json e en.json presenti")
+        it_loc = json.loads(it_loc_path.read_text(encoding="utf-8"))
+        en_loc = json.loads(en_loc_path.read_text(encoding="utf-8"))
+        mqtt_req_keys = [
+            "mqtt_title", "mqtt_subtitle", "mqtt_desc", "mqtt_status_connected",
+            "mqtt_status_disconnected", "mqtt_status_disabled", "mqtt_config_btn",
+            "mqtt_test_btn", "mqtt_modal_title", "mqtt_modal_desc", "mqtt_enable_toggle",
+            "mqtt_broker_host", "mqtt_broker_port", "mqtt_username", "mqtt_password",
+            "mqtt_base_topic", "mqtt_discovery_enable", "mqtt_ha_prefix", "mqtt_publish_interval",
+            "mqtt_save_btn", "mqtt_messages_count", "mqtt_last_published", "mqtt_last_error"
+        ]
+        for k in mqtt_req_keys:
+            runner.assert_true(k in it_loc.get("controls", {}), f"Chiave '{k}' presente in it.json (controls)")
+            runner.assert_true(k in en_loc.get("controls", {}), f"Chiave '{k}' presente in en.json (controls)")
+
+        # Verifica template HTML e script JS
+        html_content = Path("app/templates/index.html").read_text(encoding="utf-8")
+        js_content = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("showMqttModal" in html_content, "showMqttModal presente in index.html")
+        runner.assert_true("mqttSettings" in html_content, "mqttSettings presente in index.html")
+        runner.assert_true("openMqttModal" in js_content, "openMqttModal presente in app.js")
+        runner.assert_true("fetchMqttSettings" in js_content, "fetchMqttSettings presente in app.js")
+        runner.assert_true("saveMqttSettings" in js_content, "saveMqttSettings presente in app.js")
+        runner.assert_true("testMqttConnection" in js_content, "testMqttConnection presente in app.js")
 
         # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
         res_prom_root = await client.get("/metrics")

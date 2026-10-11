@@ -590,17 +590,17 @@ gantt
   - Colspan dinamico sulla riga vuota dei filtri (`:colspan="getActiveColumnsCount() + 2"`).
 
 #### 2. 🏠 Pannello & Modale di Configurazione Visuale MQTT / Home Assistant Auto-Discovery
-- [ ] **Modale / Form di Configurazione UI per MQTT:**
+- [x] **Modale / Form di Configurazione UI per MQTT:**
   - Card e modale dedicati per configurare i parametri del broker MQTT direttamente dal browser, senza dover modificare a mano il `docker-compose.yml`:
     - Toggle On/Off Client MQTT (`mqtt_enabled`)
     - Broker Host (IP o hostname del broker, es. Mosquitto o Home Assistant) e Porta (default: `1883`)
     - Credenziali opzionali (Username / Password con campo password oscurabile)
-    - Base Topic (default: `eero_dashboard`)
+    - Base Topic (default: `eero`)
     - Toggle Home Assistant Auto-Discovery (`mqtt_discovery_enabled`) e prefisso discovery (default: `homeassistant`)
-    - Intervallo di pubblicazione telemetria in secondi (default: `30`s)
-- [ ] **Pulsante "Test Connessione Broker" in Tempo Reale:**
-  - Chiamata diretta all'endpoint `POST /api/automations/mqtt/test` con feedback visivo immediato (badge di connessione riuscita con riepilogo broker/topic o messaggio d'errore contestuale).
-- [ ] **Persistenza & Ricaricamento a Caldo (Hot-Reload):**
+    - Intervallo di pubblicazione telemetria in secondi (default: `60`s)
+- [x] **Pulsante "Test Connessione Broker" in Tempo Reale:**
+  - Chiamata diretta all'endpoint `POST /api/automations/mqtt/test` con feedback visivo immediato (badge di connessione riuscita con riepilogo broker/topic o messaggio d'errore contestuale), con supporto al test preventivo dei parametri non salvati del modale.
+- [x] **Persistenza & Ricaricamento a Caldo (Hot-Reload):**
   - Salvataggio dei parametri nel database SQLite via `POST /api/automations/mqtt/config` e aggiornamento a caldo del client asincrono `mqtt_service` senza necessità di riavviare il container Docker.
 
 #### 3. 🛡️ Hardening Immagine Docker & Mitigazione Vulnerabilità Docker Hub (Docker Scout / Trivy)

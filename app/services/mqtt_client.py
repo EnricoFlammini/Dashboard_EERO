@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import settings
 from app.services.db import db_service
+from app.services.eero_client import eero_client
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,67 @@ class MQTTService:
             "publish_interval": self._publish_interval,
             "stats": self._stats,
         }
+
+    async def test_connection(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Tests connection to an MQTT broker."""
+        target_host = (host or self._broker_host or "localhost").strip()
+        target_port = int(port or self._broker_port or 1883)
+        target_user = username if username is not None else self._username
+        target_pass = password if password is not None else self._password
+
+        is_demo = getattr(eero_client, "is_demo_mode", False)
+        if is_demo or target_host in ("localhost", "127.0.0.1", "demo"):
+            return {
+                "success": True,
+                "simulated": is_demo or target_host in ("localhost", "127.0.0.1", "demo"),
+                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita.",
+                "broker": f"{target_host}:{target_port}",
+                "base_topic": self._base_topic
+            }
+
+        if not self.is_available:
+            return {
+                "success": False,
+                "error": "Modulo aiomqtt non disponibile nel container. Installare aiomqtt per connettersi al broker.",
+                "broker": f"{target_host}:{target_port}"
+            }
+
+        try:
+            client_kwargs = {
+                "hostname": target_host,
+                "port": target_port,
+                "timeout": 5.0,
+            }
+            if target_user:
+                client_kwargs["username"] = target_user
+                client_kwargs["password"] = target_pass
+
+            async with aiomqtt.Client(**client_kwargs) as client:
+                await client.publish(
+                    f"{self._base_topic}/status/test",
+                    payload=json.dumps({"test": True, "timestamp": datetime.now(timezone.utc).isoformat()}),
+                    qos=0
+                )
+            return {
+                "success": True,
+                "simulated": False,
+                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita con successo.",
+                "broker": f"{target_host}:{target_port}",
+                "base_topic": self._base_topic
+            }
+        except Exception as e:
+            logger.warning(f"[MQTT] Test connessione fallito verso {target_host}:{target_port}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "broker": f"{target_host}:{target_port}"
+            }
 
     async def update_config(self, config_data: Dict[str, Any]):
         """Updates configuration and restarts connection if enabled."""

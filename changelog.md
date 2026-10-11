@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🏠 IoT & Smart Home: Pannello & Modale di Configurazione Visuale MQTT / Home Assistant Auto-Discovery
+* **🎛️ Card di Controllo & Telemetria MQTT nella Scheda Controlli:**
+  * Inserita nuova card dedicata ad alta visibilità nella scheda Controlli & Ospiti (`settings-controls`), con indicatore di stato in tempo reale (*Connesso*, *Disconnesso*, *Disattivato*), switch rapido on/off e metriche di telemetria (messaggi pubblicati, data/ora ultimo invio, eventuale ultimo errore riscontrato).
+  * Quadro riassuntivo dei parametri attivi: endpoint broker (`host:port`), base topic (`eero/#`), stato Home Assistant Auto-Discovery e frequenza di pubblicazione telemetria.
+* **🪟 Modale di Configurazione Visuale Fluent (`#showMqttModal`):**
+  * Permette di configurare integralmente il broker MQTT direttamente dal browser senza dover modificare il file `docker-compose.yml`.
+  * Supporto completo per host broker, porta, credenziali con toggle per mostrare/nascondere la password (e indicazione di password protetta/invariata in modifica), topic base personalizzato, toggle Auto-Discovery Home Assistant e prefisso discovery.
+* **⚡ Pulsante di Test Connessione in Tempo Reale con Parametri a Caldo:**
+  * Aggiunto pulsante di test connessione sia nella card principale sia all'interno del modale di configurazione.
+  * Il test dal modale consente di validare a caldo i parametri temporanei digitati (`POST /api/automations/mqtt/test`) prima di salvare le modifiche.
+* **🔄 Hot-Reload Asincrono & Persistenza SQLite:**
+  * Salvataggio persistente delle configurazioni nel database SQLite locale tramite `POST /api/automations/mqtt/config` e ricaricamento istantaneo in memoria del worker asincrono `mqtt_service` senza riavviare il container Docker.
+* **🌐 Localizzazione Bilingue Completa (Italiano / Inglese):**
+  * Aggiunte tutte le chiavi `controls.mqtt_*` nei cataloghi di traduzione `it.json` ed `en.json`.
+
 ### 🎛️ UI & Tabella Dispositivi: Selettore Colonne & Personalizzazione Visibilità (Issue #60 - @WillFulmer)
 * **🎛️ Menu Dropdown Personalizzazione Colonne della Tabella (Desktop >= md):**
   * Introdotto un nuovo pulsante interattivo *"Colonne"* nella barra degli strumenti della tabella dispositivi con badge numerico dinamico delle colonne attive (es. `7/8`).

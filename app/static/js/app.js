@@ -430,6 +430,42 @@ document.addEventListener('alpine:init', () => {
     },
     adguardTesting: false,
     adguardSyncing: false,
+
+    // MQTT & Home Assistant Integration State (v1.6.1)
+    mqttSettings: {
+      enabled: false,
+      broker_host: 'localhost',
+      broker_port: 1883,
+      username: '',
+      has_password: false,
+      base_topic: 'eero',
+      discovery_enabled: true,
+      discovery_prefix: 'homeassistant',
+      publish_interval: 60,
+      connected: false,
+      available: false,
+      stats: {
+        messages_published: 0,
+        last_published: null,
+        last_error: null
+      }
+    },
+    mqttModalForm: {
+      enabled: false,
+      broker_host: 'localhost',
+      broker_port: 1883,
+      username: '',
+      password: '',
+      has_password: false,
+      base_topic: 'eero',
+      discovery_enabled: true,
+      discovery_prefix: 'homeassistant',
+      publish_interval: 60
+    },
+    showMqttModal: false,
+    mqttTesting: false,
+    mqttSaving: false,
+    showMqttPassword: false,
     
     alertsList: [],
 
@@ -653,6 +689,7 @@ document.addEventListener('alpine:init', () => {
           this.fetchDigestSettings();
           this.fetchDnsSettings();
           this.fetchAdGuardSettings();
+          this.fetchMqttSettings();
           this.fetchAlerts();
           this.fetchSchedules();
           this.fetchGuestNetwork();
@@ -1047,6 +1084,7 @@ document.addEventListener('alpine:init', () => {
         await this.fetchDigestSettings();
         await this.fetchDnsSettings();
         await this.fetchAdGuardSettings();
+        await this.fetchMqttSettings();
         await this.fetchAlerts();
         await this.fetchSchedules();
         await this.fetchGuestNetwork();
@@ -1249,6 +1287,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchNotificationSettings(),
         this.fetchDigestSettings(),
         this.fetchAdGuardSettings(),
+        this.fetchMqttSettings(),
         this.fetchAlerts(),
       ]);
       if (this.currentTab === 'devices') {
@@ -3320,6 +3359,160 @@ document.addEventListener('alpine:init', () => {
         this.showToast(title, err.message, "error");
       } finally {
         this.adguardSyncing = false;
+      }
+    },
+
+    // =========================================================================
+    // MQTT & HOME ASSISTANT GATEWAY (v1.6.1 - Modulo 2)
+    // =========================================================================
+    async fetchMqttSettings() {
+      try {
+        const res = await fetch('/api/automations/mqtt/config');
+        const json = await res.json();
+        if (json.status === 'success' && json.config) {
+          this.mqttSettings = {
+            ...this.mqttSettings,
+            ...json.config,
+            connected: Boolean(json.config.connected),
+            available: Boolean(json.config.available),
+            stats: json.config.stats || {
+              messages_published: 0,
+              last_published: null,
+              last_error: null
+            }
+          };
+        }
+      } catch (err) {
+        console.error("Fetch MQTT settings error:", err);
+      }
+    },
+
+    openMqttModal() {
+      this.mqttModalForm = {
+        enabled: Boolean(this.mqttSettings.enabled),
+        broker_host: this.mqttSettings.broker_host || 'localhost',
+        broker_port: this.mqttSettings.broker_port || 1883,
+        username: this.mqttSettings.username || '',
+        password: '',
+        has_password: Boolean(this.mqttSettings.has_password),
+        base_topic: this.mqttSettings.base_topic || 'eero',
+        discovery_enabled: this.mqttSettings.discovery_enabled !== false,
+        discovery_prefix: this.mqttSettings.ha_discovery_prefix || this.mqttSettings.discovery_prefix || 'homeassistant',
+        publish_interval: this.mqttSettings.publish_interval || 60
+      };
+      this.showMqttPassword = false;
+      this.showMqttModal = true;
+    },
+
+    closeMqttModal() {
+      this.showMqttModal = false;
+      this.showMqttPassword = false;
+    },
+
+    async saveMqttSettings() {
+      this.mqttSaving = true;
+      try {
+        const payload = {
+          enabled: Boolean(this.mqttModalForm.enabled),
+          broker_host: (this.mqttModalForm.broker_host || 'localhost').trim(),
+          broker_port: parseInt(this.mqttModalForm.broker_port, 10) || 1883,
+          username: (this.mqttModalForm.username || '').trim(),
+          base_topic: (this.mqttModalForm.base_topic || 'eero').trim() || 'eero',
+          discovery_enabled: Boolean(this.mqttModalForm.discovery_enabled),
+          ha_discovery_prefix: (this.mqttModalForm.discovery_prefix || 'homeassistant').trim() || 'homeassistant',
+          publish_interval: parseInt(this.mqttModalForm.publish_interval, 10) || 60
+        };
+        if (this.mqttModalForm.password) {
+          payload.password = this.mqttModalForm.password;
+        }
+
+        const res = await fetch('/api/automations/mqtt/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({}));
+
+        if (res.ok && json.status === 'success') {
+          const title = this.currentLanguage === 'it' ? "Configurazione MQTT" : "MQTT Configuration";
+          const msg = this.currentLanguage === 'it' ? "Impostazioni MQTT salvate con successo!" : "MQTT settings saved successfully!";
+          this.showToast(title, msg, "success");
+          this.closeMqttModal();
+          await this.fetchMqttSettings();
+        } else {
+          const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Errore salvataggio MQTT." : "Failed to save MQTT settings.");
+          this.showToast(title, msg, "error");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
+        this.showToast(title, err.message, "error");
+      } finally {
+        this.mqttSaving = false;
+      }
+    },
+
+    async testMqttConnection(useModalForm = false) {
+      this.mqttTesting = true;
+      try {
+        let payload = null;
+        if (useModalForm) {
+          payload = {
+            broker_host: (this.mqttModalForm.broker_host || 'localhost').trim(),
+            broker_port: parseInt(this.mqttModalForm.broker_port, 10) || 1883,
+            username: (this.mqttModalForm.username || '').trim()
+          };
+          if (this.mqttModalForm.password) {
+            payload.password = this.mqttModalForm.password;
+          }
+        }
+        const res = await fetch('/api/automations/mqtt/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload ? JSON.stringify(payload) : null
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.status === 'success') {
+          const title = this.currentLanguage === 'it' ? "Test Connessione MQTT" : "MQTT Connection Test";
+          const msg = json.message || (this.currentLanguage === 'it' ? "Connessione al broker riuscita!" : "Connection to broker succeeded!");
+          this.showToast(title, msg, "success");
+          await this.fetchMqttSettings();
+        } else {
+          const title = this.currentLanguage === 'it' ? "Test MQTT Fallito" : "MQTT Test Failed";
+          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile connettersi al broker MQTT." : "Could not connect to MQTT broker.");
+          this.showToast(title, msg, "error");
+        }
+      } catch (err) {
+        const title = this.currentLanguage === 'it' ? "Errore Test MQTT" : "MQTT Test Error";
+        this.showToast(title, err.message, "error");
+      } finally {
+        this.mqttTesting = false;
+      }
+    },
+
+    async toggleMqttEnabled() {
+      const nextState = !this.mqttSettings.enabled;
+      try {
+        const res = await fetch('/api/automations/mqtt/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: nextState })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.status === 'success') {
+          this.mqttSettings.enabled = nextState;
+          const title = this.currentLanguage === 'it' ? "Integrazione MQTT" : "MQTT Integration";
+          const msg = nextState
+            ? (this.currentLanguage === 'it' ? "MQTT abilitato e avviato." : "MQTT enabled and started.")
+            : (this.currentLanguage === 'it' ? "MQTT disattivato." : "MQTT disabled.");
+          this.showToast(title, msg, "info");
+          await this.fetchMqttSettings();
+        } else {
+          const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
+          this.showToast(title, json.detail || "Errore switch stato", "error");
+        }
+      } catch (err) {
+        this.showToast(this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error", err.message, "error");
       }
     },
 
