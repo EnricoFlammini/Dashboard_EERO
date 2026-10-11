@@ -603,14 +603,14 @@ Questo progetto si basa e si ispira al lavoro pionieristico della community open
 ### 🏆 Ringraziamenti Speciali & Community Hall of Fame
 Un ringraziamento sincero a tutti gli utenti e contributori open-source che con issue, test e proposte hanno reso possibile l'evoluzione della suite:
 * **[@jpatchMC](https://github.com/jpatchMC):** Multi-DNS Sync, Intelligent Address Pruning, visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment IPv6 ULA (#57, #65) e Architettura 100% Offline-First con Asset Locali (#58).
-* **[@carbones73](https://github.com/carbones73):** Hardening di sicurezza (4 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs e permessi `0600` su `session.json`), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione deterministica Primary Gateway (#47–#53).
+* **[@carbones73](https://github.com/carbones73):** Hardening di sicurezza (6 Security Advisories GHSA: protezione CORS/CSRF, sanitizzazione credenziali Wi-Fi, controllo API docs, permessi `0600` su `session.json`, autorizzazione endpoint Multi-DNS ed esfiltrazione credenziali [GHSA-4qpq-c8xj-jr4r], verifica sicura certificati TLS su connessioni DNS [GHSA-h2mh-hfmh-rgg9]), telemetria rigorosa senza fallback sintetici, accuratezza radio 5 GHz UNII-3 vs 6 GHz ed elezione deterministica Primary Gateway (#47–#53).
 * **[@Hatton920](https://github.com/Hatton920):** Diagnostica interattiva a 4 pilastri dell'Health Score, velocità link PHY, rilevamento nodi in reboot vs offline e sanitizzazione speedtest (#14, #15, #34, #35, #41).
 * **[@DannyFeliz](https://github.com/DannyFeliz):** Ottimizzazioni layout responsive mobile/tablet, filtri frequenze radio, ordinamento "Recently Joined" e badge "NEW" (#60).
 * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (`T:nopass`) (#63) e trasparenza canali di recapito Daily Digest (#64).
 * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
 * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
 * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione inglese del Telegram Daily Digest (#38).
-* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose preconfigurato per Synology DSM 7.2+ Container Manager (#66).
+* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose per Synology DSM 7.2+ Container Manager (#66), internazionalizzazione (i18n) barra filtri Top Bandwidth Hogs, ripristino getter categorie Alpine.js e callout setup admin (#67).
 * **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---
