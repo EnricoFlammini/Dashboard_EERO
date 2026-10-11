@@ -446,6 +446,9 @@
     "dns_sync_single": "Sync",
     "dns_prune_stale_ips": "Intelligent IP Pruning (removes stale leases & IPv6)",
     "dns_drop_ipv6": "Exclude IPv6 from sync",
+    "dns_insecure_tls": "Accept unverified HTTPS certificate (self-signed)",
+    "dns_insecure_tls_warning": "Certificate verification is off for this server: anyone able to intercept traffic on your network could read its password or token. Enable it only for a server you trust that uses a self-signed certificate.",
+    "dns_tls_error": "The server's HTTPS certificate could not be verified (self-signed, expired or issued for another name). If this is your own server and you trust it, enable 'Accept unverified HTTPS certificate' for this instance.",
     "dns_no_instances": "No DNS instances configured. Click 'Add DNS Instance' to start.",
     "dns_server_name_placeholder": "e.g. AdGuard Home, Pi-hole..."
   },

@@ -34,6 +34,8 @@ class AdGuardService:
             "url": first_adguard.get("url", "") if first_adguard else "",
             "username": first_adguard.get("username", "") if first_adguard else "",
             "has_password": first_adguard.get("has_password", False) if first_adguard else False,
+            # Opzione TLS solo da un'istanza AdGuard (mai da un Pi-hole/Technitium usato come ripiego)
+            "insecure_tls": bool(first_adguard.get("insecure_tls")) if first_adguard and first_adguard.get("engine") == "adguard" else False,
             "last_sync_time": first_adguard.get("last_sync_time", "") if first_adguard else "",
             "last_sync_count": first_adguard.get("last_sync_count", 0) if first_adguard else 0,
             "last_sync_status": first_adguard.get("last_sync_status", "") if first_adguard else "",
@@ -58,7 +60,9 @@ class AdGuardService:
                 formatted_instances.append(i_copy)
             await dns_manager.save_settings(enabled=enabled, instances=formatted_instances)
         else:
-            # Compatibilità singola istanza
+            # Compatibilità singola istanza: l'opzione TLS salvata vale solo se il server non cambia
+            cur = await self.get_settings()
+            same_server = normalize_dns_url(url or "") == normalize_dns_url(cur.get("url", ""))
             inst_list = [{
                 "id": "inst-adguard-1",
                 "name": "AdGuard Home",
@@ -66,6 +70,7 @@ class AdGuardService:
                 "url": url or "",
                 "username": username or "",
                 "password": password or "",
+                "insecure_tls": bool(cur.get("insecure_tls")) if same_server else False,
                 "enabled": True
             }]
             await dns_manager.save_settings(enabled=enabled, instances=inst_list)
@@ -82,14 +87,16 @@ class AdGuardService:
         self,
         url: str,
         username: Optional[str] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
+        insecure_tls: bool = False
     ) -> Dict[str, Any]:
         """Testa una singola istanza AdGuard Home."""
         inst_payload = {
             "engine": "adguard",
             "url": url,
             "username": username or "",
-            "password": password or ""
+            "password": password or "",
+            "insecure_tls": insecure_tls
         }
         return await dns_manager.test_instance(inst_payload)
 
@@ -107,7 +114,10 @@ class AdGuardService:
         target_url = url or cur.get("url", "")
         target_user = username if username is not None else cur.get("username", "")
         target_pass = password
-        return await self.test_single_instance(target_url, target_user, target_pass)
+        # Opzione TLS dell'istanza salvata solo se si testa lo stesso server; altrimenti verifica attiva
+        same_server = normalize_dns_url(target_url) == normalize_dns_url(cur.get("url", ""))
+        target_insecure = bool(cur.get("insecure_tls")) if same_server else False
+        return await self.test_single_instance(target_url, target_user, target_pass, insecure_tls=target_insecure)
 
     async def sync_devices(
         self,

@@ -2,6 +2,7 @@ import asyncio
 import ipaddress
 import json
 import logging
+import ssl
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import urllib.parse
@@ -43,6 +44,54 @@ def _same_registered_instance(saved: Dict[str, Any], engine: str, normalized_url
     return True
 
 
+def parse_insecure_tls(value: Any) -> bool:
+    """Interpreta in modo rigoroso l'opzione 'insecure_tls' di un'istanza DNS.
+
+    Solo True (o le stringhe "true"/"1"/"yes"/"on") disattiva la verifica del certificato TLS:
+    una stringa come "false" o "0" resta False (bool("false") sarebbe True), None e valori ignoti pure.
+    """
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def apply_legacy_tls_default(inst: Dict[str, Any]) -> Dict[str, Any]:
+    """Compatibilità per le istanze salvate prima dell'opzione 'insecure_tls'.
+
+    Fino alla v1.6.0 ogni istanza veniva contattata con verify=False. Un'istanza salvata senza
+    l'opzione e con URL https:// mantiene quindi la verifica disattivata, così un server con certificato
+    autofirmato continua a funzionare: l'opzione risulta spuntata nell'interfaccia e l'utente può toglierla.
+    Le istanze http:// non cambiano (nessun TLS); quelle con l'opzione esplicita vengono solo normalizzate.
+    """
+    if inst.get("insecure_tls") is None:
+        inst["insecure_tls"] = normalize_dns_url(inst.get("url", "")).lower().startswith("https://")
+    else:
+        inst["insecure_tls"] = parse_insecure_tls(inst["insecure_tls"])
+    return inst
+
+
+def _is_tls_verification_error(exc: Optional[BaseException]) -> bool:
+    """True se l'errore (o una delle sue cause) è un certificato TLS non verificabile."""
+    seen = set()
+    while exc is not None and id(exc) not in seen:
+        if isinstance(exc, ssl.SSLCertVerificationError):
+            return True
+        seen.add(id(exc))
+        exc = exc.__cause__ or exc.__context__
+    return False
+
+
+def _tls_error_result(url: str) -> Dict[str, Any]:
+    return {
+        "success": False,
+        "tls_error": True,
+        "message": (
+            f"Certificato HTTPS di '{url}' non verificabile (autofirmato, scaduto o emesso per un altro nome). "
+            "Se il server è nella tua rete e ti fidi, abilita 'Accetta certificato HTTPS non verificato' per questa istanza."
+        ),
+    }
+
+
 class DNSManager:
     """
     Gestore unificato Multi-Engine DNS per eero Dashboard.
@@ -67,6 +116,7 @@ class DNSManager:
                     "token": "",
                     "zone": "lan",
                     "has_password": True,
+                    "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
                     "last_sync_status": "Completato: 18 client sincronizzati [Simulazione Demo]",
@@ -82,6 +132,7 @@ class DNSManager:
                     "token": "",
                     "zone": "lan",
                     "has_password": True,
+                    "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
                     "last_sync_status": "Completato: 18 client sincronizzati [Simulazione Demo]",
@@ -97,6 +148,7 @@ class DNSManager:
                     "token": "demo_pihole_token_123",
                     "zone": "lan",
                     "has_password": True,
+                    "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
                     "last_sync_status": "Completato: 18 record Local DNS sincronizzati [Simulazione Demo]",
@@ -145,16 +197,17 @@ class DNSManager:
                     "token": "",
                     "zone": "lan",
                     "has_password": has_pwd,
+                    "insecure_tls": all_s.get("adguard_insecure_tls"),
                     "enabled": True,
                     "last_sync_time": all_s.get("adguard_last_sync_time", ""),
                     "last_sync_count": int(all_s.get("adguard_last_sync_count", "0") or 0),
                     "last_sync_status": all_s.get("adguard_last_sync_status", "")
                 })
 
-        # Maschera i segreti nella risposta: espone solo i flag has_password / has_token (mai password/token in chiaro)
+        # Maschera i segreti nella risposta (espone solo has_password/has_token) e rende esplicita l'opzione TLS (vedi apply_legacy_tls_default)
         sanitized_instances = []
         for inst in instances:
-            inst_copy = dict(inst)
+            inst_copy = apply_legacy_tls_default(dict(inst))
             inst_copy["has_password"] = bool(inst_copy.get("password") or inst_copy.get("has_password"))
             inst_copy["has_token"] = bool(inst_copy.get("token"))
             inst_copy.pop("password", None)
@@ -183,6 +236,11 @@ class DNSManager:
                 if not d_copy.get("token") and old_demo.get("token"):
                     d_copy["token"] = old_demo["token"]
                 d_copy["has_password"] = bool(d_copy.get("password") or d_copy.get("token") or old_demo.get("has_password"))
+                insecure = d_copy.get("insecure_tls")
+                if insecure is None:
+                    same_demo = bool(inst.get("id")) and normalize_dns_url(old_demo.get("url", "")) == normalize_dns_url(d_copy.get("url", ""))
+                    insecure = old_demo.get("insecure_tls", False) if same_demo else False
+                d_copy["insecure_tls"] = parse_insecure_tls(insecure)
                 new_demo_instances.append(d_copy)
             self._demo_settings["instances"] = new_demo_instances
             return
@@ -194,7 +252,13 @@ class DNSManager:
             existing_instances = json.loads(all_s.get("dns_instances", "[]"))
         except Exception:
             pass
-        existing_map = {inst.get("id"): inst for inst in existing_instances if inst.get("id")}
+        existing_map = {inst.get("id"): apply_legacy_tls_default(inst) for inst in existing_instances if inst.get("id")}
+        if not existing_instances and all_s.get("adguard_url"):
+            # Configurazione legacy a istanza singola (vedi get_settings): conserva la sua opzione TLS al primo salvataggio
+            existing_map["inst-legacy-adguard"] = apply_legacy_tls_default({
+                "url": all_s.get("adguard_url", ""),
+                "insecure_tls": all_s.get("adguard_insecure_tls"),
+            })
 
         processed_instances: List[Dict[str, Any]] = []
         for inst in instances:
@@ -214,6 +278,13 @@ class DNSManager:
             if not tok and keep_secret and old_inst.get("token"):
                 tok = old_inst["token"]
 
+            # Opzione TLS: valore esplicito della richiesta, altrimenti quello già salvato per lo stesso id fornito
+            # e lo stesso server (istanza nuova, senza id o con un altro URL: verifica attiva)
+            insecure = inst.get("insecure_tls")
+            if insecure is None:
+                same_instance = bool(inst.get("id")) and normalize_dns_url(old_inst.get("url", "")) == clean_url
+                insecure = old_inst.get("insecure_tls", False) if same_instance else False
+
             processed_instances.append({
                 "id": inst_id,
                 "name": str(inst.get("name") or "DNS Server").strip(),
@@ -224,6 +295,7 @@ class DNSManager:
                 "token": tok or "",
                 "zone": str(inst.get("zone") if inst.get("zone") is not None else "lan").strip().lower().lstrip("."),
                 "has_password": bool(pwd or tok),
+                "insecure_tls": parse_insecure_tls(insecure),
                 "enabled": bool(inst.get("enabled", True)),
                 "last_sync_time": old_inst.get("last_sync_time", ""),
                 "last_sync_status": old_inst.get("last_sync_status", ""),
@@ -242,6 +314,7 @@ class DNSManager:
                 await db_service.set_setting("adguard_password", first_adguard["password"])
             await db_service.set_setting("adguard_url", first_adguard["url"])
             await db_service.set_setting("adguard_username", first_adguard["username"])
+            await db_service.set_setting("adguard_insecure_tls", "true" if first_adguard["insecure_tls"] else "false")
 
     # =========================================================================
     # INSTANCE TESTING
@@ -287,19 +360,29 @@ class DNSManager:
             except Exception:
                 pass
 
+        # Opzione TLS non passata: quella dell'istanza salvata con lo stesso id e lo stesso server
+        # (configurazione legacy inclusa), altrimenti verifica attiva
+        insecure = instance_data.get("insecure_tls")
+        if insecure is None and inst_id:
+            saved_instances = (await self.get_settings()).get("instances", [])
+            saved_target = next((x for x in saved_instances if x.get("id") == inst_id), None)
+            if saved_target and normalize_dns_url(saved_target.get("url", "")) == url:
+                insecure = saved_target.get("insecure_tls")
+        insecure_tls = parse_insecure_tls(insecure)
+
         if engine == "adguard":
-            return await self._test_adguard(url, instance_data.get("username", ""), password or "")
+            return await self._test_adguard(url, instance_data.get("username", ""), password or "", insecure_tls=insecure_tls)
         elif engine == "pihole":
-            return await self._test_pihole(url, token or password or "")
+            return await self._test_pihole(url, token or password or "", insecure_tls=insecure_tls)
         elif engine == "technitium":
-            return await self._test_technitium(url, token or password or "", instance_data.get("username", ""))
+            return await self._test_technitium(url, token or password or "", instance_data.get("username", ""), insecure_tls=insecure_tls)
         else:
             return {"success": False, "message": f"Motore DNS '{engine}' non riconosciuto."}
 
-    async def _test_adguard(self, url: str, username: str, password: str) -> Dict[str, Any]:
+    async def _test_adguard(self, url: str, username: str, password: str, insecure_tls: bool = False) -> Dict[str, Any]:
         auth = (username.strip(), password.strip()) if username and password else None
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=not insecure_tls, follow_redirects=True) as client:
                 resp = await client.get(f"{url}/control/clients", auth=auth)
                 if resp.status_code == 200:
                     data = resp.json() if isinstance(resp.json(), dict) else {}
@@ -316,17 +399,19 @@ class DNSManager:
                     return {"success": False, "status_code": resp.status_code, "message": "Autenticazione fallita (401/403). Verifica Username e Password."}
                 else:
                     return {"success": False, "status_code": resp.status_code, "message": f"AdGuard Home ha risposto con codice HTTP {resp.status_code}."}
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Impossibile connettersi a '{url}'. Verifica IP, porta e protocollo (http/https)."}
         except httpx.TimeoutException:
             return {"success": False, "message": f"Timeout connessione verso '{url}' (oltre 8 secondi)."}
         except Exception as e:
             return {"success": False, "message": f"Errore di connessione AdGuard: {str(e)}"}
 
-    async def _test_pihole(self, url: str, token: str) -> Dict[str, Any]:
+    async def _test_pihole(self, url: str, token: str, insecure_tls: bool = False) -> Dict[str, Any]:
         # Prova prima Pi-hole v6 (/api/) poi v5 (admin/api.php)
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=not insecure_tls, follow_redirects=True) as client:
                 # 1. Pi-hole v6 REST API check
                 v6_headers = {}
                 clean_token = token.strip()
@@ -345,8 +430,9 @@ class DNSManager:
                             if sid:
                                 v6_headers = {"sid": sid}
                                 resp_v6 = await client.get(f"{url}/api/config/dns/hosts", headers=v6_headers)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        if _is_tls_verification_error(e):
+                            raise
 
                 if resp_v6.status_code == 200:
                     data = resp_v6.json() if isinstance(resp_v6.json(), dict) else {}
@@ -386,16 +472,18 @@ class DNSManager:
                     "message": "Connessione a Pi-hole stabilita con successo!",
                     "existing_clients_count": 0
                 }
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Impossibile raggiungere Pi-hole su '{url}'."}
         except httpx.TimeoutException:
             return {"success": False, "message": f"Timeout connessione Pi-hole verso '{url}'."}
         except Exception as e:
             return {"success": False, "message": f"Errore di connessione Pi-hole: {str(e)}"}
 
-    async def _test_technitium(self, url: str, token_or_pass: str, username: str) -> Dict[str, Any]:
+    async def _test_technitium(self, url: str, token_or_pass: str, username: str, insecure_tls: bool = False) -> Dict[str, Any]:
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=not insecure_tls, follow_redirects=True) as client:
                 # Prova prima con il token diretto se presente
                 token = token_or_pass.strip()
                 if username and token_or_pass and not token.isalnum():
@@ -422,7 +510,9 @@ class DNSManager:
                 elif resp.status_code in (401, 403):
                     return {"success": False, "message": "Autenticazione Technitium DNS fallita (Token o Credenziali non valide)."}
                 return {"success": False, "message": f"Technitium DNS ha risposto con codice HTTP {resp.status_code}."}
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Impossibile raggiungere Technitium DNS su '{url}'."}
         except Exception as e:
             return {"success": False, "message": f"Errore connessione Technitium DNS: {str(e)}"}
@@ -644,12 +734,13 @@ class DNSManager:
         
         prune_stale = bool(inst.get("prune_stale_ips", True))
         drop_v6 = bool(inst.get("drop_ipv6", False))
+        insecure_tls = parse_insecure_tls(inst.get("insecure_tls", False))
 
         existing_by_name: Dict[str, Dict[str, Any]] = {}
         existing_by_id: Dict[str, Dict[str, Any]] = {}
 
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=not insecure_tls, follow_redirects=True) as client:
                 resp = await client.get(f"{url}/control/clients", auth=auth)
                 if resp.status_code == 200:
                     resp_data = resp.json() if isinstance(resp.json(), dict) else {}
@@ -701,15 +792,18 @@ class DNSManager:
                     "message": f"AdGuard: {added} aggiunti, {updated} aggiornati, {failed} falliti."
                 }
         except Exception as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Errore durante la sincronizzazione AdGuard: {str(e)}"}
 
     async def _sync_single_pihole(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
         token = (inst.get("token") or inst.get("password") or "").strip()
         raw_zone = str(inst.get("zone") if inst.get("zone") is not None else "").strip().lstrip(".")
+        insecure_tls = parse_insecure_tls(inst.get("insecure_tls", False))
 
         try:
-            async with httpx.AsyncClient(timeout=10.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=10.0, verify=not insecure_tls, follow_redirects=True) as client:
                 # -------------------------------------------------------------
                 # 1. RILEVAZIONE PI-HOLE v6 REST API (/api/config/dns/hosts)
                 # -------------------------------------------------------------
@@ -733,8 +827,9 @@ class DNSManager:
                                 if recheck.status_code == 200:
                                     is_v6 = True
                                     resp_v6 = recheck
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        if _is_tls_verification_error(e):
+                            raise
 
                 # -------------------------------------------------------------
                 # 2. ESECUZIONE SINCRONIZZAZIONE PI-HOLE v6 REST API
@@ -839,17 +934,20 @@ class DNSManager:
                     "message": f"Pi-hole v5: {synced} record DNS sincronizzati{zone_label} ({failed} falliti)."
                 }
         except Exception as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Errore durante sincronizzazione Pi-hole: {str(e)}"}
 
     async def _sync_single_technitium(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
         token = inst.get("token") or inst.get("password") or ""
         zone = inst.get("zone", "lan").lstrip(".")
+        insecure_tls = parse_insecure_tls(inst.get("insecure_tls", False))
 
         synced = 0
         failed = 0
         try:
-            async with httpx.AsyncClient(timeout=8.0, verify=False, follow_redirects=True) as client:
+            async with httpx.AsyncClient(timeout=8.0, verify=not insecure_tls, follow_redirects=True) as client:
                 for client_item in prepared_clients:
                     ip = client_item.get("ip")
                     hostname = client_item.get("hostname")
@@ -880,6 +978,8 @@ class DNSManager:
                     "message": f"Technitium: {synced} record A + PTR sincronizzati nella zona {zone}."
                 }
         except Exception as e:
+            if _is_tls_verification_error(e):
+                return _tls_error_result(url)
             return {"success": False, "message": f"Errore durante sincronizzazione Technitium DNS: {str(e)}"}
 
     async def sync_devices(
@@ -940,11 +1040,17 @@ class DNSManager:
                 "url": all_s.get("adguard_url"),
                 "username": all_s.get("adguard_username", ""),
                 "password": all_s.get("adguard_password", ""),
+                "insecure_tls": all_s.get("adguard_insecure_tls"),
                 "enabled": True
             })
 
         if not instances:
             return {"success": False, "message": "Nessuna istanza DNS configurata.", "results": []}
+
+        # Rende esplicita l'opzione TLS delle istanze salvate prima della sua introduzione
+        # (salvata con lo stato di sincronizzazione più sotto)
+        for inst in instances:
+            apply_legacy_tls_default(inst)
 
         results = []
         all_success = True

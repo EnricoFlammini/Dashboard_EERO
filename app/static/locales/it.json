@@ -446,6 +446,9 @@
     "dns_sync_single": "Sync",
     "dns_prune_stale_ips": "Pruning Intelligente IP (rimuove lease e IPv6 obsoleti)",
     "dns_drop_ipv6": "Escludi IPv6 dalla sincronizzazione",
+    "dns_insecure_tls": "Accetta certificato HTTPS non verificato (autofirmato)",
+    "dns_insecure_tls_warning": "Verifica del certificato disattivata per questo server: chi può intercettare il traffico della tua rete potrebbe leggerne password o token. Attivala solo per un server fidato con certificato autofirmato.",
+    "dns_tls_error": "Impossibile verificare il certificato HTTPS del server (autofirmato, scaduto o emesso per un altro nome). Se è un tuo server e ti fidi, abilita 'Accetta certificato HTTPS non verificato' per questa istanza.",
     "dns_no_instances": "Nessuna istanza DNS configurata. Clicca su 'Aggiungi Istanza DNS' per iniziare.",
     "dns_server_name_placeholder": "Es. AdGuard Home, Pi-hole..."
   },

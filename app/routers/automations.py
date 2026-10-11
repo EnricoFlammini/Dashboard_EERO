@@ -1,14 +1,14 @@
 import json
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
 from app.services.db import db_service
-from app.services.dns_manager import dns_manager
+from app.services.dns_manager import dns_manager, parse_insecure_tls
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
 from app.services.mqtt_client import mqtt_service
@@ -83,6 +83,13 @@ class DNSInstanceModel(BaseModel):
     last_sync_count: Optional[int] = 0
     prune_stale_ips: Optional[bool] = Field(True, description="Pota automaticamente indirizzi SLAAC obsoleti e lease scaduti (Issue #31)")
     drop_ipv6: Optional[bool] = Field(False, description="Esclude completamente tutti gli indirizzi IPv6 dalla sincronizzazione DNS")
+    insecure_tls: Optional[bool] = Field(None, description="Disattiva la verifica del certificato HTTPS (solo server fidati con certificato autofirmato). Assente: valore già salvato, altrimenti verifica attiva")
+
+    @field_validator("insecure_tls", mode="before")
+    @classmethod
+    def _strict_insecure_tls(cls, value: Any) -> Optional[bool]:
+        # Stessa interpretazione rigorosa del database ("t", "y", 1.0 non disattivano la verifica)
+        return None if value is None else parse_insecure_tls(value)
 
 
 class DNSSettingsRequest(BaseModel):

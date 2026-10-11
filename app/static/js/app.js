@@ -2855,6 +2855,16 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // MULTI-ENGINE DNS SYNCHRONIZER (AdGuard, Pi-hole, Technitium)
     // =========================================================================
+    // Stessa normalizzazione di normalize_dns_url (backend): frammento, slash finali, http:// se manca lo schema
+    normalizeDnsUrl(url) {
+      let clean = String(url || '').trim();
+      if (!clean) return '';
+      if (clean.includes('#')) clean = clean.split('#')[0];
+      clean = clean.replace(/\/+$/, '');
+      if (!clean.startsWith('http://') && !clean.startsWith('https://')) clean = 'http://' + clean;
+      return clean;
+    },
+
     async fetchDnsSettings() {
       try {
         const res = await fetch('/api/automations/dns');
@@ -2876,6 +2886,8 @@ document.addEventListener('alpine:init', () => {
               enabled: i.enabled !== false,
               prune_stale_ips: i.prune_stale_ips !== undefined ? Boolean(i.prune_stale_ips) : true,
               drop_ipv6: Boolean(i.drop_ipv6),
+              insecure_tls: i.insecure_tls === true,
+              tls_url: i.insecure_tls === true ? this.normalizeDnsUrl(i.url) : '',
               last_sync_time: i.last_sync_time || '',
               last_sync_status: i.last_sync_status || '',
               last_sync_count: i.last_sync_count || 0
@@ -2916,6 +2928,8 @@ document.addEventListener('alpine:init', () => {
         enabled: true,
         prune_stale_ips: true,
         drop_ipv6: false,
+        insecure_tls: false,
+        tls_url: '',
         last_sync_time: '',
         last_sync_status: '',
         last_sync_count: 0
@@ -2955,7 +2969,8 @@ document.addEventListener('alpine:init', () => {
             zone: inst.zone,
             enabled: inst.enabled,
             prune_stale_ips: inst.prune_stale_ips !== false,
-            drop_ipv6: Boolean(inst.drop_ipv6)
+            drop_ipv6: Boolean(inst.drop_ipv6),
+            insecure_tls: inst.insecure_tls === true
           }))
         };
         const res = await fetch('/api/automations/dns', {
@@ -2992,7 +3007,8 @@ document.addEventListener('alpine:init', () => {
             password: inst.password || undefined,
             token: inst.token || undefined,
             zone: inst.zone,
-            enabled: inst.enabled
+            enabled: inst.enabled,
+            insecure_tls: inst.insecure_tls === true
           }
         };
         const res = await fetch('/api/automations/dns/test', {
@@ -3007,7 +3023,8 @@ document.addEventListener('alpine:init', () => {
           this.showToast(title, `${inst.name}: ${json.message}`, "success");
         } else {
           const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          this.showToast(title, `${inst.name}: ${json.message || 'Connessione non riuscita'}`, "error");
+          const failMsg = (json.tls_error && this.t('controls.dns_tls_error')) || json.message || 'Connessione non riuscita';
+          this.showToast(title, `${inst.name}: ${failMsg}`, "error");
         }
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";

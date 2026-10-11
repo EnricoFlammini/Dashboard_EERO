@@ -2796,7 +2796,7 @@
                     <!-- Server URL -->
                     <div class="sm:col-span-8">
                       <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_url') || 'URL Server:'"></label>
-                      <input type="text" x-model="inst.url" placeholder="http://192.168.1.50:80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                      <input type="text" x-model="inst.url" @input="if (inst.insecure_tls && normalizeDnsUrl($event.target.value) !== inst.tls_url) inst.insecure_tls = false" placeholder="http://192.168.1.50:80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                     </div>
 
                     <!-- Contextual Authentication / Parameters -->
@@ -2856,6 +2856,12 @@
                         <input type="checkbox" x-model="inst.drop_ipv6" class="rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
                         <span class="text-[11px]" x-text="t('controls.dns_drop_ipv6')"></span>
                       </label>
+                      <!-- Certificato HTTPS non verificato: visibile per URL https:// (o se già attivo), verifica attiva di default, tolto se il server (URL normalizzato) cambia -->
+                      <label x-show="(inst.url || '').trim().toLowerCase().startsWith('https://') || inst.insecure_tls" class="flex items-center space-x-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" x-model="inst.insecure_tls" @change="inst.tls_url = normalizeDnsUrl(inst.url)" class="rounded text-amber-600 focus:ring-amber-500 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
+                        <span class="text-[11px]" x-text="t('controls.dns_insecure_tls')"></span>
+                      </label>
+                      <p x-show="inst.insecure_tls" class="w-full text-[11px] text-amber-600 dark:text-amber-400" x-text="t('controls.dns_insecure_tls_warning')"></p>
                     </div>
                   </div>
 
