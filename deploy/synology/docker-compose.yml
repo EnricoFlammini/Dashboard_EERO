@@ -1,12 +1,10 @@
 # eero Custom Dashboard - Synology Container Manager (DSM 7.2+)
+# Setup and update steps: see README.md in this folder.
 #
-# 1. File Station: create the folder  docker/eero-dashboard/data
-#    (Container Manager will not create missing bind-mount folders).
-# 2. Container Manager -> Project -> Create
-#      Project name: eero-dashboard            (lowercase only)
-#      Path:         /volume1/docker/eero-dashboard
-#      Source:       Create docker-compose.yml -> paste this file
-# 3. Open http://<NAS-IP>:8085
+# pull_policy: always makes every `docker compose up` (Container Manager
+# Project -> Start or Action -> Build) check Docker Hub for a newer :latest
+# before starting. A plain container restart or a NAS reboot does NOT pull;
+# use the Task Scheduler job in README.md to cover those.
 #
 # If your shared "docker" folder is on another volume (e.g. /volume2),
 # update the path under "volumes" below.
@@ -14,8 +12,10 @@
 services:
   eero-dashboard:
     image: enricoflammini/eero-dashboard:latest
+    pull_policy: always            # pull newest :latest on every project start/build
     container_name: eero_custom_dashboard
     restart: unless-stopped
+    stop_grace_period: 30s         # let the app close SQLite cleanly before recreate
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -62,3 +62,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    mem_limit: 512m
