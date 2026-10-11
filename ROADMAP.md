@@ -620,16 +620,16 @@ gantt
   - Aggiunto step automatizzato con **Aqua Security Trivy Action** nel workflow GitHub Actions per verificare le vulnerabilità su OS e librerie ad ogni pubblicazione multi-arch.
 
 #### 4. 🔐 Gestione Sessioni Locali: Opzione "Ricordami" & Chiusura Sessione al Riavvio Browser
-- [ ] **Checkbox "Ricordami / Remember Me" nel Modale di Login Locale:**
-  - Aggiunta di un'opzione checkbox *"Resta connesso / Ricordami"* nel form di login (`#localLoginModal`).
-- [ ] **Modalità Predefinita a Sessione Volatile (Session-Only by Default):**
+- [x] **Checkbox "Ricordami / Remember Me" nel Modale di Login Locale:**
+  - Aggiunta di un'opzione checkbox *"Resta connesso / Ricordami"* nel form di login (`#localLoginModal`) e nel wizard di setup iniziale amministratore (`#adminSetupModal`).
+- [x] **Modalità Predefinita a Sessione Volatile (Session-Only by Default):**
   - **Comportamento predefinito (senza "Ricordami"):**
     - Il session token viene salvato unicamente in `sessionStorage` (anziché `localStorage`) e il cookie HTTP `session_token` viene configurato come **session cookie** (privo di `max_age` o `expires`), venendo distrutto dal browser alla chiusura della finestra/scheda.
     - Ad ogni riapertura dell'applicazione o nuovo avvio del browser, l'utente deve inserire obbligatoriamente le proprie credenziali per accedere.
   - **Comportamento con "Ricordami" abilitato:**
-    - Persistenza estesa nel `localStorage` del browser e cookie con durata definita (es. 7 giorni).
-- [ ] **Gatekeeping Immediato all'Avvio (Strict Login Prompt):**
-  - All'apertura della pagina, se l'utente non possiede una sessione valida attiva per la scheda corrente, presentazione automatica del modale di login per autenticarsi prima di sbloccare la consultazione dei nodi e dei dispositivi della dashboard.
+    - Persistenza estesa nel `localStorage` del browser e cookie con durata definita (7 giorni, `Max-Age=604800`).
+- [x] **Gatekeeping Immediato all'Avvio (Strict Login Prompt):**
+  - All'apertura della pagina, se l'utente non possiede una sessione valida attiva per la scheda corrente, presentazione automatica del modale di login per autenticarsi prima di sbloccare la consultazione dei nodi e dei dispositivi della dashboard (o del setup wizard amministratore al primo avvio).
 
 #### 5. 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66 & PR #68)
 - [x] **Template Ufficiale `deploy/synology/docker-compose.yml`:**

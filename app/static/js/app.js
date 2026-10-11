@@ -533,7 +533,11 @@ document.addEventListener('alpine:init', () => {
     // MODULE 3: LOCAL AUTHENTICATION & RBAC STATE
     // =========================================================================
     currentUser: null,
-    localAuthToken: (typeof localStorage !== 'undefined') ? (localStorage.getItem('eero_local_auth_token') || null) : null,
+    localAuthToken: (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('eero_local_auth_token')) 
+      ? sessionStorage.getItem('eero_local_auth_token') 
+      : ((typeof localStorage !== 'undefined' && localStorage.getItem('eero_local_auth_token')) 
+          ? localStorage.getItem('eero_local_auth_token') 
+          : null),
     showLocalLoginModal: false,
     showAdminSetupModal: false,
     adminSetupRequired: false,
@@ -541,10 +545,11 @@ document.addEventListener('alpine:init', () => {
       username: '',
       password: '',
       passwordConfirm: '',
+      remember_me: false,
       error: '',
       loading: false
     },
-    localLoginData: { username: '', password: '', error: '' },
+    localLoginData: { username: '', password: '', remember_me: false, error: '' },
     isLocalAuthChecking: false,
     sessionTimeoutMinutes: (typeof localStorage !== 'undefined' && localStorage.getItem('eero_session_timeout') !== null) ? Number(localStorage.getItem('eero_session_timeout')) : 15,
     lastUserActivity: Date.now(),
@@ -653,6 +658,15 @@ document.addEventListener('alpine:init', () => {
         this.currentTab = 'guests';
         if (typeof window !== 'undefined' && window.history) {
           window.history.replaceState({}, '', this.routes.guests);
+        }
+      }
+
+      // Prompt Gatekeeping Rigoroso: se non loggato, propone immediatamente il login (o setup se primo avvio)
+      if (!this.currentUser) {
+        if (this.adminSetupRequired) {
+          this.openAdminSetupModal();
+        } else {
+          this.openLocalLoginModal();
         }
       }
 
@@ -4884,6 +4898,7 @@ document.addEventListener('alpine:init', () => {
       this.localLoginData = {
         username: '',
         password: '',
+        remember_me: false,
         error: ''
       };
       this.showLocalLoginModal = true;
@@ -4894,6 +4909,7 @@ document.addEventListener('alpine:init', () => {
         username: '',
         password: '',
         passwordConfirm: '',
+        remember_me: false,
         error: '',
         loading: false
       };
@@ -4937,6 +4953,7 @@ document.addEventListener('alpine:init', () => {
         } else {
           this.localAuthToken = null;
           if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+          if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('eero_local_auth_token');
           this.currentUser = null;
         }
       } catch (e) {
@@ -4977,13 +4994,20 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({
             username: u,
             password: p,
-            display_name: u.charAt(0).toUpperCase() + u.slice(1)
+            display_name: u.charAt(0).toUpperCase() + u.slice(1),
+            remember_me: !!this.localSetupData.remember_me
           })
         });
         const data = await res.json();
         if (res.ok && data.token) {
           this.localAuthToken = data.token;
-          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          if (this.localSetupData.remember_me) {
+            if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+            if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('eero_local_auth_token');
+          } else {
+            if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('eero_local_auth_token', data.token);
+            if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+          }
           this.currentUser = data.user;
           this.adminSetupRequired = false;
           this.showAdminSetupModal = false;
@@ -5015,17 +5039,24 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             username: this.localLoginData.username,
-            password: this.localLoginData.password
+            password: this.localLoginData.password,
+            remember_me: !!this.localLoginData.remember_me
           })
         });
         const data = await res.json();
         if (res.ok && data.token) {
           this.localAuthToken = data.token;
-          if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+          if (this.localLoginData.remember_me) {
+            if (typeof localStorage !== 'undefined') localStorage.setItem('eero_local_auth_token', data.token);
+            if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('eero_local_auth_token');
+          } else {
+            if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('eero_local_auth_token', data.token);
+            if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+          }
           this.currentUser = data.user;
           this.lastUserActivity = Date.now();
           this.showLocalLoginModal = false;
-          this.localLoginData = { username: '', password: '', error: '' };
+          this.localLoginData = { username: '', password: '', remember_me: false, error: '' };
           this.showToast(
             this.currentLanguage === 'it' ? 'Accesso Eseguito' : 'Login Successful',
             (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
@@ -5058,6 +5089,7 @@ document.addEventListener('alpine:init', () => {
       }
       this.localAuthToken = null;
       if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('eero_local_auth_token');
       this.currentUser = null;
       await this.setTab('guests');
       this.showToast(
@@ -5336,6 +5368,7 @@ document.addEventListener('alpine:init', () => {
           if (res.status === 401) {
             this.localAuthToken = null;
             if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
+            if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('eero_local_auth_token');
             this.currentUser = null;
             this.openLocalLoginModal();
           }

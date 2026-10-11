@@ -4719,6 +4719,64 @@ async def run_all_tests():
         wf_content = wf_path.read_text(encoding="utf-8")
         runner.assert_true("aquasecurity/trivy-action" in wf_content, "CI/CD integra scanner automatico di vulnerabilità Trivy")
 
+        # =====================================================================
+        # TEST MODULO 4 - GESTIONE SESSIONI LOCALI ("RICORDAMI" & GATEKEEPING)
+        # =====================================================================
+        print("\n🔐 TEST MODULO 4 - GESTIONE SESSIONI LOCALI ('RICORDAMI' & GATEKEEPING)")
+
+        # 1. Test backend login con remember_me=False (sessione volatile) vs remember_me=True (persistente)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as auth_client:
+            # Login volatile (default remember_me=False)
+            r_volatile = await auth_client.post(
+                "/api/auth/local/login",
+                json={"username": "admin", "password": getattr(runner, "admin_test_pwd", "AdminPassword123!"), "remember_me": False}
+            )
+            runner.assert_true(r_volatile.status_code == 200, "POST /api/auth/local/login con remember_me=False risponde 200 OK")
+            v_json = r_volatile.json()
+            runner.assert_true(v_json.get("remember_me") is False, "Payload login restituisce remember_me=False")
+            v_cookie = r_volatile.headers.get("set-cookie", "")
+            runner.assert_true("session_token=" in v_cookie, "Set-Cookie include session_token")
+            runner.assert_true("Max-Age=" not in v_cookie, "Set-Cookie non specifica Max-Age per sessione volatile (cookie di sessione browser)")
+
+            # Login persistente (remember_me=True)
+            r_persist = await auth_client.post(
+                "/api/auth/local/login",
+                json={"username": "admin", "password": getattr(runner, "admin_test_pwd", "AdminPassword123!"), "remember_me": True}
+            )
+            runner.assert_true(r_persist.status_code == 200, "POST /api/auth/local/login con remember_me=True risponde 200 OK")
+            p_json = r_persist.json()
+            runner.assert_true(p_json.get("remember_me") is True, "Payload login restituisce remember_me=True")
+            p_cookie = r_persist.headers.get("set-cookie", "")
+            runner.assert_true("session_token=" in p_cookie, "Set-Cookie include session_token")
+            runner.assert_true("Max-Age=604800" in p_cookie, "Set-Cookie specifica Max-Age=604800 (7 giorni) per sessione persistente")
+
+        # 2. Test template index.html per checkbox "Ricordami"
+        index_html_path = Path("app/templates/index.html")
+        runner.assert_true(index_html_path.exists(), "app/templates/index.html esiste")
+        index_content = index_html_path.read_text(encoding="utf-8")
+        runner.assert_true("id=\"localLoginRememberMe\"" in index_content, "index.html contiene checkbox #localLoginRememberMe")
+        runner.assert_true("x-model=\"localLoginData.remember_me\"" in index_content, "Checkbox login è collegata a localLoginData.remember_me")
+        runner.assert_true("id=\"localSetupRememberMe\"" in index_content, "index.html contiene checkbox #localSetupRememberMe")
+        runner.assert_true("x-model=\"localSetupData.remember_me\"" in index_content, "Checkbox setup è collegata a localSetupData.remember_me")
+
+        # 3. Test script app.js per gestione sessione volatile vs persistente e gatekeeping
+        app_js_path = Path("app/static/js/app.js")
+        runner.assert_true(app_js_path.exists(), "app/static/js/app.js esiste")
+        app_js_content = app_js_path.read_text(encoding="utf-8")
+        runner.assert_true("sessionStorage.getItem('eero_local_auth_token')" in app_js_content, "app.js legge token da sessionStorage")
+        runner.assert_true("localStorage.getItem('eero_local_auth_token')" in app_js_content, "app.js legge token di fallback da localStorage")
+        runner.assert_true("remember_me: false" in app_js_content, "app.js inizializza remember_me a false nei form")
+        runner.assert_true("sessionStorage.removeItem('eero_local_auth_token')" in app_js_content, "app.js pulisce sessionStorage al logout / 401")
+        runner.assert_true("this.openLocalLoginModal()" in app_js_content, "app.js include chiamata a openLocalLoginModal per gatekeeping")
+
+        # 4. Test dizionari internazionalizzazione
+        it_json = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_json = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        runner.assert_true("auth_local" in it_json and "remember_me" in it_json["auth_local"], "Chiave auth_local.remember_me presente in it.json")
+        runner.assert_true("auth_local" in en_json and "remember_me" in en_json["auth_local"], "Chiave auth_local.remember_me presente in en.json")
+        runner.assert_true(it_json["auth_local"]["remember_me"] == "Resta connesso / Ricordami", "Traduzione italiana auth_local.remember_me corretta")
+        runner.assert_true(en_json["auth_local"]["remember_me"] == "Stay signed in / Remember me", "Traduzione inglese auth_local.remember_me corretta")
+
         runner.print_summary()
 
 

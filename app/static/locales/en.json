@@ -751,10 +751,13 @@
     "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead."
   },
   "auth_local": {
-    "login_title": "Local Administration Login",
-    "login_subtitle": "Authentication with Role-Based Access Control (RBAC)",
+    "login_title": "Administration Sign In",
+    "login_subtitle": "RBAC role-based access control authentication",
     "username": "Username",
+    "username_placeholder": "Enter username",
     "password": "Password",
+    "password_placeholder": "Enter password",
+    "remember_me": "Stay signed in / Remember me",
     "login_btn": "Sign In",
     "logging_in": "Signing in...",
     "logout": "Sign Out",
@@ -764,8 +767,22 @@
     "role_viewer": "Viewer",
     "no_access": "You do not have the required permissions for this action.",
     "admin_required_title": "Administrator Access Required",
-    "admin_required_desc": "To manage users, create new accounts or modify RBAC permissions, please log in as Admin (default credentials: admin / admin).",
-    "login_as_admin_btn": "Log in as Admin"
+    "admin_required_desc": "To manage users, create new accounts or modify RBAC permissions, please log in as Admin.",
+    "login_as_admin_btn": "Log in as Admin",
+    "setup_title": "Initial Administrator Setup",
+    "setup_subtitle": "Create the administrator account to securely protect your dashboard",
+    "setup_badge": "First Run",
+    "setup_security_title": "Zero-Default Security",
+    "setup_desc": "Zero default passwords: the credentials chosen here will secure your local dashboard.",
+    "display_name": "Display Name (optional)",
+    "display_name_placeholder": "e.g. Administrator",
+    "password_confirm": "Confirm Password",
+    "setup_btn": "Create Administrator & Sign In",
+    "setting_up": "Creating account...",
+    "password_mismatch": "Passwords do not match",
+    "password_min_length": "Password must be at least 6 characters",
+    "username_min_length": "Username must be at least 3 characters",
+    "setup_success": "Administrator setup completed successfully!"
   },
   "users_modal": {
     "title": "Users Management & Permission Matrix",
@@ -948,29 +965,6 @@
     "show_details": "Error Details",
     "hide_details": "Hide Details",
     "saved_success": "Logging configuration updated successfully."
-  },
-  "auth_local": {
-    "login_title": "Administration Sign In",
-    "login_subtitle": "RBAC role-based access control authentication",
-    "username": "Username",
-    "username_placeholder": "Enter username",
-    "password": "Password",
-    "password_placeholder": "Enter password",
-    "login_btn": "Sign In",
-    "logging_in": "Signing in...",
-    "setup_title": "Initial Administrator Setup",
-    "setup_subtitle": "Create the administrator account to securely protect your dashboard",
-    "setup_badge": "First Run",
-    "setup_security_title": "Zero-Default Security",
-    "setup_desc": "Zero default passwords: the credentials chosen here will secure your local dashboard.",
-    "display_name": "Display Name (optional)",
-    "display_name_placeholder": "e.g. Administrator",
-    "password_confirm": "Confirm Password",
-    "setup_btn": "Create Administrator & Sign In",
-    "setting_up": "Creating account...",
-    "password_mismatch": "Passwords do not match",
-    "password_min_length": "Password must be at least 6 characters",
-    "username_min_length": "Username must be at least 3 characters",
-    "setup_success": "Administrator setup completed successfully!"
   }
 }
+

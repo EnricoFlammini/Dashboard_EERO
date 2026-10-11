@@ -6,6 +6,20 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🔐 Gestione Sessioni Locali: Opzione "Ricordami" & Chiusura Sessione al Riavvio Browser (v1.6.1 - Modulo 4)
+* **☑️ Checkbox "Resta connesso / Ricordami" nei Modali di Login & Primo Setup:**
+  * Integrata opzione checkbox *"Resta connesso / Ricordami"* (`remember_me`) nel modale di autenticazione locale (`#localLoginModal`) e nel wizard di configurazione iniziale amministratore (`#adminSetupModal`).
+* **💨 Sessione Volatile Predefinita (Session-Only by Default):**
+  * Quando l'opzione "Ricordami" non è spuntata (comportamento predefinito e raccomandato per la massima sicurezza):
+    * Il token di autenticazione viene memorizzato unicamente in `sessionStorage` (anziché `localStorage`), venendo automaticamente rimosso alla chiusura della scheda o finestra del browser.
+    * Il cookie HTTP `session_token` viene configurato come **session cookie** (privo di parametro `Max-Age` / `Expires`), venendo invalidato e rimosso nativamente dal client alla chiusura del browser.
+  * Quando "Ricordami" viene spuntato dall'utente:
+    * Il token viene salvato nel `localStorage` del browser e il cookie HTTP viene impostato con persistenza a 7 giorni (`Max-Age=604800`).
+* **🛡️ Gatekeeping Rigoroso & Auto-Prompt all'Avvio:**
+  * All'apertura della dashboard, se l'utente non possiede una sessione autenticata attiva, l'applicazione visualizza immediatamente il prompt di login locale (o il wizard di setup al primo avvio), mantenendo le viste di sistema protette.
+* **🌐 Traduzioni Bilingue & Consolidamento Locales:**
+  * Consolidate le definizioni `auth_local` in `it.json` ed `en.json` e aggiunte le etichette bilingue per *"Resta connesso / Ricordami"* (*"Stay signed in / Remember me"*).
+
 ### 🛡️ Docker & Security Hardening: Migrazione Alpine Multi-Stage, Utente Non-Root & Trivy CI/CD (v1.6.1 - Modulo 3)
 * **🏔️ Migrazione ad Alpine Linux Multi-Stage (`python:3.12-alpine`):**
   * Riprogettato completamente il `Dockerfile` con architettura a due stadi:

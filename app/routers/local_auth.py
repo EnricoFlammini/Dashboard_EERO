@@ -23,11 +23,13 @@ class LocalAdminSetupRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Nome utente amministratore")
     password: str = Field(..., min_length=6, max_length=128, description="Password amministratore")
     display_name: Optional[str] = Field(None, max_length=60, description="Nome visualizzato opzionale")
+    remember_me: Optional[bool] = Field(False, description="Se True, sessione persistente (7 giorni), altrimenti volatile")
 
 
 class LocalLoginRequest(BaseModel):
     username: str = Field(..., min_length=1, description="Nome utente locale registrato")
     password: str = Field(..., min_length=1, description="Password in chiaro")
+    remember_me: Optional[bool] = Field(False, description="Se True, sessione persistente (7 giorni), altrimenti volatile")
 
 
 @router.get("/status")
@@ -81,13 +83,16 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
             await db.commit()
             user_id = cursor.lastrowid
 
-    token = await db_service.create_user_session(user_id=user_id, duration_days=7)
+    duration_days = 7 if payload.remember_me else 1
+    cookie_max_age = (7 * 24 * 3600) if payload.remember_me else None
+
+    token = await db_service.create_user_session(user_id=user_id, duration_days=duration_days)
     await db_service.update_user_last_login(user_id=user_id)
 
     response.set_cookie(
         key="session_token",
         value=token,
-        max_age=7 * 24 * 3600,
+        max_age=cookie_max_age,
         httponly=True,
         samesite="lax",
         secure=False
@@ -110,6 +115,7 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
         "status": "success",
         "message": "Configurazione amministratore completata con successo.",
         "token": token,
+        "remember_me": bool(payload.remember_me),
         "user": clean_user
     }
 
@@ -148,14 +154,17 @@ async def local_login(payload: LocalLoginRequest, response: Response):
         )
 
     user_id = user["id"]
-    token = await db_service.create_user_session(user_id=user_id, duration_days=7)
+    duration_days = 7 if payload.remember_me else 1
+    cookie_max_age = (7 * 24 * 3600) if payload.remember_me else None
+
+    token = await db_service.create_user_session(user_id=user_id, duration_days=duration_days)
     await db_service.update_user_last_login(user_id=user_id)
 
     # Impostazione cookie HTTP-only
     response.set_cookie(
         key="session_token",
         value=token,
-        max_age=7 * 24 * 3600,
+        max_age=cookie_max_age,
         httponly=True,
         samesite="lax",
         secure=False  # Consentito anche su reti locali HTTP standard
@@ -177,6 +186,7 @@ async def local_login(payload: LocalLoginRequest, response: Response):
     return {
         "status": "success",
         "token": token,
+        "remember_me": bool(payload.remember_me),
         "user": clean_user
     }
 

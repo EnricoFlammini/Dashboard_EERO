@@ -6742,6 +6742,11 @@
           <input type="password" x-model="localLoginData.password" required placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="localLoginRememberMe" x-model="localLoginData.remember_me" class="rounded border-slate-300 dark:border-slate-700 text-[#0067c0] focus:ring-sky-500 w-4 h-4 cursor-pointer">
+          <label for="localLoginRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me') || 'Resta connesso / Ricordami'"></label>
+        </div>
+
         <template x-if="localLoginData.error">
           <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold" x-text="localLoginData.error"></div>
         </template>
@@ -6809,6 +6814,11 @@
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm') || 'Conferma Password'"></label>
           <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="localSetupRememberMe" x-model="localSetupData.remember_me" class="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer">
+          <label for="localSetupRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me') || 'Resta connesso / Ricordami'"></label>
         </div>
 
         <template x-if="localSetupData.error">
