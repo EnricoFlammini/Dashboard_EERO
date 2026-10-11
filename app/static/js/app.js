@@ -5514,6 +5514,13 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // MODULE 3: BANDWIDTH HOGS MULTI-FILTERS COMPUTED
     // =========================================================================
+    // Distinct device categories for the hogs category filter; values stay in
+    // their stored (Italian) form and are translated for display via formatCategoryName().
+    get availableCategories() {
+      const cats = new Set((this.devices || []).map(d => d.category || 'Altro'));
+      return [...cats].sort((a, b) => this.formatCategoryName(a).localeCompare(this.formatCategoryName(b)));
+    },
+
     getFilteredTopHogs() {
       if (!this.topHogsList || !Array.isArray(this.topHogsList)) return [];
       return this.topHogsList.filter(hog => {
@@ -5521,7 +5528,7 @@ document.addEventListener('alpine:init', () => {
         
         // Category filter
         if (this.hogsCategoryFilter !== 'all') {
-          const cat = dev ? (dev.category || '') : (hog.category || '');
+          const cat = (dev ? dev.category : hog.category) || 'Altro';
           if (cat !== this.hogsCategoryFilter) return false;
         }
 

@@ -1007,32 +1007,32 @@
         <div class="flex flex-wrap items-center gap-2 mb-3.5 pb-3 border-b border-black/[0.05] dark:border-white/[0.05] text-xs">
           <!-- Category Filter -->
           <div class="flex items-center space-x-1.5">
-            <span class="text-slate-500 font-semibold text-[11px]">Categoria:</span>
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_category')"></span>
             <select x-model="hogsCategoryFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all">Tutte</option>
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
               <template x-for="cat in availableCategories" :key="cat">
-                <option :value="cat" x-text="cat"></option>
+                <option :value="cat" x-text="formatCategoryName(cat)"></option>
               </template>
             </select>
           </div>
 
           <!-- Frequency Band Filter -->
           <div class="flex items-center space-x-1.5">
-            <span class="text-slate-500 font-semibold text-[11px]">Banda:</span>
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_band')"></span>
             <select x-model="hogsBandFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all">Tutte</option>
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
               <option value="6ghz">6 GHz</option>
               <option value="5ghz">5 GHz</option>
               <option value="2.4ghz">2.4 GHz</option>
-              <option value="wired">Cablato</option>
+              <option value="wired" x-text="t('top_hogs.filter_wired')"></option>
             </select>
           </div>
 
           <!-- Mesh Node Filter -->
           <div class="flex items-center space-x-1.5">
-            <span class="text-slate-500 font-semibold text-[11px]">Nodo:</span>
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_node')"></span>
             <select x-model="hogsNodeFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none max-w-[140px] truncate">
-              <option value="all">Tutti i nodi</option>
+              <option value="all" x-text="t('top_hogs.filter_all_nodes')"></option>
               <template x-for="eero in eeros" :key="eero.id">
                 <option :value="eero.id" x-text="eero.location || eero.model || eero.id"></option>
               </template>
@@ -1044,7 +1044,7 @@
             x-show="hogsCategoryFilter !== 'all' || hogsBandFilter !== 'all' || hogsNodeFilter !== 'all'"
             @click="hogsCategoryFilter = 'all'; hogsBandFilter = 'all'; hogsNodeFilter = 'all'"
             class="px-2 py-1 rounded-lg text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition cursor-pointer">
-            ✕ Resetta
+            ✕ <span x-text="t('top_hogs.reset')"></span>
           </button>
         </div>
 
@@ -6503,7 +6503,7 @@
       <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1">
         <div class="flex items-center space-x-1.5 font-bold text-emerald-700 dark:text-emerald-400">
           <span>🔒</span>
-          <span>Sicurezza Zero-Default</span>
+          <span x-text="t('auth_local.setup_security_title') || 'Sicurezza Zero-Default'"></span>
         </div>
         <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc') || 'Nessuna password predefinita: le credenziali configurate qui proteggeranno la tua dashboard locale.'"></p>
       </div>
