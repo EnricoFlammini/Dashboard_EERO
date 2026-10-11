@@ -30,6 +30,8 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **👤 Esecuzione Sicura con Utente Non-Root (`appuser` UID 10001):**
   * Introdotto utente e gruppo dedicati non privilegiati `appuser:appgroup` (UID/GID 10001) con ownership esclusiva della directory dati persistente `/app/data`.
   * Rimosso l'avvio come utente `root`, garantendo piena aderenza al principio del minimo privilegio (*Least Privilege*) e prevenendo privilege escalation dal container verso l'host server.
+* **🔄 Self-Healing Trasparente Permessi Volume (`entrypoint.sh` + `su-exec`):**
+  * Introdotto script di bootstrap `entrypoint.sh` con `su-exec`: se il container rileva volumi host montati da versioni precedenti con permessi `root`, ne corregge automaticamente la proprietà a `appuser:appgroup` per poi cedere all'istante i privilegi di root, garantendo aggiornamenti zero-configurazione senza richiedere alcun comando manuale all'utente.
 * **🩺 Healthcheck Docker Nativo:**
   * Integrata istruzione `HEALTHCHECK` direttamente nel `Dockerfile` verso l'endpoint `/api/health` per un monitoraggio affidabile su Docker Compose, Kubernetes e Synology Container Manager.
 * **🔍 Scansione Continua delle Vulnerabilità in CI/CD:**

@@ -4705,13 +4705,20 @@ async def run_all_tests():
         runner.assert_true(dockerfile_path.exists(), "Dockerfile presente nel repository")
         df_content = dockerfile_path.read_text(encoding="utf-8")
         runner.assert_true("FROM python:3.12-alpine AS builder" in df_content, "Dockerfile utilizza base Alpine per lo stage builder")
-        runner.assert_true("FROM python:3.12-alpine AS runner" in df_content, "Dockerfile utilizza base Alpine per lo stage runner")
-        runner.assert_true("USER appuser" in df_content, "Dockerfile imposta utente non-root 'appuser'")
+        runner.assert_true("su-exec" in df_content, "Dockerfile include su-exec per privilege dropping")
+        runner.assert_true("ENTRYPOINT [\"/app/entrypoint.sh\"]" in df_content, "Dockerfile imposta script di entrypoint")
         runner.assert_true("addgroup -g 10001 -S appgroup" in df_content, "Dockerfile crea gruppo non privilegiato 'appgroup' (GID 10001)")
         runner.assert_true("adduser -u 10001 -S appuser" in df_content, "Dockerfile crea utente non privilegiato 'appuser' (UID 10001)")
         runner.assert_true("HEALTHCHECK" in df_content, "Dockerfile include direttiva HEALTHCHECK nativa")
         runner.assert_true("COPY --from=builder /opt/venv /opt/venv" in df_content, "Dockerfile copia virtualenv dallo stage builder")
         runner.assert_true("chown -R appuser:appgroup /app/data" in df_content, "Dockerfile assegna ownership /app/data a appuser")
+
+        # Verifica script di entrypoint e self-healing permessi volume
+        entrypoint_path = Path("entrypoint.sh")
+        runner.assert_true(entrypoint_path.exists(), "entrypoint.sh presente nel repository")
+        ep_content = entrypoint_path.read_text(encoding="utf-8")
+        runner.assert_true("su-exec appuser" in ep_content, "entrypoint.sh cede privilegi a appuser non-root tramite su-exec")
+        runner.assert_true("chown -R appuser:appgroup /app/data" in ep_content, "entrypoint.sh esegue self-healing dei permessi del volume /app/data")
 
         # Verifica workflow CI/CD con Trivy Scanner
         wf_path = Path(".github/workflows/docker-publish.yml")

@@ -44,13 +44,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Installa solo i pacchetti e le librerie runtime essenziali (curl per healthcheck, tzdata, ca-certificates)
+# Installa solo i pacchetti e le librerie runtime essenziali (curl per healthcheck, tzdata, ca-certificates, su-exec)
 RUN apk add --no-cache \
     curl \
     tzdata \
     ca-certificates \
     libjpeg-turbo \
-    zlib
+    zlib \
+    su-exec
 
 # Crea utente e gruppo di sistema non-root dedicati (Principio del Least Privilege)
 RUN addgroup -g 10001 -S appgroup && \
@@ -59,16 +60,16 @@ RUN addgroup -g 10001 -S appgroup && \
 # Copia l'ambiente virtuale completo precompilato dallo stage builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copia il codice sorgente e la documentazione
+# Copia il codice sorgente, documentazione e script di avvio entrypoint
 COPY app/ /app/app/
 COPY changelog.md /app/changelog.md
 COPY README.md /app/README.md
+COPY entrypoint.sh /app/entrypoint.sh
 
-# Prepara la directory dati per la persistenza e assegna la proprietà all'utente appuser
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data /app
-
-# Esegui il container con utente non privilegiato
-USER appuser
+# Prepara la directory dati per la persistenza e assegna i permessi necessari
+RUN mkdir -p /app/data && \
+    chown -R appuser:appgroup /app/data /app && \
+    chmod +x /app/entrypoint.sh
 
 # Espone la porta del container
 EXPOSE 8000
@@ -77,5 +78,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:8000/api/health || exit 1
 
-# Comando di avvio del server FastAPI con Uvicorn
+# Entrypoint trasparente: self-healing permessi volume host ed esecuzione sicura come utente non-root appuser
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Comando predefinito di avvio del server FastAPI con Uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--log-level", "info"]
+
