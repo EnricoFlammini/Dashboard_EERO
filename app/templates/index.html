@@ -1164,6 +1164,124 @@
               <span x-show="devices.filter(d => d.is_new).length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" x-text="devices.filter(d => d.is_new).length"></span>
             </button>
 
+            <!-- Column Customizer Dropdown (Desktop Only >= md - Issue #60) -->
+            <div class="hidden md:block relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
+              <button 
+                type="button"
+                @click.stop="toggleDeviceDropdown('columns')"
+                :class="openDeviceDropdown === 'columns' ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                class="device-toggle-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs"
+                :title="t('devices.columns_button_tooltip') || 'Personalizza le colonne visibili della tabella'"
+                :aria-label="t('devices.columns_button')"
+                :aria-expanded="openDeviceDropdown === 'columns'">
+                <svg class="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4v16m6-16v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg>
+                <span x-text="t('devices.columns_button') || 'Colonne'"></span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/[0.06] dark:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-semibold" x-text="getActiveColumnsCount() + '/8'"></span>
+                <svg class="w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'columns' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </button>
+
+              <!-- Columns Dropdown Menu -->
+              <div 
+                x-show="openDeviceDropdown === 'columns'" 
+                x-cloak 
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-75"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+                class="absolute right-0 top-full mt-1.5 w-60 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 p-2.5 space-y-2 text-xs">
+                
+                <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/80 dark:border-slate-800">
+                  <span class="font-semibold text-slate-900 dark:text-white" x-text="t('devices.columns_title') || 'Colonne Visibili'"></span>
+                  <button 
+                    type="button" 
+                    @click="resetTableColumns()" 
+                    class="text-[11px] font-medium text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                    x-text="t('devices.columns_reset') || 'Ripristina'">
+                  </button>
+                </div>
+
+                <div class="space-y-1 max-h-64 overflow-y-auto pr-0.5">
+                  <!-- Fixed Col: Name -->
+                  <div class="flex items-center justify-between px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 select-none">
+                    <span class="flex items-center gap-2">
+                      <span class="w-3.5 h-3.5 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-700 text-slate-500 text-[10px]">✓</span>
+                      <span x-text="t('devices.col_device')"></span>
+                    </span>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-60" x-text="t('devices.columns_fixed') || 'Fissa'"></span>
+                  </div>
+
+                  <!-- Toggleable Columns -->
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.address" @change="toggleTableColumn('address')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_ip_mac')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.profile" @change="toggleTableColumn('profile')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_profile')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.node" @change="toggleTableColumn('node')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_node')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.band" @change="toggleTableColumn('band')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_band')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.signal" @change="toggleTableColumn('signal')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_signal')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.traffic" @change="toggleTableColumn('traffic')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_traffic')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.first_seen" @change="toggleTableColumn('first_seen')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_first_seen')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.status" @change="toggleTableColumn('status')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_status')"></span>
+                    </span>
+                  </label>
+
+                  <!-- Fixed Col: Actions -->
+                  <div class="flex items-center justify-between px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 select-none">
+                    <span class="flex items-center gap-2">
+                      <span class="w-3.5 h-3.5 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-700 text-slate-500 text-[10px]">✓</span>
+                      <span x-text="t('devices.col_actions')"></span>
+                    </span>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-60" x-text="t('devices.columns_fixed') || 'Fissa'"></span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
             <!-- Refresh Dispositivi -->
             <button 
               type="button"
@@ -1607,20 +1725,21 @@
             <caption class="sr-only" x-text="t('devices.title')"></caption>
             <colgroup>
               <col class="device-col-name">
-              <col class="device-col-address">
-              <col class="device-col-profile">
-              <col class="device-col-node">
-              <col class="device-col-band">
-              <col class="device-col-signal">
-              <col class="device-col-traffic">
-              <col class="device-col-status">
+              <col x-show="isTableColumnVisible('address')" class="device-col-address">
+              <col x-show="isTableColumnVisible('profile')" class="device-col-profile">
+              <col x-show="isTableColumnVisible('node')" class="device-col-node">
+              <col x-show="isTableColumnVisible('band')" class="device-col-band">
+              <col x-show="isTableColumnVisible('signal')" class="device-col-signal">
+              <col x-show="isTableColumnVisible('traffic')" class="device-col-traffic">
+              <col x-show="isTableColumnVisible('first_seen')" class="device-col-first-seen">
+              <col x-show="isTableColumnVisible('status')" class="device-col-status">
               <col class="device-col-actions">
             </colgroup>
             <thead class="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
               <tr class="text-slate-700 dark:text-slate-400 uppercase tracking-wider font-semibold">
                 
                 <!-- Col: Device / Name -->
-                <th @click="toggleDeviceSort('name')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th @click="toggleDeviceSort('name')" class="device-col-name py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_device')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'name' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1632,7 +1751,7 @@
                 </th>
 
                 <!-- Col: IP / MAC -->
-                <th @click="toggleDeviceSort('ip')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('address')" @click="toggleDeviceSort('ip')" class="device-col-address py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_ip_mac')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'ip' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1644,7 +1763,7 @@
                 </th>
 
                 <!-- Col: Profile / User -->
-                <th @click="toggleDeviceSort('profile')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('profile')" @click="toggleDeviceSort('profile')" class="device-col-profile py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_profile')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'profile' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1656,7 +1775,7 @@
                 </th>
 
                 <!-- Col: Node -->
-                <th @click="toggleDeviceSort('node')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('node')" @click="toggleDeviceSort('node')" class="device-col-node py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_node')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'node' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1668,7 +1787,7 @@
                 </th>
 
                 <!-- Col: Band -->
-                <th @click="toggleDeviceSort('band')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('band')" @click="toggleDeviceSort('band')" class="device-col-band py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_band')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'band' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1680,7 +1799,7 @@
                 </th>
 
                 <!-- Col: Signal -->
-                <th @click="toggleDeviceSort('signal')" class="py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('signal')" @click="toggleDeviceSort('signal')" class="device-col-signal py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1.5">
                     <span x-text="t('devices.col_signal')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'signal' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1692,7 +1811,7 @@
                 </th>
 
                 <!-- Col: Traffic (Download & Upload) -->
-                <th class="device-th-traffic py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('traffic')" class="device-col-traffic device-th-traffic py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1 text-[11px]">
                     <div @click="toggleDeviceSort('download')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'download' ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400'" title="Download">
                       <span>↓DL</span>
@@ -1703,14 +1822,26 @@
                     <div @click="toggleDeviceSort('upload')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'upload' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'" title="Upload">
                       <span>↑UL</span>
                       <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'asc'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
-                      <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'desc'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
                     <button @click.stop="showUsageInfoModal = true" type="button" class="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-sky-500 hover:text-white text-slate-500 dark:text-slate-300 text-[9px] font-bold inline-flex items-center justify-center cursor-pointer transition ml-0.5" :title="t('device_modal.usage_info_btn_title')">?</button>
                   </div>
                 </th>
 
+                <!-- Col: First Seen (Issue #60) -->
+                <th x-show="isTableColumnVisible('first_seen')" @click="toggleDeviceSort('first_seen')" class="device-col-first-seen py-3.5 px-3 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_first_seen')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'first_seen' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'first_seen' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'first_seen' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'first_seen'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
                 <!-- Col: Status -->
-                <th @click="toggleDeviceSort('status')" class="device-th-status py-3.5 px-3 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                <th x-show="isTableColumnVisible('status')" @click="toggleDeviceSort('status')" class="device-col-status device-th-status py-3.5 px-3 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center justify-center space-x-1.5">
                     <span x-text="t('devices.col_status')"></span>
                     <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
@@ -1722,7 +1853,7 @@
                 </th>
 
                 <!-- Col: Actions -->
-                <th class="py-3.5 px-4 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
+                <th class="device-col-actions py-3.5 px-4 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
@@ -1765,7 +1896,7 @@
                   </td>
 
                   <!-- IP & MAC with Static / DHCP badge -->
-                  <td class="py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
+                  <td x-show="isTableColumnVisible('address')" class="py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
                     <div class="flex items-center space-x-2">
                       <span class="text-slate-900 dark:text-slate-200 font-bold text-xs" x-text="dev.ip || '---'"></span>
                       <template x-if="dev.is_static">
@@ -1791,7 +1922,7 @@
                   </td>
 
                   <!-- Profile / User -->
-                  <td class="py-3 px-4 whitespace-nowrap" :data-label="t('devices.col_profile')">
+                  <td x-show="isTableColumnVisible('profile')" class="py-3 px-4 whitespace-nowrap" :data-label="t('devices.col_profile')">
                     <template x-if="dev.profile_name">
                       <span class="device-profile inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none">
                         <span>👤</span>
@@ -1804,7 +1935,7 @@
                   </td>
 
                   <!-- Connected eero -->
-                  <td class="py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
+                  <td x-show="isTableColumnVisible('node')" class="py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
                     <div class="flex items-center space-x-1.5 flex-wrap gap-1">
                       <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
                       <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
@@ -1819,7 +1950,7 @@
                   </td>
 
                   <!-- Band / Channel -->
-                  <td class="py-3 px-4" :data-label="t('devices.col_band')">
+                  <td x-show="isTableColumnVisible('band')" class="py-3 px-4" :data-label="t('devices.col_band')">
                     <div class="flex items-center space-x-2">
                       <span 
                         class="px-2.5 py-0.5 rounded text-[10px] font-mono font-extrabold shadow-xs dark:shadow-none inline-block"
@@ -1838,7 +1969,7 @@
                   </td>
 
                   <!-- Signal & PHY Link Speed (Real Eero API data) -->
-                  <td class="py-3 px-4 font-mono text-xs" :data-label="t('devices.col_signal')">
+                  <td x-show="isTableColumnVisible('signal')" class="py-3 px-4 font-mono text-xs" :data-label="t('devices.col_signal')">
                     <template x-if="dev.wireless">
                       <div>
                         <template x-if="dev.signal_rssi">
@@ -1861,7 +1992,7 @@
                   </td>
 
                   <!-- Traffic (Download & Upload) -->
-                  <td class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic') || 'Traffic'">
+                  <td x-show="isTableColumnVisible('traffic')" class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic') || 'Traffic'">
                     <template x-if="(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05)">
                       <div class="flex flex-col leading-tight">
                         <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="'DL Cumulativo: ' + formatBytes(dev.rx_bytes || 0) + ' (~ Stima hardware Wi-Fi)' + (dev.download_rate_mbps > 0.05 ? ' • Real-Time: ' + dev.download_rate_mbps + ' Mbps' : '')">
@@ -1896,8 +2027,21 @@
                     </template>
                   </td>
 
+                  <!-- First Seen (Issue #60) -->
+                  <td x-show="isTableColumnVisible('first_seen')" class="device-first-seen-cell py-3 px-3 font-mono text-xs whitespace-nowrap" :data-label="t('devices.col_first_seen') || 'Primo Accesso'">
+                    <template x-if="dev.first_seen">
+                      <div class="flex items-center space-x-1.5" :title="(t('devices.first_seen_badge_tooltip') || 'Primo accesso:') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                        <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-slate-700 dark:text-slate-300 font-medium" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                      </div>
+                    </template>
+                    <template x-if="!dev.first_seen">
+                      <span class="text-slate-400 dark:text-slate-600 text-[11px]">—</span>
+                    </template>
+                  </td>
+
                   <!-- Status (Online/Offline) -->
-                  <td class="device-status-cell py-3 px-3 text-center whitespace-nowrap" :data-label="t('devices.col_status')">
+                  <td x-show="isTableColumnVisible('status')" class="device-status-cell py-3 px-3 text-center whitespace-nowrap" :data-label="t('devices.col_status')">
                     <template x-if="dev.connected">
                       <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 shadow-xs dark:shadow-none" x-text="t('devices.status_online')"></span>
                     </template>
@@ -1923,7 +2067,7 @@
               <!-- Dynamic Empty State -->
               <template x-if="filteredDevices.length === 0">
                 <tr class="device-empty-row">
-                  <td colspan="9" class="py-12 px-4 text-center text-slate-500">
+                  <td :colspan="getActiveColumnsCount() + 2" class="py-12 px-4 text-center text-slate-500">
                     <div class="flex flex-col items-center justify-center space-y-2">
                       <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                       <span class="text-sm font-medium text-slate-400" x-text="t('devices.no_devices_found')"></span>

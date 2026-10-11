@@ -249,6 +249,69 @@ document.addEventListener('alpine:init', () => {
       return this.t('devices.filter_all_assignments');
     },
 
+    // Table Column Customization State (v1.6.1 - Issue #60)
+    deviceTableColumns: (() => {
+      const defaults = {
+        address: true,
+        profile: true,
+        node: true,
+        band: true,
+        signal: true,
+        traffic: true,
+        status: true,
+        first_seen: false
+      };
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const saved = localStorage.getItem('eero_device_columns');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            return { ...defaults, ...parsed };
+          }
+        }
+      } catch (e) {}
+      return defaults;
+    })(),
+
+    toggleTableColumn(colKey) {
+      if (this.deviceTableColumns[colKey] !== undefined) {
+        this.deviceTableColumns[colKey] = !this.deviceTableColumns[colKey];
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('eero_device_columns', JSON.stringify(this.deviceTableColumns));
+          }
+        } catch (e) {}
+      }
+    },
+
+    resetTableColumns() {
+      this.deviceTableColumns = {
+        address: true,
+        profile: true,
+        node: true,
+        band: true,
+        signal: true,
+        traffic: true,
+        status: true,
+        first_seen: false
+      };
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('eero_device_columns');
+        }
+      } catch (e) {}
+    },
+
+    isTableColumnVisible(colKey) {
+      if (colKey === 'name' || colKey === 'actions') return true;
+      return this.deviceTableColumns[colKey] !== false;
+    },
+
+    getActiveColumnsCount() {
+      const keys = ['address', 'profile', 'node', 'band', 'signal', 'traffic', 'status', 'first_seen'];
+      return keys.filter(k => this.deviceTableColumns[k]).length;
+    },
+
     // eeroOS Release Notes & Community Updates State (v1.6.0)
     eeroNewsLoading: false,
     eeroNewsError: null,

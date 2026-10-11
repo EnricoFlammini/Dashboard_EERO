@@ -570,23 +570,24 @@ gantt
 > **Obiettivo:** Estendere la tabella principale dei dispositivi consentendo all'utente di scegliere liberamente quali colonne visualizzare e personalizzare la densità informativa, rispondendo al feedback della community (Issue #60 - @WillFulmer).
 
 #### 1. Selettore Colonne & Personalizzazione Visibilità (Opzione B)
-- [ ] **Menu Selettore Colonne Dinamico (Column Visibility Dropdown):**
-  - Aggiunta di un pulsante selettore colonne (`Columns` / `Colonne`) nella barra degli strumenti della tabella dispositivi.
-  - Elenco checkbox per attivare o disattivare a piacimento le singole colonne della tabella:
-    - *Stato & Categoria*
-    - *Nome & Produttore*
-    - *Indirizzo IP (IPv4 / IPv6)*
-    - *Indirizzo MAC*
-    - *Banda & Connessione (Wi-Fi 2.4/5/6 GHz, Ethernet)*
-    - *Qualità Segnale (RSSI / Barre)*
-    - *Velocità in tempo reale (Rx / Tx)*
-    - *Nodo Mesh di Connessione*
-    - *Colonna dedicata 'Primo Accesso / Connesso da' (`Joined / First Seen`)*
-- [ ] **Persistenza Locale delle Preferenze (`localStorage`):**
-  - Salvataggio delle colonne abilitate/disabilitate per mantenere le preferenze tra sessioni e ricaricamenti pagina.
-  - Pulsante di ripristino configurazione predefinita (*Reset to Default*).
-- [ ] **Layout Tabella Adattivo & Responsive:**
-  - Adattamento fluido della larghezza e compattazione coerente con il design system Windows 11 Fluent.
+- [x] **Menu Selettore Colonne Dinamico (Column Visibility Dropdown):**
+  - Aggiunta di un pulsante selettore colonne (`Columns` / `Colonne`) nella barra degli strumenti della tabella dispositivi con badge conteggio attivo (`7/8`).
+  - Elenco checkbox Fluent per attivare o disattivare a piacimento le singole colonne della tabella:
+    - *Indirizzo IP & MAC* (`address`)
+    - *Profilo / Utente* (`profile`)
+    - *Nodo Mesh di Connessione* (`node`)
+    - *Banda & Connessione (Wi-Fi 2.4/5/6 GHz, Ethernet)* (`band`)
+    - *Qualità Segnale & PHY Link Speed* (`signal`)
+    - *Velocità e traffico cumulativo (DL / UL)* (`traffic`)
+    - *Colonna dedicata 'Primo Accesso' (`Joined / First Seen` con ordinamento e date relative)*
+    - *Stato Connessione (Online / Offline)* (`status`)
+    - *Colonne fisse protette: Nome e Azioni*
+- [x] **Persistenza Locale delle Preferenze (`localStorage`):**
+  - Salvataggio immediato in `localStorage` (`eero_device_columns`) per mantenere le preferenze tra sessioni e ricaricamenti pagina.
+  - Pulsante di ripristino configurazione predefinita (*Reset / Ripristina*).
+- [x] **Layout Tabella Adattivo & Responsive:**
+  - Adattamento fluido della larghezza (`min-width: max-content; width: 100%`) e compattazione coerente con il design system Windows 11 Fluent.
+  - Colspan dinamico sulla riga vuota dei filtri (`:colspan="getActiveColumnsCount() + 2"`).
 
 #### 2. 🏠 Pannello & Modale di Configurazione Visuale MQTT / Home Assistant Auto-Discovery
 - [ ] **Modale / Form di Configurazione UI per MQTT:**

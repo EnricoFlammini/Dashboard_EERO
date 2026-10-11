@@ -4406,6 +4406,38 @@ async def run_all_tests():
         runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
 
         # =====================================================================
+        # [ISSUE #60] SELETTORE COLONNE & PERSONALIZZAZIONE VISIBILITÀ TABELLA
+        # =====================================================================
+        print("\n📊 TEST ISSUE #60 (DEVICE TABLE COLUMN CUSTOMIZATION)")
+        import json as _col_json
+        with open("app/static/locales/it.json", "r", encoding="utf-8") as _f_it:
+            _it_locale = _col_json.load(_f_it)
+        with open("app/static/locales/en.json", "r", encoding="utf-8") as _f_en:
+            _en_locale = _col_json.load(_f_en)
+
+        for _ckey in ["col_first_seen", "columns_button", "columns_button_tooltip", "columns_title", "columns_reset", "columns_fixed"]:
+            runner.assert_true(_ckey in _it_locale.get("devices", {}), f"Chiave devices.{_ckey} presente in it.json")
+            runner.assert_true(_ckey in _en_locale.get("devices", {}), f"Chiave devices.{_ckey} presente in en.json")
+
+        with open("app/static/js/app.js", "r", encoding="utf-8") as _f_js:
+            _app_js = _f_js.read()
+        runner.assert_true("deviceTableColumns:" in _app_js, "app.js definisce lo stato deviceTableColumns")
+        runner.assert_true("toggleTableColumn(" in _app_js, "app.js implementa toggleTableColumn")
+        runner.assert_true("resetTableColumns(" in _app_js, "app.js implementa resetTableColumns")
+        runner.assert_true("isTableColumnVisible(" in _app_js, "app.js implementa isTableColumnVisible")
+        runner.assert_true("eero_device_columns" in _app_js, "app.js persiste su localStorage 'eero_device_columns'")
+
+        with open("app/templates/index.html", "r", encoding="utf-8") as _f_html:
+            _index_html = _f_html.read()
+        runner.assert_true("toggleTableColumn" in _index_html, "index.html contiene il selettore colonne con checkbox toggle")
+        runner.assert_true("isTableColumnVisible('first_seen')" in _index_html, "index.html supporta visibilità colonna first_seen")
+        runner.assert_true("device-col-first-seen" in _index_html, "index.html include classe device-col-first-seen")
+
+        with open("app/static/css/styles.css", "r", encoding="utf-8") as _f_css:
+            _styles_css = _f_css.read()
+        runner.assert_true(".device-table .device-col-first-seen" in _styles_css, "styles.css definisce .device-col-first-seen")
+
+        # =====================================================================
         # [SICUREZZA DNS] AUTORIZZAZIONE ENDPOINT DNS & NON RIUTILIZZO DEI SEGRETI
         # Regressione per: endpoint DNS/AdGuard di lettura, scrittura e /test privi di
         # require_permission, e /dns/test che riutilizzava il segreto salvato verso un

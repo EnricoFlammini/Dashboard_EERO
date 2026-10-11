@@ -6,6 +6,26 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🎛️ UI & Tabella Dispositivi: Selettore Colonne & Personalizzazione Visibilità (Issue #60 - @WillFulmer)
+* **🎛️ Menu Dropdown Personalizzazione Colonne della Tabella (Desktop >= md):**
+  * Introdotto un nuovo pulsante interattivo *"Colonne"* nella barra degli strumenti della tabella dispositivi con badge numerico dinamico delle colonne attive (es. `7/8`).
+  * Menu a tendina in stile Windows 11 Fluent con controlli checkbox per alternare istantaneamente la visibilità delle colonne:
+    * *Indirizzo IP & MAC* (`address`)
+    * *Profilo / Utente* (`profile`)
+    * *Nodo Mesh di Connessione* (`node`)
+    * *Banda & Canale* (`band`)
+    * *Segnale & PHY Link Speed* (`signal`)
+    * *Traffico DL / UL* (`traffic`)
+    * *Primo Accesso / Joined* (`first_seen` - nuova colonna dedicata con ordinamento e timestamp relativo)
+    * *Stato Connessione* (`status`)
+    * Colonne *Nome Dispositivo* e *Azioni* preservate come fisse e protette.
+* **💾 Persistenza Locale delle Preferenze (`localStorage`):**
+  * Le preferenze delle colonne vengono salvate automaticamente nella chiave `eero_device_columns` del browser e mantenute tra le sessioni e i ricaricamenti pagina.
+  * Pulsante dedicato *"Ripristina / Reset"* per riportare la vista alla configurazione consigliata di fabbrica.
+* **📐 Layout Tabella Fluido & Responsive:**
+  * Aggiornato lo stile CSS con `min-width: max-content; width: 100%;` per consentire alla tabella di compattarsi fluidamente sugli schermi laptop senza scrollbar orizzontale quando le colonne superflue vengono nascoste.
+  * Colspan dinamico (`:colspan="getActiveColumnsCount() + 2"`) sullo stato di tabella vuota quando nessun dispositivo corrisponde ai filtri.
+
 ### 🔒 Security Hardening: Risoluzione Vulnerabilità DNS Automation (GHSA-4qpq-c8xj-jr4r & GHSA-h2mh-hfmh-rgg9 - @carbones73)
 * **🛡️ Autorizzazione Endpoint Multi-DNS & Protezione Credenziali (GHSA-4qpq-c8xj-jr4r):**
   * Introdotte le dipendenze di autorizzazione `require_permission("view_dns_sync")` per la lettura (`GET /api/automations/dns`, `GET /adguard`) e `action_sync_dns` per scrittura e test (`POST /api/automations/dns`, `/dns/test`, `POST /adguard`, `/adguard/test`), bloccando l'accesso non autenticato quando `REQUIRE_LOCAL_AUTH=true`.

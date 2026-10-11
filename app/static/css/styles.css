@@ -944,7 +944,8 @@ html.dark .sidebar-btn-inactive:hover {
 }
 
 .device-table {
-  min-width: 76rem;
+  min-width: max-content;
+  width: 100%;
   table-layout: fixed;
 }
 
@@ -955,6 +956,7 @@ html.dark .sidebar-btn-inactive:hover {
 .device-table .device-col-band { width: 7rem; }
 .device-table .device-col-signal { width: 7rem; }
 .device-table .device-col-traffic { width: 11rem; }
+.device-table .device-col-first-seen { width: 9.5rem; }
 .device-table .device-col-status { width: 6.5rem; }
 .device-table .device-col-actions { width: 3.5rem; }
 
