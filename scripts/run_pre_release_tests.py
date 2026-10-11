@@ -4697,6 +4697,28 @@ async def run_all_tests():
         dry_run_count = prune_tags("enricoflammini/eero-dashboard", keep_main=5, keep_test=1, dry_run=True)
         runner.assert_true(isinstance(dry_run_count, int) and dry_run_count >= 0, "prune_tags dry_run eseguito con successo")
 
+        # =====================================================================
+        # TEST MODULO 3 - HARDENING DOCKER & CONTAINER SECURITY
+        # =====================================================================
+        print("\n🐳 TEST MODULO 3 - HARDENING DOCKER, MULTI-STAGE ALPINE & NON-ROOT USER")
+        dockerfile_path = Path("Dockerfile")
+        runner.assert_true(dockerfile_path.exists(), "Dockerfile presente nel repository")
+        df_content = dockerfile_path.read_text(encoding="utf-8")
+        runner.assert_true("FROM python:3.12-alpine AS builder" in df_content, "Dockerfile utilizza base Alpine per lo stage builder")
+        runner.assert_true("FROM python:3.12-alpine AS runner" in df_content, "Dockerfile utilizza base Alpine per lo stage runner")
+        runner.assert_true("USER appuser" in df_content, "Dockerfile imposta utente non-root 'appuser'")
+        runner.assert_true("addgroup -g 10001 -S appgroup" in df_content, "Dockerfile crea gruppo non privilegiato 'appgroup' (GID 10001)")
+        runner.assert_true("adduser -u 10001 -S appuser" in df_content, "Dockerfile crea utente non privilegiato 'appuser' (UID 10001)")
+        runner.assert_true("HEALTHCHECK" in df_content, "Dockerfile include direttiva HEALTHCHECK nativa")
+        runner.assert_true("COPY --from=builder /opt/venv /opt/venv" in df_content, "Dockerfile copia virtualenv dallo stage builder")
+        runner.assert_true("chown -R appuser:appgroup /app/data" in df_content, "Dockerfile assegna ownership /app/data a appuser")
+
+        # Verifica workflow CI/CD con Trivy Scanner
+        wf_path = Path(".github/workflows/docker-publish.yml")
+        runner.assert_true(wf_path.exists(), "Workflow CI/CD .github/workflows/docker-publish.yml presente")
+        wf_content = wf_path.read_text(encoding="utf-8")
+        runner.assert_true("aquasecurity/trivy-action" in wf_content, "CI/CD integra scanner automatico di vulnerabilità Trivy")
+
         runner.print_summary()
 
 

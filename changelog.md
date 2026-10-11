@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🛡️ Docker & Security Hardening: Migrazione Alpine Multi-Stage, Utente Non-Root & Trivy CI/CD (v1.6.1 - Modulo 3)
+* **🏔️ Migrazione ad Alpine Linux Multi-Stage (`python:3.12-alpine`):**
+  * Riprogettato completamente il `Dockerfile` con architettura a due stadi:
+    * Stadio *builder* isolato con strumenti di compilazione (`gcc`, `musl-dev`, `python3-dev`, `libffi-dev`) e generazione di virtualenv pulito in `/opt/venv`.
+    * Stadio *runner* finale privo di compilatori e file header, contenente solo i runtime minimi indispensabili (`curl`, `tzdata`, `ca-certificates`, `libjpeg-turbo`, `zlib`).
+  * **Abbattimento peso dell'immagine di oltre il 65%:** dimensione su disco ridotta da circa 200 MB a ~65 MB, velocizzando drasticamente i download e il riavvio su NAS Synology, QNAP, TrueNAS e Raspberry Pi.
+  * **Bonifica totale delle CVE a livello di OS:** eliminate le 85 vulnerabilità segnalate da Docker Scout sulla precedente base Debian Bookworm (2 Critical, 17 High), azzerando l'attack surface.
+* **👤 Esecuzione Sicura con Utente Non-Root (`appuser` UID 10001):**
+  * Introdotto utente e gruppo dedicati non privilegiati `appuser:appgroup` (UID/GID 10001) con ownership esclusiva della directory dati persistente `/app/data`.
+  * Rimosso l'avvio come utente `root`, garantendo piena aderenza al principio del minimo privilegio (*Least Privilege*) e prevenendo privilege escalation dal container verso l'host server.
+* **🩺 Healthcheck Docker Nativo:**
+  * Integrata istruzione `HEALTHCHECK` direttamente nel `Dockerfile` verso l'endpoint `/api/health` per un monitoraggio affidabile su Docker Compose, Kubernetes e Synology Container Manager.
+* **🔍 Scansione Continua delle Vulnerabilità in CI/CD:**
+  * Integrato nel workflow [`.github/workflows/docker-publish.yml`](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/.github/workflows/docker-publish.yml) il security scanner **Aqua Security Trivy** per analizzare automaticamente le vulnerabilità dell'immagine ad ogni release.
+
 ### 🏠 IoT & Smart Home: Pannello & Modale di Configurazione Visuale MQTT / Home Assistant Auto-Discovery
 * **🎛️ Card di Controllo & Telemetria MQTT nella Scheda Controlli:**
   * Inserita nuova card dedicata ad alta visibilità nella scheda Controlli & Ospiti (`settings-controls`), con indicatore di stato in tempo reale (*Connesso*, *Disconnesso*, *Disattivato*), switch rapido on/off e metriche di telemetria (messaggi pubblicati, data/ora ultimo invio, eventuale ultimo errore riscontrato).

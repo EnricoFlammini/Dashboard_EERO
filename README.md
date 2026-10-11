@@ -90,7 +90,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🛠️ Tech Stack
 
-* **Backend:** Python 3.12 (`python:3.12-slim-bookworm`), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2, `asyncio`.
+* **Backend:** Python 3.12 (`python:3.12-alpine` Multi-Stage Build & Non-Root User), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2, `asyncio`.
 * **HTTP Client:** `httpx` (async client for eero REST API 2.2).
 * **Storage:** Async SQLite with `aiosqlite` (WAL mode).
 * **Frontend:** Semantic HTML5, Vanilla CSS / Tailwind CSS, Alpine.js (v3.14+), Chart.js (v4.4+).
@@ -446,7 +446,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🛠️ Stack Tecnologico
 
-* **Backend:** Python 3.12 (`python:3.12-slim-bookworm`), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2, `asyncio`.
+* **Backend:** Python 3.12 (`python:3.12-alpine` Multi-Stage Build con Utente Non-Root), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2, `asyncio`.
 * **Client HTTP:** `httpx` (client asincrono per REST API eero 2.2).
 * **Database & Storico:** SQLite asincrono con `aiosqlite` (WAL mode).
 * **Frontend:** HTML5 semantico, Vanilla CSS / Tailwind CSS, Alpine.js (v3.14+), Chart.js (v4.4+).
