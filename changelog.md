@@ -6,12 +6,36 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
-### 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66 - @todddube)
+### 🔒 Security Hardening: Risoluzione Vulnerabilità DNS Automation (GHSA-4qpq-c8xj-jr4r & GHSA-h2mh-hfmh-rgg9 - @carbones73)
+* **🛡️ Autorizzazione Endpoint Multi-DNS & Protezione Credenziali (GHSA-4qpq-c8xj-jr4r):**
+  * Introdotte le dipendenze di autorizzazione `require_permission("view_dns_sync")` per la lettura (`GET /api/automations/dns`, `GET /adguard`) e `action_sync_dns` per scrittura e test (`POST /api/automations/dns`, `/dns/test`, `POST /adguard`, `/adguard/test`), bloccando l'accesso non autenticato quando `REQUIRE_LOCAL_AUTH=true`.
+  * Mascherati sia le password sia i token di autenticazione (`has_password` e `has_token`), impedendo la restituzione dei token Pi-hole e Technitium in chiaro.
+  * Introdotta la funzione `_same_registered_instance()`: le credenziali memorizzate non vengono mai inoltrate a URL arbitrari scelti dal chiamante, neutralizzando l'esfiltrazione delle credenziali verso server malevoli (SSRF).
+* **🔐 Verifica Certificati TLS per Connessioni HTTPS ai Server DNS (GHSA-h2mh-hfmh-rgg9):**
+  * Abilitata di default la verifica rigorosa dei certificati TLS (`verify=True`) per tutte le connessioni verso i server AdGuard Home, Pi-hole e Technitium.
+  * Introdotto il flag per-istanza `insecure_tls` con checkbox dedicata nella UI (*"Accetta certificato HTTPS non verificato"* con avviso visivo) per supportare in sicurezza certificati autofirmati (*self-signed*).
+  * Garantita la retrocompatibilità per istanze HTTPS preesistenti (impostate con `insecure_tls = true` per evitare interruzioni di servizio).
+  * Aggiunti 75 test di regressione e sicurezza dedicati alla suite pre-rilascio (suite portata a 1.207 test complessivi con esito 100% green).
+
+### 🌐 UI & i18n Fix: Localizzazione Bandwidth Hogs & Ripristino Categorie (PR #67 - @todddube)
+* **🌐 Traduzione Multilingua Completa Card Top Bandwidth Hogs:**
+  * Sostituite le etichette precedentemente hardcoded in italiano (`Categoria:`, `Banda:`, `Nodo:`, `Tutte`, `Tutti i nodi`, `Cablato`, `Resetta`) con chiavi di traduzione `top_hogs.filter_*` in `it.json` ed `en.json`.
+  * Tradotto il titolo dell'avviso di sicurezza nel box di setup iniziale dell'amministratore (`auth_local.setup_security_title`: *"Zero-Default Security"* / *"Sicurezza Zero-Default"*).
+* **🩹 Ripristino Dropdown Categorie Dispositivi:**
+  * Aggiunto il getter mancante `availableCategories` in Alpine.js ([app.js](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/app/static/js/app.js)), risolvendo il problema del menu a tendina delle categorie precedentemente vuoto e ordinando le opzioni in base al nome localizzato (`formatCategoryName`).
+  * Mappati i dispositivi privi di categoria come `Altro` per consentire un filtraggio coerente.
+
+### 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66 & PR #68 - @todddube)
 * **🗄️ Template Docker Compose & Guida Ufficiale Synology:**
   * Introdotto template pronto all'uso `deploy/synology/docker-compose.yml` preconfigurato per Synology DSM 7.2+ Container Manager (funzione "Progetti").
   * Configurato percorso di storage persistente compatibile con Synology Hyper Backup (`/volume1/docker/eero-dashboard/data:/app/data`).
-  * Inclusa guida passo-passo `deploy/synology/README.md` con accorgimenti specifici per DSM (nomi progetto in minuscolo, creazione preventiva cartella in File Station, aggiornamento sicuro con *Azione -> Compila* senza esporre il socket Docker dell'host).
-  * Estese le variabili d'ambiente opzionali del template Synology con le nuove integrazioni introdotte in v1.6.0 (MQTT broker, Discord Webhook, notifiche push Pushover).
+  * Inclusa guida passo-passo `deploy/synology/README.md` con accorgimenti specifici per DSM (nomi progetto in minuscolo, creazione preventiva cartella in File Station).
+  * Estese le variabili d'ambiente opzionali del template Synology con le nuove integrazioni introdotte in v1.6.0 (DNS fallback, MQTT broker, Discord Webhook, notifiche push Pushover).
+* **🔄 Aggiornamenti Automatici Senza Esporre Docker Socket (PR #68):**
+  * Introdotta la direttiva `pull_policy: always` che verifica e scarica l'immagine più recente da Docker Hub ad ogni avvio/compilazione del progetto.
+  * Aggiunto `stop_grace_period: 30s` per consentire una chiusura pulita del database SQLite prima della ricreazione del container.
+  * Aggiunto limite prudenziale di memoria `mem_limit: 512m`.
+  * Documentato script pronto per il **Task Scheduler di DSM** (avvio del NAS e cron giornaliero) per aggiornare automaticamente la dashboard (`docker compose pull && docker compose up -d`) senza montare `docker.sock` all'interno del container.
 * **🏆 Community Credits:**
   * Aggiunto **@todddube** alla Community Hall of Fame nel modale About dell'interfaccia web e nella documentazione ufficiale `README.md`.
 

@@ -630,16 +630,29 @@ gantt
 - [ ] **Gatekeeping Immediato all'Avvio (Strict Login Prompt):**
   - All'apertura della pagina, se l'utente non possiede una sessione valida attiva per la scheda corrente, presentazione automatica del modale di login per autenticarsi prima di sbloccare la consultazione dei nodi e dei dispositivi della dashboard.
 
-#### 5. 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66)
+#### 5. 🗄️ Homelab Deployments: Template Ufficiale Synology DSM 7.2+ Container Manager (PR #66 & PR #68)
 - [x] **Template Ufficiale `deploy/synology/docker-compose.yml`:**
   - File Docker Compose *ready-to-paste* per la funzione "Progetti" di Synology Container Manager.
   - Mappatura persistente `/volume1/docker/eero-dashboard/data:/app/data` compatibile con Synology Hyper Backup.
-  - Integrazione completa delle variabili d'ambiente (incluse quelle di v1.6.0: MQTT, Discord, Pushover).
-  - Healthcheck Docker e raccomandazioni di sicurezza (aggiornamento tramite *Azione → Compila* senza esporre `/var/run/docker.sock` su NAS).
-- [x] **Guida Passo-Passo DSM 7.2+ (`deploy/synology/README.md`):**
+  - Integrazione completa delle variabili d'ambiente (incluse quelle di v1.6.0: DNS fallback, MQTT, Discord, Pushover).
+  - Direttiva `pull_policy: always`, `stop_grace_period: 30s` e `mem_limit: 512m` (PR #68).
+  - Healthcheck Docker e raccomandazioni di sicurezza.
+- [x] **Guida Passo-Passo DSM 7.2+ & Aggiornamenti Automatici (`deploy/synology/README.md`):**
   - Istruzioni dedicate per File Station, restrizioni di naming (solo minuscole per Container Manager), e porte alternative (8085).
+  - Script pronto per il **Task Scheduler di DSM** (avvio e cron giornaliero) per aggiornare automaticamente la dashboard (`pull && up -d && prune`) in totale sicurezza senza montare `docker.sock` su NAS (PR #68).
 - [x] **Documentazione [README.md](file:///c:/Users/flamm/Documents/Progetti/03.Prj_Dashboard_EERO/Programma/README.md) & Crediti Community:**
   - Sezione dedicata e link in italiano e inglese nella documentazione generale e citazione di Todd Dube nei riconoscimenti della community.
+
+#### 6. 🔒 Security Hardening DNS & i18n Fixes (GHSA-4qpq-c8xj-jr4r, GHSA-h2mh-hfmh-rgg9 & PR #67)
+- [x] **Protezione Endpoint Multi-DNS & Neutralizzazione Esfiltrazione Credenziali (GHSA-4qpq-c8xj-jr4r - @carbones73):**
+  - Dipendenze `require_permission` su endpoint DNS/AdGuard e isolamento del riutilizzo credenziali con `_same_registered_instance()`.
+  - Mascheramento token e password in `GET /api/automations/dns` (`has_password`, `has_token`).
+- [x] **Verifica Certificati TLS Server DNS HTTPS & Opt-out Self-Signed (GHSA-h2mh-hfmh-rgg9 - @carbones73):**
+  - Connessioni HTTPS verso AdGuard/Pi-hole/Technitium verificate di default (`verify=True`).
+  - Flag per-istanza `insecure_tls` con checkbox e avviso nella UI, preservando retrocompatibilità per istanze preesistenti.
+  - 75 test di regressione/sicurezza offline aggiunti alla suite (totale 1.207 test al 100%).
+- [x] **Localizzazione Filtri Bandwidth Hogs & Ripristino Categorie Alpine.js (PR #67 - @todddube):**
+  - Stringhe tradotte in `it.json`/`en.json`, getter `availableCategories` ripristinato e formattazione bilingue.
 
 ---
 
