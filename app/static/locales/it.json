@@ -615,7 +615,14 @@
     "period_weekly": "7 Giorni",
     "period_monthly": "30 Giorni",
     "loading": "Caricamento statistiche consumi...",
-    "no_data": "Nessun dato di consumo registrato per questo periodo."
+    "no_data": "Nessun dato di consumo registrato per questo periodo.",
+    "filter_category": "Categoria:",
+    "filter_band": "Banda:",
+    "filter_node": "Nodo:",
+    "filter_all": "Tutte",
+    "filter_all_nodes": "Tutti i nodi",
+    "filter_wired": "Cablato",
+    "reset": "Resetta"
   },
   "analytics": {
     "page_title": "Statistiche & Analytics Rete",
@@ -911,6 +918,7 @@
     "setup_title": "Configurazione Iniziale Amministratore",
     "setup_subtitle": "Crea l'account di amministrazione per proteggere la dashboard in sicurezza",
     "setup_badge": "Primo Avvio",
+    "setup_security_title": "Sicurezza Zero-Default",
     "setup_desc": "Nessuna password predefinita: le credenziali configurate qui proteggeranno la tua dashboard locale.",
     "display_name": "Nome Visualizzato (opzionale)",
     "display_name_placeholder": "es. Amministratore",

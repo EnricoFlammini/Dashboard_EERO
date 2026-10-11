@@ -615,7 +615,14 @@
     "period_weekly": "7 Days",
     "period_monthly": "30 Days",
     "loading": "Loading bandwidth usage...",
-    "no_data": "No device data usage recorded for this period."
+    "no_data": "No device data usage recorded for this period.",
+    "filter_category": "Category:",
+    "filter_band": "Band:",
+    "filter_node": "Node:",
+    "filter_all": "All",
+    "filter_all_nodes": "All nodes",
+    "filter_wired": "Wired",
+    "reset": "Reset"
   },
   "analytics": {
     "page_title": "Network Statistics & Analytics",
@@ -911,6 +918,7 @@
     "setup_title": "Initial Administrator Setup",
     "setup_subtitle": "Create the administrator account to securely protect your dashboard",
     "setup_badge": "First Run",
+    "setup_security_title": "Zero-Default Security",
     "setup_desc": "Zero default passwords: the credentials chosen here will secure your local dashboard.",
     "display_name": "Display Name (optional)",
     "display_name_placeholder": "e.g. Administrator",
