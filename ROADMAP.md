@@ -677,7 +677,7 @@ gantt
 - [x] **Esposizione API & Controlli UI per l'Orario del Digest:**
   - Endpoint `GET /api/automations/digest` e `POST /api/automations/digest` estesi con supporto al campo `hour` (0-23 con validazione Pydantic) e `last_sent_date`.
   - Nuova interfaccia nella card Daily Digest con selettore orario a tendina (00:00 - 23:00), badge orario dinamico e indicatore visuale con data dell'ultimo invio riuscito.
-#### 9. 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
+#### 9. 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @onefish2)
 - [x] **Prioritizzazione IPv4 Subnet LAN per Host Multi-Indirizzo:**
   - Risolto il problema per cui host Linux con runtime container (Docker/Podman) e interfacce bridge virtuali (`172.17.x.x`, `172.24.x.x`, `10.88.x.x`) venivano associati erroneamente a IP non instradabili sulla LAN eero.
   - Introdotto algoritmo a 5 livelli di priorità in `_sort_ipv4_candidates`: preferenza assoluta all'indirizzo appartenente alla subnet LAN fisica eero (desunta da gateway e netmask) e a IP privati non terminanti in `.1`, deprioritizzando sistematicamente i bridge virtuali container.

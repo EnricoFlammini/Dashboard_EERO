@@ -34,7 +34,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Risolto l'errore frontend `availableCategories is not defined` con valore di fallback difensivo per le categorie predefinite quando l'inventario dispositivi è inizialmente vuoto.
   * Aggiornato il Service Worker PWA (`CACHE_NAME = 'eero-dashboard-v1.6.1'`) per forzare l'invalidazione della cache browser su nuove release.
 
-### 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
+### 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @onefish2)
 * **🌐 Prioritizzazione Automatica IPv4 Subnet LAN per Host Multi-Indirizzo:**
   * Risolto il problema per cui macchine Linux con runtime container (Docker/Podman) venivano associate nell'inventario e nella sincronizzazione DNS all'indirizzo del bridge virtuale (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`) anziché al loro vero indirizzo LAN.
   * Introdotta gerarchia a 5 livelli di punteggio in `_sort_ipv4_candidates`: prioritizzazione dell'IP appartenente alla subnet LAN fisica eero (desunta dinamicamente da gateway e netmask) e a IP privati RFC 1918 non terminanti in `.1`, deprioritizzando sistematicamente i bridge virtuali container.
