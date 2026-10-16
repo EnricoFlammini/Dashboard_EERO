@@ -214,5 +214,7 @@ async def index_page(request: Request):
             "app_version": settings.app_version,
             "build_number": settings.build_number,
             "full_version": settings.full_version,
+            # Stato iniziale locale (nessuna chiamata cloud): evita il flash del modale di login al refresh
+            "initial_authenticated": eero_client.is_authenticated,
         }
     )

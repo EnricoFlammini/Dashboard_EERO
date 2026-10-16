@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException
@@ -24,20 +25,39 @@ class ModeSwitchRequest(BaseModel):
     demo: bool = Field(..., description="True per attivare Demo Mode, False per tornare a Live Network")
 
 
+_account_refresh_task: Optional[asyncio.Task] = None
+
+
+async def _refresh_account_info():
+    try:
+        await eero_client.fetch_account_info()
+    except Exception as e:
+        logger.warning(f"Background account info refresh failed: {e}")
+
+
 @router.get("/status")
 async def get_auth_status():
-    """Restituisce lo stato corrente di autenticazione e le informazioni dell'account."""
+    """Restituisce lo stato corrente di autenticazione e le informazioni dell'account.
+
+    Risponde subito con l'account in cache e lo aggiorna in background: un errore
+    transitorio del cloud eero non deve mai far risultare l'utente disconnesso.
+    """
+    global _account_refresh_task
     is_demo = eero_client.is_demo_mode
     is_auth = eero_client.is_authenticated
     has_live = eero_client.has_saved_live_token or (bool(eero_client.user_token) and not eero_client.user_token.startswith("demo_"))
-    
+
     account = None
     if is_auth and not is_demo:
-        try:
-            account = await eero_client.fetch_account_info()
-        except Exception as e:
-            logger.warning(f"Failed to fetch account info on status check: {e}")
-            is_auth = False
+        if eero_client.account_info:
+            account = eero_client.account_info
+            if _account_refresh_task is None or _account_refresh_task.done():
+                _account_refresh_task = asyncio.create_task(_refresh_account_info())
+        else:
+            try:
+                account = await eero_client.fetch_account_info()
+            except Exception as e:
+                logger.warning(f"Failed to fetch account info on status check: {e}")
     elif is_demo:
         account = eero_client.account_info or {"name": "Demo Administrator", "email": "admin@demo-eero.lan"}
 

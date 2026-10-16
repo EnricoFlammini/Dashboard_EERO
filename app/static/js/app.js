@@ -91,7 +91,10 @@ document.addEventListener('alpine:init', () => {
     },
     
     // Auth & Session State
-    isAuthenticated: false,
+    // Seeded from the server-rendered page so a logged-in refresh never flashes the login modal;
+    // the modal waits for authChecked before trusting a "not authenticated" state.
+    isAuthenticated: Boolean(window.APP_CONFIG && window.APP_CONFIG.initialAuthenticated === 'true'),
+    authChecked: false,
     isDemoMode: false,
     hasSavedLiveToken: false,
     showLogoutModal: false,
@@ -636,19 +639,23 @@ document.addEventListener('alpine:init', () => {
         }
       }
 
-      // Sincronizza dinamicamente versione e build number con /api/health
-      try {
-        const healthRes = await fetch('/api/health');
-        if (healthRes.ok) {
-          const hData = await healthRes.json();
-          if (hData.full_version) this.fullVersion = hData.full_version;
-          if (hData.build_number) this.buildNumber = String(hData.build_number);
-          if (hData.version) this.appVersion = hData.version;
-        }
-      } catch (e) {}
-
-      await this.setLanguage(this.currentLanguage);
-      await this.checkAuthStatus();
+      // Versione, lingua e stato auth sono indipendenti: caricati in parallelo per ridurre l'attesa al refresh
+      const syncVersion = async () => {
+        try {
+          const healthRes = await fetch('/api/health');
+          if (healthRes.ok) {
+            const hData = await healthRes.json();
+            if (hData.full_version) this.fullVersion = hData.full_version;
+            if (hData.build_number) this.buildNumber = String(hData.build_number);
+            if (hData.version) this.appVersion = hData.version;
+          }
+        } catch (e) {}
+      };
+      await Promise.all([
+        syncVersion(),
+        this.setLanguage(this.currentLanguage),
+        this.checkAuthStatus()
+      ]);
       await this.checkLocalAuthSession();
       await this.loadSessionTimeoutSetting();
       this.initInactivityWatchdog();
@@ -1120,13 +1127,17 @@ document.addEventListener('alpine:init', () => {
     async checkAuthStatus() {
       try {
         const res = await fetch('/api/auth/status');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         this.isAuthenticated = Boolean(data.authenticated);
         this.isDemoMode = Boolean(data.demo_mode);
         this.hasSavedLiveToken = Boolean(data.has_saved_live_token);
         this.userAccount = data.account;
       } catch (err) {
+        // Keep the server-rendered state: a failed check must not force the login modal
         console.error("Auth status check failed:", err);
+      } finally {
+        this.authChecked = true;
       }
     },
 
