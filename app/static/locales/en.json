@@ -908,6 +908,13 @@
     "grade_c": "C (Fair)",
     "grade_d": "D (High Latency)",
     "grade_f": "F (Critical)",
+    "label_a_plus": "Optimal",
+    "label_a": "Very Good",
+    "label_b": "Good",
+    "label_c": "Fair",
+    "label_d": "High Latency",
+    "label_f": "Critical",
+    "not_available": "Not Available",
     "desc": "Index of latency stability under maximum network load (Bufferbloat Grade)"
   },
   "settings_users": {
@@ -957,7 +964,7 @@
     "retention_24h": "24 Hours",
     "retention_7d": "7 Days",
     "retention_15d": "15 Days",
-    "retention_30d": "1 Month (30d)",
+    "retention_30d": "1 Month (1mo)",
     "retention_custom": "Custom",
     "retention_custom_label": "Custom retention days:",
     "retention_days_unit": "days",

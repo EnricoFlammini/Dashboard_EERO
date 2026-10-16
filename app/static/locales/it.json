@@ -908,6 +908,13 @@
     "grade_c": "C (Sufficiente)",
     "grade_d": "D (Latenza Elevata)",
     "grade_f": "F (Critico)",
+    "label_a_plus": "Ottimale",
+    "label_a": "Molto Buono",
+    "label_b": "Buono",
+    "label_c": "Sufficiente",
+    "label_d": "Latenza Elevata",
+    "label_f": "Critico",
+    "not_available": "Non Disponibile",
     "desc": "Indice di stabilità della latenza sotto carico massimo (Bufferbloat Grade)"
   },
   "settings_users": {

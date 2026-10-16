@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### ⚡ Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (Issue #71 - @XprofQ / @todddube)
+* **⚡ Correzione Rilevamento Grado Bufferbloat su Frontend (`getBufferbloatGrade`):**
+  * Risolto il bug per cui il badge Bufferbloat nella pagina Speed Test restituiva sistematicamente `"n/a Non Disponibile"`, nonostante il test fosse registrato con successo nel database SQLite e visualizzato correttamente nella Live Console.
+  * `getBufferbloatGrade()` in `app.js` riconosce ora direttamente i campi `st.bufferbloat_grade`, `st.ping_under_load` e `st.bufferbloat_delta_ms` esposti da backend e database.
+* **🌐 Traduzione e Bilinguismo Completo per Bufferbloat (IT/EN):**
+  * Rimossi tutti i testi hardcoded in lingua italiana dal calcolatore di rating client.
+  * Aggiunte chiavi dedicate in `it.json` ed `en.json` (`label_a_plus` .. `label_f`, `not_available`): le valutazioni sono ora tradotte dinamicamente (`Optimal`, `Very Good`, `Good`, `Fair`, `High Latency`, `Critical`, `Not Available`).
+* **🔄 Caricamento Istantaneo Speed Test all'Avvio (`refreshAllData`):**
+  * Inserito `this.loadSpeedtestData()` in `refreshAllData()`, assicurando la disponibilità immediata del grafico, dello storico e del rating Bufferbloat fin dal primo caricamento della dashboard senza richiedere il click preventivo sulla scheda Speed Test.
+* **📡 Arricchimento Cache Speedtest in Poller (`poller.py`):**
+  * `cached_network["speedtest"]` viene arricchita automaticamente con le misurazioni di Bufferbloat dall'ultimo record SQLite valido, colmando il divario con i payload cloud eero nativi che non includono i test sotto carico.
+* **⏱️ Abbreviazioni Durata Localizzate in Retention Policy (`index.html`):**
+  * Sostituiti i tag statici `7gg`, `15gg`, `1m` nei pulsanti di retention log con espressioni Alpine reattive alla lingua selezionata: `7d`, `15d`, `1mo` per l'inglese, `7gg`, `15gg`, `1m` per l'italiano.
+  * Aggiornata la dicitura `retention_30d` in `en.json` in `"1 Month (1mo)"`.
+
 ### 🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69 - @tekzer0)
 * **📡 Parsing Flessibile e Universale dei Payload eero API:**
   * Risolto il problema per cui account eero con strutture di risposta non convenzionali (singolo oggetto `"network"`, stringa URL o endpoint dedicato `/2.2/networks` restituente array nativo) non venivano scoperti, portando a `Total available networks: 0` e `current_network_id = None`.

@@ -1122,6 +1122,32 @@ class BackgroundPoller:
                             source="eero_gateway"
                         )
 
+            # 7. Arricchimento speedtest in cached_network con metriche Bufferbloat da SQLite
+            if self.cached_network:
+                sp_cached = self.cached_network.get("speedtest")
+                if not isinstance(sp_cached, dict) or not sp_cached.get("bufferbloat_grade"):
+                    try:
+                        latest_db_tests = await db_service.get_speedtests(limit=1)
+                        if latest_db_tests and len(latest_db_tests) > 0:
+                            l_st = latest_db_tests[0]
+                            if not isinstance(sp_cached, dict):
+                                self.cached_network["speedtest"] = {}
+                                sp_cached = self.cached_network["speedtest"]
+                            if l_st.get("bufferbloat_grade"):
+                                sp_cached["bufferbloat_grade"] = l_st["bufferbloat_grade"]
+                            if l_st.get("bufferbloat_delta_ms") is not None:
+                                sp_cached["bufferbloat_delta_ms"] = l_st["bufferbloat_delta_ms"]
+                            if l_st.get("ping_under_load") is not None:
+                                sp_cached["ping_under_load"] = l_st["ping_under_load"]
+                            if not sp_cached.get("ping_ms") and l_st.get("ping_ms"):
+                                sp_cached["ping_ms"] = l_st["ping_ms"]
+                            if not sp_cached.get("download_mbps") and l_st.get("download_mbps"):
+                                sp_cached["download_mbps"] = l_st["download_mbps"]
+                            if not sp_cached.get("upload_mbps") and l_st.get("upload_mbps"):
+                                sp_cached["upload_mbps"] = l_st["upload_mbps"]
+                    except Exception as e:
+                        logger.debug(f"Arricchimento bufferbloat cache network: {e}")
+
         except Exception as e:
             logger.error(f"Errore durante il salvataggio delle metriche di rete: {e}")
 
@@ -1319,3 +1345,4 @@ class BackgroundPoller:
 
 # Istanza singleton background poller
 background_poller = BackgroundPoller()
+poller = background_poller

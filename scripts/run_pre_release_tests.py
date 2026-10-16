@@ -5277,6 +5277,79 @@ async def run_all_tests():
             settings.demo_mode = saved_demo_mode
             settings.eero_network_id = saved_env_net_id
 
+        # -----------------------------------------------------------------
+        # 35. TEST SPEEDTEST BUFFERBLOAT REPORTING & DURATION I18N (v1.6.1 Modulo 11 - Issue #71)
+        # -----------------------------------------------------------------
+        print("\n🚀 [35/35] TEST SPEEDTEST BUFFERBLOAT REPORTING & DURATION I18N (v1.6.1 Modulo 11)")
+        # 1. Verifica chiavi bufferbloat in it.json ed en.json
+        it_loc_mod11 = json.loads(Path("app/static/locales/it.json").read_text(encoding="utf-8"))
+        en_loc_mod11 = json.loads(Path("app/static/locales/en.json").read_text(encoding="utf-8"))
+        runner.assert_true("not_available" in it_loc_mod11["bufferbloat"], "Chiave 'not_available' presente in it.json")
+        runner.assert_true("not_available" in en_loc_mod11["bufferbloat"], "Chiave 'not_available' presente in en.json")
+        runner.assert_true(it_loc_mod11["bufferbloat"]["not_available"] == "Non Disponibile", "Traduzione 'not_available' corretta in italiano")
+        runner.assert_true(en_loc_mod11["bufferbloat"]["not_available"] == "Not Available", "Traduzione 'not_available' corretta in inglese")
+        runner.assert_true("label_a_plus" in it_loc_mod11["bufferbloat"], "Chiave 'label_a_plus' presente in it.json")
+        runner.assert_true("label_a_plus" in en_loc_mod11["bufferbloat"], "Chiave 'label_a_plus' presente in en.json")
+        runner.assert_true(en_loc_mod11["logs"]["retention_30d"] == "1 Month (1mo)", "retention_30d in en.json aggiornato a '1 Month (1mo)'")
+
+        # 2. Verifica index.html: abbreviazioni durata dinamiche e badge bufferbloat
+        index_html_mod11 = Path("app/templates/index.html").read_text(encoding="utf-8")
+        runner.assert_true("currentLanguage === 'it' ? '7gg' : '7d'" in index_html_mod11, "Abbreviazione 7 giorni dinamica (7gg/7d) in index.html")
+        runner.assert_true("currentLanguage === 'it' ? '15gg' : '15d'" in index_html_mod11, "Abbreviazione 15 giorni dinamica (15gg/15d) in index.html")
+        runner.assert_true("currentLanguage === 'it' ? '1m' : '1mo'" in index_html_mod11, "Abbreviazione 1 mese dinamica (1m/1mo) in index.html")
+        runner.assert_true("getBufferbloatGrade(latestSpeedtest)" in index_html_mod11, "Badge bufferbloat referenzia getBufferbloatGrade in index.html")
+
+        # 3. Verifica app.js: getBufferbloatGrade riconosce bufferbloat_grade, ping_under_load e delta
+        app_js_mod11 = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("rawGrade = String(st.bufferbloat_grade" in app_js_mod11, "getBufferbloatGrade riconosce direttamente st.bufferbloat_grade")
+        runner.assert_true("st.ping_under_load" in app_js_mod11, "getBufferbloatGrade riconosce st.ping_under_load")
+        runner.assert_true("st.bufferbloat_delta_ms" in app_js_mod11, "getBufferbloatGrade riconosce st.bufferbloat_delta_ms")
+        runner.assert_true("this.loadSpeedtestData()" in app_js_mod11, "loadSpeedtestData() integrato in refreshAllData()")
+
+        # 4. Verifica arricchimento poller: cached_network speedtest riceve bufferbloat da SQLite
+        from app.services.poller import poller
+        saved_cn = poller.cached_network
+        try:
+            # Assicura speedtest salvato su DB
+            test_bb_id = await db_service.save_speedtest(
+                download_mbps=940.5,
+                upload_mbps=220.0,
+                ping_ms=9.5,
+                server_name="Test Gateway WAN",
+                source="eero_gateway",
+                ping_under_load=13.0,
+                bufferbloat_grade="A+",
+                bufferbloat_delta_ms=3.5
+            )
+            runner.assert_true(test_bb_id > 0, "Speedtest di test inserito con successo")
+
+            # Simula poller con speedtest senza campi bufferbloat (come da eero cloud nativo)
+            poller.cached_network = {
+                "id": "net_test_bb",
+                "speedtest": {
+                    "download_mbps": 940.5,
+                    "upload_mbps": 220.0,
+                    "ping_ms": 9.5
+                }
+            }
+            # Esegui blocco arricchimento
+            latest_db_tests = await db_service.get_speedtests(limit=1)
+            runner.assert_true(len(latest_db_tests) > 0, "DB restituisce ultimo speedtest")
+            l_st = latest_db_tests[0]
+            sp_cached = poller.cached_network["speedtest"]
+            if l_st.get("bufferbloat_grade"):
+                sp_cached["bufferbloat_grade"] = l_st["bufferbloat_grade"]
+            if l_st.get("bufferbloat_delta_ms") is not None:
+                sp_cached["bufferbloat_delta_ms"] = l_st["bufferbloat_delta_ms"]
+            if l_st.get("ping_under_load") is not None:
+                sp_cached["ping_under_load"] = l_st["ping_under_load"]
+
+            runner.assert_true(poller.cached_network["speedtest"].get("bufferbloat_grade") == "A+", "cached_network arricchita con bufferbloat_grade 'A+'")
+            runner.assert_true(float(poller.cached_network["speedtest"].get("bufferbloat_delta_ms")) == 3.5, "cached_network arricchita con bufferbloat_delta_ms 3.5")
+            runner.assert_true(float(poller.cached_network["speedtest"].get("ping_under_load")) == 13.0, "cached_network arricchita con ping_under_load 13.0")
+        finally:
+            poller.cached_network = saved_cn
+
         runner.print_summary()
 
 

@@ -1320,6 +1320,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchAdGuardSettings(),
         this.fetchMqttSettings(),
         this.fetchAlerts(),
+        this.loadSpeedtestData(),
       ]);
       if (this.currentTab === 'devices') {
         if (this.$nextTick) {
@@ -5950,29 +5951,77 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     getBufferbloatGrade(speedtestObj) {
       const st = speedtestObj || this.latestSpeedtest || {};
+      const isIt = (this.currentLanguage === 'it');
+
+      const gradeStyles = {
+        'A+': {
+          grade: 'A+',
+          label: this.t('bufferbloat.label_a_plus') || (isIt ? 'Ottimale' : 'Optimal'),
+          class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+        },
+        'A': {
+          grade: 'A',
+          label: this.t('bufferbloat.label_a') || (isIt ? 'Molto Buono' : 'Very Good'),
+          class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+        },
+        'B': {
+          grade: 'B',
+          label: this.t('bufferbloat.label_b') || (isIt ? 'Buono' : 'Good'),
+          class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
+        },
+        'C': {
+          grade: 'C',
+          label: this.t('bufferbloat.label_c') || (isIt ? 'Sufficiente' : 'Fair'),
+          class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+        },
+        'D': {
+          grade: 'D',
+          label: this.t('bufferbloat.label_d') || (isIt ? 'Latenza Elevata' : 'High Latency'),
+          class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
+        },
+        'F': {
+          grade: 'F',
+          label: this.t('bufferbloat.label_f') || (isIt ? 'Critico' : 'Critical'),
+          class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+        }
+      };
+
+      // 1. Grado diretto salvato su SQLite / backend
+      const rawGrade = String(st.bufferbloat_grade || st.grade || '').toUpperCase().trim();
+      if (rawGrade && gradeStyles[rawGrade]) {
+        return gradeStyles[rawGrade];
+      }
+
+      // 2. Calcolo da delta o latenza sotto carico (ping_under_load)
       const ping = Number(st.ping_ms || st.ping || 0);
-      const loadedLatency = Number(st.loaded_latency_ms || st.loaded_ping || 0);
-      const delta = loadedLatency > 0 ? (loadedLatency - ping) : 0;
+      const loadedLatency = Number(st.ping_under_load || st.loaded_latency_ms || st.loaded_ping || 0);
+      const hasDelta = (st.bufferbloat_delta_ms !== undefined && st.bufferbloat_delta_ms !== null);
+      const delta = hasDelta ? Number(st.bufferbloat_delta_ms) : (loadedLatency > 0 ? Math.max(0, loadedLatency - ping) : 0);
 
-      if (loadedLatency > 0) {
-        if (delta <= 5) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
-        if (delta <= 15) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
-        if (delta <= 30) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
-        if (delta <= 60) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
-        if (delta <= 120) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
-        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+      if (hasDelta || loadedLatency > 0) {
+        if (delta < 5.0) return gradeStyles['A+'];
+        if (delta < 15.0) return gradeStyles['A'];
+        if (delta < 30.0) return gradeStyles['B'];
+        if (delta < 60.0) return gradeStyles['C'];
+        if (delta < 200.0) return gradeStyles['D'];
+        return gradeStyles['F'];
       }
 
+      // 3. Fallback da ping idle se non sono disponibili misurazioni sotto carico
       if (ping > 0) {
-        if (ping <= 12) return { grade: 'A+', label: 'Eccellente', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
-        if (ping <= 20) return { grade: 'A', label: 'Ottimo', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' };
-        if (ping <= 35) return { grade: 'B', label: 'Buono', class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30' };
-        if (ping <= 55) return { grade: 'C', label: 'Sufficiente', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' };
-        if (ping <= 85) return { grade: 'D', label: 'Latenza Alta', class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30' };
-        return { grade: 'F', label: 'Critico', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' };
+        if (ping <= 12) return gradeStyles['A+'];
+        if (ping <= 20) return gradeStyles['A'];
+        if (ping <= 35) return gradeStyles['B'];
+        if (ping <= 55) return gradeStyles['C'];
+        if (ping <= 85) return gradeStyles['D'];
+        return gradeStyles['F'];
       }
 
-      return { grade: 'n/a', label: 'Non Disponibile', class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30' };
+      return {
+        grade: 'n/a',
+        label: this.t('bufferbloat.not_available') || (isIt ? 'Non Disponibile' : 'Not Available'),
+        class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30'
+      };
     },
 
     // =========================================================================

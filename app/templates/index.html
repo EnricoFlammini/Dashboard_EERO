@@ -3690,7 +3690,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold">7gg</span>
+                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '7gg' : '7d'">7d</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_7d') || '1 settimana'"></span>
                 </button>
 
@@ -3703,7 +3703,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold">15gg</span>
+                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '15gg' : '15d'">15d</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_15d') || '15 giorni'"></span>
                 </button>
 
@@ -3716,7 +3716,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold">1m</span>
+                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '1m' : '1mo'">1mo</span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_30d') || '30 giorni'"></span>
                 </button>
 

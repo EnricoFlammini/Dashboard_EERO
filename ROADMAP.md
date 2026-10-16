@@ -693,7 +693,7 @@ gantt
   - Esclusione trasparente dei dispositivi contrassegnati dai payload di sincronizzazione `_prepare_clients_payload`, `/api/devices/export/hosts` e `/api/devices/export/adguard`.
   - 22 nuovi test di regressione in Modulo 9 (totale suite a 1.426/1.426 superati al 100%).
 
-#### 8. 🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69 - @tekzer0)
+#### 10. 🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69 - @tekzer0)
 - [x] **Parsing Flessibile & Universale dei Payload eero API:**
   - Parsing esteso per risposte singolari o non convenzionali (`networks`, `network`, `shared_networks`, `guest_networks`, `admin_networks`), array nativi e dizionari indicizzati per ID rete.
   - Gestione sicura del fallback `/2.2/networks` per array raw o dict senza generare `AttributeError`.
@@ -706,6 +706,26 @@ gantt
   - Risoluzione dell'errore Alpine `availableCategories is not defined` con array di categorie predefinite difensive quando l'inventario dispositivi è inizialmente vuoto.
   - Aggiornamento della cache del Service Worker PWA (`eero-dashboard-v1.6.1`) per invalidare immediatamente vecchie copie di `app.js`.
   - 22 nuovi test di regressione in Modulo 10 (totale suite a 1.448/1.448 superati al 100%).
+
+#### 11. ⚡ Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (Issue #71 - @XprofQ / @todddube)
+- [x] **Riconoscimento Diretto Metriche Bufferbloat nel Client Frontend (`app.js`):**
+  - Risolto il bug per cui il badge Bufferbloat nella pagina Speed Test restituiva sistematicamente `"n/a Non Disponibile"`, anche quando il grado e il delta di latenza erano memorizzati correttamente nel database SQLite e registrati nella Live Console.
+  - `getBufferbloatGrade()` in `app.js` riconosce ora prioritariamente il grado persistito `st.bufferbloat_grade` (o `st.grade`), la latenza sotto carico `st.ping_under_load` e il delta `st.bufferbloat_delta_ms`.
+  - Algoritmo di fallback da delta/latenza sotto carico allineato con precisione alla funzione standard `compute_bufferbloat()`.
+- [x] **Localizzazione Completa e Bilingue dei Giudizi Bufferbloat (IT/EN):**
+  - Eliminate le etichette testuali hardcoded in italiano (`Eccellente`, `Ottimo`, `Non Disponibile`) dal calcolatore client.
+  - Aggiunte chiavi dedicate nel blocco `bufferbloat` di `it.json` ed `en.json` (`label_a_plus` .. `label_f`, `not_available`).
+  - Rendering coerente e localizzato in inglese (`Optimal`, `Very Good`, `Good`, `Fair`, `High Latency`, `Critical`, `Not Available`) o in italiano (`Ottimale`, `Molto Buono`, `Buono`, `Sufficiente`, `Latenza Elevata`, `Critico`, `Non Disponibile`) in base alla lingua dell'interfaccia.
+- [x] **Caricamento Istantaneo Dati Speed Test in `refreshAllData()`:**
+  - Integrata la chiamata asincrona `this.loadSpeedtestData()` in `refreshAllData()`, assicurando la disponibilità immediata del grafico, dello storico e del rating Bufferbloat fin dal primo caricamento della dashboard senza richiedere il click preventivo sulla scheda Speed Test.
+- [x] **Arricchimento Dati Speed Test in Cache Poller (`poller.py`):**
+  - Sincronizzazione automatica in `_poll_and_cache()`: qualora l'oggetto `speedtest` inviato dalle API eero cloud non contenga i parametri di Bufferbloat, la cache RAM `cached_network["speedtest"]` viene arricchita con `bufferbloat_grade`, `bufferbloat_delta_ms` e `ping_under_load` dall'ultimo record valido presente su SQLite.
+- [x] **Localizzazione Abbreviazioni Durata nei Pulsanti Retention Policy:**
+  - Sostituite le abbreviazioni hardcoded in italiano (`7gg`, `15gg`, `1m`) nei pulsanti di retention dei log in `index.html` con rendering dinamico `x-text="currentLanguage === 'it' ? ... : ..."`: `7d`, `15d`, `1mo` in inglese e `7gg`, `15gg`, `1m` in italiano.
+  - Aggiornata la descrizione `retention_30d` in `en.json` in `"1 Month (1mo)"`.
+- [x] **Suite di Test Automatizzata Modulo 11:**
+  - 18 nuovi test di regressione in Modulo 11 (totale suite a 1.466/1.466 superati al 100%).
+
 
 ---
 
