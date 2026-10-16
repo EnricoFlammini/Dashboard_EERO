@@ -31,6 +31,7 @@ class DBService:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA synchronous = NORMAL;")
             await db.execute("PRAGMA busy_timeout = 60000;")
+            await db.execute("PRAGMA wal_autocheckpoint = 1000;")
             
             # Clean up obsolete bandwidth metrics tables
             await db.execute("DROP TABLE IF EXISTS wan_metrics;")
@@ -158,6 +159,8 @@ class DBService:
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_time ON device_signal_history(mac_address, timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_time ON device_signal_history(timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_clean_ts ON device_signal_history(replace(replace(timestamp, 'T', ' '), 'Z', ''));")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_clean_ts ON device_signal_history(mac_address, is_demo, replace(replace(timestamp, 'T', ' '), 'Z', ''));")
             try:
                 await db.execute("ALTER TABLE device_signal_history ADD COLUMN is_demo INTEGER DEFAULT 0;")
             except Exception:
@@ -181,6 +184,8 @@ class DBService:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_mac_time ON device_usage_history(mac_address, timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_net_time ON device_usage_history(network_id, timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_time ON device_usage_history(timestamp);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_clean_ts ON device_usage_history(replace(replace(timestamp, 'T', ' '), 'Z', ''));")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_device_usage_mac_clean_ts ON device_usage_history(mac_address, is_demo, replace(replace(timestamp, 'T', ' '), 'Z', ''));")
 
             # 10. eeroOS Release Notes & Updates Hub (v1.6.0)
             await db.execute("""
@@ -1044,6 +1049,36 @@ class DBService:
             await db.execute("UPDATE alert_history SET read = 1 WHERE read = 0")
             await db.commit()
 
+    @staticmethod
+    def parse_bitrate_float(val: Any) -> Optional[float]:
+        """Estrae in modo robusto il valore numerico (Mbps) da float, int o stringhe con unità (es: '72.0 MBit/s', '1.2 Gbps')."""
+        if val is None:
+            return None
+        if isinstance(val, (int, float)):
+            try:
+                f_val = float(val)
+                return round(f_val, 2)
+            except (ValueError, OverflowError):
+                return None
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ("n/a", "none", "null", "-", "undefined"):
+                return None
+            import re
+            m = re.search(r"^[+-]?([0-9]+(?:\.[0-9]+)?)", val_str)
+            if m:
+                try:
+                    num = float(m.group(1))
+                    lower = val_str.lower()
+                    if "gbit" in lower or "gbps" in lower:
+                        num *= 1000.0
+                    elif "kbit" in lower or "kbps" in lower:
+                        num /= 1000.0
+                    return round(num, 2)
+                except (ValueError, OverflowError):
+                    return None
+        return None
+
     # ----------------- DEVICE SIGNAL HISTORY (v1.04.00) -----------------
     async def record_device_signal_samples(self, samples: List[Dict[str, Any]], is_demo: int = 0) -> int:
         """Salva in batch i campioni di segnale RSSI dei dispositivi wireless connessi."""
@@ -1073,8 +1108,8 @@ class DBService:
                             except Exception:
                                 chan_val = None
                             eero_name = s.get("connected_eero_name") or s.get("eero_name") or ""
-                            rx_rate = s.get("rx_bitrate")
-                            tx_rate = s.get("tx_bitrate")
+                            rx_rate = self.parse_bitrate_float(s.get("rx_bitrate"))
+                            tx_rate = self.parse_bitrate_float(s.get("tx_bitrate"))
 
                             await db.execute(
                                 """
@@ -1885,9 +1920,13 @@ class DBService:
                     if pt["connected_eero_name"]:
                         eeros.append(str(pt["connected_eero_name"]))
                     if pt["rx_bitrate"] is not None:
-                        rx_rates.append(float(pt["rx_bitrate"]))
+                        rx_val = self.parse_bitrate_float(pt["rx_bitrate"])
+                        if rx_val is not None:
+                            rx_rates.append(rx_val)
                     if pt["tx_bitrate"] is not None:
-                        tx_rates.append(float(pt["tx_bitrate"]))
+                        tx_val = self.parse_bitrate_float(pt["tx_bitrate"])
+                        if tx_val is not None:
+                            tx_rates.append(tx_val)
 
                 if not rssis:
                     continue
@@ -2571,10 +2610,19 @@ class DBService:
             await db.commit()
 
     async def run_database_maintenance(self, vacuum: bool = False) -> Dict[str, Any]:
-        """Esegue manutenzione e compattazione SQLite (PRAGMA optimize, VACUUM opzionale)."""
+        """Esegue manutenzione e compattazione SQLite (PRAGMA optimize, PRAGMA wal_checkpoint, VACUUM opzionale)."""
+        wal_checkpoint_info = None
         async with self.get_connection() as db:
             async with db.execute("PRAGMA optimize;"):
                 pass
+            # Esegui checkpoint WAL passivo ad ogni ciclo per evitare accumulo e crescita esponenziale del file -wal
+            try:
+                cur_chk = await db.execute("PRAGMA wal_checkpoint(PASSIVE);")
+                row_chk = await cur_chk.fetchone()
+                if row_chk:
+                    wal_checkpoint_info = {"busy": row_chk[0], "log": row_chk[1], "checkpointed": row_chk[2]}
+            except Exception as ex_wal:
+                logger.warning(f"Passive WAL checkpoint during routine maintenance: {ex_wal}")
             await db.commit()
 
         if vacuum:
@@ -2592,13 +2640,89 @@ class DBService:
                 except Exception as ex_wal:
                     logger.warning(f"WAL checkpoint after vacuum error: {ex_wal}")
 
-        logger.info(f"SQLite optimization completed (vacuum={vacuum}).")
+        logger.info(f"SQLite optimization completed (vacuum={vacuum}, wal_checkpoint={wal_checkpoint_info}).")
         return {
             "status": "success",
             "pragma_optimize": True,
+            "wal_checkpoint": wal_checkpoint_info,
             "vacuum": vacuum,
             "vacuum_performed": vacuum,
             "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    async def check_database_integrity(self, quick: bool = True) -> Dict[str, Any]:
+        """
+        Esegue un controllo di integrità del database SQLite (PRAGMA quick_check o PRAGMA integrity_check).
+        Restituisce lo stato ('ok' o 'corrupt') e la lista degli eventuali errori/avvisi rilevati.
+        """
+        pragma = "PRAGMA quick_check(10);" if quick else "PRAGMA integrity_check(10);"
+        errors = []
+        try:
+            async with self.get_connection() as db:
+                cur = await db.execute(pragma)
+                rows = await cur.fetchall()
+                for r in rows:
+                    val = r[0] if isinstance(r, (list, tuple, aiosqlite.Row)) else str(r)
+                    if val and str(val).lower() != "ok":
+                        errors.append(str(val))
+            status = "ok" if not errors else "corrupt"
+            return {
+                "status": status,
+                "healthy": len(errors) == 0,
+                "check_type": "quick_check" if quick else "integrity_check",
+                "errors": errors,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Errore durante l'integrity check del database: {e}", exc_info=True)
+            return {
+                "status": "error",
+                "healthy": False,
+                "check_type": "quick_check" if quick else "integrity_check",
+                "errors": [str(e)],
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+    async def backup_database_file(self, target_path: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Crea un backup consistente, atomico e deframmentato del database SQLite a caldo
+        utilizzando 'VACUUM INTO', garantendo zero corruzione anche in modalità WAL attiva.
+        """
+        import os
+        import sqlite3
+
+        if not target_path:
+            backup_dir = os.path.join(os.path.dirname(self.db_path), "backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            ts_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            target_path = os.path.join(backup_dir, f"metrics_backup_{ts_str}.db")
+        else:
+            target_path = os.path.abspath(target_path)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+        if os.path.exists(target_path):
+            os.remove(target_path)
+
+        def _vacuum_into():
+            con = sqlite3.connect(self.db_path, autocommit=True, timeout=60.0)
+            try:
+                try:
+                    con.execute("PRAGMA wal_checkpoint(PASSIVE);")
+                except Exception as ex_wal:
+                    logger.warning(f"WAL checkpoint before VACUUM INTO: {ex_wal}")
+                con.execute(f"VACUUM INTO '{target_path}';")
+            finally:
+                con.close()
+
+        await asyncio.to_thread(_vacuum_into)
+
+        size_bytes = os.path.getsize(target_path) if os.path.exists(target_path) else 0
+        return {
+            "status": "success",
+            "backup_path": target_path,
+            "size_bytes": size_bytes,
+            "size_mb": round(size_bytes / (1024 * 1024), 2),
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
     # ----------------- DISASTER RECOVERY: BACKUP & RESTORE (v1.6.0 Modulo 1) -----------------

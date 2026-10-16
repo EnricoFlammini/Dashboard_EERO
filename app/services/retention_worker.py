@@ -74,13 +74,13 @@ class RetentionWorker:
             except asyncio.CancelledError:
                 break
 
-    async def run_compaction_cycle(self, vacuum: bool = False) -> Dict[str, Any]:
+    async def run_compaction_cycle(self, vacuum: bool = False, force: bool = False) -> Dict[str, Any]:
         """
         Esegue un ciclo completo e atomico di tiering:
-        1. Trova le ore concluse non ancora aggregate e genera i record hourly.
-        2. Trova i giorni conclusi e genera i record daily.
+        1. Trova le ore concluse non ancora aggregate e genera i record hourly (saltando quelle già compattate se not force).
+        2. Trova i giorni conclusi non ancora aggregati e genera i record daily.
         3. Elimina i campioni scaduti (Tier 1 > 48h, Tier 2 > 30d, Tier 3 > 365d) e log di sistema.
-        4. Esegue PRAGMA optimize sul database SQLite (e VACUUM se richiesto).
+        4. Esegue PRAGMA optimize e WAL checkpoint sul database SQLite (e VACUUM se richiesto).
         """
         async with self._lock:
             now = datetime.now(timezone.utc)
@@ -90,15 +90,34 @@ class RetentionWorker:
             hours_aggregated = 0
             signals_aggregated = 0
             days_aggregated = 0
+            errors = []
 
             # 1. Rileva ore concluse da aggregare (negli ultimi 7 giorni)
             cutoff_history = current_hour - timedelta(days=7)
             cutoff_history_str = cutoff_history.strftime("%Y-%m-%d %H:%M:%S")
             current_hour_str = current_hour.strftime("%Y-%m-%d %H:%M:%S")
 
-            pending_hours = set()
+            # Identifica le ore già aggregate in precedenza per saltarle se non forzato (Issue #73)
+            done_hours_u = set()
+            done_hours_s = set()
+            if not force:
+                async with db_service.get_connection() as db:
+                    cur_u_done = await db.execute(
+                        "SELECT DISTINCT hour_timestamp FROM device_usage_hourly WHERE hour_timestamp >= ? AND hour_timestamp < ?",
+                        (cutoff_history_str, current_hour_str)
+                    )
+                    done_hours_u = {r["hour_timestamp"] for r in await cur_u_done.fetchall()}
+
+                    cur_s_done = await db.execute(
+                        "SELECT DISTINCT hour_timestamp FROM device_signal_hourly WHERE hour_timestamp >= ? AND hour_timestamp < ?",
+                        (cutoff_history_str, current_hour_str)
+                    )
+                    done_hours_s = {r["hour_timestamp"] for r in await cur_s_done.fetchall()}
+
+            pending_usage_hours = set()
+            pending_signal_hours = set()
             async with db_service.get_connection() as db:
-                # Trova ore presenti nei campioni grezzi
+                # Trova ore presenti nei campioni grezzi usage
                 cur = await db.execute(
                     """
                     SELECT DISTINCT strftime('%Y-%m-%d %H:00:00', replace(replace(timestamp, 'T', ' '), 'Z', '')) as h
@@ -110,8 +129,8 @@ class RetentionWorker:
                 )
                 rows = await cur.fetchall()
                 for r in rows:
-                    if r["h"]:
-                        pending_hours.add(r["h"])
+                    if r["h"] and (force or r["h"] not in done_hours_u):
+                        pending_usage_hours.add(r["h"])
 
                 # Aggiungi ore presenti nei segnali grezzi
                 cur_sig = await db.execute(
@@ -125,37 +144,62 @@ class RetentionWorker:
                 )
                 rows_sig = await cur_sig.fetchall()
                 for r in rows_sig:
-                    if r["h"]:
-                        pending_hours.add(r["h"])
+                    if r["h"] and (force or r["h"] not in done_hours_s):
+                        pending_signal_hours.add(r["h"])
 
-            # Esegui aggregazione oraria per ogni ora conclusa trovata
-            for h_str in sorted(pending_hours):
-                try:
-                    h_dt = datetime.strptime(h_str, "%Y-%m-%d %H:00:00").replace(tzinfo=timezone.utc)
-                    u_cnt = await db_service.aggregate_hourly_usage(h_dt)
-                    s_cnt = await db_service.aggregate_hourly_signals(h_dt)
-                    if u_cnt > 0:
-                        hours_aggregated += 1
-                    if s_cnt > 0:
-                        signals_aggregated += 1
-                except Exception as ex:
-                    logger.warning(f"RetentionWorker: Errore aggregazione ora {h_str}: {ex}")
+            # Esegui aggregazione oraria solo per le ore effettivamente non aggregate
+            all_target_hours = sorted(pending_usage_hours.union(pending_signal_hours))
+            for h_str in all_target_hours:
+                h_dt = datetime.strptime(h_str, "%Y-%m-%d %H:00:00").replace(tzinfo=timezone.utc)
+                if h_str in pending_usage_hours:
+                    try:
+                        u_cnt = await db_service.aggregate_hourly_usage(h_dt)
+                        if u_cnt > 0:
+                            hours_aggregated += 1
+                    except Exception as ex:
+                        err_msg = f"RetentionWorker: Errore aggregazione usage ora {h_str}: {ex}"
+                        logger.warning(err_msg)
+                        errors.append(err_msg)
+
+                if h_str in pending_signal_hours:
+                    try:
+                        s_cnt = await db_service.aggregate_hourly_signals(h_dt)
+                        if s_cnt > 0:
+                            signals_aggregated += 1
+                    except Exception as ex:
+                        err_msg = f"RetentionWorker: Errore aggregazione signals ora {h_str}: {ex}"
+                        logger.warning(err_msg)
+                        errors.append(err_msg)
 
             # 2. Rileva giorni conclusi da aggregare (negli ultimi 30 giorni)
+            cutoff_days = current_day - timedelta(days=30)
+            cutoff_day_str = cutoff_days.strftime("%Y-%m-%d")
+            current_day_str = current_day.strftime("%Y-%m-%d")
+
+            done_days = set()
+            if not force:
+                async with db_service.get_connection() as db:
+                    cur_done_d = await db.execute(
+                        "SELECT DISTINCT day_date FROM device_usage_daily WHERE day_date >= ? AND day_date < ?",
+                        (cutoff_day_str, current_day_str)
+                    )
+                    done_days = {str(r["day_date"])[:10] for r in await cur_done_d.fetchall()}
+
             pending_days = set()
             async with db_service.get_connection() as db:
                 cur_d = await db.execute(
                     """
                     SELECT DISTINCT date(hour_timestamp) as d
                     FROM device_usage_hourly
-                    WHERE hour_timestamp < ?
+                    WHERE hour_timestamp >= ? AND hour_timestamp < ?
                     """,
-                    (current_day.strftime("%Y-%m-%d"),)
+                    (cutoff_day_str, current_day_str)
                 )
                 rows_d = await cur_d.fetchall()
                 for r in rows_d:
-                    if r["d"]:
-                        pending_days.add(r["d"])
+                    d_val = str(r["d"])[:10] if r["d"] else ""
+                    if d_val and (force or d_val not in done_days):
+                        pending_days.add(d_val)
 
             for d_str in sorted(pending_days):
                 try:
@@ -163,7 +207,9 @@ class RetentionWorker:
                     if d_cnt > 0:
                         days_aggregated += 1
                 except Exception as ex:
-                    logger.warning(f"RetentionWorker: Errore aggregazione giorno {d_str}: {ex}")
+                    err_msg = f"RetentionWorker: Errore aggregazione giorno {d_str}: {ex}"
+                    logger.warning(err_msg)
+                    errors.append(err_msg)
 
             # 3. Purga dei dati scaduti per ciascun Tier e log di sistema
             raw_purged = await db_service.purge_expired_raw_samples()
@@ -173,12 +219,13 @@ class RetentionWorker:
             await db_service.cleanup_stale_discovered_ips(retention_days=30)
 
             # 4. Ottimizzazione SQLite WAL & statistiche
-            await db_service.run_database_maintenance(vacuum=vacuum)
+            maintenance_res = await db_service.run_database_maintenance(vacuum=vacuum)
             db_stats = await db_service.get_database_stats()
 
             self._last_run = now
+            status = "success" if not errors else "warning"
             self._last_summary = {
-                "status": "success",
+                "status": status,
                 "timestamp": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "hours_aggregated": hours_aggregated,
                 "signals_aggregated": signals_aggregated,
@@ -187,6 +234,8 @@ class RetentionWorker:
                 "hourly_purged": hourly_purged,
                 "daily_purged": daily_purged,
                 "logs_purged": logs_purged,
+                "errors": errors,
+                "maintenance": maintenance_res,
                 "db_stats": db_stats
             }
             return self._last_summary

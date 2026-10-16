@@ -146,17 +146,46 @@ async def get_database_statistics():
 
 
 @router.post("/database/compact", dependencies=[Depends(require_admin)])
-async def trigger_database_compaction():
+async def trigger_database_compaction(force: bool = False, vacuum: bool = True):
     """
     Esegue manualmente e on-demand un ciclo completo di compattazione e tiering multi-livello.
     Richiede privilegi di amministratore.
     """
     try:
         from app.services.retention_worker import retention_worker
-        summary = await retention_worker.run_compaction_cycle(vacuum=True)
+        summary = await retention_worker.run_compaction_cycle(vacuum=vacuum, force=force)
         return summary
     except Exception as e:
         logger.error(f"Error during manual database compaction: {e}")
         raise HTTPException(status_code=500, detail=f"Errore durante la compattazione del database: {str(e)}")
+
+
+@router.get("/database/integrity", dependencies=[Depends(require_admin)])
+async def check_database_integrity(quick: bool = True):
+    """
+    Esegue un controllo di integrità del database SQLite (PRAGMA quick_check o integrity_check).
+    Richiede privilegi di amministratore.
+    """
+    try:
+        res = await db_service.check_database_integrity(quick=quick)
+        return res
+    except Exception as e:
+        logger.error(f"Error checking database integrity: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore controllo integrità database: {str(e)}")
+
+
+@router.post("/database/backup", dependencies=[Depends(require_admin)])
+async def create_database_backup():
+    """
+    Crea un backup coerente, atomico e deframmentato del database SQLite a caldo via VACUUM INTO.
+    Richiede privilegi di amministratore.
+    """
+    try:
+        res = await db_service.backup_database_file()
+        return res
+    except Exception as e:
+        logger.error(f"Error creating database backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Errore creazione backup database: {str(e)}")
+
 
 

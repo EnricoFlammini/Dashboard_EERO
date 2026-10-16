@@ -4829,6 +4829,92 @@ async def run_all_tests():
         runner.assert_true(it_json["auth_local"]["remember_me"] == "Resta connesso / Ricordami", "Traduzione italiana auth_local.remember_me corretta")
         runner.assert_true(en_json["auth_local"]["remember_me"] == "Stay signed in / Remember me", "Traduzione inglese auth_local.remember_me corretta")
 
+        print("\n⚡ TEST ISSUES #73 & #74 (RETENTION WORKER CPU OPTIMIZATION, STRING BITRATE PARSE & SQLITE INTEGRITY / BACKUP)")
+
+        # 1. Test parsing bitrate con unità e formati eterogenei (Issue #73)
+        runner.assert_true(db_service.parse_bitrate_float(72.0) == 72.0, "parse_bitrate_float gestisce float nativo")
+        runner.assert_true(db_service.parse_bitrate_float(100) == 100.0, "parse_bitrate_float gestisce int nativo")
+        runner.assert_true(db_service.parse_bitrate_float("72.0 MBit/s") == 72.0, "parse_bitrate_float gestisce stringa con '72.0 MBit/s'")
+        runner.assert_true(db_service.parse_bitrate_float("144.4 Mbps") == 144.4, "parse_bitrate_float gestisce stringa con 'Mbps'")
+        runner.assert_true(db_service.parse_bitrate_float("1.2 Gbps") == 1200.0, "parse_bitrate_float converte '1.2 Gbps' in Mbps")
+        runner.assert_true(db_service.parse_bitrate_float("500 kbps") == 0.5, "parse_bitrate_float converte '500 kbps' in Mbps")
+        runner.assert_true(db_service.parse_bitrate_float(None) is None, "parse_bitrate_float restituisce None per None")
+        runner.assert_true(db_service.parse_bitrate_float("n/a") is None, "parse_bitrate_float restituisce None per 'n/a'")
+        runner.assert_true(db_service.parse_bitrate_float("-") is None, "parse_bitrate_float restituisce None per '-'")
+
+        # 2. Test aggregazione segnale con bitrate memorizzato come stringa (Issue #73 regression)
+        test_hour_str_73 = "2026-10-15 03:00:00"
+        test_hour_dt_73 = datetime.strptime(test_hour_str_73, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        test_mac_73 = "11:22:33:44:55:73"
+
+        async with db_service.get_connection() as db:
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                ("2026-10-15 03:15:00", test_mac_73, "Device-Issue-73", -65, "5 GHz", 44, "Ufficio", "72.0 MBit/s", "48.0 MBit/s")
+            )
+            await db.execute(
+                "INSERT INTO device_signal_history (timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0);",
+                ("2026-10-15 03:45:00", test_mac_73, "Device-Issue-73", -67, "5 GHz", 44, "Ufficio", "86.0 MBit/s", "52.0 MBit/s")
+            )
+            await db.commit()
+
+        # Esecuzione aggregazione segnale orario con stringhe: non deve sollevare ValueError
+        sig_cnt_73 = await db_service.aggregate_hourly_signals(test_hour_dt_73)
+        runner.assert_true(sig_cnt_73 >= 1, f"aggregate_hourly_signals gestisce stringhe con unità (processati {sig_cnt_73} apparati)")
+
+        async with db_service.get_connection() as db:
+            cur_sig_check = await db.execute("SELECT * FROM device_signal_hourly WHERE mac_address = ? AND hour_timestamp = ?;", (test_mac_73, "2026-10-15 03:00:00"))
+            row_sig_check = await cur_sig_check.fetchone()
+
+        runner.assert_true(row_sig_check is not None, "Record rollup segnale orario salvato con successo")
+        runner.assert_true(row_sig_check["avg_rx_bitrate"] == 79.0, f"avg_rx_bitrate calcolato correttamente (atteso: 79.0, ottenuto: {row_sig_check['avg_rx_bitrate']})")
+        runner.assert_true(row_sig_check["avg_tx_bitrate"] == 50.0, f"avg_tx_bitrate calcolato correttamente (atteso: 50.0, ottenuto: {row_sig_check['avg_tx_bitrate']})")
+
+        # 3. Test compattazione selettiva (salta ore già aggregate a meno di force=True) (Issue #73)
+        res_compaction_selective = await retention_worker.run_compaction_cycle(force=False)
+        runner.assert_true(res_compaction_selective.get("status") in ("success", "warning"), "run_compaction_cycle selettivo risponde con status valido")
+        # Un secondo ciclo consecutivo con force=False non deve riprocessare l'ora già aggregata
+        res_compaction_skip = await retention_worker.run_compaction_cycle(force=False)
+        runner.assert_true(res_compaction_skip.get("hours_aggregated") == 0, f"Compattazione salta ore già aggregate (hours_aggregated: {res_compaction_skip.get('hours_aggregated')})")
+
+        # 4. Test controllo integrità database SQLite (Issue #74)
+        integrity_res = await db_service.check_database_integrity(quick=True)
+        runner.assert_true(integrity_res.get("healthy") is True, "check_database_integrity(quick=True) riporta database integro")
+        runner.assert_true(integrity_res.get("status") == "ok", "Stato integrità 'ok'")
+        runner.assert_true(len(integrity_res.get("errors", [])) == 0, "Nessun errore di corruzione riscontrato")
+
+        # Endpoint GET /api/system/database/integrity (richiede admin)
+        res_int_api = await client.get("/api/system/database/integrity?quick=true", headers=adm_hdr)
+        runner.assert_true(res_int_api.status_code == 200, "GET /api/system/database/integrity risponde HTTP 200 per admin")
+        runner.assert_true(res_int_api.json().get("healthy") is True, "Endpoint integrity conferma database integro")
+
+        # 5. Test backup atomico e consistente a caldo con VACUUM INTO (Issue #74)
+        backup_res = await db_service.backup_database_file()
+        runner.assert_true(backup_res.get("status") == "success", "backup_database_file eseguito con successo")
+        b_path = backup_res.get("backup_path")
+        runner.assert_true(Path(b_path).exists(), f"File di backup creato su disco: {b_path}")
+        runner.assert_true(backup_res.get("size_bytes", 0) > 0, "File di backup ha dimensione > 0")
+
+        # Verifica integrità sul file di backup appena generato
+        async with aiosqlite.connect(b_path) as b_conn:
+            b_cur = await b_conn.execute("PRAGMA integrity_check;")
+            b_rows = await b_cur.fetchall()
+            runner.assert_true(len(b_rows) == 1 and b_rows[0][0] == "ok", "Backup creato con VACUUM INTO supera PRAGMA integrity_check con successo")
+
+        # Endpoint POST /api/system/database/backup
+        res_b_api = await client.post("/api/system/database/backup", headers=adm_hdr)
+        runner.assert_true(res_b_api.status_code == 200, "POST /api/system/database/backup risponde HTTP 200")
+        b_api_path = res_b_api.json().get("backup_path")
+        runner.assert_true(Path(b_api_path).exists(), "File di backup endpoint API creato con successo")
+
+        # Pulizia backup generati durante il test
+        for p in (b_path, b_api_path):
+            try:
+                if Path(p).exists():
+                    Path(p).unlink()
+            except Exception:
+                pass
+
         runner.print_summary()
 
 

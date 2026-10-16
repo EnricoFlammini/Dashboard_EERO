@@ -655,6 +655,18 @@ gantt
 - [x] **Localizzazione Filtri Bandwidth Hogs & Ripristino Categorie Alpine.js (PR #67 - @todddube):**
   - Stringhe tradotte in `it.json`/`en.json`, getter `availableCategories` ripristinato e formattazione bilingue.
 
+#### 7. ⚡ Ottimizzazioni Database & Retention Engine (Issue #73 & #74)
+- [x] **Compattazione e Tiering Selettivo Incrementale (Issue #73 - @mrtekkid):**
+  - Rielaborazione intelligente circoscritta alle sole ore e giorni non ancora aggregati, evitando di ricalcolare l'intera cronologia passata ad ogni ciclo e abbattendo il tempo di CPU da oltre 20 minuti a frazioni di secondo.
+  - Aggiunto parametro `force=True` per compattazione manuale on-demand.
+- [x] **Indici di Espressione su Timestamp e Sanificazione Bitrate (Issue #73):**
+  - Nuovi indici SQLite ad albero B su espressione `replace(replace(timestamp, 'T', ' '), 'Z', '')` per azzerare i tempi di scansione su `device_usage_history` e `device_signal_history`.
+  - Risoluzione del crash su stringhe bitrate come `'72.0 MBit/s'` tramite l'helper `parse_bitrate_float()` con supporto esteso a float, int, `Mbps`, `Gbps`, `kbps`.
+- [x] **Hardening WAL, Controllo Integrità & Backup Atomico a Caldo (Issue #74 - @WillFulmer):**
+  - Configurazione `PRAGMA wal_autocheckpoint = 1000` e checkpoint WAL passivo ad ogni ciclo di manutenzione per prevenire la crescita esponenziale del file `-wal`.
+  - Endpoint `GET /api/system/database/integrity` con `PRAGMA quick_check` / `integrity_check`.
+  - Endpoint `POST /api/system/database/backup` basato su `VACUUM INTO` per generare copie coerenti, deframmentate e verificate a caldo senza rischio di corruzione.
+
 ---
 
 ## 🛠️ Note Operative per il Futuro

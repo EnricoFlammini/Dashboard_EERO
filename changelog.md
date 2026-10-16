@@ -6,6 +6,44 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### ⚡ Ottimizzazione CPU Retention Worker, Compattazione Selettiva & Parse Bitrate (Issue #73 - @mrtekkid)
+* **⚡ Compattazione e Tiering Selettivo Incremenale:**
+  * `run_compaction_cycle()` verifica in modo intelligente le ore già aggregate in `device_usage_hourly` e `device_signal_hourly`, saltando la rielaborazione ridondante dell'intera cronologia degli ultimi 7 giorni.
+  * In condizioni ordinarie viene elaborata esclusivamente l'ora appena conclusa (riduzione dell'overhead di I/O e CPU del 99.4%).
+  * Aggiunto parametro `force=True` per consentire ricalcoli manuali forzati su richiesta.
+* **🚀 Indici di Espressione SQLite su Timestamp Puliti:**
+  * Introdotti indici ad alte prestazioni su espressione `replace(replace(timestamp, 'T', ' '), 'Z', '')` per `device_usage_history` e `device_signal_history`.
+  * Le query di aggregazione e filtraggio passano da scansioni complete della tabella (*full table scan*) a ricerche B-tree indicizzate binarie istantanee.
+* **🛡️ Parsing Robusto dei Bitrate con Unità di Misura (`parse_bitrate_float`):**
+  * Risolto l'errore `ValueError: could not convert string to float: '72.0 MBit/s'` nell'aggregazione dei segnali Wi-Fi.
+  * Implementato helper universale `parse_bitrate_float()` capace di analizzare e convertire float/int nativi, formati con unità (`Mbps`, `MBit/s`, `Gbps`, `kbps`) e gestire in sicurezza valori nulli o non validi.
+  * Sanitizzazione automatica applicata sia in fase di ricezione dei campioni sia durante i rollup storici.
+* **📊 Tracciamento Trasparente degli Errori di Compattazione:**
+  * Gli eventuali errori riscontrati durante il ciclo vengono accumulati e riflessi nel riassunto con `status: "warning"` e dettaglio degli errori (`errors: [...]`), garantendo piena visibilità nei log e nelle statistiche di sistema.
+
+### 🛡️ SQLite WAL Hardening, Check Integrità & Backup a Caldo Atomico (Issue #74 - @WillFulmer)
+* **🔄 Checkpoint WAL Passivo Regolare & Auto-Checkpoint Limit:**
+  * Impostato `PRAGMA wal_autocheckpoint = 1000` durante l'inizializzazione del database.
+  * Integrato `PRAGMA wal_checkpoint(PASSIVE)` ad ogni ciclo di manutenzione per svuotare periodicamente le pagine dal file `-wal` al database principale, prevenendo la crescita incontrollata del file WAL.
+* **🩺 Controllo Integrità Nativo Database (`GET /api/system/database/integrity`):**
+  * Nuovo metodo `check_database_integrity()` ed endpoint API per amministratori che esegue `PRAGMA quick_check` o `PRAGMA integrity_check`, identificando immediatamente eventuali corruzioni di pagina o indici malformati.
+* **💾 Backup Online Atomico & Consistente via `VACUUM INTO` (`POST /api/system/database/backup`):**
+  * Nuovo metodo `backup_database_file()` ed endpoint API per generare a caldo snapshot SQLite deframmentati, verificati e pronti per il salvataggio esterno, eliminando il rischio di corruzione generato da backup del filesystem eseguiti mentre SQLite scrive in WAL.
+
+### 🌐 Interfaccia & Esperienza Utente: Fix Login Modal, Gestione Baseline Dispositivi & i18n (PR #75, #76, #77 - @todddube)
+* **⚡ Risoluzione Flash Modale Login & Resilienza Errori Cloud eero (PR #75):**
+  * Eliminato il lampo visivo del form di login eero al ricaricamento della pagina grazie al pre-caricamento di `initial_authenticated` e all'aggiunta della regola CSS `[x-cloak]`.
+  * Avvio parallelizzato delle chiamate di bootstrap con `Promise.all`.
+  * Errori temporanei del cloud eero non forzano più il logout automatico dell'utente mantenendo valida la sessione salvata.
+* **🏷️ Baseline Prima Scansione & Dismissal Badge "NEW" Dispositivi (PR #76):**
+  * I dispositivi presenti in rete al momento della prima installazione della dashboard vengono classificati come `baseline` e non mostrano più il badge verde "NEW" per 7 giorni.
+  * Migrazione automatica one-time per database esistenti.
+  * Nuovo endpoint `POST /api/devices/seen` con validazione MAC, pulsante *"Segna tutti come visti"* e possibilità di cliccare sul badge per rimuoverlo all'istante con opzione di ripristino.
+* **🌍 Localizzazione Completa Pagina Dispositivi & Wrapping Nomi Profilo (PR #77):**
+  * Localizzazione bilingue (italiano e inglese) per tooltip di traffico cumulativo, stima Wi-Fi, periodi e messaggi di errore.
+  * Allargata la colonna Profilo/Utente da 8rem a 11rem con wrapping a 2 righe (`line-clamp-2`) e tooltip su hover per nomi utente particolarmente lunghi.
+
+
 ### 🔐 Gestione Sessioni Locali: Opzione "Ricordami" & Chiusura Sessione al Riavvio Browser (v1.6.1 - Modulo 4)
 * **☑️ Checkbox "Resta connesso / Ricordami" nei Modali di Login & Primo Setup:**
   * Integrata opzione checkbox *"Resta connesso / Ricordami"* (`remember_me`) nel modale di autenticazione locale (`#localLoginModal`) e nel wizard di configurazione iniziale amministratore (`#adminSetupModal`).
