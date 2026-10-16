@@ -951,7 +951,7 @@ html.dark .sidebar-btn-inactive:hover {
 
 .device-table .device-col-name { width: 13.5rem; }
 .device-table .device-col-address { width: 11rem; }
-.device-table .device-col-profile { width: 8rem; }
+.device-table .device-col-profile { width: 11rem; }
 .device-table .device-col-node { width: 8rem; }
 .device-table .device-col-band { width: 7rem; }
 .device-table .device-col-signal { width: 7rem; }

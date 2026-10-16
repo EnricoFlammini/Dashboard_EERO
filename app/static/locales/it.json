@@ -145,6 +145,11 @@
     "mesh_active": "Mesh Attivo"
   },
   "devices": {
+    "traffic_dl_total": "DL cumulativo:",
+    "traffic_ul_total": "UL cumulativo:",
+    "traffic_hw_estimate": "(~ Stima hardware Wi-Fi)",
+    "traffic_realtime": "Tempo reale:",
+    "device_id_not_found": "Identificatore dispositivo non trovato",
     "title": "Dispositivi Connessi & Assegnazione IP",
     "subtitle": "Gestione completa apparati, metriche fisiche radio, IP statici e inoltro porte",
     "search_placeholder": "Cerca per Nome, IP, MAC o note...",
@@ -220,6 +225,7 @@
     "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard"
   },
   "device_modal": {
+    "reservation_error": "Errore durante la prenotazione DHCP",
     "title": "Dettaglio Dispositivo",
     "first_seen": "Primo rilevamento sulla rete:",
     "tab_general": "Dati & Categoria",
