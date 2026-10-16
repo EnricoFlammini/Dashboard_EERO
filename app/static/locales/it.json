@@ -279,6 +279,7 @@
     "notes_placeholder": "Ubicazione, credenziali locali, note d'uso...",
     "favorite_toggle": "Aggiungi ai Preferiti ⭐",
     "gaming_target_toggle": "Pausa in Gaming Mode",
+    "dns_sync_excluded_toggle": "Escludi da sync DNS",
     "save_metadata_btn": "Salva Modifiche",
     "loading_dhcp": "Lettura configurazione DHCP dal Cloud eero...",
     "static_active_title": "IP Statico Riservato su eero",

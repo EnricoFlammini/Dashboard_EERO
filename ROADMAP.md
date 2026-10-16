@@ -677,7 +677,21 @@ gantt
 - [x] **Esposizione API & Controlli UI per l'Orario del Digest:**
   - Endpoint `GET /api/automations/digest` e `POST /api/automations/digest` estesi con supporto al campo `hour` (0-23 con validazione Pydantic) e `last_sent_date`.
   - Nuova interfaccia nella card Daily Digest con selettore orario a tendina (00:00 - 23:00), badge orario dinamico e indicatore visuale con data dell'ultimo invio riuscito.
-  - Test di regressione offline aggiunti (24 nuovi test in Modulo 8, totale suite a 1.404/1.404 al 100%).
+#### 9. 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
+- [x] **Prioritizzazione IPv4 Subnet LAN per Host Multi-Indirizzo:**
+  - Risolto il problema per cui host Linux con runtime container (Docker/Podman) e interfacce bridge virtuali (`172.17.x.x`, `172.24.x.x`, `10.88.x.x`) venivano associati erroneamente a IP non instradabili sulla LAN eero.
+  - Introdotto algoritmo a 5 livelli di priorità in `_sort_ipv4_candidates`: preferenza assoluta all'indirizzo appartenente alla subnet LAN fisica eero (desunta da gateway e netmask) e a IP privati non terminanti in `.1`, deprioritizzando sistematicamente i bridge virtuali container.
+  - Precedenza per prenotazioni DHCP o IP statici esplicitamente configurati e popolamento coerente della lista ordinata `ipv4_candidates`.
+- [x] **Pruning Intelligente Record Obsoleti Pi-hole v6 (REST API PATCH & DELETE):**
+  - Risolto l'accumulo indefinito di vecchi lease DHCP e IP obsoleti su Pi-hole v6 quando gli host cambiano indirizzo: se `prune_stale_ips` è abilitato (default `True`), la sincronizzazione atomica via PATCH `/api/config` rimuove automaticamente i vecchi record appartenenti ai dispositivi gestiti dalla dashboard.
+  - **Preservazione assoluta dei record unmanaged:** I record DNS personalizzati aggiunti manualmente dall'utente in Pi-hole (es. stampanti di rete, domini interni personalizzati) vengono preservati intatti e mai cancellati.
+  - Supporto per fallback PUT/DELETE su Pi-hole v6 e rimozione di lease obsoleti su Pi-hole v5 legacy (`customdns&action=delete`).
+- [x] **Toggle "Escludi da sincronizzazione DNS" per Singolo Dispositivo:**
+  - Aggiunta colonna persistente `dns_sync_excluded` nella tabella SQLite `device_metadata` con migrazione automatica schema.
+  - Supporto completo nei modelli Pydantic `DeviceMetadataRequest` e negli endpoint API `/api/devices/{mac}/metadata`.
+  - Checkbox dedicata con switch rapido nel modale dettaglio dispositivo (`#deviceDetailModal`) in `index.html` e `app.js` con traduzioni complete in italiano e inglese.
+  - Esclusione trasparente dei dispositivi contrassegnati dai payload di sincronizzazione `_prepare_clients_payload`, `/api/devices/export/hosts` e `/api/devices/export/adguard`.
+  - 22 nuovi test di regressione in Modulo 9 (totale suite a 1.426/1.426 superati al 100%).
 
 ---
 

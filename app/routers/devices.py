@@ -24,6 +24,7 @@ class DeviceMetadataRequest(BaseModel):
     static_ip: Optional[str] = None
     is_favorite: Optional[bool] = False
     is_low_latency_target: Optional[bool] = False
+    dns_sync_excluded: Optional[bool] = False
 
 
 class DeviceSeenRequest(BaseModel):
@@ -153,6 +154,8 @@ async def export_hosts(
     suffix = f".{domain_suffix.lstrip('.')}" if domain_suffix else ""
 
     for d in devices:
+        if d.get("dns_sync_excluded"):
+            continue
         if connected_only and not d.get("connected"):
             continue
         ip = d.get("ip")
@@ -182,6 +185,8 @@ async def export_adguard(
 
     clients = []
     for d in devices:
+        if d.get("dns_sync_excluded"):
+            continue
         if connected_only and not d.get("connected"):
             continue
         ip = d.get("ip")

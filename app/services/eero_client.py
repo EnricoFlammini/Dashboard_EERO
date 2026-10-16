@@ -692,6 +692,18 @@ class EeroClient:
         if data.get("gateway_ip"):
             self.current_gateway_ip = str(data.get("gateway_ip"))
 
+        # Netmask / Subnet LAN (Issue #72)
+        netmask = (
+            (data.get("ip_settings") or {}).get("netmask") or 
+            (data.get("ip_settings") or {}).get("mask") or
+            (data.get("dhcp") or {}).get("netmask") or 
+            (data.get("dhcp") or {}).get("mask") or
+            None
+        )
+        if netmask:
+            self.current_gateway_netmask = str(netmask).strip()
+            data["gateway_netmask"] = self.current_gateway_netmask
+
         # ISP
         data["isp"] = (
             data.get("isp") or 
@@ -852,6 +864,70 @@ class EeroClient:
             return True
 
         return False
+
+    def _get_lan_network(self) -> Optional[ipaddress.IPv4Network]:
+        """Restituisce l'oggetto IPv4Network per la subnet LAN eero se nota, altrimenti None (Issue #72)."""
+        gw_ip = getattr(self, "current_gateway_ip", None)
+        if not gw_ip:
+            return None
+        gw_mask = getattr(self, "current_gateway_netmask", None)
+        try:
+            if gw_mask:
+                return ipaddress.IPv4Network(f"{gw_ip}/{gw_mask}", strict=False)
+            octets = [int(x) for x in gw_ip.split(".")]
+            if len(octets) == 4:
+                if octets[0] == 192 and octets[1] == 168:
+                    if octets[2] in (4, 5, 6, 7):
+                        return ipaddress.IPv4Network(f"{octets[0]}.{octets[1]}.4.0/22", strict=False)
+                    return ipaddress.IPv4Network(f"{octets[0]}.{octets[1]}.{octets[2]}.0/24", strict=False)
+                elif octets[0] == 10:
+                    return ipaddress.IPv4Network(f"10.{octets[1]}.{octets[2]}.0/24", strict=False)
+                elif octets[0] == 172 and 16 <= octets[1] <= 31:
+                    return ipaddress.IPv4Network(f"172.{octets[1]}.{octets[2]}.0/24", strict=False)
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _sort_ipv4_candidates(candidates: List[str], lan_net: Optional[ipaddress.IPv4Network] = None) -> List[str]:
+        """Ordina i candidati IPv4 dando priorità alla LAN fisica e deprioritizzando bridge virtuali Docker/Podman (Issue #72)."""
+        def _score(ip_str: str) -> Tuple[int, int]:
+            try:
+                ip_obj = ipaddress.IPv4Address(ip_str.strip())
+            except Exception:
+                return (99, 0)
+
+            if ip_obj.is_loopback or ip_obj.is_link_local:
+                return (90, int(ip_obj))
+
+            octets = ip_str.strip().split(".")
+            ends_in_one = (octets[-1] == "1")
+
+            # Verifica subnet LAN eero se nota
+            if lan_net is not None:
+                try:
+                    if ip_obj in lan_net:
+                        return (1 if ends_in_one else 0, int(ip_obj))
+                except Exception:
+                    pass
+
+            # Rilevamento bridge container tipici (Docker 172.17-31.x.x, Podman 10.88-89.x.x, K8s 10.244/10.42/10.96)
+            is_container_bridge = False
+            first, second = int(octets[0]), int(octets[1])
+            if first == 172 and 17 <= second <= 31:
+                is_container_bridge = True
+            elif first == 10 and second in (88, 89, 244, 42, 96):
+                is_container_bridge = True
+
+            if is_container_bridge or (ends_in_one and (first == 172 or first == 10)):
+                return (4, int(ip_obj))
+
+            if ip_obj.is_private:
+                return (3 if ends_in_one else 2, int(ip_obj))
+
+            return (5, int(ip_obj))
+
+        return sorted(candidates, key=_score)
 
     def _normalize_eero_node(self, n: Dict[str, Any]) -> Dict[str, Any]:
         node = dict(n)
@@ -1389,7 +1465,19 @@ class EeroClient:
                     if not any(d["address"] == ip_str for d in ipv6_details):
                         ipv6_details.append(detail_entry)
 
-            raw_ip = ipv4_candidates[0] if ipv4_candidates else (dev.get("ip") if isinstance(dev.get("ip"), str) else None)
+            # Prioritizzazione intelligente candidati IPv4 (Issue #72)
+            lan_net = self._get_lan_network()
+            sorted_v4 = self._sort_ipv4_candidates(ipv4_candidates, lan_net)
+
+            # Se il dispositivo ha una prenotazione o static IP configurato, prioritizzalo se presente
+            static_pref = dev.get("static_ip") or (dev.get("reservation") or {}).get("ip")
+            if static_pref and str(static_pref).strip() in sorted_v4:
+                pref_clean = str(static_pref).strip()
+                sorted_v4.remove(pref_clean)
+                sorted_v4.insert(0, pref_clean)
+
+            dev["ipv4_candidates"] = sorted_v4
+            raw_ip = sorted_v4[0] if sorted_v4 else (dev.get("ip") if isinstance(dev.get("ip"), str) else None)
             dev["ip"] = str(raw_ip).strip() if raw_ip else None
 
             # Struttura completa IPv6 (Issue #57)

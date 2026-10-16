@@ -4,7 +4,7 @@ import json
 import logging
 import ssl
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 import urllib.parse
 import httpx
 
@@ -554,6 +554,8 @@ class DNSManager:
         """Estrae e normalizza IP, MAC, hostname e tag per ciascun apparato eero, con filtro IPv6 opzionale."""
         ip_counts: Dict[str, int] = {}
         for dev in devices:
+            if dev.get("dns_sync_excluded"):
+                continue
             raw_ips = []
             if dev.get("ip"):
                 raw_ips.append(str(dev["ip"]).strip())
@@ -569,6 +571,8 @@ class DNSManager:
         prepared: List[Dict[str, Any]] = []
 
         for dev in devices:
+            if dev.get("dns_sync_excluded"):
+                continue
             ip = dev.get("ip")
             mac = dev.get("mac")
             if not ip and not mac:
@@ -801,6 +805,17 @@ class DNSManager:
         token = (inst.get("token") or inst.get("password") or "").strip()
         raw_zone = str(inst.get("zone") if inst.get("zone") is not None else "").strip().lstrip(".")
         insecure_tls = parse_insecure_tls(inst.get("insecure_tls", False))
+        prune_stale = bool(inst.get("prune_stale_ips", True))
+
+        # Mappatura dei target attivi che la dashboard sta sincronizzando: hostname.lower() -> active IP
+        managed_active_targets: Dict[str, str] = {}
+        for client_item in prepared_clients:
+            ip = client_item.get("ip")
+            hostname = client_item.get("hostname")
+            if not ip or not hostname:
+                continue
+            target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+            managed_active_targets[target_name.lower().strip()] = ip.strip()
 
         try:
             async with httpx.AsyncClient(timeout=10.0, verify=not insecure_tls, follow_redirects=True) as client:
@@ -842,14 +857,43 @@ class DNSManager:
                     elif "hosts" in data and isinstance(data.get("hosts"), list):
                         existing_hosts = data.get("hosts") or []
 
-                    # Mappatura host esistenti: IP -> hostname
-                    host_map: Dict[str, str] = {}
-                    for entry in existing_hosts:
-                        if isinstance(entry, str) and " " in entry.strip():
-                            parts = entry.strip().split(None, 1)
-                            if len(parts) == 2:
-                                host_map[parts[0].lower()] = parts[1].strip()
+                    retained_entries: List[Tuple[str, str]] = []
+                    stale_records: List[str] = []
+                    seen_pairs: Set[Tuple[str, str]] = set()
 
+                    for entry in existing_hosts:
+                        if not (isinstance(entry, str) and " " in entry.strip()):
+                            continue
+                        parts = entry.strip().split(None, 1)
+                        if len(parts) != 2:
+                            continue
+                        e_ip = parts[0].strip()
+                        e_host = parts[1].strip()
+                        e_host_lower = e_host.lower()
+
+                        if e_host_lower in managed_active_targets:
+                            active_ip = managed_active_targets[e_host_lower]
+                            if e_ip.lower() == active_ip.lower():
+                                pair_key = (e_ip.lower(), e_host_lower)
+                                if pair_key not in seen_pairs:
+                                    seen_pairs.add(pair_key)
+                                    retained_entries.append((e_ip, e_host))
+                            else:
+                                if prune_stale:
+                                    stale_records.append(f"{e_ip} {e_host}")
+                                else:
+                                    pair_key = (e_ip.lower(), e_host_lower)
+                                    if pair_key not in seen_pairs:
+                                        seen_pairs.add(pair_key)
+                                        retained_entries.append((e_ip, e_host))
+                        else:
+                            # Record personalizzato non gestito: preserva integralmente
+                            pair_key = (e_ip.lower(), e_host_lower)
+                            if pair_key not in seen_pairs:
+                                seen_pairs.add(pair_key)
+                                retained_entries.append((e_ip, e_host))
+
+                    # Aggiunta/aggiornamento dei target attivi
                     synced = 0
                     for client_item in prepared_clients:
                         ip = client_item.get("ip")
@@ -857,10 +901,13 @@ class DNSManager:
                         if not ip or not hostname:
                             continue
                         target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
-                        host_map[ip.lower().strip()] = target_name
+                        pair_key = (ip.lower().strip(), target_name.lower().strip())
+                        if pair_key not in seen_pairs:
+                            seen_pairs.add(pair_key)
+                            retained_entries.append((ip.strip(), target_name))
                         synced += 1
 
-                    new_hosts_list = [f"{ip_addr} {h_name}" for ip_addr, h_name in host_map.items()]
+                    new_hosts_list = [f"{ip_val} {host_val}" for ip_val, host_val in retained_entries]
 
                     # Tenta prima PATCH atomica (un'unica richiesta veloce senza restart multipli)
                     patch_payload = {
@@ -883,6 +930,15 @@ class DNSManager:
                         }
 
                     # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
+                    # ed eventuale DELETE dei record obsoleti identificati se prune_stale
+                    if prune_stale:
+                        for stale_item in stale_records:
+                            try:
+                                stale_quoted = urllib.parse.quote(stale_item)
+                                await client.delete(f"{url}/api/config/dns/hosts/{stale_quoted}", headers=v6_headers)
+                            except Exception:
+                                pass
+
                     put_synced = 0
                     put_failed = 0
                     for client_item in prepared_clients:
@@ -909,6 +965,29 @@ class DNSManager:
                 # -------------------------------------------------------------
                 # 3. ESECUZIONE SINCRONIZZAZIONE PI-HOLE v5 (LEGACY admin/api.php)
                 # -------------------------------------------------------------
+                if prune_stale:
+                    try:
+                        v5_get_url = f"{url}/admin/api.php?customdns&action=get&auth={token}"
+                        v5_get_res = await client.get(v5_get_url)
+                        if v5_get_res.status_code == 200:
+                            v5_data = v5_get_res.json()
+                            raw_v5_entries = v5_data.get("data") if isinstance(v5_data, dict) else (v5_data if isinstance(v5_data, list) else [])
+                            for entry in raw_v5_entries:
+                                if isinstance(entry, (list, tuple)) and len(entry) >= 2:
+                                    first_val, second_val = str(entry[0]).strip(), str(entry[1]).strip()
+                                    if self._is_ipv4(first_val) or self._is_ipv6(first_val):
+                                        e_ip, e_domain = first_val, second_val
+                                    else:
+                                        e_domain, e_ip = first_val, second_val
+                                    
+                                    if e_domain.lower() in managed_active_targets:
+                                        active_ip = managed_active_targets[e_domain.lower()]
+                                        if e_ip.lower() != active_ip.lower():
+                                            v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
+                                            await client.get(v5_del_url)
+                    except Exception as e:
+                        logger.warning(f"Pi-hole v5: errore durante controllo pruning customdns: {e}")
+
                 synced = 0
                 failed = 0
                 for client_item in prepared_clients:

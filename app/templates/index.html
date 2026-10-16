@@ -5146,14 +5146,18 @@
           </div>
 
           <!-- Toggles -->
-          <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
             <label class="flex items-center space-x-2 text-slate-800 dark:text-slate-300 font-medium cursor-pointer">
               <input type="checkbox" x-model="deviceMetadataForm.is_favorite" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-sky-500">
-              <span x-text="t('device_modal.favorite_toggle')"></span>
+              <span class="text-xs" x-text="t('device_modal.favorite_toggle')"></span>
             </label>
             <label class="flex items-center space-x-2 text-slate-800 dark:text-slate-300 font-medium cursor-pointer">
               <input type="checkbox" x-model="deviceMetadataForm.is_low_latency_target" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-rose-500">
-              <span x-text="t('device_modal.gaming_target_toggle')"></span>
+              <span class="text-xs" x-text="t('device_modal.gaming_target_toggle')"></span>
+            </label>
+            <label class="flex items-center space-x-2 text-slate-800 dark:text-slate-300 font-medium cursor-pointer">
+              <input type="checkbox" x-model="deviceMetadataForm.dns_sync_excluded" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-amber-500">
+              <span class="text-xs" x-text="t('device_modal.dns_sync_excluded_toggle')"></span>
             </label>
           </div>
         </div>

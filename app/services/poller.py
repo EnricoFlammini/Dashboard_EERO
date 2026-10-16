@@ -780,6 +780,7 @@ class BackgroundPoller:
                 dev_copy["is_static"] = is_static
                 dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
                 dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
+                dev_copy["dns_sync_excluded"] = bool(meta.get("dns_sync_excluded", False))
                 is_prof_paused = False
                 if final_prof_id:
                     target_p = next((p for p in profiles if str(p.get("id")) == str(final_prof_id) or p.get("url", "").endswith(str(final_prof_id))), None)

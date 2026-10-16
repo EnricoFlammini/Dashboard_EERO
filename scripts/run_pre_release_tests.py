@@ -16,6 +16,9 @@ import sys
 import os
 import asyncio
 import aiosqlite
+import ipaddress
+import json
+import httpx
 from datetime import date, datetime, timedelta, timezone
 
 # Configure UTF-8 stdout for Windows console
@@ -5017,6 +5020,136 @@ async def run_all_tests():
         maintenance_engine._last_run_date = None  # Simula riavvio container
         maint_res = await maintenance_engine.check_and_run_nightly_maintenance(datetime(2026, 10, 16, 4, 8, 0))
         runner.assert_true(maint_res is None, "check_and_run_nightly_maintenance salta l'esecuzione se già completata oggi nel DB")
+
+        # =========================================================================
+        print("\n" + "=" * 60)
+        print("MODULO 9: DNS SYNC LAN IPV4 PRIORITIZATION, STALE IP PRUNING & DEVICE EXCLUSION (ISSUE #72)")
+        print("=" * 60)
+
+        # 1. Prioritizzazione candidati IPv4 (_sort_ipv4_candidates e _normalize_device)
+        test_docker_candidates = ["172.17.0.1", "172.24.0.1", "192.168.0.37", "172.28.0.1"]
+        
+        # Con subnet LAN esplicita 192.168.0.0/24:
+        lan_net_test = ipaddress.IPv4Network("192.168.0.0/24")
+        sorted_with_lan = eero_client._sort_ipv4_candidates(test_docker_candidates, lan_net_test)
+        runner.assert_true(sorted_with_lan[0] == "192.168.0.37", "Con subnet LAN nota, l'indirizzo LAN 192.168.0.37 è al primo posto (index 0)")
+        runner.assert_true("172.17.0.1" in sorted_with_lan[1:], "Bridge Docker 172.17.0.1 deprioritizzato rispetto alla LAN")
+
+        # Senza subnet LAN nota (fallback euristico):
+        sorted_without_lan = eero_client._sort_ipv4_candidates(test_docker_candidates, None)
+        runner.assert_true(sorted_without_lan[0] == "192.168.0.37", "Senza subnet LAN nota, l'indirizzo LAN privato 192.168.0.37 batte comunque i bridge Docker e .1")
+
+        # Podman bridge 10.88.0.1 vs LAN IP 10.0.0.45:
+        podman_candidates = ["10.88.0.1", "10.0.0.45", "10.89.0.1"]
+        sorted_podman = eero_client._sort_ipv4_candidates(podman_candidates, ipaddress.IPv4Network("10.0.0.0/24"))
+        runner.assert_true(sorted_podman[0] == "10.0.0.45", "LAN IP 10.0.0.45 prioritizzato rispetto ai bridge Podman 10.88.0.1 / 10.89.0.1")
+
+        # Verifica normalizzazione dispositivo tramite _normalize_device:
+        mock_raw_device = {
+            "mac": "aa:bb:cc:dd:ee:ff",
+            "nickname": "Linux HomeServer",
+            "ips": ["172.17.0.1", "172.24.0.1", "192.168.0.37", "172.28.0.1"]
+        }
+        eero_client.current_gateway_ip = "192.168.0.1"
+        eero_client.current_gateway_netmask = "255.255.255.0"
+        normalized_dev = eero_client._normalize_device(mock_raw_device)
+        runner.assert_true(normalized_dev.get("ip") == "192.168.0.37", "_normalize_device assegna l'IP LAN primario 192.168.0.37 escludendo i bridge Docker")
+        runner.assert_true("ipv4_candidates" in normalized_dev, "_normalize_device popola la lista completa ordinata ipv4_candidates")
+        runner.assert_true(normalized_dev["ipv4_candidates"][0] == "192.168.0.37", "ipv4_candidates ha 192.168.0.37 in prima posizione")
+
+        # Dispositivo con prenotazione statica esplicita:
+        mock_static_device = {
+            "mac": "11:22:33:44:55:66",
+            "nickname": "Workstation",
+            "ips": ["172.17.0.1", "192.168.0.99", "192.168.0.100"],
+            "static_ip": "192.168.0.100"
+        }
+        normalized_static = eero_client._normalize_device(mock_static_device)
+        runner.assert_true(normalized_static.get("ip") == "192.168.0.100", "static_ip/prenotazione ha precedenza assoluta sui candidati")
+
+        # 2. Esclusione dispositivo da sync DNS (dns_sync_excluded)
+        test_mac_excl = "22:33:44:55:66:77"
+        await db_service.upsert_device_metadata(mac_address=test_mac_excl, dns_sync_excluded=True)
+        meta_read = await db_service.get_device_metadata(test_mac_excl)
+        runner.assert_true(meta_read is not None and bool(meta_read.get("dns_sync_excluded")) is True, "dns_sync_excluded=True salvato e letto correttamente in SQLite")
+
+        # Test aggiornamento via API endpoint /api/devices/{mac}/metadata
+        res_meta_api = await client.post(f"/api/devices/{test_mac_excl}/metadata", json={"dns_sync_excluded": True, "custom_name": "Test Server"}, headers=adm_hdr)
+        runner.assert_true(res_meta_api.status_code == 200, "POST /api/devices/{mac}/metadata con dns_sync_excluded risponde HTTP 200")
+        runner.assert_true(res_meta_api.json().get("metadata", {}).get("dns_sync_excluded") == 1, "Risposta API conferma dns_sync_excluded: 1")
+
+        # Test filtro _prepare_clients_payload in DNSManager
+        test_device_list = [
+            {"mac": "aa:11:22:33:44:55", "ip": "192.168.0.10", "hostname": "managed-host-1", "dns_sync_excluded": False},
+            {"mac": "bb:11:22:33:44:55", "ip": "192.168.0.20", "hostname": "excluded-host-2", "dns_sync_excluded": True},
+            {"mac": "cc:11:22:33:44:55", "ip": "192.168.0.30", "hostname": "managed-host-3"}
+        ]
+        from app.services.dns_manager import DNSManager
+        dns_mgr = DNSManager()
+        prep_payload = dns_mgr._prepare_clients_payload(test_device_list)
+        prep_names = [p["hostname"] for p in prep_payload]
+        runner.assert_true("managed-host-1" in prep_names, "Host abilitato managed-host-1 presente nel payload sync DNS")
+        runner.assert_true("managed-host-3" in prep_names, "Host predefinito managed-host-3 presente nel payload sync DNS")
+        runner.assert_true("excluded-host-2" not in prep_names, "Host con dns_sync_excluded=True escluso dal payload sync DNS")
+
+        # 3. Pi-hole v6: Pruning intelligente record obsoleti e preservazione record unmanaged
+        pihole_mock_v6 = {
+            "id": "inst-pihole-test",
+            "name": "Pi-hole Test",
+            "engine": "pihole",
+            "url": "http://127.0.0.1:8088",
+            "token": "test-sid-123",
+            "zone": "lan",
+            "prune_stale_ips": True
+        }
+
+        # Simulazione Pi-hole v6 con record esistenti:
+        existing_v6_hosts = [
+            "172.17.0.1 homeserver.lan",
+            "192.168.0.50 homeserver.lan",
+            "192.168.0.200 unmanaged-nas.lan",
+            "192.168.0.10 laptop.lan"
+        ]
+
+        mock_incoming_clients = [
+            {"ip": "192.168.0.37", "hostname": "homeserver"},
+            {"ip": "192.168.0.10", "hostname": "laptop"}
+        ]
+
+        sent_patch_payload = None
+        async def mock_pihole_handler(request: httpx.Request):
+            nonlocal sent_patch_payload
+            if request.method == "GET" and "/api/config/dns/hosts" in str(request.url):
+                return httpx.Response(200, json={"config": {"dns": {"hosts": existing_v6_hosts}}})
+            if request.method == "PATCH" and "/api/config" in str(request.url):
+                sent_patch_payload = json.loads(request.content.decode("utf-8"))
+                return httpx.Response(200, json={"status": "success"})
+            return httpx.Response(404)
+
+        transport = httpx.MockTransport(mock_pihole_handler)
+        orig_async_client = httpx.AsyncClient
+        try:
+            httpx.AsyncClient = lambda *args, **kwargs: orig_async_client(transport=transport, *args, **kwargs)
+            res_sync = await dns_mgr._sync_single_pihole(pihole_mock_v6, mock_incoming_clients)
+            runner.assert_true(res_sync.get("success") is True, "Sincronizzazione Pi-hole v6 completata con successo via PATCH")
+            runner.assert_true(sent_patch_payload is not None, "PATCH payload inviato a Pi-hole v6")
+            
+            patched_hosts = sent_patch_payload.get("config", {}).get("dns", {}).get("hosts", [])
+            runner.assert_true("192.168.0.200 unmanaged-nas.lan" in patched_hosts, "Record unmanaged (unmanaged-nas.lan) PRESERVATO integralmente")
+            runner.assert_true("192.168.0.10 laptop.lan" in patched_hosts, "Record valido attivo (laptop.lan) PRESERVATO")
+            runner.assert_true("192.168.0.37 homeserver.lan" in patched_hosts, "Record attivo (192.168.0.37 homeserver.lan) AGGIUNTO con successo")
+            runner.assert_true("172.17.0.1 homeserver.lan" not in patched_hosts, "VECCHIO BRIDGE POTATO: 172.17.0.1 homeserver.lan rimosso dai record Pi-hole")
+            runner.assert_true("192.168.0.50 homeserver.lan" not in patched_hosts, "VECCHIO LEASE POTATO: 192.168.0.50 homeserver.lan rimosso dai record Pi-hole")
+
+            # 4. Pi-hole v6 con prune_stale_ips=False: i vecchi record non devono essere rimossi
+            pihole_mock_no_prune = dict(pihole_mock_v6)
+            pihole_mock_no_prune["prune_stale_ips"] = False
+            sent_patch_payload = None
+            await dns_mgr._sync_single_pihole(pihole_mock_no_prune, mock_incoming_clients)
+            patched_hosts_no_prune = sent_patch_payload.get("config", {}).get("dns", {}).get("hosts", [])
+            runner.assert_true("172.17.0.1 homeserver.lan" in patched_hosts_no_prune, "Con prune_stale_ips=False, il vecchio record non viene potato")
+        finally:
+            httpx.AsyncClient = orig_async_client
 
         runner.print_summary()
 

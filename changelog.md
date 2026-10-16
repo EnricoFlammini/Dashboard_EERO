@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
+* **🌐 Prioritizzazione Automatica IPv4 Subnet LAN per Host Multi-Indirizzo:**
+  * Risolto il problema per cui macchine Linux con runtime container (Docker/Podman) venivano associate nell'inventario e nella sincronizzazione DNS all'indirizzo del bridge virtuale (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`) anziché al loro vero indirizzo LAN.
+  * Introdotta gerarchia a 5 livelli di punteggio in `_sort_ipv4_candidates`: prioritizzazione dell'IP appartenente alla subnet LAN fisica eero (desunta dinamicamente da gateway e netmask) e a IP privati RFC 1918 non terminanti in `.1`, deprioritizzando sistematicamente i bridge virtuali container.
+  * Precedenza immediata per prenotazioni DHCP e IP statici configurati, con esportazione completa di `ipv4_candidates` nei dati del dispositivo.
+* **🧹 Pruning Intelligente Record DNS Obsoleti Pi-hole v6 (REST API PATCH & DELETE):**
+  * Risolto l'accumulo cumulativo infinito di record e vecchi lease DHCP per lo stesso hostname in Pi-hole v6 quando un dispositivo cambia IP o presenta indirizzi multipli.
+  * Se `prune_stale_ips` è abilitato (default `True`), la sincronizzazione atomica via PATCH `/api/config` calcola la differenza tra IP attivi e host registrati, eliminando i record non più validi per i dispositivi gestiti.
+  * **Preservazione rigorosa dei record unmanaged:** Eventuali record DNS personalizzati aggiunti manualmente dall'utente direttamente in Pi-hole (es. stampanti, server interni non eero) non vengono mai toccati né rimossi.
+  * Supporto integrato anche per fallback PUT/DELETE su Pi-hole v6 e rimozione di lease obsoleti su Pi-hole v5 legacy (`customdns&action=delete`).
+* **🛑 Toggle "Escludi da Sincronizzazione DNS" per Singolo Dispositivo (`dns_sync_excluded`):**
+  * Nuova colonna persistente `dns_sync_excluded` in `device_metadata` con migrazione automatica schema SQLite.
+  * Aggiunta checkbox rapida con feedback reattivo nella scheda dettaglio del dispositivo (`#deviceDetailModal`) per escludere apparati la cui risoluzione DNS deve essere gestita altrove o non sincronizzata.
+  * Filtraggio automatico e trasparente applicato a tutti i motori DNS (`_prepare_clients_payload`), `/api/devices/export/hosts` e `/api/devices/export/adguard`.
+
 ### 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @todddube)
 * **🛡️ Guardia di Persistenza su SQLite (`last_daily_digest_date`):**
   * Risolto l'invio moltiplicato e ripetuto del riepilogo giornaliero (fino a 13 notifiche in un'ora) causato da riavvii del container durante la finestra oraria programmata.

@@ -343,7 +343,8 @@ document.addEventListener('alpine:init', () => {
       category: 'Altro',
       custom_notes: '',
       is_favorite: false,
-      is_low_latency_target: false
+      is_low_latency_target: false,
+      dns_sync_excluded: false
     },
     deviceReservation: null,
     deviceForwards: [],
@@ -2086,7 +2087,8 @@ document.addEventListener('alpine:init', () => {
         category: device.category || device.default_category || 'Altro',
         custom_notes: device.custom_notes || '',
         is_favorite: Boolean(device.is_favorite),
-        is_low_latency_target: Boolean(device.is_low_latency_target)
+        is_low_latency_target: Boolean(device.is_low_latency_target),
+        dns_sync_excluded: Boolean(device.dns_sync_excluded)
       };
 
       this.deviceSelectedProfileId = device.profile_id || '';
@@ -2285,7 +2287,8 @@ document.addEventListener('alpine:init', () => {
           category: this.deviceMetadataForm.category,
           custom_notes: this.deviceMetadataForm.custom_notes,
           is_favorite: Boolean(this.deviceMetadataForm.is_favorite),
-          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target)
+          is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target),
+          dns_sync_excluded: Boolean(this.deviceMetadataForm.dns_sync_excluded)
         });
 
         const title = this.currentLanguage === 'it' ? "Salvato" : "Saved";
