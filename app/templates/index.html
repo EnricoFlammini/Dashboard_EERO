@@ -3147,19 +3147,36 @@
                 </div>
                 <div>
                   <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.digest_title')"></h3>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-semibold inline-block mt-0.5" x-text="currentLanguage === 'it' ? 'Ore 21:00' : '9:00 PM (21:00)'"></span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-semibold inline-block mt-0.5" x-text="digestHourBadgeText()"></span>
                 </div>
               </div>
             </div>
             <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('controls.digest_desc')"></p>
 
-            <!-- Toggle Abilitazione Invio Automatico Daily Digest -->
-            <div class="pt-1">
+            <!-- Toggle Abilitazione & Orario Invio Daily Digest -->
+            <div class="pt-1 flex items-center justify-between gap-3 flex-wrap">
               <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
                 <input type="checkbox" x-model="digestSettings.enabled" @change="saveDigestSettings()" class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500/30 bg-white dark:bg-slate-800 w-4 h-4">
                 <span class="font-medium text-slate-800 dark:text-slate-200" x-text="t('controls.digest_enable_toggle')"></span>
               </label>
+              <div class="flex items-center space-x-1.5 shrink-0" x-show="digestSettings.enabled">
+                <label class="text-[11px] font-medium text-slate-500 dark:text-slate-400" x-text="t('controls.digest_scheduled_hour') || 'Orario:'"></label>
+                <select x-model.number="digestSettings.hour" @change="saveDigestSettings()" class="text-xs py-1 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-indigo-500/30 focus:border-indigo-500">
+                  <template x-for="h in 24" :key="h - 1">
+                    <option :value="h - 1" x-text="String(h - 1).padStart(2, '0') + ':00'"></option>
+                  </template>
+                </select>
+              </div>
             </div>
+
+            <!-- Stato Ultimo Invio Oggi (Issue #70) -->
+            <template x-if="digestSettings.last_sent_date">
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                <span x-text="t('controls.digest_last_sent') || 'Ultimo invio:'"></span>
+                <span class="font-mono font-medium text-slate-700 dark:text-slate-300" x-text="digestSettings.last_sent_date"></span>
+              </div>
+            </template>
 
             <!-- Canali di recapito attivi (Issue #64) -->
             <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 text-xs space-y-1.5">

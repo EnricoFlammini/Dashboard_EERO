@@ -667,6 +667,18 @@ gantt
   - Endpoint `GET /api/system/database/integrity` con `PRAGMA quick_check` / `integrity_check`.
   - Endpoint `POST /api/system/database/backup` basato su `VACUUM INTO` per generare copie coerenti, deframmentate e verificate a caldo senza rischio di corruzione.
 
+#### 8. 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @todddube)
+- [x] **Guardia di Persistenza su SQLite per Daily Digest (`app_settings`):**
+  - Risolto il problema per cui i riavvii del container eero dashboard nella finestra oraria prestabilita re-inviavano ripetutamente il digest giornaliero su Telegram/Discord/Webhook/Pushover (un utente ha riscontrato fino a 13 invii in un'ora).
+  - La data dell'ultimo invio (`last_daily_digest_date`) viene ora memorizzata in modo permanente su SQLite e verificata prima di ogni dispatch, garantendo un solo invio al giorno indipendentemente da quanti riavvii subisca il container.
+- [x] **Configurazione Orario Flessibile & Timezone (`DAILY_DIGEST_HOUR` e `TZ`):**
+  - Aggiunti parametri `daily_digest_hour` (default `21`) e `tz` nei `Settings` dell'applicazione, collegati alle variabili d'ambiente documentate `DAILY_DIGEST_HOUR` e `TZ`.
+  - Risoluzione intelligente del fuso orario tramite `_get_local_now()` con supporto `zoneinfo` nativo, Linux `/usr/share/zoneinfo` e fallback sicuro a timezone di sistema o UTC.
+- [x] **Esposizione API & Controlli UI per l'Orario del Digest:**
+  - Endpoint `GET /api/automations/digest` e `POST /api/automations/digest` estesi con supporto al campo `hour` (0-23 con validazione Pydantic) e `last_sent_date`.
+  - Nuova interfaccia nella card Daily Digest con selettore orario a tendina (00:00 - 23:00), badge orario dinamico e indicatore visuale con data dell'ultimo invio riuscito.
+  - Test di regressione offline aggiunti (24 nuovi test in Modulo 8, totale suite a 1.404/1.404 al 100%).
+
 ---
 
 ## 🛠️ Note Operative per il Futuro

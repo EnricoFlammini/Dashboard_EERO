@@ -360,6 +360,10 @@ class MaintenanceEngine:
         # Se già eseguito oggi, non rieseguire
         if self._last_run_date == today_str:
             return None
+        last_run_setting = await db_service.get_setting("last_nightly_maintenance_run", "")
+        if last_run_setting and last_run_setting.startswith(today_str):
+            self._last_run_date = today_str
+            return None
 
         target_t = parse_time_str(cfg.get("time", "04:00"))
         curr_t = now.time()

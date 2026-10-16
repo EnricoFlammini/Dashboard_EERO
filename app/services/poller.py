@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import zoneinfo
 from datetime import datetime, timezone, time as dt_time
 from typing import Any, Dict, List, Optional, Set
 
@@ -1122,11 +1124,30 @@ class BackgroundPoller:
         except Exception as e:
             logger.error(f"Errore durante il salvataggio delle metriche di rete: {e}")
 
+    @staticmethod
+    def _get_local_now(tz_name: Optional[str] = None) -> datetime:
+        """Restituisce il datetime corrente nel fuso orario configurato (default da settings.tz o env TZ),
+        con fallback sicuro al fuso locale di sistema o UTC.
+        """
+        tz_str = (tz_name or getattr(settings, "tz", "") or os.getenv("TZ", "") or "").strip()
+        if tz_str:
+            if tz_str.upper() == "UTC":
+                return datetime.now(timezone.utc)
+            try:
+                return datetime.now(zoneinfo.ZoneInfo(tz_str))
+            except Exception:
+                pass
+        try:
+            return datetime.now().astimezone()
+        except Exception:
+            return datetime.now()
+
     async def _run_periodic_jobs(self):
-        """Esecuzione scheduler notturno LED, pulizia retention e speedtest pianificati."""
+        """Esecuzione scheduler notturno LED, pulizia retention, speedtest e daily digest."""
         now = datetime.now()
+        local_now = self._get_local_now()
         
-        # A. Scheduler Modalità Notte LED
+        # A. Scheduler Modalità Notte LED (rispetta il fuso locale)
         night_mode_enabled = (await db_service.get_setting("night_mode_enabled", "false")).lower() == "true"
         if night_mode_enabled:
             start_str = await db_service.get_setting("night_mode_start", "23:00")
@@ -1136,7 +1157,7 @@ class BackgroundPoller:
                 eh, em = map(int, end_str.split(":"))
                 start_time = dt_time(sh, sm)
                 end_time = dt_time(eh, em)
-                curr_time = now.time()
+                curr_time = local_now.time()
 
                 if start_time < end_time:
                     is_night = start_time <= curr_time <= end_time
@@ -1169,15 +1190,21 @@ class BackgroundPoller:
                         logger.warning(f"Scheduled speedtest failed: {err}")
                 asyncio.create_task(_safe_scheduled_speedtest())
 
-        # D. Daily Digest (ore 21:00)
-        today_str = now.strftime("%Y-%m-%d")
-        if now.hour == 21 and self._last_digest_date != today_str:
-            self._last_digest_date = today_str
-            digest_enabled = (await db_service.get_setting("daily_digest_enabled", "true")).lower() == "true"
-            if digest_enabled:
-                asyncio.create_task(self._send_daily_digest())
+        # D. Daily Digest (persistenza su DB SQLite per evitare re-invii continui e spam dopo riavvii del container - Issue #70)
+        configured_hour = int(await db_service.get_setting("daily_digest_hour", str(getattr(settings, "daily_digest_hour", 21))))
+        today_str = local_now.strftime("%Y-%m-%d")
+        if local_now.hour == configured_hour:
+            last_digest_date = await db_service.get_setting("last_daily_digest_date", "")
+            if last_digest_date != today_str and self._last_digest_date != today_str:
+                self._last_digest_date = today_str
+                await db_service.set_setting("last_daily_digest_date", today_str)
+                digest_enabled = (await db_service.get_setting("daily_digest_enabled", "true")).lower() == "true"
+                if digest_enabled:
+                    asyncio.create_task(self._send_daily_digest())
+                else:
+                    logger.debug("Daily digest automatic dispatch is disabled in settings.")
             else:
-                logger.debug("Daily digest automatic dispatch is disabled in settings.")
+                logger.debug(f"Daily digest for {today_str} already recorded as sent. Skipping.")
 
         # E. Sincronizzazione periodica AdGuard Home (ogni 30 minuti)
         if self.cached_devices and (not self._last_adguard_sync or (now - self._last_adguard_sync).total_seconds() > 1800):
@@ -1198,14 +1225,14 @@ class BackgroundPoller:
         # G. Parental Scheduling & Regole Temporali (v1.6.0 Modulo 1)
         try:
             from app.services.scheduler import schedule_engine
-            asyncio.create_task(schedule_engine.evaluate_schedules(now))
+            asyncio.create_task(schedule_engine.evaluate_schedules(local_now))
         except Exception as sch_err:
             logger.debug(f"Periodic schedule evaluation error: {sch_err}")
 
         # H. Manutenzione Notturna Mesh & Compattazione SQLite (v1.6.0 Modulo 1)
         try:
             from app.services.scheduler import maintenance_engine
-            asyncio.create_task(maintenance_engine.check_and_run_nightly_maintenance(now))
+            asyncio.create_task(maintenance_engine.check_and_run_nightly_maintenance(local_now))
         except Exception as maint_err:
             logger.debug(f"Periodic maintenance check error: {maint_err}")
 

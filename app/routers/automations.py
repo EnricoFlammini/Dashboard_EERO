@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from app.config import settings
 from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
@@ -57,6 +58,7 @@ class MQTTConfigRequest(BaseModel):
 
 class DigestSettingsRequest(BaseModel):
     enabled: bool
+    hour: Optional[int] = Field(None, ge=0, le=23, description="Ora programmata invio daily digest (0-23)")
 
 
 class DigestGenerateRequest(BaseModel):
@@ -393,14 +395,29 @@ async def mark_all_alerts_read():
 async def get_digest_settings():
     """Restituisce le impostazioni del report digest giornaliero."""
     val = await db_service.get_setting("daily_digest_enabled", "true")
-    return {"status": "success", "enabled": val.lower() == "true"}
+    hour = int(await db_service.get_setting("daily_digest_hour", str(getattr(settings, "daily_digest_hour", 21))))
+    last_sent = await db_service.get_setting("last_daily_digest_date", "")
+    return {
+        "status": "success",
+        "enabled": val.lower() == "true",
+        "hour": hour,
+        "last_sent_date": last_sent or None
+    }
 
 
 @router.post("/digest")
 async def update_digest_settings(payload: DigestSettingsRequest):
-    """Aggiorna lo stato di abilitazione del report digest giornaliero."""
+    """Aggiorna lo stato di abilitazione e l'orario del report digest giornaliero."""
     await db_service.set_setting("daily_digest_enabled", "true" if payload.enabled else "false")
-    return {"status": "success", "message": "Impostazioni Digest aggiornate con successo.", "enabled": payload.enabled}
+    if payload.hour is not None:
+        await db_service.set_setting("daily_digest_hour", str(payload.hour))
+    hour = int(await db_service.get_setting("daily_digest_hour", str(getattr(settings, "daily_digest_hour", 21))))
+    return {
+        "status": "success",
+        "message": "Impostazioni Digest aggiornate con successo.",
+        "enabled": payload.enabled,
+        "hour": hour
+    }
 
 
 @router.post("/digest/generate")

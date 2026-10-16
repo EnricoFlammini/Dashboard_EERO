@@ -4915,6 +4915,109 @@ async def run_all_tests():
             except Exception:
                 pass
 
+        # =========================================================================
+        # MODULO 8: DAILY DIGEST SCHEDULER & RESTART IDEMPOTENCY (ISSUE #70)
+        # =========================================================================
+        print("\n" + "=" * 60)
+        print("MODULO 8: DAILY DIGEST SCHEDULER & RESTART IDEMPOTENCY (ISSUE #70)")
+        print("=" * 60)
+
+        # 1. Configurazione settings e risoluzione fuso orario
+        runner.assert_true(hasattr(settings, "daily_digest_hour"), "settings possiede l'attributo daily_digest_hour")
+        runner.assert_true(hasattr(settings, "tz"), "settings possiede l'attributo tz")
+        runner.assert_true(isinstance(settings.daily_digest_hour, int), "daily_digest_hour è un intero")
+        
+        dt_utc = BackgroundPoller._get_local_now("UTC")
+        runner.assert_true(dt_utc.tzinfo is not None, "_get_local_now('UTC') restituisce datetime con tzinfo")
+        dt_default = BackgroundPoller._get_local_now()
+        runner.assert_true(isinstance(dt_default, datetime), "_get_local_now() restituisce istanza datetime")
+
+        # 2. Endpoint API /api/automations/digest (GET & POST)
+        res_get_digest = await client.get("/api/automations/digest")
+        runner.assert_true(res_get_digest.status_code == 200, "GET /api/automations/digest risponde HTTP 200")
+        digest_data = res_get_digest.json()
+        runner.assert_true("enabled" in digest_data, "GET /api/automations/digest include 'enabled'")
+        runner.assert_true("hour" in digest_data, "GET /api/automations/digest include 'hour'")
+        runner.assert_true("last_sent_date" in digest_data, "GET /api/automations/digest include 'last_sent_date'")
+
+        # Aggiornamento orario valido (es. ore 20)
+        res_post_digest = await client.post("/api/automations/digest", json={"enabled": True, "hour": 20})
+        runner.assert_true(res_post_digest.status_code == 200, "POST /api/automations/digest con hour=20 risponde HTTP 200")
+        runner.assert_true(res_post_digest.json().get("hour") == 20, "Risposta POST conferma hour=20")
+
+        # Verifica persistenza su GET
+        res_verify_digest = await client.get("/api/automations/digest")
+        runner.assert_true(res_verify_digest.json().get("hour") == 20, "GET successivo conferma persistenza hour=20")
+
+        # Validazione range orario (rifiuto valori non compresi tra 0 e 23)
+        res_invalid_high = await client.post("/api/automations/digest", json={"enabled": True, "hour": 25})
+        runner.assert_true(res_invalid_high.status_code == 422, "POST /api/automations/digest con hour=25 rifiutato con HTTP 422")
+        res_invalid_low = await client.post("/api/automations/digest", json={"enabled": True, "hour": -1})
+        runner.assert_true(res_invalid_low.status_code == 422, "POST /api/automations/digest con hour=-1 rifiutato con HTTP 422")
+
+        # 3. Test guard persistente SQLite e Idempotency al riavvio del container (Issue #70)
+        await db_service.set_setting("daily_digest_enabled", "true")
+        await db_service.set_setting("daily_digest_hour", "20")
+        await db_service.set_setting("last_daily_digest_date", "")
+
+        digest_dispatches = 0
+        async def _mock_dispatch(lang=None):
+            nonlocal digest_dispatches
+            digest_dispatches += 1
+            return {"network_name": "Test Net", "health_score": 100}
+
+        test_digest_poller = BackgroundPoller()
+        test_digest_poller._send_daily_digest = _mock_dispatch
+
+        # 3a. Poller eseguito ad un'ora differente (es. 18:00) -> Nessun invio
+        test_digest_poller._get_local_now = lambda: datetime(2026, 10, 16, 18, 0, 0)
+        await test_digest_poller._run_periodic_jobs()
+        await asyncio.sleep(0.01)
+        runner.assert_true(digest_dispatches == 0, "Nessun invio digest prima dell'orario stabilito (18:00 != 20:00)")
+        last_in_db = await db_service.get_setting("last_daily_digest_date", "")
+        runner.assert_true(last_in_db == "", "last_daily_digest_date resta vuoto nel DB prima dell'invio")
+
+        # 3b. Poller eseguito all'orario target (20:05) -> Invio singolo e persistenza DB
+        test_digest_poller._get_local_now = lambda: datetime(2026, 10, 16, 20, 5, 0)
+        await test_digest_poller._run_periodic_jobs()
+        await asyncio.sleep(0.01)
+        runner.assert_true(digest_dispatches == 1, "Digest inviato con successo alle 20:05 (dispatch count == 1)")
+        last_in_db = await db_service.get_setting("last_daily_digest_date", "")
+        runner.assert_true(last_in_db == "2026-10-16", "last_daily_digest_date salvato in SQLite come '2026-10-16'")
+
+        # 3c. Stesso processo, ciclo di polling successivo durante la stessa ora (20:15) -> Nessun re-invio
+        test_digest_poller._get_local_now = lambda: datetime(2026, 10, 16, 20, 15, 0)
+        await test_digest_poller._run_periodic_jobs()
+        await asyncio.sleep(0.01)
+        runner.assert_true(digest_dispatches == 1, "Nessun re-invio all'interno della stessa ora nello stesso processo")
+
+        # 3d. SIMULAZIONE RIAVVIO CONTAINER (Issue #70 - utente riceveva 13 digest in un'ora a causa di riavvii del container)
+        # Nuova istanza poller (come all'avvio pulito di un container) con RAM cache vuota (_last_digest_date == None)
+        restarted_poller = BackgroundPoller()
+        runner.assert_true(restarted_poller._last_digest_date is None, "Nuovo poller dopo riavvio container parte con _last_digest_date = None in RAM")
+        restarted_poller._send_daily_digest = _mock_dispatch
+        restarted_poller._get_local_now = lambda: datetime(2026, 10, 16, 20, 25, 0)
+        
+        # Esecuzione periodic jobs nel container riavviato alle 20:25: la guardia SQLite deve bloccare il re-invio!
+        await restarted_poller._run_periodic_jobs()
+        await asyncio.sleep(0.01)
+        runner.assert_true(digest_dispatches == 1, "SPAM BLOCCATO: Dopo riavvio container il digest NON viene re-inviato (dispatch count ancora 1)")
+
+        # 3e. Esecuzione il giorno successivo (2026-10-17 alle 20:00) -> Deve inviare regolarmente il nuovo digest
+        restarted_poller._get_local_now = lambda: datetime(2026, 10, 17, 20, 0, 0)
+        await restarted_poller._run_periodic_jobs()
+        await asyncio.sleep(0.01)
+        runner.assert_true(digest_dispatches == 2, "Il giorno successivo (2026-10-17) il digest viene regolarmente inviato (dispatch count == 2)")
+        last_in_db_next = await db_service.get_setting("last_daily_digest_date", "")
+        runner.assert_true(last_in_db_next == "2026-10-17", "last_daily_digest_date aggiornato su SQLite a '2026-10-17'")
+
+        # 4. Idempotency della manutenzione notturna attraverso i riavvii del container
+        from app.services.scheduler import maintenance_engine
+        await db_service.set_setting("last_nightly_maintenance_run", "2026-10-16T04:05:00")
+        maintenance_engine._last_run_date = None  # Simula riavvio container
+        maint_res = await maintenance_engine.check_and_run_nightly_maintenance(datetime(2026, 10, 16, 4, 8, 0))
+        runner.assert_true(maint_res is None, "check_and_run_nightly_maintenance salta l'esecuzione se già completata oggi nel DB")
+
         runner.print_summary()
 
 

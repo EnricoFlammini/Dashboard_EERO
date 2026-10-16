@@ -49,6 +49,8 @@ try:
         telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
         webhook_url: str = os.getenv("WEBHOOK_URL", "")
         dashboard_lang: str = os.getenv("DASHBOARD_LANG", "en")
+        daily_digest_hour: int = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
+        tz: str = os.getenv("TZ", "")
 
         # CORS: origini esterne consentite, separate da virgola (vuoto = solo stessa origine)
         cors_origins: str = os.getenv("CORS_ORIGINS", "")
@@ -137,6 +139,8 @@ except ImportError:
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")
             self.dashboard_lang = os.getenv("DASHBOARD_LANG", "en")
+            self.daily_digest_hour = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
+            self.tz = os.getenv("TZ", "")
             self.docker_socket_path = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))

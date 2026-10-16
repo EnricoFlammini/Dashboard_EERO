@@ -6,6 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @todddube)
+* **🛡️ Guardia di Persistenza su SQLite (`last_daily_digest_date`):**
+  * Risolto l'invio moltiplicato e ripetuto del riepilogo giornaliero (fino a 13 notifiche in un'ora) causato da riavvii del container durante la finestra oraria programmata.
+  * La data dell'ultimo invio viene registrata in modo persistente nella tabella `app_settings` di SQLite: qualsiasi nuovo avvio o riavvio del container verifica il database e salta l'invio se il digest del giorno è già stato inoltrato.
+* **⏰ Orario di Invio Flessibile & Timezone (`DAILY_DIGEST_HOUR` e `TZ`):**
+  * Aggiunte le impostazioni `daily_digest_hour` (default 21) e `tz` con mappatura alle variabili d'ambiente documentate `DAILY_DIGEST_HOUR` e `TZ`.
+  * Risoluzione temporale tramite `_get_local_now()` compatibile con `zoneinfo`, fusi orari IANA di sistema e fallback automatico.
+* **🎛️ Gestione Orario da Interfaccia & Trasparenza Stato Invio:**
+  * Estesi gli endpoint `GET /api/automations/digest` e `POST /api/automations/digest` per supportare il parametro `hour` (0-23) e mostrare `last_sent_date`.
+  * Aggiunto nella dashboard un selettore orario a tendina, badge dinamico e stato visuale che conferma l'avvenuto invio odierno del report.
+
 ### ⚡ Ottimizzazione CPU Retention Worker, Compattazione Selettiva & Parse Bitrate (Issue #73 - @mrtekkid)
 * **⚡ Compattazione e Tiering Selettivo Incremenale:**
   * `run_compaction_cycle()` verifica in modo intelligente le ore già aggregate in `device_usage_hourly` e `device_signal_hourly`, saltando la rielaborazione ridondante dell'intera cronologia degli ultimi 7 giorni.

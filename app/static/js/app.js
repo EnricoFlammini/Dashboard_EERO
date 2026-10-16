@@ -407,7 +407,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     digestSettings: {
-      enabled: true
+      enabled: true,
+      hour: 21,
+      last_sent_date: null
     },
     
     // Multi-Engine DNS Integration State (AdGuard Home, Pi-hole, Technitium)
@@ -3591,28 +3593,47 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'success') {
           this.digestSettings.enabled = Boolean(json.enabled);
+          if (json.hour !== undefined && json.hour !== null) {
+            this.digestSettings.hour = Number(json.hour);
+          }
+          this.digestSettings.last_sent_date = json.last_sent_date || null;
         }
       } catch (err) {
         console.error("Fetch digest settings error:", err);
       }
     },
 
+    digestHourBadgeText() {
+      const h = (this.digestSettings && this.digestSettings.hour !== undefined && this.digestSettings.hour !== null) 
+        ? this.digestSettings.hour 
+        : 21;
+      const formatted = String(h).padStart(2, '0') + ':00';
+      return this.currentLanguage === 'it' ? `Ore ${formatted}` : `${formatted}`;
+    },
+
     async saveDigestSettings() {
       try {
+        const targetHour = (this.digestSettings.hour !== undefined && this.digestSettings.hour !== null)
+          ? Number(this.digestSettings.hour)
+          : 21;
         const res = await fetch('/api/automations/digest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: Boolean(this.digestSettings.enabled) })
+          body: JSON.stringify({
+            enabled: Boolean(this.digestSettings.enabled),
+            hour: targetHour
+          })
         });
         const json = await res.json();
         if (res.ok) {
           const isIt = this.currentLanguage === 'it';
+          const hStr = String(targetHour).padStart(2, '0') + ':00';
           const title = this.digestSettings.enabled 
             ? (isIt ? "Digest Programmato Attivo" : "Scheduled Digest Enabled") 
             : (isIt ? "Digest Programmato Disattivato" : "Scheduled Digest Disabled");
           const msg = this.digestSettings.enabled 
-            ? (isIt ? "Il report automatico delle 21:00 è abilitato." : "Automatic 21:00 daily report is enabled.") 
-            : (isIt ? "L'invio automatico delle 21:00 è stato sospeso." : "Automatic 21:00 daily report has been paused.");
+            ? (isIt ? `Il report automatico delle ${hStr} è abilitato.` : `Automatic daily report at ${hStr} is enabled.`) 
+            : (isIt ? "L'invio automatico del report è stato sospeso." : "Automatic daily report dispatch has been paused.");
           this.showToast(title, msg, "info");
         } else {
           const title = this.currentLanguage === 'it' ? "Errore" : "Error";
