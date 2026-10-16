@@ -1922,11 +1922,12 @@
                   </td>
 
                   <!-- Profile / User -->
-                  <td x-show="isTableColumnVisible('profile')" class="py-3 px-4 whitespace-nowrap" :data-label="t('devices.col_profile')">
+                  <td x-show="isTableColumnVisible('profile')" class="py-3 px-4" :data-label="t('devices.col_profile')">
                     <template x-if="dev.profile_name">
-                      <span class="device-profile inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none">
-                        <span>👤</span>
-                        <span class="truncate" x-text="dev.profile_name"></span>
+                      <!-- Long profile names wrap to two lines, then clamp; full name on hover -->
+                      <span class="device-profile inline-flex max-w-full items-start gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none" :title="dev.profile_name">
+                        <span class="shrink-0">👤</span>
+                        <span class="min-w-0 line-clamp-2 break-words leading-snug" x-text="dev.profile_name"></span>
                       </span>
                     </template>
                     <template x-if="!dev.profile_name">
