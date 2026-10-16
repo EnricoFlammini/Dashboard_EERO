@@ -5264,7 +5264,7 @@ async def run_all_tests():
 
             sw_js_path = Path("app/static/sw.js")
             sw_js_content = sw_js_path.read_text(encoding="utf-8")
-            runner.assert_true("eero-dashboard-v1.6.5" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.5 per invalidazione cache obsoleta")
+            runner.assert_true("eero-dashboard-v1.6.1" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.1 per invalidazione cache obsoleta")
 
         finally:
             # Ripristina stato originale eero_client

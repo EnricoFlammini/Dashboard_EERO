@@ -704,7 +704,7 @@ gantt
 - [x] **Banner Guida "Nessuna Rete Rilevata" & Inizializzazione Difensiva Alpine:**
   - Banner responsive con localizzazione bilingue IT/EN (`resilience.no_networks_title`, `resilience.no_networks_desc`) e azioni rapide "Riprova Sincronizzazione" e "Cambia Account".
   - Risoluzione dell'errore Alpine `availableCategories is not defined` con array di categorie predefinite difensive quando l'inventario dispositivi è inizialmente vuoto.
-  - Aggiornamento della cache del Service Worker PWA (`eero-dashboard-v1.6.5`) per invalidare immediatamente vecchie copie di `app.js`.
+  - Aggiornamento della cache del Service Worker PWA (`eero-dashboard-v1.6.1`) per invalidare immediatamente vecchie copie di `app.js`.
   - 22 nuovi test di regressione in Modulo 10 (totale suite a 1.448/1.448 superati al 100%).
 
 ---

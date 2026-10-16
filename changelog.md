@@ -17,7 +17,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🖥️ Banner Guida "Nessuna Rete Rilevata" & Inizializzazione Difensiva Alpine:**
   * Aggiunto banner dedicato e localizzato (IT/EN) nella dashboard che informa chiaramente l'utente quando l'account non ha reti associate, con pulsanti rapidi "Riprova Sincronizzazione" e "Cambia Account".
   * Risolto l'errore frontend `availableCategories is not defined` con valore di fallback difensivo per le categorie predefinite quando l'inventario dispositivi è inizialmente vuoto.
-  * Aggiornato il Service Worker PWA (`CACHE_NAME = 'eero-dashboard-v1.6.5'`) per forzare l'invalidazione della cache browser su nuove release.
+  * Aggiornato il Service Worker PWA (`CACHE_NAME = 'eero-dashboard-v1.6.1'`) per forzare l'invalidazione della cache browser su nuove release.
 
 ### 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
 * **🌐 Prioritizzazione Automatica IPv4 Subnet LAN per Host Multi-Indirizzo:**

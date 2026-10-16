@@ -1,9 +1,9 @@
 /**
- * Service Worker for eero Dashboard PWA (v1.6.5)
+ * Service Worker for eero Dashboard PWA (v1.6.1)
  * Provides offline shell caching and fast background sync
  */
 
-const CACHE_NAME = 'eero-dashboard-v1.6.5';
+const CACHE_NAME = 'eero-dashboard-v1.6.1';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
