@@ -1995,11 +1995,11 @@
                   <td x-show="isTableColumnVisible('traffic')" class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic') || 'Traffic'">
                     <template x-if="(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05)">
                       <div class="flex flex-col leading-tight">
-                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="'DL Cumulativo: ' + formatBytes(dev.rx_bytes || 0) + ' (~ Stima hardware Wi-Fi)' + (dev.download_rate_mbps > 0.05 ? ' • Real-Time: ' + dev.download_rate_mbps + ' Mbps' : '')">
+                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.download_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.download_rate_mbps + ' Mbps' : '')">
                           ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
                           <span x-show="dev.download_rate_mbps > 0.05" class="text-[10px] text-sky-500 dark:text-sky-400 font-medium ml-1" x-text="'(' + formatTrafficRate(dev.download_rate_mbps) + ')'"></span>
                         </span>
-                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="'UL Cumulativo: ' + formatBytes(dev.tx_bytes || 0) + ' (~ Stima hardware Wi-Fi)' + (dev.upload_rate_mbps > 0.05 ? ' • Real-Time: ' + dev.upload_rate_mbps + ' Mbps' : '')">
+                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.upload_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.upload_rate_mbps + ' Mbps' : '')">
                           ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
                           <span x-show="dev.upload_rate_mbps > 0.05" class="text-[9px] text-emerald-500 dark:text-emerald-400 font-normal ml-1" x-text="'(' + formatTrafficRate(dev.upload_rate_mbps) + ')'"></span>
                         </span>
@@ -2017,10 +2017,10 @@
                     </template>
                     <template x-if="!(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05) && dev.wireless">
                       <div class="flex flex-col leading-tight">
-                        <span class="text-xs font-bold text-sky-600/70 dark:text-sky-400/70" :title="'DL Cumulativo: ' + formatBytes(dev.rx_bytes || 0) + ' (~ Stima hardware Wi-Fi)'">
+                        <span class="text-xs font-bold text-sky-600/70 dark:text-sky-400/70" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
                           ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
                         </span>
-                        <span class="text-[10px] font-medium text-emerald-600/70 dark:text-emerald-400/70" :title="'UL Cumulativo: ' + formatBytes(dev.tx_bytes || 0) + ' (~ Stima hardware Wi-Fi)'">
+                        <span class="text-[10px] font-medium text-emerald-600/70 dark:text-emerald-400/70" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
                           ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
                         </span>
                       </div>
@@ -2123,7 +2123,7 @@
                   <span>•</span>
                   <span class="truncate" x-text="dev.connected_eero_name || 'Gateway'"></span>
                   <template x-if="dev.first_seen && formatFirstSeenRelative(dev.first_seen)">
-                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :title="(t('device_modal.first_seen') || 'Primo accesso') + ': ' + formatFirstSeenFull(dev.first_seen)">
+                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :title="(t('device_modal.first_seen') || 'Primo accesso:') + ' ' + formatFirstSeenFull(dev.first_seen)">
                       <span>•</span>
                       <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                       <span x-text="formatFirstSeenRelative(dev.first_seen)"></span>
@@ -5430,7 +5430,7 @@
               </div>
               <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
                 <span x-text="t('device_modal.usage_chart_hint') + (deviceUsagePeriod === 'daily' ? ' (' + (deviceUsageData && deviceUsageData.resolution_minutes ? deviceUsageData.resolution_minutes : (deviceUsageResolution || 15)) + ' min)' : '')"></span>
-                <span class="font-mono" x-text="deviceUsageData ? deviceUsageData.period : ''"></span>
+                <span class="font-mono" x-text="deviceUsageData && deviceUsageData.period ? (t('device_modal.period_' + deviceUsageData.period) || deviceUsageData.period) : ''"></span>
               </div>
               <div class="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/60 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
                 <span class="flex items-center gap-1.5">

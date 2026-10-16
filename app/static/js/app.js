@@ -2091,7 +2091,7 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || 'Errore durante la prenotazione DHCP');
+          throw new Error(data.detail || data.message || this.t('device_modal.reservation_error'));
         }
 
         const title = this.currentLanguage === 'it' ? "IP Statico Riservato" : "Static IP Reserved";
@@ -2205,7 +2205,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedDevice) return;
       const targetId = (this.selectedDevice.mac || this.selectedDevice.id || this.selectedDevice.mac_address || '').toLowerCase();
       if (!targetId) {
-        this.showToast(this.currentLanguage === 'it' ? "Errore" : "Error", "Identificatore dispositivo non trovato", "error");
+        this.showToast(this.currentLanguage === 'it' ? "Errore" : "Error", this.t('devices.device_id_not_found'), "error");
         return;
       }
       try {

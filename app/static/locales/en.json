@@ -145,6 +145,11 @@
     "mesh_active": "Mesh Active"
   },
   "devices": {
+    "traffic_dl_total": "Total download:",
+    "traffic_ul_total": "Total upload:",
+    "traffic_hw_estimate": "(~ Wi-Fi hardware estimate)",
+    "traffic_realtime": "Real-time:",
+    "device_id_not_found": "Device identifier not found",
     "title": "Connected Devices & IP Management",
     "subtitle": "Complete device control, radio physical metrics, static IPs and port forwarding",
     "search_placeholder": "Search by Name, IP, MAC or notes...",
@@ -220,6 +225,7 @@
     "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard"
   },
   "device_modal": {
+    "reservation_error": "Error while creating the DHCP reservation",
     "title": "Device Details",
     "first_seen": "First detected on network:",
     "tab_general": "Data & Category",
