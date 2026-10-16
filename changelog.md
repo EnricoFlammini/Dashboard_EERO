@@ -49,7 +49,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiunta checkbox rapida con feedback reattivo nella scheda dettaglio del dispositivo (`#deviceDetailModal`) per escludere apparati la cui risoluzione DNS deve essere gestita altrove o non sincronizzata.
   * Filtraggio automatico e trasparente applicato a tutti i motori DNS (`_prepare_clients_payload`), `/api/devices/export/hosts` e `/api/devices/export/adguard`.
 
-### 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @todddube)
+### 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @stevehoek / @todddube)
 * **🛡️ Guardia di Persistenza su SQLite (`last_daily_digest_date`):**
   * Risolto l'invio moltiplicato e ripetuto del riepilogo giornaliero (fino a 13 notifiche in un'ora) causato da riavvii del container durante la finestra oraria programmata.
   * La data dell'ultimo invio viene registrata in modo persistente nella tabella `app_settings` di SQLite: qualsiasi nuovo avvio o riavvio del container verifica il database e salta l'invio se il digest del giorno è già stato inoltrato.

@@ -139,7 +139,7 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
 2. **Multi-Engine DNS Synchronizer (In alto a destra):**
    - **Supporto Multi-Engine Eterogeneo:** Gestione simultanea di molteplici istanze di AdGuard Home, Pi-hole (v5 & v6) e Technitium DNS (record diretti A e Reverse PTR).
    - **Auto-Sync Continuo:** Il poller di background allinea automaticamente i server DNS configurati all'accesso di nuovi dispositivi.
-   - **Intelligent Address Pruning & Esclusione IPv6 (v1.5.0 - Issue #31):** Opzioni dedicate per singola istanza DNS per potare automaticamente vecchi IP scaduti e preservare o escludere indirizzi IPv6 temporanei dalla sincronizzazione.
+   - **Intelligent Address Pruning & Esclusione IPv6 (v1.5.0, v1.6.1):** Opzioni dedicate per singola istanza DNS per potare automaticamente vecchi IP scaduti e lease obsoleti (anche per Pi-hole v6 via PATCH `/api/config`), con prioritizzazione automatica della subnet LAN fisica eero rispetto ai bridge virtuali Docker (`172.17.x.x`). Include il toggle per singolo apparato *"Escludi da sincronizzazione DNS"* (`dns_sync_excluded`) nel modale dispositivo.
    - **Pulsanti "Test" e "Sincronizza":** Verifica rapida della singola istanza o globale, con trigger di sincronizzazione immediata con un solo clic.
    - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
 3. **Notifiche Telegram & Webhook (In basso a sinistra):**
@@ -149,7 +149,8 @@ La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4
    - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
    - **Pulsante "Invia Test":** Verifica il corretto recapito dei messaggi verso il bot Telegram e l'URL Webhook.
 4. **Report Digest Giornaliero (In basso a destra):**
-   - **Toggle di Abilitazione Programmata:** Consente di attivare o sospendere l'inoltro automatico delle ore 21:00.
+   - **Toggle di Abilitazione Programmata & Orario Personalizzabile (v1.6.1):** Consente di attivare o sospendere l'inoltro automatico e selezionare l'orario desiderato (00:00 - 23:00, default 21:00) con supporto alle variabili `DAILY_DIGEST_HOUR` e `TZ`.
+   - **Protezione Idempotente ai Riavvii:** Tracciamento su SQLite di `last_daily_digest_date` per garantire un solo invio al giorno senza duplicati in caso di riavvio del container.
    - Invia un riepilogo dettagliato con: stato di salute della rete, ISP, nodi mesh online, client connessi suddivisi per frequenza (**6 GHz, 5 GHz, 2.4 GHz, Cablati**) e velocità Speed Test Gateway.
    - Pulsante **"Genera & Invia Digest Ora"** per richiedere l'inoltro immediato del report in qualsiasi momento.
 5. **Gaming & Focus Mode (Bassa Latenza):**
@@ -243,7 +244,7 @@ La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestio
     - `WARNING`: Avvisi. Segnala degradi di latenza, disconnessioni temporanee e anomalie di sincronizzazione.
     - `ERROR`: Critico. Limita i log esclusivamente alle eccezioni bloccanti e agli errori di comunicazione.
 * **Periodo di Conservazione (Retention Temporale):**
-  - Imposta il periodo di persistenza: **24 Ore**, **7 Giorni**, **15 Giorni**, **1 Mese (30gg)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
+  - Imposta il periodo di persistenza: **24 Ore (24h)**, **7 Giorni (7gg/7d)**, **15 Giorni (15gg/15d)**, **1 Mese (1m/1mo)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
   - Un worker di background compila e rimuove periodicamente i log obsoleti garantendo che lo storage non si saturi mai.
 * **Console Live Log Viewer:**
   - Box terminale ad alto contrasto con font monospazio (`Fira Code`).
@@ -516,7 +517,7 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
 2. **Multi-Engine DNS Synchronizer (Top-Right):**
    - **Heterogeneous Multi-Engine Support:** Simultaneous management of multiple instances across AdGuard Home, Pi-hole (v5 & v6 REST API), and Technitium DNS (direct A and Reverse PTR records).
    - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into all active DNS servers.
-   - **Intelligent Address Pruning & IPv6 Exclusions (v1.5.0 - Issue #31):** Dedicated per-instance options to automatically prune obsolete IPs and exclude temporary IPv6 leases from synchronization.
+   - **Intelligent Address Pruning & IPv6 Exclusions (v1.5.0, v1.6.1):** Dedicated per-instance options to automatically prune obsolete IPs and expired leases (covering Pi-hole v6 atomic `PATCH /api/config` as well), with automatic LAN subnet prioritization over Docker virtual bridge gateways (`172.17.x.x`). Includes per-device *"Exclude from DNS Sync"* toggle (`dns_sync_excluded`) in the device modal.
    - **Individual & Global Test and Sync:** Quickly test individual or all instances, with instant 1-click manual synchronization.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
 3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
@@ -526,7 +527,8 @@ The **Automations & Controls** tab organizes your network tools into a clean 2x2
    - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
    - **"Send Test" Button:** Instantly tests message delivery to your Telegram bot and Webhook URL.
 4. **Daily Digest Report (Bottom-Right):**
-   - **Scheduled Dispatch Toggle:** Enable or suspend the automatic 21:00 summary dispatch.
+   - **Scheduled Dispatch Toggle & Configurable Hour (v1.6.1):** Enable or suspend the automatic summary and customize dispatch hour (00:00 - 23:00, default 21:00) with `DAILY_DIGEST_HOUR` and `TZ` support.
+   - **Restart Idempotency Protection:** Persistent SQLite tracking of `last_daily_digest_date` ensuring exactly one dispatch per calendar day across container restarts.
    - Automated report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
    - **"Generate & Send Digest Now"** button for immediate on-demand dispatch.
 5. **One-Click Gaming / Focus Mode (Low Latency):**
@@ -620,7 +622,7 @@ The **Controls & Guest QR** tab now features Card 7 dedicated to **System Logs &
     - `WARNING`: Alerts. Captures latency spikes, intermittent disconnects, and DNS synchronization warnings.
     - `ERROR`: Critical. Restricts logging strictly to unexpected exceptions and fatal connection failures.
 * **Retention Policies:**
-  - Configure automatic log lifecycle: **24 Hours**, **7 Days**, **15 Days**, **1 Month (30d)**, or **Custom** (specific day count, or `0` for unlimited).
+  - Configure automatic log lifecycle: **24 Hours (24h)**, **7 Days (7d/7gg)**, **15 Days (15d/15gg)**, **1 Month (1mo/1m)**, or **Custom** (specific day count, or `0` for unlimited).
   - An automated background retention worker purges expired records periodically to safeguard flash storage.
 * **Live Log Viewer Console:**
   - Acrylic terminal box styled with monospace typography.
@@ -789,6 +791,13 @@ CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
+## v1.6.1
+* **Prioritizzazione IPv4 Subnet LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72):** Algoritmo a 5 livelli in `_sort_ipv4_candidates` che privilegia gli IP appartenenti alla subnet LAN fisica eero e penalizza i bridge container (`172.17.x.x`), potatura automatica (`prune_stale_ips`) dei vecchi record su Pi-hole v6 preservando i record manuali, e nuovo switch "Escludi da sincronizzazione DNS" (`dns_sync_excluded`).
+* **Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69):** Parsing flessibile per payload eero singolari o atipici, fallback trasparente su variabile d'ambiente `EERO_NETWORK_ID`, banner guida reattivo "Nessuna Rete Rilevata" e protezione assoluta da inquinamento del database con dati demo su sessioni reali.
+* **Scheduler Daily Digest Idempotente ai Riavvii & Orario Flessibile (Issue #70):** Tracciamento persistente su SQLite di `last_daily_digest_date` per eliminare lo spam di notifiche duplicate ai riavvii, orario di invio configurabile (`DAILY_DIGEST_HOUR` e `TZ`) con selettore orario interattivo nella card riepilogo.
+* **Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (Issue #71):** Riconoscimento immediato di `bufferbloat_grade`, `ping_under_load` e `bufferbloat_delta_ms` dal frontend `app.js` e arricchimento della cache `poller.py`, rating localizzati dinamicamente (IT/EN) e abbreviazioni di durata responsive (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+* **Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (Issue #73, #74):** Compattazione incrementale selettiva delle sole ore non ancora aggregate (risparmio CPU del 99.4%), indici B-tree su espressioni temporali SQLite, parser universale dei bitrate con unità di misura e strumenti di verifica integrità e backup deframmentato a caldo (`VACUUM INTO`).
+
 ## v1.6.0
 * **Modulo 1 - Autenticazione Locale, RBAC & Smart Automations:** Gestione accessi multi-utente con ruoli `Admin`, `Operator` e `Viewer`, parental scheduling avanzato a fasce orarie e giorni della settimana, motore di manutenzione notturna programmata e backup di emergenza.
 * **Modulo 2 - Compattazione Dati Multi-Tier, Bufferbloat & PWA Offline-First:** Compattazione scalabile SQLite (Raw 48h -> Oraria 30gg -> Giornaliera 365gg), indicatore analitico Bufferbloat con grading da A+ a F e latenze a riposo/carico, supporto Progressive Web App (PWA) con Service Worker per consultazione offline.
@@ -954,6 +963,13 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+## v1.6.1
+* **Subnet-Aware IPv4 Prioritization, Pi-hole v6 Stale Record Pruning & Device Exclusions (Issue #72):** Multi-level scoring algorithm prioritizing physical eero LAN subnet addresses over virtual container bridge gateways (`172.17.x.x`), automated atomic pruning of expired DHCP leases and obsolete mappings for Pi-hole v6 while strictly preserving custom unmanaged records, and a dedicated per-device "Exclude from DNS Sync" toggle (`dns_sync_excluded`).
+* **Robust Network Discovery, EERO_NETWORK_ID Fallback & Zero-Network Guidance (Issue #69):** Universal parsing of eero API responses, transparent fallback to `EERO_NETWORK_ID` for delegated or multi-network accounts, zero-network guidance banner with quick retry, and prevention of demo device leakage into live production databases.
+* **Daily Digest Restart Idempotency & Custom Dispatch Hour (Issue #70):** Persistent SQLite tracking of `last_daily_digest_date` preventing notification spam on container restarts, paired with configurable `DAILY_DIGEST_HOUR` (0-23) and `TZ` support with an interactive time-picker UI.
+* **Speed Test Bufferbloat Accuracy & Localized Duration Units (Issue #71):** Direct frontend recognition of stored `bufferbloat_grade`, `ping_under_load`, and `bufferbloat_delta_ms` resolving `"n/a Non Disponibile"` reporting, bilingual localized ratings, and dynamic duration abbreviations in retention buttons (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+* **Multi-Tier Selective Compaction, Timestamp Indexes & Resilient Bitrate Parsing (Issues #73, #74):** Selective retention engine processing only uncompacted hours (reducing CPU overhead by 99.4%), SQLite B-tree expression indexes on cleaned timestamps, universal `parse_bitrate_float()` handling units (`Mbps`, `MBit/s`), database health integrity check endpoints, and defragmented online hot backups via `VACUUM INTO`.
 
 ## v1.6.0
 * **Module 1 - Local Authentication, RBAC & Smart Automations:** Multi-user authentication with `Admin`, `Operator`, and `Viewer` roles, advanced parental time scheduling with day-of-week matrices, nightly maintenance engine, and disaster recovery emergency backups.

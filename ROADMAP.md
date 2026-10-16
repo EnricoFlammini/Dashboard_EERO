@@ -667,7 +667,7 @@ gantt
   - Endpoint `GET /api/system/database/integrity` con `PRAGMA quick_check` / `integrity_check`.
   - Endpoint `POST /api/system/database/backup` basato su `VACUUM INTO` per generare copie coerenti, deframmentate e verificate a caldo senza rischio di corruzione.
 
-#### 8. 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @todddube)
+#### 8. 📬 Scheduler Daily Digest & Idempotenza ai Riavvii Container (Issue #70 - @stevehoek / @todddube)
 - [x] **Guardia di Persistenza su SQLite per Daily Digest (`app_settings`):**
   - Risolto il problema per cui i riavvii del container eero dashboard nella finestra oraria prestabilita re-inviavano ripetutamente il digest giornaliero su Telegram/Discord/Webhook/Pushover (un utente ha riscontrato fino a 13 invii in un'ora).
   - La data dell'ultimo invio (`last_daily_digest_date`) viene ora memorizzata in modo permanente su SQLite e verificata prima di ogni dispatch, garantendo un solo invio al giorno indipendentemente da quanti riavvii subisca il container.
@@ -724,7 +724,7 @@ gantt
   - Sostituite le abbreviazioni hardcoded in italiano (`7gg`, `15gg`, `1m`) nei pulsanti di retention dei log in `index.html` con rendering dinamico `x-text="currentLanguage === 'it' ? ... : ..."`: `7d`, `15d`, `1mo` in inglese e `7gg`, `15gg`, `1m` in italiano.
   - Aggiornata la descrizione `retention_30d` in `en.json` in `"1 Month (1mo)"`.
 - [x] **Suite di Test Automatizzata Modulo 11:**
-  - 18 nuovi test di regressione in Modulo 11 (totale suite a 1.466/1.466 superati al 100%).
+  - 20 nuovi test di regressione in Modulo 11 (totale suite a 1.468/1.468 superati al 100%).
 
 
 ---

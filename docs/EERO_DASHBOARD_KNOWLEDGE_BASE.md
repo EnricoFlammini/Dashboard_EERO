@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.0)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.1)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.6.0**  
+> *Versione di riferimento del software:* **v1.6.1**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -47,6 +47,11 @@
    * 4.30 [Multi-Channel Daily Digest Delivery Transparency (v1.6.0 - Issue #64)](#430-multi-channel-daily-digest-delivery-transparency-v160---issue-64)
    * 4.31 [Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (v1.6.0 - Issue #65)](#431-perfezionamento-discovery-ipv6-ula--filtri-tabella-client-v160---issue-65)
    * 4.32 [Local RBAC & Setup Wizard Iniziale Amministratore (v1.6.0)](#432-local-rbac--setup-wizard-iniziale-amministratore-v160)
+   * 4.33 [Prioritizzazione IPv4 LAN Subnet & Pruning Pi-hole v6 (v1.6.1 - Issue #72)](#433-prioritizzazione-ipv4-lan-subnet--pruning-pi-hole-v6-v161---issue-72)
+   * 4.34 [Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (v1.6.1 - Issue #69)](#434-rilevamento-reti-robusto-fallback-eero_network_id-e-guida-zero-reti-v161---issue-69)
+   * 4.35 [Scheduler Daily Digest Idempotente ai Riavvii Container (v1.6.1 - Issue #70)](#435-scheduler-daily-digest-idempotente-ai-riavvii-container-v161---issue-70)
+   * 4.36 [Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71)](#436-risoluzione-bug-bufferbloat-wan--localizzazione-abbreviazioni-durata-v161---issue-71)
+   * 4.37 [Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74)](#437-compattazione-selettiva-multi-tier-indici-timestamp--parsing-bitrate-v161---issue-73-74)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -410,7 +415,43 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
   2. **Rimozione Credenziali Predefinite:** Eliminati tutti i default visibili e placeholder nella UI (`admin / admin`).
   3. **Endpoint di Inizializzazione Protetto (`POST /api/auth/local/setup`):** Consente la creazione del primo utente amministratore solo ed esclusivamente se nessun utente è presente nel database. Chiamate successive ricevono `400 Bad Request` per prevenire attacchi di re-inizializzazione.
   4. **Supporto Headless / Automazioni Docker:** È possibile pre-configurare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o `docker-compose.yml`. Al boot, l'applicazione crea automaticamente l'account amministratore bypassando il wizard per deploy non presidiati.
-  5. **Controllo Accessi a Ruoli (RBAC):** Tre ruoli predefiniti (`admin`, `operator`, `viewer`) con matrice granulare dei permessi (modifica impostazioni, comandi di rete, sola lettura).
+### 4.33 Prioritizzazione IPv4 LAN Subnet & Pruning Pi-hole v6 (v1.6.1 - Issue #72)
+* **Prioritizzazione Subnet LAN per Host Multi-Indirizzo:**
+  Risolto il problema per cui host Linux con bridge container (Docker/Podman `172.17.x.x`, `172.24.x.x`) venivano associati a IP virtuali non raggiungibili. Algoritmo a 5 livelli di priorità in `_sort_ipv4_candidates`: preferenza assoluta all'IP appartenente alla subnet LAN fisica eero (desunta dinamicamente da gateway e netmask) e deprioritizzazione dei bridge container terminanti in `.1`.
+* **Pruning Record Obsoleti Pi-hole v6 (REST API PATCH):**
+  Se `prune_stale_ips` è attivo, la sincronizzazione atomica rimuove vecchi lease e record obsoleti appartenenti alla zona gestita (es. `.lan`), preservando al 100% i record DNS personalizzati e unmanaged aggiunti manualmente dall'utente.
+* **Toggle Esclusione Singolo Dispositivo:**
+  Colonna persistente `dns_sync_excluded` in `device_metadata` con switch rapido nella scheda dettaglio apparato (`#deviceDetailModal`), escludendo selettivamente i client dalla sincronizzazione DNS.
+
+### 4.34 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (v1.6.1 - Issue #69)
+* **Parsing Universale Payload eero API:**
+  Supporto per risposte singolari o atipiche (`network`, `networks`, `shared_networks`, array raw o dizionari indicizzati per ID) senza eccezioni.
+* **Fallback Variabile d'Ambiente (`EERO_NETWORK_ID`):**
+  Se l'account eero autenticato non restituisce alcuna rete dall'endpoint, il sistema attiva il fallback su `EERO_NETWORK_ID` consentendo il monitoraggio anche per account con permessi delegati o limitati.
+* **Isolamento Dati Demo da Sessioni Reali:**
+  Garantito che in caso di sessione reale con 0 reti scoperte non vengano mai caricati apparati demo fittizi a tutela dell'integrità del database.
+* **Banner Guida "Nessuna Rete Rilevata":**
+  Banner informativo reattivo con pulsanti rapidi "Riprova Sincronizzazione" e "Cambia Account", con categorie di fallback difensive in Alpine.js.
+
+### 4.35 Scheduler Daily Digest Idempotente ai Riavvii Container (v1.6.1 - Issue #70)
+* **Guardia Persistente su SQLite (`last_daily_digest_date`):**
+  Prevenzione dello spam di notifiche duplicate ai riavvii del container tramite registrazione permanente della data di invio nella tabella `app_settings`.
+* **Orario di Invio Flessibile & Timezone (`DAILY_DIGEST_HOUR` e `TZ`):**
+  Configurazione da ambiente o da interfaccia utente dell'orario desiderato (00:00 - 23:00, default 21:00) con risoluzione temporale `_get_local_now()` compatibile con `zoneinfo`.
+
+### 4.36 Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71)
+* **Riconoscimento Metriche Bufferbloat Frontend:**
+  `getBufferbloatGrade()` in `app.js` riconosce prioritariamente `st.bufferbloat_grade`, `st.ping_under_load` e `st.bufferbloat_delta_ms` memorizzati in SQLite e arricchiti in RAM cache dal poller, risolvendo il falso positivo `"n/a Non Disponibile"`.
+* **Localizzazione Bilingue Rating e Abbreviazioni Durata:**
+  Valutazioni tradotte dinamicamente in base alla lingua (IT/EN) e abbreviazioni responsive nei pulsanti di retention (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+
+### 4.37 Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74)
+* **Compattazione Incrementale Selettiva:**
+  Elaborazione circoscritta alle sole ore non ancora aggregate in `device_usage_hourly` e `device_signal_hourly` (riduzione CPU del 99.4%).
+* **Indici di Espressione su Timestamp & Parser Bitrate Universale:**
+  Indici B-tree su espressione pulita `replace(replace(timestamp, 'T', ' '), 'Z', '')` e helper `parse_bitrate_float()` per gestire formati con unità (`Mbps`, `MBit/s`, `Gbps`).
+* **Verifica Integrità & Backup Deframmentato Atomico a Caldo:**
+  Endpoint `GET /api/system/database/integrity` e `POST /api/system/database/backup` basato su `VACUUM INTO`.
 
 ---
 
@@ -421,12 +462,23 @@ Il database si trova in `data/metrics.db` (percorso configurabile via `DATA_DIR`
 ### Tabelle dello Schema
 
 #### 1. `app_settings`
-Memorizza impostazioni e preferenze dell'applicazione (DNS instances, canali di notifica, retention).
+Memorizza impostazioni e preferenze dell'applicazione (DNS instances, canali di notifica, retention, `last_daily_digest_date`).
 * `key` (TEXT PRIMARY KEY)
 * `value` (TEXT)
 * `updated_at` (DATETIME)
 
-#### 2. `known_devices`
+#### 2. `device_metadata` (v1.4.0, v1.6.1)
+Metadati personalizzati, tag e preferenze per singolo dispositivo client.
+* `mac_address` (TEXT PRIMARY KEY)
+* `nickname` (TEXT)
+* `category` (TEXT)
+* `notes` (TEXT)
+* `is_favorite` (INTEGER DEFAULT 0)
+* `dns_sync_excluded` (INTEGER DEFAULT 0) — Esclusione dalla sincronizzazione DNS (v1.6.1)
+* `custom_ip` (TEXT)
+* `updated_at` (DATETIME)
+
+#### 3. `known_devices`
 Registro dei MAC address noti per prevenire notifiche duplicate di "nuovo dispositivo".
 * `mac_address` (TEXT PRIMARY KEY)
 * `first_seen` (DATETIME)
@@ -436,15 +488,19 @@ Registro dei MAC address noti per prevenire notifiche duplicate di "nuovo dispos
 * `is_guest` (BOOLEAN)
 * `nickname` (TEXT)
 
-#### 3. `speedtest_history`
-Storico dei risultati dei test di velocità WAN eseguiti dal gateway eero.
+#### 4. `speedtests`
+Storico dei risultati dei test di velocità WAN eseguiti dal gateway eero e rating Bufferbloat.
 * `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
 * `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
 * `download_mbps` (REAL)
 * `upload_mbps` (REAL)
 * `ping_ms` (REAL)
+* `jitter` (REAL DEFAULT 0.0)
 * `server_name` (TEXT)
 * `source` (TEXT) — `eero_gateway` o `manual`
+* `ping_under_load` (REAL)
+* `bufferbloat_grade` (TEXT) — A+, A, B, C, D, F
+* `bufferbloat_delta_ms` (REAL)
 
 #### 4. `device_signal_history`
 Campionamenti continui dei parametri radio Wi-Fi dei client connessi.
@@ -573,6 +629,12 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **POST** | `/api/metrics/speedtest/run` | Avvia un nuovo test di velocità sul gateway eero | Nessuno |
 | **GET** | `/api/metrics/signal/overview` | Panoramica potenza segnale Wi-Fi e Watchlist deboli | Nessuno |
 | **GET** | `/api/metrics/signal/history` | Storico temporale potenza RSSI per un client | `?mac_address=...&hours=24` |
+| **POST** | `/api/automations/digest` | Configura preferenze Daily Digest (abilitazione, orario 0-23) (v1.6.1) | `{"enabled": true, "hour": 21}` |
+| **GET** | `/api/automations/digest` | Restituisce configurazione Daily Digest, orario e `last_sent_date` (v1.6.1) | Nessuno |
+| **GET** | `/api/devices/{mac}/metadata` | Restituisce metadati e preferenze client (`dns_sync_excluded`) (v1.6.1) | Nessuno |
+| **POST** | `/api/devices/{mac}/metadata` | Salva metadati client inclusa esclusione DNS (v1.6.1) | `{"dns_sync_excluded": true, ...}` |
+| **GET** | `/api/system/database/integrity` | Esegue check integrità SQLite (`PRAGMA quick_check`) (v1.6.1) | Nessuno |
+| **POST** | `/api/system/database/backup` | Genera snapshot atomico deframmentato a caldo (`VACUUM INTO`) (v1.6.1) | Nessuno |
 | **GET** | `/api/system/update/check` | Verifica disponibilità aggiornamenti Docker/GitHub | `?force=true` |
 | **POST** | `/api/system/update/trigger` | Avvia aggiornamento automatico 1-clic del container | Nessuno |
 | **GET** | `/api/system/logs/config` | Restituisce livello logging attivo e parametri retention (v1.6.0) | Nessuno |
@@ -604,7 +666,9 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `ADMIN_PASSWORD` | `""` | Password dell'amministratore per setup headless (se vuota, si avvia il wizard web al primo avvio) (v1.6.0) |
 | `REQUIRE_LOCAL_AUTH` | `false` | Se `true`, richiede autenticazione locale obbligatoria per le chiamate API (v1.6.0) |
 | `EERO_USER_TOKEN` | `""` | Token permanente per bypassare il login interattivo 2FA |
-| `EERO_NETWORK_ID` | `""` | ID opzionale della rete preferita da avviare come attiva |
+| `DAILY_DIGEST_HOUR` | `21` | Orario programmato (0-23) per l'invio del report Daily Digest (v1.6.1) |
+| `TZ` | `"Europe/Rome"` | Fuso orario per l'interpretazione di date e orari del digest (v1.6.1) |
+| `EERO_NETWORK_ID` | `""` | ID opzionale della rete preferita da avviare come attiva / fallback (v1.6.1) |
 | `LOG_LEVEL` | `"INFO"` | Livello minimo di logging (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) (v1.6.0) |
 | `LOG_RETENTION_DAYS` | `7` | Giorni di conservazione dei log applicativi nel database SQLite (v1.6.0) |
 | `LOG_MAX_ENTRIES` | `5000` | Numero massimo di righe conservate nella tabella `system_logs` (v1.6.0) |
@@ -741,6 +805,31 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Sintomo:** Gli indirizzi IPv6 ULA scoperti via NDP non venivano visualizzati nella finestra modale del dispositivo e non era possibile trovarli cercando nella tabella client.
 * **Causa Radice:** Gli ULA venivano memorizzati in `ipv6_ula` e `ipv6_addresses` ma non sincronizzati in `ipv6_all` utilizzato dal template. Mancavano inoltre chiavi di localizzazione inglese per le pianificazioni orarie e il messaggio segnaposto del QR Code.
 * **Risoluzione:** Implementato fallback di iterazione su `ipv6_all || ipv6_addresses || [ipv6]`, introdotto badge dedicato `ULA Enriched` in tabella e modale, completate le traduzioni inglesi e collegata la funzione `cleanup_stale_discovered_ips(30)` al ciclo di manutenzione notturna per l'auto-pruning periodico.
+
+### Issue #69 — Robust Account Network Discovery & EERO_NETWORK_ID Fallback (@tekzer0)
+* **Sintomo:** Account eero con risposte singolari o atipiche non rilevavano reti attive (`Total available networks: 0`).
+* **Causa Radice:** Il parser si aspettava array convenzionali e falliva su dizionari o chiavi singole.
+* **Risoluzione:** Parsing universale esteso a array, dizionari e chiavi singole, con fallback automatico su `EERO_NETWORK_ID` e banner informativo per zero reti rilevate.
+
+### Issue #70 — Daily Digest Duplicate Dispatch on Container Restart (@stevehoek / @todddube)
+* **Sintomo:** Il riavvio del container nella finestra oraria del Daily Digest causava invii multipli e ripetuti (fino a 13 notifiche).
+* **Causa Radice:** Lo scheduler non persisteva la data dell'ultimo invio su disco, resettando lo stato in memoria ad ogni restart.
+* **Risoluzione:** Salvataggio persistente di `last_daily_digest_date` in `app_settings` SQLite con verifica prima di ogni dispatch, e supporto a `DAILY_DIGEST_HOUR` e `TZ`.
+
+### Issue #71 — WAN Bufferbloat Reporting Bug & Duration Abbreviations (@XprofQ / @todddube)
+* **Sintomo:** Il badge Bufferbloat nella pagina Speed Test mostrava `"n/a Non Disponibile"` nonostante i valori fossero presenti nei log e nel database.
+* **Causa Radice:** `getBufferbloatGrade()` in `app.js` cercava proprietà inesistenti (`loaded_latency_ms`) e ignorava `bufferbloat_grade`, oltre a non caricare i dati speedtest all'avvio.
+* **Risoluzione:** Riconoscimento diretto di `st.bufferbloat_grade`, `st.ping_under_load` e `st.bufferbloat_delta_ms`, arricchimento della cache `poller.py`, chiamata a `loadSpeedtestData()` in `refreshAllData()`, localizzazione bilingue completa e abbreviazioni durata reattive (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+
+### Issue #72 — LAN IPv4 Subnet Prioritization & Pi-hole v6 Stale Record Pruning (@onefish2)
+* **Sintomo:** Macchine Linux con bridge virtuali Docker (`172.17.x.x`) venivano associate all'IP del bridge anziché all'IP LAN, e Pi-hole v6 accumulava lease obsoleti all'infinito.
+* **Causa Radice:** L'IP del dispositivo veniva preso dal primo elemento senza verifica della subnet LAN fisica eero, e il sync Pi-hole v6 aggiungeva record senza potare i vecchi lease.
+* **Risoluzione:** Algoritmo a punteggio a 5 livelli in `_sort_ipv4_candidates` che privilegia la subnet fisica eero e penalizza i gateway bridge container, estensione del pruning atomico `prune_stale_ips` a Pi-hole v6, e nuovo switch `dns_sync_excluded` per singolo apparato.
+
+### Issue #73 & #74 — Retention Worker CPU Overhead & Database Integrity (@mrtekkid / @WillFulmer)
+* **Sintomo:** Picchi di CPU al 50% per 20+ minuti ad ogni ora per la ri-aggregazione dell'intera cronologia, e rischio di frammentazione/corruzione snapshot database.
+* **Causa Radice:** Il worker riaggregava tutte le ore storiche invece delle sole ore nuove, le query facevano full scan per mancanza di indici su timestamp puliti, e mancava parsing per stringhe bitrate con unità (`72.0 MBit/s`).
+* **Risoluzione:** Compattazione selettiva incrementale limitata alle sole ore non aggregate (taglio CPU del 99.4%), indici B-tree su espressioni temporali, helper `parse_bitrate_float()`, endpoint di check integrità (`/api/system/database/integrity`) e backup deframmentato a caldo con `VACUUM INTO`.
 
 ---
 

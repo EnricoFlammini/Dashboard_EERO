@@ -50,6 +50,20 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🛡️ Subnet-Aware IPv4 Prioritization & Pi-hole v6 Stale Record Pruning (v1.6.1 - Issue #72):**
+  - **LAN Subnet Prioritization:** Multi-level scoring algorithm resolving multi-IP Linux and Docker host issues by prioritizing addresses belonging to the physical eero LAN subnet (e.g. `192.168.0.37`) while automatically deprioritizing virtual container bridge gateways (`172.17.0.1`, `172.24.0.1`, `10.88.0.1` ending in `.1`).
+  - **Pi-hole v6 Intelligent Pruning:** Automatic removal of expired DHCP leases and obsolete IP mappings for managed hosts via atomic `PATCH /api/config` and Pi-hole v5 `customdns&action=delete`, while strictly preserving custom unmanaged DNS records.
+  - **Per-Device Sync Toggle:** Dedicated `"Exclude from DNS Sync"` switch inside the device detail modal to omit specific hosts managed elsewhere.
+* **🌐 Robust Network Discovery, EERO_NETWORK_ID Fallback & Zero-Network Guidance (v1.6.1 - Issue #69):** Universal parsing of eero API responses (arrays, dicts, single `network` keys or URLs), transparent fallback to configured `EERO_NETWORK_ID` for delegated or multi-network accounts, zero-network guidance banner with quick retry, and complete prevention of demo device leakage into live production databases.
+* **📬 Daily Digest Restart Idempotency & Custom Dispatch Hour (v1.6.1 - Issue #70):** Persistent SQLite tracking of `last_daily_digest_date` in `app_settings` preventing duplicate notification spam on container restarts, paired with configurable `DAILY_DIGEST_HOUR` (0–23) and `TZ` support with a responsive time-picker UI.
+* **⚡ Speed Test Bufferbloat Accuracy & Localized Duration Units (v1.6.1 - Issue #71):**
+  - Direct client recognition of stored `bufferbloat_grade`, `ping_under_load`, and `bufferbloat_delta_ms` from SQLite and poller RAM cache, resolving `"n/a Non Disponibile"` reporting.
+  - Fully bilingual localized bufferbloat grades (*Optimal*, *Very Good*, *Good*, *Fair*, *High Latency*, *Critical*, *Not Available* / *Ottimale*, *Molto Buono*, *Buono*, *Sufficiente*, *Latenza Elevata*, *Critico*, *Non Disponibile*).
+  - Dynamic duration abbreviations in system log retention buttons (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+* **🚀 Multi-Tier Selective Compaction & Resilient Bitrate Parsing (v1.6.1 - Issue #73, #74):**
+  - Selective retention engine processing only uncompacted hours, eliminating 99.4% recurring CPU overhead on large installations.
+  - High-performance SQLite expression indexes on cleaned timestamps and universal `parse_bitrate_float()` handling units (`Mbps`, `MBit/s`, `Gbps`).
+  - Database health integrity check endpoints (`/api/system/database/integrity`) and defragmented online hot backups via `VACUUM INTO` (`/api/system/database/backup`).
 * **📦 100% Offline-First & Local Asset Bundling (v1.6.0 - Issue #58):** Completely independent from external CDNs. Vendor libraries (Tailwind, Alpine.js, Chart.js, Lucide Icons) and local WOFF2 typography fonts (*Inter* and *JetBrains Mono*) are self-hosted inside the container, ensuring seamless operation during ISP outages or in isolated air-gapped homelabs.
 * **🔐 Local RBAC & Administrator Setup Wizard (v1.6.0):** Zero-default password policy with an interactive first-run administrator onboarding wizard. Features granular permission matrices (`Admin`, `Operator`, `Viewer`), session invalidation, and optional headless container provisioning via `ADMIN_USER` and `ADMIN_PASSWORD` environment variables.
 * **🔍 Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0 - Issue #57, #65):** Bypasses eero L2 routing limits by discovering local IPv6 ULA addresses (`fd00::/8`) via active NDP resolution and AdGuard Home sync. Features dedicated `POST /api/network/enrichment/neighbors` ingestion API, **`ULA Enriched`** UI badges, and automated 30-day stale IP pruning.
@@ -173,6 +187,7 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 | `PUSHOVER_API_TOKEN` | *(empty)* | Pushover application token for push notifications |
 | `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
+| `EERO_NETWORK_ID` | *(empty)* | Specific eero network ID to monitor (useful for accounts with multiple networks or delegated access) |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
 
 ---
@@ -362,9 +377,12 @@ A heartfelt thank you to the open-source contributors and community members whos
 * **[@DannyFeliz](https://github.com/DannyFeliz):** Responsive UI layouts, frequency filters, "Recently Joined" device sorting, and emerald pulsing "NEW" badges (#60).
 * **[@WillFulmer](https://github.com/WillFulmer):** Universal Wi-Fi Alliance QR codes for open guest networks (`T:nopass`) (#63) and multi-channel Daily Digest delivery transparency (#64).
 * **[@jonmacdonald](https://github.com/jonmacdonald):** SQLite concurrency & lock contention resolution via write locks and 60s busy timeout (#62), and primary gateway switch reconciliation (#26).
-* **[@jimcampbell100](https://github.com/jimcampbell100):** Inspiration for Multi-Network Fleet Management (#22).
-* **[@stevehoek](https://github.com/stevehoek):** Multi-network switching and English localization of Telegram Daily Digest (#37, #38).
-* **[@todddube](https://github.com/todddube):** Official Synology DSM 7.2+ Container Manager deployment guide and ready-to-paste Docker Compose template (#66).
+* **[@stevehoek](https://github.com/stevehoek):** Multi-network switching, English localization of Telegram Daily Digest (#37, #38), and daily digest restart idempotency verification (#70).
+* **[@todddube](https://github.com/todddube):** Official Synology DSM 7.2+ Container Manager deployment guide and ready-to-paste Docker Compose template (#66), and configurable daily digest hour support (#70).
+* **[@onefish2](https://github.com/onefish2):** LAN IPv4 subnet prioritization for multi-address container hosts and intelligent Pi-hole v6 stale record pruning (#72).
+* **[@tekzer0](https://github.com/tekzer0):** Robust account network discovery, `EERO_NETWORK_ID` env fallback, and zero-network resilience (#69).
+* **[@mrtekkid](https://github.com/mrtekkid):** Multi-tier selective data compaction, timestamp expression indexes, and universal bitrate parsing (#73).
+* **[@XprofQ](https://github.com/XprofQ):** Identification of WAN bufferbloat reporting bug and duration unit localization suggestions (#71).
 * **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
 
 ---
@@ -406,6 +424,20 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🛡️ Prioritizzazione IPv4 Subnet LAN, Pruning Intelligente Pi-hole v6 ed Esclusione Dispositivi (v1.6.1 - Issue #72):**
+  - **Prioritizzazione Subnet LAN:** Algoritmo a punteggio a 5 livelli per host multi-IP (es. Linux con Docker/Podman): priorità assoluta agli IP appartenenti alla subnet LAN fisica eero (`192.168.0.37`) e sistematica deprioritizzazione dei bridge container virtuali terminanti in `.1` (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`).
+  - **Pruning Intelligente Pi-hole v6:** Eliminazione automatica di vecchi lease e record obsoleti per i dispositivi gestiti tramite `PATCH /api/config` (e Pi-hole v5), con preservazione assoluta dei record DNS manuali e unmanaged.
+  - **Toggle Esclusione Singolo Dispositivo:** Switch dedicato *"Escludi da sincronizzazione DNS"* nella scheda dettaglio per escludere apparati la cui risoluzione è gestita altrove.
+* **🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (v1.6.1 - Issue #69):** Parsing universale dei payload eero (oggetti singoli `network`, URL, array o dizionari), fallback trasparente sulla variabile `EERO_NETWORK_ID` per account con permessi delegati o condivisi, banner guida responsive con azioni rapide e isolamento assoluto tra sessioni reali e dati demo fittizi.
+* **📬 Scheduler Daily Digest Idempotente ai Riavvii & Orario Configurabile (v1.6.1 - Issue #70):** Tracciamento persistente su SQLite di `last_daily_digest_date` per eliminare lo spam di notifiche duplicate ai riavvii del container, supporto alle variabili `DAILY_DIGEST_HOUR` e `TZ` con selettore orario (00:00 - 23:00) nell'interfaccia.
+* **⚡ Accuratezza Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71):**
+  - Riconoscimento diretto su frontend di `bufferbloat_grade`, `ping_under_load` e `bufferbloat_delta_ms` da SQLite e dalla cache RAM del poller, risolvendo il falso positivo `"n/a Non Disponibile"`.
+  - Localizzazione bilingue completa dei rating Bufferbloat (*Ottimale*, *Molto Buono*, *Buono*, *Sufficiente*, *Latenza Elevata*, *Critico*, *Non Disponibile* / *Optimal*, *Very Good*, *Good*, *Fair*, *High Latency*, *Critical*, *Not Available*).
+  - Abbreviazioni temporali dinamiche per i pulsanti di retention (`7gg`/`7d`, `15gg`/`15d`, `1m`/`1mo`).
+* **🚀 Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74):**
+  - Motore di compattazione incrementale che elabora esclusivamente le ore non ancora aggregate, riducendo l'impatto di CPU del 99.4% su reti con centinaia di dispositivi.
+  - Nuovi indici SQLite ad albero B su espressioni temporali e sanitizzazione universale dei bitrate con unità di misura (`Mbps`, `MBit/s`, `Gbps`).
+  - Endpoint di controllo integrità (`/api/system/database/integrity`) e backup deframmentato a caldo non bloccante via `VACUUM INTO` (`/api/system/database/backup`).
 * **📦 Architettura 100% Offline-First & Asset Locali (v1.6.0 - Issue #58):** Indipendenza totale da CDN esterne. Tutte le librerie frontend (Tailwind, Alpine.js, Chart.js, Lucide Icons) e i font WOFF2 (*Inter* e *JetBrains Mono*) sono auto-ospitati nel container, consentendo il pieno funzionamento della dashboard anche durante blackout dell'operatore o in LAN isolate.
 * **🔐 Controllo Accessi Locale (RBAC) & Setup Wizard Iniziale (v1.6.0):** Politica di sicurezza a credenziali zero-default con wizard guidato al primo avvio per la configurazione dell'account amministratore. Matrice granulare dei permessi (`Admin`, `Operator`, `Viewer`), invalidazione sessioni e supporto al deployment headless tramite variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD`.
 * **🔍 Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0 - Issue #57, #65):** Superamento dei limiti di routing L2 di eero scoprendo gli indirizzi IPv6 ULA locali (`fd00::/8`) via NDP e sincronizzazione AdGuard Home. Include API di ingestion `POST /api/network/enrichment/neighbors`, badge grafici dedicati **`ULA Enriched`** e potatura automatica di indirizzi obsoleti a 30 giorni.
@@ -531,6 +563,9 @@ Template Docker Compose preconfigurato e guida passo-passo per Synology DSM 7.2+
 | `PUSHOVER_API_TOKEN` | *(vuoto)* | Token applicativo per notifiche push Pushover |
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
+| `DAILY_DIGEST_HOUR` | `21` | Ora di invio del riepilogo giornaliero (0-23 nel fuso locale) |
+| `TZ` | `Europe/Rome` | Fuso orario dell'applicazione per timestamp e digest |
+| `EERO_NETWORK_ID` | *(vuoto)* | ID specifico della rete eero da monitorare (utile per account con reti multiple o permessi delegati) |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
 | `CORS_ORIGINS` | *(vuoto)* | Origini browser aggiuntive autorizzate a chiamare le API, separate da virgola (es. `http://homeassistant.local:8123`). Lasciare vuoto salvo che un'altra web app debba chiamare le API della dashboard dal browser. Le richieste di modifica (POST/PUT/PATCH/DELETE) da qualsiasi altra origine web ricevono 403; i client senza header `Origin` (curl, Home Assistant REST, script) non sono toccati. Se un reverse proxy riscrive l'header `Host` senza impostare `X-Forwarded-Host`, aggiungere qui l'URL pubblico della dashboard. `*` ripristina il vecchio comportamento aperto a tutti (sconsigliato). |
 
@@ -609,8 +644,12 @@ Un ringraziamento sincero a tutti gli utenti e contributori open-source che con 
 * **[@WillFulmer](https://github.com/WillFulmer):** Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (`T:nopass`) (#63) e trasparenza canali di recapito Daily Digest (#64).
 * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
 * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
-* **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37) e localizzazione inglese del Telegram Daily Digest (#38).
-* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose per Synology DSM 7.2+ Container Manager (#66), internazionalizzazione (i18n) barra filtri Top Bandwidth Hogs, ripristino getter categorie Alpine.js e callout setup admin (#67).
+* **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37), localizzazione inglese del Telegram Daily Digest (#38) e verifica dell'idempotenza del digest ai riavvii (#70).
+* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose per Synology DSM 7.2+ Container Manager (#66), internazionalizzazione (i18n) barra filtri Top Bandwidth Hogs, ripristino getter categorie Alpine.js, callout setup admin (#67) e supporto all'orario personalizzato del Daily Digest (#70).
+* **[@onefish2](https://github.com/onefish2):** Prioritizzazione IPv4 Subnet LAN per host container multi-indirizzo e pruning intelligente dei record DNS obsoleti per Pi-hole v6 (#72).
+* **[@tekzer0](https://github.com/tekzer0):** Rilevamento account multi-rete eero resiliente, fallback su variabile d'ambiente `EERO_NETWORK_ID` e guida visiva a zero-reti (#69).
+* **[@mrtekkid](https://github.com/mrtekkid):** Compattazione selettiva multi-tier per abbattimento del consumo CPU del Retention Worker, indici B-tree su espressioni temporali e parsing universale dei bitrate con unità di misura (#73).
+* **[@XprofQ](https://github.com/XprofQ):** Segnalazione bug di visualizzazione Bufferbloat WAN e proposta di standardizzazione delle abbreviazioni di durata temporale (#71).
 * **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---
