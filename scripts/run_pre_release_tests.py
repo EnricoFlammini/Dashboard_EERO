@@ -4378,6 +4378,51 @@ async def run_all_tests():
         runner.assert_true("first_seen" in it_loc.get("device_modal", {}), "Chiave device_modal.first_seen in it.json")
         runner.assert_true("first_seen" in en_loc.get("device_modal", {}), "Chiave device_modal.first_seen in en.json")
 
+        # 3. Mark as seen & baseline prima scansione (Issue #60)
+        baseline_mac = "02:00:00:00:60:01"
+        await db_service.register_known_devices_batch([{"mac": baseline_mac, "hostname": "Baseline Test"}], baseline=True)
+        baseline_entry = (await db_service.get_all_known_devices_map()).get(baseline_mac, {})
+        runner.assert_true(baseline_entry.get("baseline") is True, "register_known_devices_batch(baseline=True) marca il dispositivo come baseline")
+        runner.assert_true(baseline_entry.get("acknowledged_at") is None, "Dispositivo baseline senza acknowledged_at")
+        async with db_service.get_connection() as conn:
+            cursor = await conn.execute("SELECT value FROM app_settings WHERE key = 'known_devices_baseline_v1'")
+            runner.assert_true(await cursor.fetchone() is not None, "Migrazione baseline known_devices registrata una sola volta in app_settings")
+
+        cached_devs = background_poller.cached_devices
+        runner.assert_true(len(cached_devs) > 0, "Cache dispositivi popolata per test Mark as seen")
+        target = cached_devs[0]
+        target_mac = (target.get("mac") or target.get("mac_address") or "").lower()
+        target.update(is_new=True, new_dismissed=False)
+
+        # Client senza cookie di sessione: quello condiviso conserva un token invalidato dai test precedenti
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as seen_client:
+            res_seen = await seen_client.post("/api/devices/seen", json={"macs": [target_mac.upper()]})
+            runner.assert_true(res_seen.status_code == 200 and res_seen.json().get("updated") == 1, "POST /api/devices/seen segna il dispositivo come visto")
+            runner.assert_true(target.get("is_new") is False and target.get("new_dismissed") is True, "Cache RAM aggiornata subito: is_new=False, new_dismissed=True")
+            ack_entry = (await db_service.get_all_known_devices_map()).get(target_mac, {})
+            runner.assert_true(bool(ack_entry.get("acknowledged_at")), "acknowledged_at salvato su SQLite")
+
+            res_unseen = await seen_client.post("/api/devices/seen", json={"macs": [target_mac], "seen": False})
+            runner.assert_true(res_unseen.status_code == 200, "POST /api/devices/seen con seen=false risponde HTTP 200")
+            runner.assert_true(target.get("is_new") is True and target.get("new_dismissed") is False, "Annulla: badge NUOVO ripristinato nella cache")
+            unack_entry = (await db_service.get_all_known_devices_map()).get(target_mac, {})
+            runner.assert_true(unack_entry.get("acknowledged_at") is None, "Annulla: acknowledged_at azzerato su SQLite")
+
+            res_bad_mac = await seen_client.post("/api/devices/seen", json={"macs": ["not-a-mac"]})
+            runner.assert_true(res_bad_mac.status_code == 400, "POST /api/devices/seen rifiuta MAC non validi (HTTP 400)")
+            res_empty = await seen_client.post("/api/devices/seen", json={"macs": []})
+            runner.assert_true(res_empty.status_code == 422, "POST /api/devices/seen rifiuta lista vuota (HTTP 422)")
+
+        for req_key in ["mark_seen", "mark_new", "mark_all_seen", "new_badge_click_hint", "marked_seen_title", "marked_seen_msg", "marked_new_title", "marked_new_msg", "mark_seen_error"]:
+            runner.assert_true(req_key in it_loc.get("devices", {}), f"Chiave devices.{req_key} presente in it.json")
+            runner.assert_true(req_key in en_loc.get("devices", {}), f"Chiave devices.{req_key} presente in en.json")
+        runner.assert_true("tracked_since" in it_loc.get("device_modal", {}), "Chiave device_modal.tracked_since in it.json")
+        runner.assert_true("tracked_since" in en_loc.get("device_modal", {}), "Chiave device_modal.tracked_since in en.json")
+
+        async with db_service.get_connection() as conn:
+            await conn.execute("DELETE FROM known_devices WHERE mac_address = ?", (baseline_mac,))
+            await conn.commit()
+
         # -----------------------------------------------------------------
         # TEST ISSUES #62, #63, #64
         # -----------------------------------------------------------------

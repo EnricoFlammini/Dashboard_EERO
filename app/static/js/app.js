@@ -1370,6 +1370,38 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Mark as seen (Issue #60): hides the NEW badge, or restores it when seen = false
+    async setDevicesSeen(macs, seen = true) {
+      const targets = (macs || []).map(m => String(m || '').toLowerCase()).filter(Boolean);
+      if (!targets.length) return;
+      try {
+        const res = await fetch('/api/devices/seen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ macs: targets, seen })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+        const macSet = new Set(targets);
+        const apply = (d) => {
+          if (!d || !macSet.has(String(d.mac || d.mac_address || '').toLowerCase())) return;
+          if (seen && d.is_new) Object.assign(d, { is_new: false, is_new_24h: false, new_dismissed: true });
+          if (!seen && d.new_dismissed) Object.assign(d, { is_new: true, new_dismissed: false });
+        };
+        this.devices.forEach(apply);
+        apply(this.selectedDevice);
+        if (seen) {
+          this.showToast(this.t('devices.marked_seen_title'), this.t('devices.marked_seen_msg', { count: targets.length }), 'success');
+        } else {
+          this.showToast(this.t('devices.marked_new_title'), this.t('devices.marked_new_msg'), 'info');
+        }
+      } catch (err) {
+        this.showToast(this.t('devices.mark_seen_error'), err.message, 'error');
+      }
+    },
+
     async fetchProfiles() {
       try {
         const res = await fetch('/api/profiles');

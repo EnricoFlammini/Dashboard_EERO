@@ -26,6 +26,14 @@ class DeviceMetadataRequest(BaseModel):
     is_low_latency_target: Optional[bool] = False
 
 
+class DeviceSeenRequest(BaseModel):
+    macs: List[str] = Field(..., min_length=1, max_length=1000, description="MAC address dei dispositivi da aggiornare")
+    seen: bool = Field(True, description="True = segna come visto (nasconde NUOVO), False = annulla")
+
+
+MAC_RE = re.compile(r"^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
+
+
 class DeviceRenameRequest(BaseModel):
     nickname: str = Field(..., description="Nuovo nome dispositivo da sincronizzare con il cloud eero")
 
@@ -222,6 +230,18 @@ async def export_adguard(
         "clients": clients
     }
 
+
+
+@router.post("/seen", dependencies=[Depends(require_permission("action_edit_devices"))])
+async def mark_devices_seen(payload: DeviceSeenRequest):
+    """Segna uno o più dispositivi come visti, rimuovendo il badge NUOVO, o annulla l'operazione (Issue #60)."""
+    macs = {m.strip().lower() for m in payload.macs if m and m.strip()}
+    invalid = sorted(m for m in macs if not MAC_RE.match(m))
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"MAC address non valido: {', '.join(invalid[:5])}")
+    updated = await db_service.set_known_devices_seen(macs, seen=payload.seen)
+    background_poller.mark_cached_devices_seen(macs, seen=payload.seen)
+    return {"status": "success", "updated": updated, "seen": payload.seen}
 
 
 @router.post("/{device_id_or_mac:path}/metadata", dependencies=[Depends(require_permission("action_edit_devices"))])

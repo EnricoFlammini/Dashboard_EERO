@@ -90,6 +90,17 @@ class BackgroundPoller:
                 pass
         logger.info("Background Poller stopped.")
 
+    def mark_cached_devices_seen(self, macs: Set[str], seen: bool = True):
+        """Aggiorna subito il badge NUOVO nella cache RAM, senza attendere il prossimo ciclo di polling."""
+        for d in self.cached_devices:
+            mac = (d.get("mac") or d.get("mac_address") or "").lower()
+            if mac not in macs:
+                continue
+            if seen and d.get("is_new"):
+                d.update(is_new=False, is_new_24h=False, new_dismissed=True)
+            elif not seen and d.get("new_dismissed"):
+                d.update(is_new=True, new_dismissed=False)
+
     def invalidate_cache(self):
         """Invalida completamente la cache in RAM per consentire l'hot-swap immediato tra reti."""
         self.cached_network = {}
@@ -853,8 +864,13 @@ class BackgroundPoller:
                 except Exception:
                     pass
 
-                dev_copy["is_new"] = is_new_7d
-                dev_copy["is_new_24h"] = is_new_24h
+                # Badge NUOVO soppresso per i dispositivi della prima scansione (già in rete) o segnati come visti
+                is_baseline = bool(known_dev_entry.get("baseline")) or (is_initial_discovery and not known_dev_entry)
+                is_acknowledged = bool(known_dev_entry.get("acknowledged_at"))
+                dev_copy["is_new"] = is_new_7d and not (is_baseline or is_acknowledged)
+                dev_copy["is_new_24h"] = is_new_24h and not (is_baseline or is_acknowledged)
+                dev_copy["is_baseline"] = is_baseline
+                dev_copy["new_dismissed"] = is_new_7d and is_acknowledged and not is_baseline
 
                 enriched_devices.append(dev_copy)
 
@@ -876,7 +892,7 @@ class BackgroundPoller:
 
             # Se era la primissima discovery assoluta (db vuoto), registriamo tutto su SQLite senza inviare notifiche
             if is_initial_discovery and enriched_devices:
-                await db_service.register_known_devices_batch(enriched_devices, notified=True)
+                await db_service.register_known_devices_batch(enriched_devices, notified=True, baseline=True)
 
             # 2.5 Risoluzione robusta dei nodi eero per ciascun dispositivo
             eero_by_key: Dict[str, Dict[str, Any]] = {}
