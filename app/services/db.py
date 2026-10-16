@@ -123,6 +123,23 @@ class DBService:
             """)
             await db.execute("CREATE INDEX IF NOT EXISTS idx_known_devices_mac ON known_devices(mac_address);")
 
+            # Colonne "Mark as seen" (Issue #60): baseline = rilevato alla prima scansione, acknowledged_at = segnato come visto
+            for col_def in ("baseline INTEGER DEFAULT 0", "acknowledged_at DATETIME"):
+                try:
+                    await db.execute(f"ALTER TABLE known_devices ADD COLUMN {col_def};")
+                except Exception:
+                    pass
+
+            # Migrazione una tantum: i dispositivi registrati dalla prima scansione (stessa finestra di 10 minuti
+            # del first_seen più vecchio) erano già presenti in rete e non devono risultare "nuovi"
+            cursor = await db.execute("SELECT 1 FROM app_settings WHERE key = 'known_devices_baseline_v1'")
+            if not await cursor.fetchone():
+                await db.execute("""
+                    UPDATE known_devices SET baseline = 1
+                    WHERE julianday(first_seen) <= (SELECT julianday(MIN(first_seen)) FROM known_devices) + (10.0 / 1440);
+                """)
+                await db.execute("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('known_devices_baseline_v1', 'done');")
+
             # 8. Device Signal History (RSSI, Band, Channel, Bitrate & Node Storicization - v1.04.00)
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS device_signal_history (
@@ -905,8 +922,11 @@ class DBService:
             )
             await db.commit()
 
-    async def register_known_devices_batch(self, devices: List[Dict[str, Any]], notified: bool = True):
-        """Registra un batch di dispositivi come noti nel database."""
+    async def register_known_devices_batch(self, devices: List[Dict[str, Any]], notified: bool = True, baseline: bool = False):
+        """Registra un batch di dispositivi come noti nel database.
+
+        baseline=True marca i dispositivi della prima scansione: erano già in rete, quindi non sono "nuovi".
+        """
         if not devices:
             return
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -916,22 +936,22 @@ class DBService:
             if mac:
                 hostname = d.get("custom_name") or d.get("nickname") or d.get("hostname") or ""
                 ip = d.get("ip") or ""
-                records.append((mac, now, hostname, ip, 1 if notified else 0))
+                records.append((mac, now, hostname, ip, 1 if notified else 0, 1 if baseline else 0))
         if records:
             async with self.get_connection() as db:
                 await db.executemany(
                     """
-                    INSERT OR IGNORE INTO known_devices (mac_address, first_seen, hostname, ip, notified)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT OR IGNORE INTO known_devices (mac_address, first_seen, hostname, ip, notified, baseline)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     records
                 )
                 await db.commit()
 
     async def get_all_known_devices_map(self) -> Dict[str, Dict[str, Any]]:
-        """Restituisce una mappa {mac: {first_seen, hostname, ip, notified}} dei dispositivi noti (Issue #60)."""
+        """Restituisce una mappa {mac: {first_seen, hostname, ip, notified, baseline, acknowledged_at}} dei dispositivi noti (Issue #60)."""
         async with self.get_connection() as db:
-            cursor = await db.execute("SELECT LOWER(mac_address) as mac, first_seen, hostname, ip, notified FROM known_devices")
+            cursor = await db.execute("SELECT LOWER(mac_address) as mac, first_seen, hostname, ip, notified, baseline, acknowledged_at FROM known_devices")
             rows = await cursor.fetchall()
             return {
                 row["mac"]: {
@@ -939,10 +959,36 @@ class DBService:
                     "first_seen": row["first_seen"],
                     "hostname": row["hostname"],
                     "ip": row["ip"],
-                    "notified": bool(row["notified"])
+                    "notified": bool(row["notified"]),
+                    "baseline": bool(row["baseline"]),
+                    "acknowledged_at": row["acknowledged_at"],
                 }
                 for row in rows if row["mac"]
             }
+
+    async def set_known_devices_seen(self, macs: Set[str], seen: bool = True) -> int:
+        """Segna i dispositivi come visti (nasconde il badge NUOVO) o annulla l'operazione (Issue #60)."""
+        macs_clean = sorted({(m or "").lower().strip() for m in macs} - {""})
+        if not macs_clean:
+            return 0
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        async with self.get_connection() as db:
+            if seen:
+                await db.executemany(
+                    """
+                    INSERT INTO known_devices (mac_address, first_seen, notified, acknowledged_at)
+                    VALUES (?, ?, 1, ?)
+                    ON CONFLICT(mac_address) DO UPDATE SET acknowledged_at = excluded.acknowledged_at
+                    """,
+                    [(mac, now, now) for mac in macs_clean]
+                )
+            else:
+                await db.executemany(
+                    "UPDATE known_devices SET acknowledged_at = NULL WHERE mac_address = ?",
+                    [(mac,) for mac in macs_clean]
+                )
+            await db.commit()
+        return len(macs_clean)
 
     # ----------------- APP SETTINGS -----------------
     async def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:

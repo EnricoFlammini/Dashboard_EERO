@@ -1718,6 +1718,17 @@
         </div>
       </div>
 
+      <!-- Mark all as seen (Issue #60): visible only with the "New" filter active -->
+      <div x-show="selectedCategoryFilter === 'new' && can('action_edit_devices') && devices.some(d => d.is_new)" x-cloak class="flex justify-end">
+        <button
+          type="button"
+          @click="setDevicesSeen(devices.filter(d => d.is_new).map(d => d.mac || d.mac_address))"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span x-text="t('devices.mark_all_seen') + ' (' + devices.filter(d => d.is_new).length + ')'"></span>
+        </button>
+      </div>
+
       <!-- Devices Table (Desktop Only >= md) -->
       <div class="hidden md:block device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
         <div class="device-table-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
@@ -1870,7 +1881,11 @@
                         <div class="flex min-w-0 items-center gap-1.5 flex-wrap">
                           <div class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm" :title="dev.custom_name || dev.nickname || dev.hostname || 'Device'" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
                           <template x-if="dev.is_new">
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40 shadow-xs" :title="t('devices.first_seen_badge_tooltip') + (dev.first_seen ? ': ' + dev.first_seen : '')">
+                            <span
+                              @click="if (can('action_edit_devices')) setDevicesSeen([dev.mac || dev.mac_address])"
+                              :class="can('action_edit_devices') ? 'cursor-pointer hover:bg-emerald-500/30' : ''"
+                              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40 shadow-xs"
+                              :title="t('devices.first_seen_badge_tooltip') + (dev.first_seen ? ' ' + formatFirstSeenFull(dev.first_seen) : '') + (can('action_edit_devices') ? ' — ' + t('devices.new_badge_click_hint') : '')">
                               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                               <span x-text="t('devices.new_badge')"></span>
                             </span>
@@ -2103,7 +2118,11 @@
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="font-bold text-sm text-slate-900 dark:text-white truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Dispositivo'"></span>
                   <template x-if="dev.is_new">
-                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40" x-text="t('devices.new_badge')"></span>
+                    <span
+                      @click="if (can('action_edit_devices')) { $event.stopPropagation(); setDevicesSeen([dev.mac || dev.mac_address]); }"
+                      class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40"
+                      :title="can('action_edit_devices') ? t('devices.new_badge_click_hint') : ''"
+                      x-text="t('devices.new_badge')"></span>
                   </template>
                   <template x-if="dev.is_favorite">
                     <span class="text-amber-500 text-xs">⭐</span>
@@ -5044,12 +5063,20 @@
             <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('device_modal.first_seen') || 'Primo accesso rilevato'"></span>
+                <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="selectedDevice.is_baseline ? t('device_modal.tracked_since') : (t('device_modal.first_seen') || 'Primo accesso rilevato')"></span>
                 <template x-if="selectedDevice.is_new">
                   <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span x-text="t('devices.new_badge') || 'NUOVO'"></span>
                   </span>
+                </template>
+                <template x-if="can('action_edit_devices') && (selectedDevice.is_new || selectedDevice.new_dismissed)">
+                  <button
+                    type="button"
+                    @click="setDevicesSeen([selectedDevice.mac || selectedDevice.mac_address], Boolean(selectedDevice.is_new))"
+                    class="px-2 py-0.5 rounded-lg text-[10px] font-semibold border transition cursor-pointer"
+                    :class="selectedDevice.is_new ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border-emerald-500/30' : 'bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.1] text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'"
+                    x-text="selectedDevice.is_new ? t('devices.mark_seen') : t('devices.mark_new')"></button>
                 </template>
               </div>
               <div class="text-right">
