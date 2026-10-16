@@ -26,7 +26,8 @@
       name: "{{ app_name }}",
       version: "{{ app_version }}",
       buildNumber: "{{ build_number }}",
-      fullVersion: "{{ full_version }}"
+      fullVersion: "{{ full_version }}",
+      initialAuthenticated: "{{ 'true' if initial_authenticated else 'false' }}"
     };
   </script>
 
@@ -86,6 +87,7 @@
 
   <!-- Critical Layout Fix: Sidebar Strict Width on Desktop, Hidden on Mobile -->
   <style>
+    [x-cloak] { display: none !important; }
     @media (min-width: 768px) {
       aside.sidebar-container {
         transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -5690,7 +5692,7 @@
   <!-- ===================================================================== -->
   <!-- LOGIN & 2FA OTP MODAL (WHEN NOT AUTHENTICATED) -->
   <!-- ===================================================================== -->
-  <template x-if="!isAuthenticated">
+  <template x-if="authChecked && !isAuthenticated">
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <div class="glass-panel-elevated w-full max-w-md rounded-3xl p-8 space-y-6 text-center border border-sky-500/20">
         
