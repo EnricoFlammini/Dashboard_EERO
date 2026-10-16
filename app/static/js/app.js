@@ -123,10 +123,13 @@ document.addEventListener('alpine:init', () => {
     lastPollTime: null,
     pollingTimer: null,
 
-    // Multi-Network Fleet Management State (v1.5.0 - Issue #22)
+    // Multi-Network Fleet Management State (v1.5.0 - Issue #22, Issue #69)
     availableNetworks: [],
     activeNetworkId: '',
     isSwitchingNetwork: false,
+    get noNetworksFound() {
+      return Boolean(this.isAuthenticated && !this.isDemoMode && this.authChecked && Array.isArray(this.availableNetworks) && this.availableNetworks.length === 0);
+    },
 
     // Device Data Usage Insights State (v1.5.0)
     deviceUsagePeriod: 'daily', // 'daily' | 'weekly' | 'monthly'
@@ -5892,8 +5895,16 @@ document.addEventListener('alpine:init', () => {
     // Distinct device categories for the hogs category filter; values stay in
     // their stored (Italian) form and are translated for display via formatCategoryName().
     get availableCategories() {
-      const cats = new Set((this.devices || []).map(d => d.category || 'Altro'));
-      return [...cats].sort((a, b) => this.formatCategoryName(a).localeCompare(this.formatCategoryName(b)));
+      const devList = Array.isArray(this.devices) ? this.devices : [];
+      if (devList.length === 0) {
+        return ['Computer', 'Mobile', 'Smart Home', 'Intrattenimento', 'Server/Rete', 'Gaming', 'Altro'];
+      }
+      const cats = new Set(devList.map(d => (d && d.category) ? d.category : 'Altro'));
+      return [...cats].sort((a, b) => {
+        const nameA = (typeof this.formatCategoryName === 'function') ? (this.formatCategoryName(a) || String(a)) : String(a);
+        const nameB = (typeof this.formatCategoryName === 'function') ? (this.formatCategoryName(b) || String(b)) : String(b);
+        return String(nameA).localeCompare(String(nameB));
+      });
     },
 
     getFilteredTopHogs() {

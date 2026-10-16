@@ -557,38 +557,61 @@ class EeroClient:
             data = resp.json().get("data", {})
             self.account_info = data
 
-            # 1. Parsing delle reti da account/user (supporta reti proprietarie, condivise e admin)
+            # 1. Parsing delle reti da account/user (supporta reti proprietarie, singole, condivise e admin - Issue #69)
             raw_networks = []
-            for net_key in ("networks", "shared_networks", "guest_networks", "admin_networks"):
+            for net_key in ("networks", "network", "shared_networks", "guest_networks", "admin_networks"):
                 net_val = data.get(net_key)
                 if isinstance(net_val, dict):
-                    cand = net_val.get("data", [])
+                    cand = net_val.get("data") or net_val.get("networks") or net_val.get("items")
                     if isinstance(cand, list):
                         raw_networks.extend(cand)
+                    elif "url" in net_val or "id" in net_val or "name" in net_val:
+                        raw_networks.append(net_val)
+                    else:
+                        # Gestione dizionario indicizzato per ID rete
+                        for v in net_val.values():
+                            if isinstance(v, dict) and ("url" in v or "id" in v or "name" in v):
+                                raw_networks.append(v)
+                            elif isinstance(v, str) and ("/networks/" in v or v.isdigit()):
+                                raw_networks.append(v)
                 elif isinstance(net_val, list):
                     raw_networks.extend(net_val)
+                elif isinstance(net_val, (str, int)) and net_val:
+                    raw_networks.append(str(net_val))
 
-            # 2. Fallback per account con sole reti condivise/admin: endpoint /2.2/networks
+            # 2. Fallback per account con sole reti condivise/admin o endpoint dedicato: /2.2/networks
             if not raw_networks:
                 try:
                     net_resp = await client.get(f"{EERO_API_BASE}/networks", headers=self._get_headers())
                     if net_resp.status_code == 200:
-                        net_data = net_resp.json().get("data", [])
-                        if isinstance(net_data, list):
-                            raw_networks.extend(net_data)
-                        elif isinstance(net_data, dict):
-                            raw_networks.extend(net_data.get("data", []))
+                        payload = net_resp.json()
+                        if isinstance(payload, list):
+                            raw_networks.extend(payload)
+                        elif isinstance(payload, dict):
+                            cand = payload.get("data") or payload.get("networks") or payload.get("items")
+                            if isinstance(cand, list):
+                                raw_networks.extend(cand)
+                            elif "url" in payload or "id" in payload:
+                                raw_networks.append(payload)
+                            else:
+                                for v in payload.values():
+                                    if isinstance(v, dict) and ("url" in v or "id" in v or "name" in v):
+                                        raw_networks.append(v)
+                                    elif isinstance(v, list):
+                                        raw_networks.extend(v)
                 except Exception as e:
                     logger.warning(f"Fallback fetch /networks failed: {e}")
 
-            # 3. Normalizzazione lista reti disponibili (Multi-Network Fleet Management - Issue #22)
+            # 3. Normalizzazione lista reti disponibili (Multi-Network Fleet Management - Issue #22, Issue #69)
             parsed_networks = []
             for item in raw_networks:
                 if isinstance(item, dict):
-                    net_url = str(item.get("url", ""))
-                    net_id = net_url.split("/")[-1] if "/" in net_url else str(item.get("id", ""))
-                    net_name = item.get("name") or item.get("nickname") or f"eero Network ({net_id})"
-                    role = item.get("role") or ("owner" if "shared" not in net_url else "admin")
+                    net_url = str(item.get("url") or "")
+                    net_id = str(item.get("id") or "")
+                    if not net_id and "/" in net_url:
+                        net_id = net_url.split("/")[-1]
+                    net_name = item.get("name") or item.get("nickname") or (f"eero Network ({net_id})" if net_id else "eero Network")
+                    role = item.get("role") or ("admin" if "shared" in net_url.lower() or "guest" in net_url.lower() else "owner")
                     if net_id and not any(x["id"] == net_id for x in parsed_networks):
                         parsed_networks.append({
                             "id": net_id,
@@ -596,15 +619,27 @@ class EeroClient:
                             "url": net_url or f"/2.2/networks/{net_id}",
                             "role": role,
                         })
-                elif isinstance(item, str):
-                    net_id = item.split("/")[-1]
+                elif isinstance(item, (str, int)):
+                    str_item = str(item).strip()
+                    net_id = str_item.split("/")[-1] if "/" in str_item else str_item
                     if net_id and not any(x["id"] == net_id for x in parsed_networks):
                         parsed_networks.append({
                             "id": net_id,
                             "name": f"eero Network ({net_id})",
-                            "url": f"/2.2/networks/{net_id}",
+                            "url": str_item if "/" in str_item else f"/2.2/networks/{net_id}",
                             "role": "owner",
                         })
+
+            # 4. Fallback configurazione: se nessuna rete è stata rilevata dall'account, usa EERO_NETWORK_ID da .env/settings (Issue #69)
+            env_net_id = (settings.eero_network_id or "").strip()
+            if not parsed_networks and env_net_id:
+                logger.info(f"Using fallback EERO_NETWORK_ID from configuration: {env_net_id}")
+                parsed_networks.append({
+                    "id": env_net_id,
+                    "name": f"eero Network ({env_net_id})",
+                    "url": f"/2.2/networks/{env_net_id}",
+                    "role": "owner",
+                })
 
             if parsed_networks:
                 self.available_networks = parsed_networks
@@ -612,7 +647,6 @@ class EeroClient:
                 # - Se c'è settings.eero_network_id in .env ed è presente, priorità a quello
                 # - Se self.current_network_id è già impostato ed esiste tra le reti disponibili, MANTIENILO! (Issue #22 bug fix)
                 # - Altrimenti fallback alla prima rete disponibile
-                env_net_id = (settings.eero_network_id or "").strip()
                 known_ids = [x["id"] for x in parsed_networks]
 
                 if env_net_id and env_net_id in known_ids:
@@ -625,6 +659,13 @@ class EeroClient:
 
                 for n in self.available_networks:
                     n["is_active"] = (n["id"] == self.current_network_id)
+            else:
+                self.available_networks = []
+                self.current_network_id = None
+                logger.warning(
+                    "No eero networks found for the authenticated account. "
+                    "If your account has access to a network, specify EERO_NETWORK_ID in your configuration or verify your eero permissions."
+                )
 
             logger.info(f"Resolved eero network: ID={self.current_network_id} (Total available networks: {len(self.available_networks)})")
             self.save_session()

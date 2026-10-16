@@ -896,7 +896,9 @@
     "auth_expired_title": "Sessione Cloud eero Scaduta (HTTP 401)",
     "auth_expired_desc": "Il token di sessione eero è scaduto. Riconnetti il tuo account per riprendere il monitoraggio.",
     "retry_btn": "Riprova Sincronizzazione",
-    "relogin_btn": "Riconnetti Account"
+    "relogin_btn": "Riconnetti Account",
+    "no_networks_title": "Nessuna Rete eero Rilevata",
+    "no_networks_desc": "L'account eero connesso non ha restituito alcuna rete attiva. Se gestisci reti condivise o hai configurato EERO_NETWORK_ID, prova a riaggiornare o a riconnettere l'account."
   },
   "bufferbloat": {
     "badge_title": "Bufferbloat Rating",

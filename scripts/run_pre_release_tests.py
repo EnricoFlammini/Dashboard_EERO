@@ -5151,6 +5151,132 @@ async def run_all_tests():
         finally:
             httpx.AsyncClient = orig_async_client
 
+        # =========================================================================
+        # MODULO 10: ROBUST ACCOUNT NETWORK DISCOVERY, CONFIG FALLBACK & ZERO-NETWORK GUIDANCE (ISSUE #69)
+        # =========================================================================
+        print("\n" + "="*80)
+        print("MODULO 10: ROBUST ACCOUNT NETWORK DISCOVERY, CONFIG FALLBACK & ZERO-NETWORK GUIDANCE (ISSUE #69)")
+        print("="*80)
+
+        saved_token = eero_client.user_token
+        saved_net_id = eero_client.current_network_id
+        saved_avail_nets = list(eero_client.available_networks)
+        saved_demo_mode = settings.demo_mode
+        saved_env_net_id = settings.eero_network_id
+
+        try:
+            settings.demo_mode = False
+            eero_client.user_token = "live_test_token_mod10"
+
+            # 1. Singular 'network' dict in account response
+            mock_resp_data = {"network": {"url": "/2.2/networks/singular_111", "name": "Singular Net"}}
+            async def mock_singular_handler(request: httpx.Request):
+                if "/account" in str(request.url) or "/user" in str(request.url):
+                    return httpx.Response(200, json={"data": mock_resp_data})
+                return httpx.Response(404)
+
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(mock_singular_handler))
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            settings.eero_network_id = ""
+
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id == "singular_111", "Parsing rete da chiave singola 'network' dizionario")
+            runner.assert_true(len(eero_client.available_networks) == 1, "available_networks contiene 1 rete")
+            runner.assert_true(eero_client.available_networks[0]["name"] == "Singular Net", "Nome rete estratto correttamente da 'network' singola")
+
+            # 2. String URL in singular 'network'
+            mock_resp_data = {"network": "/2.2/networks/string_222"}
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id == "string_222", "Parsing rete da stringa URL '/2.2/networks/string_222'")
+
+            # 3. Networks dictionary indexed by ID
+            mock_resp_data = {"networks": {"net_333": {"id": "net_333", "name": "Keyed Net", "url": "/2.2/networks/net_333"}}}
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id == "net_333", "Parsing dizionario di reti indicizzato per ID")
+            runner.assert_true(eero_client.available_networks[0]["name"] == "Keyed Net", "Nome rete estratto dal dizionario indicizzato")
+
+            # 4. Fallback a /2.2/networks con payload list raw
+            async def mock_fallback_list_handler(request: httpx.Request):
+                if "/account" in str(request.url):
+                    return httpx.Response(200, json={"data": {}})
+                if "/networks" in str(request.url):
+                    return httpx.Response(200, json=[{"url": "/2.2/networks/raw_list_444", "name": "Raw List Net"}])
+                return httpx.Response(404)
+
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(mock_fallback_list_handler))
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id == "raw_list_444", "Fallback /2.2/networks gestisce raw list senza eccezioni")
+
+            # 5. Fallback a settings.eero_network_id quando l'API non restituisce reti
+            async def mock_zero_net_handler(request: httpx.Request):
+                if "/account" in str(request.url):
+                    return httpx.Response(200, json={"data": {}})
+                if "/networks" in str(request.url):
+                    return httpx.Response(200, json={"data": []})
+                return httpx.Response(404)
+
+            eero_client._http_client = httpx.AsyncClient(transport=httpx.MockTransport(mock_zero_net_handler))
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            settings.eero_network_id = "configured_env_net_555"
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id == "configured_env_net_555", "Fallback a EERO_NETWORK_ID da .env quando l'account non ha reti scoperte")
+            runner.assert_true(len(eero_client.available_networks) == 1, "Rete da configurazione registrata in available_networks")
+            runner.assert_true(eero_client.available_networks[0]["id"] == "configured_env_net_555", "ID rete configurata corretto")
+
+            # 6. Zero reti scoperte e nessuna configurata: stato 0 reti pulito e sicuro
+            settings.eero_network_id = ""
+            eero_client.current_network_id = None
+            eero_client.available_networks = []
+            await eero_client.fetch_account_info()
+            runner.assert_true(eero_client.current_network_id is None, "current_network_id è None quando 0 reti disponibili")
+            runner.assert_true(len(eero_client.available_networks) == 0, "available_networks è vuota con 0 reti")
+            devices_zero = await eero_client.get_devices()
+            runner.assert_true(len(devices_zero) == 0, "get_devices() restituisce lista vuota (nessun dispositivo demo fittizio su sessione reale)")
+
+            # 7. Frontend, Template e i18n Parity (Issue #69)
+            index_html_path = Path("app/templates/index.html")
+            index_html_content = index_html_path.read_text(encoding="utf-8")
+            runner.assert_true("noNetworksFound" in index_html_content, "Banner 'noNetworksFound' presente in index.html")
+            runner.assert_true("resilience.no_networks_title" in index_html_content, "Stringa i18n resilience.no_networks_title referenziata nel banner")
+
+            it_json_path = Path("app/static/locales/it.json")
+            it_json = json.loads(it_json_path.read_text(encoding="utf-8"))
+            runner.assert_true("no_networks_title" in it_json.get("resilience", {}), "no_networks_title presente in it.json")
+            runner.assert_true("no_networks_desc" in it_json.get("resilience", {}), "no_networks_desc presente in it.json")
+
+            en_json_path = Path("app/static/locales/en.json")
+            en_json = json.loads(en_json_path.read_text(encoding="utf-8"))
+            runner.assert_true("no_networks_title" in en_json.get("resilience", {}), "no_networks_title presente in en.json")
+            runner.assert_true("no_networks_desc" in en_json.get("resilience", {}), "no_networks_desc presente in en.json")
+
+            app_js_path = Path("app/static/js/app.js")
+            app_js_content = app_js_path.read_text(encoding="utf-8")
+            runner.assert_true("get noNetworksFound()" in app_js_content, "Getter noNetworksFound definito in app.js")
+            runner.assert_true("['Computer', 'Mobile', 'Smart Home', 'Intrattenimento', 'Server/Rete', 'Gaming', 'Altro']" in app_js_content, "Fallback difensivo disponibile per availableCategories quando devices è vuota")
+
+            sw_js_path = Path("app/static/sw.js")
+            sw_js_content = sw_js_path.read_text(encoding="utf-8")
+            runner.assert_true("eero-dashboard-v1.6.5" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.5 per invalidazione cache obsoleta")
+
+        finally:
+            # Ripristina stato originale eero_client
+            if eero_client._http_client is not None and not eero_client._http_client.is_closed:
+                await eero_client._http_client.aclose()
+            eero_client._http_client = None
+            eero_client.user_token = saved_token
+            eero_client.current_network_id = saved_net_id
+            eero_client.available_networks = saved_avail_nets
+            settings.demo_mode = saved_demo_mode
+            settings.eero_network_id = saved_env_net_id
+
         runner.print_summary()
 
 

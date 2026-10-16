@@ -896,7 +896,9 @@
     "auth_expired_title": "eero Cloud Session Expired (HTTP 401)",
     "auth_expired_desc": "Your eero session token has expired. Re-authenticate to resume real-time monitoring.",
     "retry_btn": "Retry Sync",
-    "relogin_btn": "Reconnect Account"
+    "relogin_btn": "Reconnect Account",
+    "no_networks_title": "No eero Networks Detected",
+    "no_networks_desc": "The authenticated eero account did not return any active networks. If you use shared networks or configured EERO_NETWORK_ID, try refreshing or reconnecting your account."
   },
   "bufferbloat": {
     "badge_title": "Bufferbloat Rating",

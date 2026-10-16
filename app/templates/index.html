@@ -803,6 +803,35 @@
         </div>
       </template>
 
+      <!-- NO NETWORKS FOUND BANNER (Issue #69) -->
+      <template x-if="noNetworksFound">
+        <div class="mb-5 p-4 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg bg-indigo-500/10 border-indigo-500/30 text-indigo-900 dark:text-indigo-200">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold" x-text="t('resilience.no_networks_title') || 'Nessuna Rete eero Rilevata'"></div>
+              <div class="text-[11px] opacity-85" x-text="t('resilience.no_networks_desc') || 'L\'account eero connesso non ha restituito alcuna rete attiva. Se gestisci reti condivise o hai configurato EERO_NETWORK_ID, prova a riaggiornare o a riconnettere l\'account.'"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button 
+              @click="manualRefresh()"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 shadow-sm"
+              x-text="t('resilience.retry_btn') || 'Riprova Ora'">
+            </button>
+            <button 
+              @click="showLogoutModal = true"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm"
+              x-text="t('resilience.relogin_btn') || 'Cambia Account'">
+            </button>
+          </div>
+        </div>
+      </template>
+
       <!-- =================================================================== -->
       <!-- TAB 1: OVERVIEW & MESH TOPOLOGY -->
       <!-- =================================================================== -->

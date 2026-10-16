@@ -693,6 +693,20 @@ gantt
   - Esclusione trasparente dei dispositivi contrassegnati dai payload di sincronizzazione `_prepare_clients_payload`, `/api/devices/export/hosts` e `/api/devices/export/adguard`.
   - 22 nuovi test di regressione in Modulo 9 (totale suite a 1.426/1.426 superati al 100%).
 
+#### 8. 🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69 - @tekzer0)
+- [x] **Parsing Flessibile & Universale dei Payload eero API:**
+  - Parsing esteso per risposte singolari o non convenzionali (`networks`, `network`, `shared_networks`, `guest_networks`, `admin_networks`), array nativi e dizionari indicizzati per ID rete.
+  - Gestione sicura del fallback `/2.2/networks` per array raw o dict senza generare `AttributeError`.
+- [x] **Fallback Diretto su Configurazione d'Ambiente (`EERO_NETWORK_ID`):**
+  - Integrazione automatica di `settings.eero_network_id` in `available_networks` e `current_network_id` qualora l'account non restituisca alcuna rete dall'endpoint, sbloccando gli account con permessi delegati o limitati.
+- [x] **Prevenzione Fallback Demo su Sessioni Reali:**
+  - Salvaguardia dell'integrità del database e della sincronizzazione DNS: una sessione live con 0 reti scoperte non carica mai dispositivi di test demo fittizi.
+- [x] **Banner Guida "Nessuna Rete Rilevata" & Inizializzazione Difensiva Alpine:**
+  - Banner responsive con localizzazione bilingue IT/EN (`resilience.no_networks_title`, `resilience.no_networks_desc`) e azioni rapide "Riprova Sincronizzazione" e "Cambia Account".
+  - Risoluzione dell'errore Alpine `availableCategories is not defined` con array di categorie predefinite difensive quando l'inventario dispositivi è inizialmente vuoto.
+  - Aggiornamento della cache del Service Worker PWA (`eero-dashboard-v1.6.5`) per invalidare immediatamente vecchie copie di `app.js`.
+  - 22 nuovi test di regressione in Modulo 10 (totale suite a 1.448/1.448 superati al 100%).
+
 ---
 
 ## 🛠️ Note Operative per il Futuro

@@ -6,6 +6,19 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🌐 Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69 - @tekzer0)
+* **📡 Parsing Flessibile e Universale dei Payload eero API:**
+  * Risolto il problema per cui account eero con strutture di risposta non convenzionali (singolo oggetto `"network"`, stringa URL o endpoint dedicato `/2.2/networks` restituente array nativo) non venivano scoperti, portando a `Total available networks: 0` e `current_network_id = None`.
+  * Supporto universale per chiavi singole e plurali (`networks`, `network`, `shared_networks`, `guest_networks`, `admin_networks`), array nativi o dizionari indicizzati per ID rete.
+* **⚙️ Fallback Diretto su Variabile d'Ambiente (`EERO_NETWORK_ID`):**
+  * Se l'account autenticato non restituisce alcuna rete dai payload eero e `/networks`, il sistema esegue ora il fallback trasparente su `EERO_NETWORK_ID` configurato in `.env` o docker-compose, consentendo il regolare monitoraggio anche con account ad accesso delegato o limitato.
+* **🛡️ Prevenzione Fallback Demo su Sessioni Reali:**
+  * Garantito che in caso di sessione reale con 0 reti scoperte il client ritorni liste vuote e non carichi dispositivi di test demo, salvaguardando l'integrità del database, dello storico, del DNS sync e delle notifiche.
+* **🖥️ Banner Guida "Nessuna Rete Rilevata" & Inizializzazione Difensiva Alpine:**
+  * Aggiunto banner dedicato e localizzato (IT/EN) nella dashboard che informa chiaramente l'utente quando l'account non ha reti associate, con pulsanti rapidi "Riprova Sincronizzazione" e "Cambia Account".
+  * Risolto l'errore frontend `availableCategories is not defined` con valore di fallback difensivo per le categorie predefinite quando l'inventario dispositivi è inizialmente vuoto.
+  * Aggiornato il Service Worker PWA (`CACHE_NAME = 'eero-dashboard-v1.6.5'`) per forzare l'invalidazione della cache browser su nuove release.
+
 ### 🛡️ Prioritizzazione IPv4 LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72 - @mrtekkid)
 * **🌐 Prioritizzazione Automatica IPv4 Subnet LAN per Host Multi-Indirizzo:**
   * Risolto il problema per cui macchine Linux con runtime container (Docker/Podman) venivano associate nell'inventario e nella sincronizzazione DNS all'indirizzo del bridge virtuale (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`) anziché al loro vero indirizzo LAN.
