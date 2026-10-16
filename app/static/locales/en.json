@@ -42,7 +42,8 @@
     "about": "About & Credits",
     "health_score": "Network Health Score",
     "quick_help": "Quick Help",
-    "settings_export": "Data Export"
+    "settings_export": "Data Export",
+    "eero_news_short": "Release Notes"
   },
   "guests_page": {
     "title": "Guest Wi-Fi Access",
@@ -508,7 +509,32 @@
     "mqtt_messages_count": "Published Messages",
     "mqtt_last_published": "Last Published",
     "mqtt_last_error": "Last Error",
-    "mqtt_stats_title": "MQTT Telemetry Metrics"
+    "mqtt_stats_title": "MQTT Telemetry Metrics",
+    "mqtt_discovery_active": "✓ Active (MQTT Discovery)",
+    "mqtt_discovery_inactive": "✕ Disabled",
+    "mqtt_lib_ready": "✓ aiomqtt library ready",
+    "mqtt_lib_fallback": "⚠️ aiomqtt in fallback or demo simulation mode",
+    "mqtt_testing": "Testing...",
+    "mqtt_saving": "Saving...",
+    "mqtt_password_unchanged": "•••••••• (unchanged)",
+    "mqtt_cancel": "Cancel",
+    "mqtt_discovery_desc": "Automatically creates Home Assistant sensors and devices for WAN status, download/upload speed, mesh nodes and connected clients, with no manual YAML configuration.",
+    "session_title": "Session Timeout & Auto-Logout",
+    "session_status_on": "Auto-logout after {minutes} min inactivity",
+    "session_status_off": "Disabled (No timeout)",
+    "session_desc": "Automatically ends the user session when no interactions are detected for the chosen interval, securing the dashboard on shared devices.",
+    "session_duration_label": "Inactivity duration before logout:",
+    "session_never": "Never",
+    "session_default": "Default",
+    "session_disabled": "Disabled",
+    "session_inactivity": "Inactivity",
+    "session_watchdog_on": "Inactivity watchdog active on mouse/keyboard/touch events",
+    "session_watchdog_off": "Inactivity watchdog disabled",
+    "session_last_activity": "Last interaction: {time}",
+    "mqtt_user_label": "User:",
+    "mqtt_anonymous": "(anonymous)",
+    "mqtt_interval_label": "Interval:",
+    "mqtt_never": "Never"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -608,7 +634,11 @@
     "install_now_btn": "⚡ Update Container Now (1-Click)",
     "updating_title": "Updating Container...",
     "updating_desc": "Pulling new Docker image and restarting container. The web app will auto-reconnect as soon as the server is ready.",
-    "cancel": "Close"
+    "cancel": "Close",
+    "banner_up_to_date_title": "Dashboard Up to Date",
+    "banner_up_to_date_desc": "Installed version (v{version}) matches the latest public release on Docker Hub and GitHub.",
+    "banner_update_title": "New Version Available: v{version}",
+    "banner_update_desc": "A new Docker image is ready. Install it with 1-click if the Docker socket is mounted, or with the manual command below."
   },
   "toasts": {
     "saved": "Saved",
@@ -801,7 +831,8 @@
     "password_mismatch": "Passwords do not match",
     "password_min_length": "Password must be at least 6 characters",
     "username_min_length": "Username must be at least 3 characters",
-    "setup_success": "Administrator setup completed successfully!"
+    "setup_success": "Administrator setup completed successfully!",
+    "login_btn_title": "Sign in as Administrator or Local User"
   },
   "users_modal": {
     "title": "Users Management & Permission Matrix",
@@ -888,7 +919,11 @@
     "empty_desc": "Create a time rule to automatically manage Wi-Fi access during evening or school hours.",
     "save_btn": "Save Rule",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit",
+    "modal_subtitle": "Configure the schedule's times and target",
+    "rule_name_placeholder": "e.g. Evening Gaming Shutdown",
+    "all_nodes_reboot_desc": "Entire eero mesh network"
   },
   "resilience": {
     "stale_data_title": "Telemetry Data is Stale",
@@ -936,7 +971,9 @@
   },
   "settings_updates": {
     "title": "Check for Updates & Docker Container",
-    "subtitle": "Docker Hub container status, installed version, socket status and 1-click update trigger"
+    "subtitle": "Docker Hub container status, installed version, socket status and 1-click update trigger",
+    "checking": "Checking...",
+    "recheck_btn": "Recheck Releases"
   },
   "settings_export": {
     "title": "Data Export & Download Center",
@@ -992,7 +1029,17 @@
     "no_logs": "No log records found matching current criteria.",
     "show_details": "Error Details",
     "hide_details": "Hide Details",
-    "saved_success": "Logging configuration updated successfully."
+    "saved_success": "Logging configuration updated successfully.",
+    "lvl_short_debug": "Verbose",
+    "lvl_short_info": "Standard",
+    "lvl_short_warning": "Warnings",
+    "lvl_short_error": "Critical",
+    "retention_short_7d": "7d",
+    "retention_short_15d": "15d",
+    "retention_short_30d": "1mo",
+    "retention_days_placeholder": "Days",
+    "clear_warning": "Warning: historical data in the log file and SQLite table cannot be recovered.",
+    "management": "Log Management & Diagnostics"
   }
 }
 

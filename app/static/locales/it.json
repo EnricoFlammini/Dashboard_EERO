@@ -42,7 +42,8 @@
     "about": "About & Crediti",
     "health_score": "Network Health Score",
     "quick_help": "Guida Rapida",
-    "settings_export": "Download Dati"
+    "settings_export": "Download Dati",
+    "eero_news_short": "Note Rilascio"
   },
   "guests_page": {
     "title": "Accesso Wi-Fi Ospiti",
@@ -508,7 +509,32 @@
     "mqtt_messages_count": "Messaggi Pubblicati",
     "mqtt_last_published": "Ultima Pubblicazione",
     "mqtt_last_error": "Ultimo Errore",
-    "mqtt_stats_title": "Metriche Telemetria MQTT"
+    "mqtt_stats_title": "Metriche Telemetria MQTT",
+    "mqtt_discovery_active": "✓ Attivo (MQTT Discovery)",
+    "mqtt_discovery_inactive": "✕ Disattivato",
+    "mqtt_lib_ready": "✓ Libreria aiomqtt pronta",
+    "mqtt_lib_fallback": "⚠️ aiomqtt in fallback o simulazione demo",
+    "mqtt_testing": "Test in corso...",
+    "mqtt_saving": "Salvataggio...",
+    "mqtt_password_unchanged": "•••••••• (invariata)",
+    "mqtt_cancel": "Annulla",
+    "mqtt_discovery_desc": "Crea automaticamente sensori e dispositivi in Home Assistant per stato WAN, velocità download/upload, nodi mesh e client connessi senza alcuna configurazione manuale YAML.",
+    "session_title": "Timeout Sessione & Disconnessione Automatica",
+    "session_status_on": "Disconnessione dopo {minutes} min di inattività",
+    "session_status_off": "Disattivato (Nessun timeout)",
+    "session_desc": "Termina automaticamente la sessione dell'utente se non vengono rilevate interazioni (movimento del mouse, pressione tasti o tocco schermo) per il periodo selezionato, proteggendo la riservatezza della dashboard su dispositivi e postazioni condivise.",
+    "session_duration_label": "Tempo di inattività prima del logout:",
+    "session_never": "Mai",
+    "session_default": "Predefinito",
+    "session_disabled": "Disattivo",
+    "session_inactivity": "Inattività",
+    "session_watchdog_on": "Watchdog inattività attivo su eventi mouse/tastiera/touch",
+    "session_watchdog_off": "Watchdog inattività disattivato",
+    "session_last_activity": "Ultima interazione: {time}",
+    "mqtt_user_label": "Utente:",
+    "mqtt_anonymous": "(anonimo)",
+    "mqtt_interval_label": "Intervallo:",
+    "mqtt_never": "Mai"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",
@@ -608,7 +634,11 @@
     "install_now_btn": "⚡ Aggiorna Container Ora (1-Clic)",
     "updating_title": "Aggiornamento in Corso...",
     "updating_desc": "Download della nuova immagine Docker e riavvio del container in corso. La pagina si ricaricherà automaticamente non appena il server sarà pronto.",
-    "cancel": "Chiudi"
+    "cancel": "Chiudi",
+    "banner_up_to_date_title": "Dashboard Perfettamente Aggiornata",
+    "banner_up_to_date_desc": "La versione installata (v{version}) è allineata con l'ultima release disponibile su Docker Hub e GitHub.",
+    "banner_update_title": "Nuova Versione Disponibile: v{version}",
+    "banner_update_desc": "È disponibile un aggiornamento dell'immagine Docker. Puoi avviarlo con 1-click se il socket Docker è montato o tramite comando manuale."
   },
   "toasts": {
     "saved": "Salvato",
@@ -801,7 +831,8 @@
     "password_mismatch": "Le password inserite non coincidono",
     "password_min_length": "La password deve contenere almeno 6 caratteri",
     "username_min_length": "Lo username deve contenere almeno 3 caratteri",
-    "setup_success": "Configurazione completata con successo!"
+    "setup_success": "Configurazione completata con successo!",
+    "login_btn_title": "Accedi come Amministratore o Utente Locale"
   },
   "users_modal": {
     "title": "Gestione Utenti & Matrice Permessi",
@@ -888,7 +919,11 @@
     "empty_desc": "Crea una regola oraria per gestire automaticamente l'accesso Wi-Fi durante le ore serali o scolastiche.",
     "save_btn": "Salva Regola",
     "cancel": "Annulla",
-    "delete": "Elimina"
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "modal_subtitle": "Configura orari e bersaglio della pianificazione",
+    "rule_name_placeholder": "Es. Spegnimento Serale Gaming",
+    "all_nodes_reboot_desc": "Intera rete mesh eero"
   },
   "resilience": {
     "stale_data_title": "Dati Telemetrici Non Aggiornati",
@@ -936,7 +971,9 @@
   },
   "settings_updates": {
     "title": "Verifica aggiornamenti e Container Docker",
-    "subtitle": "Stato container Docker Hub, versione installata, socket status e trigger per 1-click update"
+    "subtitle": "Stato container Docker Hub, versione installata, socket status e trigger per 1-click update",
+    "checking": "Verifica...",
+    "recheck_btn": "Ricontrolla Release"
   },
   "settings_export": {
     "title": "Centro Download & Esportazione Dati",
@@ -992,7 +1029,17 @@
     "no_logs": "Nessun evento registrato corrispondente ai criteri.",
     "show_details": "Dettagli Errore",
     "hide_details": "Nascondi Dettagli",
-    "saved_success": "Configurazione log aggiornata con successo."
+    "saved_success": "Configurazione log aggiornata con successo.",
+    "lvl_short_debug": "Dettagliato",
+    "lvl_short_info": "Normale",
+    "lvl_short_warning": "Avvisi",
+    "lvl_short_error": "Critico",
+    "retention_short_7d": "7gg",
+    "retention_short_15d": "15gg",
+    "retention_short_30d": "1m",
+    "retention_days_placeholder": "Giorni",
+    "clear_warning": "Attenzione: i dati storici del file log e della tabella SQLite non potranno essere recuperati.",
+    "management": "Gestione Log & Diagnostica"
   }
 }
 
