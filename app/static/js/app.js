@@ -6,9 +6,9 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.0',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.1',
     buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.0 build 1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.1 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
@@ -498,13 +498,13 @@ document.addEventListener('alpine:init', () => {
     // Estimated Data Usage Info Modal State
     showUsageInfoModal: false,
 
-    // Auto-Update State (v1.6.0)
+    // Auto-Update State (v1.6.1)
     updateInfo: {
       update_available: false,
-      current_version: '1.6.0',
-      latest_version: '1.6.0',
+      current_version: '1.6.1',
+      latest_version: '1.6.1',
       latest_build_number: '1',
-      latest_full_version: '1.6.0 build 1',
+      latest_full_version: '1.6.1 build 1',
       release_title: '',
       release_notes: '',
       docker_socket_available: false,
