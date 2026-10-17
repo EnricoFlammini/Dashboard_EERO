@@ -769,6 +769,7 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {
         console.warn("Could not load translations for", this.currentLanguage, e);
       }
+      document.body.classList.remove('i18n-pending');
       try {
         await fetch('/api/system/language', {
           method: 'POST',

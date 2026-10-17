@@ -88,6 +88,9 @@
   <!-- Critical Layout Fix: Sidebar Strict Width on Desktop, Hidden on Mobile -->
   <style>
     [x-cloak] { display: none !important; }
+    /* Hide the page until the first locale file is applied, so untranslated fallbacks never flash; reveal after 4s regardless. */
+    body.i18n-pending { visibility: hidden; animation: i18n-reveal 0s 4s forwards; }
+    @keyframes i18n-reveal { to { visibility: visible; } }
     @media (min-width: 768px) {
       aside.sidebar-container {
         transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -139,7 +142,7 @@
     }
   </style>
 </head>
-<body class="bg-[#f3f3f3] dark:bg-[#202020] text-[#1c1c1c] dark:text-[#ffffff] min-h-screen antialiased flex flex-col transition-colors duration-200" x-data="eeroApp">
+<body class="i18n-pending bg-[#f3f3f3] dark:bg-[#202020] text-[#1c1c1c] dark:text-[#ffffff] min-h-screen antialiased flex flex-col transition-colors duration-200" x-data="eeroApp">
 
   <!-- ===================================================================== -->
   <!-- TOP APP BAR (WINDOWS 11 FLUENT HEADER) -->
@@ -243,7 +246,7 @@
           <button 
             @click="openLocalLoginModal()"
             class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0067c0]/10 hover:bg-[#0067c0]/20 text-[#0067c0] dark:text-sky-400 border border-[#0067c0]/30 dark:border-sky-500/30 transition-all active:scale-95 cursor-pointer shadow-xs"
-            title="Accedi come Amministratore o Utente Locale">
+            :title="t('auth_local.login_btn_title')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
             </svg>
@@ -3313,7 +3316,7 @@
                   <span x-text="mqttSettings.broker_host || 'localhost'"></span>:<span x-text="mqttSettings.broker_port || 1883"></span>
                 </div>
                 <div class="text-[10px] text-slate-400 truncate">
-                  User: <span x-text="mqttSettings.username ? mqttSettings.username : '(anonimo)'"></span>
+                  <span x-text="t('controls.mqtt_user_label')"></span> <span x-text="mqttSettings.username ? mqttSettings.username : t('controls.mqtt_anonymous')"></span>
                 </div>
               </div>
 
@@ -3332,10 +3335,10 @@
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
                 <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Home Assistant Discovery</span>
                 <div class="text-xs font-bold flex items-center space-x-1.5" :class="mqttSettings.discovery_enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
-                  <span x-text="mqttSettings.discovery_enabled ? '✓ Attivo (MQTT Discovery)' : '✕ Disattivato'"></span>
+                  <span x-text="mqttSettings.discovery_enabled ? t('controls.mqtt_discovery_active') : t('controls.mqtt_discovery_inactive')"></span>
                 </div>
                 <div class="text-[10px] text-slate-400">
-                  Intervallo: <span class="font-mono font-bold" x-text="(mqttSettings.publish_interval || 60) + 's'"></span>
+                  <span x-text="t('controls.mqtt_interval_label')"></span> <span class="font-mono font-bold" x-text="(mqttSettings.publish_interval || 60) + 's'"></span>
                 </div>
               </div>
 
@@ -3347,7 +3350,7 @@
                 </div>
                 <div class="text-[10px] text-slate-400 truncate">
                   <span x-text="t('controls.mqtt_last_published') || 'Ultimo invio'"></span>: 
-                  <span class="font-mono" x-text="(mqttSettings.stats && mqttSettings.stats.last_published) ? new Date(mqttSettings.stats.last_published).toLocaleTimeString() : 'Mai'"></span>
+                  <span class="font-mono" x-text="(mqttSettings.stats && mqttSettings.stats.last_published) ? new Date(mqttSettings.stats.last_published).toLocaleTimeString() : t('controls.mqtt_never')"></span>
                 </div>
               </div>
             </div>
@@ -3367,8 +3370,8 @@
           <!-- Footer Action Buttons: Test Connection & Config Modal -->
           <div class="pt-3 border-t border-black/[0.06] dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span class="text-[11px] text-slate-500">
-              <span x-show="mqttSettings.available" class="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Libreria aiomqtt pronta</span>
-              <span x-show="!mqttSettings.available" class="text-amber-600 dark:text-amber-400">⚠️ aiomqtt in fallback o simulazione demo</span>
+              <span x-show="mqttSettings.available" class="text-emerald-600 dark:text-emerald-400 font-semibold" x-text="t('controls.mqtt_lib_ready')"></span>
+              <span x-show="!mqttSettings.available" class="text-amber-600 dark:text-amber-400" x-text="t('controls.mqtt_lib_fallback')"></span>
             </span>
             <div class="flex items-center space-x-2">
               <button 
@@ -3378,7 +3381,7 @@
                 :disabled="mqttTesting || mqttSaving"
                 class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition cursor-pointer flex items-center space-x-1.5 disabled:opacity-50">
                 <svg x-show="mqttTesting" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span x-text="mqttTesting ? 'Testing...' : (t('controls.mqtt_test_btn') || 'Test Connessione')"></span>
+                <span x-text="mqttTesting ? t('controls.mqtt_testing') : t('controls.mqtt_test_btn')"></span>
               </button>
               <button 
                 x-show="can('action_manage_rules')"
@@ -3402,18 +3405,18 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="currentLanguage === 'it' ? 'Timeout Sessione & Disconnessione Automatica' : 'Session Timeout & Auto-Logout'"></h3>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white leading-tight" x-text="t('controls.session_title')"></h3>
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold inline-block mt-0.5"
                         :class="sessionTimeoutMinutes > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20'"
-                        x-text="sessionTimeoutMinutes > 0 ? (currentLanguage === 'it' ? ('Disconnessione dopo ' + sessionTimeoutMinutes + ' min di inattività') : ('Auto-logout after ' + sessionTimeoutMinutes + ' min inactivity')) : (currentLanguage === 'it' ? 'Disattivato (Nessun timeout)' : 'Disabled (No timeout)')"></span>
+                        x-text="sessionTimeoutMinutes > 0 ? t('controls.session_status_on', { minutes: sessionTimeoutMinutes }) : t('controls.session_status_off')"></span>
                 </div>
               </div>
             </div>
             
-            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'Termina automaticamente la sessione dell\'utente se non vengono rilevate interazioni (movimento del mouse, pressione tasti o tocco schermo) per il periodo selezionato, proteggendo la riservatezza della dashboard su dispositivi e postazioni condivise.' : 'Automatically ends the user session when no interactions are detected for the chosen interval, securing the dashboard on shared devices.'"></p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('controls.session_desc')"></p>
 
             <div class="space-y-2 pt-1 text-xs">
-              <label class="block text-slate-700 dark:text-slate-300 font-semibold" x-text="currentLanguage === 'it' ? 'Tempo di inattività prima del logout:' : 'Inactivity duration before logout:'"></label>
+              <label class="block text-slate-700 dark:text-slate-300 font-semibold" x-text="t('controls.session_duration_label')"></label>
               <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
                 <template x-for="mins in [5, 10, 15, 30, 60, 0]" :key="mins">
                   <button 
@@ -3423,8 +3426,8 @@
                     :class="sessionTimeoutMinutes === mins 
                       ? 'bg-[#0067c0] text-white border-[#0067c0] dark:bg-sky-500 dark:border-sky-500 shadow-md shadow-sky-500/20 ring-2 ring-sky-500/30' 
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
-                    <span class="text-sm font-extrabold" x-text="mins === 0 ? (currentLanguage === 'it' ? 'Mai' : 'Never') : (mins + ' min')"></span>
-                    <span class="text-[9px] font-normal opacity-80" x-text="mins === 15 ? (currentLanguage === 'it' ? 'Predefinito' : 'Default') : (mins === 0 ? (currentLanguage === 'it' ? 'Disattivo' : 'Disabled') : (currentLanguage === 'it' ? 'Inattività' : 'Inactivity'))"></span>
+                    <span class="text-sm font-extrabold" x-text="mins === 0 ? t('controls.session_never') : (mins + ' min')"></span>
+                    <span class="text-[9px] font-normal opacity-80" x-text="mins === 15 ? t('controls.session_default') : (mins === 0 ? t('controls.session_disabled') : t('controls.session_inactivity'))"></span>
                   </button>
                 </template>
               </div>
@@ -3434,9 +3437,9 @@
           <div class="pt-2 border-t border-black/[0.06] dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500">
             <span class="flex items-center space-x-1.5">
               <span class="w-2 h-2 rounded-full" :class="sessionTimeoutMinutes > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
-              <span x-text="sessionTimeoutMinutes > 0 ? (currentLanguage === 'it' ? 'Watchdog inattività attivo su eventi mouse/tastiera/touch' : 'Inactivity watchdog active on mouse/keyboard/touch events') : (currentLanguage === 'it' ? 'Watchdog inattività disattivato' : 'Inactivity watchdog disabled')"></span>
+              <span x-text="sessionTimeoutMinutes > 0 ? t('controls.session_watchdog_on') : t('controls.session_watchdog_off')"></span>
             </span>
-            <span class="font-mono text-[10px] text-slate-400" x-text="'Ultima interazione: ' + new Date(lastUserActivity).toLocaleTimeString()"></span>
+            <span class="font-mono text-[10px] text-slate-400" x-text="t('controls.session_last_activity', { time: new Date(lastUserActivity).toLocaleTimeString() })"></span>
           </div>
         </div>
 
@@ -3531,13 +3534,13 @@
                       <button 
                         @click="openScheduleModal(s)"
                         class="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition cursor-pointer text-xs"
-                        title="Modifica">
+                        :title="t('schedules.edit')">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                       </button>
                       <button 
                         @click="deleteSchedule(s.id)"
                         class="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer text-xs"
-                        title="Elimina">
+                        :title="t('schedules.delete')">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
                     </div>
@@ -3616,7 +3619,7 @@
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-purple-50 dark:hover:bg-purple-950/30'"
                   class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">DEBUG</span>
-                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Dettagliato' : 'Verbose'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="t('logs.lvl_short_debug')"></span>
                 </button>
 
                 <!-- INFO -->
@@ -3629,7 +3632,7 @@
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-sky-50 dark:hover:bg-sky-950/30'"
                   class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">INFO</span>
-                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Normale' : 'Standard'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="t('logs.lvl_short_info')"></span>
                 </button>
 
                 <!-- WARNING -->
@@ -3642,7 +3645,7 @@
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/30'"
                   class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">WARNING</span>
-                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Avvisi' : 'Warnings'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="t('logs.lvl_short_warning')"></span>
                 </button>
 
                 <!-- ERROR -->
@@ -3655,7 +3658,7 @@
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-950/30'"
                   class="py-2.5 px-3 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
                   <span class="text-xs font-extrabold">ERROR</span>
-                  <span class="text-[10px] font-medium opacity-90" x-text="currentLanguage === 'it' ? 'Critico' : 'Critical'"></span>
+                  <span class="text-[10px] font-medium opacity-90" x-text="t('logs.lvl_short_error')"></span>
                 </button>
               </div>
             </div>
@@ -3690,7 +3693,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '7gg' : '7d'">7d</span>
+                  <span class="text-xs font-extrabold" x-text="t('logs.retention_short_7d')"></span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_7d') || '1 settimana'"></span>
                 </button>
 
@@ -3703,7 +3706,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '15gg' : '15d'">15d</span>
+                  <span class="text-xs font-extrabold" x-text="t('logs.retention_short_15d')"></span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_15d') || '15 giorni'"></span>
                 </button>
 
@@ -3716,7 +3719,7 @@
                     ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/25 ring-2 ring-cyan-500/40 border-cyan-600' 
                     : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'"
                   class="py-2 px-2 text-center rounded-xl text-xs font-bold border transition cursor-pointer flex flex-col items-center justify-center space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs">
-                  <span class="text-xs font-extrabold" x-text="currentLanguage === 'it' ? '1m' : '1mo'">1mo</span>
+                  <span class="text-xs font-extrabold" x-text="t('logs.retention_short_30d')"></span>
                   <span class="text-[9px] font-normal opacity-80" x-text="t('logs.retention_30d') || '30 giorni'"></span>
                 </button>
 
@@ -3741,7 +3744,7 @@
                   min="0" 
                   max="3650"
                   x-model.number="customRetentionInput" 
-                  placeholder="Giorni" 
+                  :placeholder="t('logs.retention_days_placeholder')" 
                   class="glass-input w-28 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-center border-slate-300 dark:border-slate-700">
                 <span class="text-xs text-slate-600 dark:text-slate-400 font-medium" x-text="t('logs.retention_days_unit') || 'giorni (0 = illimitato)'"></span>
                 <button 
@@ -4458,7 +4461,7 @@
               :disabled="isCheckingUpdate || isTriggeringUpdate"
               class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent text-xs font-semibold flex items-center space-x-1.5 shadow-sm dark:shadow-none transition disabled:opacity-40 cursor-pointer">
               <svg class="w-3.5 h-3.5" :class="isCheckingUpdate ? 'animate-spin text-amber-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              <span x-text="isCheckingUpdate ? (currentLanguage === 'it' ? 'Verifica...' : 'Checking...') : (currentLanguage === 'it' ? 'Ricontrolla Release' : 'Recheck Releases')"></span>
+              <span x-text="isCheckingUpdate ? t('settings_updates.checking') : t('settings_updates.recheck_btn')"></span>
             </button>
 
             <template x-if="updateInfo && updateInfo.can_auto_install && currentUser && (currentUser.is_admin || currentUser.role === 'admin')">
@@ -4494,8 +4497,8 @@
           <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center space-x-3">
             <span class="text-emerald-500 dark:text-emerald-400 text-2xl">✅</span>
             <div class="space-y-0.5">
-              <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="currentLanguage === 'it' ? 'Dashboard Perfettamente Aggiornata' : 'Dashboard Up to Date'"></span>
-              <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione installata (v' + fullVersion + ') è allineata con l\'ultima release disponibile su Docker Hub e GitHub.' : 'Installed version matches latest public release on Docker Hub.'"></p>
+              <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="t('update_modal.banner_up_to_date_title')"></span>
+              <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.banner_up_to_date_desc', { version: fullVersion })"></p>
             </div>
           </div>
         </template>
@@ -4505,8 +4508,8 @@
             <div class="flex items-center space-x-3">
               <span class="text-2xl">🚀</span>
               <div class="space-y-0.5">
-                <span class="font-bold text-amber-900 dark:text-amber-300 block" x-text="'Nuova Versione Disponibile: v' + (updateInfo.latest_full_version || updateInfo.latest_version)"></span>
-                <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'È disponibile un aggiornamento dell\'immagine Docker. Puoi avviarlo con 1-click se il socket Docker è montato o tramite comando manuale.' : 'A new Docker release is ready.'"></p>
+                <span class="font-bold text-amber-900 dark:text-amber-300 block" x-text="t('update_modal.banner_update_title', { version: updateInfo.latest_full_version || updateInfo.latest_version })"></span>
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.banner_update_desc')"></p>
               </div>
             </div>
           </div>
@@ -4522,7 +4525,7 @@
 
         <!-- Command Fallback -->
         <div class="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800">
-          <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" x-text="t('update_modal.manual_title') || 'Comando Manuale da Terminale:'"></span>
+          <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" x-text="t('update_modal.manual_title')"></span>
           <div class="flex items-center space-x-2">
             <code class="flex-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-800 dark:text-amber-300 px-3 py-2.5 rounded-xl font-mono text-xs select-all overflow-x-auto" x-text="updateInfo.cli_command || 'docker compose pull && docker compose up -d'"></code>
             <button 
@@ -7235,7 +7238,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="scheduleModalMode === 'create' ? (t('schedules.add_btn') || 'Nuova Regola Oraria') : 'Modifica Regola Oraria'"></h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Configura orari e bersaglio della pianificazione</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('schedules.modal_subtitle')"></p>
           </div>
         </div>
         <button @click="showScheduleModal = false" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition cursor-pointer">
@@ -7247,7 +7250,7 @@
       <form @submit.prevent="saveSchedule()" class="space-y-4 text-xs">
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.rule_name') || 'Nome Regola'"></label>
-          <input type="text" x-model="scheduleForm.name" required placeholder="Es. Spegnimento Serale Gaming" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+          <input type="text" x-model="scheduleForm.name" required :placeholder="t('schedules.rule_name_placeholder')" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
         </div>
 
         <!-- Days Selector -->
@@ -7353,7 +7356,7 @@
 
             <!-- Tutti i Nodi: Riavvio -->
             <template x-if="scheduleForm.target_type === 'all_nodes_reboot'">
-              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold">Intera rete mesh eero</div>
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_nodes_reboot_desc')"></div>
             </template>
           </div>
         </div>
@@ -7419,7 +7422,7 @@
           <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
-          <span class="text-[11px] font-medium leading-tight">Attenzione: i dati storici del file log e della tabella SQLite non potranno essere recuperati.</span>
+          <span class="text-[11px] font-medium leading-tight" x-text="t('logs.clear_warning')"></span>
         </div>
       </div>
 
@@ -7544,7 +7547,7 @@
             <input 
               :type="showMqttPassword ? 'text' : 'password'" 
               x-model="mqttModalForm.password" 
-              :placeholder="mqttModalForm.has_password ? (currentLanguage === 'it' ? '•••••••• (invariata)' : '•••••••• (unchanged)') : (t('controls.mqtt_password_placeholder') || 'Password')" 
+              :placeholder="mqttModalForm.has_password ? t('controls.mqtt_password_unchanged') : (t('controls.mqtt_password_placeholder') || 'Password')" 
               autocomplete="new-password"
               class="glass-input w-full px-3 py-2 rounded-xl text-xs font-mono">
           </div>
@@ -7597,9 +7600,7 @@
                 placeholder="homeassistant" 
                 class="glass-input w-full px-3 py-1.5 rounded-lg font-mono text-xs">
             </div>
-            <p class="text-[11px] text-slate-500 leading-relaxed">
-              Crea automaticamente sensori e dispositivi in Home Assistant per stato WAN, velocità download/upload, nodi mesh e client connessi senza alcuna configurazione manuale YAML.
-            </p>
+            <p class="text-[11px] text-slate-500 leading-relaxed" x-text="t('controls.mqtt_discovery_desc')"></p>
           </div>
         </div>
 
@@ -7612,7 +7613,7 @@
             :disabled="mqttTesting || mqttSaving"
             class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300 transition cursor-pointer flex items-center justify-center space-x-1.5 disabled:opacity-50 text-xs">
             <svg x-show="mqttTesting" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            <span x-text="mqttTesting ? 'Testing...' : (t('controls.mqtt_test_btn') || 'Test Connessione')"></span>
+            <span x-text="mqttTesting ? t('controls.mqtt_testing') : t('controls.mqtt_test_btn')"></span>
           </button>
 
           <!-- Right: Cancel & Save Buttons -->
@@ -7622,14 +7623,14 @@
               @click="closeMqttModal()" 
               :disabled="mqttSaving || mqttTesting"
               class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300 transition cursor-pointer disabled:opacity-50 text-xs" 
-              x-text="currentLanguage === 'it' ? 'Annulla' : 'Cancel'">
+              x-text="t('controls.mqtt_cancel')">
             </button>
             <button 
               type="submit" 
               :disabled="mqttSaving || mqttTesting"
               class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition shadow-md shadow-sky-500/20 cursor-pointer flex items-center space-x-2 disabled:opacity-50 text-xs">
               <svg x-show="mqttSaving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-              <span x-text="mqttSaving ? (currentLanguage === 'it' ? 'Salvataggio...' : 'Saving...') : (t('controls.mqtt_save_btn') || 'Salva e Applica')"></span>
+              <span x-text="mqttSaving ? t('controls.mqtt_saving') : (t('controls.mqtt_save_btn') || 'Salva e Applica')"></span>
             </button>
           </div>
         </div>
