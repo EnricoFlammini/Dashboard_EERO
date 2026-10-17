@@ -5294,9 +5294,9 @@ async def run_all_tests():
 
         # 2. Verifica index.html: abbreviazioni durata dinamiche e badge bufferbloat
         index_html_mod11 = Path("app/templates/index.html").read_text(encoding="utf-8")
-        runner.assert_true("currentLanguage === 'it' ? '7gg' : '7d'" in index_html_mod11, "Abbreviazione 7 giorni dinamica (7gg/7d) in index.html")
-        runner.assert_true("currentLanguage === 'it' ? '15gg' : '15d'" in index_html_mod11, "Abbreviazione 15 giorni dinamica (15gg/15d) in index.html")
-        runner.assert_true("currentLanguage === 'it' ? '1m' : '1mo'" in index_html_mod11, "Abbreviazione 1 mese dinamica (1m/1mo) in index.html")
+        runner.assert_true("t('logs.retention_short_7d')" in index_html_mod11, "Abbreviazione 7 giorni dinamica (7gg/7d) in index.html")
+        runner.assert_true("t('logs.retention_short_15d')" in index_html_mod11, "Abbreviazione 15 giorni dinamica (15gg/15d) in index.html")
+        runner.assert_true("t('logs.retention_short_30d')" in index_html_mod11, "Abbreviazione 1 mese dinamica (1m/1mo) in index.html")
         runner.assert_true("getBufferbloatGrade(latestSpeedtest)" in index_html_mod11, "Badge bufferbloat referenzia getBufferbloatGrade in index.html")
 
         # 3. Verifica app.js: getBufferbloatGrade riconosce bufferbloat_grade, ping_under_load e delta
