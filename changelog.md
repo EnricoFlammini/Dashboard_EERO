@@ -6,6 +6,17 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.1] - Unreleased
 
+### 🌐 Bilinguismo Completo Impostazioni & Rimozione FOUT Caricamento (PR #78 - @todddube)
+* **🌐 Traduzione Integrale Sezioni e Modali Impostazioni (IT/EN):**
+  * Risolto il rendering di stringhe hardcoded in lingua italiana quando la lingua selezionata è l'inglese nelle schede Controlli, Utenti, Backup, Esportazione Dati e Aggiornamenti.
+  * Localizzate completamente le modali di sistema: Gateway MQTT & Home Assistant Discovery, Schedulazioni Orarie, Pulizia Log e Aggiornamento Container Docker.
+  * Sostituiti tutti gli operatori ternari inline `currentLanguage === 'it'` con chiavi dedicate in `en.json` e `it.json` e interpolazione nativa dei parametri (`version`, `minutes`, `time`).
+* **⚡ Prevenzione del Flash dei Testi Non Tradotti (FOUT / Loading Flash):**
+  * Introdotta la classe transitoria `body.i18n-pending` (`visibility: hidden`) rimossa istantaneamente non appena il payload delle traduzioni JSON è caricato via `setLanguage()`.
+  * Integrato un fallback CSS automatico a 4 secondi (`animation: i18n-reveal`) che rivela comunque la pagina in caso di timeout della rete o mancato caricamento dei file di lingua.
+* **💯 Parità Perfetta delle Chiavi di Localizzazione:**
+  * Allineati al 100% i file `en.json` e `it.json` con 974 chiavi ciascuno, colmando chiavi orfane o mancanti (`logs.management`, `nav.eero_news_short`).
+
 ### ⚡ Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (Issue #71 - @XprofQ / @todddube)
 * **⚡ Correzione Rilevamento Grado Bufferbloat su Frontend (`getBufferbloatGrade`):**
   * Risolto il bug per cui il badge Bufferbloat nella pagina Speed Test restituiva sistematicamente `"n/a Non Disponibile"`, nonostante il test fosse registrato con successo nel database SQLite e visualizzato correttamente nella Live Console.

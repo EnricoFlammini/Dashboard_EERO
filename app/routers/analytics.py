@@ -326,7 +326,7 @@ async def get_isp_sla_trend(days: int = Query(30, ge=1, le=365)) -> Dict[str, An
 @router.get("/export/{data_type}")
 async def export_network_data(
     data_type: str,
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", pattern="^(csv|json)$"),
     limit: int = Query(5000, ge=1, le=50000)
 ):
     """

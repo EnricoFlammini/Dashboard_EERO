@@ -188,7 +188,7 @@ async def clear_system_logs(
 
 @router.get("/download")
 async def download_system_logs(
-    format: str = Query("log", regex="^(log|json|txt)$", description="Formato file ('log', 'txt' o 'json')"),
+    format: str = Query("log", pattern="^(log|json|txt)$", description="Formato file ('log', 'txt' o 'json')"),
     user: Optional[Dict[str, Any]] = Depends(require_permission("view_logs")),
 ):
     """
