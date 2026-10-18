@@ -232,7 +232,9 @@
     "mark_seen_error": "Could not update devices",
     "joined_relative": "First seen",
     "badge_ula_enriched": "ULA Enriched",
-    "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard"
+    "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard",
+    "clear_search": "Clear search",
+    "generic_device": "Device"
   },
   "device_modal": {
     "reservation_error": "Error while creating the DHCP reservation",
@@ -385,7 +387,11 @@
     "col_rssi_signal": "RSSI Signal Level",
     "col_recommendation": "Optimization Tip",
     "rec_move_closer": "Move device closer or reposition an intermediate eero beacon",
-    "no_weak_devices": "All wireless devices currently enjoy optimal or good signal!"
+    "no_weak_devices": "All wireless devices currently enjoy optimal or good signal!",
+    "signal_range_excellent": "≥ -50 dBm",
+    "signal_range_good": "-51 to -65 dBm",
+    "signal_range_fair": "-66 to -75 dBm",
+    "signal_range_weak": "< -75 dBm"
   },
   "controls": {
     "guest_title": "Smart Guest Wi-Fi & QR Code",
@@ -534,7 +540,8 @@
     "mqtt_user_label": "User:",
     "mqtt_anonymous": "(anonymous)",
     "mqtt_interval_label": "Interval:",
-    "mqtt_never": "Never"
+    "mqtt_never": "Never",
+    "mqtt_username_placeholder": "e.g. mqtt-user"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -610,7 +617,11 @@
     "contrib_jonmacdonald": "SQLite lock contention & concurrency resolution with 60s busy timeout (Issue #62) & switch gateway reconciliation (Issue #26)",
     "contrib_todddube": "Official Synology DSM 7.2+ Container Manager deployment guide & compose template (PR #66) and Bandwidth Hogs filter bar / admin setup localization & category getter fix (PR #67)",
     "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
-    "close": "Close"
+    "close": "Close",
+    "crafted_prefix": "Crafted with ❤️ by",
+    "crafted_middle": "for the",
+    "crafted_suffix": " community.",
+    "support_title": "Support Enrico Flammini on Buy Me a Coffee"
   },
   "update_modal": {
     "title": "Update Available",
@@ -652,7 +663,29 @@
     "guest_updated": "Guest Network Updated",
     "gaming_enabled": "Gaming Mode Enabled",
     "gaming_disabled": "Gaming Mode Disabled",
-    "reboot_triggered": "Restart Triggered"
+    "reboot_triggered": "Restart Triggered",
+    "success_title": "Success",
+    "speedtest_error": "Speed Test Error",
+    "guest_network": "Guest Network",
+    "guest_enabled": "Guest network enabled.",
+    "guest_disabled": "Guest network disabled.",
+    "guest_error": "Guest Network Error",
+    "guest_saved_desc": "Credentials and QR code saved.",
+    "new_password": "New Password",
+    "password_generated": "Secure password generated.",
+    "network_switched": "Active Network Changed",
+    "network_switched_desc": "Successfully connected to network: {network}",
+    "network_switch_error": "Network Switch Error",
+    "operation_failed": "Operation failed",
+    "otp_request_failed": "OTP request failed",
+    "dns_save_error": "Error saving DNS settings",
+    "connection_failed": "Connection failed",
+    "sync_failed": "Synchronization failed.",
+    "mqtt_toggle_error": "Could not change MQTT state",
+    "logs_title": "System Logs",
+    "logs_toggle_error": "Could not update the logging state.",
+    "logs_cleared": "System logs cleared successfully ({count} records removed).",
+    "logs_clear_error": "Error while clearing the logs."
   },
   "health_modal": {
     "title": "Network Health Score & Diagnostics",
@@ -758,7 +791,8 @@
     "export_btn_csv": "Download CSV",
     "export_btn_json": "Download JSON",
     "exporting": "Exporting...",
-    "export_success": "File exported successfully"
+    "export_success": "File exported successfully",
+    "clients_online": "clients online"
   },
   "eero_news": {
     "title": "eeroOS Release Notes & Community Updates",
@@ -797,7 +831,9 @@
     "show_older_releases": "Show older versions ({count} releases)",
     "show_recent_only": "Show recent releases only",
     "installed_on_network": "Installed on your network",
-    "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead."
+    "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead.",
+    "load_error": "Unable to load eeroOS release notes",
+    "connection_error": "Connection error"
   },
   "auth_local": {
     "login_title": "Administration Sign In",
@@ -864,7 +900,11 @@
     "back_to_list": "← Back to List",
     "loading_users": "Loading users...",
     "status_active": "Active",
-    "status_inactive": "Disabled"
+    "status_inactive": "Disabled",
+    "delete_user_title": "Delete User",
+    "role_admin_option": "Administrator (Admin)",
+    "role_operator_option": "Network Operator (Operator)",
+    "role_viewer_option": "Read Only (Viewer)"
   },
   "backup_modal": {
     "title": "Configuration Backup & Restore",
@@ -879,7 +919,8 @@
     "select_file": "Select backup file (.json)",
     "restore_warning": "Warning: Restoring will overwrite existing configurations with the data from the backup file.",
     "upload_btn": "Start Restore",
-    "close": "Close"
+    "close": "Close",
+    "restore_in_progress": "Restoring in progress..."
   },
   "schedules": {
     "title": "Parental Scheduling & Time Windows",
@@ -923,7 +964,16 @@
     "edit": "Edit",
     "modal_subtitle": "Configure the schedule's times and target",
     "rule_name_placeholder": "e.g. Evening Gaming Shutdown",
-    "all_nodes_reboot_desc": "Entire eero mesh network"
+    "all_nodes_reboot_desc": "Entire eero mesh network",
+    "name_required": "Enter a name for the rule",
+    "target_required": "Select a valid target for the rule",
+    "saved": "Time rule saved",
+    "save_error": "Unable to save the rule",
+    "delete_confirm": "Delete this schedule rule?",
+    "deleted": "Rule deleted",
+    "evaluated_title": "Evaluation Completed",
+    "evaluated_desc": "Active rules: {evaluated}, actions taken: {actions}",
+    "profile_devices_count": "{count} dev."
   },
   "resilience": {
     "stale_data_title": "Telemetry Data is Stale",
@@ -1040,6 +1090,18 @@
     "retention_days_placeholder": "Days",
     "clear_warning": "Warning: historical data in the log file and SQLite table cannot be recovered.",
     "management": "Log Management & Diagnostics"
+  },
+  "permissions": {
+    "view_topology": "Mesh Topology & WAN View",
+    "view_clients": "Device Fleet View",
+    "view_analytics": "Analytics & SLA View",
+    "view_logs": "Logs & Audit View",
+    "action_reboot_nodes": "Reboot Mesh Nodes",
+    "action_pause_devices": "Pause Devices Wi-Fi",
+    "action_manage_rules": "Manage DHCP Rules & Port Forwarding",
+    "action_sync_dns": "Sync External DNS Hosts",
+    "action_manage_users": "Administer Users & RBAC",
+    "action_system_backup": "Backup & Disaster Recovery"
   }
 }
 

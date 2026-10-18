@@ -14,8 +14,15 @@ document.addEventListener('alpine:init', () => {
     currentTheme: localStorage.getItem('eero_theme') || 'system',
 
     // i18n Multi-Language State
-    currentLanguage: localStorage.getItem('eero_lang') || 'en',
+    supportedLanguages: ['en', 'it'],
+    currentLanguage: (() => {
+      const saved = localStorage.getItem('eero_lang');
+      if (saved === 'en' || saved === 'it') return saved;
+      const browser = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language.toLowerCase() : '';
+      return browser.startsWith('it') ? 'it' : 'en';
+    })(),
     translations: {},
+    fallbackTranslations: {},
     translationsLoaded: false,
 
     // Navigation & Sidebar State
@@ -588,6 +595,7 @@ document.addEventListener('alpine:init', () => {
     showBackupModal: false,
     backupLoading: false,
     backupRestoreStatus: '',
+    backupRestoreIsError: false,
     dbStats: null,
     dbStatsLoading: false,
     dbCompacting: false,
@@ -757,18 +765,30 @@ document.addEventListener('alpine:init', () => {
       await this.setTab(this.currentTab, false);
     },
 
-    async setLanguage(lang) {
-      this.currentLanguage = lang || 'en';
-      localStorage.setItem('eero_lang', this.currentLanguage);
+    async fetchLocale(lang) {
+      const cfg = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
+      const ver = (cfg.version && !cfg.version.startsWith('{')) ? `${cfg.version}.b${cfg.buildNumber || ''}` : this.appVersion;
       try {
-        const res = await fetch(`/static/locales/${this.currentLanguage}.json`);
-        if (res.ok) {
-          this.translations = await res.json();
-          this.translationsLoaded = true;
-        }
+        const res = await fetch(`/static/locales/${lang}.json?v=${encodeURIComponent(ver)}`);
+        if (res.ok) return await res.json();
       } catch (e) {
-        console.warn("Could not load translations for", this.currentLanguage, e);
+        console.warn("Could not load translations for", lang, e);
       }
+      return null;
+    },
+
+    async setLanguage(lang) {
+      this.currentLanguage = this.supportedLanguages.includes(lang) ? lang : 'en';
+      localStorage.setItem('eero_lang', this.currentLanguage);
+      document.documentElement.lang = this.currentLanguage;
+      // English is the reference locale: keep it loaded so any key missing from
+      // the active locale still renders in English instead of blank.
+      if (!this.fallbackTranslations || !Object.keys(this.fallbackTranslations).length) {
+        this.fallbackTranslations = (await this.fetchLocale('en')) || {};
+      }
+      const active = this.currentLanguage === 'en' ? this.fallbackTranslations : await this.fetchLocale(this.currentLanguage);
+      this.translations = active || this.fallbackTranslations;
+      this.translationsLoaded = Object.keys(this.translations).length > 0;
       document.body.classList.remove('i18n-pending');
       try {
         await fetch('/api/system/language', {
@@ -976,19 +996,23 @@ document.addEventListener('alpine:init', () => {
       return unique.length > 0 ? unique.join(', ') : fallbackIp;
     },
 
-    t(path, params = {}) {
-      if (!path) return '';
-      const keys = path.split('.');
-      let val = this.translations;
+    lookupTranslation(dict, keys) {
+      let val = dict;
       for (const k of keys) {
         if (val && typeof val === 'object' && k in val) {
           val = val[k];
         } else {
-          val = null;
-          break;
+          return null;
         }
       }
-      if (typeof val !== 'string') {
+      return typeof val === 'string' ? val : null;
+    },
+
+    t(path, params = {}) {
+      if (!path) return '';
+      const keys = path.split('.');
+      const val = this.lookupTranslation(this.translations, keys) ?? this.lookupTranslation(this.fallbackTranslations, keys);
+      if (val === null) {
         return '';
       }
       let res = val;
@@ -1194,7 +1218,7 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ login: this.loginIdentifier })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Richiesta OTP fallita');
+        if (!res.ok) throw new Error(data.detail || this.t('toasts.otp_request_failed'));
         if (data.user_token) {
           this.tempUserToken = data.user_token;
         }
@@ -1591,20 +1615,19 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    // BCP 47 locale for dates and numbers: the browser's own regional variant
+    // when it matches the dashboard language (e.g. en-US vs en-GB), otherwise
+    // the dashboard language's default region.
+    dateLocale() {
+      const nav = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : '';
+      if (nav.toLowerCase().startsWith(this.currentLanguage)) return nav;
+      return this.currentLanguage === 'it' ? 'it-IT' : 'en-US';
+    },
+
     formatLocalTime(ts) {
       if (!ts) return '';
       const d = new Date(ts.replace(' ', 'T'));
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    },
-
-    formatLocalDateTime(ts) {
-      if (!ts) return '';
-      let str = String(ts).trim();
-      if (!str.endsWith('Z') && !str.includes('+')) {
-        str = str.replace(' ', 'T') + 'Z';
-      }
-      const dt = new Date(str);
-      return dt.toLocaleDateString('it-IT', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+      return d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
     },
 
     formatFirstSeenRelative(ts) {
@@ -1631,7 +1654,7 @@ document.addEventListener('alpine:init', () => {
         const diffWeeks = Math.floor(diffDays / 7);
         return isIt ? `${diffWeeks} sett. fa` : `${diffWeeks}w ago`;
       }
-      return d.toLocaleDateString(isIt ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' });
+      return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' });
     },
 
     formatFirstSeenFull(ts) {
@@ -1643,7 +1666,7 @@ document.addEventListener('alpine:init', () => {
       const d = new Date(str);
       if (isNaN(d.getTime())) return String(ts);
       const isIt = this.currentLanguage === 'it';
-      return d.toLocaleString(isIt ? 'it-IT' : 'en-US', {
+      return d.toLocaleString(this.dateLocale(), {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -2694,9 +2717,9 @@ document.addEventListener('alpine:init', () => {
         const d = new Date(clean);
         if (isNaN(d.getTime())) return isoStr;
         if (includeDate) {
-          return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
         }
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         return isoStr;
       }
@@ -2800,12 +2823,12 @@ document.addEventListener('alpine:init', () => {
         
         if (json.status === 'success') {
           this.lastSpeedtestResult = json.result;
-          this.showToast("Speed Test Completato", `↓ ${json.result.download_mbps} Mbps | ↑ ${json.result.upload_mbps} Mbps`, "success");
+          this.showToast(this.t('toasts.speedtest_completed'), `↓ ${json.result.download_mbps} Mbps | ↑ ${json.result.upload_mbps} Mbps`, "success");
           await this.loadSpeedtestData();
         }
       } catch (err) {
         clearInterval(interval);
-        this.showToast("Errore Speed Test", err.message, "error");
+        this.showToast(this.t('toasts.speedtest_error'), err.message, "error");
       } finally {
         setTimeout(() => {
           this.speedtestRunning = false;
@@ -2849,9 +2872,9 @@ document.addEventListener('alpine:init', () => {
         this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
         this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
         this.updateActiveQrCode();
-        this.showToast("Rete Ospiti", `Rete Ospiti ${targetState ? 'Attivata' : 'Disattivata'}.`, "info");
+        this.showToast(this.t('toasts.guest_network'), this.t(targetState ? 'toasts.guest_enabled' : 'toasts.guest_disabled'), "info");
       } catch (err) {
-        this.showToast("Errore Rete Ospiti", err.message, "error");
+        this.showToast(this.t('toasts.guest_error'), err.message, "error");
       }
     },
 
@@ -2860,7 +2883,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/network/guest/generate-password', { method: 'POST' });
         const json = await res.json();
         this.guestNetwork.password = json.password;
-        this.showToast("Nuova Password", "Password sicura generata.", "info");
+        this.showToast(this.t('toasts.new_password'), this.t('toasts.password_generated'), "info");
       } catch (err) {
         console.error(err);
       }
@@ -2877,9 +2900,9 @@ document.addEventListener('alpine:init', () => {
         this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
         this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
         this.updateActiveQrCode();
-        this.showToast("Rete Ospiti Aggiornata", "Credenziali e QR Code salvati.", "success");
+        this.showToast(this.t('toasts.guest_updated'), this.t('toasts.guest_saved_desc'), "success");
       } catch (err) {
-        this.showToast("Errore", err.message, "error");
+        this.showToast(this.t('toasts.error'), err.message, "error");
       }
     },
 
@@ -3154,7 +3177,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(title, msg, "success");
           await this.fetchDnsSettings();
         } else {
-          throw new Error(json.detail || json.message || "Errore salvataggio DNS");
+          throw new Error(json.detail || json.message || this.t('toasts.dns_save_error'));
         }
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Salvataggio" : "Save Error";
@@ -3192,7 +3215,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(title, `${inst.name}: ${json.message}`, "success");
         } else {
           const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          const failMsg = (json.tls_error && this.t('controls.dns_tls_error')) || json.message || 'Connessione non riuscita';
+          const failMsg = (json.tls_error && this.t('controls.dns_tls_error')) || json.message || this.t('toasts.connection_failed');
           this.showToast(title, `${inst.name}: ${failMsg}`, "error");
         }
       } catch (err) {
@@ -3252,7 +3275,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchDnsSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          this.showToast(title, `${inst.name}: ${json.detail || json.message || 'Sincronizzazione fallita'}`, "error");
+          this.showToast(title, `${inst.name}: ${json.detail || json.message || this.t('toasts.sync_failed')}`, "error");
         }
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
@@ -3282,7 +3305,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchDnsSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          this.showToast(title, json.detail || json.message || "Sincronizzazione fallita.", "error");
+          this.showToast(title, json.detail || json.message || this.t('toasts.sync_failed'), "error");
         }
       } catch (err) {
         const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
@@ -3576,7 +3599,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchMqttSettings();
         } else {
           const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
-          this.showToast(title, json.detail || "Errore switch stato", "error");
+          this.showToast(title, json.detail || this.t('toasts.mqtt_toggle_error'), "error");
         }
       } catch (err) {
         this.showToast(this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error", err.message, "error");
@@ -3783,11 +3806,11 @@ document.addEventListener('alpine:init', () => {
             this.eeroNewsExpandedVersions[data.releases[0].version] = true;
           }
         } else {
-          this.eeroNewsError = "Impossibile caricare le novità eeroOS";
+          this.eeroNewsError = this.t('eero_news.load_error');
         }
       } catch (err) {
         console.error("fetchEeroNews error:", err);
-        this.eeroNewsError = err.message || "Errore di connessione";
+        this.eeroNewsError = err.message || this.t('eero_news.connection_error');
       } finally {
         this.eeroNewsLoading = false;
       }
@@ -4181,13 +4204,13 @@ document.addEventListener('alpine:init', () => {
           }
           await this.fetchAvailableNetworks();
           await this.fetchTopHogs(this.topHogsPeriod);
-          this.showToast('Rete Attiva Cambiata', `Connesso con successo alla rete: ${networkId}`, 'success');
+          this.showToast(this.t('toasts.network_switched'), this.t('toasts.network_switched_desc', { network: networkId }), 'success');
         } else {
-          this.showToast('Errore Cambio Rete', data.detail || data.message || 'Operazione non riuscita', 'error');
+          this.showToast(this.t('toasts.network_switch_error'), data.detail || data.message || this.t('toasts.operation_failed'), 'error');
         }
       } catch (err) {
         console.error('Switch network error:', err);
-        this.showToast('Errore', String(err), 'error');
+        this.showToast(this.t('toasts.error'), String(err), 'error');
       } finally {
         this.isSwitchingNetwork = false;
       }
@@ -4269,8 +4292,8 @@ document.addEventListener('alpine:init', () => {
       const labels = usageData.data_points.map(p => {
         const d = new Date(p.timestamp);
         return usageData.period === 'daily' 
-          ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : d.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+          ? d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' })
+          : d.toLocaleDateString(this.dateLocale(), { day: '2-digit', month: '2-digit' });
       });
 
       const downRates = usageData.data_points.map(p => Number(p.download_mbps !== undefined ? p.download_mbps : (p.download_rate_mbps || 0)));
@@ -4818,7 +4841,7 @@ document.addEventListener('alpine:init', () => {
 
         const labels = points.map(p => {
           const d = new Date(p.timestamp);
-          return isNaN(d.getTime()) ? p.timestamp : d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          return isNaN(d.getTime()) ? p.timestamp : d.toLocaleDateString(this.dateLocale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         });
         const dlData = points.map(p => p.download_mbps);
         const ulData = points.map(p => p.upload_mbps);
@@ -5362,6 +5385,26 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Permission catalog for the RBAC grids: the backend catalog when loaded,
+    // otherwise the known keys so the grid still renders.
+    permissionsForDisplay() {
+      if (this.permissionsCatalog && this.permissionsCatalog.length) return this.permissionsCatalog;
+      return Object.keys(this.lookupTranslationNode('permissions') || {}).map(key => ({ key }));
+    },
+
+    permissionLabel(perm) {
+      if (!perm) return '';
+      return this.t(`permissions.${perm.key}`)
+        || (this.currentLanguage === 'en' && perm.label_en)
+        || perm.label
+        || perm.key;
+    },
+
+    lookupTranslationNode(key) {
+      const node = (this.translations && this.translations[key]) || (this.fallbackTranslations && this.fallbackTranslations[key]);
+      return (node && typeof node === 'object') ? node : null;
+    },
+
     formatUserPermissionsCount(u) {
       if (!u) return '';
       const total = (this.permissionsCatalog && this.permissionsCatalog.length) ? this.permissionsCatalog.length : 10;
@@ -5497,6 +5540,7 @@ document.addEventListener('alpine:init', () => {
     openBackupModal() {
       this.showBackupModal = true;
       this.backupRestoreStatus = '';
+      this.backupRestoreIsError = false;
     },
 
     async downloadBackup() {
@@ -5528,7 +5572,8 @@ document.addEventListener('alpine:init', () => {
       const file = event.target.files?.[0];
       if (!file) return;
       this.backupLoading = true;
-      this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Ripristino in corso...' : 'Restoring in progress...';
+      this.backupRestoreIsError = false;
+      this.backupRestoreStatus = this.t('backup_modal.restore_in_progress');
       try {
         const text = await file.text();
         const json = JSON.parse(text);
@@ -5551,6 +5596,7 @@ document.addEventListener('alpine:init', () => {
             window.location.reload();
           }, 1200);
         } else {
+          this.backupRestoreIsError = true;
           this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore' : 'Error'}: ${data.detail || (this.currentLanguage === 'it' ? 'Impossibile ripristinare il file' : 'Unable to restore file')}`;
           this.showToast(
             this.currentLanguage === 'it' ? 'Errore Ripristino' : 'Restore Error',
@@ -5559,6 +5605,7 @@ document.addEventListener('alpine:init', () => {
           );
         }
       } catch (e) {
+        this.backupRestoreIsError = true;
         this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore di parsing' : 'Parsing error'}: ${e.message}`;
         this.showToast(
           this.currentLanguage === 'it' ? 'Errore File' : 'File Error',
@@ -5796,13 +5843,13 @@ document.addEventListener('alpine:init', () => {
 
     async saveSchedule() {
       if (!this.scheduleForm.name) {
-        this.showToast('Errore', 'Inserisci un nome per la regola', 'warning');
+        this.showToast(this.t('toasts.error'), this.t('schedules.name_required'), 'warning');
         return;
       }
       const isSpecialAll = ['all_profiles', 'all_nodes_led', 'all_nodes_reboot'].includes(this.scheduleForm.target_type);
       const tid = this.scheduleForm.target_id || (isSpecialAll ? 'all' : '');
       if (!tid && !isSpecialAll) {
-        this.showToast('Errore', 'Seleziona un destinatario valido per la regola', 'warning');
+        this.showToast(this.t('toasts.error'), this.t('schedules.target_required'), 'warning');
         return;
       }
       if (this.isRebootSchedule()) {
@@ -5835,12 +5882,12 @@ document.addEventListener('alpine:init', () => {
           });
         }
         if (res.ok) {
-          this.showToast('Successo', 'Regola oraria salvata', 'success');
+          this.showToast(this.t('toasts.success_title'), this.t('schedules.saved'), 'success');
           this.showScheduleModal = false;
           await this.fetchSchedules();
         } else {
           const err = await res.json();
-          this.showToast('Errore', err.detail || 'Impossibile salvare la regola', 'error');
+          this.showToast(this.t('toasts.error'), err.detail || this.t('schedules.save_error'), 'error');
         }
       } catch (e) {
         this.showToast('Errore', String(e), 'error');
@@ -5861,13 +5908,13 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteSchedule(id) {
-      if (!confirm('Vuoi eliminare questa regola di pianificazione?')) return;
+      if (!confirm(this.t('schedules.delete_confirm'))) return;
       try {
         const res = await fetch(`/api/schedules/${encodeURIComponent(id)}`, {
           method: 'DELETE'
         });
         if (res.ok) {
-          this.showToast('Successo', 'Regola eliminata', 'info');
+          this.showToast(this.t('toasts.success_title'), this.t('schedules.deleted'), 'info');
           await this.fetchSchedules();
         }
       } catch (e) {
@@ -5881,8 +5928,8 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.showToast(
-            'Valutazione Completata',
-            `Regole attive: ${data.evaluated || 0}, azioni eseguite: ${data.actions_taken || 0}`,
+            this.t('schedules.evaluated_title'),
+            this.t('schedules.evaluated_desc', { evaluated: data.evaluated || 0, actions: data.actions_taken || 0 }),
             'success'
           );
         }
@@ -6115,10 +6162,10 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.enabled = data.enabled;
-          this.showToast(this.t('logs.saved_success') || 'Configurazione log aggiornata.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         } else {
           this.logConfig.enabled = !this.logConfig.enabled;
-          this.showToast("Errore aggiornamento stato log.", 'error');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_toggle_error'), 'error');
         }
       } catch (e) {
         this.logConfig.enabled = !this.logConfig.enabled;
@@ -6139,7 +6186,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.level = data.level;
-          this.showToast(this.t('logs.saved_success') || 'Livello log aggiornato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
           await this.fetchSystemLogs();
         }
       } catch (e) {
@@ -6166,7 +6213,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.retention_days = data.retention_days;
-          this.showToast(this.t('logs.saved_success') || 'Periodo di retention aggiornato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         }
       } catch (e) {
         console.error("Failed to set log retention:", e);
@@ -6187,7 +6234,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.retention_days = data.retention_days;
-          this.showToast(this.t('logs.saved_success') || 'Periodo di retention personalizzato applicato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         }
       } catch (e) {
         console.error("Failed to apply custom retention:", e);
@@ -6215,11 +6262,11 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.showClearLogsModal = false;
-          this.showToast(data.message || 'Log di sistema cancellati con successo.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_cleared', { count: data.deleted_records || 0 }), 'success');
           await this.fetchLogConfig();
           await this.fetchSystemLogs();
         } else {
-          this.showToast("Errore durante la cancellazione dei log.", 'error');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_clear_error'), 'error');
         }
       } catch (e) {
         console.error("Failed to clear system logs:", e);

@@ -232,7 +232,9 @@
     "mark_seen_error": "Impossibile aggiornare i dispositivi",
     "joined_relative": "Primo accesso",
     "badge_ula_enriched": "ULA Enriched",
-    "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard"
+    "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard",
+    "clear_search": "Cancella ricerca",
+    "generic_device": "Dispositivo"
   },
   "device_modal": {
     "reservation_error": "Errore durante la prenotazione DHCP",
@@ -385,7 +387,11 @@
     "col_rssi_signal": "Livello Segnale RSSI",
     "col_recommendation": "Suggerimento Ottimizzazione",
     "rec_move_closer": "Avvicina il dispositivo al nodo o sposta un beacon eero intermedio",
-    "no_weak_devices": "Tutti i dispositivi wireless godono di un segnale ottimale o buono!"
+    "no_weak_devices": "Tutti i dispositivi wireless godono di un segnale ottimale o buono!",
+    "signal_range_excellent": "≥ -50 dBm",
+    "signal_range_good": "da -51 a -65 dBm",
+    "signal_range_fair": "da -66 a -75 dBm",
+    "signal_range_weak": "< -75 dBm"
   },
   "controls": {
     "guest_title": "Smart Guest Wi-Fi & QR Code",
@@ -534,7 +540,8 @@
     "mqtt_user_label": "Utente:",
     "mqtt_anonymous": "(anonimo)",
     "mqtt_interval_label": "Intervallo:",
-    "mqtt_never": "Mai"
+    "mqtt_never": "Mai",
+    "mqtt_username_placeholder": "es. mqtt-user"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",
@@ -583,18 +590,18 @@
   "about_modal": {
     "title": "About & Crediti",
     "subtitle": "Informazioni sul progetto",
-    "crafted_by": "Crafted with ❤️ by Enrico Flammini for the homelab & self-hosted community.",
+    "crafted_by": "Realizzato con ❤️ da Enrico Flammini per la community homelab & self-hosted.",
     "links_title": "Link Utili & Open Source",
-    "source_code": "Source Code: GitHub Repository",
+    "source_code": "Codice Sorgente: Repository GitHub",
     "source_code_desc": "Consulta il codice sorgente, proponi PR o apri issues",
-    "license": "License: MIT License",
-    "license_desc": "Open Source & 100% Free to use",
-    "deployment": "Deployment: Docker Container",
-    "deployment_desc": "Docker Hub Multi-Arch Container (amd64/arm64)",
-    "fun_notes_title": "Fun Notes",
-    "coffee_note": "Powered by coffee, late-night packet sniffing, and private eero APIs.",
+    "license": "Licenza: MIT",
+    "license_desc": "Open Source e gratuito al 100%",
+    "deployment": "Deployment: Container Docker",
+    "deployment_desc": "Container Docker Hub multi-architettura (amd64/arm64)",
+    "fun_notes_title": "Curiosità",
+    "coffee_note": "Alimentato da caffè, sniffing di pacchetti a notte fonda e API private eero.",
     "buy_me_a_coffee": "Offrimi un caffè (Buy me a coffee)",
-    "telemetry_note": "Zero Cloud Telemetry: Your data lives strictly in your local volume.",
+    "telemetry_note": "Zero telemetria cloud: i tuoi dati restano esclusivamente nel tuo volume locale.",
     "credits_title": "Ringraziamenti Speciali & Community",
     "credits_badge": "Hall of Fame",
     "credits_desc": "Un ringraziamento sincero a tutti gli utenti che con issue, test e proposte hanno reso possibile l'evoluzione della dashboard:",
@@ -610,7 +617,11 @@
     "contrib_jonmacdonald": "Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (Issue #62) & riconciliazione switch gateway (Issue #26)",
     "contrib_todddube": "Guida ufficiale e template Docker Compose per Synology DSM 7.2+ Container Manager (PR #66) e internazionalizzazione (i18n) barra filtri Bandwidth Hogs e setup admin (PR #67)",
     "contrib_bug_hunters_desc": "Grazie a @BaRaD5 (cache query DNS), @phutmacher (elezione primary gateway), @txrangersxx (network ID resolver), @nextlevel2023 (feedback login Amazon) e u/djbills (Docker tag isolation).",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "crafted_prefix": "Realizzato con ❤️ da",
+    "crafted_middle": "per la community",
+    "crafted_suffix": ".",
+    "support_title": "Sostieni Enrico Flammini su Buy Me a Coffee"
   },
   "update_modal": {
     "title": "Aggiornamento Disponibile",
@@ -652,7 +663,29 @@
     "guest_updated": "Rete Ospiti Aggiornata",
     "gaming_enabled": "Gaming Mode Attivata",
     "gaming_disabled": "Gaming Mode Disattivata",
-    "reboot_triggered": "Riavvio Avviato"
+    "reboot_triggered": "Riavvio Avviato",
+    "success_title": "Successo",
+    "speedtest_error": "Errore Speed Test",
+    "guest_network": "Rete Ospiti",
+    "guest_enabled": "Rete Ospiti attivata.",
+    "guest_disabled": "Rete Ospiti disattivata.",
+    "guest_error": "Errore Rete Ospiti",
+    "guest_saved_desc": "Credenziali e QR Code salvati.",
+    "new_password": "Nuova Password",
+    "password_generated": "Password sicura generata.",
+    "network_switched": "Rete Attiva Cambiata",
+    "network_switched_desc": "Connesso con successo alla rete: {network}",
+    "network_switch_error": "Errore Cambio Rete",
+    "operation_failed": "Operazione non riuscita",
+    "otp_request_failed": "Richiesta OTP fallita",
+    "dns_save_error": "Errore salvataggio DNS",
+    "connection_failed": "Connessione non riuscita",
+    "sync_failed": "Sincronizzazione fallita.",
+    "mqtt_toggle_error": "Errore cambio stato MQTT",
+    "logs_title": "Log di Sistema",
+    "logs_toggle_error": "Errore aggiornamento stato log.",
+    "logs_cleared": "Log di sistema cancellati con successo ({count} record rimossi).",
+    "logs_clear_error": "Errore durante la cancellazione dei log."
   },
   "health_modal": {
     "title": "Network Health Score & Diagnostica",
@@ -686,7 +719,7 @@
     "ai_diagnostics_badge": "Diagnostica Intelligente AI",
     "ai_analysis_title": "Analisi Descrittiva Dinamica",
     "action_checklist_title": "Piano di Risoluzione Guidato (Actionable Checklist)",
-    "roaming_advisor_title": "Roaming Advisor (Sticky Clients)",
+    "roaming_advisor_title": "Consulente Roaming (Client \"Sticky\")",
     "roaming_advisor_subtitle": "Dispositivi mobili agganciati a nodi distanti con segnale sub-ottimale",
     "iot_anomalies_title": "Anomalie Traffico Notturno IoT (01:00 - 06:00)",
     "iot_anomalies_subtitle": "Picchi anomali di download/upload rilevati su apparati domotici e telecamere",
@@ -697,7 +730,7 @@
     "force_roaming_tip": "Consiglio: Per forzare il roaming su un nodo più vicino, disattiva e riattiva il Wi-Fi sul dispositivo."
   },
   "footer": {
-    "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
+    "text": "eero Custom Dashboard & Management Suite • Self-Hosted e containerizzata su Docker • Zero telemetria dei dati",
     "changelog": "Changelog"
   },
   "top_hogs": {
@@ -758,7 +791,8 @@
     "export_btn_csv": "Scarica CSV",
     "export_btn_json": "Scarica JSON",
     "exporting": "Esportazione in corso...",
-    "export_success": "File esportato con successo"
+    "export_success": "File esportato con successo",
+    "clients_online": "client online"
   },
   "eero_news": {
     "title": "Novità & Note di Rilascio eeroOS",
@@ -797,7 +831,9 @@
     "show_older_releases": "Mostra versioni precedenti ({count} release)",
     "show_recent_only": "Mostra solo le ultime novità",
     "installed_on_network": "Installata sulla tua rete",
-    "source_disclaimer": "Fonte ufficiale: eero Customer Support (Zendesk Help Center API). I dati sono sincronizzati periodicamente in background con impatto nullo sulle prestazioni."
+    "source_disclaimer": "Fonte ufficiale: eero Customer Support (Zendesk Help Center API). I dati sono sincronizzati periodicamente in background con impatto nullo sulle prestazioni.",
+    "load_error": "Impossibile caricare le novità eeroOS",
+    "connection_error": "Errore di connessione"
   },
   "auth_local": {
     "login_title": "Accesso Amministrazione",
@@ -864,7 +900,11 @@
     "back_to_list": "← Torna alla Lista",
     "loading_users": "Caricamento utenti...",
     "status_active": "Attivo",
-    "status_inactive": "Disattivato"
+    "status_inactive": "Disattivato",
+    "delete_user_title": "Elimina Utente",
+    "role_admin_option": "Amministratore (Admin)",
+    "role_operator_option": "Operatore di Rete (Operator)",
+    "role_viewer_option": "Sola Lettura (Viewer)"
   },
   "backup_modal": {
     "title": "Backup & Ripristino Configurazione",
@@ -879,7 +919,8 @@
     "select_file": "Seleziona file di backup (.json)",
     "restore_warning": "Attenzione: il ripristino sovrascriverà le impostazioni correnti con quelle presenti nel file di backup.",
     "upload_btn": "Avvia Ripristino",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "restore_in_progress": "Ripristino in corso..."
   },
   "schedules": {
     "title": "Parental Scheduling & Regole Orarie",
@@ -923,7 +964,16 @@
     "edit": "Modifica",
     "modal_subtitle": "Configura orari e bersaglio della pianificazione",
     "rule_name_placeholder": "Es. Spegnimento Serale Gaming",
-    "all_nodes_reboot_desc": "Intera rete mesh eero"
+    "all_nodes_reboot_desc": "Intera rete mesh eero",
+    "name_required": "Inserisci un nome per la regola",
+    "target_required": "Seleziona un destinatario valido per la regola",
+    "saved": "Regola oraria salvata",
+    "save_error": "Impossibile salvare la regola",
+    "delete_confirm": "Vuoi eliminare questa regola di pianificazione?",
+    "deleted": "Regola eliminata",
+    "evaluated_title": "Valutazione Completata",
+    "evaluated_desc": "Regole attive: {evaluated}, azioni eseguite: {actions}",
+    "profile_devices_count": "{count} disp."
   },
   "resilience": {
     "stale_data_title": "Dati Telemetrici Non Aggiornati",
@@ -1018,8 +1068,8 @@
     "download_log": "Scarica formato .log",
     "download_json": "Scarica formato .json",
     "refresh_btn": "Aggiorna",
-    "auto_refresh": "Auto-refresh (10s)",
-    "viewer_title": "Live Log Viewer Console",
+    "auto_refresh": "Aggiornamento automatico (10s)",
+    "viewer_title": "Console Log in Tempo Reale",
     "search_placeholder": "Cerca nel messaggio o modulo...",
     "filter_all": "Tutti",
     "total_records": "Eventi Registrati",
@@ -1040,6 +1090,18 @@
     "retention_days_placeholder": "Giorni",
     "clear_warning": "Attenzione: i dati storici del file log e della tabella SQLite non potranno essere recuperati.",
     "management": "Gestione Log & Diagnostica"
+  },
+  "permissions": {
+    "view_topology": "Visualizzazione Topologia Mesh & WAN",
+    "view_clients": "Visualizzazione Flotta Dispositivi",
+    "view_analytics": "Visualizzazione Grafici & SLA",
+    "view_logs": "Visualizzazione Log & Audit",
+    "action_reboot_nodes": "Riavvio Nodi Mesh eero",
+    "action_pause_devices": "Sospensione / Pausa Wi-Fi Dispositivi",
+    "action_manage_rules": "Gestione Regole & Port Forwarding",
+    "action_sync_dns": "Sincronizzazione Host DNS Esterni",
+    "action_manage_users": "Amministrazione Utenti & RBAC",
+    "action_system_backup": "Esportazione & Ripristino Backup"
   }
 }
 
