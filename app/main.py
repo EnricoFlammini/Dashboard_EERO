@@ -43,9 +43,15 @@ async def lifespan(app: FastAPI):
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
 
-    # 1.0 System/alert language for messages produced outside of HTTP requests
+    # 1.0 System/alert language for messages produced outside of HTTP requests.
+    # DASHBOARD_LANG is the default; a language saved from the UI takes precedence.
     from app.services.notifications import notification_service
+    saved_lang = await db_service.get_setting("system_language", None)
     i18n.set_system_language(await notification_service.get_language())
+    logger.info(
+        f"Language: {i18n.get_system_language()} "
+        f"(DASHBOARD_LANG={settings.dashboard_lang}, saved setting={saved_lang or 'none'})"
+    )
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
     from app.services.log_service import log_service
@@ -230,6 +236,7 @@ async def index_page(request: Request):
             "app_version": settings.app_version,
             "build_number": settings.build_number,
             "full_version": settings.full_version,
+            "default_language": i18n.get_system_language(),
             # Stato iniziale locale (nessuna chiamata cloud): evita il flash del modale di login al refresh
             "initial_authenticated": eero_client.is_authenticated,
         }

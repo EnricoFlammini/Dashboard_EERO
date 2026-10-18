@@ -23,6 +23,7 @@ services:
       # - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - TZ=${TZ:-Europe/Rome}
+      - DASHBOARD_LANG=${DASHBOARD_LANG:-en}
       - DATA_DIR=/app/data
       - EERO_USER_TOKEN=${EERO_USER_TOKEN:-}
       - EERO_NETWORK_ID=${EERO_NETWORK_ID:-}

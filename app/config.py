@@ -1,6 +1,16 @@
 import os
 from pathlib import Path
 
+def _normalize_language(value: object) -> str:
+    """Maps DASHBOARD_LANG values such as 'IT', 'it-IT' or 'it_IT' to 'en'/'it'; anything else is English."""
+    code = str(value or "").strip().lower().replace("_", "-").split("-", 1)[0]
+    return code if code in ("en", "it") else "en"
+
+
+def _default_language() -> str:
+    return _normalize_language(os.getenv("DASHBOARD_LANG", "en"))
+
+
 def _get_default_build_number() -> str:
     env_b = os.getenv("BUILD_NUMBER")
     if env_b and env_b.strip():
@@ -17,6 +27,7 @@ def _get_default_build_number() -> str:
 
 
 try:
+    from pydantic import field_validator
     from pydantic_settings import BaseSettings, SettingsConfigDict
     
     class Settings(BaseSettings):
@@ -48,7 +59,7 @@ try:
         telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
         telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
         webhook_url: str = os.getenv("WEBHOOK_URL", "")
-        dashboard_lang: str = os.getenv("DASHBOARD_LANG", "en")
+        dashboard_lang: str = _default_language()
         daily_digest_hour: int = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
         tz: str = os.getenv("TZ", "")
 
@@ -88,6 +99,11 @@ try:
         pushover_user_key: str = os.getenv("PUSHOVER_USER_KEY", "")
         pushover_api_token: str = os.getenv("PUSHOVER_API_TOKEN", "")
         pushover_alerts_enabled: bool = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+
+        @field_validator("dashboard_lang", mode="before")
+        @classmethod
+        def _validate_dashboard_lang(cls, value: object) -> str:
+            return _normalize_language(value)
 
         model_config = SettingsConfigDict(
             env_file=".env",
@@ -138,7 +154,7 @@ except ImportError:
             self.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")
-            self.dashboard_lang = os.getenv("DASHBOARD_LANG", "en")
+            self.dashboard_lang = _default_language()
             self.daily_digest_hour = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
             self.tz = os.getenv("TZ", "")
             self.docker_socket_path = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")

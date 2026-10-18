@@ -31,10 +31,12 @@ document.addEventListener('alpine:init', () => {
     // i18n Multi-Language State
     supportedLanguages: ['en', 'it'],
     currentLanguage: (() => {
+      // A choice saved in this browser wins; otherwise the server default
+      // (saved system language, else DASHBOARD_LANG, else English).
       const saved = localStorage.getItem('eero_lang');
       if (saved === 'en' || saved === 'it') return saved;
-      const browser = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language.toLowerCase() : '';
-      return browser.startsWith('it') ? 'it' : 'en';
+      const serverDefault = (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.defaultLanguage) || '';
+      return serverDefault === 'it' ? 'it' : 'en';
     })(),
     translations: {},
     fallbackTranslations: {},

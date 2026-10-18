@@ -18,7 +18,7 @@
         }
         var l = localStorage.getItem('eero_lang');
         if (l !== 'en' && l !== 'it') {
-          l = (navigator.language || '').toLowerCase().indexOf('it') === 0 ? 'it' : 'en';
+          l = '{{ default_language }}' === 'it' ? 'it' : 'en';
         }
         document.documentElement.lang = l;
       } catch (e) {}
@@ -32,6 +32,7 @@
       version: "{{ app_version }}",
       buildNumber: "{{ build_number }}",
       fullVersion: "{{ full_version }}",
+      defaultLanguage: "{{ default_language }}",
       initialAuthenticated: "{{ 'true' if initial_authenticated else 'false' }}"
     };
   </script>
