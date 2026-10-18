@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 import aiosqlite
 from app.config import settings
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -2787,11 +2788,11 @@ class DBService:
         Esegue il ripristino transazionale atomico dei dati da un payload di backup valido.
         """
         if not isinstance(backup_data, dict):
-            raise ValueError("Il payload di backup non è un oggetto JSON valido.")
+            raise ValueError(tr("db.restore_invalid_json"))
 
         meta = backup_data.get("metadata") or {}
         if not meta and "device_metadata" not in backup_data and "app_settings" not in backup_data and "device_schedules" not in backup_data:
-            raise ValueError("Struttura del file di backup non riconosciuta o priva di sezioni valide.")
+            raise ValueError(tr("db.restore_unrecognized"))
 
         restored_stats = {
             "device_metadata": 0,
@@ -2923,13 +2924,19 @@ class DBService:
         # Log evento allarme
         await self.save_alert(
             alert_type="system_backup_restored",
-            title="💾 Ripristino Backup di Sistema Eseguito",
-            message=f"Ripristino completato con successo: {restored_stats['device_metadata']} metadati dispositivi, {restored_stats['app_settings']} impostazioni, {restored_stats['device_schedules']} regole orarie e {restored_stats['local_users']} utenti."
+            title=tr("db.restore_alert_title"),
+            message=tr(
+                "db.restore_alert_message",
+                devices=restored_stats["device_metadata"],
+                settings=restored_stats["app_settings"],
+                schedules=restored_stats["device_schedules"],
+                users=restored_stats["local_users"],
+            )
         )
 
         return {
             "status": "success",
-            "message": "Ripristino del backup completato con successo.",
+            "message": tr("db.restore_completed"),
             "restored_elements": restored_stats,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }

@@ -1,0 +1,8 @@
+{
+  "already_in_progress": "Un aggiornamento è già in corso...",
+  "watchtower_sent": "Segnale di aggiornamento inviato con successo a Watchtower. Il container si riavvierà a breve.",
+  "watchtower_bad_status": "Watchtower ha risposto con codice {code}: {body}",
+  "watchtower_error": "Errore trigger Watchtower: {error}",
+  "docker_started": "Aggiornamento avviato: download della nuova immagine Docker in corso. L'applicazione si riavvierà automaticamente.",
+  "manual_required": "Nessun Docker Socket o Watchtower configurato. Esegui il comando '{command}' sul server."
+}

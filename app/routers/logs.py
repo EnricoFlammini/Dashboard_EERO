@@ -22,6 +22,7 @@ from app.config import settings
 from app.routers.dependencies import require_admin, require_permission
 from app.services.db import db_service
 from app.services.log_service import VALID_LOG_LEVELS, log_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -75,32 +76,32 @@ async def update_logs_config(
         if lvl_clean not in VALID_LOG_LEVELS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Livello log '{payload.level}' non valido. Valori ammessi: {list(VALID_LOG_LEVELS.keys())}"
+                detail=tr("logs.invalid_level", level=payload.level, allowed=list(VALID_LOG_LEVELS.keys()))
             )
         await log_service.set_level(lvl_clean)
-        changes.append(f"livello: {lvl_clean}")
+        changes.append(tr("logs.change_level", level=lvl_clean))
 
     # 2. Toggle Abilitazione a caldo
     if payload.enabled is not None:
         await log_service.set_enabled(payload.enabled)
-        changes.append(f"stato: {'ATTIVO' if payload.enabled else 'DISATTIVATO'}")
+        changes.append(tr("logs.change_state_on") if payload.enabled else tr("logs.change_state_off"))
 
     # 3. Aggiornamento giorni di retention
     if payload.retention_days is not None:
         await log_service.set_retention_days(payload.retention_days)
-        changes.append(f"retention: {payload.retention_days} giorni")
+        changes.append(tr("logs.change_retention", days=payload.retention_days))
 
     if not changes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nessun parametro valido fornito per l'aggiornamento della configurazione."
+            detail=tr("logs.no_valid_params")
         )
 
     # Registrazione allarme di audit per tracciabilità
     await db_service.save_alert(
         alert_type="system_logs_config_updated",
-        title="⚙️ Configurazione Log Aggiornata",
-        message=f"Impostazioni di diagnostica modificate da '{actor}': {', '.join(changes)}."
+        title=tr("logs.config_updated_alert_title"),
+        message=tr("logs.config_updated_alert_message", actor=actor, changes=", ".join(changes))
     )
 
     cfg = await db_service.get_logging_config()
@@ -108,7 +109,7 @@ async def update_logs_config(
 
     return {
         "status": "success",
-        "message": f"Configurazione log aggiornata con successo ({', '.join(changes)}).",
+        "message": tr("logs.config_updated", changes=", ".join(changes)),
         "enabled": cfg.get("enabled", True),
         "level": cfg.get("level", "INFO"),
         "retention_days": cfg.get("retention_days", 7),
@@ -174,13 +175,13 @@ async def clear_system_logs(
     # Emissione allarme di sicurezza / audit
     await db_service.save_alert(
         alert_type="system_logs_cleared",
-        title="🗑️ Registro Log di Sistema Svuotato",
-        message=f"I log di sistema sono stati azzerati dall'utente '{actor}' (rimossi {res.get('deleted_records', 0)} eventi)."
+        title=tr("logs.cleared_alert_title"),
+        message=tr("logs.cleared_alert_message", actor=actor, count=res.get("deleted_records", 0))
     )
 
     return {
         "status": "success",
-        "message": f"Registro eventi azzerato con successo ({res.get('deleted_records', 0)} record rimossi).",
+        "message": tr("logs.cleared", count=res.get("deleted_records", 0)),
         "deleted_records": res.get("deleted_records", 0),
         "timestamp": res.get("timestamp"),
     }
@@ -237,7 +238,7 @@ async def download_system_logs(
         f"{l['timestamp']} [{l['level']}] {l['logger_name']}: {l['message']}"
         for l in reversed(all_logs)
     ]
-    log_text = "\n".join(lines) if lines else f"# {settings.app_name} System Log - {datetime.now(timezone.utc).isoformat()}\n# Nessun log registrato."
+    log_text = "\n".join(lines) if lines else f"# {settings.app_name} System Log - {datetime.now(timezone.utc).isoformat()}\n# " + tr("logs.no_logs_recorded")
     return Response(
         content=log_text.encode("utf-8"),
         media_type="text/plain; charset=utf-8",

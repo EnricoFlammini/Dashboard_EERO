@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Set
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.notifications import notification_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -210,11 +211,17 @@ class ScheduleEngine:
                             logger.error(f"ScheduleEngine error pausing device {dev_id}: {ex}")
 
                 # Registra l'evento nello storico allarmi
-                status_label = "Attivata" if is_active_now else "Terminata"
+                status_label = tr("schedules.state_started") if is_active_now else tr("schedules.state_ended")
                 await db_service.save_alert(
                     alert_type="schedule_transition",
-                    title=f"🕒 Regola Pianificata '{s_name}'",
-                    message=f"La regola oraria '{s_name}' è stata applicata: stato {status_label} su {len(targets) if targets else 1} target ({t_type})."
+                    title=tr("schedules.transition_alert_title", name=s_name),
+                    message=tr(
+                        "schedules.transition_alert_message",
+                        name=s_name,
+                        state=status_label,
+                        count=len(targets) if targets else 1,
+                        target_type=t_type,
+                    )
                 )
 
         return {
@@ -287,6 +294,9 @@ class MaintenanceEngine:
 
         reboot_triggered = False
         reboot_reason = None
+        # (key, params) of the reboot reason, rendered per language below
+        reboot_reason_key = None
+        reboot_reason_params: Dict[str, Any] = {}
         rebooted_items = []
 
         if cfg.get("auto_reboot") or force:
@@ -312,26 +322,38 @@ class MaintenanceEngine:
                             except Exception as re:
                                 logger.error(f"MaintenanceEngine: Error rebooting node {b_id}: {re}")
                     reboot_triggered = bool(rebooted_items)
-                    reboot_reason = f"Health score critico ({health_score}/{threshold}) e {len(degraded_beacons)} nodi beacon degradati."
+                    reboot_reason_key = "schedules.maintenance_reason_beacons"
+                    reboot_reason_params = {"score": health_score, "threshold": threshold, "count": len(degraded_beacons)}
                 else:
                     # Se l'intera rete è degradata, riavvio generale
                     try:
                         await eero_client.reboot_network()
                         reboot_triggered = True
-                        reboot_reason = f"Health score generale critico ({health_score}/{threshold}). Riavvio preventivo rete."
-                        rebooted_items.append("Rete eero Mesh Intera")
+                        reboot_reason_key = "schedules.maintenance_reason_network"
+                        reboot_reason_params = {"score": health_score, "threshold": threshold}
+                        rebooted_items.append(tr("schedules.maintenance_whole_network"))
                     except Exception as re:
                         logger.error(f"MaintenanceEngine: Error rebooting network: {re}")
 
         # Salva log e invia notifica se è avvenuto un riavvio o se programmato
+        if reboot_reason_key:
+            reboot_reason = tr(reboot_reason_key, **reboot_reason_params)
         if reboot_triggered:
             await db_service.save_alert(
                 alert_type="nightly_maintenance_reboot",
-                title="🔄 Manutenzione Notturna: Riavvio Mesh",
-                message=f"{reboot_reason} Nodi riavviati: {', '.join(rebooted_items)}."
+                title=tr("schedules.maintenance_alert_title"),
+                message=tr("schedules.maintenance_alert_message", reason=reboot_reason, items=", ".join(rebooted_items))
             )
+            # Telegram follows the system/alert language, not the requesting browser's
+            sys_lang = await notification_service.get_language()
+            tg_reason = tr(reboot_reason_key, lang=sys_lang, **reboot_reason_params) if reboot_reason_key else ""
             await notification_service.send_telegram_message(
-                f"<b>🔄 Manutenzione Notturna eero</b>\n\n{reboot_reason}\nApparati: <code>{', '.join(rebooted_items)}</code>"
+                tr(
+                    "schedules.maintenance_telegram",
+                    lang=sys_lang,
+                    reason=tg_reason,
+                    items=", ".join(rebooted_items),
+                )
             )
 
         await db_service.set_setting("last_nightly_maintenance_run", now.isoformat())

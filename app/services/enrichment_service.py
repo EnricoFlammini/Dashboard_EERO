@@ -8,6 +8,7 @@ import sys
 from typing import Any, Dict, List, Optional, Set
 import httpx
 
+from app.i18n import tr
 from app.services.db import db_service
 
 logger = logging.getLogger(__name__)
@@ -186,12 +187,12 @@ class EnrichmentService:
             
             clean_mac = normalize_mac(str(raw_mac or ""))
             if not clean_mac:
-                errors.append(f"Elemento #{idx}: MAC address '{raw_mac}' non valido.")
+                errors.append(tr("enrichment.invalid_mac", index=idx, mac=raw_mac))
                 continue
 
             ip_info = classify_ip(str(raw_ip or ""))
             if not ip_info.get("valid"):
-                errors.append(f"Elemento #{idx}: Indirizzo IP '{raw_ip}' non valido.")
+                errors.append(tr("enrichment.invalid_ip", index=idx, ip=raw_ip))
                 continue
 
             specified_type = str(item.get("ip_type") or item.get("type") or "").strip().upper()
@@ -207,7 +208,7 @@ class EnrichmentService:
         if not valid_entries:
             return {
                 "status": "error",
-                "message": "Nessuna associazione IP-MAC valida fornita.",
+                "message": tr("enrichment.no_valid_mappings"),
                 "errors": errors[:10],
                 "added": 0,
                 "updated": 0,
@@ -248,7 +249,7 @@ class EnrichmentService:
         auth = (username.strip(), password.strip()) if username and password else None
 
         if not url:
-            return {"success": False, "message": "URL AdGuard non configurato.", "found_count": 0, "resolved_count": 0}
+            return {"success": False, "message": tr("enrichment.adguard_url_missing"), "found_count": 0, "resolved_count": 0}
 
         candidate_ips: Set[str] = set()
 
@@ -281,7 +282,7 @@ class EnrichmentService:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Errore connessione ad AdGuard ({url}): {str(e)}",
+                "message": tr("enrichment.adguard_connection_error", url=url, error=str(e)),
                 "found_count": 0,
                 "resolved_count": 0
             }
@@ -289,7 +290,7 @@ class EnrichmentService:
         if not candidate_ips:
             return {
                 "success": True,
-                "message": "Nessun client auto/orfano rilevato su AdGuard Home.",
+                "message": tr("enrichment.no_orphan_clients"),
                 "found_count": 0,
                 "resolved_count": 0,
                 "candidates": []
@@ -322,7 +323,7 @@ class EnrichmentService:
 
         return {
             "success": True,
-            "message": f"Rilevati {len(ula_candidates)} candidati ULA, {len(resolved_mappings)} risolti con successo via NDP.",
+            "message": tr("enrichment.scan_result", candidates=len(ula_candidates), resolved=len(resolved_mappings)),
             "found_count": len(candidate_ips),
             "ula_candidates_count": len(ula_candidates),
             "resolved_count": len(resolved_mappings),
@@ -340,7 +341,7 @@ class EnrichmentService:
         if not adguard_instances:
             return {
                 "success": False,
-                "message": "Nessuna istanza AdGuard Home attiva configurata.",
+                "message": tr("enrichment.no_adguard_instances"),
                 "total_instances": 0,
                 "results": []
             }

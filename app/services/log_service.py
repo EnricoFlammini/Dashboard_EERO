@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import settings
 from app.services.db import db_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +231,7 @@ class LogService:
         """Modifica a caldo il livello di logging per l'intera applicazione."""
         lvl_clean = level_name.upper().strip()
         if lvl_clean not in VALID_LOG_LEVELS:
-            raise ValueError(f"Livello log non valido: {level_name}. Ammessi: {list(VALID_LOG_LEVELS.keys())}")
+            raise ValueError(tr("logs.invalid_level_short", level=level_name, allowed=list(VALID_LOG_LEVELS.keys())))
 
         lvl_num = VALID_LOG_LEVELS[lvl_clean]
         self._current_level = lvl_clean
@@ -297,7 +298,7 @@ class LogService:
         await db_service.insert_system_log(
             level="INFO",
             logger_name="app.services.log_service",
-            message=f"Log di sistema cancellati con successo (rimossi {deleted_rows} record precedenti).",
+            message=tr("logs.cleared_audit_entry", count=deleted_rows),
             timestamp=ts_now,
         )
 

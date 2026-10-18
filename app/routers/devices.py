@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.i18n import tr
 from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
@@ -243,7 +244,7 @@ async def mark_devices_seen(payload: DeviceSeenRequest):
     macs = {m.strip().lower() for m in payload.macs if m and m.strip()}
     invalid = sorted(m for m in macs if not MAC_RE.match(m))
     if invalid:
-        raise HTTPException(status_code=400, detail=f"MAC address non valido: {', '.join(invalid[:5])}")
+        raise HTTPException(status_code=400, detail=tr("devices.invalid_mac", macs=", ".join(invalid[:5])))
     updated = await db_service.set_known_devices_seen(macs, seen=payload.seen)
     background_poller.mark_cached_devices_seen(macs, seen=payload.seen)
     return {"status": "success", "updated": updated, "seen": payload.seen}
@@ -494,7 +495,7 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
         cached_p = await eero_client.get_profiles()
         background_poller.update_cached_profiles(cached_p)
 
-        msg = "Dispositivo rimosso dal profilo con successo." if not payload.profile_id else "Profilo dispositivo aggiornato con successo."
+        msg = tr("devices.profile_removed") if not payload.profile_id else tr("devices.profile_updated")
         return {
             "status": "success",
             "message": msg,

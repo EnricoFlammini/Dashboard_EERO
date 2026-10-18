@@ -1,0 +1,5 @@
+{
+  "invalid_mac": "Invalid MAC address: {macs}",
+  "profile_removed": "Device removed from profile.",
+  "profile_updated": "Device profile updated."
+}

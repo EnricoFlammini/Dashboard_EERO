@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import settings
+from app.i18n import tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -114,7 +115,7 @@ class MQTTService:
             return {
                 "success": True,
                 "simulated": is_demo or target_host in ("localhost", "127.0.0.1", "demo"),
-                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita.",
+                "message": tr("mqtt.test_ok_simulated", broker=f"{target_host}:{target_port}"),
                 "broker": f"{target_host}:{target_port}",
                 "base_topic": self._base_topic
             }
@@ -122,7 +123,7 @@ class MQTTService:
         if not self.is_available:
             return {
                 "success": False,
-                "error": "Modulo aiomqtt non disponibile nel container. Installare aiomqtt per connettersi al broker.",
+                "error": tr("mqtt.aiomqtt_missing"),
                 "broker": f"{target_host}:{target_port}"
             }
 
@@ -145,7 +146,7 @@ class MQTTService:
             return {
                 "success": True,
                 "simulated": False,
-                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita con successo.",
+                "message": tr("mqtt.test_ok", broker=f"{target_host}:{target_port}"),
                 "broker": f"{target_host}:{target_port}",
                 "base_topic": self._base_topic
             }

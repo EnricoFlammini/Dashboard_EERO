@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import require_admin
 from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
 from app.services.db import db_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Lo username '{clean_username}' è già in uso."
+            detail=tr("users.username_in_use", username=clean_username)
         )
 
     # Coerenza ruolo e flag is_admin
@@ -95,7 +96,7 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
 
     created_user = await db_service.get_local_user_by_id(new_id)
     if not created_user:
-        raise HTTPException(status_code=500, detail="Errore durante la creazione dell'utente.")
+        raise HTTPException(status_code=500, detail=tr("users.create_failed"))
 
     # Rimuovi dati sensibili
     created_user.pop("password_hash", None)
@@ -104,7 +105,7 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
     logger.info(f"Local Auth: Utente '{clean_username}' (id: {new_id}, admin: {effective_is_admin}) creato con successo da '{admin.get('username')}'.")
     return {
         "status": "success",
-        "message": f"Utente '{clean_username}' creato con successo.",
+        "message": tr("users.created", username=clean_username),
         "user": created_user
     }
 
@@ -117,7 +118,7 @@ async def get_user(user_id: int, admin: dict = Depends(require_admin)):
     """
     user = await db_service.get_local_user_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utente non trovato.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr("users.not_found"))
     
     user.pop("password_hash", None)
     user.pop("salt", None)
@@ -135,13 +136,13 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
     """
     user = await db_service.get_local_user_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utente non trovato.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr("users.not_found"))
 
     new_username = payload.username.strip() if payload.username else None
     if new_username and new_username.lower() != user["username"].lower():
         existing = await db_service.get_local_user_by_username(new_username)
         if existing and existing["id"] != user_id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Username '{new_username}' già utilizzato da un altro utente.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=tr("users.username_taken", username=new_username))
 
     # Determina is_admin target
     target_is_admin = None
@@ -156,7 +157,7 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
         if admin_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Impossibile revocare i permessi di amministratore: deve rimanere almeno un amministratore attivo nel sistema."
+                detail=tr("users.last_admin_demote")
             )
 
     # Determina role coerente
@@ -188,7 +189,7 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
     )
 
     if not success:
-        raise HTTPException(status_code=500, detail="Errore durante l'aggiornamento dell'utente.")
+        raise HTTPException(status_code=500, detail=tr("users.update_failed"))
 
     updated_user = await db_service.get_local_user_by_id(user_id)
     updated_user.pop("password_hash", None)
@@ -197,7 +198,7 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
     logger.info(f"Local Auth: Utente id={user_id} aggiornato con successo dall'admin '{admin.get('username')}'.")
     return {
         "status": "success",
-        "message": "Utente aggiornato con successo.",
+        "message": tr("users.updated"),
         "user": updated_user
     }
 
@@ -210,7 +211,7 @@ async def delete_user(user_id: int, admin: dict = Depends(require_admin)):
     """
     user = await db_service.get_local_user_by_id(user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utente non trovato.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr("users.not_found"))
 
     # Verifica se l'utente da eliminare è un admin
     if user.get("is_admin"):
@@ -218,15 +219,15 @@ async def delete_user(user_id: int, admin: dict = Depends(require_admin)):
         if admin_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Impossibile eliminare l'utente: deve rimanere almeno un amministratore attivo nel sistema."
+                detail=tr("users.last_admin_delete")
             )
 
     success = await db_service.delete_local_user(user_id)
     if not success:
-        raise HTTPException(status_code=500, detail="Errore durante l'eliminazione dell'utente.")
+        raise HTTPException(status_code=500, detail=tr("users.delete_failed"))
 
     logger.info(f"Local Auth: Utente '{user.get('username')}' (id={user_id}) eliminato dall'admin '{admin.get('username')}'.")
     return {
         "status": "success",
-        "message": f"Utente '{user.get('username')}' eliminato con successo."
+        "message": tr("users.deleted", username=user.get('username'))
     }

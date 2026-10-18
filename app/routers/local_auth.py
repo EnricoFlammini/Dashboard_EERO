@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import get_current_user, _extract_token_from_request
 from app.services.auth_service import auth_service
 from app.services.db import db_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +56,14 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
     if not setup_required:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La configurazione iniziale dell'amministratore è già stata completata. Esegui il login normale."
+            detail=tr("auth.setup_already_done")
         )
 
     username = payload.username.strip()
     if not username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nome utente non valido."
+            detail=tr("auth.invalid_username")
         )
 
     p_hash, p_salt = auth_service.hash_password(payload.password)
@@ -113,7 +114,7 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
     logger.info(f"Local Auth: Setup iniziale completato per l'amministratore '{username}'.")
     return {
         "status": "success",
-        "message": "Configurazione amministratore completata con successo.",
+        "message": tr("auth.setup_completed"),
         "token": token,
         "remember_me": bool(payload.remember_me),
         "user": clean_user
@@ -131,7 +132,7 @@ async def local_login(payload: LocalLoginRequest, response: Response):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenziali non valide (username o password errati)."
+            detail=tr("auth.invalid_credentials")
         )
 
     # Verifica password
@@ -143,14 +144,14 @@ async def local_login(payload: LocalLoginRequest, response: Response):
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenziali non valide (username o password errati)."
+            detail=tr("auth.invalid_credentials")
         )
 
     # Verifica se l'account è disattivato dall'amministratore
     if user.get("is_active") is False or user.get("is_active") == 0:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account disattivato dall'amministratore. Contatta l'amministratore di sistema."
+            detail=tr("auth.account_disabled")
         )
 
     user_id = user["id"]
@@ -203,7 +204,7 @@ async def local_logout(request: Request, response: Response):
     response.delete_cookie(key="session_token")
     return {
         "status": "success",
-        "message": "Sessione terminata con successo."
+        "message": tr("auth.logged_out")
     }
 
 
@@ -257,6 +258,6 @@ async def set_session_timeout(payload: SessionTimeoutRequest):
     return {
         "status": "success",
         "session_timeout_minutes": payload.minutes,
-        "message": f"Timeout sessione impostato a {payload.minutes} minuti." if payload.minutes > 0 else "Logout automatico disattivato."
+        "message": tr("auth.session_timeout_set", minutes=payload.minutes) if payload.minutes > 0 else tr("auth.session_timeout_disabled")
     }
 

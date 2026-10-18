@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.i18n import tr
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 
@@ -60,7 +61,7 @@ async def create_profile(req: CreateProfileRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": f"Profilo '{req.name}' creato con successo.",
+            "message": tr("profiles.created", name=req.name),
             "profile": res.get("profile")
         }
     except Exception as e:
@@ -81,7 +82,7 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": "Profilo aggiornato con successo.",
+            "message": tr("profiles.updated"),
             "profile": res.get("profile")
         }
     except Exception as e:
@@ -98,7 +99,7 @@ async def delete_profile(profile_id: str):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": "Profilo eliminato con successo.",
+            "message": tr("profiles.deleted"),
             "result": res
         }
     except Exception as e:
@@ -117,7 +118,7 @@ async def assign_devices_to_profile(profile_id: str, req: AssignDevicesRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": f"{len(req.device_ids)} dispositivi assegnati al profilo.",
+            "message": tr("profiles.devices_assigned", count=len(req.device_ids)),
             "profile_id": profile_id
         }
     except Exception as e:

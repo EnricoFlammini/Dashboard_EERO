@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from app.config import settings
 from app.services.runtime_info import get_runtime_info
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +235,7 @@ class UpdaterService:
             return {
                 "success": True,
                 "status": "in_progress",
-                "message": "Un aggiornamento è già in corso..."
+                "message": tr("updater.already_in_progress")
             }
 
         # 1. Se configurato Watchtower Webhook
@@ -247,14 +248,14 @@ class UpdaterService:
                         return {
                             "success": True,
                             "method": "watchtower",
-                            "message": "Segnale di aggiornamento inviato con successo a Watchtower. Il container si riavvierà a breve."
+                            "message": tr("updater.watchtower_sent")
                         }
                     else:
-                        raise RuntimeError(f"Watchtower ha risposto con codice {resp.status_code}: {resp.text}")
+                        raise RuntimeError(tr("updater.watchtower_bad_status", code=resp.status_code, body=resp.text))
             except Exception as ex:
                 self._is_updating = False
                 logger.error(f"Errore trigger Watchtower: {ex}")
-                raise RuntimeError(f"Errore trigger Watchtower: {ex}")
+                raise RuntimeError(tr("updater.watchtower_error", error=ex))
 
         # 2. Se è montato il Docker Socket (/var/run/docker.sock)
         if self.is_docker_socket_available:
@@ -268,14 +269,14 @@ class UpdaterService:
             return {
                 "success": True,
                 "method": "docker_socket",
-                "message": "Aggiornamento avviato: download della nuova immagine Docker in corso. L'applicazione si riavvierà automaticamente."
+                "message": tr("updater.docker_started")
             }
 
         # 3. Modalità assistita se nessun metodo automatico è disponibile
         return {
             "success": False,
             "method": "manual",
-            "message": "Nessun Docker Socket o Watchtower configurato. Esegui il comando 'docker compose pull && docker compose up -d' sul server.",
+            "message": tr("updater.manual_required", command="docker compose pull && docker compose up -d"),
             "cli_command": "docker compose pull && docker compose up -d"
         }
 

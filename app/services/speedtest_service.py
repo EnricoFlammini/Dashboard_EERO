@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from app.config import settings
+from app.i18n import tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -59,7 +60,7 @@ class SpeedtestService:
         Include la misurazione e classificazione del Bufferbloat.
         """
         if self.is_running:
-            raise RuntimeError("Uno Speed Test è già in corso di esecuzione.")
+            raise RuntimeError(tr("speedtest.already_running"))
 
         self.is_running = True
         logger.info("Avvio esecuzione Speed Test...")
@@ -93,7 +94,7 @@ class SpeedtestService:
                 isp_name = (network_details.get("isp") if isinstance(network_details, dict) else None) or "eero Gateway"
                 server = f"{isp_name} (eero Cloud SpeedTest)"
                 if down <= 0.0:
-                    raise RuntimeError("eero Gateway speed test did not return valid throughput metrics.")
+                    raise RuntimeError(tr("speedtest.invalid_metrics"))
             else:
                 # Esecuzione simulata/sintetica rapida (solo per demo mode)
                 await asyncio.sleep(2.0)

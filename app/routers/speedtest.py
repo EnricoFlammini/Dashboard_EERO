@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.i18n import tr
 from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.speedtest_service import speedtest_service
@@ -23,13 +24,13 @@ async def get_speedtest_status():
 async def trigger_manual_speedtest():
     """Avvia manualmente una sessione di Speed Test."""
     if speedtest_service.is_running:
-        raise HTTPException(status_code=409, detail="Uno Speed Test è già in corso. Attendi il completamento.")
+        raise HTTPException(status_code=409, detail=tr("speedtest.already_running_wait"))
 
     try:
         result = await speedtest_service.run_speedtest()
         return {
             "status": "success",
-            "message": "Speed Test completato con successo.",
+            "message": tr("speedtest.completed"),
             "result": result
         }
     except Exception as e:

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
+from app.i18n import tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -154,7 +155,7 @@ async def get_network_distribution() -> Dict[str, Any]:
         active_count = len(active_devices)
 
         def _get_device_display_name(dev: Dict[str, Any]) -> str:
-            return str(dev.get("custom_name") or dev.get("nickname") or dev.get("hostname") or dev.get("ip") or dev.get("mac") or "Dispositivo").strip()
+            return str(dev.get("custom_name") or dev.get("nickname") or dev.get("hostname") or dev.get("ip") or dev.get("mac") or tr("analytics.unknown_device")).strip()
 
         # 1. Distribuzione Frequenze (su client attivi)
         freq_map: Dict[str, List[str]] = {"6 GHz": [], "5 GHz": [], "2.4 GHz": [], "Ethernet": []}
@@ -180,7 +181,7 @@ async def get_network_distribution() -> Dict[str, Any]:
         node_map: Dict[str, Dict[str, Any]] = {}
         node_keys_map: Dict[str, set] = {}
         for e in eeros:
-            e_name = e.get("name") or e.get("location") or "Nodo eero"
+            e_name = e.get("name") or e.get("location") or tr("analytics.unknown_node")
             e_id = str(e.get("id") or "").strip()
             e_serial = str(e.get("serial") or "").strip()
             e_url = str(e.get("url") or "").strip()
@@ -335,7 +336,7 @@ async def export_network_data(
     """
     valid_types = ("devices", "speedtest", "signal", "usage")
     if data_type not in valid_types:
-        raise HTTPException(status_code=400, detail=f"Tipo di dato non valido. Scegli tra: {', '.join(valid_types)}")
+        raise HTTPException(status_code=400, detail=tr("analytics.invalid_data_type", types=", ".join(valid_types)))
 
     is_demo = int(getattr(eero_client, "is_demo_mode", False) or False)
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

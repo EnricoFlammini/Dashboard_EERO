@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "Il payload di backup non è un oggetto JSON valido.",
+  "restore_unrecognized": "Struttura del file di backup non riconosciuta o priva di sezioni valide.",
+  "restore_alert_title": "💾 Ripristino Backup di Sistema Eseguito",
+  "restore_alert_message": "Ripristino completato con successo: {devices} metadati dispositivi, {settings} impostazioni, {schedules} regole orarie e {users} utenti.",
+  "restore_completed": "Ripristino del backup completato con successo."
+}

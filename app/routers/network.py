@@ -5,6 +5,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from app.config import settings
+from app.i18n import tr
 from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
@@ -89,7 +91,7 @@ async def force_network_refresh():
         cached = background_poller.get_cached_state()
         return {
             "status": "success",
-            "message": "Dati rete aggiornati con successo.",
+            "message": tr("network.refreshed"),
             "data": cached
         }
     except Exception as e:
@@ -102,7 +104,7 @@ async def get_debug_raw():
     """Diagnostica: recupera i campi raw completi restituiti da eero per capire come vengono forniti i dati."""
     import httpx
     if not eero_client.is_authenticated or not eero_client.current_network_id:
-        return {"status": "error", "message": "Non autenticato con eero"}
+        return {"status": "error", "message": tr("network.not_authenticated")}
 
     try:
         async with eero_client._client_session() as client:
@@ -303,7 +305,7 @@ async def update_advanced_settings(payload: AdvancedSettingsRequest):
         # In un'infrastruttura eero reale o demo
         return {
             "status": "success",
-            "message": "Impostazioni avanzate aggiornate.",
+            "message": tr("network.advanced_updated"),
             "settings": payload.model_dump(exclude_unset=True)
         }
     except Exception as e:
@@ -348,7 +350,7 @@ async def switch_network(payload: SwitchNetworkRequest):
         cached = background_poller.get_cached_state()
         return {
             "status": "success",
-            "message": f"Rete passata a '{payload.network_id}' con successo.",
+            "message": tr("network.switched", network_id=payload.network_id),
             "active_network_id": eero_client.current_network_id,
             "data": cached
         }
@@ -455,8 +457,8 @@ async def delete_discovered_mapping(
     deleted = await db_service.delete_discovered_ip(payload.mac, payload.ip)
     if deleted:
         await enrichment_service.refresh_cached_devices_enrichment()
-        return {"status": "success", "message": f"Associazione {payload.ip} <-> {payload.mac} rimossa."}
-    return {"status": "not_found", "message": "Nessuna corrispondenza trovata per l'eliminazione."}
+        return {"status": "success", "message": tr("network.mapping_removed", ip=payload.ip, mac=payload.mac)}
+    return {"status": "not_found", "message": tr("network.mapping_not_found")}
 
 
 @router.post("/enrichment/scan-adguard")

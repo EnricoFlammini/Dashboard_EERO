@@ -11,6 +11,7 @@ from app.services.eero_news_service import eero_news_service
 from app.services.notifications import notification_service
 from app.services.runtime_info import get_runtime_info
 from app.services.updater import updater_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ async def set_system_language(payload: LanguageRequest):
     """Aggiorna e persiste la lingua preferita per la dashboard e le notifiche."""
     lang = payload.language.lower().strip()
     if lang not in ("it", "en"):
-        raise HTTPException(status_code=400, detail="Lingua non supportata. Valori validi: 'en', 'it'")
+        raise HTTPException(status_code=400, detail=tr("system.language_unsupported"))
     await notification_service.set_language(lang)
     return {"status": "success", "language": lang}
 
@@ -74,7 +75,7 @@ async def get_eero_news(force: bool = Query(False, description="Forza il ricalco
         summary = await eero_news_service.get_news_summary(force=force)
         return summary
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nel recupero delle notizie eero: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.news_fetch_failed", error=str(e)))
 
 
 @router.post("/eero-news/refresh")
@@ -84,7 +85,7 @@ async def refresh_eero_news():
         summary = await eero_news_service.get_news_summary(force=True)
         return summary
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nel refresh delle notizie eero: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.news_refresh_failed", error=str(e)))
 
 
 # =========================================================================
@@ -111,7 +112,7 @@ async def export_system_backup_endpoint():
         )
     except Exception as e:
         logger.error(f"Error generating system backup: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore durante l'esportazione del backup: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.backup_export_failed", error=str(e)))
 
 
 @router.post("/restore", dependencies=[Depends(require_admin)])
@@ -129,7 +130,7 @@ async def import_system_restore_endpoint(payload: Dict[str, Any]):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.error(f"Error during system restore: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore durante il ripristino del backup: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.backup_restore_failed", error=str(e)))
 
 
 # =========================================================================
@@ -149,7 +150,7 @@ async def get_database_statistics():
         return stats
     except Exception as e:
         logger.error(f"Error fetching database stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore recupero statistiche database: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.db_stats_failed", error=str(e)))
 
 
 @router.post("/database/compact", dependencies=[Depends(require_admin)])
@@ -164,7 +165,7 @@ async def trigger_database_compaction(force: bool = False, vacuum: bool = True):
         return summary
     except Exception as e:
         logger.error(f"Error during manual database compaction: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore durante la compattazione del database: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.db_compact_failed", error=str(e)))
 
 
 @router.get("/database/integrity", dependencies=[Depends(require_admin)])
@@ -178,7 +179,7 @@ async def check_database_integrity(quick: bool = True):
         return res
     except Exception as e:
         logger.error(f"Error checking database integrity: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore controllo integrità database: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.db_integrity_failed", error=str(e)))
 
 
 @router.post("/database/backup", dependencies=[Depends(require_admin)])
@@ -192,7 +193,7 @@ async def create_database_backup():
         return res
     except Exception as e:
         logger.error(f"Error creating database backup: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore creazione backup database: {str(e)}")
+        raise HTTPException(status_code=500, detail=tr("system.db_backup_failed", error=str(e)))
 
 
 
