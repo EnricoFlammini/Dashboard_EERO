@@ -4464,7 +4464,7 @@
                 :disabled="isTriggeringUpdate"
                 class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-50 cursor-pointer">
                 <span>⚡</span>
-                <span x-text="isTriggeringUpdate ? 'Aggiornamento...' : 'Aggiorna Ora (1-Click)'"></span>
+                <span x-text="isTriggeringUpdate ? t('update_modal.updating_short') : t('update_modal.update_now_short')"></span>
               </button>
             </template>
           </div>
@@ -4485,6 +4485,41 @@
             <span class="font-bold text-amber-600 dark:text-amber-400 font-mono text-sm" x-text="updateInfo.latest_full_version ? 'v' + updateInfo.latest_full_version : (updateInfo.latest_version ? 'v' + updateInfo.latest_version : '---')"></span>
           </div>
         </div>
+
+        <!-- Runtime: where this instance runs and which branch it was built from -->
+        <template x-if="runtimeInfo">
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none text-xs space-y-3">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('settings_updates.runtime_title')"></span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_environment')"></span>
+                <span class="font-bold text-slate-900 dark:text-white text-sm"
+                      :class="runtimeInfo.environment === 'local' ? 'text-violet-700 dark:text-violet-300' : 'text-sky-700 dark:text-sky-300'"
+                      x-text="(runtimeInfo.environment === 'local' ? '💻 ' : '🐳 ') + runtimeEnvironmentLabel()"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_branch')"></span>
+                <span class="font-bold font-mono text-sm block truncate"
+                      :class="runtimeInfo.git_branch ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'"
+                      :title="runtimeInfo.git_branch || ''"
+                      x-text="runtimeInfo.git_branch || t('settings_updates.runtime_unknown')"></span>
+                <span class="font-mono text-[10px] text-slate-400" x-show="runtimeInfo.git_commit" x-text="runtimeInfo.git_commit"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_host')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" :title="runtimeInfo.hostname" x-text="runtimeInfo.hostname"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_platform')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" x-text="'Python ' + runtimeInfo.python_version + ' · ' + runtimeInfo.os"></span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed"
+               x-text="runtimeInfo.git_source === 'checkout' ? t('settings_updates.runtime_source_checkout')
+                     : runtimeInfo.git_source === 'build' ? t('settings_updates.runtime_source_build')
+                     : t('settings_updates.runtime_source_missing')"></p>
+          </div>
+        </template>
 
         <!-- Banner state -->
         <template x-if="!updateInfo.update_available">

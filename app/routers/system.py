@@ -9,6 +9,7 @@ from app.routers.dependencies import require_admin, require_permission
 from app.services.db import db_service
 from app.services.eero_news_service import eero_news_service
 from app.services.notifications import notification_service
+from app.services.runtime_info import get_runtime_info
 from app.services.updater import updater_service
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,12 @@ async def check_for_updates(force: bool = Query(False, description="Forza il con
         return info
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/runtime", dependencies=[Depends(require_permission("view_logs"))])
+async def get_runtime():
+    """Reports where this instance runs (local, Docker, Kubernetes) and its source branch/commit."""
+    return {"status": "success", **get_runtime_info()}
 
 
 @router.post("/update/trigger")

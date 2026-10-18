@@ -4,6 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Shown on the Updates page; set with:
+        # GIT_BRANCH=$(git branch --show-current) GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build
+        GIT_BRANCH: ${GIT_BRANCH:-}
+        GIT_COMMIT: ${GIT_COMMIT:-}
     container_name: eero_custom_dashboard_dev
     restart: unless-stopped
     dns:

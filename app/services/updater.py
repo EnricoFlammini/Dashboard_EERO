@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from app.config import settings
+from app.services.runtime_info import get_runtime_info
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +219,7 @@ class UpdaterService:
             "docker_socket_available": docker_sock,
             "watchtower_configured": watchtower,
             "can_auto_install": can_auto,
-            "cli_command": "docker compose pull && docker compose up -d",
+            "cli_command": "git pull && pip install -r requirements.txt" if get_runtime_info()["environment"] == "local" else "docker compose pull && docker compose up -d",
             "checked_at": now.isoformat()
         }
 

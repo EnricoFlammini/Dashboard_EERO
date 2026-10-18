@@ -649,7 +649,9 @@
     "banner_up_to_date_title": "Dashboard Perfettamente Aggiornata",
     "banner_up_to_date_desc": "La versione installata (v{version}) è allineata con l'ultima release disponibile su Docker Hub e GitHub.",
     "banner_update_title": "Nuova Versione Disponibile: v{version}",
-    "banner_update_desc": "È disponibile un aggiornamento dell'immagine Docker. Puoi avviarlo con 1-click se il socket Docker è montato o tramite comando manuale."
+    "banner_update_desc": "È disponibile un aggiornamento dell'immagine Docker. Puoi avviarlo con 1-click se il socket Docker è montato o tramite comando manuale.",
+    "updating_short": "Aggiornamento...",
+    "update_now_short": "Aggiorna Ora (1-Click)"
   },
   "toasts": {
     "saved": "Salvato",
@@ -1023,7 +1025,19 @@
     "title": "Verifica aggiornamenti e Container Docker",
     "subtitle": "Stato container Docker Hub, versione installata, socket status e trigger per 1-click update",
     "checking": "Verifica...",
-    "recheck_btn": "Ricontrolla Release"
+    "recheck_btn": "Ricontrolla Release",
+    "runtime_title": "In Esecuzione Su",
+    "runtime_environment": "Ambiente",
+    "runtime_branch": "Branch Sorgente",
+    "runtime_host": "Host",
+    "runtime_platform": "Piattaforma",
+    "runtime_unknown": "Non registrato",
+    "env_local": "Locale (da sorgente)",
+    "env_docker": "Container Docker",
+    "env_kubernetes": "Pod Kubernetes",
+    "runtime_source_checkout": "Branch e commit sono letti in tempo reale dal checkout git locale da cui gira questo server.",
+    "runtime_source_build": "Branch e commit sono stati registrati alla build di questa immagine.",
+    "runtime_source_missing": "Questa immagine è stata creata senza informazioni sul branch. Ricostruiscila con i build argument GIT_BRANCH e GIT_COMMIT per mostrarle qui."
   },
   "settings_export": {
     "title": "Centro Download & Esportazione Dati",

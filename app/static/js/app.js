@@ -505,6 +505,9 @@ document.addEventListener('alpine:init', () => {
     // Estimated Data Usage Info Modal State
     showUsageInfoModal: false,
 
+    // Where this instance runs (local / Docker / Kubernetes) and its source branch
+    runtimeInfo: null,
+
     // Auto-Update State (v1.6.1)
     updateInfo: {
       update_available: false,
@@ -737,6 +740,7 @@ document.addEventListener('alpine:init', () => {
           this.fetchDbStats();
         } else if (tab === 'settings-updates') {
           this.checkForUpdates(false);
+          this.fetchRuntimeInfo();
         } else if (tab === 'news') {
           this.fetchEeroNews();
         }
@@ -1146,7 +1150,7 @@ document.addEventListener('alpine:init', () => {
       } else if (tab === 'settings-backup') {
         await this.fetchDbStats();
       } else if (tab === 'settings-updates') {
-        await this.checkForUpdates(false);
+        await Promise.all([this.checkForUpdates(false), this.fetchRuntimeInfo()]);
       } else if (tab === 'news') {
         await this.fetchEeroNews();
       }
@@ -2564,6 +2568,23 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.isCheckingUpdate = false;
       }
+    },
+
+    async fetchRuntimeInfo() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/runtime', { headers });
+        this.runtimeInfo = res.ok ? await res.json() : null;
+      } catch (err) {
+        console.warn("Runtime info fetch failed:", err);
+        this.runtimeInfo = null;
+      }
+    },
+
+    runtimeEnvironmentLabel() {
+      const env = this.runtimeInfo && this.runtimeInfo.environment;
+      return env ? this.t(`settings_updates.env_${env}`) : '';
     },
 
     openUpdateModal(force = false) {
