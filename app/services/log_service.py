@@ -189,8 +189,8 @@ class LogService:
         self._running = True
         self._flusher_task = asyncio.create_task(self._flusher_loop())
         logger.info(
-            f"LogService avviato con successo. Livello: {self._current_level}, "
-            f"Abilitato: {self._enabled}, File: {self.log_file_path}"
+            f"LogService started. Level: {self._current_level}, "
+            f"Enabled: {self._enabled}, File: {self.log_file_path}"
         )
 
     async def stop(self):
@@ -214,7 +214,7 @@ class LogService:
         if self.sqlite_handler in root_logger.handlers:
             root_logger.removeHandler(self.sqlite_handler)
 
-        logger.info("LogService arrestato correttamente.")
+        logger.info("LogService stopped.")
 
     async def _flusher_loop(self):
         """Loop asincrono che svuota il buffer di log in SQLite ogni secondo."""
@@ -251,7 +251,7 @@ class LogService:
 
         # Salva configurazione persistente
         await db_service.set_logging_config(level=lvl_clean)
-        logger.info(f"Livello di logging aggiornato a caldo a: {lvl_clean}")
+        logger.info(f"Logging level changed at runtime to: {lvl_clean}")
         return self._current_level
 
     async def set_enabled(self, enabled: bool) -> bool:
@@ -268,14 +268,14 @@ class LogService:
                 self.file_handler.setLevel(lvl_num)
 
         await db_service.set_logging_config(enabled=enabled)
-        logger.info(f"Stato logging aggiornato a caldo: {'ATTIVO' if enabled else 'DISATTIVATO'}")
+        logger.info(f"Logging state changed at runtime: {'ENABLED' if enabled else 'DISABLED'}")
         return self._enabled
 
     async def set_retention_days(self, days: int) -> int:
         """Imposta il periodo di conservazione dei log in giorni."""
         d = max(0, int(days))
         await db_service.set_logging_config(retention_days=d)
-        logger.info(f"Retention dei log aggiornata a: {d} giorni")
+        logger.info(f"Log retention changed to: {d} days")
         return d
 
     async def clear_logs(self) -> Dict[str, Any]:
@@ -295,7 +295,7 @@ class LogService:
                 with open(log_p, "w", encoding="utf-8") as f:
                     f.truncate(0)
         except Exception as e:
-            logger.warning(f"Errore durante lo svuotamento del file di log: {e}")
+            logger.warning(f"Error while clearing the log file: {e}")
 
         # Inserisci una riga iniziale pulita di audit
         ts_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")

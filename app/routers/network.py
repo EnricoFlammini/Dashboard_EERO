@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
@@ -95,7 +95,7 @@ async def force_network_refresh():
             "data": cached
         }
     except Exception as e:
-        logger.error(f"Force refresh error: {e}")
+        log_event(logger, logging.ERROR, "log_eero.force_refresh_failed", error=e)
         return {"status": "error", "message": str(e)}
 
 
@@ -175,7 +175,7 @@ async def reboot_network():
         res = await eero_client.reboot_network()
         return res
     except Exception as e:
-        logger.error(f"Failed to reboot network: {e}")
+        log_event(logger, logging.ERROR, "log_eero.network_reboot_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -186,7 +186,7 @@ async def reboot_single_eero(eero_id: str):
         res = await eero_client.reboot_eero(eero_id)
         return res
     except Exception as e:
-        logger.error(f"Failed to reboot eero {eero_id}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.node_reboot_failed", eero_id=eero_id, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -197,7 +197,7 @@ async def toggle_eero_led(eero_id: str, payload: ToggleLEDRequest):
         res = await eero_client.set_eero_led(eero_id, payload.led_on)
         return res
     except Exception as e:
-        logger.error(f"Failed to toggle LED on eero {eero_id}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.led_toggle_failed_api", eero_id=eero_id, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -208,7 +208,7 @@ async def toggle_all_leds(payload: ToggleLEDRequest):
         res = await eero_client.set_all_leds(payload.led_on)
         return res
     except Exception as e:
-        logger.error(f"Failed to toggle all LEDs: {e}")
+        log_event(logger, logging.ERROR, "log_eero.leds_toggle_all_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -269,7 +269,7 @@ async def update_guest_network(payload: GuestNetworkRequest):
             "qr_code_data_url_dark": qr_code_dark,
         }
     except Exception as e:
-        logger.error(f"Failed to update guest network: {e}")
+        log_event(logger, logging.ERROR, "log_eero.guest_update_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -309,7 +309,7 @@ async def update_advanced_settings(payload: AdvancedSettingsRequest):
             "settings": payload.model_dump(exclude_unset=True)
         }
     except Exception as e:
-        logger.error(f"Failed to update advanced settings: {e}")
+        log_event(logger, logging.ERROR, "log_eero.advanced_update_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -355,7 +355,7 @@ async def switch_network(payload: SwitchNetworkRequest):
             "data": cached
         }
     except Exception as e:
-        logger.error(f"Error switching network: {e}")
+        log_event(logger, logging.ERROR, "log_eero.network_switch_failed", error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 

@@ -224,7 +224,7 @@ async def get_signal_overview():
             "overview": overview
         }
     except Exception as e:
-        logger.error(f"Errore recupero signal overview: {e}")
+        logger.error(f"Error fetching signal overview: {e}")
         return {
             "status": "error",
             "message": str(e),
@@ -288,7 +288,7 @@ async def get_device_signal_history(
             "history": history
         }
     except Exception as e:
-        logger.error(f"Errore recupero signal history per {mac}: {e}")
+        logger.error(f"Error fetching signal history for {mac}: {e}")
         return {
             "status": "error",
             "message": str(e),

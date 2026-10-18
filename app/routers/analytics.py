@@ -282,7 +282,7 @@ async def get_network_distribution() -> Dict[str, Any]:
             "vendors": vendor_list
         }
     except Exception as e:
-        logger.error(f"Errore generazione distribuzione analytics: {e}")
+        logger.error(f"Error generating analytics distribution: {e}")
         return {
             "status": "error",
             "message": str(e),
@@ -306,7 +306,7 @@ async def get_isp_sla_trend(days: int = Query(30, ge=1, le=365)) -> Dict[str, An
             "sla": sla_data
         }
     except Exception as e:
-        logger.error(f"Errore recupero SLA trend: {e}")
+        logger.error(f"Error fetching SLA trend: {e}")
         return {
             "status": "error",
             "message": str(e),

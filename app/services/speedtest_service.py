@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from app.config import settings
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -63,7 +63,7 @@ class SpeedtestService:
             raise RuntimeError(tr("speedtest.already_running"))
 
         self.is_running = True
-        logger.info("Avvio esecuzione Speed Test...")
+        log_event(logger, logging.INFO, "log_eero.speedtest_started")
         
         try:
             # Se siamo autenticati con eero (e non forzato locale o demo pura)
@@ -140,10 +140,10 @@ class SpeedtestService:
                 "bufferbloat_grade": grade,
                 "bufferbloat_delta_ms": delta,
             }
-            logger.info(f"Speed Test completato: ↓ {down} Mbps, ↑ {up} Mbps, Ping: {ping} ms (Bufferbloat: {grade}, +{delta} ms)")
+            log_event(logger, logging.INFO, "log_eero.speedtest_completed", down=down, up=up, ping=ping, grade=grade, delta=delta)
             return self.last_result
         except Exception as e:
-            logger.error(f"Speed Test execution error: {e}")
+            log_event(logger, logging.ERROR, "log_eero.speedtest_failed", error=e)
             raise
         finally:
             self.is_running = False

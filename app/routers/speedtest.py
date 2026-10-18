@@ -1,6 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.speedtest_service import speedtest_service
@@ -34,7 +34,7 @@ async def trigger_manual_speedtest():
             "result": result
         }
     except Exception as e:
-        logger.error(f"Manual speedtest execution error: {e}")
+        log_event(logger, logging.ERROR, "log_eero.speedtest_manual_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 

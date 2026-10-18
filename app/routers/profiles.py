@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 
@@ -65,7 +65,7 @@ async def create_profile(req: CreateProfileRequest):
             "profile": res.get("profile")
         }
     except Exception as e:
-        logger.error(f"Errore creazione profilo: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_create_failed", exc_info=True, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -86,7 +86,7 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
             "profile": res.get("profile")
         }
     except Exception as e:
-        logger.error(f"Errore aggiornamento profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_update_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -103,7 +103,7 @@ async def delete_profile(profile_id: str):
             "result": res
         }
     except Exception as e:
-        logger.error(f"Errore eliminazione profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_delete_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -122,5 +122,5 @@ async def assign_devices_to_profile(profile_id: str, req: AssignDevicesRequest):
             "profile_id": profile_id
         }
     except Exception as e:
-        logger.error(f"Errore assegnazione dispositivi a profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_devices_assign_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))

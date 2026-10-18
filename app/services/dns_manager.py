@@ -10,7 +10,7 @@ import httpx
 
 from app.services.db import db_service
 from app.services.eero_client import get_adguard_tags
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class DNSManager:
             try:
                 instances = json.loads(instances_json)
             except Exception as e:
-                logger.warning(f"Errore caricamento dns_instances da SQLite: {e}")
+                logger.warning(f"Failed to load dns_instances from SQLite: {e}")
 
         # Se non ci sono istanze strutturate, controlla la configurazione legacy AdGuard
         if not instances:
@@ -1000,7 +1000,7 @@ class DNSManager:
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
                     except Exception as e:
-                        logger.warning(f"Pi-hole v5: errore durante controllo pruning customdns: {e}")
+                        logger.warning(f"Pi-hole v5: customdns pruning check failed: {e}")
 
                 synced = 0
                 failed = 0
@@ -1214,11 +1214,11 @@ class DNSManager:
                 logger.debug(f"Pre-sync AdGuard NDP scan skipped/failed: {e_scan}")
 
             # 2. Sincronizzazione regolare verso tutti i server DNS
-            logger.info("Avvio sincronizzazione automatica Multi-DNS background...")
+            log_event(logger, logging.INFO, "log_ops.dns_autosync_started")
             res = await self.sync_devices(devices)
-            logger.info(f"Esito sync Multi-DNS: {res.get('message')}")
+            log_event(logger, logging.INFO, "log_ops.dns_autosync_result", result=res.get('message'))
         except Exception as e:
-            logger.error(f"Errore durante l'auto-sync Multi-DNS: {e}")
+            log_event(logger, logging.ERROR, "log_ops.dns_autosync_failed", error=str(e))
 
 
 # Istanza singleton esportata

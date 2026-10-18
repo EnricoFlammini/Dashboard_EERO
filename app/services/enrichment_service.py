@@ -8,7 +8,7 @@ import sys
 from typing import Any, Dict, List, Optional, Set
 import httpx
 
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.db import db_service
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ async def probe_ip(ip_str: str, timeout_sec: float = 1.0) -> None:
             except Exception:
                 pass
     except Exception as e:
-        logger.debug(f"ICMP probe su {clean_ip} non riuscito: {e}")
+        logger.debug(f"ICMP probe to {clean_ip} failed: {e}")
 
 
 async def resolve_mac_via_ndp(ip_str: str, probe_first: bool = True) -> Optional[str]:
@@ -127,7 +127,7 @@ async def resolve_mac_via_ndp(ip_str: str, probe_first: bool = True) -> Optional
             if match:
                 resolved_mac = normalize_mac(match.group(0))
         except Exception as e:
-            logger.debug(f"Errore esecuzione 'ip neigh' per {clean_ip}: {e}")
+            logger.debug(f"Running 'ip neigh' for {clean_ip} failed: {e}")
 
         # 2. Fallback su /proc/net/arp se IPv4
         if not resolved_mac and clean_info["version"] == 4 and os.path.exists("/proc/net/arp"):
@@ -221,9 +221,8 @@ class EnrichmentService:
         # Re-arricchisci subito la cache dispositivi in RAM
         await self.refresh_cached_devices_enrichment()
 
-        logger.info(
-            f"Reverse Enrichment: elaborati {len(valid_entries)} record da '{source}' "
-            f"(aggiunti={db_res['added']}, aggiornati={db_res['updated']})."
+        log_event(logger, logging.INFO, "log_ops.enrichment_processed",
+            count=len(valid_entries), source=source, added=db_res['added'], updated=db_res['updated'],
         )
 
         return {

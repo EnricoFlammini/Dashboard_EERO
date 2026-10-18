@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from app.config import settings
+from app.i18n import log_event
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -254,7 +255,7 @@ class EeroNewsService:
                         article = data.get("article", {})
                         html_body = article.get("body", "")
                         if html_body:
-                            logger.info(f"Successfully fetched eero release notes from {url}")
+                            log_event(logger, logging.INFO, "log_ops.news_fetched", url=url)
                             break
                     else:
                         logger.warning(f"Zendesk API {url} returned status {resp.status_code}")
@@ -267,13 +268,13 @@ class EeroNewsService:
             if releases:
                 await db_service.save_release_notes(releases)
                 self._last_fetched = now
-                logger.info(f"Persisted {len(releases)} eero release notes to SQLite.")
+                log_event(logger, logging.INFO, "log_ops.news_persisted", count=len(releases))
                 return releases
 
         # Fallback se la connessione fallisce o offline: recupera dalla cache SQLite esistente
         cached = await db_service.get_release_notes(limit=100)
         if cached:
-            logger.info("Using cached eero release notes from SQLite after remote fetch failure.")
+            log_event(logger, logging.INFO, "log_ops.news_cached_fallback")
             return cached
 
         # Se anche il DB è vuoto (es. primo avvio offline), carica i dati di default

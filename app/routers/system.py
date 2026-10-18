@@ -11,7 +11,7 @@ from app.services.eero_news_service import eero_news_service
 from app.services.notifications import notification_service
 from app.services.runtime_info import get_runtime_info
 from app.services.updater import updater_service
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ async def export_system_backup_endpoint():
             }
         )
     except Exception as e:
-        logger.error(f"Error generating system backup: {e}")
+        log_event(logger, logging.ERROR, "log_system.backup_export_failed", error=e)
         raise HTTPException(status_code=500, detail=tr("system.backup_export_failed", error=str(e)))
 
 
@@ -129,7 +129,7 @@ async def import_system_restore_endpoint(payload: Dict[str, Any]):
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        logger.error(f"Error during system restore: {e}")
+        log_event(logger, logging.ERROR, "log_system.backup_restore_failed", error=e)
         raise HTTPException(status_code=500, detail=tr("system.backup_restore_failed", error=str(e)))
 
 
@@ -164,7 +164,7 @@ async def trigger_database_compaction(force: bool = False, vacuum: bool = True):
         summary = await retention_worker.run_compaction_cycle(vacuum=vacuum, force=force)
         return summary
     except Exception as e:
-        logger.error(f"Error during manual database compaction: {e}")
+        log_event(logger, logging.ERROR, "log_system.db_compact_failed", error=e)
         raise HTTPException(status_code=500, detail=tr("system.db_compact_failed", error=str(e)))
 
 
@@ -178,7 +178,7 @@ async def check_database_integrity(quick: bool = True):
         res = await db_service.check_database_integrity(quick=quick)
         return res
     except Exception as e:
-        logger.error(f"Error checking database integrity: {e}")
+        log_event(logger, logging.ERROR, "log_system.db_integrity_failed", error=e)
         raise HTTPException(status_code=500, detail=tr("system.db_integrity_failed", error=str(e)))
 
 
@@ -192,7 +192,7 @@ async def create_database_backup():
         res = await db_service.backup_database_file()
         return res
     except Exception as e:
-        logger.error(f"Error creating database backup: {e}")
+        log_event(logger, logging.ERROR, "log_system.db_backup_failed", error=e)
         raise HTTPException(status_code=500, detail=tr("system.db_backup_failed", error=str(e)))
 
 

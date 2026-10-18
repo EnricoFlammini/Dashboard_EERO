@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Optional
 from fastapi import Depends, HTTPException, Request, status
 from app.config import settings
 from app.services.db import db_service
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -121,8 +121,9 @@ def require_permission(perm_key: str) -> Callable:
             if perms.intersection(allowed_keys) or "*" in perms:
                 return user
             
-            logger.warning(
-                f"Accesso negato: utente '{user.get('username')}' non ha il permesso richiesto '{perm_key}'"
+            log_event(
+                logger, logging.WARNING, "log_system.permission_denied",
+                username=user.get('username'), permission=perm_key,
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

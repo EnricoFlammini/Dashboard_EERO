@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import require_admin
 from app.services.auth_service import auth_service, ALL_PERMISSION_KEYS
 from app.services.db import db_service
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ async def create_user(payload: CreateUserRequest, admin: dict = Depends(require_
     created_user.pop("password_hash", None)
     created_user.pop("salt", None)
 
-    logger.info(f"Local Auth: Utente '{clean_username}' (id: {new_id}, admin: {effective_is_admin}) creato con successo da '{admin.get('username')}'.")
+    log_event(logger, logging.INFO, "log_system.user_created", username=clean_username, user_id=new_id, is_admin=effective_is_admin, admin=admin.get('username'))
     return {
         "status": "success",
         "message": tr("users.created", username=clean_username),
@@ -195,7 +195,7 @@ async def update_user(user_id: int, payload: UpdateUserRequest, admin: dict = De
     updated_user.pop("password_hash", None)
     updated_user.pop("salt", None)
 
-    logger.info(f"Local Auth: Utente id={user_id} aggiornato con successo dall'admin '{admin.get('username')}'.")
+    log_event(logger, logging.INFO, "log_system.user_updated", user_id=user_id, admin=admin.get('username'))
     return {
         "status": "success",
         "message": tr("users.updated"),
@@ -226,7 +226,7 @@ async def delete_user(user_id: int, admin: dict = Depends(require_admin)):
     if not success:
         raise HTTPException(status_code=500, detail=tr("users.delete_failed"))
 
-    logger.info(f"Local Auth: Utente '{user.get('username')}' (id={user_id}) eliminato dall'admin '{admin.get('username')}'.")
+    log_event(logger, logging.INFO, "log_system.user_deleted", username=user.get('username'), user_id=user_id, admin=admin.get('username'))
     return {
         "status": "success",
         "message": tr("users.deleted", username=user.get('username'))

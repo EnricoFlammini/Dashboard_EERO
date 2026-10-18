@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from app.config import settings
 from app.services.runtime_info import get_runtime_info
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class UpdaterService:
                         published_at = data.get("published_at") or ""
                         html_url = data.get("html_url") or html_url
         except Exception as e:
-            logger.warning(f"Error checking GitHub Releases: {e}")
+            log_event(logger, logging.WARNING, "log_system.update_check_github_failed", error=e)
 
         # 2. Interroga sempre anche Docker Hub Tags API per identificare l'effettiva immagine Docker più recente
         try:
@@ -196,7 +196,7 @@ class UpdaterService:
                             else:
                                 release_notes = f"Release v{latest_full_ver} pubblicata su Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
         except Exception as e:
-            logger.warning(f"Error checking Docker Hub: {e}")
+            log_event(logger, logging.WARNING, "log_system.update_check_dockerhub_failed", error=e)
 
         update_avail = is_newer_version(current_full, latest_full_ver)
         docker_sock = self.is_docker_socket_available
@@ -226,7 +226,7 @@ class UpdaterService:
 
         self._cached_update_info = result
         self._last_check_time = now
-        logger.info(f"Update check completed: current={current_ver}, latest={latest_ver}, update_available={update_avail}")
+        log_event(logger, logging.INFO, "log_system.update_check_completed", current=current_ver, latest=latest_ver, update_available=update_avail)
         return result
 
     async def trigger_update(self) -> Dict[str, Any]:
@@ -254,14 +254,14 @@ class UpdaterService:
                         raise RuntimeError(tr("updater.watchtower_bad_status", code=resp.status_code, body=resp.text))
             except Exception as ex:
                 self._is_updating = False
-                logger.error(f"Errore trigger Watchtower: {ex}")
+                log_event(logger, logging.ERROR, "log_system.watchtower_trigger_failed", error=ex)
                 raise RuntimeError(tr("updater.watchtower_error", error=ex))
 
         # 2. Se è montato il Docker Socket (/var/run/docker.sock)
         if self.is_docker_socket_available:
             self._is_updating = True
             sock_path = settings.docker_socket_path
-            logger.info(f"Avvio auto-update tramite Docker Socket: {sock_path}")
+            log_event(logger, logging.INFO, "log_system.docker_socket_update_started", socket=sock_path)
             
             # Esegui in background il pull e il recreate
             asyncio.create_task(self._perform_docker_socket_update(sock_path))
@@ -290,10 +290,10 @@ class UpdaterService:
                 logger.info(f"Docker API pull: {pull_url}")
                 pull_resp = await client.post(pull_url)
                 if pull_resp.status_code != 200:
-                    logger.error(f"Docker pull fallito ({pull_resp.status_code}): {pull_resp.text}")
+                    log_event(logger, logging.ERROR, "log_system.docker_pull_failed", status=pull_resp.status_code, response=pull_resp.text)
                     return
 
-                logger.info("Docker image pull completato con successo. Segnalazione restart...")
+                log_event(logger, logging.INFO, "log_system.docker_pull_completed")
                 await asyncio.sleep(2.0)
                 
                 # 2. Invia segnale di restart al container corrente
@@ -301,11 +301,11 @@ class UpdaterService:
                 if hostname:
                     try:
                         await client.post(f"/containers/{hostname}/restart?t=5")
-                        logger.info(f"Container {hostname} restarted via Docker Socket.")
+                        log_event(logger, logging.INFO, "log_system.container_restarted", container=hostname)
                     except Exception as e:
-                        logger.warning(f"Could not restart container by hostname: {e}")
+                        log_event(logger, logging.WARNING, "log_system.container_restart_failed", error=e)
         except Exception as ex:
-            logger.error(f"Errore durante l'aggiornamento via Docker Socket: {ex}")
+            log_event(logger, logging.ERROR, "log_system.docker_socket_update_failed", error=ex)
         finally:
             self._is_updating = False
 

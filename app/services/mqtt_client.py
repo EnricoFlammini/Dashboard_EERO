@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import settings
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -151,7 +151,7 @@ class MQTTService:
                 "base_topic": self._base_topic
             }
         except Exception as e:
-            logger.warning(f"[MQTT] Test connessione fallito verso {target_host}:{target_port}: {e}")
+            log_event(logger, logging.WARNING, "log_ops.mqtt_test_failed", host=target_host, port=target_port, error=str(e))
             return {
                 "success": False,
                 "error": str(e),
@@ -346,7 +346,7 @@ class MQTTService:
             self._stats["discovery_topics_published"] += 1
 
         self._discovery_published = True
-        logger.info(f"[MQTT] Pubblicati {len(payloads)} topic di Home Assistant Auto-Discovery.")
+        log_event(logger, logging.INFO, "log_ops.mqtt_discovery_published", count=len(payloads))
 
     async def publish_telemetry(self, client: Any, telemetry_data: Optional[Dict[str, Any]] = None):
         """Publishes current network telemetry and device tracker states."""
@@ -427,7 +427,7 @@ class MQTTService:
     async def _worker_loop(self):
         """Background asynchronous MQTT client loop with auto-reconnect."""
         from app.services.eero_client import eero_client
-        logger.info(f"[MQTT] Avvio worker MQTT (Broker: {self._broker_host}:{self._broker_port}, Base Topic: {self._base_topic})")
+        log_event(logger, logging.INFO, "log_ops.mqtt_worker_started", host=self._broker_host, port=self._broker_port, topic=self._base_topic)
 
         while not self._stop_event.is_set():
             if not self._enabled:
@@ -435,7 +435,7 @@ class MQTTService:
                 continue
 
             if not self.is_available:
-                logger.warning("[MQTT] Modulo aiomqtt non disponibile. Installare aiomqtt per abilitare la pubblicazione MQTT.")
+                log_event(logger, logging.WARNING, "log_ops.mqtt_aiomqtt_missing")
                 await asyncio.sleep(60)
                 continue
 
@@ -466,7 +466,7 @@ class MQTTService:
                     self._connected = True
                     self._stats["connected"] = True
                     self._stats["last_error"] = None
-                    logger.info(f"[MQTT] Connesso con successo al broker {self._broker_host}:{self._broker_port}")
+                    log_event(logger, logging.INFO, "log_ops.mqtt_connected", host=self._broker_host, port=self._broker_port)
 
                     # Publish Home Assistant Discovery
                     await self.publish_discovery_configs(client)
@@ -482,18 +482,18 @@ class MQTTService:
                 self._connected = False
                 self._stats["connected"] = False
                 self._stats["last_error"] = str(e)
-                logger.warning(f"[MQTT] Errore connessione broker {self._broker_host}:{self._broker_port} ({e}). Riprovo tra 15s...")
+                log_event(logger, logging.WARNING, "log_ops.mqtt_connect_failed", host=self._broker_host, port=self._broker_port, error=str(e))
                 await asyncio.sleep(15)
 
         self._connected = False
         self._stats["connected"] = False
-        logger.info("[MQTT] Worker MQTT terminato.")
+        log_event(logger, logging.INFO, "log_ops.mqtt_worker_stopped")
 
     async def start(self):
         """Starts the background MQTT client worker."""
         await self.load_settings()
         if not self._enabled:
-            logger.info("[MQTT] Servizio MQTT disabilitato da configurazione.")
+            log_event(logger, logging.INFO, "log_ops.mqtt_disabled")
             return
 
         if self._task and not self._task.done():

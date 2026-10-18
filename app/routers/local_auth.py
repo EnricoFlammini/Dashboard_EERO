@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import get_current_user, _extract_token_from_request
 from app.services.auth_service import auth_service
 from app.services.db import db_service
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
         "last_login": None
     }
 
-    logger.info(f"Local Auth: Setup iniziale completato per l'amministratore '{username}'.")
+    log_event(logger, logging.INFO, "log_system.admin_setup_completed", username=username)
     return {
         "status": "success",
         "message": tr("auth.setup_completed"),
@@ -183,7 +183,7 @@ async def local_login(payload: LocalLoginRequest, response: Response):
         "last_login": user.get("last_login")
     }
 
-    logger.info(f"Local Auth: Utente '{username}' autenticato con successo.")
+    log_event(logger, logging.INFO, "log_system.user_logged_in", username=username)
     return {
         "status": "success",
         "token": token,
@@ -254,7 +254,7 @@ async def get_session_timeout():
 async def set_session_timeout(payload: SessionTimeoutRequest):
     """Aggiorna il timeout di inattività per il logout automatico in minuti."""
     await db_service.set_setting("session_timeout_minutes", str(payload.minutes))
-    logger.info(f"Local Auth: Aggiornato timeout inattività a {payload.minutes} minuti.")
+    log_event(logger, logging.INFO, "log_system.session_timeout_updated", minutes=payload.minutes)
     return {
         "status": "success",
         "session_timeout_minutes": payload.minutes,

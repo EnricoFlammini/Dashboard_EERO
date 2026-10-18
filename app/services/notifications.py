@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
 from app import i18n
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.config import settings
 from app.services.db import db_service
 
@@ -134,9 +134,9 @@ class NotificationService:
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
             if not ignore_enabled and not self._demo_settings.get("telegram_enabled", True):
-                logger.debug("[Demo Mode] Notifiche Telegram disabilitate nelle impostazioni demo.")
+                logger.debug("[Demo Mode] Telegram notifications are disabled in the demo settings.")
                 return False
-            logger.info(f"[Demo Mode] Simulazione invio notifica Telegram riuscita (messaggio: {message[:80]}...)")
+            log_event(logger, logging.INFO, "log_ops.telegram_demo_sent", preview=message[:80])
             return True
 
         if not ignore_enabled:
@@ -163,22 +163,22 @@ class NotificationService:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
-                    logger.info("Telegram notification sent successfully.")
+                    log_event(logger, logging.INFO, "log_ops.telegram_sent")
                     return True
                 else:
-                    logger.error(f"Telegram send failed ({resp.status_code}): {resp.text}")
+                    log_event(logger, logging.ERROR, "log_ops.telegram_send_failed", status=resp.status_code, response=resp.text)
                     return False
         except Exception as e:
-            logger.error(f"Telegram notification error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.telegram_error", error=str(e))
             return False
 
     async def send_webhook(self, event_type: str, data: Dict[str, Any], ignore_enabled: bool = False) -> bool:
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
             if not ignore_enabled and not self._demo_settings.get("webhook_enabled", True):
-                logger.debug(f"[Demo Mode] Webhook disabilitato nelle impostazioni demo ({event_type}).")
+                logger.debug(f"[Demo Mode] Webhook is disabled in the demo settings ({event_type}).")
                 return False
-            logger.info(f"[Demo Mode] Simulazione invio notifica Webhook riuscita (evento: {event_type})")
+            log_event(logger, logging.INFO, "log_ops.webhook_demo_sent", event=event_type)
             return True
 
         if not ignore_enabled:
@@ -201,7 +201,7 @@ class NotificationService:
                 resp = await client.post(webhook_url, json=payload)
                 return resp.status_code in (200, 201, 202, 204)
         except Exception as e:
-            logger.error(f"Webhook notification error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.webhook_error", error=str(e))
             return False
 
     async def send_discord_message(
@@ -217,7 +217,7 @@ class NotificationService:
         if eero_client.is_demo_mode:
             if not ignore_enabled and not self._demo_settings.get("discord_enabled", True):
                 return False
-            logger.info(f"[Demo Mode] Simulazione invio notifica Discord riuscita (titolo: {title})")
+            log_event(logger, logging.INFO, "log_ops.discord_demo_sent", title=title)
             return True
 
         if not ignore_enabled:
@@ -248,7 +248,7 @@ class NotificationService:
                 resp = await client.post(webhook_url, json=payload)
                 return resp.status_code in (200, 204)
         except Exception as e:
-            logger.error(f"Discord notification error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.discord_error", error=str(e))
             return False
 
     async def send_pushover_message(
@@ -263,7 +263,7 @@ class NotificationService:
         if eero_client.is_demo_mode:
             if not ignore_enabled and not self._demo_settings.get("pushover_enabled", True):
                 return False
-            logger.info(f"[Demo Mode] Simulazione invio notifica Pushover riuscita (titolo: {title})")
+            log_event(logger, logging.INFO, "log_ops.pushover_demo_sent", title=title)
             return True
 
         if not ignore_enabled:
@@ -289,7 +289,7 @@ class NotificationService:
                 resp = await client.post("https://api.pushover.net/1/messages.json", data=payload)
                 return resp.status_code == 200
         except Exception as e:
-            logger.error(f"Pushover notification error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.pushover_error", error=str(e))
             return False
 
     async def _dispatch_all_channels(self, event_type: str, title: str, text: str, db_msg: str, data: Dict[str, Any], color: int = 0x38bdf8):

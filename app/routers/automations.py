@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 from app.config import settings
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
@@ -196,7 +196,7 @@ async def toggle_focus_mode(payload: FocusModeRequest):
                 await eero_client.update_device(device_id=str(dev_id), paused=True)
                 paused_list.append(dev.get("mac"))
             except Exception as ex:
-                logger.warning(f"Failed to pause device {dev_id} for focus mode: {ex}")
+                log_event(logger, logging.WARNING, "log_ops.focus_pause_failed", device=dev_id, error=str(ex))
 
         await db_service.set_setting("focus_mode_active", "true")
         await db_service.set_setting("focus_mode_paused_macs", json.dumps(paused_list))
@@ -229,7 +229,7 @@ async def toggle_focus_mode(payload: FocusModeRequest):
                     await eero_client.update_device(device_id=str(dev_id), paused=False)
                     unpaused_count += 1
                 except Exception as ex:
-                    logger.warning(f"Failed to unpause device {dev_id}: {ex}")
+                    log_event(logger, logging.WARNING, "log_ops.focus_unpause_failed", device=dev_id, error=str(ex))
 
         await db_service.set_setting("focus_mode_active", "false")
         await db_service.set_setting("focus_mode_paused_macs", "[]")
@@ -423,7 +423,7 @@ async def generate_immediate_digest(payload: Optional[DigestGenerateRequest] = N
         data = await background_poller._send_daily_digest(lang=lang)
         return {"status": "success", "message": tr("automations.digest_sent"), "data": data}
     except Exception as e:
-        logger.error(f"Errore generazione digest: {e}")
+        log_event(logger, logging.ERROR, "log_ops.digest_generate_failed", error=str(e))
         raise HTTPException(status_code=500, detail=tr("automations.digest_send_error", error=str(e)))
 
 

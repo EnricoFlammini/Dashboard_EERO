@@ -6,7 +6,7 @@ from datetime import datetime, timezone, time as dt_time
 from typing import Any, Dict, List, Optional, Set
 
 from app.config import settings
-from app.i18n import SUPPORTED_LANGUAGES, current_language, tr, tr_all
+from app.i18n import SUPPORTED_LANGUAGES, current_language, log_event, tr, tr_all
 from app.services.adguard import adguard_service
 from app.services.db import db_service
 from app.services.eero_client import eero_client
@@ -94,7 +94,7 @@ class BackgroundPoller:
             return
         self._running = True
         self._task = asyncio.create_task(self._poll_loop())
-        logger.info(f"Background Poller started (Interval: {settings.poll_interval}s).")
+        log_event(logger, logging.INFO, "log_ops.poller_started", interval=settings.poll_interval)
 
     async def stop(self):
         self._running = False
@@ -104,7 +104,7 @@ class BackgroundPoller:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        logger.info("Background Poller stopped.")
+        log_event(logger, logging.INFO, "log_ops.poller_stopped")
 
     def mark_cached_devices_seen(self, macs: Set[str], seen: bool = True):
         """Aggiorna subito il badge NUOVO nella cache RAM, senza attendere il prossimo ciclo di polling."""
@@ -523,7 +523,7 @@ class BackgroundPoller:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Errore durante il ciclo di polling in background: {e}", exc_info=True)
+                log_event(logger, logging.ERROR, "log_ops.poll_loop_failed", exc_info=True, error=str(e))
                 await asyncio.sleep(10)
 
     async def _poll_and_cache(self):
@@ -552,9 +552,8 @@ class BackgroundPoller:
                 else:
                     self.cloud_status = "unreachable"
 
-                logger.warning(
-                    f"Cloud poll attempt failed ({self._consecutive_failed_polls} consecutive failure(s), "
-                    f"cloud_status='{self.cloud_status}'): {e}"
+                log_event(logger, logging.WARNING, "log_ops.cloud_poll_failed",
+                    count=self._consecutive_failed_polls, status=self.cloud_status, error=str(e),
                 )
 
                 if self._consecutive_failed_polls >= 3 and not self._cloud_alert_sent:
@@ -578,7 +577,7 @@ class BackgroundPoller:
             try:
                 profiles = await eero_client.get_profiles()
             except Exception as ep:
-                logger.warning(f"Failed to fetch profiles in poller: {ep}")
+                log_event(logger, logging.WARNING, "log_ops.profiles_fetch_failed", error=str(ep))
                 profiles = []
 
             try:
@@ -610,7 +609,7 @@ class BackgroundPoller:
                     if r_mac and r_ip:
                         cloud_reservations[r_mac] = r_ip
             except Exception as e:
-                logger.warning(f"Failed to fetch cloud reservations in poller: {e}")
+                log_event(logger, logging.WARNING, "log_ops.reservations_fetch_failed", error=str(e))
                 cloud_reservations = {}
 
             # Costruzione mappa dispositivi -> profili per arricchimento immediato
@@ -1072,10 +1071,10 @@ class BackgroundPoller:
                             if not sp_cached.get("upload_mbps") and l_st.get("upload_mbps"):
                                 sp_cached["upload_mbps"] = l_st["upload_mbps"]
                     except Exception as e:
-                        logger.debug(f"Arricchimento bufferbloat cache network: {e}")
+                        logger.debug(f"Bufferbloat enrichment of network cache failed: {e}")
 
         except Exception as e:
-            logger.error(f"Errore durante il salvataggio delle metriche di rete: {e}")
+            log_event(logger, logging.ERROR, "log_ops.metrics_save_failed", error=str(e))
 
     @staticmethod
     def _get_local_now(tz_name: Optional[str] = None) -> datetime:
@@ -1120,10 +1119,10 @@ class BackgroundPoller:
                 if is_night != self._last_night_mode_state:
                     self._last_night_mode_state = is_night
                     target_led_on = not is_night
-                    logger.info(f"Night Mode Scheduler: Impostazione LED a {target_led_on}")
+                    log_event(logger, logging.INFO, "log_ops.night_mode_leds_on" if target_led_on else "log_ops.night_mode_leds_off")
                     await eero_client.set_all_leds(target_led_on)
             except Exception as ex:
-                logger.error(f"Errore calcolo scheduler night mode: {ex}")
+                log_event(logger, logging.ERROR, "log_ops.night_mode_failed", error=str(ex))
 
         # B. Retention Cleanup (una volta ogni 24 ore)
         if not self._last_retention_run or (now - self._last_retention_run).total_seconds() > 86400:
@@ -1140,7 +1139,7 @@ class BackgroundPoller:
                     try:
                         await speedtest_service.run_speedtest()
                     except Exception as err:
-                        logger.warning(f"Scheduled speedtest failed: {err}")
+                        log_event(logger, logging.WARNING, "log_ops.scheduled_speedtest_failed", error=str(err))
                 asyncio.create_task(_safe_scheduled_speedtest())
 
         # D. Daily Digest (persistenza su DB SQLite per evitare re-invii continui e spam dopo riavvii del container - Issue #70)
@@ -1235,7 +1234,7 @@ class BackgroundPoller:
             await notification_service.notify_digest(digest_payload, lang=lang)
             return digest_payload
         except Exception as e:
-            logger.error(f"Errore invio digest giornaliero: {e}", exc_info=True)
+            log_event(logger, logging.ERROR, "log_ops.digest_send_failed", exc_info=True, error=str(e))
             raise e
 
     def update_cached_profiles(self, profiles: List[Dict[str, Any]]):

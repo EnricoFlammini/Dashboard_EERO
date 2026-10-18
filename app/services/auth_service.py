@@ -107,7 +107,7 @@ class AuthService:
             expected_digest = bytes.fromhex(password_hash)
             return hmac.compare_digest(computed_digest, expected_digest)
         except Exception as e:
-            logger.warning(f"Errore durante la verifica della password: {e}")
+            logger.warning(f"Error while verifying password: {e}")
             return False
 
     @staticmethod

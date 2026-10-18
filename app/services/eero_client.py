@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from app.config import settings
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +244,7 @@ class EeroClient:
             if settings.eero_network_id:
                 self.current_network_id = settings.eero_network_id.strip()
                 self.saved_live_network_id = self.current_network_id
-            logger.info("Loaded eero session token permanently from environment variable (.env).")
+            log_event(logger, logging.INFO, "log_eero.session_loaded_env")
             return
 
         # 2. Caricamento dal file di sessione persistente nel volume ./data
@@ -278,9 +278,9 @@ class EeroClient:
                         self.account_info = data.get("account_info")
                         self.available_networks = data.get("available_networks") or []
 
-                    logger.info(f"Loaded existing eero session (Network ID: {self.current_network_id}, Demo Mode: {self.is_demo_mode})")
+                    log_event(logger, logging.INFO, "log_eero.session_loaded", network_id=self.current_network_id, demo=self.is_demo_mode)
         except Exception as e:
-            logger.warning(f"Could not load session from {self.session_path}: {e}")
+            log_event(logger, logging.WARNING, "log_eero.session_load_failed", path=self.session_path, error=e)
 
     def save_session(self):
         """Salva il token di sessione su disco."""
@@ -307,9 +307,9 @@ class EeroClient:
                     pass  # fchmod assente (Windows) o non consentito sul volume: il salvataggio prosegue
                 f.truncate(0)  # svuotato solo dopo il chmod: un chmod fallito non lascia mai il file vuoto
                 json.dump(data, f, indent=2)
-            logger.info("Saved eero session to disk.")
+            log_event(logger, logging.INFO, "log_eero.session_saved")
         except Exception as e:
-            logger.error(f"Error saving session: {e}")
+            log_event(logger, logging.ERROR, "log_eero.session_save_failed", error=e)
 
     def set_demo_mode(self, active: bool):
         """Attiva o disattiva la modalità demo preservando il token reale salvato."""
@@ -354,9 +354,9 @@ class EeroClient:
         if self.session_path.exists():
             try:
                 os.remove(self.session_path)
-                logger.info("Removed session file on logout.")
+                log_event(logger, logging.INFO, "log_eero.session_removed_logout")
             except Exception as e:
-                logger.error(f"Failed to remove session file: {e}")
+                log_event(logger, logging.ERROR, "log_eero.session_remove_failed", error=e)
 
     def get_available_networks(self) -> List[Dict[str, Any]]:
         """Restituisce la lista di tutte le reti eero disponibili con il flag is_active aggiornato."""
@@ -402,7 +402,7 @@ class EeroClient:
             raise ValueError(tr("eero.invalid_network_id"))
 
         old_net_id = self.current_network_id
-        logger.info(f"Switching eero active network from '{old_net_id}' to '{clean_id}'...")
+        log_event(logger, logging.INFO, "log_eero.network_switching", old_network_id=old_net_id, network_id=clean_id)
 
         if self.is_demo_mode:
             valid_demo_ids = ("network_demo_mesh_01", "network_demo_mesh_02")
@@ -433,7 +433,7 @@ class EeroClient:
             net["is_active"] = (net.get("id") == self.current_network_id)
 
         self.save_session()
-        logger.info(f"Successfully switched active network to '{self.current_network_id}'.")
+        log_event(logger, logging.INFO, "log_eero.network_switched", network_id=self.current_network_id)
         return {
             "status": "success",
             "active_network_id": self.current_network_id,
@@ -634,7 +634,7 @@ class EeroClient:
             # 4. Fallback configurazione: se nessuna rete è stata rilevata dall'account, usa EERO_NETWORK_ID da .env/settings (Issue #69)
             env_net_id = (settings.eero_network_id or "").strip()
             if not parsed_networks and env_net_id:
-                logger.info(f"Using fallback EERO_NETWORK_ID from configuration: {env_net_id}")
+                log_event(logger, logging.INFO, "log_eero.network_env_fallback", network_id=env_net_id)
                 parsed_networks.append({
                     "id": env_net_id,
                     "name": f"eero Network ({env_net_id})",
@@ -663,12 +663,9 @@ class EeroClient:
             else:
                 self.available_networks = []
                 self.current_network_id = None
-                logger.warning(
-                    "No eero networks found for the authenticated account. "
-                    "If your account has access to a network, specify EERO_NETWORK_ID in your configuration or verify your eero permissions."
-                )
+                log_event(logger, logging.WARNING, "log_eero.no_networks_found")
 
-            logger.info(f"Resolved eero network: ID={self.current_network_id} (Total available networks: {len(self.available_networks)})")
+            log_event(logger, logging.INFO, "log_eero.network_resolved", network_id=self.current_network_id, count=len(self.available_networks))
             self.save_session()
             return data
 
@@ -2172,7 +2169,7 @@ class EeroClient:
     async def reboot_network(self) -> Dict[str, Any]:
         """Invia il comando di riavvio all'intera rete eero."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
-            logger.info("Demo: Riavvio intera rete mesh simulato.")
+            log_event(logger, logging.INFO, "log_eero.demo_network_reboot")
             return {"status": "success", "message": tr("eero.network_reboot_demo")}
 
         async with self._client_session() as client:
@@ -2184,7 +2181,7 @@ class EeroClient:
     async def reboot_eero(self, eero_id: str) -> Dict[str, Any]:
         """Invia il comando di riavvio a un singolo nodo eero."""
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
-            logger.info(f"Demo: Riavvio nodo eero {eero_id} simulato.")
+            log_event(logger, logging.INFO, "log_eero.demo_node_reboot", eero_id=eero_id)
             return {"status": "success", "message": tr("eero.node_reboot_demo", eero_id=eero_id)}
 
         async with self._client_session() as client:
@@ -2234,14 +2231,14 @@ class EeroClient:
                         resp = await client.put(url, json=payload, headers=headers)
 
                     if resp.status_code in (200, 201, 202, 204):
-                        logger.info(f"LED update succeeded for eero {clean_id} via {method} {url}")
+                        log_event(logger, logging.INFO, "log_eero.led_updated", eero_id=clean_id, method=method, url=url)
                         return {"status": "success", "eero_id": clean_id, "led_on": led_on}
                     else:
                         last_err = f"{method} {url} -> HTTP {resp.status_code}: {resp.text}"
                 except Exception as ex:
                     last_err = f"{method} {url} -> Exception: {ex}"
 
-            logger.error(f"All LED update attempts failed for eero {clean_id}. Last error: {last_err}")
+            log_event(logger, logging.ERROR, "log_eero.led_update_failed", eero_id=clean_id, error=last_err)
             raise RuntimeError(tr("eero.led_error", error=last_err))
 
     async def set_all_leds(self, led_on: bool) -> Dict[str, Any]:
@@ -2255,7 +2252,7 @@ class EeroClient:
                     res = await self.set_eero_led(str(eid), led_on)
                     results.append(res)
                 except Exception as ex:
-                    logger.warning(f"Failed to toggle LED on eero {eid}: {ex}")
+                    log_event(logger, logging.WARNING, "log_eero.led_toggle_failed", eero_id=eid, error=ex)
         return {"status": "success", "all_leds_on": led_on, "count": len(results)}
 
     # =========================================================================
@@ -2377,7 +2374,7 @@ class EeroClient:
                             resp = await client.patch(url, json=p_var, headers=self._get_headers(), cookies=self._get_cookies())
 
                         if resp.status_code in (200, 201, 204):
-                            logger.info(f"Dispositivo {device_id} aggiornato con successo su eero Cloud via {method} {url} (payload: {p_var})")
+                            log_event(logger, logging.INFO, "log_eero.device_updated", device_id=device_id, method=method, url=url, payload=p_var)
                             return {
                                 "status": "success",
                                 "device_id": device_id,
@@ -2391,7 +2388,7 @@ class EeroClient:
                     except Exception as e:
                         last_error = f"{method} {url}: {e}"
 
-        logger.warning(f"Tentativi di aggiornamento del dispositivo {device_id} su eero Cloud falliti: {last_error}")
+        log_event(logger, logging.WARNING, "log_eero.device_update_failed", device_id=device_id, error=last_error)
         return {
             "status": "warning",
             "device_id": device_id,
@@ -3318,7 +3315,7 @@ class EeroClient:
 
                             if resp.status_code in (200, 201, 204):
                                 data = resp.json().get("data", payload) if (resp.status_code in (200, 201) and resp.text) else payload
-                                logger.info(f"Profile {clean_id} updated successfully ({resp.status_code}) via {method} {url}")
+                                log_event(logger, logging.INFO, "log_eero.profile_updated", profile_id=clean_id, status=resp.status_code, method=method, url=url)
                                 return {"status": "success", "profile": self._normalize_profile(data)}
                             last_err = f"{resp.status_code}: {resp.text}"
                         except Exception as ex:
@@ -3369,7 +3366,7 @@ class EeroClient:
             res = await self.update_profile(profile_id=profile_id, paused=paused)
             target_prof = res.get("profile")
         except Exception as ex:
-            logger.warning(f"Profile-level pause warning on cloud: {ex}")
+            log_event(logger, logging.WARNING, "log_eero.profile_pause_cloud_warning", profile_id=clean_id, error=ex)
 
         # 2. Pausa/riattiva tutti i singoli dispositivi associati al profilo (garantito su Cloud eero)
         try:
@@ -3385,7 +3382,7 @@ class EeroClient:
                         except Exception as d_ex:
                             logger.warning(f"Failed to pause individual device {d_id}: {d_ex}")
         except Exception as ex:
-            logger.warning(f"Error pausing individual devices of profile {clean_id}: {ex}")
+            log_event(logger, logging.WARNING, "log_eero.profile_pause_devices_failed", profile_id=clean_id, error=ex)
 
         if not target_prof:
             target_prof = {"id": clean_id, "paused": paused}
@@ -4255,7 +4252,7 @@ class EeroClient:
                     data = resp.json().get("data", {})
                     return {"status": "success", "network_id": net_id, "data": data}
         except Exception as e:
-            logger.debug(f"Endpoint /data_usage/devices non disponibile o fallito ({e}), fallback a telemetria live.")
+            logger.debug(f"Endpoint /data_usage/devices unavailable or failed ({e}); falling back to live telemetry.")
 
         devices = await self.get_devices()
         results = []
