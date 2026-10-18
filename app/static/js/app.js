@@ -3,6 +3,21 @@
  * Powered by Alpine.js & Chart.js
  */
 
+// Tag every same-origin API call with the dashboard language so the server
+// answers (errors, confirmations) in the language the user is reading.
+(() => {
+  if (typeof window === 'undefined' || !window.fetch) return;
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init = {}) => {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const sameOriginApi = url.startsWith('/api/') || url.startsWith(`${window.location.origin}/api/`);
+    if (!sameOriginApi || typeof input !== 'string') return nativeFetch(input, init);
+    const headers = new Headers(init.headers || {});
+    if (!headers.has('X-Dashboard-Lang')) headers.set('X-Dashboard-Lang', document.documentElement.lang || 'en');
+    return nativeFetch(input, { ...init, headers });
+  };
+})();
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
@@ -670,7 +685,7 @@ document.addEventListener('alpine:init', () => {
       };
       await Promise.all([
         syncVersion(),
-        this.setLanguage(this.currentLanguage),
+        this.setLanguage(this.currentLanguage, { syncServer: false }),
         this.checkAuthStatus()
       ]);
       await this.checkLocalAuthSession();
@@ -781,7 +796,10 @@ document.addEventListener('alpine:init', () => {
       return null;
     },
 
-    async setLanguage(lang) {
+    // syncServer: an explicit user switch also updates the server's alert
+    // language; the page-load call must not, or every browser that opens the
+    // dashboard would overwrite it.
+    async setLanguage(lang, { syncServer = true } = {}) {
       this.currentLanguage = this.supportedLanguages.includes(lang) ? lang : 'en';
       localStorage.setItem('eero_lang', this.currentLanguage);
       document.documentElement.lang = this.currentLanguage;
@@ -794,14 +812,16 @@ document.addEventListener('alpine:init', () => {
       this.translations = active || this.fallbackTranslations;
       this.translationsLoaded = Object.keys(this.translations).length > 0;
       document.body.classList.remove('i18n-pending');
-      try {
-        await fetch('/api/system/language', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: this.currentLanguage })
-        });
-      } catch (e) {
-        console.warn("Could not sync language with backend:", e);
+      if (syncServer) {
+        try {
+          await fetch('/api/system/language', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: this.currentLanguage })
+          });
+        } catch (e) {
+          console.warn("Could not sync language with backend:", e);
+        }
       }
       await this.loadManualSections();
       if (this.showChangelogModal) {

@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app import i18n
 from app.config import settings
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
@@ -41,6 +42,10 @@ async def lifespan(app: FastAPI):
 
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
+
+    # 1.0 System/alert language for messages produced outside of HTTP requests
+    from app.services.notifications import notification_service
+    i18n.set_system_language(await notification_service.get_language())
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
     from app.services.log_service import log_service
@@ -125,8 +130,19 @@ def _is_cross_origin_write(request: Request) -> bool:
 async def block_cross_origin_writes(request: Request, call_next):
     """Rifiuta POST/PUT/PATCH/DELETE inviati da pagine di altri siti: le POST senza body non passano dal preflight CORS."""
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):
-        return JSONResponse(status_code=403, content={"detail": "Cross-origin request blocked"})
+        return JSONResponse(status_code=403, content={"detail": i18n.tr("common.cross_origin_blocked")})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def bind_request_language(request: Request, call_next):
+    """Binds the caller's UI language so API messages come back in that language."""
+    lang = request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")
+    token = i18n.set_request_language(lang)
+    try:
+        return await call_next(request)
+    finally:
+        i18n.reset_request_language(token)
 
 
 # Definizione Percorsi Static e Template

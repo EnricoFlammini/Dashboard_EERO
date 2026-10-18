@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
+from app import i18n
 from app.config import settings
 from app.services.db import db_service
 
@@ -34,9 +35,12 @@ class NotificationService:
         if eero_client.is_demo_mode and "system_language" in self._demo_settings:
             demo_lang = self._demo_settings.get("system_language")
             if demo_lang and demo_lang.lower() in ("it", "en"):
+                i18n.set_system_language(demo_lang)
                 return demo_lang.lower()
         lang = await db_service.get_setting("system_language", settings.dashboard_lang)
-        return lang.lower() if lang and lang.lower() in ("it", "en") else "en"
+        resolved = lang.lower() if lang and lang.lower() in ("it", "en") else "en"
+        i18n.set_system_language(resolved)
+        return resolved
 
     async def set_language(self, lang: str):
         """Sets the active system language."""
@@ -44,6 +48,7 @@ class NotificationService:
         if lang in ("it", "en"):
             self._demo_settings["system_language"] = lang
             await db_service.set_setting("system_language", lang)
+            i18n.set_system_language(lang)
 
     async def get_settings(self) -> Dict[str, Any]:
         """Recupera le impostazioni correnti di notifica salvate nel database o fittizie in ambiente demo."""
@@ -101,6 +106,7 @@ class NotificationService:
                 self._demo_settings["pushover_api_token"] = pushover_api_token.strip()
             if language is not None and language.lower().strip() in ("it", "en"):
                 self._demo_settings["system_language"] = language.lower().strip()
+                i18n.set_system_language(language)
             return
 
         await db_service.set_setting("telegram_alerts_enabled", "true" if telegram_enabled else "false")
@@ -121,6 +127,7 @@ class NotificationService:
             await db_service.set_setting("pushover_api_token", pushover_api_token.strip())
         if language is not None and language.lower().strip() in ("it", "en"):
             await db_service.set_setting("system_language", language.lower().strip())
+            i18n.set_system_language(language)
 
     async def send_telegram_message(self, message: str, ignore_enabled: bool = False) -> bool:
         from app.services.eero_client import eero_client
