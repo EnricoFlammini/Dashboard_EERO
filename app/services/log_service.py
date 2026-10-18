@@ -75,10 +75,14 @@ class SQLiteLogHandler(logging.Handler):
             ts = datetime.fromtimestamp(record.created, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             msg = record.getMessage()
 
-            details_json = None
+            details: Dict[str, Any] = {}
             if record.exc_info:
-                exc_text = "".join(traceback.format_exception(*record.exc_info))
-                details_json = json.dumps({"exc_info": exc_text})
+                details["exc_info"] = "".join(traceback.format_exception(*record.exc_info))
+            # Set by app.i18n.log_event: lets the Logs page re-render the message per viewer language
+            i18n_meta = getattr(record, "i18n", None)
+            if i18n_meta:
+                details["i18n"] = i18n_meta
+            details_json = json.dumps(details, ensure_ascii=False) if details else None
 
             self._buffer.append({
                 "timestamp": ts,

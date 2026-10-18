@@ -104,4 +104,38 @@ def tr_all(key: str, **params: Any) -> Dict[str, str]:
     return {lang: tr(key, lang=lang, **params) for lang in SUPPORTED_LANGUAGES}
 
 
+def _jsonable(value: Any) -> Any:
+    return value if isinstance(value, (str, int, float, bool)) or value is None else str(value)
+
+
+def log_event(logger: logging.Logger, level: int, key: str, /, *, exc_info: Any = False, **params: Any) -> None:
+    """Logs an operator-facing event that the Logs page can show in the viewer's language.
+
+    The log file and the stored message are always English (stable for search,
+    downloads and bug reports); the key and params ride along on the record so
+    the SQLite log handler can persist them and the logs API can re-render the
+    message in the requesting user's language.
+    """
+    clean = {k: _jsonable(v) for k, v in params.items()}
+    logger.log(level, tr(key, lang="en", **clean), exc_info=exc_info, extra={"i18n": {"key": key, "params": clean}})
+
+
+def localize_log_entry(entry: Dict[str, Any], lang: Optional[str] = None) -> Dict[str, Any]:
+    """Re-renders a stored log row in ``lang`` (or the current language) when it carries an i18n key."""
+    raw = entry.get("details_json")
+    if not raw:
+        return entry
+    try:
+        details = json.loads(raw)
+    except (TypeError, ValueError):
+        return entry
+    meta = details.pop("i18n", None) if isinstance(details, dict) else None
+    if not isinstance(meta, dict) or not meta.get("key"):
+        return entry
+    localized = dict(entry)
+    localized["message"] = tr(meta["key"], lang=lang, **(meta.get("params") or {}))
+    localized["details_json"] = json.dumps(details) if details else None
+    return localized
+
+
 load_catalogs()

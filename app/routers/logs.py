@@ -22,7 +22,7 @@ from app.config import settings
 from app.routers.dependencies import require_admin, require_permission
 from app.services.db import db_service
 from app.services.log_service import VALID_LOG_LEVELS, log_service
-from app.i18n import tr
+from app.i18n import localize_log_entry, tr
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ async def get_system_logs(
         "total": total_count,
         "limit": limit,
         "offset": offset,
-        "logs": logs,
+        "logs": [localize_log_entry(entry) for entry in logs],
     }
 
 
