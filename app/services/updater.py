@@ -190,11 +190,12 @@ class UpdaterService:
                             if best_tag_obj:
                                 published_at = best_tag_obj.get("last_updated", "")
                             release_title = f"v{latest_full_ver}"
-                            local_notes = extract_release_notes_from_changelog(cand_ver)
-                            if local_notes:
-                                release_notes = local_notes
-                            else:
-                                release_notes = f"Release v{latest_full_ver} pubblicata su Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
+                            if not release_notes:
+                                local_notes = extract_release_notes_from_changelog(cand_ver)
+                                if local_notes:
+                                    release_notes = local_notes
+                                else:
+                                    release_notes = f"Release v{latest_full_ver} available on Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
         except Exception as e:
             log_event(logger, logging.WARNING, "log_system.update_check_dockerhub_failed", error=e)
 

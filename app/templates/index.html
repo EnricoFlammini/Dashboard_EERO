@@ -1049,7 +1049,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_category')"></span>
             <select x-model="hogsCategoryFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all" x-text="t('top_hogs.filter_all')"></option>
+              <option value="all" x-text="t('top_hogs.filter_all')">All</option>
               <template x-for="cat in availableCategories" :key="cat">
                 <option :value="cat" x-text="formatCategoryName(cat)"></option>
               </template>
@@ -1060,11 +1060,11 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_band')"></span>
             <select x-model="hogsBandFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all" x-text="t('top_hogs.filter_all')"></option>
+              <option value="all" x-text="t('top_hogs.filter_all')">All</option>
               <option value="6ghz">6 GHz</option>
               <option value="5ghz">5 GHz</option>
               <option value="2.4ghz">2.4 GHz</option>
-              <option value="wired" x-text="t('top_hogs.filter_wired')"></option>
+              <option value="wired" x-text="t('top_hogs.filter_wired')">Wired</option>
             </select>
           </div>
 
@@ -1072,7 +1072,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_node')"></span>
             <select x-model="hogsNodeFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none max-w-[140px] truncate">
-              <option value="all" x-text="t('top_hogs.filter_all_nodes')"></option>
+              <option value="all" x-text="t('top_hogs.filter_all_nodes')">All nodes</option>
               <template x-for="eero in eeros" :key="eero.id">
                 <option :value="eero.id" x-text="eero.location || eero.model || eero.id"></option>
               </template>
@@ -1903,7 +1903,7 @@
                   <td class="device-name-cell py-3 px-4">
                     <div class="device-identity flex items-center gap-3">
                       <div class="w-8 h-8 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(dev.custom_icon || dev.category || dev.device_type)"></path></svg>
                       </div>
                       <div class="min-w-0">
                         <div class="flex min-w-0 items-center gap-1.5 flex-wrap">
@@ -2667,12 +2667,16 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
               </svg>
             </div>
-            <div class="flex items-baseline space-x-2">
-              <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="analyticsSla ? analyticsSla.avg_download_mbps : '--'"></span>
-              <span class="text-xs text-slate-500 font-medium">↓ Mbps</span>
+            <div class="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5">
+              <div class="inline-flex items-baseline space-x-1">
+                <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="analyticsSla ? analyticsSla.avg_download_mbps : '--'"></span>
+                <span class="text-xs text-slate-500 font-medium whitespace-nowrap">↓ Mbps</span>
+              </div>
               <span class="text-slate-400">/</span>
-              <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="analyticsSla ? analyticsSla.avg_upload_mbps : '--'"></span>
-              <span class="text-xs text-slate-500 font-medium">↑ Mbps</span>
+              <div class="inline-flex items-baseline space-x-1">
+                <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="analyticsSla ? analyticsSla.avg_upload_mbps : '--'"></span>
+                <span class="text-xs text-slate-500 font-medium whitespace-nowrap">↑ Mbps</span>
+              </div>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400" x-text="t('analytics.kpi_avg_wan_sub')"></div>
           </div>
@@ -2706,7 +2710,7 @@
               <span class="text-xs text-slate-400" x-text="analyticsDistribution ? ('/ ' + analyticsDistribution.total_devices + ' tot') : ''"></span>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              <span x-text="t('analytics.kpi_mesh_density_sub')"></span>: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="(analyticsDistribution && analyticsDistribution.node_load && analyticsDistribution.node_load.length > 0) ? (Number(analyticsDistribution.active_devices / analyticsDistribution.node_load.length).toFixed(1) + ' client/nodo') : '--'"></span>
+              <span x-text="t('analytics.kpi_mesh_density_sub')"></span>: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="(analyticsDistribution && analyticsDistribution.node_load && analyticsDistribution.node_load.length > 0) ? (Number(analyticsDistribution.active_devices / analyticsDistribution.node_load.length).toFixed(1) + ' ' + t('analytics.clients_per_node')) : '--'"></span>
             </div>
           </div>
         </div>
@@ -3858,7 +3862,7 @@
               
               <template x-if="logLoading && logsList.length === 0">
                 <div class="py-12 text-center text-slate-400">
-                  <span class="animate-spin inline-block mr-2">⏳</span> Caricamento registri di sistema in corso...
+                  <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('logs.loading')">Loading system logs...</span>
                 </div>
               </template>
 
@@ -6883,10 +6887,10 @@
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('auth_local.setup_title') || 'Configurazione Iniziale Amministratore'"></h3>
-              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40" x-text="t('auth_local.setup_badge') || 'PRIMO AVVIO'"></span>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('auth_local.setup_title')">Initial Administrator Setup</h3>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40" x-text="t('auth_local.setup_badge')">FIRST RUN</span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_subtitle') || 'Crea l\'account di amministrazione per proteggere la dashboard'"></p>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_subtitle')">Create the administrator account to securely protect your dashboard</p>
           </div>
         </div>
       </div>
@@ -6895,31 +6899,31 @@
       <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1">
         <div class="flex items-center space-x-1.5 font-bold text-emerald-700 dark:text-emerald-400">
           <span>🔒</span>
-          <span x-text="t('auth_local.setup_security_title') || 'Sicurezza Zero-Default'"></span>
+          <span x-text="t('auth_local.setup_security_title')">Zero-Default Security</span>
         </div>
-        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc') || 'Nessuna password predefinita: le credenziali configurate qui proteggeranno la tua dashboard locale.'"></p>
+        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc')">Zero default passwords: the credentials chosen here will secure your local dashboard.</p>
       </div>
 
       <!-- Setup Form -->
       <form @submit.prevent="performAdminSetup()" class="space-y-4 text-xs" autocomplete="off">
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username') || 'Nome Utente'"></label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username')">Username</label>
           <input type="text" x-model="localSetupData.username" required minlength="3" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="off">
         </div>
 
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password') || 'Password'"></label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password')">Password</label>
           <input type="password" x-model="localSetupData.password" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm') || 'Conferma Password'"></label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm')">Confirm Password</label>
           <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
           <input type="checkbox" id="localSetupRememberMe" x-model="localSetupData.remember_me" class="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer">
-          <label for="localSetupRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me') || 'Resta connesso / Ricordami'"></label>
+          <label for="localSetupRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me')">Stay signed in / Remember me</label>
         </div>
 
         <template x-if="localSetupData.error">
@@ -6929,7 +6933,7 @@
         <div class="pt-2 flex items-center justify-end space-x-2">
           <button type="submit" :disabled="localSetupData.loading" class="w-full px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-bold transition shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1.5">
             <span x-show="localSetupData.loading" class="animate-spin text-xs">⏳</span>
-            <span x-text="localSetupData.loading ? (t('auth_local.setting_up') || 'Creazione...') : (t('auth_local.setup_btn') || 'Crea Account Amministratore & Accedi')"></span>
+            <span x-text="localSetupData.loading ? (t('auth_local.setting_up') || 'Setting up...') : (t('auth_local.setup_btn') || 'Create Administrator & Sign In')">Create Administrator & Sign In</span>
           </button>
         </div>
       </form>
@@ -6972,8 +6976,9 @@
           <template x-if="userModalMode !== 'list'">
             <button 
               @click="userModalMode = 'list'"
-              class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 transition cursor-pointer">
-              ← Torna alla Lista
+              class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 transition cursor-pointer"
+              x-text="t('users_modal.back_to_list')">
+              ← Back to List
             </button>
           </template>
           <button @click="showUsersModal = false" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition cursor-pointer">
@@ -6985,7 +6990,7 @@
       <!-- Mode 1: Users List View -->
       <div x-show="userModalMode === 'list'" class="flex-1 overflow-y-auto space-y-4">
         <div x-show="usersLoading" class="py-8 text-center text-xs text-slate-400">
-          <span class="animate-spin inline-block mr-2">⏳</span> Caricamento utenti...
+          <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('users_modal.loading_users')">Loading users...</span>
         </div>
 
         <div x-show="!usersLoading">
@@ -6996,7 +7001,7 @@
                   <tr>
                     <th class="p-3" x-text="t('users_modal.col_user') || 'Utente'"></th>
                     <th class="p-3" x-text="t('users_modal.col_role') || 'Ruolo'"></th>
-                    <th class="p-3">Permessi</th>
+                    <th class="p-3" x-text="t('users_modal.col_permissions')">Permissions</th>
                     <th class="p-3" x-text="t('users_modal.col_status') || 'Stato'"></th>
                     <th class="p-3 text-right" x-text="t('users_modal.col_actions') || 'Azioni'"></th>
                   </tr>

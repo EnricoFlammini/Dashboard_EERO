@@ -949,7 +949,7 @@ html.dark .sidebar-btn-inactive:hover {
   table-layout: fixed;
 }
 
-.device-table .device-col-name { width: 13.5rem; }
+.device-table .device-col-name { width: 16.5rem; min-width: 14rem; }
 .device-table .device-col-address { width: 11rem; }
 .device-table .device-col-profile { width: 11rem; }
 .device-table .device-col-node { width: 8rem; }
@@ -987,9 +987,13 @@ html.dark .sidebar-btn-inactive:hover {
 }
 
 .device-name {
+  max-width: 100%;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
 }
 
 @media (min-width: 768px) {

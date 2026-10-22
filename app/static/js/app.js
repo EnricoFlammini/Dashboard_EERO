@@ -99,17 +99,26 @@ document.addEventListener('alpine:init', () => {
     },
     getDeviceIconPath(cat) {
       const c = (cat || '').toLowerCase();
-      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
+      if (c.includes('game') || c.includes('gaming') || c.includes('console') || c.includes('playstation') || c.includes('xbox') || c.includes('nintendo') || c.includes('switch')) {
+        return 'M6 11h4m-2-2v4m7-2h.01m3 0h.01M4 9a5 5 0 0110-3h2a5 5 0 015 5v4a4 4 0 01-4 4l-2-2h-6l-2 2a4 4 0 01-4-4V9z';
+      }
+      if (c.includes('server') || c.includes('rete') || c.includes('network') || c.includes('nas') || c.includes('storage') || c.includes('switch') || c.includes('router')) {
+        return 'M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01';
+      }
+      if (c.includes('audio') || c.includes('speaker') || c.includes('sound') || c.includes('music') || c.includes('echo') || c.includes('homepod') || c.includes('sonos')) {
+        return 'M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z';
+      }
+      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone') || c.includes('iphone') || c.includes('android')) {
         return 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z';
       }
       if (c.includes('tablet') || c.includes('ipad')) {
         return 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z';
       }
-      if (c.includes('tv') || c.includes('media') || c.includes('entertainment')) {
+      if (c.includes('tv') || c.includes('media') || c.includes('entertainment') || c.includes('intrattenimento') || c.includes('streaming') || c.includes('chromecast') || c.includes('firetv') || c.includes('apple tv')) {
         return 'M7 4h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm-3 16h16';
       }
-      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay')) {
-        return 'M13 10V3L4 14h7v7l9-11h-7z';
+      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay') || c.includes('light') || c.includes('lamp') || c.includes('sensor') || c.includes('camera') || c.includes('thermostat')) {
+        return 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z';
       }
       return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
@@ -963,7 +972,13 @@ document.addEventListener('alpine:init', () => {
         return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
       }
       if (bh) {
-        return bh;
+        const cleanBh = bh.replace(/\s*\((?:stimata|estimated)\)/gi, '').trim();
+        const isEstimated = Boolean(eero.backhaul_estimated || /\((?:stimata|estimated)\)/i.test(bh));
+        if (isEstimated) {
+          const estLabel = this.t('dashboard.backhaul_estimated') || (this.currentLanguage === 'it' ? '(Stimata)' : '(Estimated)');
+          return `${cleanBh} ${estLabel}`;
+        }
+        return cleanBh;
       }
       const modelStr = String(eero.model || '').toLowerCase();
       const is6Eor7 = modelStr.includes('pro 6e') || modelStr.includes('max 7') || modelStr.includes('outdoor 7') || modelStr.includes('k010001') || modelStr.includes('s010001') || modelStr.includes('t010001');
@@ -4270,7 +4285,7 @@ document.addEventListener('alpine:init', () => {
       const activePeriod = this.topHogsPeriod || 'daily';
       this.topHogsLoading = true;
       try {
-        const res = await fetch(`/api/network/top-hogs?period=${activePeriod}&limit=5`);
+        const res = await fetch(`/api/network/top-hogs?period=${activePeriod}&limit=30`);
         const data = await res.json();
         if (data.status === 'success') {
           this.topHogsList = data.top_hogs || [];
@@ -6003,7 +6018,8 @@ document.addEventListener('alpine:init', () => {
     getFilteredTopHogs() {
       if (!this.topHogsList || !Array.isArray(this.topHogsList)) return [];
       return this.topHogsList.filter(hog => {
-        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === (hog.mac || '').toLowerCase()) || d.id === hog.device_id);
+        const hogMac = (hog.mac || '').toLowerCase();
+        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === hogMac) || d.id === hog.device_id);
         
         // Category filter
         if (this.hogsCategoryFilter !== 'all') {
@@ -6012,23 +6028,36 @@ document.addEventListener('alpine:init', () => {
         }
 
         // Frequency band filter
-        if (this.hogsBandFilter !== 'all' && dev) {
+        if (this.hogsBandFilter !== 'all') {
+          if (!dev) return false;
+          const isWiredDev = Boolean(
+            dev.connection_type === 'wired' ||
+            dev.connection_type === 'ethernet' ||
+            dev.wired === true ||
+            dev.wireless === false ||
+            dev.frequency_band === 'Cablato' ||
+            dev.frequency_band === 'Wired'
+          );
           if (this.hogsBandFilter === 'wired') {
-            if (dev.connection_type !== 'wired' && dev.wireless) return false;
-          } else if (this.hogsBandFilter === '6ghz') {
-            const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
-            if (!is6) return false;
-          } else if (this.hogsBandFilter === '5ghz') {
-            const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
-            if (!is5) return false;
-          } else if (this.hogsBandFilter === '2.4ghz') {
-            const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
-            if (!is24) return false;
+            if (!isWiredDev) return false;
+          } else {
+            if (isWiredDev) return false;
+            if (this.hogsBandFilter === '6ghz') {
+              const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
+              if (!is6) return false;
+            } else if (this.hogsBandFilter === '5ghz') {
+              const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
+              if (!is5) return false;
+            } else if (this.hogsBandFilter === '2.4ghz') {
+              const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
+              if (!is24) return false;
+            }
           }
         }
 
         // Mesh Node filter
-        if (this.hogsNodeFilter !== 'all' && dev) {
+        if (this.hogsNodeFilter !== 'all') {
+          if (!dev) return false;
           if (dev.connected_eero_id !== this.hogsNodeFilter && dev.connected_eero_name !== this.hogsNodeFilter) {
             return false;
           }

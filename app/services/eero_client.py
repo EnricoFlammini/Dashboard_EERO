@@ -1342,7 +1342,7 @@ class EeroClient:
             # Nessun canale né frequenza: stima dal modello (Issue #56: trasparenza sulle bande dedotte da hardware)
             elif is_6e_or_7_hardware and channel == 0:
                 node["backhaul_estimated"] = True
-                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (stimata)"
+                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str})"
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
