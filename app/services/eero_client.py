@@ -2741,21 +2741,6 @@ class EeroClient:
                 )
                 if res_forwards.status_code == 200:
                     raw_fwd_payload = res_forwards.json()
-                    raw_data_items = raw_fwd_payload.get("data", raw_fwd_payload) if isinstance(raw_fwd_payload, dict) else raw_fwd_payload
-                    # Se /forwards risponde 200 ma con lista vuota, controlla se esistono su /port_forwards
-                    if not raw_data_items:
-                        try:
-                            res_pf = await client.get(
-                                f"{EERO_API_BASE}/networks/{self.current_network_id}/port_forwards",
-                                headers=self._get_headers()
-                            )
-                            if res_pf.status_code == 200:
-                                pf_payload = res_pf.json()
-                                pf_items = pf_payload.get("data", pf_payload) if isinstance(pf_payload, dict) else pf_payload
-                                if pf_items:
-                                    raw_fwd_payload = pf_payload
-                        except Exception:
-                            pass
                 else:
                     # Fallback su /port_forwards in caso di 404 o altro codice HTTP su /forwards
                     try:
