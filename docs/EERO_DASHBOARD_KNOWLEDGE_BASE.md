@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.1)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.1 Build 1)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.6.1**  
+> *Versione di riferimento del software:* **v1.6.1 (Build 1)**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -52,6 +52,11 @@
    * 4.35 [Scheduler Daily Digest Idempotente ai Riavvii Container (v1.6.1 - Issue #70)](#435-scheduler-daily-digest-idempotente-ai-riavvii-container-v161---issue-70)
    * 4.36 [Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71)](#436-risoluzione-bug-bufferbloat-wan--localizzazione-abbreviazioni-durata-v161---issue-71)
    * 4.37 [Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74)](#437-compattazione-selettiva-multi-tier-indici-timestamp--parsing-bitrate-v161---issue-73-74)
+   * 4.38 [Bilinguismo Completo Impostazioni, Modali & Prevenzione FOUT (v1.6.1 - PR #78, #75, #76, #77)](#438-bilinguismo-completo-impostazioni-modali--prevenzione-fout-v161---pr-78-75-76-77)
+   * 4.39 [Personalizzazione Colonne Tabella Dispositivi & Densità UI (v1.6.1 - Issue #60)](#439-personalizzazione-colonne-tabella-dispositivi--densità-ui-v161---issue-60)
+   * 4.40 [Pannello Visuale Configurazione MQTT, Home Assistant Discovery & Hot-Reload (v1.6.1)](#440-pannello-visuale-configurazione-mqtt-home-assistant-discovery--hot-reload-v161)
+   * 4.41 [Hardening Docker Multi-Stage Alpine Linux & Utente Non-Root (v1.6.1)](#441-hardening-docker-multi-stage-alpine-linux--utente-non-root-v161)
+   * 4.42 [Template Ufficiale Synology DSM 7.2+ Container Manager (v1.6.1 - PR #66)](#442-template-ufficiale-synology-dsm-72-container-manager-v161---pr-66)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -75,11 +80,11 @@
 ## 2. Architettura del Sistema & Stack Tecnologico
 
 ### Stack Tecnologico
-* **Backend:** Python 3.12 (`python:3.12-slim-bookworm`), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2.
+* **Backend:** Python 3.12 (Multi-Stage Alpine Linux `python:3.12-alpine`, non-root user `appuser:appgroup` UID/GID 10001, container footprint compatto ~65MB), FastAPI >= 0.115, Uvicorn >= 0.32, Pydantic v2.
 * **HTTP Client & Connection Pooling:** `httpx.AsyncClient` con DNS cache in memoria (`InMemoryDnsCache`, TTL 300s) e Keep-Alive per minimizzare l'overhead di handshaking TLS verso `api-user.e2ro.com`.
-* **Database Relazionale Locale:** SQLite in modalità WAL (*Write-Ahead Logging*) gestito asincronamente con `aiosqlite`.
-* **Frontend:** Architettura Single-Page Application reattiva e ultraleggera con Semantic HTML5, Vanilla CSS e Tailwind CSS, Alpine.js (v3.14+) per il reactive data binding e Chart.js (v4.4+) per i grafici temporali.
-* **Containerizzazione:** Immagini Docker multi-architettura (`linux/amd64` per PC/Server x86 e `linux/arm64` per Raspberry Pi / Apple Silicon).
+* **Database Relazionale Locale:** SQLite in modalità WAL (*Write-Ahead Logging*) gestito asincronamente con `aiosqlite`, locking scritture serializzato (`asyncio.Lock`), `busy_timeout` a 60s e auto-checkpoint passivo periodico.
+* **Frontend:** Architettura Single-Page Application reattiva e ultraleggera con Semantic HTML5, Vanilla CSS e Tailwind CSS, Alpine.js (v3.14+) per il reactive data binding e Chart.js (v4.4+) per i grafici temporali, 100% offline-ready con font e vendor bundle locali.
+* **Containerizzazione & Sicurezza:** Immagini Docker multi-architettura (`linux/amd64` per PC/Server x86 e `linux/arm64` per Raspberry Pi / Apple Silicon / NAS Synology e QNAP) verificate automaticamente in CI/CD con Aqua Security Trivy (0 vulnerabilità Critical / High).
 
 ### Diagramma dei Componenti
 
@@ -267,13 +272,18 @@ Finestra modale con spiegazione dettagliata in bilingue, elenco delle penalità 
 
 ### 4.18 Community Hall of Fame & Crediti Open Source
 * **Riconoscimento Contributi Community:** Nel modale *About & Crediti*, una sezione dedicata con badge *Hall of Fame* riconosce gli utenti di GitHub e Reddit che hanno fornito proposte di feature, issue e feedback tecnici:
+  * `@todddube`: PR #78 (Bilinguismo completo IT/EN schede e modali Impostazioni, eliminazione FOUT caricamento e parità 100% delle 974 chiavi di localizzazione), PR #75 (risoluzione flash modale login e resilienza sessione cloud), PR #76 (gestione baseline dispositivi e i18n), PR #77 (polish modali di sistema), co-autore Issue #70 (idempotenza Daily Digest) e Issue #71 (Bufferbloat rating e abbreviazioni durata).
+  * `@onefish2`: Prioritizzazione subnet LAN fisica eero per host multi-IP (Docker/Podman bridge), pruning atomico lease obsoleti Pi-hole v6 e switch esclusione DNS per singolo client (Issue #72).
+  * `@mrtekkid`: Compattazione selettiva incrementale multi-tier retention worker, taglio del 99.4% dell'overhead CPU, indici B-tree su espressioni temporali e parsing bitrate per stringhe con unità (Issue #73).
+  * `@tekzer0`: Parsing universale account eero API (array, dict, chiavi singolari), fallback su `EERO_NETWORK_ID` e banner informativo zero-reti guidato (Issue #69).
+  * `@XprofQ`: Risoluzione bug calcolo e visualizzazione badge Bufferbloat WAN e localizzazione rating (Issue #71).
   * `@jpatchMC`: Multi-DNS Sync UI, IPv6 SLAAC Pruning, telemetria Layer 2 (#16, #21, #23, #31, #36, #40, #42), visibilità e ricerca indirizzi IPv6 (#43), Reverse Client Enrichment ULA via NDP (#57, #65) e Local Asset Bundling 100% Offline (#58).
   * `@Hatton920`: Health Score Breakdown, velocità link PHY, stato nodi rebooting vs offline, sanitizzazione speedtest (#14, #15, #34, #35, #41).
   * `@jimcampbell100`: Multi-Network Fleet Management (#22).
-  * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38).
+  * `@stevehoek`: Switch multi-rete (#37) e localizzazione inglese Daily Digest (#38, #70).
   * `@DannyFeliz`: Layout responsive mobile/tablet (#27, #28, #29, #46), ordinamento "Recently Joined" e badge "NEW" (#60).
   * `@carbones73`: Telemetria rigorosa, accuratezza canali 5 GHz UNII-3 vs 6 GHz, isolamento sessioni live da demo, stabilizzazione drift simulatore ed elezione deterministica Primary Gateway (#47, #48, #49, #50, #51, #52, #53); 4 GitHub Security Advisories (hardening CORS/CSRF, sanitizzazione password Wi-Fi, switch documentazione interattiva API_DOCS, permessi 0600 per session.json).
-  * `@WillFulmer`: Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (#63) e trasparenza canali di recapito Daily Digest (#64).
+  * `@WillFulmer`: Generazione QR Code standard Wi-Fi per reti ospiti aperte senza password (#63), trasparenza canali di recapito Daily Digest (#64), personalizzazione colonne tabella client (#60) e check integrità database SQLite con backup a caldo `VACUUM INTO` (#74).
   * `@jonmacdonald`: Risoluzione lock contention SQLite, concorrenza asincrona con busy timeout a 60s (#62) ed elezione switch gateway in topologie complesse (#26).
   * *Bug Hunters & Tester:* `@BaRaD5` (cache DNS locale), `@phutmacher` (elezione gateway), `@txrangersxx` (network ID resolver), `@nextlevel2023` (feedback login Amazon) e `u/djbills` (isolamento tag Docker Hub).
 * **Tassonomia Giuridica Standard:** Per tutelare pienamente la paternità intellettuale, l'architettura e il copyright dell'applicazione in capo all'autore esclusivo (**Enrico Flammini**), tutti i collaboratori sono designati esclusivamente con lo status standard di **Contributor** e le sezioni intitolate **"Community Feature Proposals & Feedback"**, escludendo qualsiasi dicitura ("co-designer") suscettibile di fraintendimenti di titolarità.
@@ -453,6 +463,71 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
 * **Verifica Integrità & Backup Deframmentato Atomico a Caldo:**
   Endpoint `GET /api/system/database/integrity` e `POST /api/system/database/backup` basato su `VACUUM INTO`.
 
+### 4.38 Bilinguismo Completo Impostazioni, Modali & Prevenzione FOUT (v1.6.1 - PR #78, #75, #76, #77)
+*(Contributo Community — PR #78, #75, #76, #77 - @todddube)*
+* **Traduzione Integrale Schede e Modali Impostazioni (IT/EN):**
+  Risolto il rendering di stringhe hardcoded in italiano nelle sezioni Controlli, Gestione Utenti RBAC, Backup Database, Esportazione Dati e Aggiornamenti. Tutte le modali di sistema (Gateway MQTT & Home Assistant Discovery, Schedulazioni Orarie, Pulizia Log e Aggiornamento Container Docker) passano ora per chiavi strutturate con parità assoluta al 100% tra `en.json` e `it.json` (974 chiavi ciascuno).
+* **Eliminazione degli Operatori Ternari Inline:**
+  Sostituiti tutti i costrutti inline `currentLanguage === 'it'` sparsi nell'HTML con chiavi dedicate e interpolazione nativa dei parametri dinamici (`version`, `minutes`, `time`).
+* **Prevenzione del Flash dei Testi Non Tradotti (FOUT / Loading Flash):**
+  Introdotta la classe transitoria `body.i18n-pending` (`visibility: hidden`) applicata al tag `<body>` e rimossa all'istante non appena il payload delle traduzioni JSON è caricato via `setLanguage()`. Integrato un fallback CSS automatico a 4 secondi (`animation: i18n-reveal`) che sblocca la visibilità della pagina in caso di timeout della rete o mancato caricamento dei file di lingua.
+* **Risoluzione Flash Modale Login all'Avvio (PR #75):**
+  Eliminato il lampo visivo del form di login eero al ricaricamento della pagina grazie al pre-caricamento di `initial_authenticated` e alla direttiva Alpine.js `[x-cloak]`.
+* **Abbreviazioni Durata Dinamiche nei Controlli di Retention:**
+  Sostituzione dei badge statici nei pulsanti di retention log con espressioni reattive alla lingua attiva: `7d`, `15d`, `1mo` in inglese; `7gg`, `15gg`, `1m` in italiano.
+
+### 4.39 Personalizzazione Colonne Tabella Dispositivi & Densità UI (v1.6.1 - Issue #60)
+*(Richiesta da GitHub Issue #60 - @WillFulmer)*
+* **Menu Selettore Colonne Dinamico (Column Visibility Dropdown):**
+  Pulsante dedicato nella barra degli strumenti della tabella dispositivi con badge conteggio attivo (`7/8`) che apre un elenco di checkbox Fluent per mostrare o nascondere a piacimento le singole colonne:
+  * *Indirizzo IP & MAC* (`address`)
+  * *Profilo / Utente* (`profile`)
+  * *Nodo Mesh di Connessione* (`node`)
+  * *Banda & Connessione (Wi-Fi 2.4/5/6 GHz, Ethernet)* (`band`)
+  * *Qualità Segnale & PHY Link Speed* (`signal`)
+  * *Velocità e traffico cumulativo (DL / UL)* (`traffic`)
+  * *Primo Accesso (`Joined / First Seen` con ordinamento e date relative)*
+  * *Stato Connessione (Online / Offline)* (`status`)
+  *(Le colonne identificative Nome apparato e Menu Azioni rimangono fisse e protette).*
+* **Persistenza Locale delle Preferenze (`localStorage`):**
+  Salvataggio automatico immediato in `localStorage` (`eero_device_columns`) per mantenere l'impostazione visiva tra sessioni e ricaricamenti pagina, con pulsante rapido di ripristino valori predefiniti (*Reset / Ripristina*).
+* **Layout Tabella Adattivo & Responsive:**
+  Adattamento dinamico del layout CSS e ricalcolo automatico del `colspan` sulle righe vuote o messaggi di nessun dispositivo trovato.
+
+### 4.40 Pannello Visuale Configurazione MQTT, Home Assistant Discovery & Hot-Reload (v1.6.1)
+* **Gestione Broker MQTT & Home Assistant Discovery In-App:**
+  Card e modale dedicati per configurare i parametri del broker MQTT direttamente dal browser, senza necessità di editare manualmente variabili d'ambiente o file `docker-compose.yml`:
+  * Toggle client MQTT (`mqtt_enabled`)
+  * Host broker (IP/Hostname Mosquitto o Home Assistant) e porta TCP (default `1883`)
+  * Credenziali di autenticazione opzionali (Username / Password con campo oscurabile)
+  * Prefisso Base Topic (default `eero`)
+  * Switch Home Assistant MQTT Discovery (`mqtt_discovery_enabled`) e prefisso discovery (default `homeassistant`)
+  * Intervallo di pubblicazione telemetria (default `60s`)
+* **Test Connessione Broker in Tempo Reale:**
+  Pulsante *"Test Connessione"* collegato all'endpoint `POST /api/automations/mqtt/test` per verificare la raggiungibilità e autenticazione del broker in tempo reale (anche con parametri non ancora salvati nel form).
+* **Persistenza su Database & Hot-Reload a Caldo:**
+  Salvataggio dei parametri in SQLite via `POST /api/automations/mqtt/config` e ricaricamento istantaneo a caldo del servizio asincrono `mqtt_service` senza riavviare il container Docker.
+
+### 4.41 Hardening Docker Multi-Stage Alpine Linux & Utente Non-Root (v1.6.1)
+* **Migrazione Base Image ad Alpine Linux Multi-Stage (`python:3.12-alpine`):**
+  Adozione dell'architettura Multi-Stage Build nel `Dockerfile`:
+  * **Stage 1 (Builder):** Isolamento degli strumenti di compilazione C (`gcc`, `musl-dev`, `python3-dev`, `libffi-dev`) ed installazione delle dipendenze in virtualenv `/opt/venv`.
+  * **Stage 2 (Runner):** Immagine runtime finale contenente esclusivamente runtime essenziali (`curl`, `tzdata`, `ca-certificates`, `libjpeg-turbo`, `zlib`), escludendo header, compilatori e package manager di compilazione.
+* **Riduzione Dimensioni Container (-68%):**
+  Passaggio da un peso immagine Debian slim di ~200MB a ~65MB su Alpine Linux, velocizzando i tempi di pull e riducendo l'impronta di memoria su NAS e microcontrollori.
+* **Esecuzione con Utente Non-Root (Principle of Least Privilege):**
+  Creazione dell'utente non privilegiato `appuser:appgroup` (UID/GID 10001) e assegnazione rigorosa della proprietà dei volumi `/app/data`, impedendo privilege escalation verso il sistema operativo host.
+* **Azzeramento Vulnerabilità (0 Critical, 0 High) & Aqua Trivy CI/CD:**
+  Eliminazione delle 85 vulnerabilità Debian (2 Critical, 17 High, 10 Medium, 56 Low), attestando l'immagine a zero falle note con audit automatizzato `Aqua Security Trivy Action` ad ogni push su GitHub Actions.
+
+### 4.42 Template Ufficiale Synology DSM 7.2+ Container Manager (v1.6.1 - PR #66)
+* **Template Pronto all'Uso per Synology NAS:**
+  File [`docker-compose.yml`](deploy/synology/docker-compose.yml) ottimizzato specificamente per Synology Container Manager su DSM 7.2+.
+* **Bind Mount Compatibile con Hyper Backup:**
+  Mappatura del volume `/volume1/docker/eero-dashboard/data` con permessi preconfigurati per consentire il backup automatico e incrementale tramite Synology Hyper Backup.
+* **Guida Completa di Deploy:**
+  Documentazione passo-passo inclusa in `deploy/synology/README.md` con istruzioni per configurazione porte, variabili d'ambiente e procedura di aggiornamento a zero downtime tramite *Azione → Compila*.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -570,6 +645,93 @@ Utenti locali per autenticazione web, ruoli e permessi RBAC.
 * `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP) — Data creazione utente
 * `last_login` (DATETIME) — Data ultimo accesso riuscito
 
+#### 9. `device_usage_hourly` (v1.6.0, v1.6.1)
+Roll-up orario pre-aggregato del consumo per client e rete, popolato dal compattatore incrementale (`run_compaction_cycle`).
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `hour_timestamp` (TEXT NOT NULL) — Formato ISO `YYYY-MM-DDTHH:00:00`
+* `mac_address` (TEXT NOT NULL)
+* `network_id` (TEXT NOT NULL)
+* `rx_bytes_total` (REAL NOT NULL DEFAULT 0)
+* `tx_bytes_total` (REAL NOT NULL DEFAULT 0)
+* `download_mbps_avg` (REAL NOT NULL DEFAULT 0)
+* `upload_mbps_avg` (REAL NOT NULL DEFAULT 0)
+* `samples_count` (INTEGER NOT NULL DEFAULT 1)
+
+#### 10. `device_usage_daily` (v1.6.0, v1.6.1)
+Roll-up giornaliero consolidato per conservazione a lungo termine delle statistiche di traffico.
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `date_str` (TEXT NOT NULL) — Formato ISO `YYYY-MM-DD`
+* `mac_address` (TEXT NOT NULL)
+* `network_id` (TEXT NOT NULL)
+* `rx_bytes_total` (REAL NOT NULL DEFAULT 0)
+* `tx_bytes_total` (REAL NOT NULL DEFAULT 0)
+* `download_mbps_avg` (REAL NOT NULL DEFAULT 0)
+* `upload_mbps_avg` (REAL NOT NULL DEFAULT 0)
+* `samples_count` (INTEGER NOT NULL DEFAULT 1)
+
+#### 11. `device_signal_hourly` (v1.6.0, v1.6.1)
+Roll-up orario della potenza segnale Wi-Fi RSSI media e campioni registrati.
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `hour_timestamp` (TEXT NOT NULL)
+* `mac_address` (TEXT NOT NULL)
+* `signal_dbm_avg` (REAL NOT NULL)
+* `signal_dbm_min` (INTEGER NOT NULL)
+* `signal_dbm_max` (INTEGER NOT NULL)
+* `frequency_band` (TEXT)
+* `samples_count` (INTEGER NOT NULL DEFAULT 1)
+
+#### 12. `device_schedules` (v1.6.0)
+Regole di programmazione oraria / Parental Scheduling per mettere in pausa o consentire l'accesso Wi-Fi a specifici dispositivi o profili.
+* `id` (TEXT PRIMARY KEY) — Identificativo univoco UUID
+* `name` (TEXT NOT NULL) — Nome regola (es. "Studio pomeridiano", "Notte ragazzi")
+* `target_type` (TEXT NOT NULL) — `device` o `profile`
+* `target_id` (TEXT NOT NULL) — MAC address o ID del profilo
+* `days_of_week_json` (TEXT NOT NULL) — Array giorni serializzato (es. `["mon", "tue", ...]`)
+* `start_time` (TEXT NOT NULL) — Orario inizio `HH:MM`
+* `end_time` (TEXT NOT NULL) — Orario fine `HH:MM`
+* `action` (TEXT NOT NULL DEFAULT 'pause') — `pause` o `resume`
+* `is_active` (INTEGER NOT NULL DEFAULT 1)
+* `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+
+#### 13. `user_sessions` (v1.6.0, v1.6.1)
+Gestione delle sessioni web locali con supporto a token JWT e persistenza estesa con opzione "Ricordami".
+* `session_id` (TEXT PRIMARY KEY) — Token di sessione univoco crittograficamente sicuro
+* `username` (TEXT NOT NULL)
+* `created_at` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+* `expires_at` (DATETIME NOT NULL)
+* `remember_me` (INTEGER NOT NULL DEFAULT 0)
+
+#### 14. `alert_history` (v1.6.0)
+Registro permanente di tutti gli allarmi e notifiche inviate attraverso i dispatcher (Telegram, Webhook, Discord, Pushover).
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+* `event_type` (TEXT NOT NULL) — `new_device`, `node_offline`, `daily_digest`, `speedtest_alert`, ecc.
+* `title` (TEXT NOT NULL)
+* `message` (TEXT NOT NULL)
+* `severity` (TEXT NOT NULL DEFAULT 'info') — `info`, `warning`, `critical`
+* `channels_json` (TEXT) — Array dei canali di recapito con rispettivo esito
+
+#### 15. `iot_traffic_anomalies` (v1.6.0)
+Tracciamento delle anomalie di traffico insolito rilevate durante le ore notturne per apparati Smart Home / IoT.
+* `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+* `timestamp` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+* `mac_address` (TEXT NOT NULL)
+* `hostname` (TEXT)
+* `device_type` (TEXT)
+* `anomaly_score` (REAL NOT NULL)
+* `delta_bytes` (REAL NOT NULL)
+* `normal_baseline_bytes` (REAL NOT NULL)
+* `resolved` (INTEGER NOT NULL DEFAULT 0)
+
+#### 16. `eero_release_notes` (v1.6.0)
+Cache locale delle release notes e note di rilascio ufficiali di eeroOS estratte via Zendesk API e Reddit.
+* `version` (TEXT PRIMARY KEY) — Es. "v7.6.2-12"
+* `release_date` (DATETIME)
+* `title` (TEXT)
+* `content_markdown` (TEXT NOT NULL)
+* `source_url` (TEXT)
+* `scraped_at` (DATETIME DEFAULT CURRENT_TIMESTAMP)
+
 ---
 
 ## 6. Catalogo Completo API REST (Endpoint Reference)
@@ -650,6 +812,27 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.6.0) | `?lang=it|en` |
 | **GET** | `/api/system/language` | Restituisce la preferenza di lingua attiva e persistita su SQLite (v1.5.0) | Nessuno |
 | **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "en"\|"it"}` |
+| **GET** | `/api/automations/mqtt/config` | Restituisce lo stato e la configurazione del broker MQTT (v1.6.1) | Nessuno |
+| **POST** | `/api/automations/mqtt/config` | Salva la configurazione MQTT e aggiorna il client a caldo (hot-reload) (v1.6.1) | `{"enabled": true, "broker": "...", "port": 1883, ...}` |
+| **POST** | `/api/automations/mqtt/test` | Verifica la connessione al broker MQTT in tempo reale anche con parametri non salvati (v1.6.1) | Opzionale `{"broker": "...", "port": 1883, ...}` |
+| **GET** | `/api/system/eero-news` | Restituisce feed e cronologia release notes ufficiali eeroOS (v1.6.0) | Nessuno |
+| **POST** | `/api/system/eero-news/refresh` | Forza scansione e aggiornamento feed release notes eeroOS (v1.6.0) | Nessuno |
+| **GET** | `/api/system/backup` | Esporta dump JSON strutturato completo del database per backup e migrazioni (v1.6.0) | Nessuno |
+| **POST** | `/api/system/restore` | Ripristina configurazione, utenti e metadati da file di backup JSON (v1.6.0) | File di backup JSON (multipart / payload) |
+| **GET** | `/api/system/database/stats` | Statistiche su conteggio righe e dimensioni tabelle SQLite (v1.6.0) | Nessuno |
+| **POST** | `/api/system/database/compact` | Forza esecuzione immediata del ciclo di compattazione e roll-up storico (v1.6.0, v1.6.1) | `?force=true` |
+| **GET** | `/api/schedules` | Elenco di tutte le regole di Parental Scheduling / schedulazioni attive (v1.6.0) | Nessuno |
+| **POST** | `/api/schedules` | Crea una nuova regola di pianificazione oraria per client o profilo (v1.6.0) | `{"name": "...", "target_type": "...", "days": [...], ...}` |
+| **GET** | `/api/schedules/{schedule_id}` | Dettaglio di una singola schedulazione oraria (v1.6.0) | Nessuno |
+| **PUT** | `/api/schedules/{schedule_id}` | Modifica una schedulazione oraria esistente (v1.6.0) | Payload schedulazione aggiornato |
+| **DELETE** | `/api/schedules/{schedule_id}` | Elimina una schedulazione oraria dal database (v1.6.0) | Nessuno |
+| **POST** | `/api/schedules/{schedule_id}/toggle` | Attiva o disattiva rapidamente una regola oraria (v1.6.0) | `{"active": true/false}` |
+| **POST** | `/api/schedules/evaluate` | Valuta immediatamente tutte le regole schedulate e applica le azioni sui dispositivi (v1.6.0) | Nessuno |
+| **GET** | `/api/profiles` | Elenco dei Profili Utente configurati nel cloud eero con apparati associati (v1.6.0) | Nessuno |
+| **POST** | `/api/profiles` | Crea un nuovo profilo utente sulla rete eero (v1.6.0) | `{"name": "..."}` |
+| **PUT** | `/api/profiles/{profile_id}` | Rinomina o aggiorna un profilo utente eero esistente (v1.6.0) | `{"name": "..."}` |
+| **DELETE** | `/api/profiles/{profile_id}` | Elimina un profilo utente dalla rete eero (v1.6.0) | Nessuno |
+| **POST** | `/api/profiles/{profile_id}/assign` | Assegna o rimuove un client dal profilo utente (v1.6.0) | `{"mac": "...", "action": "assign"|"unassign"}` |
 
 ---
 
@@ -830,6 +1013,26 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Sintomo:** Picchi di CPU al 50% per 20+ minuti ad ogni ora per la ri-aggregazione dell'intera cronologia, e rischio di frammentazione/corruzione snapshot database.
 * **Causa Radice:** Il worker riaggregava tutte le ore storiche invece delle sole ore nuove, le query facevano full scan per mancanza di indici su timestamp puliti, e mancava parsing per stringhe bitrate con unità (`72.0 MBit/s`).
 * **Risoluzione:** Compattazione selettiva incrementale limitata alle sole ore non aggregate (taglio CPU del 99.4%), indici B-tree su espressioni temporali, helper `parse_bitrate_float()`, endpoint di check integrità (`/api/system/database/integrity`) e backup deframmentato a caldo con `VACUUM INTO`.
+
+### PR #78, #75, #76, #77 — Bilinguismo Completo Impostazioni, Modali & Rimozione FOUT (@todddube)
+* **Sintomo:** Stringhe hardcoded in lingua italiana persistevano nella scheda Impostazioni (Controlli, Gestione Utenti, Backup, Esportazione, Aggiornamenti) e nelle modali di sistema (Gateway MQTT, Discovery Home Assistant, Pulizia Log, Schedulazioni Orarie, Docker Update) anche selezionando la lingua inglese. Inoltre, all'avvio della pagina e al reload si verificavano fastidiosi lampi visivi di testi non tradotti (FOUT) e della modale di login eero prima del caricamento delle preferenze utente.
+* **Causa Radice:** Presenza di testi fissi e operatori ternari inline `currentLanguage === 'it'` sparsi nel template `index.html` privi di chiavi di localizzazione corrispondenti in `en.json`. Assenza di una classe di pre-render per occultare transitoriamente il corpo della pagina durante il caricamento delle traduzioni, e mancata inizializzazione difensiva di `initial_authenticated` con `[x-cloak]` sul contenitore del form di login.
+* **Risoluzione:**
+  * Parità assoluta al 100% delle chiavi di localizzazione tra `it.json` ed `en.json` (974 chiavi ciascuno).
+  * Sostituzione di tutti i ternari con chiavi dedicate e binding reattivo con interpolazione nativa dei parametri (`version`, `minutes`, `time`).
+  * Introduzione della classe `body.i18n-pending` (`visibility: hidden`) rimossa istantaneamente all'evento di avvenuto caricamento della lingua, con animazione CSS di sblocco d'emergenza a 4 secondi (`animation: i18n-reveal`) contro timeout o errori di rete.
+  * Pre-caricamento di `initial_authenticated` nel payload server e direttiva `[x-cloak]` contro il flash visivo della modale di login.
+  * Localizzazione reattiva delle abbreviazioni di durata dei log (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
+
+### Issue #60 — Tabella Dispositivi: Selettore Colonne Dinamico & Densità Personalizzabile (@WillFulmer)
+* **Sintomo:** Su schermi a risoluzione standard o su tablet, la tabella dispositivi risultava eccessivamente affollata a causa dell'aggiunta di nuove metriche (traffico DL/UL, First Seen, segnale RSSI, ecc.), senza possibilità per l'utente di nascondere le colonne superflue.
+* **Causa Radice:** Struttura statica delle colonne `<th>` e `<td>` senza meccanismo di toggling reattivo in Alpine.js.
+* **Risoluzione:** Implementato menu a comparsa Fluent *"Colonne"* con checkbox reattive, salvataggio immediato in `localStorage` (`eero_device_columns`), pulsante di ripristino default e calcolo dinamico del `colspan` per le righe informative.
+
+### PR #66 — Template di Deploy Synology DSM 7.2+ Container Manager (@EnricoFlammini)
+* **Sintomo:** Gli utenti di NAS Synology riscontravano difficoltà nel configurare il montaggio dei volumi e le opzioni di rete tramite la nuova interfaccia grafica di Container Manager su DSM 7.2+.
+* **Causa Radice:** I progetti Container Manager richiedono strutture docker-compose specifiche e percorsi di bind mount compatibili con il sistema di permessi ACL di Synology e Hyper Backup.
+* **Risoluzione:** Creato il template pronto `deploy/synology/docker-compose.yml` e la guida completa `deploy/synology/README.md` con mappatura `/volume1/docker/eero-dashboard/data` e workflow di aggiornamento senza downtime via *Azione → Compila*.
 
 ---
 
