@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.scheduler import schedule_engine
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ async def create_schedule(
 ):
     """Crea una nuova regola di pianificazione per utenti o nodi mesh."""
     if not payload.name.strip():
-        raise HTTPException(status_code=400, detail="Il nome della regola non può essere vuoto.")
+        raise HTTPException(status_code=400, detail=tr("schedules.name_required"))
 
     target_ids = []
     if payload.target_ids is not None:
@@ -75,7 +76,7 @@ async def create_schedule(
         target_ids = ["all"]
 
     if not target_ids:
-        raise HTTPException(status_code=400, detail="Specificare almeno un utente o nodo target.")
+        raise HTTPException(status_code=400, detail=tr("schedules.target_required"))
 
     days_list = payload.days if payload.days is not None else (payload.days_of_week or ["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
     is_enabled = payload.is_active if payload.is_active is not None else (payload.enabled if payload.enabled is not None else True)
@@ -106,7 +107,7 @@ async def get_schedule(schedule_id: int):
     """Recupera i dettagli di una specifica pianificazione."""
     schedule = await db_service.get_device_schedule_by_id(schedule_id)
     if not schedule:
-        raise HTTPException(status_code=404, detail="Pianificazione non trovata.")
+        raise HTTPException(status_code=404, detail=tr("schedules.not_found"))
     return schedule
 
 
@@ -119,7 +120,7 @@ async def update_schedule(
     """Modifica i parametri di una pianificazione esistente."""
     existing = await db_service.get_device_schedule_by_id(schedule_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Pianificazione non trovata.")
+        raise HTTPException(status_code=404, detail=tr("schedules.not_found"))
 
     update_dict = payload.model_dump(exclude_unset=True)
     if not update_dict:
@@ -137,7 +138,7 @@ async def update_schedule(
 
     success = await db_service.update_device_schedule(schedule_id, **update_dict)
     if not success:
-        raise HTTPException(status_code=500, detail="Errore durante l'aggiornamento della regola.")
+        raise HTTPException(status_code=500, detail=tr("schedules.update_failed"))
 
     updated = await db_service.get_device_schedule_by_id(schedule_id)
     try:
@@ -156,13 +157,13 @@ async def delete_schedule(
     """Elimina una pianificazione."""
     existing = await db_service.get_device_schedule_by_id(schedule_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Pianificazione non trovata.")
+        raise HTTPException(status_code=404, detail=tr("schedules.not_found"))
 
     success = await db_service.delete_device_schedule(schedule_id)
     if not success:
-        raise HTTPException(status_code=500, detail="Errore durante l'eliminazione della regola.")
+        raise HTTPException(status_code=500, detail=tr("schedules.delete_failed"))
 
-    return {"status": "success", "message": f"Regola #{schedule_id} eliminata."}
+    return {"status": "success", "message": tr("schedules.deleted", id=schedule_id)}
 
 
 @router.post("/{schedule_id}/toggle")
@@ -173,7 +174,7 @@ async def toggle_schedule(
     """Attiva o disattiva una regola di pianificazione."""
     existing = await db_service.get_device_schedule_by_id(schedule_id)
     if not existing:
-        raise HTTPException(status_code=404, detail="Pianificazione non trovata.")
+        raise HTTPException(status_code=404, detail=tr("schedules.not_found"))
 
     new_state = not existing.get("enabled", True)
     await db_service.toggle_device_schedule(schedule_id, enabled=new_state)

@@ -59,6 +59,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Network-first for locale files so a release never pairs new markup with
+  // stale translations; the cached copy is only used offline.
+  if (url.pathname.startsWith('/static/locales/')) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(url.pathname, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => caches.match(url.pathname))
+    );
+    return;
+  }
+
   // Stale-while-revalidate for static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {

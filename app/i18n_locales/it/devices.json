@@ -1,0 +1,5 @@
+{
+  "invalid_mac": "MAC address non valido: {macs}",
+  "profile_removed": "Dispositivo rimosso dal profilo con successo.",
+  "profile_updated": "Profilo dispositivo aggiornato con successo."
+}

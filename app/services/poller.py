@@ -6,6 +6,7 @@ from datetime import datetime, timezone, time as dt_time
 from typing import Any, Dict, List, Optional, Set
 
 from app.config import settings
+from app.i18n import SUPPORTED_LANGUAGES, current_language, log_event, tr, tr_all
 from app.services.adguard import adguard_service
 from app.services.db import db_service
 from app.services.eero_client import eero_client
@@ -31,6 +32,19 @@ def _without_wifi_passwords(value: Any) -> Any:
     if isinstance(value, list):
         return [_without_wifi_passwords(v) for v in value]
     return value
+
+
+def _tr_each(key: str, **params: Any) -> Dict[str, str]:
+    """Like tr_all, but a param given as {"en": ..., "it": ...} is resolved per language."""
+    return {
+        lang: tr(key, lang=lang, **{k: (v.get(lang, "") if isinstance(v, dict) else v) for k, v in params.items()})
+        for lang in SUPPORTED_LANGUAGES
+    }
+
+
+def _join_issues(issues: List[Dict[str, str]]) -> Dict[str, str]:
+    """Joins bilingual issue texts into one bilingual pillar summary."""
+    return {lang: "; ".join(issue[lang] for issue in issues) for lang in SUPPORTED_LANGUAGES}
 
 
 class BackgroundPoller:
@@ -80,7 +94,7 @@ class BackgroundPoller:
             return
         self._running = True
         self._task = asyncio.create_task(self._poll_loop())
-        logger.info(f"Background Poller started (Interval: {settings.poll_interval}s).")
+        log_event(logger, logging.INFO, "log_ops.poller_started", interval=settings.poll_interval)
 
     async def stop(self):
         self._running = False
@@ -90,7 +104,7 @@ class BackgroundPoller:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        logger.info("Background Poller stopped.")
+        log_event(logger, logging.INFO, "log_ops.poller_stopped")
 
     def mark_cached_devices_seen(self, macs: Set[str], seen: bool = True):
         """Aggiorna subito il badge NUOVO nella cache RAM, senza attendere il prossimo ciclo di polling."""
@@ -150,207 +164,164 @@ class BackgroundPoller:
         penalties = []
         recommendations = []
         recommendations_i18n = []
+        lang_now = current_language()
+
+        def add_recommendation(text_i18n: Dict[str, str]) -> None:
+            recommendations.append(text_i18n[lang_now])
+            recommendations_i18n.append(text_i18n)
 
         # 1. Mesh Topology & Nodes (Max 40 pt)
         mesh_max = 40
         mesh_score = mesh_max
-        mesh_issues = []
-        mesh_issues_en = []
+        mesh_issues: List[Dict[str, str]] = []
 
         offline_nodes = [e for e in eeros if e.get("status") not in ("online", "green", "rebooting")]
         if offline_nodes:
             deduction = len(offline_nodes) * 20
             mesh_score = max(0, mesh_score - deduction)
-            names = [e.get("name") or e.get("location") or "Nodo eero" for e in offline_nodes]
-            names_en = [e.get("name") or e.get("location") or "eero node" for e in offline_nodes]
-            mesh_issues.append(f"{len(offline_nodes)} nodi offline: {', '.join(names)}")
-            mesh_issues_en.append(f"{len(offline_nodes)} offline node(s): {', '.join(names_en)}")
+            names_i18n = {
+                lang: [e.get("name") or e.get("location") or tr("health.fallback_node_name", lang=lang) for e in offline_nodes]
+                for lang in SUPPORTED_LANGUAGES
+            }
+            names_str_i18n = {lang: ", ".join(names) for lang, names in names_i18n.items()}
+            mesh_issues.append(_tr_each("health.issue_offline_nodes", count=len(offline_nodes), names=names_str_i18n))
+            title_i18n = tr_all("health.penalty_offline_nodes_title")
+            description_i18n = tr_all("health.penalty_offline_nodes_desc", count=len(offline_nodes))
             penalties.append({
                 "id": "offline_nodes",
                 "pillar": "mesh_topology",
-                "title": "Nodi Mesh Disconnessi",
-                "title_i18n": {
-                    "it": "Nodi Mesh Disconnessi",
-                    "en": "Disconnected Mesh Nodes"
-                },
+                "title": title_i18n[lang_now],
+                "title_i18n": title_i18n,
                 "impact": -min(deduction, mesh_max),
                 "severity": "critical",
-                "description": f"{len(offline_nodes)} nodo/i eero risultano offline o non raggiungibili.",
-                "description_i18n": {
-                    "it": f"{len(offline_nodes)} nodo/i eero risultano offline o non raggiungibili.",
-                    "en": f"{len(offline_nodes)} eero node(s) are offline or unreachable."
-                },
-                "affected_items": names
+                "description": description_i18n[lang_now],
+                "description_i18n": description_i18n,
+                "affected_items": names_i18n[lang_now]
             })
-            recommendations.append(f"Verifica l'alimentazione e la connettività dei nodi disconnessi ({', '.join(names)}).")
-            recommendations_i18n.append({
-                "it": f"Verifica l'alimentazione e la connettività dei nodi disconnessi ({', '.join(names)}).",
-                "en": f"Check power and connectivity for disconnected nodes ({', '.join(names)})."
-            })
+            add_recommendation(_tr_each("health.rec_offline_nodes", names=names_str_i18n))
 
         # Verifica degradamento backhaul su nodi wireless o cablati
-        degraded_backhaul_nodes = []
-        degraded_backhaul_nodes_en = []
+        degraded_backhaul_nodes: List[Dict[str, str]] = []
         for e in eeros:
             if e.get("status") in ("online", "green") and not e.get("is_gateway"):
                 rssi = e.get("signal_rssi")
                 if isinstance(rssi, (int, float)) and rssi < -75:
-                    degraded_backhaul_nodes.append(f"{e.get('name')} (Backhaul debole: {rssi} dBm)")
-                    degraded_backhaul_nodes_en.append(f"{e.get('name')} (Weak backhaul: {rssi} dBm)")
+                    degraded_backhaul_nodes.append(tr_all("health.item_weak_backhaul", name=e.get("name"), rssi=rssi))
                 backhaul_str = str(e.get("backhaul_type") or "").lower()
                 if "100 mbps" in backhaul_str or "100m" in backhaul_str:
-                    degraded_backhaul_nodes.append(f"{e.get('name')} (Cavo limitato a 100 Mbps)")
-                    degraded_backhaul_nodes_en.append(f"{e.get('name')} (Cable limited to 100 Mbps)")
+                    degraded_backhaul_nodes.append(tr_all("health.item_cable_100", name=e.get("name")))
 
         if degraded_backhaul_nodes and mesh_score > 5:
             backhaul_deduction = min(len(degraded_backhaul_nodes) * 5, 10)
             mesh_score = max(0, mesh_score - backhaul_deduction)
-            mesh_issues.append(f"Backhaul degradato su {len(degraded_backhaul_nodes)} nodi")
-            mesh_issues_en.append(f"Degraded backhaul on {len(degraded_backhaul_nodes)} node(s)")
+            mesh_issues.append(tr_all("health.issue_degraded_backhaul", count=len(degraded_backhaul_nodes)))
+            title_i18n = tr_all("health.penalty_degraded_backhaul_title")
+            description_i18n = tr_all("health.penalty_degraded_backhaul_desc")
             penalties.append({
                 "id": "degraded_backhaul",
                 "pillar": "mesh_topology",
-                "title": "Collegamento Backhaul Degradato",
-                "title_i18n": {
-                    "it": "Collegamento Backhaul Degradato",
-                    "en": "Degraded Backhaul Link"
-                },
+                "title": title_i18n[lang_now],
+                "title_i18n": title_i18n,
                 "impact": -backhaul_deduction,
                 "severity": "warning",
-                "description": "Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps.",
-                "description_i18n": {
-                    "it": "Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps.",
-                    "en": "Some mesh extender nodes have weak wireless backhaul or a link limited to 100 Mbps."
-                },
-                "affected_items": degraded_backhaul_nodes
+                "description": description_i18n[lang_now],
+                "description_i18n": description_i18n,
+                "affected_items": [item[lang_now] for item in degraded_backhaul_nodes]
             })
-            recommendations.append("Per i nodi con segnale mesh debole, riduci la distanza dal Gateway. Per i collegamenti cablati a 100 Mbps, verifica l'integrità del cavo Ethernet Cat 5e/6.")
-            recommendations_i18n.append({
-                "it": "Per i nodi con segnale mesh debole, riduci la distanza dal Gateway. Per i collegamenti cablati a 100 Mbps, verifica l'integrità del cavo Ethernet Cat 5e/6.",
-                "en": "For nodes with weak mesh signal, reduce distance to Gateway. For 100 Mbps links, verify Ethernet Cat 5e/6 cable integrity."
-            })
+            add_recommendation(tr_all("health.rec_degraded_backhaul"))
 
         mesh_status = "optimal" if mesh_score >= 35 else ("warning" if mesh_score >= 20 else "critical")
-        mesh_details_text = (
-            f"{len(eeros) - len(offline_nodes)}/{len(eeros)} nodi operativi con backhaul eccellente."
-            if not mesh_issues else "; ".join(mesh_issues)
-        )
-        mesh_details_text_en = (
-            f"{len(eeros) - len(offline_nodes)}/{len(eeros)} operational nodes with excellent backhaul."
-            if not mesh_issues_en else "; ".join(mesh_issues_en)
+        mesh_summary_i18n = _join_issues(mesh_issues) if mesh_issues else tr_all(
+            "health.mesh_summary_ok", online=len(eeros) - len(offline_nodes), total=len(eeros)
         )
 
         # 2. WAN & Gateway Connectivity (Max 30 pt)
         wan_max = 30
         wan_score = wan_max
-        wan_issues = []
-        wan_issues_en = []
+        wan_issues: List[Dict[str, str]] = []
 
         is_wan_online = network_details.get("status") in ("online", "green")
         if not is_wan_online:
             wan_score = 0
-            wan_issues.append("Connessione Internet non attiva o gateway offline")
-            wan_issues_en.append("Internet connection inactive or gateway offline")
+            wan_issues.append(tr_all("health.issue_wan_offline"))
+            title_i18n = tr_all("health.penalty_wan_offline_title")
+            description_i18n = tr_all("health.penalty_wan_offline_desc")
             penalties.append({
                 "id": "wan_offline",
                 "pillar": "wan_gateway",
-                "title": "Internet WAN Non Raggiungibile",
-                "title_i18n": {
-                    "it": "Internet WAN Non Raggiungibile",
-                    "en": "WAN Internet Unreachable"
-                },
+                "title": title_i18n[lang_now],
+                "title_i18n": title_i18n,
                 "impact": -wan_max,
                 "severity": "critical",
-                "description": "La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline.",
-                "description_i18n": {
-                    "it": "La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline.",
-                    "en": "eero network reports loss of Internet access from provider or gateway offline."
-                },
-                "affected_items": ["Gateway WAN"]
+                "description": description_i18n[lang_now],
+                "description_i18n": description_i18n,
+                "affected_items": [tr("health.item_wan_gateway")]
             })
-            recommendations.append("Controlla il cavo tra il modem del provider (ONT/FTTH/DSL) e la porta WAN del gateway eero.")
-            recommendations_i18n.append({
-                "it": "Controlla il cavo tra il modem del provider (ONT/FTTH/DSL) e la porta WAN del gateway eero.",
-                "en": "Check the cable between your provider modem (ONT/FTTH/DSL) and the eero gateway WAN port."
-            })
+            add_recommendation(tr_all("health.rec_wan_offline"))
         else:
             sp = network_details.get("speedtest") or {}
             ping_val = float(sp.get("ping_ms") or 0.0)
+            ping_str = f"{ping_val:.1f}"
             if ping_val > 80.0:
                 wan_score = max(10, wan_score - 10)
-                wan_issues.append(f"Latenza elevata verso gateway/ISP ({ping_val:.1f} ms)")
-                wan_issues_en.append(f"High latency to gateway/ISP ({ping_val:.1f} ms)")
+                wan_issues.append(tr_all("health.issue_high_latency", ping=ping_str))
+                title_i18n = tr_all("health.penalty_high_latency_title")
+                description_i18n = tr_all("health.penalty_high_latency_desc", ping=ping_str)
                 penalties.append({
                     "id": "high_wan_latency",
                     "pillar": "wan_gateway",
-                    "title": "Latenza Internet Elevata",
-                    "title_i18n": {
-                        "it": "Latenza Internet Elevata",
-                        "en": "High Internet Latency"
-                    },
+                    "title": title_i18n[lang_now],
+                    "title_i18n": title_i18n,
                     "impact": -10,
                     "severity": "warning",
-                    "description": f"Il ping medio registrato dal Gateway verso la rete esterna è elevato ({ping_val:.1f} ms > 80 ms).",
-                    "description_i18n": {
-                        "it": f"Il ping medio registrato dal Gateway verso la rete esterna è elevato ({ping_val:.1f} ms > 80 ms).",
-                        "en": f"Average ping recorded from Gateway to external network is high ({ping_val:.1f} ms > 80 ms)."
-                    },
-                    "affected_items": [f"Ping Gateway: {ping_val:.1f} ms"]
+                    "description": description_i18n[lang_now],
+                    "description_i18n": description_i18n,
+                    "affected_items": [tr("health.item_ping_gateway", ping=ping_str)]
                 })
-                recommendations.append("Se la latenza rimane costantemente sopra 80 ms, esegui un test diretto o verifica congestioni sul modem/router del provider.")
-                recommendations_i18n.append({
-                    "it": "Se la latenza rimane costantemente sopra 80 ms, esegui un test diretto o verifica congestioni sul modem/router del provider.",
-                    "en": "If latency remains consistently above 80 ms, run a direct speed test or check provider modem/router congestion."
-                })
+                add_recommendation(tr_all("health.rec_high_latency"))
             elif ping_val > 45.0:
                 wan_score = max(20, wan_score - 5)
-                wan_issues.append(f"Latenza moderata ({ping_val:.1f} ms)")
-                wan_issues_en.append(f"Moderate latency ({ping_val:.1f} ms)")
+                wan_issues.append(tr_all("health.issue_moderate_latency", ping=ping_str))
+                title_i18n = tr_all("health.penalty_moderate_latency_title")
+                description_i18n = tr_all("health.penalty_moderate_latency_desc", ping=ping_str)
                 penalties.append({
                     "id": "moderate_wan_latency",
                     "pillar": "wan_gateway",
-                    "title": "Latenza Internet Moderata",
-                    "title_i18n": {
-                        "it": "Latenza Internet Moderata",
-                        "en": "Moderate Internet Latency"
-                    },
+                    "title": title_i18n[lang_now],
+                    "title_i18n": title_i18n,
                     "impact": -5,
                     "severity": "info",
-                    "description": f"Latenza WAN registrata di {ping_val:.1f} ms (sopra la soglia ideale di 45 ms).",
-                    "description_i18n": {
-                        "it": f"Latenza WAN registrata di {ping_val:.1f} ms (sopra la soglia ideale di 45 ms).",
-                        "en": f"Recorded WAN latency of {ping_val:.1f} ms (above ideal 45 ms threshold)."
-                    },
-                    "affected_items": [f"Ping: {ping_val:.1f} ms"]
+                    "description": description_i18n[lang_now],
+                    "description_i18n": description_i18n,
+                    "affected_items": [tr("health.item_ping", ping=ping_str)]
                 })
 
         wan_status = "optimal" if wan_score >= 25 else ("warning" if wan_score >= 15 else "critical")
-        wan_details_text = (
-            f"Gateway online, IP pubblico attivo ({network_details.get('public_ip', 'N/D')}), latenza ottimale."
-            if not wan_issues else "; ".join(wan_issues)
-        )
-        wan_details_text_en = (
-            f"Gateway online, active public IP ({network_details.get('public_ip', 'N/A')}), optimal latency."
-            if not wan_issues_en else "; ".join(wan_issues_en)
-        )
+        if wan_issues:
+            wan_summary_i18n = _join_issues(wan_issues)
+        else:
+            public_ip = network_details.get("public_ip")
+            wan_summary_i18n = _tr_each(
+                "health.wan_summary_ok",
+                ip=public_ip if public_ip is not None else tr_all("health.not_available"),
+            )
 
         # 3. Client Wi-Fi Signal Quality (Max 20 pt)
         client_max = 20
         client_score = client_max
-        client_issues = []
-        client_issues_en = []
+        client_issues: List[Dict[str, str]] = []
 
         connected_clients = [d for d in enriched_devices if d.get("connected")]
         wireless_connected = [d for d in connected_clients if d.get("wireless")]
 
-        weak_devices = []
-        critical_devices = []
+        weak_devices: List[Dict[str, str]] = []
+        critical_devices: List[Dict[str, str]] = []
         for d in wireless_connected:
             rssi = d.get("signal_rssi")
             if isinstance(rssi, (int, float)):
-                d_name = d.get("custom_name") or d.get("nickname") or d.get("hostname") or d.get("mac") or "Dispositivo"
+                d_name = d.get("custom_name") or d.get("nickname") or d.get("hostname") or d.get("mac") or tr_all("health.fallback_device_name")
                 eero_name = d.get("connected_eero_name") or "eero"
-                item_label = f"{d_name} ({rssi} dBm su {eero_name})"
+                item_label = _tr_each("health.item_weak_client", device=d_name, rssi=rssi, node=eero_name)
                 if rssi < -82:
                     critical_devices.append(item_label)
                 elif rssi < -75:
@@ -362,46 +333,32 @@ class BackgroundPoller:
             deduction = min(deduction, 18)
             client_score = max(2, client_score - deduction)
             all_affected = critical_devices + weak_devices
-            client_issues.append(f"{total_degraded} dispositivi con segnale debole")
-            client_issues_en.append(f"{total_degraded} device(s) with weak signal")
+            client_issues.append(tr_all("health.issue_weak_clients", count=total_degraded))
+            title_i18n = tr_all("health.penalty_weak_clients_title")
+            description_i18n = tr_all("health.penalty_weak_clients_desc", count=total_degraded)
             penalties.append({
                 "id": "weak_client_signal",
                 "pillar": "client_signal",
-                "title": "Client con Segnale Wi-Fi Degradato",
-                "title_i18n": {
-                    "it": "Client con Segnale Wi-Fi Degradato",
-                    "en": "Clients with Degraded Wi-Fi Signal"
-                },
+                "title": title_i18n[lang_now],
+                "title_i18n": title_i18n,
                 "impact": -deduction,
                 "severity": "warning" if len(critical_devices) == 0 else "critical",
-                "description": f"{total_degraded} dispositivi wireless presentano un segnale RSSI degradato (< -75 dBm), che può causare perdita pacchetti o throughput ridotto.",
-                "description_i18n": {
-                    "it": f"{total_degraded} dispositivi wireless presentano un segnale RSSI degradato (< -75 dBm), che può causare perdita pacchetti o throughput ridotto.",
-                    "en": f"{total_degraded} wireless device(s) have degraded RSSI signal (< -75 dBm), which may cause packet loss or reduced throughput."
-                },
-                "affected_items": all_affected[:6]
+                "description": description_i18n[lang_now],
+                "description_i18n": description_i18n,
+                "affected_items": [item[lang_now] for item in all_affected[:6]]
             })
-            recommendations.append(f"Avvicina i dispositivi ({', '.join(all_affected[:3])}) al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.")
-            recommendations_i18n.append({
-                "it": f"Avvicina i dispositivi ({', '.join(all_affected[:3])}) al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.",
-                "en": f"Move devices ({', '.join(all_affected[:3])}) closer to the nearest mesh node or consider repositioning to eliminate dead zones."
-            })
+            devices_i18n = {lang: ", ".join(item[lang] for item in all_affected[:3]) for lang in SUPPORTED_LANGUAGES}
+            add_recommendation(_tr_each("health.rec_weak_clients", devices=devices_i18n))
 
         client_status = "optimal" if client_score >= 18 else ("warning" if client_score >= 10 else "critical")
-        client_details_text = (
-            f"Tutti i {len(wireless_connected)} dispositivi wireless hanno segnale RSSI eccellente (>= -75 dBm)."
-            if not client_issues else "; ".join(client_issues)
-        )
-        client_details_text_en = (
-            f"All {len(wireless_connected)} wireless devices have excellent RSSI signal (>= -75 dBm)."
-            if not client_issues_en else "; ".join(client_issues_en)
+        client_summary_i18n = _join_issues(client_issues) if client_issues else tr_all(
+            "health.client_summary_ok", count=len(wireless_connected)
         )
 
         # 4. Channel Distribution & Density (Max 10 pt)
         channel_max = 10
         channel_score = channel_max
-        channel_issues = []
-        channel_issues_en = []
+        channel_issues: List[Dict[str, str]] = []
 
         c_6g = sum(1 for d in wireless_connected if "6" in str(d.get("wireless_band", "")))
         c_5g = sum(1 for d in wireless_connected if "5" in str(d.get("wireless_band", "")))
@@ -410,66 +367,51 @@ class BackgroundPoller:
 
         if total_w >= 6 and (c_24g / total_w) > 0.70 and (c_5g + c_6g) > 0:
             channel_score = max(5, channel_score - 3)
-            channel_issues.append("Sovraccarico frequenza 2.4 GHz (> 70% dei client)")
-            channel_issues_en.append("2.4 GHz band overload (> 70% of clients)")
+            channel_issues.append(tr_all("health.issue_band_24"))
+            title_i18n = tr_all("health.penalty_band_24_title")
+            description_i18n = tr_all("health.penalty_band_24_desc", count=c_24g, total=total_w)
             penalties.append({
                 "id": "band_24_crowding",
                 "pillar": "channel_density",
-                "title": "Affollamento Frequenza 2.4 GHz",
-                "title_i18n": {
-                    "it": "Affollamento Frequenza 2.4 GHz",
-                    "en": "2.4 GHz Band Crowding"
-                },
+                "title": title_i18n[lang_now],
+                "title_i18n": title_i18n,
                 "impact": -3,
                 "severity": "info",
-                "description": f"{c_24g} su {total_w} client wireless sono connessi sui canali 2.4 GHz, con potenziale saturazione dello spettro.",
-                "description_i18n": {
-                    "it": f"{c_24g} su {total_w} client wireless sono connessi sui canali 2.4 GHz, con potenziale saturazione dello spettro.",
-                    "en": f"{c_24g} out of {total_w} wireless clients are connected on 2.4 GHz channels, potentially saturating the spectrum."
-                },
-                "affected_items": [f"2.4 GHz: {c_24g} client", f"5 GHz: {c_5g} client", f"6 GHz: {c_6g} client"]
+                "description": description_i18n[lang_now],
+                "description_i18n": description_i18n,
+                "affected_items": [
+                    tr("health.item_band_clients", band="2.4 GHz", count=c_24g),
+                    tr("health.item_band_clients", band="5 GHz", count=c_5g),
+                    tr("health.item_band_clients", band="6 GHz", count=c_6g),
+                ]
             })
-            recommendations.append("Attiva la funzione 'Band Steering' nelle impostazioni per instradare automaticamente i dispositivi compatibili sui 5 GHz o 6 GHz.")
-            recommendations_i18n.append({
-                "it": "Attiva la funzione 'Band Steering' nelle impostazioni per instradare automaticamente i dispositivi compatibili sui 5 GHz o 6 GHz.",
-                "en": "Enable 'Band Steering' in settings to automatically route compatible devices to 5 GHz or 6 GHz."
-            })
+            add_recommendation(tr_all("health.rec_band_24"))
 
         if len(eeros) > 1 and total_w >= 8:
             for node in eeros:
                 cnt = node.get("connected_clients_count", 0)
                 if cnt / len(connected_clients) > 0.80 and cnt >= 15:
-                    node_name = node.get("name") or "Nodo"
+                    node_name = node.get("name") or tr_all("health.fallback_node_short")
                     channel_score = max(4, channel_score - 3)
-                    channel_issues.append(f"Carico client sbilanciato su {node_name} ({cnt} client)")
-                    channel_issues_en.append(f"Unbalanced client load on {node_name} ({cnt} clients)")
+                    channel_issues.append(_tr_each("health.issue_node_overload", node=node_name, count=cnt))
+                    title_i18n = tr_all("health.penalty_node_overload_title")
+                    description_i18n = _tr_each("health.penalty_node_overload_desc", node=node_name)
                     penalties.append({
                         "id": "node_overload",
                         "pillar": "channel_density",
-                        "title": "Sbilanciamento Carico Nodi Mesh",
-                        "title_i18n": {
-                            "it": "Sbilanciamento Carico Nodi Mesh",
-                            "en": "Mesh Node Load Imbalance"
-                        },
+                        "title": title_i18n[lang_now],
+                        "title_i18n": title_i18n,
                         "impact": -3,
                         "severity": "info",
-                        "description": f"Il nodo '{node_name}' gestisce oltre l'80% di tutti i dispositivi connessi della casa.",
-                        "description_i18n": {
-                            "it": f"Il nodo '{node_name}' gestisce oltre l'80% di tutti i dispositivi connessi della casa.",
-                            "en": f"Node '{node_name}' handles more than 80% of all connected household devices."
-                        },
-                        "affected_items": [f"{node_name}: {cnt} client"]
+                        "description": description_i18n[lang_now],
+                        "description_i18n": description_i18n,
+                        "affected_items": [_tr_each("health.item_node_clients", node=node_name, count=cnt)[lang_now]]
                     })
                     break
 
         channel_status = "optimal" if channel_score >= 8 else ("warning" if channel_score >= 5 else "critical")
-        channel_details_text = (
-            f"Distribuzione frequenze bilanciata: 6 GHz ({c_6g}), 5 GHz ({c_5g}), 2.4 GHz ({c_24g})."
-            if not channel_issues else "; ".join(channel_issues)
-        )
-        channel_details_text_en = (
-            f"Balanced frequency distribution: 6 GHz ({c_6g}), 5 GHz ({c_5g}), 2.4 GHz ({c_24g})."
-            if not channel_issues_en else "; ".join(channel_issues_en)
+        channel_summary_i18n = _join_issues(channel_issues) if channel_issues else tr_all(
+            "health.channel_summary_ok", c6=c_6g, c5=c_5g, c24=c_24g
         )
 
         # Calcolo Score Finale (1 - 100)
@@ -479,11 +421,7 @@ class BackgroundPoller:
         overall_status = "optimal" if final_score >= 90 else ("good" if final_score >= 70 else ("warning" if final_score >= 50 else "critical"))
 
         if not recommendations:
-            recommendations.append("Tutti i parametri di stabilità della rete eero mesh sono ottimali. Nessuna azione correttiva necessaria.")
-            recommendations_i18n.append({
-                "it": "Tutti i parametri di stabilità della rete eero mesh sono ottimali. Nessuna azione correttiva necessaria.",
-                "en": "All eero mesh stability parameters are optimal. No corrective action needed."
-            })
+            add_recommendation(tr_all("health.rec_all_optimal"))
 
         # Diagnostica Intelligente AI & Roaming Advisor (v1.6.0 Modulo 1)
         from app.services.diagnostics_service import diagnostics_service
@@ -513,33 +451,24 @@ class BackgroundPoller:
                     "score": mesh_score,
                     "max_score": mesh_max,
                     "status": mesh_status,
-                    "summary": mesh_details_text,
-                    "summary_i18n": {
-                        "it": mesh_details_text,
-                        "en": mesh_details_text_en
-                    }
+                    "summary": mesh_summary_i18n[lang_now],
+                    "summary_i18n": mesh_summary_i18n
                 },
                 "wan_gateway": {
                     "key": "wan_gateway",
                     "score": wan_score,
                     "max_score": wan_max,
                     "status": wan_status,
-                    "summary": wan_details_text,
-                    "summary_i18n": {
-                        "it": wan_details_text,
-                        "en": wan_details_text_en
-                    }
+                    "summary": wan_summary_i18n[lang_now],
+                    "summary_i18n": wan_summary_i18n
                 },
                 "client_signal": {
                     "key": "client_signal",
                     "score": client_score,
                     "max_score": client_max,
                     "status": client_status,
-                    "summary": client_details_text,
-                    "summary_i18n": {
-                        "it": client_details_text,
-                        "en": client_details_text_en
-                    },
+                    "summary": client_summary_i18n[lang_now],
+                    "summary_i18n": client_summary_i18n,
                     "weak_count": total_degraded,
                 },
                 "channel_density": {
@@ -547,11 +476,8 @@ class BackgroundPoller:
                     "score": channel_score,
                     "max_score": channel_max,
                     "status": channel_status,
-                    "summary": channel_details_text,
-                    "summary_i18n": {
-                        "it": channel_details_text,
-                        "en": channel_details_text_en
-                    },
+                    "summary": channel_summary_i18n[lang_now],
+                    "summary_i18n": channel_summary_i18n,
                     "counts": {
                         "band_6ghz": c_6g,
                         "band_5ghz": c_5g,
@@ -597,7 +523,7 @@ class BackgroundPoller:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Errore durante il ciclo di polling in background: {e}", exc_info=True)
+                log_event(logger, logging.ERROR, "log_ops.poll_loop_failed", exc_info=True, error=str(e))
                 await asyncio.sleep(10)
 
     async def _poll_and_cache(self):
@@ -626,9 +552,8 @@ class BackgroundPoller:
                 else:
                     self.cloud_status = "unreachable"
 
-                logger.warning(
-                    f"Cloud poll attempt failed ({self._consecutive_failed_polls} consecutive failure(s), "
-                    f"cloud_status='{self.cloud_status}'): {e}"
+                log_event(logger, logging.WARNING, "log_ops.cloud_poll_failed",
+                    count=self._consecutive_failed_polls, status=self.cloud_status, error=str(e),
                 )
 
                 if self._consecutive_failed_polls >= 3 and not self._cloud_alert_sent:
@@ -652,7 +577,7 @@ class BackgroundPoller:
             try:
                 profiles = await eero_client.get_profiles()
             except Exception as ep:
-                logger.warning(f"Failed to fetch profiles in poller: {ep}")
+                log_event(logger, logging.WARNING, "log_ops.profiles_fetch_failed", error=str(ep))
                 profiles = []
 
             try:
@@ -684,7 +609,7 @@ class BackgroundPoller:
                     if r_mac and r_ip:
                         cloud_reservations[r_mac] = r_ip
             except Exception as e:
-                logger.warning(f"Failed to fetch cloud reservations in poller: {e}")
+                log_event(logger, logging.WARNING, "log_ops.reservations_fetch_failed", error=str(e))
                 cloud_reservations = {}
 
             # Costruzione mappa dispositivi -> profili per arricchimento immediato
@@ -1146,10 +1071,10 @@ class BackgroundPoller:
                             if not sp_cached.get("upload_mbps") and l_st.get("upload_mbps"):
                                 sp_cached["upload_mbps"] = l_st["upload_mbps"]
                     except Exception as e:
-                        logger.debug(f"Arricchimento bufferbloat cache network: {e}")
+                        logger.debug(f"Bufferbloat enrichment of network cache failed: {e}")
 
         except Exception as e:
-            logger.error(f"Errore durante il salvataggio delle metriche di rete: {e}")
+            log_event(logger, logging.ERROR, "log_ops.metrics_save_failed", error=str(e))
 
     @staticmethod
     def _get_local_now(tz_name: Optional[str] = None) -> datetime:
@@ -1194,10 +1119,10 @@ class BackgroundPoller:
                 if is_night != self._last_night_mode_state:
                     self._last_night_mode_state = is_night
                     target_led_on = not is_night
-                    logger.info(f"Night Mode Scheduler: Impostazione LED a {target_led_on}")
+                    log_event(logger, logging.INFO, "log_ops.night_mode_leds_on" if target_led_on else "log_ops.night_mode_leds_off")
                     await eero_client.set_all_leds(target_led_on)
             except Exception as ex:
-                logger.error(f"Errore calcolo scheduler night mode: {ex}")
+                log_event(logger, logging.ERROR, "log_ops.night_mode_failed", error=str(ex))
 
         # B. Retention Cleanup (una volta ogni 24 ore)
         if not self._last_retention_run or (now - self._last_retention_run).total_seconds() > 86400:
@@ -1214,7 +1139,7 @@ class BackgroundPoller:
                     try:
                         await speedtest_service.run_speedtest()
                     except Exception as err:
-                        logger.warning(f"Scheduled speedtest failed: {err}")
+                        log_event(logger, logging.WARNING, "log_ops.scheduled_speedtest_failed", error=str(err))
                 asyncio.create_task(_safe_scheduled_speedtest())
 
         # D. Daily Digest (persistenza su DB SQLite per evitare re-invii continui e spam dopo riavvii del container - Issue #70)
@@ -1285,8 +1210,8 @@ class BackgroundPoller:
             wan_down = net.get("speed_down_mbps") or stats.get("avg_download") or 0.0
             wan_up = net.get("speed_up_mbps") or stats.get("avg_upload") or 0.0
             wan_ping = net.get("ping_ms") or stats.get("avg_ping") or 0.0
-            isp_name = net.get("isp") or "N/D"
-            network_name = net.get("name") or "Rete eero"
+            isp_name = net.get("isp") or tr("notifications.not_available", lang=lang)
+            network_name = net.get("name") or tr("notifications.default_network_name", lang=lang)
             health_score = self.cached_health_score or 100
 
             digest_payload = {
@@ -1309,7 +1234,7 @@ class BackgroundPoller:
             await notification_service.notify_digest(digest_payload, lang=lang)
             return digest_payload
         except Exception as e:
-            logger.error(f"Errore invio digest giornaliero: {e}", exc_info=True)
+            log_event(logger, logging.ERROR, "log_ops.digest_send_failed", exc_info=True, error=str(e))
             raise e
 
     def update_cached_profiles(self, profiles: List[Dict[str, Any]]):

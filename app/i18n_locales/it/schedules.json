@@ -1,0 +1,18 @@
+{
+  "name_required": "Il nome della regola non può essere vuoto.",
+  "target_required": "Specificare almeno un utente o nodo target.",
+  "not_found": "Pianificazione non trovata.",
+  "update_failed": "Errore durante l'aggiornamento della regola.",
+  "delete_failed": "Errore durante l'eliminazione della regola.",
+  "deleted": "Regola #{id} eliminata.",
+  "state_started": "Attivata",
+  "state_ended": "Terminata",
+  "transition_alert_title": "🕒 Regola Pianificata '{name}'",
+  "transition_alert_message": "La regola oraria '{name}' è stata applicata: stato {state} su {count} target ({target_type}).",
+  "maintenance_reason_beacons": "Health score critico ({score}/{threshold}) e {count} nodi beacon degradati.",
+  "maintenance_reason_network": "Health score generale critico ({score}/{threshold}). Riavvio preventivo rete.",
+  "maintenance_whole_network": "Rete eero Mesh Intera",
+  "maintenance_alert_title": "🔄 Manutenzione Notturna: Riavvio Mesh",
+  "maintenance_alert_message": "{reason} Nodi riavviati: {items}.",
+  "maintenance_telegram": "<b>🔄 Manutenzione Notturna eero</b>\n\n{reason}\nApparati: <code>{items}</code>"
+}

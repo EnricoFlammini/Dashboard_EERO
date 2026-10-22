@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.i18n import log_event, tr
 from app.routers.dependencies import require_permission
 
 from app.services.db import db_service
@@ -243,7 +244,7 @@ async def mark_devices_seen(payload: DeviceSeenRequest):
     macs = {m.strip().lower() for m in payload.macs if m and m.strip()}
     invalid = sorted(m for m in macs if not MAC_RE.match(m))
     if invalid:
-        raise HTTPException(status_code=400, detail=f"MAC address non valido: {', '.join(invalid[:5])}")
+        raise HTTPException(status_code=400, detail=tr("devices.invalid_mac", macs=", ".join(invalid[:5])))
     updated = await db_service.set_known_devices_seen(macs, seen=payload.seen)
     background_poller.mark_cached_devices_seen(macs, seen=payload.seen)
     return {"status": "success", "updated": updated, "seen": payload.seen}
@@ -277,7 +278,7 @@ async def rename_device(device_id: str, payload: DeviceRenameRequest):
         res = await eero_client.update_device(device_id=device_id, nickname=payload.nickname.strip())
         return res
     except Exception as e:
-        logger.error(f"Failed to rename device {device_id}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.device_rename_failed", device_id=device_id, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -395,11 +396,11 @@ async def set_device_reservation(mac_address: str, payload: ReservationRequest):
         res_mac = (res.get("mac") or res.get("mac_address") or "").lower().strip()
         if res_ip == target_ip and res_mac != mac_clean:
             old_res_id = res.get("id") or res_mac
-            logger.info(f"Reassigning IP {target_ip} from {res_mac} to {mac_clean}. Deleting old reservation {old_res_id}...")
+            log_event(logger, logging.INFO, "log_eero.reservation_reassigning", ip=target_ip, old_mac=res_mac, mac=mac_clean, reservation_id=old_res_id)
             try:
                 await eero_client.delete_reservation(old_res_id)
             except Exception as e:
-                logger.warning(f"Could not delete old reservation {old_res_id}: {e}")
+                log_event(logger, logging.WARNING, "log_eero.reservation_old_delete_failed", reservation_id=old_res_id, error=e)
             
     try:
         res = await eero_client.add_reservation(
@@ -411,7 +412,7 @@ async def set_device_reservation(mac_address: str, payload: ReservationRequest):
         await db_service.upsert_device_metadata(mac_address=mac_clean, static_ip=target_ip)
         return {"status": "success", "reservation": res}
     except Exception as e:
-        logger.error(f"Failed to add DHCP reservation for {mac_clean}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.reservation_add_failed", mac=mac_clean, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -439,7 +440,7 @@ async def delete_device_reservation(mac_address: str):
         await db_service.upsert_device_metadata(mac_address=mac_clean, static_ip="")
         return {"status": "success", "deleted": res}
     except Exception as e:
-        logger.error(f"Failed to delete DHCP reservation for {mac_clean}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.reservation_delete_failed", mac=mac_clean, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -467,7 +468,7 @@ async def create_device_port_forward(mac_address: str, payload: PortForwardReque
         )
         return {"status": "success", "forward": res}
     except Exception as e:
-        logger.error(f"Failed to add port forward: {e}")
+        log_event(logger, logging.ERROR, "log_eero.forward_add_failed", error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -478,7 +479,7 @@ async def delete_device_port_forward(mac_address: str, forward_id: str):
         res = await eero_client.delete_port_forward(forward_id)
         return {"status": "success", "deleted": res}
     except Exception as e:
-        logger.error(f"Failed to delete port forward {forward_id}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.forward_delete_failed", forward_id=forward_id, error=e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -494,14 +495,14 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
         cached_p = await eero_client.get_profiles()
         background_poller.update_cached_profiles(cached_p)
 
-        msg = "Dispositivo rimosso dal profilo con successo." if not payload.profile_id else "Profilo dispositivo aggiornato con successo."
+        msg = tr("devices.profile_removed") if not payload.profile_id else tr("devices.profile_updated")
         return {
             "status": "success",
             "message": msg,
             "result": res
         }
     except Exception as e:
-        logger.error(f"Failed to assign profile for device {mac_address}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.device_profile_assign_failed", exc_info=True, mac=mac_address, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 

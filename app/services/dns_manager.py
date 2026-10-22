@@ -10,6 +10,7 @@ import httpx
 
 from app.services.db import db_service
 from app.services.eero_client import get_adguard_tags
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -85,10 +86,7 @@ def _tls_error_result(url: str) -> Dict[str, Any]:
     return {
         "success": False,
         "tls_error": True,
-        "message": (
-            f"Certificato HTTPS di '{url}' non verificabile (autofirmato, scaduto o emesso per un altro nome). "
-            "Se il server è nella tua rete e ti fidi, abilita 'Accetta certificato HTTPS non verificato' per questa istanza."
-        ),
+        "message": tr("dns.tls_unverified", url=url),
     }
 
 
@@ -119,7 +117,7 @@ class DNSManager:
                     "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
-                    "last_sync_status": "Completato: 18 client sincronizzati [Simulazione Demo]",
+                    "last_sync_status": "",
                     "last_sync_count": 18
                 },
                 {
@@ -135,7 +133,7 @@ class DNSManager:
                     "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
-                    "last_sync_status": "Completato: 18 client sincronizzati [Simulazione Demo]",
+                    "last_sync_status": "",
                     "last_sync_count": 18
                 },
                 {
@@ -151,11 +149,27 @@ class DNSManager:
                     "insecure_tls": False,
                     "enabled": True,
                     "last_sync_time": "2026-08-29T10:00:00Z",
-                    "last_sync_status": "Completato: 18 record Local DNS sincronizzati [Simulazione Demo]",
+                    "last_sync_status": "",
                     "last_sync_count": 18
                 }
             ]
         }
+        # Stato di sync delle istanze demo come (chiave catalogo, parametri): tradotto a ogni lettura nella lingua della richiesta
+        self._demo_status_keys: Dict[str, Tuple[str, Dict[str, Any]]] = {
+            "inst-adguard-1": ("dns.demo_status_clients", {"count": 18}),
+            "inst-adguard-2": ("dns.demo_status_clients", {"count": 18}),
+            "inst-pihole-1": ("dns.demo_status_records", {"count": 18}),
+        }
+
+    def _demo_instances_view(self) -> List[Dict[str, Any]]:
+        instances = []
+        for inst in self._demo_settings.get("instances", []):
+            inst_copy = dict(inst)
+            status = self._demo_status_keys.get(inst_copy.get("id"))
+            if status:
+                inst_copy["last_sync_status"] = tr(status[0], **status[1])
+            instances.append(inst_copy)
+        return instances
 
     # =========================================================================
     # SETTINGS PERSISTENCE & RETRIEVAL
@@ -167,7 +181,7 @@ class DNSManager:
         if eero_client.is_demo_mode:
             return {
                 "enabled": bool(self._demo_settings.get("enabled", True)),
-                "instances": [dict(inst) for inst in self._demo_settings.get("instances", [])]
+                "instances": self._demo_instances_view()
             }
 
         all_s = await db_service.get_all_settings()
@@ -179,7 +193,7 @@ class DNSManager:
             try:
                 instances = json.loads(instances_json)
             except Exception as e:
-                logger.warning(f"Errore caricamento dns_instances da SQLite: {e}")
+                logger.warning(f"Failed to load dns_instances from SQLite: {e}")
 
         # Se non ci sono istanze strutturate, controlla la configurazione legacy AdGuard
         if not instances:
@@ -332,14 +346,14 @@ class DNSManager:
                 "status_code": 200,
                 "engine": engine,
                 "normalized_url": normalize_dns_url(instance_data.get("url", "")),
-                "message": f"Connessione a {engine_name} riuscita! (Ambiente Demo Simulato - 18 client rilevati)",
+                "message": tr("dns.demo_test_success", engine=engine_name, count=18),
                 "existing_clients_count": 18
             }
 
         engine = str(instance_data.get("engine") or "adguard").strip().lower()
         url = normalize_dns_url(instance_data.get("url", ""))
         if not url:
-            return {"success": False, "message": "URL mancante o non specificato."}
+            return {"success": False, "message": tr("dns.url_missing")}
 
         # Se la password o il token non sono passati, cercali nei setting salvati, ma SOLO se la richiesta
         # punta alla stessa istanza registrata (stesso id, URL, motore e account): un URL o un account
@@ -377,7 +391,7 @@ class DNSManager:
         elif engine == "technitium":
             return await self._test_technitium(url, token or password or "", instance_data.get("username", ""), insecure_tls=insecure_tls)
         else:
-            return {"success": False, "message": f"Motore DNS '{engine}' non riconosciuto."}
+            return {"success": False, "message": tr("dns.unknown_engine", engine=engine)}
 
     async def _test_adguard(self, url: str, username: str, password: str, insecure_tls: bool = False) -> Dict[str, Any]:
         auth = (username.strip(), password.strip()) if username and password else None
@@ -392,21 +406,21 @@ class DNSManager:
                         "success": True,
                         "status_code": 200,
                         "normalized_url": url,
-                        "message": f"Connessione AdGuard Home riuscita! Trovati {len(clients)} client manuali ({len(auto_clients)} scoperti automaticamente).",
+                        "message": tr("dns.adguard_test_success", clients=len(clients), auto_clients=len(auto_clients)),
                         "existing_clients_count": len(clients)
                     }
                 elif resp.status_code in (401, 403):
-                    return {"success": False, "status_code": resp.status_code, "message": "Autenticazione fallita (401/403). Verifica Username e Password."}
+                    return {"success": False, "status_code": resp.status_code, "message": tr("dns.adguard_auth_failed")}
                 else:
-                    return {"success": False, "status_code": resp.status_code, "message": f"AdGuard Home ha risposto con codice HTTP {resp.status_code}."}
+                    return {"success": False, "status_code": resp.status_code, "message": tr("dns.adguard_http_error", code=resp.status_code)}
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Impossibile connettersi a '{url}'. Verifica IP, porta e protocollo (http/https)."}
+            return {"success": False, "message": tr("dns.adguard_connect_failed", url=url)}
         except httpx.TimeoutException:
-            return {"success": False, "message": f"Timeout connessione verso '{url}' (oltre 8 secondi)."}
+            return {"success": False, "message": tr("dns.adguard_timeout", url=url)}
         except Exception as e:
-            return {"success": False, "message": f"Errore di connessione AdGuard: {str(e)}"}
+            return {"success": False, "message": tr("dns.adguard_connection_error", error=str(e))}
 
     async def _test_pihole(self, url: str, token: str, insecure_tls: bool = False) -> Dict[str, Any]:
         # Prova prima Pi-hole v6 (/api/) poi v5 (admin/api.php)
@@ -445,11 +459,11 @@ class DNSManager:
                         "success": True,
                         "status_code": 200,
                         "normalized_url": url,
-                        "message": f"Connessione Pi-hole (v6 REST API) riuscita! Trovati {len(existing)} host configurati.",
+                        "message": tr("dns.pihole_v6_success", count=len(existing)),
                         "existing_clients_count": len(existing)
                     }
                 elif resp_v6.status_code in (401, 403):
-                    return {"success": False, "status_code": resp_v6.status_code, "message": "Autenticazione Pi-hole v6 fallita (401/403). Verifica Password o API Token."}
+                    return {"success": False, "status_code": resp_v6.status_code, "message": tr("dns.pihole_v6_auth_failed")}
 
                 # 2. Pi-hole v5 check (legacy admin/api.php)
                 v5_url = f"{url}/admin/api.php?customdns&action=get&auth={clean_token}"
@@ -461,7 +475,7 @@ class DNSManager:
                             "success": True,
                             "status_code": 200,
                             "normalized_url": url,
-                            "message": "Connessione Pi-hole (v5 API) riuscita! Record Local DNS accessibili.",
+                            "message": tr("dns.pihole_v5_success"),
                             "existing_clients_count": 0
                         }
 
@@ -469,17 +483,17 @@ class DNSManager:
                     "success": True,
                     "status_code": 200,
                     "normalized_url": url,
-                    "message": "Connessione a Pi-hole stabilita con successo!",
+                    "message": tr("dns.pihole_connected"),
                     "existing_clients_count": 0
                 }
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Impossibile raggiungere Pi-hole su '{url}'."}
+            return {"success": False, "message": tr("dns.pihole_unreachable", url=url)}
         except httpx.TimeoutException:
-            return {"success": False, "message": f"Timeout connessione Pi-hole verso '{url}'."}
+            return {"success": False, "message": tr("dns.pihole_timeout", url=url)}
         except Exception as e:
-            return {"success": False, "message": f"Errore di connessione Pi-hole: {str(e)}"}
+            return {"success": False, "message": tr("dns.pihole_connection_error", error=str(e))}
 
     async def _test_technitium(self, url: str, token_or_pass: str, username: str, insecure_tls: bool = False) -> Dict[str, Any]:
         try:
@@ -501,28 +515,28 @@ class DNSManager:
                             "success": True,
                             "status_code": 200,
                             "normalized_url": url,
-                            "message": f"Connessione Technitium DNS riuscita! Trovate {len(zones)} zone configurate.",
+                            "message": tr("dns.technitium_success", count=len(zones)),
                             "existing_clients_count": len(zones)
                         }
                     else:
-                        err = data.get("errorMessage", "Errore API Technitium")
+                        err = data.get("errorMessage") or tr("dns.technitium_api_error")
                         return {"success": False, "message": f"Technitium DNS: {err}"}
                 elif resp.status_code in (401, 403):
-                    return {"success": False, "message": "Autenticazione Technitium DNS fallita (Token o Credenziali non valide)."}
-                return {"success": False, "message": f"Technitium DNS ha risposto con codice HTTP {resp.status_code}."}
+                    return {"success": False, "message": tr("dns.technitium_auth_failed")}
+                return {"success": False, "message": tr("dns.technitium_http_error", code=resp.status_code)}
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Impossibile raggiungere Technitium DNS su '{url}'."}
+            return {"success": False, "message": tr("dns.technitium_unreachable", url=url)}
         except Exception as e:
-            return {"success": False, "message": f"Errore connessione Technitium DNS: {str(e)}"}
+            return {"success": False, "message": tr("dns.technitium_connection_error", error=str(e))}
 
     async def test_all_instances(self) -> Dict[str, Any]:
         """Testa contemporaneamente tutte le istanze DNS configurate."""
         settings = await self.get_settings()
         instances = settings.get("instances", [])
         if not instances:
-            return {"success": False, "message": "Nessuna istanza DNS configurata da testare.", "results": []}
+            return {"success": False, "message": tr("dns.no_instances_to_test"), "results": []}
 
         results = []
         all_ok = True
@@ -756,7 +770,7 @@ class DNSManager:
                                 if cid:
                                     existing_by_id[str(cid).strip().lower()] = c
                 elif resp.status_code in (401, 403):
-                    return {"success": False, "message": f"Autenticazione fallita su AdGuard ({url})."}
+                    return {"success": False, "message": tr("dns.adguard_sync_auth_failed", url=url)}
 
                 added = 0
                 updated = 0
@@ -793,12 +807,12 @@ class DNSManager:
                     "added": added,
                     "updated": updated,
                     "failed": failed,
-                    "message": f"AdGuard: {added} aggiunti, {updated} aggiornati, {failed} falliti."
+                    "message": tr("dns.adguard_sync_result", added=added, updated=updated, failed=failed)
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Errore durante la sincronizzazione AdGuard: {str(e)}"}
+            return {"success": False, "message": tr("dns.adguard_sync_error", error=str(e))}
 
     async def _sync_single_pihole(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
@@ -918,7 +932,7 @@ class DNSManager:
                         }
                     }
                     patch_res = await client.patch(f"{url}/api/config", json=patch_payload, headers=v6_headers)
-                    zone_label = f" in zona .{raw_zone}" if raw_zone else " (hostname diretti)"
+                    zone_label = tr("dns.zone_label_zone", zone=raw_zone) if raw_zone else tr("dns.zone_label_direct")
 
                     if patch_res.status_code in (200, 204):
                         return {
@@ -926,7 +940,7 @@ class DNSManager:
                             "added": synced,
                             "updated": 0,
                             "failed": 0,
-                            "message": f"Pi-hole v6: {synced} record DNS sincronizzati con successo{zone_label}."
+                            "message": tr("dns.pihole_v6_sync_ok", count=synced, zone_label=zone_label)
                         }
 
                     # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
@@ -959,7 +973,7 @@ class DNSManager:
                         "added": put_synced,
                         "updated": 0,
                         "failed": put_failed,
-                        "message": f"Pi-hole v6: {put_synced} record sincronizzati{zone_label} ({put_failed} falliti)."
+                        "message": tr("dns.pihole_v6_sync_partial", count=put_synced, zone_label=zone_label, failed=put_failed)
                     }
 
                 # -------------------------------------------------------------
@@ -986,7 +1000,7 @@ class DNSManager:
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
                     except Exception as e:
-                        logger.warning(f"Pi-hole v5: errore durante controllo pruning customdns: {e}")
+                        logger.warning(f"Pi-hole v5: customdns pruning check failed: {e}")
 
                 synced = 0
                 failed = 0
@@ -1004,18 +1018,18 @@ class DNSManager:
                     else:
                         failed += 1
 
-                zone_label = f" in zona .{raw_zone}" if raw_zone else " (hostname diretti)"
+                zone_label = tr("dns.zone_label_zone", zone=raw_zone) if raw_zone else tr("dns.zone_label_direct")
                 return {
                     "success": failed == 0,
                     "added": synced,
                     "updated": 0,
                     "failed": failed,
-                    "message": f"Pi-hole v5: {synced} record DNS sincronizzati{zone_label} ({failed} falliti)."
+                    "message": tr("dns.pihole_v5_sync", count=synced, zone_label=zone_label, failed=failed)
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Errore durante sincronizzazione Pi-hole: {str(e)}"}
+            return {"success": False, "message": tr("dns.pihole_sync_error", error=str(e))}
 
     async def _sync_single_technitium(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
@@ -1054,12 +1068,12 @@ class DNSManager:
                     "added": synced,
                     "updated": 0,
                     "failed": failed,
-                    "message": f"Technitium: {synced} record A + PTR sincronizzati nella zona {zone}."
+                    "message": tr("dns.technitium_sync_result", count=synced, zone=zone)
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url)
-            return {"success": False, "message": f"Errore durante sincronizzazione Technitium DNS: {str(e)}"}
+            return {"success": False, "message": tr("dns.technitium_sync_error", error=str(e))}
 
     async def sync_devices(
         self,
@@ -1082,7 +1096,8 @@ class DNSManager:
                     continue
                 inst["last_sync_time"] = now_iso
                 inst["last_sync_count"] = len(prepared_clients) or 18
-                inst["last_sync_status"] = f"Completato: {inst['last_sync_count']} client sincronizzati [Simulazione Demo]"
+                self._demo_status_keys[inst.get("id")] = ("dns.demo_status_clients", {"count": inst["last_sync_count"]})
+                inst["last_sync_status"] = tr("dns.demo_status_clients", count=inst["last_sync_count"])
                 simulated_results.append({
                     "id": inst.get("id"),
                     "name": inst.get("name"),
@@ -1099,7 +1114,7 @@ class DNSManager:
                 "total_devices": count,
                 "total_synced": count,
                 "results": simulated_results,
-                "message": f"Sincronizzazione completata con successo su {len(simulated_results)} istanze DNS [Demo]."
+                "message": tr("dns.demo_sync_completed", count=len(simulated_results))
             }
 
         # Carica le istanze da SQLite
@@ -1124,7 +1139,7 @@ class DNSManager:
             })
 
         if not instances:
-            return {"success": False, "message": "Nessuna istanza DNS configurata.", "results": []}
+            return {"success": False, "message": tr("dns.no_instances"), "results": []}
 
         # Rende esplicita l'opzione TLS delle istanze salvate prima della sua introduzione
         # (salvata con lo stato di sincronizzazione più sotto)
@@ -1149,9 +1164,9 @@ class DNSManager:
             elif engine == "technitium":
                 res = await self._sync_single_technitium(inst, prepared_clients)
             else:
-                res = {"success": False, "message": f"Motore sconosciuto '{engine}'"}
+                res = {"success": False, "message": tr("dns.unknown_engine_sync", engine=engine)}
 
-            status_msg = res.get("message", "Sync completato")
+            status_msg = res.get("message") or tr("dns.sync_done_default")
             inst["last_sync_time"] = now_iso
             inst["last_sync_status"] = status_msg
             inst["last_sync_count"] = (res.get("added", 0) + res.get("updated", 0))
@@ -1182,7 +1197,7 @@ class DNSManager:
             "total_devices": len(prepared_clients),
             "total_synced": len(prepared_clients),
             "results": results,
-            "message": f"Sincronizzazione completata su {len(results)} istanze DNS."
+            "message": tr("dns.sync_completed", count=len(results))
         }
 
     async def auto_sync_if_enabled(self, devices: List[Dict[str, Any]]) -> None:
@@ -1199,11 +1214,11 @@ class DNSManager:
                 logger.debug(f"Pre-sync AdGuard NDP scan skipped/failed: {e_scan}")
 
             # 2. Sincronizzazione regolare verso tutti i server DNS
-            logger.info("Avvio sincronizzazione automatica Multi-DNS background...")
+            log_event(logger, logging.INFO, "log_ops.dns_autosync_started")
             res = await self.sync_devices(devices)
-            logger.info(f"Esito sync Multi-DNS: {res.get('message')}")
+            log_event(logger, logging.INFO, "log_ops.dns_autosync_result", result=res.get('message'))
         except Exception as e:
-            logger.error(f"Errore durante l'auto-sync Multi-DNS: {e}")
+            log_event(logger, logging.ERROR, "log_ops.dns_autosync_failed", error=str(e))
 
 
 # Istanza singleton esportata

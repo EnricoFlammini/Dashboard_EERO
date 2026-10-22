@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, Optional
 from fastapi import Depends, HTTPException, Request, status
 from app.config import settings
 from app.services.db import db_service
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ async def get_current_user(
     """Richiede obbligatoriamente un utente autenticato con sessione valida (HTTP 401 se assente)."""
     if not user:
         token = _extract_token_from_request(request)
-        detail = "Sessione non valida o scaduta" if token else "Autenticazione richiesta"
+        detail = tr("common.session_invalid") if token else tr("common.auth_required")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=detail,
@@ -71,7 +72,7 @@ async def require_admin(
     if not user.get("is_admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Operazione riservata esclusivamente agli amministratori."
+            detail=tr("common.admin_only")
         )
     return user
 
@@ -97,7 +98,7 @@ def require_permission(perm_key: str) -> Callable:
         if raw_token and not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Sessione non valida o scaduta",
+                detail=tr("common.session_invalid"),
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -120,19 +121,20 @@ def require_permission(perm_key: str) -> Callable:
             if perms.intersection(allowed_keys) or "*" in perms:
                 return user
             
-            logger.warning(
-                f"Accesso negato: utente '{user.get('username')}' non ha il permesso richiesto '{perm_key}'"
+            log_event(
+                logger, logging.WARNING, "log_system.permission_denied",
+                username=user.get('username'), permission=perm_key,
             )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permesso non sufficiente: richiesta autorizzazione '{perm_key}'."
+                detail=tr("common.permission_denied", permission=perm_key)
             )
 
         # Nessun token fornito
         if getattr(settings, "require_local_auth", False):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Autenticazione richiesta per questa operazione",
+                detail=tr("common.auth_required_operation"),
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

@@ -110,6 +110,8 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.versioning.outputs.app_version }}
             BUILD_NUMBER=${{ steps.versioning.outputs.build_number }}
+            GIT_BRANCH=${{ github.ref_name }}
+            GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

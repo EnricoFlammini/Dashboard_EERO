@@ -1,0 +1,8 @@
+{
+  "refreshed": "Network data refreshed.",
+  "not_authenticated": "Not signed in to eero",
+  "advanced_updated": "Advanced settings updated.",
+  "switched": "Switched to network '{network_id}'.",
+  "mapping_removed": "Mapping {ip} <-> {mac} removed.",
+  "mapping_not_found": "No matching mapping found to delete."
+}

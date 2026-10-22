@@ -1,0 +1,11 @@
+{
+  "language_unsupported": "Unsupported language. Valid values: 'en', 'it'",
+  "news_fetch_failed": "Error fetching eero news: {error}",
+  "news_refresh_failed": "Error refreshing eero news: {error}",
+  "backup_export_failed": "Error exporting the backup: {error}",
+  "backup_restore_failed": "Error restoring the backup: {error}",
+  "db_stats_failed": "Error retrieving database statistics: {error}",
+  "db_compact_failed": "Error compacting the database: {error}",
+  "db_integrity_failed": "Database integrity check error: {error}",
+  "db_backup_failed": "Error creating database backup: {error}"
+}

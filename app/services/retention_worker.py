@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import settings
+from app.i18n import log_event
 from app.services.db import db_service
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class RetentionWorker:
             return
         self._running = True
         self._task = asyncio.create_task(self._worker_loop())
-        logger.info("RetentionWorker: Motore asincrono di compattazione e tiering avviato.")
+        log_event(logger, logging.INFO, "log_ops.retention_started")
 
     async def stop(self):
         """Arresta il task di background."""
@@ -44,7 +45,7 @@ class RetentionWorker:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        logger.info("RetentionWorker: Motore di compattazione arrestato.")
+        log_event(logger, logging.INFO, "log_ops.retention_stopped")
 
     async def _worker_loop(self):
         """Loop asincrono periodico di tiering e compattazione."""
@@ -53,19 +54,18 @@ class RetentionWorker:
 
         while self._running:
             try:
-                logger.info("RetentionWorker: Avvio ciclo periodico di compattazione e tiering...")
+                log_event(logger, logging.INFO, "log_ops.retention_cycle_started")
                 summary = await self.run_compaction_cycle()
-                logger.info(
-                    f"RetentionWorker: Ciclo completato con successo. "
-                    f"Ore aggregate: {summary.get('hours_aggregated', 0)}, "
-                    f"Giorni aggregati: {summary.get('days_aggregated', 0)}, "
-                    f"Grezzi eliminati: {summary.get('raw_purged', {})}, "
-                    f"Log eliminati: {summary.get('logs_purged', 0)}"
+                log_event(logger, logging.INFO, "log_ops.retention_cycle_completed",
+                    hours=summary.get('hours_aggregated', 0),
+                    days=summary.get('days_aggregated', 0),
+                    raw_purged=summary.get('raw_purged', {}),
+                    logs_purged=summary.get('logs_purged', 0),
                 )
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"RetentionWorker: Errore imprevisto durante il ciclo di compattazione: {e}", exc_info=True)
+                log_event(logger, logging.ERROR, "log_ops.retention_cycle_failed", exc_info=True, error=str(e))
 
             interval_minutes = getattr(settings, "retention_worker_interval_minutes", 60)
             sleep_seconds = max(300, interval_minutes * 60)
@@ -158,7 +158,7 @@ class RetentionWorker:
                             hours_aggregated += 1
                     except Exception as ex:
                         err_msg = f"RetentionWorker: Errore aggregazione usage ora {h_str}: {ex}"
-                        logger.warning(err_msg)
+                        log_event(logger, logging.WARNING, "log_ops.retention_usage_hour_failed", hour=h_str, error=str(ex))
                         errors.append(err_msg)
 
                 if h_str in pending_signal_hours:
@@ -168,7 +168,7 @@ class RetentionWorker:
                             signals_aggregated += 1
                     except Exception as ex:
                         err_msg = f"RetentionWorker: Errore aggregazione signals ora {h_str}: {ex}"
-                        logger.warning(err_msg)
+                        log_event(logger, logging.WARNING, "log_ops.retention_signals_hour_failed", hour=h_str, error=str(ex))
                         errors.append(err_msg)
 
             # 2. Rileva giorni conclusi da aggregare (negli ultimi 30 giorni)
@@ -208,7 +208,7 @@ class RetentionWorker:
                         days_aggregated += 1
                 except Exception as ex:
                     err_msg = f"RetentionWorker: Errore aggregazione giorno {d_str}: {ex}"
-                    logger.warning(err_msg)
+                    log_event(logger, logging.WARNING, "log_ops.retention_day_failed", day=d_str, error=str(ex))
                     errors.append(err_msg)
 
             # 3. Purga dei dati scaduti per ciascun Tier e log di sistema

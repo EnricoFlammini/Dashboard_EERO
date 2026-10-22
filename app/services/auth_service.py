@@ -11,6 +11,8 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.i18n import tr
+
 logger = logging.getLogger(__name__)
 
 # =========================================================================
@@ -47,16 +49,16 @@ ALL_ACTION_PERMISSION_KEYS: List[str] = [p["key"] for p in ACTION_SCOPES]
 ALL_PERMISSION_KEYS: List[str] = ALL_READ_PERMISSION_KEYS + ALL_ACTION_PERMISSION_KEYS
 
 UI_PERMISSIONS_CATALOG: List[Dict[str, str]] = [
-    {"key": "view_topology", "label": "Visualizzazione Topologia Mesh & WAN", "label_en": "Mesh Topology & WAN View", "description": "Visualizzazione mappa nodi mesh, stato operativo e backhaul"},
-    {"key": "view_clients", "label": "Visualizzazione Flotta Dispositivi", "label_en": "Device Fleet View", "description": "Accesso all'elenco dei dispositivi connessi/noti, IP, MAC e frequenze"},
-    {"key": "view_analytics", "label": "Visualizzazione Grafici & SLA", "label_en": "Analytics & SLA View", "description": "Consultazione grafici di traffico, latenza e metriche SLA"},
-    {"key": "view_logs", "label": "Visualizzazione Log & Audit", "label_en": "Logs & Audit View", "description": "Consultazione registro allarmi, audit di sistema e log eventi"},
-    {"key": "action_reboot_nodes", "label": "Riavvio Nodi Mesh eero", "label_en": "Reboot Mesh Nodes", "description": "Autorizzazione al riavvio dell'intera rete mesh o dei singoli nodi"},
-    {"key": "action_pause_devices", "label": "Sospensione / Pausa Wi-Fi Dispositivi", "label_en": "Pause Devices Wi-Fi", "description": "Messa in pausa temporanea dell'accesso a Internet per dispositivi"},
-    {"key": "action_manage_rules", "label": "Gestione Regole & Port Forwarding", "label_en": "Manage DHCP Rules & Port Forwarding", "description": "Creazione, modifica ed eliminazione di IP statici e inoltro porte"},
-    {"key": "action_sync_dns", "label": "Sincronizzazione Host DNS Esterni", "label_en": "Sync External DNS Hosts", "description": "Esecuzione manuale forzata del sync verso i server DNS locali"},
-    {"key": "action_manage_users", "label": "Amministrazione Utenti & RBAC", "label_en": "Administer Users & RBAC", "description": "Creazione, abilitazione e gestione utenti locali e permessi"},
-    {"key": "action_system_backup", "label": "Esportazione & Ripristino Backup", "label_en": "Backup & Disaster Recovery", "description": "Creazione snapshot di backup, download archivio e ripristino"}
+    {"key": "view_topology", "label": "Visualizzazione Topologia Mesh & WAN", "label_en": "Mesh Topology & WAN View", "description": "Visualizzazione mappa nodi mesh, stato operativo e backhaul", "description_en": "View mesh nodes map, operational status and backhaul"},
+    {"key": "view_clients", "label": "Visualizzazione Flotta Dispositivi", "label_en": "Device Fleet View", "description": "Accesso all'elenco dei dispositivi connessi/noti, IP, MAC e frequenze", "description_en": "Access to connected/known devices list, IP, MAC and bands"},
+    {"key": "view_analytics", "label": "Visualizzazione Grafici & SLA", "label_en": "Analytics & SLA View", "description": "Consultazione grafici di traffico, latenza e metriche SLA", "description_en": "Consult traffic graphs, latency and SLA metrics"},
+    {"key": "view_logs", "label": "Visualizzazione Log & Audit", "label_en": "Logs & Audit View", "description": "Consultazione registro allarmi, audit di sistema e log eventi", "description_en": "Consult alert history, system audit and event logs"},
+    {"key": "action_reboot_nodes", "label": "Riavvio Nodi Mesh eero", "label_en": "Reboot Mesh Nodes", "description": "Autorizzazione al riavvio dell'intera rete mesh o dei singoli nodi", "description_en": "Authorization to reboot the entire mesh network or individual nodes"},
+    {"key": "action_pause_devices", "label": "Sospensione / Pausa Wi-Fi Dispositivi", "label_en": "Pause Devices Wi-Fi", "description": "Messa in pausa temporanea dell'accesso a Internet per dispositivi", "description_en": "Temporarily pause internet access for devices"},
+    {"key": "action_manage_rules", "label": "Gestione Regole & Port Forwarding", "label_en": "Manage DHCP Rules & Port Forwarding", "description": "Creazione, modifica ed eliminazione di IP statici e inoltro porte", "description_en": "Create, modify and delete static IP reservations and port forwards"},
+    {"key": "action_sync_dns", "label": "Sincronizzazione Host DNS Esterni", "label_en": "Sync External DNS Hosts", "description": "Esecuzione manuale forzata del sync verso i server DNS locali", "description_en": "Forced manual execution of sync to local DNS servers"},
+    {"key": "action_manage_users", "label": "Amministrazione Utenti & RBAC", "label_en": "Administer Users & RBAC", "description": "Creazione, abilitazione e gestione utenti locali e permessi", "description_en": "Create, enable and manage local users and permissions"},
+    {"key": "action_system_backup", "label": "Esportazione & Ripristino Backup", "label_en": "Backup & Disaster Recovery", "description": "Creazione snapshot di backup, download archivio e ripristino", "description_en": "Create backup snapshots, download archives and restore"}
 ]
 
 
@@ -73,7 +75,7 @@ class AuthService:
         Restituisce una tupla (hash_hex, salt_hex).
         """
         if not password:
-            raise ValueError("La password non può essere vuota.")
+            raise ValueError(tr("auth.password_empty"))
         
         salt_hex = salt if salt else secrets.token_hex(16)
         salt_bytes = bytes.fromhex(salt_hex)
@@ -105,7 +107,7 @@ class AuthService:
             expected_digest = bytes.fromhex(password_hash)
             return hmac.compare_digest(computed_digest, expected_digest)
         except Exception as e:
-            logger.warning(f"Errore durante la verifica della password: {e}")
+            logger.warning(f"Error while verifying password: {e}")
             return False
 
     @staticmethod

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,11 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
+        var l = localStorage.getItem('eero_lang');
+        if (l !== 'en' && l !== 'it') {
+          l = '{{ default_language }}' === 'it' ? 'it' : 'en';
+        }
+        document.documentElement.lang = l;
       } catch (e) {}
     })();
   </script>
@@ -27,6 +32,7 @@
       version: "{{ app_version }}",
       buildNumber: "{{ build_number }}",
       fullVersion: "{{ full_version }}",
+      defaultLanguage: "{{ default_language }}",
       initialAuthenticated: "{{ 'true' if initial_authenticated else 'false' }}"
     };
   </script>
@@ -1158,7 +1164,7 @@
               @click="deviceSearchQuery = ''" 
               type="button" 
               class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
-              title="Clear search">
+              :title="t('devices.clear_search')">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
           </div>
@@ -2151,7 +2157,7 @@
               <!-- Center: Device Main Info -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="font-bold text-sm text-slate-900 dark:text-white truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Dispositivo'"></span>
+                  <span class="font-bold text-sm text-slate-900 dark:text-white truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></span>
                   <template x-if="dev.is_new">
                     <span
                       @click="if (can('action_edit_devices')) { $event.stopPropagation(); setDevicesSeen([dev.mac || dev.mac_address]); }"
@@ -2479,7 +2485,7 @@
                 </span>
                 <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.excellent_count + ' (' + signalOverview.excellent_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">≥ -50 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2" x-text="t('speedtest.signal_range_excellent')">≥ -50 dBm</div>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-emerald-500 h-1.5 rounded-full" :style="`width: ${signalOverview.excellent_pct}%`"></div>
@@ -2496,7 +2502,7 @@
                 </span>
                 <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.good_count + ' (' + signalOverview.good_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">-51 a -65 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2" x-text="t('speedtest.signal_range_good')">-51 to -65 dBm</div>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-sky-500 h-1.5 rounded-full" :style="`width: ${signalOverview.good_pct}%`"></div>
@@ -2513,7 +2519,7 @@
                 </span>
                 <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.fair_count + ' (' + signalOverview.fair_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">-66 a -75 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2" x-text="t('speedtest.signal_range_fair')">-66 to -75 dBm</div>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-amber-500 h-1.5 rounded-full" :style="`width: ${signalOverview.fair_pct}%`"></div>
@@ -2530,7 +2536,7 @@
                 </span>
                 <span class="text-slate-800 dark:text-slate-300 font-mono font-bold text-xs" x-text="signalOverview.weak_count + ' (' + signalOverview.weak_pct + '%)'"></span>
               </div>
-              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">&lt; -75 dBm</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mb-2" x-text="t('speedtest.signal_range_weak')">&lt; -75 dBm</div>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
               <div class="bg-rose-500 h-1.5 rounded-full" :style="`width: ${signalOverview.weak_pct}%`"></div>
@@ -2708,7 +2714,7 @@
             </div>
             <div class="flex items-baseline space-x-2">
               <span class="text-3xl font-extrabold text-slate-900 dark:text-white font-mono" x-text="analyticsDistribution ? analyticsDistribution.active_devices : 0"></span>
-              <span class="text-xs text-slate-500 font-medium">client online</span>
+              <span class="text-xs text-slate-500 font-medium" x-text="t('analytics.clients_online')">clients online</span>
               <span class="text-xs text-slate-400" x-text="analyticsDistribution ? ('/ ' + analyticsDistribution.total_devices + ' tot') : ''"></span>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -3346,11 +3352,11 @@
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
                 <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block" x-text="t('controls.mqtt_messages_count') || 'Messaggi Pubblicati'"></span>
                 <div class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
-                  <span x-text="(mqttSettings.stats && mqttSettings.stats.messages_published) ? mqttSettings.stats.messages_published.toLocaleString() : '0'"></span> msg
+                  <span x-text="(mqttSettings.stats && mqttSettings.stats.messages_published) ? mqttSettings.stats.messages_published.toLocaleString(dateLocale()) : '0'"></span> msg
                 </div>
                 <div class="text-[10px] text-slate-400 truncate">
                   <span x-text="t('controls.mqtt_last_published') || 'Ultimo invio'"></span>: 
-                  <span class="font-mono" x-text="(mqttSettings.stats && mqttSettings.stats.last_published) ? new Date(mqttSettings.stats.last_published).toLocaleTimeString() : t('controls.mqtt_never')"></span>
+                  <span class="font-mono" x-text="(mqttSettings.stats && mqttSettings.stats.last_published) ? new Date(mqttSettings.stats.last_published).toLocaleTimeString(dateLocale()) : t('controls.mqtt_never')"></span>
                 </div>
               </div>
             </div>
@@ -3439,7 +3445,7 @@
               <span class="w-2 h-2 rounded-full" :class="sessionTimeoutMinutes > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
               <span x-text="sessionTimeoutMinutes > 0 ? t('controls.session_watchdog_on') : t('controls.session_watchdog_off')"></span>
             </span>
-            <span class="font-mono text-[10px] text-slate-400" x-text="t('controls.session_last_activity', { time: new Date(lastUserActivity).toLocaleTimeString() })"></span>
+            <span class="font-mono text-[10px] text-slate-400" x-text="t('controls.session_last_activity', { time: new Date(lastUserActivity).toLocaleTimeString(dateLocale()) })"></span>
           </div>
         </div>
 
@@ -4116,22 +4122,11 @@
 
               <!-- iOS Toggle Switches for Each Permission -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <template x-for="perm in (permissionsCatalog.length ? permissionsCatalog : [
-                  { key: 'view_topology', label: 'Visualizzazione Topologia Mesh & WAN', label_en: 'Mesh Topology & WAN View' },
-                  { key: 'view_clients', label: 'Visualizzazione Flotta Dispositivi', label_en: 'Device Fleet View' },
-                  { key: 'view_analytics', label: 'Visualizzazione Grafici & SLA', label_en: 'Analytics & SLA View' },
-                  { key: 'view_logs', label: 'Visualizzazione Log & Audit', label_en: 'Logs & Audit View' },
-                  { key: 'action_reboot_nodes', label: 'Riavvio Nodi Mesh eero', label_en: 'Reboot Mesh Nodes' },
-                  { key: 'action_pause_devices', label: 'Sospensione / Pausa Wi-Fi Dispositivi', label_en: 'Pause Devices Wi-Fi' },
-                  { key: 'action_manage_rules', label: 'Gestione Regole & Port Forwarding', label_en: 'Manage DHCP Rules & Port Forwarding' },
-                  { key: 'action_sync_dns', label: 'Sincronizzazione Host DNS Esterni', label_en: 'Sync External DNS Hosts' },
-                  { key: 'action_manage_users', label: 'Amministrazione Utenti & RBAC', label_en: 'Administer Users & RBAC' },
-                  { key: 'action_system_backup', label: 'Esportazione & Ripristino Backup', label_en: 'Backup & Disaster Recovery' }
-                ])" :key="perm.key">
+                <template x-for="perm in permissionsForDisplay()" :key="perm.key">
                   <div class="p-3 rounded-xl border flex items-center justify-between transition-all duration-200"
                        :class="userForm.permissions.includes(perm.key) ? 'bg-[#0067c0]/5 dark:bg-sky-500/10 border-[#0067c0]/30 dark:border-sky-500/30' : 'bg-black/[0.02] dark:bg-white/[0.02] border-slate-200 dark:border-slate-800 opacity-70'">
                     <div class="space-y-0.5 pr-2">
-                      <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="(currentLanguage === 'en' && perm.label_en) ? perm.label_en : (perm.label || perm.key)"></div>
+                      <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="permissionLabel(perm)"></div>
                       <div class="font-mono text-[9px] text-slate-400" x-text="perm.key"></div>
                     </div>
 
@@ -4243,7 +4238,7 @@
 
           <template x-if="backupRestoreStatus">
             <div class="p-3 rounded-xl text-xs font-semibold"
-                 :class="backupRestoreStatus.startsWith('Errore') ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'"
+                 :class="backupRestoreIsError ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'"
                  x-text="backupRestoreStatus"></div>
           </template>
         </div>
@@ -4470,7 +4465,7 @@
                 :disabled="isTriggeringUpdate"
                 class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-50 cursor-pointer">
                 <span>⚡</span>
-                <span x-text="isTriggeringUpdate ? 'Aggiornamento...' : 'Aggiorna Ora (1-Click)'"></span>
+                <span x-text="isTriggeringUpdate ? t('update_modal.updating_short') : t('update_modal.update_now_short')"></span>
               </button>
             </template>
           </div>
@@ -4491,6 +4486,41 @@
             <span class="font-bold text-amber-600 dark:text-amber-400 font-mono text-sm" x-text="updateInfo.latest_full_version ? 'v' + updateInfo.latest_full_version : (updateInfo.latest_version ? 'v' + updateInfo.latest_version : '---')"></span>
           </div>
         </div>
+
+        <!-- Runtime: where this instance runs and which branch it was built from -->
+        <template x-if="runtimeInfo">
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none text-xs space-y-3">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('settings_updates.runtime_title')"></span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_environment')"></span>
+                <span class="font-bold text-slate-900 dark:text-white text-sm"
+                      :class="runtimeInfo.environment === 'local' ? 'text-violet-700 dark:text-violet-300' : 'text-sky-700 dark:text-sky-300'"
+                      x-text="(runtimeInfo.environment === 'local' ? '💻 ' : '🐳 ') + runtimeEnvironmentLabel()"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_branch')"></span>
+                <span class="font-bold font-mono text-sm block truncate"
+                      :class="runtimeInfo.git_branch ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'"
+                      :title="runtimeInfo.git_branch || ''"
+                      x-text="runtimeInfo.git_branch || t('settings_updates.runtime_unknown')"></span>
+                <span class="font-mono text-[10px] text-slate-400" x-show="runtimeInfo.git_commit" x-text="runtimeInfo.git_commit"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_host')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" :title="runtimeInfo.hostname" x-text="runtimeInfo.hostname"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_platform')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" x-text="'Python ' + runtimeInfo.python_version + ' · ' + runtimeInfo.os"></span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed"
+               x-text="runtimeInfo.git_source === 'checkout' ? t('settings_updates.runtime_source_checkout')
+                     : runtimeInfo.git_source === 'build' ? t('settings_updates.runtime_source_build')
+                     : t('settings_updates.runtime_source_missing')"></p>
+          </div>
+        </template>
 
         <!-- Banner state -->
         <template x-if="!updateInfo.update_available">
@@ -4674,7 +4704,7 @@
                 </div>
                 <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
                   <span x-text="t('eero_news.last_checked') || 'Ultimo controllo:'"></span>
-                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString(dateLocale(), {hour: '2-digit', minute:'2-digit'})"></span>
                 </div>
               </div>
 
@@ -4713,7 +4743,7 @@
                 </div>
                 <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
                   <span x-text="t('eero_news.last_checked') || 'Ultimo controllo:'"></span>
-                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></span>
+                  <span x-text="new Date(eeroNewsData.last_checked).toLocaleTimeString(dateLocale(), {hour: '2-digit', minute:'2-digit'})"></span>
                 </div>
               </div>
 
@@ -5951,7 +5981,7 @@
         <!-- Dedication Box -->
         <div class="p-4 rounded-xl bg-indigo-50/70 dark:bg-gradient-to-br dark:from-indigo-950/60 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-500/30 text-center space-y-2.5 shadow-inner">
           <p class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
-            Crafted with ❤️ by <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> for the <span class="text-indigo-700 dark:text-indigo-300 font-medium">homelab & self-hosted</span> community.
+            <span x-text="t('about_modal.crafted_prefix')">Crafted with ❤️ by</span> <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> <span x-text="t('about_modal.crafted_middle')">for the</span> <span class="text-indigo-700 dark:text-indigo-300 font-medium">homelab & self-hosted</span><span x-text="t('about_modal.crafted_suffix')"> community.</span>
           </p>
 
           <!-- Buy Me a Coffee Button -->
@@ -5960,7 +5990,7 @@
                target="_blank" 
                rel="noopener noreferrer"
                class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-950 bg-[#FFDD00] hover:bg-[#FFE433] shadow-sm hover:shadow-md hover:shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all duration-150 border border-amber-400/50 group cursor-pointer"
-               title="Support Enrico Flammini on Buy Me a Coffee">
+               :title="t('about_modal.support_title')">
               <svg class="w-4 h-4 text-slate-950 transition-transform group-hover:rotate-12 duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
                 <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
@@ -7001,20 +7031,20 @@
                       <td class="p-3">
                         <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
                           <span class="w-2 h-2 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
-                          <span x-text="u.is_active ? 'Attivo' : 'Disattivato'"></span>
+                          <span x-text="u.is_active ? t('users_modal.status_active') : t('users_modal.status_inactive')"></span>
                         </span>
                       </td>
                       <td class="p-3 text-right space-x-1">
                         <button 
                           @click="startEditUser(u)"
                           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-sky-600 hover:bg-sky-500/10 transition cursor-pointer"
-                          title="Modifica Utente">
+                          :title="t('users_modal.edit_user')">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                         </button>
                         <button 
                           @click="deleteLocalUser(u.id, u.username)"
                           class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
-                          title="Elimina Utente">
+                          :title="t('users_modal.delete_user_title')">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                       </td>
@@ -7046,15 +7076,15 @@
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.display_name') || 'Nome Visualizzato'"></label>
-              <input type="text" x-model="userForm.display_name" placeholder="Es. Amministratore Rete" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+              <input type="text" x-model="userForm.display_name" :placeholder="t('users_modal.display_name_placeholder')" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
             </div>
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.role') || 'Ruolo Predefinito'"></label>
               <select x-model="userForm.role" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-                <option value="admin">Amministratore (Admin)</option>
-                <option value="operator">Operatore di Rete (Operator)</option>
-                <option value="viewer">Sola Lettura (Viewer)</option>
+                <option value="admin" x-text="t('users_modal.role_admin_option')"></option>
+                <option value="operator" x-text="t('users_modal.role_operator_option')"></option>
+                <option value="viewer" x-text="t('users_modal.role_viewer_option')"></option>
               </select>
             </div>
 
@@ -7098,22 +7128,11 @@
 
             <!-- iOS Toggle Switches for Each Permission -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <template x-for="perm in (permissionsCatalog.length ? permissionsCatalog : [
-                { key: 'view_topology', label: 'Visualizzazione Topologia Mesh & WAN' },
-                { key: 'view_clients', label: 'Visualizzazione Flotta Dispositivi' },
-                { key: 'view_analytics', label: 'Visualizzazione Grafici & SLA' },
-                { key: 'view_logs', label: 'Visualizzazione Log & Audit' },
-                { key: 'action_reboot_nodes', label: 'Riavvio Nodi Mesh eero' },
-                { key: 'action_pause_devices', label: 'Sospensione / Pausa Wi-Fi Dispositivi' },
-                { key: 'action_manage_rules', label: 'Gestione Regole & Port Forwarding' },
-                { key: 'action_sync_dns', label: 'Sincronizzazione Host DNS Esterni' },
-                { key: 'action_manage_users', label: 'Amministrazione Utenti & RBAC' },
-                { key: 'action_system_backup', label: 'Esportazione & Ripristino Backup' }
-              ])" :key="perm.key">
+              <template x-for="perm in permissionsForDisplay()" :key="perm.key">
                 <div class="p-3 rounded-xl border flex items-center justify-between transition-all duration-200"
                      :class="userForm.permissions.includes(perm.key) ? 'bg-[#0067c0]/5 dark:bg-sky-500/10 border-[#0067c0]/30 dark:border-sky-500/30' : 'bg-black/[0.02] dark:bg-white/[0.02] border-slate-200 dark:border-slate-800 opacity-70'">
                   <div class="space-y-0.5 pr-2">
-                    <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="perm.label || perm.key"></div>
+                    <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="permissionLabel(perm)"></div>
                     <div class="font-mono text-[9px] text-slate-400" x-text="perm.key"></div>
                   </div>
 
@@ -7206,7 +7225,7 @@
 
         <template x-if="backupRestoreStatus">
           <div class="p-2.5 rounded-lg text-xs font-semibold"
-               :class="backupRestoreStatus.startsWith('Errore') ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'"
+               :class="backupRestoreIsError ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'"
                x-text="backupRestoreStatus"></div>
         </template>
       </div>
@@ -7329,7 +7348,7 @@
               <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
                 <option value="" disabled x-text="t('schedules.select_user_placeholder') || 'Seleziona un utente...'"></option>
                 <template x-for="p in (profiles || [])" :key="p.id">
-                  <option :value="p.id" x-text="p.name + (p.devices && p.devices.length ? ' (' + p.devices.length + ' disp.)' : '')"></option>
+                  <option :value="p.id" x-text="p.name + (p.devices && p.devices.length ? ' (' + t('schedules.profile_devices_count', { count: p.devices.length }) + ')' : '')"></option>
                 </template>
               </select>
             </template>
@@ -7529,7 +7548,7 @@
             <input 
               type="text" 
               x-model="mqttModalForm.username" 
-              placeholder="es. mqtt-user" 
+              :placeholder="t('controls.mqtt_username_placeholder')" 
               autocomplete="off"
               class="glass-input w-full px-3 py-2 rounded-xl text-xs">
           </div>
@@ -8028,7 +8047,7 @@
             x-show="!currentUser"
             @click="openLocalLoginModal(); closeMobileMenu()"
             class="p-2.5 rounded-xl bg-[#0067c0]/10 text-[#0067c0] dark:text-sky-400 hover:bg-[#0067c0]/20 transition cursor-pointer flex items-center space-x-1"
-            title="Accedi">
+            :title="t('auth_local.login_btn')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
             <span class="text-xs font-bold" x-text="t('auth_local.login_btn') || 'Accedi'"></span>
           </button>
@@ -8038,7 +8057,7 @@
             x-show="currentUser"
             @click="showLogoutModal = true; closeMobileMenu()"
             class="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
-            title="Disconnetti">
+            :title="t('auth_local.logout')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           </button>
         </div>

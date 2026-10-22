@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.i18n import log_event, tr
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 
@@ -60,11 +61,11 @@ async def create_profile(req: CreateProfileRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": f"Profilo '{req.name}' creato con successo.",
+            "message": tr("profiles.created", name=req.name),
             "profile": res.get("profile")
         }
     except Exception as e:
-        logger.error(f"Errore creazione profilo: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_create_failed", exc_info=True, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -81,11 +82,11 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": "Profilo aggiornato con successo.",
+            "message": tr("profiles.updated"),
             "profile": res.get("profile")
         }
     except Exception as e:
-        logger.error(f"Errore aggiornamento profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_update_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -98,11 +99,11 @@ async def delete_profile(profile_id: str):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": "Profilo eliminato con successo.",
+            "message": tr("profiles.deleted"),
             "result": res
         }
     except Exception as e:
-        logger.error(f"Errore eliminazione profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_delete_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -117,9 +118,9 @@ async def assign_devices_to_profile(profile_id: str, req: AssignDevicesRequest):
         background_poller.update_cached_profiles(cached_p)
         return {
             "status": "success",
-            "message": f"{len(req.device_ids)} dispositivi assegnati al profilo.",
+            "message": tr("profiles.devices_assigned", count=len(req.device_ids)),
             "profile_id": profile_id
         }
     except Exception as e:
-        logger.error(f"Errore assegnazione dispositivi a profilo {profile_id}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.profile_devices_assign_failed", exc_info=True, profile_id=profile_id, error=e)
         raise HTTPException(status_code=400, detail=str(e))

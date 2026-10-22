@@ -1,0 +1,10 @@
+{
+  "invalid_mac": "Item #{index}: MAC address '{mac}' is not valid.",
+  "invalid_ip": "Item #{index}: IP address '{ip}' is not valid.",
+  "no_valid_mappings": "No valid IP-MAC mappings provided.",
+  "adguard_url_missing": "AdGuard URL not configured.",
+  "adguard_connection_error": "AdGuard connection error ({url}): {error}",
+  "no_orphan_clients": "No auto/orphan clients found on AdGuard Home.",
+  "scan_result": "Found {candidates} ULA candidates, {resolved} resolved successfully via NDP.",
+  "no_adguard_instances": "No active AdGuard Home instances configured."
+}

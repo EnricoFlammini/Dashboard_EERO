@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import settings
 from app.services.db import db_service
+from app.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +75,14 @@ class SQLiteLogHandler(logging.Handler):
             ts = datetime.fromtimestamp(record.created, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             msg = record.getMessage()
 
-            details_json = None
+            details: Dict[str, Any] = {}
             if record.exc_info:
-                exc_text = "".join(traceback.format_exception(*record.exc_info))
-                details_json = json.dumps({"exc_info": exc_text})
+                details["exc_info"] = "".join(traceback.format_exception(*record.exc_info))
+            # Set by app.i18n.log_event: lets the Logs page re-render the message per viewer language
+            i18n_meta = getattr(record, "i18n", None)
+            if i18n_meta:
+                details["i18n"] = i18n_meta
+            details_json = json.dumps(details, ensure_ascii=False) if details else None
 
             self._buffer.append({
                 "timestamp": ts,
@@ -184,8 +189,8 @@ class LogService:
         self._running = True
         self._flusher_task = asyncio.create_task(self._flusher_loop())
         logger.info(
-            f"LogService avviato con successo. Livello: {self._current_level}, "
-            f"Abilitato: {self._enabled}, File: {self.log_file_path}"
+            f"LogService started. Level: {self._current_level}, "
+            f"Enabled: {self._enabled}, File: {self.log_file_path}"
         )
 
     async def stop(self):
@@ -209,7 +214,7 @@ class LogService:
         if self.sqlite_handler in root_logger.handlers:
             root_logger.removeHandler(self.sqlite_handler)
 
-        logger.info("LogService arrestato correttamente.")
+        logger.info("LogService stopped.")
 
     async def _flusher_loop(self):
         """Loop asincrono che svuota il buffer di log in SQLite ogni secondo."""
@@ -230,7 +235,7 @@ class LogService:
         """Modifica a caldo il livello di logging per l'intera applicazione."""
         lvl_clean = level_name.upper().strip()
         if lvl_clean not in VALID_LOG_LEVELS:
-            raise ValueError(f"Livello log non valido: {level_name}. Ammessi: {list(VALID_LOG_LEVELS.keys())}")
+            raise ValueError(tr("logs.invalid_level_short", level=level_name, allowed=list(VALID_LOG_LEVELS.keys())))
 
         lvl_num = VALID_LOG_LEVELS[lvl_clean]
         self._current_level = lvl_clean
@@ -246,7 +251,7 @@ class LogService:
 
         # Salva configurazione persistente
         await db_service.set_logging_config(level=lvl_clean)
-        logger.info(f"Livello di logging aggiornato a caldo a: {lvl_clean}")
+        logger.info(f"Logging level changed at runtime to: {lvl_clean}")
         return self._current_level
 
     async def set_enabled(self, enabled: bool) -> bool:
@@ -263,14 +268,14 @@ class LogService:
                 self.file_handler.setLevel(lvl_num)
 
         await db_service.set_logging_config(enabled=enabled)
-        logger.info(f"Stato logging aggiornato a caldo: {'ATTIVO' if enabled else 'DISATTIVATO'}")
+        logger.info(f"Logging state changed at runtime: {'ENABLED' if enabled else 'DISABLED'}")
         return self._enabled
 
     async def set_retention_days(self, days: int) -> int:
         """Imposta il periodo di conservazione dei log in giorni."""
         d = max(0, int(days))
         await db_service.set_logging_config(retention_days=d)
-        logger.info(f"Retention dei log aggiornata a: {d} giorni")
+        logger.info(f"Log retention changed to: {d} days")
         return d
 
     async def clear_logs(self) -> Dict[str, Any]:
@@ -290,14 +295,14 @@ class LogService:
                 with open(log_p, "w", encoding="utf-8") as f:
                     f.truncate(0)
         except Exception as e:
-            logger.warning(f"Errore durante lo svuotamento del file di log: {e}")
+            logger.warning(f"Error while clearing the log file: {e}")
 
         # Inserisci una riga iniziale pulita di audit
         ts_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         await db_service.insert_system_log(
             level="INFO",
             logger_name="app.services.log_service",
-            message=f"Log di sistema cancellati con successo (rimossi {deleted_rows} record precedenti).",
+            message=tr("logs.cleared_audit_entry", count=deleted_rows),
             timestamp=ts_now,
         )
 

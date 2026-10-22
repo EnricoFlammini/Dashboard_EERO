@@ -10,6 +10,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app import i18n
+from app.i18n import log_event
 from app.config import settings
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
@@ -32,7 +34,7 @@ logger = logging.getLogger("eero_dashboard")
 async def lifespan(app: FastAPI):
     """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
     logger.info("=" * 60)
-    logger.info(f"Avvio {settings.app_name} v{settings.app_version}")
+    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     logger.info(f"Data directory: {settings.data_path.resolve()}")
     logger.info("=" * 60)
 
@@ -41,6 +43,16 @@ async def lifespan(app: FastAPI):
 
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
+
+    # 1.0 System/alert language for messages produced outside of HTTP requests.
+    # DASHBOARD_LANG is the default; a language saved from the UI takes precedence.
+    from app.services.notifications import notification_service
+    saved_lang = await db_service.get_setting("system_language", None)
+    i18n.set_system_language(await notification_service.get_language())
+    logger.info(
+        f"Language: {i18n.get_system_language()} "
+        f"(DASHBOARD_LANG={settings.dashboard_lang}, saved setting={saved_lang or 'none'})"
+    )
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
     from app.services.log_service import log_service
@@ -63,14 +75,14 @@ async def lifespan(app: FastAPI):
     yield
 
     # Chiusura pulita dei processi in background
-    logger.info("Chiusura in corso dei servizi in background...")
+    log_event(logger, logging.INFO, "log_system.shutdown_started")
     await mqtt_service.stop()
     await retention_worker.stop()
     await background_poller.stop()
     await eero_client.close()
     disable_dns_cache()
     await log_service.stop()
-    logger.info("Applicazione terminata correttamente.")
+    log_event(logger, logging.INFO, "log_system.shutdown_completed")
 
 
 # Inizializzazione FastAPI
@@ -125,8 +137,19 @@ def _is_cross_origin_write(request: Request) -> bool:
 async def block_cross_origin_writes(request: Request, call_next):
     """Rifiuta POST/PUT/PATCH/DELETE inviati da pagine di altri siti: le POST senza body non passano dal preflight CORS."""
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):
-        return JSONResponse(status_code=403, content={"detail": "Cross-origin request blocked"})
+        return JSONResponse(status_code=403, content={"detail": i18n.tr("common.cross_origin_blocked")})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def bind_request_language(request: Request, call_next):
+    """Binds the caller's UI language so API messages come back in that language."""
+    lang = request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")
+    token = i18n.set_request_language(lang)
+    try:
+        return await call_next(request)
+    finally:
+        i18n.reset_request_language(token)
 
 
 # Definizione Percorsi Static e Template
@@ -214,6 +237,7 @@ async def index_page(request: Request):
             "app_version": settings.app_version,
             "build_number": settings.build_number,
             "full_version": settings.full_version,
+            "default_language": i18n.get_system_language(),
             # Stato iniziale locale (nessuna chiamata cloud): evita il flash del modale di login al refresh
             "initial_authenticated": eero_client.is_authenticated,
         }

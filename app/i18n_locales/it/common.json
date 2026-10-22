@@ -1,0 +1,8 @@
+{
+  "auth_required": "Autenticazione richiesta",
+  "session_invalid": "Sessione non valida o scaduta",
+  "admin_only": "Operazione riservata esclusivamente agli amministratori.",
+  "permission_denied": "Permesso non sufficiente: richiesta autorizzazione '{permission}'.",
+  "auth_required_operation": "Autenticazione richiesta per questa operazione",
+  "cross_origin_blocked": "Richiesta cross-origin bloccata"
+}

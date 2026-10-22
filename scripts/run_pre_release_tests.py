@@ -123,14 +123,14 @@ async def run_all_tests():
         runner.assert_true("192.168.1.50" in ag_data.get("url", ""), "URL AdGuard in Demo è fittizio (192.168.1.50)")
         runner.assert_true(ag_data.get("username") == "demo_admin", "Username AdGuard in Demo è 'demo_admin'")
         runner.assert_true(ag_data.get("has_password") is True, "Indicator password AdGuard presente")
-        runner.assert_true("Simulazione Demo" in ag_data.get("last_sync_status", ""), "Stato sync riporta '[Simulazione Demo]'")
+        runner.assert_true(any(t in ag_data.get("last_sync_status", "") for t in ("Simulazione Demo", "Demo Simulation")), "Stato sync riporta '[Simulazione Demo]'")
 
         # Test Connessione AdGuard in Demo Mode (nessuna chiamata HTTP esterna)
         res = await client.post("/api/automations/adguard/test", json={})
         runner.assert_true(res.status_code == 200, "Endpoint POST /api/automations/adguard/test risponde HTTP 200")
         test_res = res.json()
         runner.assert_true(test_res.get("success") is True, "Test connessione AdGuard simulato con successo")
-        runner.assert_true("Ambiente Demo Simulato" in test_res.get("message", ""), "Messaggio esplicito di ambiente Demo simulato")
+        runner.assert_true(any(t in test_res.get("message", "") for t in ("Ambiente Demo Simulato", "Simulated demo environment")), "Messaggio esplicito di ambiente Demo simulato")
 
         # Test Sincronizzazione Dispositivi AdGuard in Demo Mode
         res = await client.post("/api/automations/adguard/sync", json={})
@@ -1484,13 +1484,13 @@ async def run_all_tests():
             await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="selfsigned.lan")))
             for inst_id, engine, _host in tls_engines:
                 test_res = (await client.post("/api/automations/dns/test", json={"instance_id": inst_id})).json()
-                runner.assert_true(test_res.get("success") is False and test_res.get("tls_error") is True and "Accetta certificato HTTPS non verificato" in test_res.get("message", ""), f"Test {engine}: certificato non verificabile → tls_error e messaggio con l'opzione da abilitare")
+                runner.assert_true(test_res.get("success") is False and test_res.get("tls_error") is True and any(t in test_res.get("message", "") for t in ("Accetta certificato HTTPS non verificato", "Accept unverified HTTPS certificate")), f"Test {engine}: certificato non verificabile → tls_error e messaggio con l'opzione da abilitare")
                 sync_res = await dns_service.sync_devices(tls_devices, instance_id=inst_id)
                 sync_item = (sync_res.get("results") or [{}])[0]
                 runner.assert_true(sync_item.get("success") is False and sync_item.get("tls_error") is True, f"Sync {engine}: certificato non verificabile → tls_error")
             await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="unreachable.lan")))
             test_res = (await client.post("/api/automations/dns/test", json={"instance_id": "tls_adguard"})).json()
-            runner.assert_true(test_res.get("success") is False and not test_res.get("tls_error") and "Impossibile connettersi" in test_res.get("message", ""), "Errore di connessione non TLS: messaggio invariato, nessun tls_error")
+            runner.assert_true(test_res.get("success") is False and not test_res.get("tls_error") and any(t in test_res.get("message", "") for t in ("Impossibile connettersi", "Cannot connect")), "Errore di connessione non TLS: messaggio invariato, nessun tls_error")
 
             # Pi-hole: errore di certificato durante /api/auth (dopo un 401) non viene assorbito
             await db_service.set_setting("dns_instances", json.dumps([{"id": "tls_pihole_auth", "name": "Pi-hole auth", "engine": "pihole", "url": "https://pihole-auth.lan", "token": "tok-tls", "insecure_tls": False, "enabled": True}]))
@@ -3948,7 +3948,7 @@ async def run_all_tests():
         runner.assert_true(clear_res.get("status") == "success", "clear_logs restituisce status success")
         post_clear_logs = await db_service.get_system_logs(limit=10)
         runner.assert_true(len(post_clear_logs) == 1, "Dopo clear_logs rimane solo l'audit log di svuotamento")
-        runner.assert_true("cancellati con successo" in post_clear_logs[0]["message"], "Audit log di svuotamento registrato correttamente")
+        runner.assert_true(any(t in post_clear_logs[0]["message"] for t in ("cancellati con successo", "cleared successfully")), "Audit log di svuotamento registrato correttamente")
 
         # 4. REST API Endpoint Testing (/api/system/logs) (v1.6.0 Modulo 4 - Fase 2)
         # GET /api/system/logs/config con admin

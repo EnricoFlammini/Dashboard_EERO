@@ -1,0 +1,11 @@
+{
+  "language_unsupported": "Lingua non supportata. Valori validi: 'en', 'it'",
+  "news_fetch_failed": "Errore nel recupero delle notizie eero: {error}",
+  "news_refresh_failed": "Errore nel refresh delle notizie eero: {error}",
+  "backup_export_failed": "Errore durante l'esportazione del backup: {error}",
+  "backup_restore_failed": "Errore durante il ripristino del backup: {error}",
+  "db_stats_failed": "Errore recupero statistiche database: {error}",
+  "db_compact_failed": "Errore durante la compattazione del database: {error}",
+  "db_integrity_failed": "Errore controllo integrità database: {error}",
+  "db_backup_failed": "Errore creazione backup database: {error}"
+}

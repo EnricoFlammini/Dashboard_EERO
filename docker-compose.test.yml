@@ -3,6 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Shown on the Updates page; set with:
+        # GIT_BRANCH=$(git branch --show-current) GIT_COMMIT=$(git rev-parse HEAD) docker compose up -d --build
+        GIT_BRANCH: ${GIT_BRANCH:-}
+        GIT_COMMIT: ${GIT_COMMIT:-}
     container_name: eero_dashboard_test
     restart: unless-stopped
     dns:
@@ -17,6 +22,7 @@ services:
       - ./data_test:/app/data
     environment:
       - TZ=${TZ:-Europe/Rome}
+      - DASHBOARD_LANG=${DASHBOARD_LANG:-en}
       - DATA_DIR=/app/data
       - EERO_USER_TOKEN=${EERO_USER_TOKEN:-}
       - EERO_NETWORK_ID=${EERO_NETWORK_ID:-}

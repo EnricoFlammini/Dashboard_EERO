@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.services.eero_client import eero_client
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ async def request_login(payload: LoginRequest):
         res = await eero_client.request_login_code(payload.login.strip())
         return res
     except Exception as e:
-        logger.error(f"Login request failed: {e}")
+        log_event(logger, logging.ERROR, "log_system.eero_login_failed", error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -117,7 +118,7 @@ async def verify_otp(payload: VerifyOTPRequest):
             logger.warning(f"Poller refresh after OTP verification: {ep}")
         return res
     except Exception as e:
-        logger.error(f"OTP verification failed: {e}")
+        log_event(logger, logging.ERROR, "log_system.eero_otp_failed", error=e)
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -125,4 +126,4 @@ async def verify_otp(payload: VerifyOTPRequest):
 async def logout():
     """Rimuove il token di sessione e disconnette l'app."""
     eero_client.clear_session()
-    return {"status": "success", "message": "Disconnessione completata."}
+    return {"status": "success", "message": tr("auth.eero_logged_out")}

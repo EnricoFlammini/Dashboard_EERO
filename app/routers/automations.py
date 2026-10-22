@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 from app.config import settings
+from app.i18n import log_event, tr
 from app.routers.dependencies import require_permission
 
 from app.services.adguard import adguard_service
@@ -195,21 +196,21 @@ async def toggle_focus_mode(payload: FocusModeRequest):
                 await eero_client.update_device(device_id=str(dev_id), paused=True)
                 paused_list.append(dev.get("mac"))
             except Exception as ex:
-                logger.warning(f"Failed to pause device {dev_id} for focus mode: {ex}")
+                log_event(logger, logging.WARNING, "log_ops.focus_pause_failed", device=dev_id, error=str(ex))
 
         await db_service.set_setting("focus_mode_active", "true")
         await db_service.set_setting("focus_mode_paused_macs", json.dumps(paused_list))
         
         await db_service.save_alert(
             alert_type="focus_mode",
-            title="🎮 Gaming / Focus Mode Attivata",
-            message=f"Focus Mode attivata. {len(paused_list)} dispositivi secondari messi in pausa."
+            title=tr("automations.focus_alert_on_title"),
+            message=tr("automations.focus_alert_on_message", count=len(paused_list))
         )
 
         return {
             "status": "success",
             "active": True,
-            "message": f"Gaming Mode attivata! {len(paused_list)} dispositivi secondari messi in pausa.",
+            "message": tr("automations.focus_on", count=len(paused_list)),
             "paused_macs": paused_list,
         }
     else:
@@ -228,21 +229,21 @@ async def toggle_focus_mode(payload: FocusModeRequest):
                     await eero_client.update_device(device_id=str(dev_id), paused=False)
                     unpaused_count += 1
                 except Exception as ex:
-                    logger.warning(f"Failed to unpause device {dev_id}: {ex}")
+                    log_event(logger, logging.WARNING, "log_ops.focus_unpause_failed", device=dev_id, error=str(ex))
 
         await db_service.set_setting("focus_mode_active", "false")
         await db_service.set_setting("focus_mode_paused_macs", "[]")
 
         await db_service.save_alert(
             alert_type="focus_mode",
-            title="🎮 Gaming / Focus Mode Disattivata",
-            message=f"Focus Mode disattivata. Riconnessione consentita per tutti gli apparati."
+            title=tr("automations.focus_alert_off_title"),
+            message=tr("automations.focus_alert_off_message")
         )
 
         return {
             "status": "success",
             "active": False,
-            "message": "Gaming Mode disattivata. Traffico ripristinato su tutta la rete.",
+            "message": tr("automations.focus_off"),
             "unpaused_count": unpaused_count,
         }
 
@@ -271,7 +272,7 @@ async def update_night_mode_settings(payload: NightModeSettingsRequest):
 
     return {
         "status": "success",
-        "message": "Impostazioni Modalità Notte salvate con successo.",
+        "message": tr("automations.night_mode_saved"),
         "settings": payload.model_dump()
     }
 
@@ -302,7 +303,7 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
         pushover_api_token=payload.pushover_api_token,
         language=payload.language
     )
-    return {"status": "success", "message": "Impostazioni di notifica salvate."}
+    return {"status": "success", "message": tr("automations.notifications_saved")}
 
 
 @router.post("/notifications/test")
@@ -310,15 +311,9 @@ async def test_notification_channels(payload: Optional[NotificationTestRequest] 
     """Invia un messaggio di prova per verificare che Telegram, Webhook, Discord e Pushover funzionino."""
     lang = payload.language if payload else None
     active_lang = await notification_service.get_language(lang)
-    is_it = (active_lang == "it")
-    if is_it:
-        msg = "🔔 <b>Test Notifiche eero Dashboard</b>\n\nConnessione con il server completata con successo!"
-        wh_msg = "Ping test da eero Dashboard"
-        title = "🔔 Test Notifiche eero Dashboard"
-    else:
-        msg = "🔔 <b>eero Dashboard Notification Test</b>\n\nServer connection completed successfully!"
-        wh_msg = "Ping test from eero Dashboard"
-        title = "🔔 eero Dashboard Notification Test"
+    msg = tr("automations.test_notification_body", lang=active_lang)
+    wh_msg = tr("automations.test_notification_webhook", lang=active_lang)
+    title = tr("automations.test_notification_title", lang=active_lang)
 
     tg_res = await notification_service.send_telegram_message(msg, ignore_enabled=True)
     wh_res = await notification_service.send_webhook("test_ping", {"test": True, "message": wh_msg}, ignore_enabled=True)
@@ -348,7 +343,7 @@ async def update_mqtt_configuration(
     """Aggiorna i parametri di configurazione del broker MQTT."""
     data = payload.model_dump(exclude_unset=True)
     await mqtt_service.update_config(data)
-    return {"status": "success", "message": "Configurazione MQTT aggiornata.", "config": await mqtt_service.get_config()}
+    return {"status": "success", "message": tr("automations.mqtt_config_saved"), "config": await mqtt_service.get_config()}
 
 
 @router.post("/mqtt/test")
@@ -366,11 +361,11 @@ async def test_mqtt_publishing(
     if not result.get("success"):
         raise HTTPException(
             status_code=400,
-            detail=result.get("error") or "Impossibile connettersi al broker MQTT specificato."
+            detail=result.get("error") or tr("automations.mqtt_connect_failed")
         )
     return {
         "status": "success",
-        "message": result.get("message") or "Test di connessione MQTT riuscito con successo.",
+        "message": result.get("message") or tr("automations.mqtt_test_ok"),
         "broker": result.get("broker"),
         "base_topic": result.get("base_topic") or mqtt_service._base_topic,
         "simulated": result.get("simulated", False)
@@ -388,7 +383,7 @@ async def get_recent_alerts():
 async def mark_all_alerts_read():
     """Segna tutti gli allarmi come letti."""
     await db_service.mark_alerts_read()
-    return {"status": "success", "message": "Tutti gli allarmi sono stati contrassegnati come letti."}
+    return {"status": "success", "message": tr("automations.alerts_marked_read")}
 
 
 @router.get("/digest")
@@ -414,7 +409,7 @@ async def update_digest_settings(payload: DigestSettingsRequest):
     hour = int(await db_service.get_setting("daily_digest_hour", str(getattr(settings, "daily_digest_hour", 21))))
     return {
         "status": "success",
-        "message": "Impostazioni Digest aggiornate con successo.",
+        "message": tr("automations.digest_saved"),
         "enabled": payload.enabled,
         "hour": hour
     }
@@ -426,10 +421,10 @@ async def generate_immediate_digest(payload: Optional[DigestGenerateRequest] = N
     try:
         lang = payload.language if payload else None
         data = await background_poller._send_daily_digest(lang=lang)
-        return {"status": "success", "message": "Report Digest generato e inviato con successo sui canali attivi.", "data": data}
+        return {"status": "success", "message": tr("automations.digest_sent"), "data": data}
     except Exception as e:
-        logger.error(f"Errore generazione digest: {e}")
-        raise HTTPException(status_code=500, detail=f"Errore durante l'invio del report: {str(e)}")
+        log_event(logger, logging.ERROR, "log_ops.digest_generate_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=tr("automations.digest_send_error", error=str(e)))
 
 
 # =========================================================================
@@ -453,7 +448,7 @@ async def update_multi_dns_settings(payload: DNSSettingsRequest):
     await dns_manager.save_settings(enabled=payload.enabled, instances=inst_dicts)
     return {
         "status": "success",
-        "message": "Impostazioni Multi-DNS salvate con successo.",
+        "message": tr("automations.dns_saved"),
         "instances": inst_dicts
     }
 
@@ -467,7 +462,7 @@ async def test_dns_instance(payload: Optional[DNSTestRequest] = None):
         settings = await dns_manager.get_settings()
         target = next((i for i in settings.get("instances", []) if i.get("id") == payload.instance_id), None)
         if not target:
-            raise HTTPException(status_code=404, detail="Istanza DNS non trovata.")
+            raise HTTPException(status_code=404, detail=tr("automations.dns_instance_not_found"))
         res = await dns_manager.test_instance(target)
     else:
         res = await dns_manager.test_all_instances()
@@ -480,12 +475,12 @@ async def sync_dns_devices(payload: Optional[DNSSyncRequest] = None):
     cached = background_poller.get_cached_state()
     devices = cached.get("devices", [])
     if not devices:
-        raise HTTPException(status_code=400, detail="Nessun dispositivo disponibile nella cache per la sincronizzazione.")
+        raise HTTPException(status_code=400, detail=tr("automations.no_cached_devices"))
 
     inst_id = payload.instance_id if payload else None
     res = await dns_manager.sync_devices(devices, instance_id=inst_id)
     if not res.get("success"):
-        raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
+        raise HTTPException(status_code=400, detail=res.get("message") or tr("automations.sync_failed"))
 
     return {
         "status": "success",
@@ -518,7 +513,7 @@ async def update_adguard_settings(payload: AdGuardSettingsRequest):
         username=payload.username,
         password=payload.password
     )
-    return {"status": "success", "message": "Impostazioni AdGuard Home salvate con successo."}
+    return {"status": "success", "message": tr("automations.adguard_saved")}
 
 
 @router.post("/adguard/test", dependencies=[Depends(require_permission("action_sync_dns"))])
@@ -538,7 +533,7 @@ async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     cached = background_poller.get_cached_state()
     devices = cached.get("devices", [])
     if not devices:
-        raise HTTPException(status_code=400, detail="Nessun dispositivo disponibile nella cache per la sincronizzazione.")
+        raise HTTPException(status_code=400, detail=tr("automations.no_cached_devices"))
     
     url = payload.url if payload else None
     username = payload.username if payload else None
@@ -547,7 +542,7 @@ async def sync_adguard_devices(payload: Optional[AdGuardSyncRequest] = None):
     
     res = await adguard_service.sync_devices(devices, url=url, username=username, password=password, instances=instances)
     if not res.get("success"):
-        raise HTTPException(status_code=400, detail=res.get("message", "Sincronizzazione fallita."))
+        raise HTTPException(status_code=400, detail=res.get("message") or tr("automations.sync_failed"))
         
     return {
         "status": "success",
@@ -586,7 +581,7 @@ async def update_nightly_maintenance_settings(payload: NightlyMaintenanceSetting
         reboot_threshold_score=payload.reboot_threshold_score,
         vacuum=payload.vacuum
     )
-    return {"status": "success", "message": "Impostazioni di manutenzione notturna salvate con successo."}
+    return {"status": "success", "message": tr("automations.nightly_maintenance_saved")}
 
 
 @router.post("/nightly-maintenance/run", dependencies=[Depends(require_permission("action_reboot_nodes"))])
