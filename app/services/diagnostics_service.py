@@ -247,6 +247,11 @@ class DiagnosticsService:
                 for lang in ("it", "en")
             )
 
+            suggested_i18n = {
+                lang: suggested_node or tr("diagnostics.fallback_nearby_node", lang=lang)
+                for lang in ("it", "en")
+            }
+
             advisor_data = {
                 "mac": mac,
                 "name": dev_name,
@@ -255,6 +260,7 @@ class DiagnosticsService:
                 "connected_eero_id": d.get("connected_eero_id"),
                 "connected_eero_name": curr_node_name,
                 "suggested_eero_name": suggested_node or tr("diagnostics.fallback_nearby_node"),
+                "suggested_eero_name_i18n": suggested_i18n,
                 "estimated_delta_dbm": delta_est,
                 "severity": severity,
                 "advice_it": advice_it,

@@ -157,7 +157,7 @@ class RetentionWorker:
                         if u_cnt > 0:
                             hours_aggregated += 1
                     except Exception as ex:
-                        err_msg = f"RetentionWorker: Errore aggregazione usage ora {h_str}: {ex}"
+                        err_msg = f"RetentionWorker: Usage aggregation error for hour {h_str}: {ex}"
                         log_event(logger, logging.WARNING, "log_ops.retention_usage_hour_failed", hour=h_str, error=str(ex))
                         errors.append(err_msg)
 
@@ -167,7 +167,7 @@ class RetentionWorker:
                         if s_cnt > 0:
                             signals_aggregated += 1
                     except Exception as ex:
-                        err_msg = f"RetentionWorker: Errore aggregazione signals ora {h_str}: {ex}"
+                        err_msg = f"RetentionWorker: Signal aggregation error for hour {h_str}: {ex}"
                         log_event(logger, logging.WARNING, "log_ops.retention_signals_hour_failed", hour=h_str, error=str(ex))
                         errors.append(err_msg)
 
@@ -207,7 +207,7 @@ class RetentionWorker:
                     if d_cnt > 0:
                         days_aggregated += 1
                 except Exception as ex:
-                    err_msg = f"RetentionWorker: Errore aggregazione giorno {d_str}: {ex}"
+                    err_msg = f"RetentionWorker: Daily aggregation error for day {d_str}: {ex}"
                     log_event(logger, logging.WARNING, "log_ops.retention_day_failed", day=d_str, error=str(ex))
                     errors.append(err_msg)
 

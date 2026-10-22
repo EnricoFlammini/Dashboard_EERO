@@ -32,6 +32,12 @@ if sys.platform == "win32":
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import tempfile
+# Default to an isolated temporary DATA_DIR to protect production databases
+if not os.environ.get("DATA_DIR"):
+    _test_data_dir = tempfile.mkdtemp(prefix="eero_dashboard_test_")
+    os.environ["DATA_DIR"] = _test_data_dir
+
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app

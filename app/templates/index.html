@@ -6572,11 +6572,11 @@
                     <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-500/20 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                       <div>
                         <span class="font-bold text-slate-900 dark:text-white" x-text="stk.name"></span>
-                        <span class="text-slate-500 dark:text-slate-400"> (</span><span class="font-mono text-rose-600 dark:text-rose-400 font-bold" x-text="stk.current_rssi + ' dBm'"></span><span class="text-slate-500 dark:text-slate-400"> su </span><span class="font-medium text-slate-700 dark:text-slate-300" x-text="stk.connected_eero_name"></span><span class="text-slate-500 dark:text-slate-400">)</span>
+                        <span class="text-slate-500 dark:text-slate-400"> (</span><span class="font-mono text-rose-600 dark:text-rose-400 font-bold" x-text="stk.current_rssi + ' dBm'"></span><span class="text-slate-500 dark:text-slate-400" x-text="currentLanguage === 'it' ? ' su ' : ' on '"></span><span class="font-medium text-slate-700 dark:text-slate-300" x-text="stk.connected_eero_name"></span><span class="text-slate-500 dark:text-slate-400">)</span>
                       </div>
                       <div class="flex items-center space-x-1 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold">
-                        <span>Consigliato:</span>
-                        <span class="font-bold text-slate-900 dark:text-white" x-text="stk.suggested_eero_name"></span>
+                        <span x-text="currentLanguage === 'it' ? 'Consigliato:' : 'Suggested:'">Consigliato:</span>
+                        <span class="font-bold text-slate-900 dark:text-white" x-text="(stk.suggested_eero_name_i18n && stk.suggested_eero_name_i18n[currentLanguage]) || stk.suggested_eero_name"></span>
                         <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold" x-text="'(+~' + stk.estimated_delta_dbm + ' dBm)'"></span>
                       </div>
                     </div>
@@ -6689,9 +6689,9 @@
                 <div class="text-[11px] text-slate-700 dark:text-slate-300" x-text="getHealthPenaltyDesc(p)"></div>
                 
                 <!-- Affected items tags -->
-                <template x-if="p.affected_items && p.affected_items.length > 0">
+                <template x-if="(p.affected_items_i18n && p.affected_items_i18n[currentLanguage]) || (p.affected_items && p.affected_items.length > 0)">
                   <div class="flex flex-wrap gap-1.5 pt-1">
-                    <template x-for="(item, idx) in p.affected_items" :key="idx">
+                    <template x-for="(item, idx) in ((p.affected_items_i18n && p.affected_items_i18n[currentLanguage]) || p.affected_items)" :key="idx">
                       <span class="px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 font-mono text-[10px] text-slate-800 dark:text-slate-200 border border-black/10 dark:border-white/10" x-text="item"></span>
                     </template>
                   </div>
