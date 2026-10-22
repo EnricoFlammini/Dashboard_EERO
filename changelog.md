@@ -4,6 +4,63 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.6.2] - 2026-10-23
+
+### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
+* **💯 100% Parità Cataloghi Linguistici:**
+  * Allineati completamente tutti i cataloghi di traduzione: 457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`.
+  * Risolte tutte le discrepanze residue e aggiunti controlli continui di parità e conformità stringhe.
+
+### 🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (Issue #83 - @richlilly2004)
+* **🏷️ Sanificazione Rigorosa Hostname DNS (`_sanitize_dns_hostname`):**
+  * Introdotta sanificazione conforme a RFC 1123 in `dns_manager.py`: rimozione di caratteri speciali, conversione di parentesi e simboli in trattini `-`, trim dei trattini e fallback ad alias o MAC address.
+  * Prevenzione del fallimento a cascata del payload atomico `PATCH /api/config` su Pi-hole v6 causato da apparati con nomi contenenti parentesi (es. `Amazon Echo (G4)`).
+* **🧹 Eliminazione 404 Endpoint Probe (`eero_client.py`):**
+  * Rimossa la richiesta ridondante a `/2.2/networks/{id}/port_forwards` nel ciclo di polling, eliminando definitivamente lo spam di log di errore 404.
+
+### ⚙️ Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC)
+* **🔄 Compatibilità Payload e Modello Dati REST:**
+  * Allineato l'endpoint `/api/automations/mqtt/config` esponendo sia l'oggetto annidato `config` che le chiavi root per massima retrocompatibilità.
+  * Aggiunto supporto bi-direzionale in `mqtt_client.py` per i parametri `discovery_prefix` e `homeassistant_prefix`.
+  * Destrutturazione difensiva in `app.js` (`res.data.config || res.data`) che assicura il caricamento e il salvataggio affidabile di credenziali e parametri broker.
+
+### 🦊 Risoluzione Glitch Layout Tabella Dispositivi su Firefox (Issue #80 - @jpatchMC)
+* **🖥️ Correzione Rendering Gecko Non-Chromium:**
+  * Rimosso il blocco `<colgroup>` contenente direttive dinamiche `<col x-show="...">` in `index.html`.
+  * Affidamento del reflow e dei vincoli di larghezza direttamente alle celle `th`/`td`, eliminando collassi di colonne, mancati render e sfarfallii allo scroll su Firefox.
+
+### 🔔 Serializzazione Payload Webhook & Isolamento Canali Notifiche (Issue #85 - @Hatton920)
+* **📦 Serializzazione Difensiva (`_json_safe`):**
+  * Aggiunta serializzazione ricorsiva in `notifications.py` per convertire oggetti complessi (`datetime`, `set`, generatori) in tipi JSON nativi prima della trasmissione.
+  * Risolto il blocco silente (`TypeError`) delle notifiche istantanee di nodo offline e nuovo dispositivo verso Home Assistant e webhook generici.
+* **🔒 Isolamento Canali & Pre-popolamento MAC:**
+  * Isolato l'invio su ciascun canale (Webhook, Discord, Telegram, Pushover) in blocchi `try/except` indipendenti.
+  * Corretto il check di abilitazione (`"true" if webhook_url else "false"`) per supportare configurazioni impostate da web UI senza variabile `.env`.
+  * Inizializzazione di `_known_macs` su SQLite all'avvio in `poller.py` per azzerare i falsi allarmi "Nuovo Dispositivo" al riavvio del container.
+
+### 🎨 Rifiniture UI/UX, Localizzazione & Nomi Dispositivi Troncati (Issue #84 - @XprofQ)
+* **✨ 11 Perfezionamenti Mirati:**
+  1. Localizzati tutti gli header e sottotitoli della modale di configurazione iniziale amministratore.
+  2. Icone categoria apparati dinamiche in tabella tramite Fluent icons basate su `dev.custom_icon || dev.category || dev.device_type`.
+  3. Spinner Live Log Viewer localizzato con `t('logs.loading')`.
+  4. Prevenzione dell'a-capo del testo "Mbps" nella card Throughput WAN con `whitespace-nowrap`.
+  5. Preservate le note di rilascio GitHub originali in lingua inglese in `updater.py`.
+  6. Badge topologia `(Estimated)` / `(Stimata)` localizzato reattivamente tramite `dashboard.backhaul_estimated`.
+  7. Dropdown Top Bandwidth Hogs provvisti di etichette fallback corrette ("All" / "Tutti"), estensione a 30 elementi e correzione della logica cablati (`raw_wired !== false`).
+  8. Formattazione range qualità segnale Wi-Fi localizzata in entrambe le lingue (`-51 to -65 dBm` / `-51 a -65 dBm`).
+  9. Verificata la piena localizzazione della checkbox "Ricordami" nel sign-in amministratore.
+  10. Colonna nome apparato `.device-col-name` allargata a `16.5rem`, clamp a 2 righe e tooltip `:title` al passaggio del mouse.
+  11. Mesh Device Density localizzato in `clients/node` / `client/nodo` via `analytics.clients_per_node`.
+
+### 🧹 Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube)
+* **🗑️ Rimozione Dead Code & Traduttori Legacy:**
+  * Eliminata `translatePillarSummaryEn` (~35 righe) e semplificati i getter di salute in `app.js` rimuovendo espressioni regolari e mapping manuali obsoleti.
+  * Standardizzate le stringhe d'errore e i log in inglese in `retention_worker.py`.
+* **🌐 Elementi Coinvolti Salute Rete Localizzati:**
+  * Aggiunto `affected_items_i18n` a tutti gli 8 generatori di penalità in `poller.py` e `suggested_eero_name_i18n` in `diagnostics_service.py`, visualizzati dinamicamente nella lingua del visualizzatore.
+* **🛡️ Isolamento Suite di Test Pre-Rilascio:**
+  * Inserito fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `scripts/run_pre_release_tests.py` se `DATA_DIR` non è definita, proteggendo il database e la sessione reale da cancellazioni durante i test.
+
 ## [1.6.1] - 2026-10-17
 
 ### 🌐 Bilinguismo Completo Impostazioni & Rimozione FOUT Caricamento (PR #78 - @todddube)

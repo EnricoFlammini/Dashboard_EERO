@@ -13,7 +13,8 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.0** | 🎨 **Windows 11 Fluent Dual-Theme, 📐 Sidebar UX, 🛡️ Multi-Engine DNS, 🔄 1-Click Update, 📶 Signal Stats & ❤️ Health Breakdown (Issue #15)** | Design System Windows 11 Fluent (Dark/Light), Navigazione Sidebar collassabile con controlli rapidi, Multi-DNS (AdGuard/Pi-hole/Technitium), Docker Auto-Update 1-clic, Storicizzazione RSSI, Health Score Breakdown |
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
-| **v1.6.1 (Pianificata)** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
+| **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
+| **v1.6.2** | 🌐 **i18n Parity, 🛡️ Pi-hole v6 RFC 1123, ⚙️ MQTT Save, 🦊 Firefox Fix, 🔔 Webhooks & 🎨 UI Polish** | Parità completa traduzioni backend/frontend (PR #79, Issue #82), sanificazione hostname RFC 1123 e rimozione 404 (Issue #83), caricamento resiliente MQTT (Issue #81), fix rendering tabelle Firefox (Issue #80), serializzazione webhook per Home Assistant (Issue #85), 11 rifiniture UI/UX e tooltip nomi troncati (Issue #84). |
 
 ---
 
@@ -725,6 +726,43 @@ gantt
   - Aggiornata la descrizione `retention_30d` in `en.json` in `"1 Month (1mo)"`.
 - [x] **Suite di Test Automatizzata Modulo 11:**
   - 20 nuovi test di regressione in Modulo 11 (totale suite a 1.468/1.468 superati al 100%).
+
+---
+
+### 📦 Release v1.6.2 — i18n Parity, Pi-hole v6 RFC 1123, MQTT Fix, Firefox Fix, Webhooks & UI Polish
+
+> **Obiettivo:** Completare la piena parità bilingue dei cataloghi, sanificare gli hostname per Pi-hole v6, garantire la compatibilità con browser non-Chromium (Firefox), ripristinare le notifiche webhook real-time verso Home Assistant e rifinire l'esperienza utente su 11 aspetti segnalati dalla community.
+
+#### 1. 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
+- [x] **100% Parità Cataloghi Linguistici:** 457 chiavi backend e 1051 chiavi frontend sincronizzate senza discrepanze tra `en.json` e `it.json`.
+- [x] **Script di Verifica Continua:** Controllo automatico di parità integrato nella pipeline.
+
+#### 2. 🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 (Issue #83 - @richlilly2004)
+- [x] **Sanificazione RFC 1123 (`_sanitize_dns_hostname`):** Conversione di parentesi e simboli speciali in trattini `-`, eliminando il blocco HTTP 400 del payload atomico `PATCH /api/config`.
+- [x] **Rimozione Chiamata Ridondante `/port_forwards`:** Eliminazione dello spam continuo di errori 404 nei log di polling.
+
+#### 3. ⚙️ Persistenza Configurazione MQTT (Issue #81 - @jpatchMC)
+- [x] **Schema REST Duale:** Esposizione simultanea di `config` e parametri root in `/api/automations/mqtt/config`.
+- [x] **Supporto Bi-direzionale Alias:** Riconoscimento trasparente di `discovery_prefix` e `homeassistant_prefix`.
+- [x] **Destrutturazione Difensiva:** Caricamento e persistenza sicura delle credenziali broker in `app.js`.
+
+#### 4. 🦊 Correzione Rendering Tabella su Firefox (Issue #80 - @jpatchMC)
+- [x] **Eliminazione `<colgroup>` Dinamico:** Rimosse le direttive `<col x-show>` da `index.html`, affidando il layout alle celle native `th`/`td` per prevenire sfarfallii e collassi su motore Gecko.
+
+#### 5. 🔔 Notifiche Webhook Real-Time & Isolamento Canali (Issue #85 - @Hatton920)
+- [x] **Serializzatore Ricorsivo `_json_safe()`:** Conversione sicura di tipi complessi prima dell'invio HTTP, ripristinando gli allarmi di nodo offline e nuovi apparati su Home Assistant.
+- [x] **Isolamento Canali Notifica:** Blocchi `try/except` indipendenti per Webhook, Discord, Telegram e Pushover.
+- [x] **Pre-caricamento MAC all'Avvio:** Popolamento di `_known_macs` da SQLite per azzerare falsi allarmi al reboot.
+
+#### 6. 🎨 11 Rifiniture UI/UX, Localizzazione & Nomi Troncati (Issue #84 - @XprofQ)
+- [x] Setup modal bilingue, icone Fluent dinamiche di categoria, spinner log localizzato, Throughput WAN senza wrapping di "Mbps", note di rilascio GitHub originali, badge `(Estimated)` / `(Stimata)`, filtri Top Bandwidth Hogs estesi a 30 con logica cablati corretta, range Wi-Fi formattati, colonna `.device-col-name` allargata a `16.5rem` con 2-line clamp e tooltip `:title`.
+
+#### 7. 🧹 Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube)
+- [x] **Rimozione Dead Code:** Eliminata `translatePillarSummaryEn` e i selettori regex legacy in `app.js`.
+- [x] **Penalità Salute Dinamiche:** Aggiunto `affected_items_i18n` e `suggested_eero_name_i18n` per rendering nella lingua del visualizzatore.
+- [x] **Isolamento Sicuro Test:** Fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `run_pre_release_tests.py`.
+
+---
 
 
 ---

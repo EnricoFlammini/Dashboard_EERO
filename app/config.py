@@ -33,7 +33,7 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = os.getenv("APP_VERSION", "1.6.1")
+        app_version: str = os.getenv("APP_VERSION", "1.6.2")
         build_number: str = _get_default_build_number()
         debug: bool = False
         
@@ -142,7 +142,7 @@ except ImportError:
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = os.getenv("APP_VERSION", "1.6.1")
+            self.app_version = os.getenv("APP_VERSION", "1.6.2")
             self.build_number = _get_default_build_number()
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")

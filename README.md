@@ -50,6 +50,20 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🌐 Complete Frontend & Backend Localization Parity & i18n Architecture (v1.6.2 - PR #79, Issue #82):**
+  - **100% Translation Parity:** Full catalog parity across backend (457 keys) and frontend (1051 keys in `en.json` and `it.json`) with automated parity audit scripts.
+  - **Architectural Cleanup:** Pruned ~90 lines of dead regex-based health translators, dynamic viewer-language rendering for Network Health penalties (`affected_items_i18n`), and automatic test suite isolation via `tempfile.mkdtemp()`.
+* **🛡️ RFC 1123 Hostname Sanitization & Clean Endpoint Polling (v1.6.2 - Issue #83):**
+  - **Pi-hole v6 RFC 1123 Compliance:** Automatic sanitization of device hostnames containing parentheses or special characters (e.g. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), preventing bulk batch rejection on Pi-hole v6 `PATCH /api/config`.
+  - **Silenced Redundant Probes:** Eliminated 404 error log spam by removing the deprecated `/port_forwards` polling request.
+* **🦊 Firefox Compatibility & Resilient MQTT Configuration (v1.6.2 - Issues #80, #81):**
+  - **Gecko Engine Rendering:** Removed problematic `<colgroup>` declarations, eliminating scroll flickering, blank rows, and collapsed columns on non-Chromium browsers like Firefox.
+  - **MQTT Configuration Persistence:** Dual-payload REST schema and bidirectional parameter aliases (`discovery_prefix` / `homeassistant_prefix`) for rock-solid Home Assistant integration.
+* **🔔 Resilient Webhook Alerts & Notification Isolation (v1.6.2 - Issue #85):**
+  - **Safe Payload Serialization:** Recursive `_json_safe()` serialization preventing silent JSON encoding failures on complex event payloads, restoring instant `node_offline` and `new_device` alerts to Home Assistant webhooks.
+  - **Channel Isolation & MAC Warmup:** Independent error boundaries per notification channel and SQLite-backed MAC address cache warmup on container startup.
+* **🎨 UI/UX Polish & Truncated Device Names (v1.6.2 - Issue #84):**
+  - 11 targeted improvements including dynamic Fluent device category icons, 2-line clamp with hover tooltip `:title` on device names (`.device-col-name`), `whitespace-nowrap` on WAN throughput, expanded Top Bandwidth Hogs filters (up to 30 nodes), and preserved original GitHub release notes.
 * **🛡️ Subnet-Aware IPv4 Prioritization & Pi-hole v6 Stale Record Pruning (v1.6.1 - Issue #72):**
   - **LAN Subnet Prioritization:** Multi-level scoring algorithm resolving multi-IP Linux and Docker host issues by prioritizing addresses belonging to the physical eero LAN subnet (e.g. `192.168.0.37`) while automatically deprioritizing virtual container bridge gateways (`172.17.0.1`, `172.24.0.1`, `10.88.0.1` ending in `.1`).
   - **Pi-hole v6 Intelligent Pruning:** Automatic removal of expired DHCP leases and obsolete IP mappings for managed hosts via atomic `PATCH /api/config` and Pi-hole v5 `customdns&action=delete`, while strictly preserving custom unmanaged DNS records.
@@ -424,6 +438,20 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🌐 Parità Completa Traduzioni Frontend & Backend e Pulizia Architetturale (v1.6.2 - PR #79, Issue #82):**
+  - **Parità Linguistica al 100%:** Allineamento totale di tutti i cataloghi (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`) con script di verifica automatica in CI/CD.
+  - **Refactoring Architetturale i18n:** Eliminazione di ~90 righe di traduttori legacy e regex, rendering dinamico delle penalità di salute nella lingua del visualizzatore (`affected_items_i18n`) e isolamento sicuro della suite di test con cartella temporanea (`tempfile.mkdtemp()`).
+* **🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (v1.6.2 - Issue #83):**
+  - **Conformità RFC 1123:** Sanificazione automatica degli hostname contenenti parentesi o caratteri speciali (es. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), prevenendo il rigetto a cascata dell'intero payload atomico `PATCH /api/config` su Pi-hole v6.
+  - **Log Poller Puliti:** Rimossa la chiamata ridondante a `/port_forwards`, azzerando i falsi errori 404 nei log.
+* **🦊 Compatibilità Firefox & Persistenza Configurazione MQTT (v1.6.2 - Issues #80, #81):**
+  - **Rendering Gecko Nativo:** Rimosso il tag `<colgroup>` dinamico, risolvendo definitivamente lo sfarfallio e il mancato render della tabella apparati su browser non-Chromium (Firefox).
+  - **Salvataggio MQTT Resiliente:** Supporto a schema REST duale e alias bi-direzionali (`discovery_prefix` / `homeassistant_prefix`) per la perfetta persistenza dei parametri broker.
+* **🔔 Notifiche Webhook Resilienti & Isolamento Canali (v1.6.2 - Issue #85):**
+  - **Serializzazione Difensiva (`_json_safe`):** Risolto l'errore di serializzazione silente su payload complessi, ripristinando gli allarmi istantanei di nodo offline e nuovo dispositivo verso webhook Home Assistant.
+  - **Isolamento Invio & Cache MAC all'Avvio:** Gestione indipendente degli errori per ciascun canale di notifica e pre-caricamento dei MAC storici da SQLite al boot del container.
+* **🎨 Rifiniture UI/UX, Localizzazione & Nomi Troncati (v1.6.2 - Issue #84):**
+  - 11 miglioramenti di interfaccia tra cui icone Fluent dinamiche in tabella, line-clamp a 2 righe con tooltip `:title` per nomi lunghi, Throughput WAN senza wrapping di "Mbps", filtri Top Bandwidth Hogs estesi a 30 elementi con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
 * **🛡️ Prioritizzazione IPv4 Subnet LAN, Pruning Intelligente Pi-hole v6 ed Esclusione Dispositivi (v1.6.1 - Issue #72):**
   - **Prioritizzazione Subnet LAN:** Algoritmo a punteggio a 5 livelli per host multi-IP (es. Linux con Docker/Podman): priorità assoluta agli IP appartenenti alla subnet LAN fisica eero (`192.168.0.37`) e sistematica deprioritizzazione dei bridge container virtuali terminanti in `.1` (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`).
   - **Pruning Intelligente Pi-hole v6:** Eliminazione automatica di vecchi lease e record obsoleti per i dispositivi gestiti tramite `PATCH /api/config` (e Pi-hole v5), con preservazione assoluta dei record DNS manuali e unmanaged.

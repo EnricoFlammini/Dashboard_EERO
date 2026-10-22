@@ -1132,7 +1132,7 @@ async def run_all_tests():
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
         check_data = check_res.json()
         runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
-        runner.assert_true(check_data.get("current_version") == "1.6.1", f"Versione corrente rilevata è 1.6.1 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true(check_data.get("current_version") == "1.6.2", f"Versione corrente rilevata è 1.6.2 (ottenuta: {check_data.get('current_version')})")
         runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
 
         # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
@@ -2198,7 +2198,7 @@ async def run_all_tests():
         # 7. Test Manuale In-App & Package Versioning (v1.6.0)
         import importlib
         app_pkg = importlib.import_module("app")
-        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.1", f"app.__version__ è '1.6.1' (trovato: {getattr(app_pkg, '__version__', None)})")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.2", f"app.__version__ è '1.6.2' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
         runner.assert_true(res_man_it.json().get("count") >= 10, f"Manuale IT contiene almeno 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
@@ -2206,11 +2206,11 @@ async def run_all_tests():
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
         runner.assert_true(res_man_en.json().get("count") >= 10, f"Manuale EN contiene almeno 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
         res_ch_it = await client.get("/api/manual/changelog?lang=it")
-        runner.assert_true(res_ch_it.json().get("version") == "1.6.1", "Versione restituita da changelog IT è 1.6.1")
-        runner.assert_true("## v1.6.1" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.1")
+        runner.assert_true(res_ch_it.json().get("version") == "1.6.2", "Versione restituita da changelog IT è 1.6.2")
+        runner.assert_true("## v1.6.2" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.2")
         res_ch_en = await client.get("/api/manual/changelog?lang=en")
-        runner.assert_true(res_ch_en.json().get("version") == "1.6.1", "Versione restituita da changelog EN è 1.6.1")
-        runner.assert_true("## v1.6.1" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.1")
+        runner.assert_true(res_ch_en.json().get("version") == "1.6.2", "Versione restituita da changelog EN è 1.6.2")
+        runner.assert_true("## v1.6.2" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.2")
 
         # 8. Test Build Number & Full Versioning (es. '1.6.0 build 1')
         runner.assert_true(hasattr(settings, "build_number") and bool(settings.build_number), "settings.build_number configurato")
@@ -2807,6 +2807,7 @@ async def run_all_tests():
         runner.assert_true(test_poller._cloud_alert_sent is True, "Dopo 3 fallimenti consecutivi _cloud_alert_sent diventa True")
 
         # Verifica soppressione falsi allarmi nodi offline durante cloud outage
+        await asyncio.sleep(0.1)  # Consente il completamento del dispatch background di notify_cloud_unreachable
         test_poller._known_eeros_status["node_test_1"] = "online"
         fake_offline_node = {"id": "node_test_1", "status": "offline"}
         alerts_before = len(await db_service.get_alerts(limit=50))
@@ -5270,7 +5271,7 @@ async def run_all_tests():
 
             sw_js_path = Path("app/static/sw.js")
             sw_js_content = sw_js_path.read_text(encoding="utf-8")
-            runner.assert_true("eero-dashboard-v1.6.1" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.1 per invalidazione cache obsoleta")
+            runner.assert_true("eero-dashboard-v1.6.2" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.2 per invalidazione cache obsoleta")
 
         finally:
             # Ripristina stato originale eero_client

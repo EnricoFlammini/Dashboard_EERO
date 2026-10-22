@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.1)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.2)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.6.1**  
+> *Versione di riferimento del software:* **v1.6.2**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -52,6 +52,7 @@
    * 4.35 [Scheduler Daily Digest Idempotente ai Riavvii Container (v1.6.1 - Issue #70)](#435-scheduler-daily-digest-idempotente-ai-riavvii-container-v161---issue-70)
    * 4.36 [Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71)](#436-risoluzione-bug-bufferbloat-wan--localizzazione-abbreviazioni-durata-v161---issue-71)
    * 4.37 [Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74)](#437-compattazione-selettiva-multi-tier-indici-timestamp--parsing-bitrate-v161---issue-73-74)
+   * 4.38 [Parità Traduzioni, RFC 1123, MQTT, Firefox & Webhook Isolation (v1.6.2)](#438-parità-traduzioni-rfc-1123-mqtt-firefox--webhook-isolation-v162)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -453,6 +454,22 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
 * **Verifica Integrità & Backup Deframmentato Atomico a Caldo:**
   Endpoint `GET /api/system/database/integrity` e `POST /api/system/database/backup` basato su `VACUUM INTO`.
 
+### 4.38 Parità Traduzioni, RFC 1123, MQTT, Firefox & Webhook Isolation (v1.6.2)
+* **Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube):**
+  100% di parità tra i cataloghi linguistici: 457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json` con audit automatizzato in CI/CD.
+* **Sanificazione Hostname RFC 1123 per Pi-hole v6 (Issue #83 - @richlilly2004):**
+  Sanificazione conforme a RFC 1123 (`_sanitize_dns_hostname` in `dns_manager.py`) per evitare che caratteri speciali (parentesi, apostrofi) provochino il rigetto a cascata (HTTP 400) del payload atomico `PATCH /api/config` su Pi-hole v6. Rimozione inoltre delle chiamate 404 ridondanti a `/port_forwards`.
+* **Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC):**
+  Esposizione simultanea dell'oggetto `config` e delle chiavi root su `/api/automations/mqtt/config`, supporto bi-direzionale alias per `discovery_prefix` / `homeassistant_prefix` e destrutturazione difensiva in `app.js`.
+* **Risoluzione Glitch Rendering Tabella su Firefox (Issue #80 - @jpatchMC):**
+  Eliminazione del blocco `<colgroup>` dinamico in `index.html` e delega del layout alle celle native `th`/`td` per prevenire collassi o sfarfallii su motore Gecko.
+* **Serializzazione Payload Webhook & Isolamento Canali (Issue #85 - @Hatton920):**
+  Serializzatore ricorsivo `_json_safe()` in `notifications.py` per convertire oggetti complessi in tipi JSON nativi prima della trasmissione verso Home Assistant, isolamento di ciascun canale (Webhook, Discord, Telegram, Pushover) in blocchi `try/except` indipendenti e pre-caricamento di `_known_macs` all'avvio da SQLite per evitare falsi allarmi al riavvio del container.
+* **11 Rifiniture UI/UX, Localizzazione & Nomi Dispositivi Troncati (Issue #84 - @XprofQ):**
+  Icone dinamiche di categoria Fluent, colonna `.device-col-name` allargata a `16.5rem` con 2-line clamp e tooltip `:title`, Throughput WAN `whitespace-nowrap`, dropdown Top Bandwidth Hogs estesi a 30 elementi con logica cablati corretta e note di rilascio GitHub originali bilingue.
+* **Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube):**
+  Rimozione di traduttori legacy e regex (~90 righe potate in `app.js`), esposizione di `affected_items_i18n` e `suggested_eero_name_i18n` renderizzati nella lingua dell'utente e fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `run_pre_release_tests.py` se `DATA_DIR` non è definita.
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -830,6 +847,36 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Sintomo:** Picchi di CPU al 50% per 20+ minuti ad ogni ora per la ri-aggregazione dell'intera cronologia, e rischio di frammentazione/corruzione snapshot database.
 * **Causa Radice:** Il worker riaggregava tutte le ore storiche invece delle sole ore nuove, le query facevano full scan per mancanza di indici su timestamp puliti, e mancava parsing per stringhe bitrate con unità (`72.0 MBit/s`).
 * **Risoluzione:** Compattazione selettiva incrementale limitata alle sole ore non aggregate (taglio CPU del 99.4%), indici B-tree su espressioni temporali, helper `parse_bitrate_float()`, endpoint di check integrità (`/api/system/database/integrity`) e backup deframmentato a caldo con `VACUUM INTO`.
+
+### Issue #80 — Firefox Device Table Column Sizing & Scrolling Glitch (@jpatchMC)
+* **Sintomo:** Su Firefox (motore Gecko), la tabella della vista Dispositivi collassava, sfarfallava durante lo scroll o non renderizzava le righe.
+* **Causa Radice:** L'elemento `<colgroup>` con direttive Alpine `<col x-show="...">` generava conflitti di ricalcolo del layout continuo nel motore Gecko non-Chromium.
+* **Risoluzione:** Rimozione del blocco `<colgroup>` e gestione dei vincoli di colonna direttamente su `th` e `td` nativi.
+
+### Issue #81 — MQTT Configuration Saving & Loading Failure (@jpatchMC)
+* **Sintomo:** Il test di connessione MQTT funzionava, ma i parametri non venivano persistiti o ricaricati correttamente nella modale.
+* **Causa Radice:** Discrepanza tra payload REST (`config` annidato vs chiavi di primo livello) e mancato allineamento tra `discovery_prefix` e `homeassistant_prefix`.
+* **Risoluzione:** Output API duale (sia `config` che root), alias bidirezionali nel client MQTT e destrutturazione difensiva in `app.js`.
+
+### Issue #83 — Pi-hole v6 FTL Sync Failure on Invalid Hostname Characters (@richlilly2004)
+* **Sintomo:** La sincronizzazione Pi-hole v6 falliva con errore HTTP 400 (`invalid hostname`) se un dispositivo aveva parentesi nel nome (es. `Amazon Echo (G4)`). Inoltre i log riportavano continui 404 su `/port_forwards`.
+* **Causa Radice:** Sanitizzazione hostname incompleta che lasciava passare parentesi e simboli incompatibili con RFC 1123, e probe automatico a un endpoint `/port_forwards` inesistente.
+* **Risoluzione:** Implementazione di `_sanitize_dns_hostname()` rigorosamente conforme a RFC 1123 in `dns_manager.py` e rimozione della chiamata ridondante a `/port_forwards`.
+
+### Issue #85 — Webhook Alerts Not Dispatched for Offline Nodes and New Devices (@Hatton920)
+* **Sintomo:** Il Daily Digest e il Test Webhook funzionavano, ma le notifiche real-time di nuovo dispositivo o nodo offline non arrivavano su Home Assistant.
+* **Causa Radice:** I payload degli eventi contenevano oggetti complessi non primitivi (`set`, `datetime`) che sollevavano `TypeError` silente durante la serializzazione `json.dumps()`.
+* **Risoluzione:** Aggiunta di `_json_safe()` ricorsivo per la conformità JSON, isolamento di ciascun canale di notifica in blocchi `try/except` indipendenti e pre-caricamento dei MAC address noti all'avvio.
+
+### Issue #84 — UI/UX Polish, Localization, Dropdowns & Truncated Names (@XprofQ)
+* **Sintomo:** 11 imperfezioni visive: header admin in italiano, icone fisse, Throughput WAN che mandava a capo "Mbps", note di rilascio GitHub sovrascritte dal changelog locale, nomi dispositivi lunghi troncati senza anteprima.
+* **Causa Radice:** Mancanza di classi anti-wrap, icone desktop statiche invece di mappe di categoria, limitazione a 10 elementi e logica cablati imprecisa nei filtri top hogs.
+* **Risoluzione:** Correzione di tutti gli 11 punti con icone Fluent dinamiche, colonna nome allargata con 2-line clamp e hover tooltip `:title`, throughput `whitespace-nowrap` e parità perfetta 1051/1051 chiavi i18n.
+
+### Issue #82 — Translations Architecture Cleanup & Test Suite Safety (@todddube)
+* **Sintomo:** Circa 100 righe di traduttori legacy con regex morti in `app.js`, penalità di salute visualizzate nella lingua del server anziché del client, e rischio di cancellazione del database reale durante l'esecuzione dei test pre-rilascio.
+* **Causa Radice:** Rimanenze storiche pre-PR #79 e percorso predefinito `DATA_DIR` non isolato nello script di test.
+* **Risoluzione:** Rimozione di `translatePillarSummaryEn` e regex obsolete, adozione di `affected_items_i18n` bilingue dal backend e isolamento automatico dei test su cartella temporanea (`tempfile.mkdtemp()`).
 
 ---
 

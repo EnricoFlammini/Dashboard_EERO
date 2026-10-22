@@ -791,6 +791,15 @@ CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
+## v1.6.2
+* **Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube):** Parità al 100% dei cataloghi linguistici (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`), audit automatizzato e validazione continua in CI/CD.
+* **Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (Issue #83 - @richlilly2004):** Sanificazione rigorosa degli hostname per sincronizzazione Pi-hole v6 (conversione caratteri speciali e parentesi in trattini) e rimozione delle chiamate ridondanti a `/port_forwards`.
+* **Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC):** Allineamento payload API, supporto bi-direzionale per `discovery_prefix` / `homeassistant_prefix` e destrutturazione difensiva nel frontend.
+* **Risoluzione Glitch Layout Tabella Dispositivi su Firefox (Issue #80 - @jpatchMC):** Eliminazione del tag `<colgroup>` dinamico a favore di definizioni native a celle per prevenire collassi o sfarfallii su Gecko.
+* **Serializzazione Payload Notifiche Webhook & Isolamento Canali (Issue #85 - @Hatton920):** Serializzatore difensivo `_json_safe()`, ripristino allarmi istantanei di nodi offline e nuovi dispositivi su Home Assistant, e popolamento di `_known_macs` all'avvio.
+* **Rifiniture UI/UX, Localizzazione & Nomi Dispositivi Troncati (Issue #84 - @XprofQ):** 11 perfezionamenti mirati: icone dinamiche fluent in tabella, tooltip e line-clamp a 2 righe per nomi lunghi, throughput WAN `whitespace-nowrap`, dropdown estesi a 30 con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
+* **Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube):** Eliminazione traduttori legacy e regex (~90 righe potate), `affected_items_i18n` renderizzati nella lingua del visualizzatore e isolamento del database di test su cartella temporanea (`tempfile.mkdtemp`).
+
 ## v1.6.1
 * **Bilinguismo Completo Impostazioni & Eliminazione FOUT Caricamento (PR #78 - @todddube):** Traduzione al 100% di tutte le schede e modali Impostazioni (Controlli, Utenti, Backup, Export, Aggiornamenti, MQTT, Schedulazioni, Pulizia Log), interpolazione nativa dei parametri e rimozione del flash di testo all'avvio (`body.i18n-pending`).
 * **Prioritizzazione IPv4 Subnet LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72):** Algoritmo a 5 livelli in `_sort_ipv4_candidates` che privilegia gli IP appartenenti alla subnet LAN fisica eero e penalizza i bridge container (`172.17.x.x`), potatura automatica (`prune_stale_ips`) dei vecchi record su Pi-hole v6 preservando i record manuali, e nuovo switch "Escludi da sincronizzazione DNS" (`dns_sync_excluded`).
@@ -964,6 +973,15 @@ Di seguito sono riassunti i titoli principali delle release. Il registro complet
 CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
+
+## v1.6.2
+* **Complete Frontend & Backend Translation Parity (PR #79 - @todddube):** 100% key parity across all linguistic catalogs (457 backend keys and 1051 frontend keys in `en.json` and `it.json`), automated parity audit and CI/CD validation.
+* **RFC 1123 Hostname Sanitization for Pi-hole v6 & Silenced 404 Endpoint Probe (Issue #83 - @richlilly2004):** Strict RFC 1123 hostname sanitization for Pi-hole v6 sync (converting parentheses and special characters to hyphens) and removal of redundant `/port_forwards` API probes.
+* **Resilient MQTT Configuration Save & Load (Issue #81 - @jpatchMC):** Aligned REST API responses, added bidirectional support for `discovery_prefix` / `homeassistant_prefix`, and resilient frontend destructuring.
+* **Fixed Firefox Device Table Rendering Glitch (Issue #80 - @jpatchMC):** Removed dynamic `<colgroup>` declaration in favor of direct cell constraints, completely eliminating column collapsing and scroll flicker in Gecko.
+* **Webhook Payload Serialization & Isolated Channel Dispatch (Issue #85 - @Hatton920):** Recursive `_json_safe()` serialization, restored instant real-time alerts for offline nodes and new devices in Home Assistant, and pre-populated `_known_macs` on startup.
+* **UI/UX Polish, Localization & Truncated Device Names (Issue #84 - @XprofQ):** 11 targeted improvements: dynamic Fluent category icons in tables, 2-line clamp with hover tooltip for long names, `whitespace-nowrap` on WAN throughput, Top Bandwidth Hogs dropdowns expanded to 30 with fixed wired detection logic, and preserved original GitHub release notes.
+* **Architectural i18n Refactoring & Test Suite Safety (Issue #82 - @todddube):** Pruned dead regex-based health translators (~90 lines removed), rendered health `affected_items_i18n` in viewer active language, and isolated pre-release test suite to a secure temporary directory (`tempfile.mkdtemp`).
 
 ## v1.6.1
 * **Complete Settings Localization & Loading Flash Prevention (PR #78 - @todddube):** 100% translation of all Settings pages and modals (Controls, Users, Backup, Export, Updates, MQTT, Schedules, Clear Logs), parameter interpolation, and loading flash prevention via `body.i18n-pending`.
