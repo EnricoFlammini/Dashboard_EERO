@@ -648,7 +648,11 @@ class BackgroundPoller:
             dt_poll = (now_utc - self._prev_poll_time).total_seconds() if self._prev_poll_time else float(settings.poll_interval)
             dt_poll = max(1.0, min(120.0, dt_poll))
 
-            is_initial_discovery = len(self._known_macs) == 0
+            if not self._initial_macs_loaded and known_devices_map:
+                self._known_macs.update(m.lower() for m in known_devices_map.keys())
+                self._initial_macs_loaded = True
+
+            is_initial_discovery = len(self._known_macs) == 0 and len(known_devices_map) == 0
 
             for dev in devices:
                 mac = (dev.get("mac") or dev.get("mac_address") or "").lower()
@@ -821,6 +825,7 @@ class BackgroundPoller:
             # Se era la primissima discovery assoluta (db vuoto), registriamo tutto su SQLite senza inviare notifiche
             if is_initial_discovery and enriched_devices:
                 await db_service.register_known_devices_batch(enriched_devices, notified=True, baseline=True)
+                self._initial_macs_loaded = True
 
             # 2.5 Risoluzione robusta dei nodi eero per ciascun dispositivo
             eero_by_key: Dict[str, Dict[str, Any]] = {}

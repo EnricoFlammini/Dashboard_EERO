@@ -10,6 +10,19 @@ from app.services.db import db_service
 logger = logging.getLogger(__name__)
 
 
+def _json_safe(obj: Any) -> Any:
+    """Converte ricorsivamente qualsiasi oggetto in tipi JSON serializzabili (stringhe, numeri, liste, dict)."""
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    if hasattr(obj, "isoformat") and callable(obj.isoformat):
+        return obj.isoformat()
+    if isinstance(obj, (list, tuple, set)):
+        return [_json_safe(item) for item in obj]
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    return str(obj)
+
+
 class NotificationService:
     """Dispatches event alerts and reports via Telegram Bot, custom Webhook, Discord and Pushover."""
 
@@ -58,16 +71,20 @@ class NotificationService:
             return dict(self._demo_settings)
 
         all_s = await db_service.get_all_settings()
+        wh_url = all_s.get("webhook_url", settings.webhook_url)
+        tg_tok = all_s.get("telegram_bot_token", settings.telegram_bot_token)
+        dc_url = all_s.get("discord_webhook_url", settings.discord_webhook_url)
+        po_key = all_s.get("pushover_user_key", settings.pushover_user_key)
         return {
-            "telegram_enabled": all_s.get("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false").lower() == "true",
-            "telegram_bot_token": all_s.get("telegram_bot_token", settings.telegram_bot_token),
+            "telegram_enabled": all_s.get("telegram_alerts_enabled", "true" if tg_tok else "false").lower() in ("true", "1", "yes"),
+            "telegram_bot_token": tg_tok,
             "telegram_chat_id": all_s.get("telegram_chat_id", settings.telegram_chat_id),
-            "webhook_enabled": all_s.get("webhook_alerts_enabled", "true" if settings.webhook_url else "false").lower() == "true",
-            "webhook_url": all_s.get("webhook_url", settings.webhook_url),
-            "discord_enabled": all_s.get("discord_alerts_enabled", "true" if settings.discord_webhook_url else "false").lower() == "true",
-            "discord_webhook_url": all_s.get("discord_webhook_url", settings.discord_webhook_url),
-            "pushover_enabled": all_s.get("pushover_alerts_enabled", "true" if settings.pushover_user_key else "false").lower() == "true",
-            "pushover_user_key": all_s.get("pushover_user_key", settings.pushover_user_key),
+            "webhook_enabled": all_s.get("webhook_alerts_enabled", "true" if wh_url else "false").lower() in ("true", "1", "yes"),
+            "webhook_url": wh_url,
+            "discord_enabled": all_s.get("discord_alerts_enabled", "true" if dc_url else "false").lower() in ("true", "1", "yes"),
+            "discord_webhook_url": dc_url,
+            "pushover_enabled": all_s.get("pushover_alerts_enabled", "true" if po_key else "false").lower() in ("true", "1", "yes"),
+            "pushover_user_key": po_key,
             "pushover_api_token": all_s.get("pushover_api_token", settings.pushover_api_token),
             "system_language": all_s.get("system_language", settings.dashboard_lang),
         }
@@ -139,18 +156,19 @@ class NotificationService:
             log_event(logger, logging.INFO, "log_ops.telegram_demo_sent", preview=message[:80])
             return True
 
-        if not ignore_enabled:
-            enabled = await db_service.get_setting("telegram_alerts_enabled", "true" if settings.telegram_bot_token else "false")
-            if enabled.lower() != "true":
-                logger.debug("Telegram alerts are disabled in settings.")
-                return False
-
         token = await db_service.get_setting("telegram_bot_token", settings.telegram_bot_token)
         chat_id = await db_service.get_setting("telegram_chat_id", settings.telegram_chat_id)
-        
+
         if not token or not chat_id:
             logger.debug("Telegram credentials not configured. Skipping Telegram notification.")
             return False
+
+        if not ignore_enabled:
+            default_enabled = "true" if (token and chat_id) else "false"
+            enabled = await db_service.get_setting("telegram_alerts_enabled", default_enabled)
+            if enabled.lower() not in ("true", "1", "yes"):
+                logger.debug("Telegram alerts are disabled in settings.")
+                return False
 
         url = f"https://api.telegram.org/bot{token}/sendMessage"
         payload = {
@@ -181,19 +199,20 @@ class NotificationService:
             log_event(logger, logging.INFO, "log_ops.webhook_demo_sent", event=event_type)
             return True
 
-        if not ignore_enabled:
-            enabled = await db_service.get_setting("webhook_alerts_enabled", "true" if settings.webhook_url else "false")
-            if enabled.lower() != "true":
-                return False
-
         webhook_url = await db_service.get_setting("webhook_url", settings.webhook_url)
         if not webhook_url:
             return False
 
+        if not ignore_enabled:
+            default_enabled = "true" if webhook_url else "false"
+            enabled = await db_service.get_setting("webhook_alerts_enabled", default_enabled)
+            if enabled.lower() not in ("true", "1", "yes"):
+                return False
+
         payload = {
             "event": event_type,
             "timestamp": data.get("timestamp") or datetime.now(timezone.utc).isoformat(),
-            "data": data,
+            "data": _json_safe(data),
             "source": "eero_custom_dashboard"
         }
         try:
@@ -220,14 +239,15 @@ class NotificationService:
             log_event(logger, logging.INFO, "log_ops.discord_demo_sent", title=title)
             return True
 
-        if not ignore_enabled:
-            enabled = await db_service.get_setting("discord_alerts_enabled", "true" if settings.discord_webhook_url else "false")
-            if enabled.lower() != "true":
-                return False
-
         webhook_url = await db_service.get_setting("discord_webhook_url", settings.discord_webhook_url)
         if not webhook_url:
             return False
+
+        if not ignore_enabled:
+            default_enabled = "true" if webhook_url else "false"
+            enabled = await db_service.get_setting("discord_alerts_enabled", default_enabled)
+            if enabled.lower() not in ("true", "1", "yes"):
+                return False
 
         clean_desc = description.replace("<b>", "**").replace("</b>", "**").replace("<code>", "`").replace("</code>", "`")
         payload = {
@@ -237,7 +257,7 @@ class NotificationService:
                     "title": title,
                     "description": clean_desc,
                     "color": color,
-                    "fields": fields or [],
+                    "fields": _json_safe(fields or []),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "footer": {"text": "eero Management Suite"}
                 }
@@ -266,15 +286,16 @@ class NotificationService:
             log_event(logger, logging.INFO, "log_ops.pushover_demo_sent", title=title)
             return True
 
-        if not ignore_enabled:
-            enabled = await db_service.get_setting("pushover_alerts_enabled", "true" if settings.pushover_user_key else "false")
-            if enabled.lower() != "true":
-                return False
-
         user_key = await db_service.get_setting("pushover_user_key", settings.pushover_user_key)
         api_token = await db_service.get_setting("pushover_api_token", settings.pushover_api_token)
         if not user_key or not api_token:
             return False
+
+        if not ignore_enabled:
+            default_enabled = "true" if (user_key and api_token) else "false"
+            enabled = await db_service.get_setting("pushover_alerts_enabled", default_enabled)
+            if enabled.lower() not in ("true", "1", "yes"):
+                return False
 
         clean_msg = message.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "")
         payload = {
@@ -294,15 +315,34 @@ class NotificationService:
 
     async def _dispatch_all_channels(self, event_type: str, title: str, text: str, db_msg: str, data: Dict[str, Any], color: int = 0x38bdf8):
         """Helper to dispatch across SQLite alerts, Telegram, Webhook, Discord and Pushover."""
-        await db_service.save_alert(
-            alert_type=event_type,
-            title=title,
-            message=db_msg
-        )
-        await self.send_telegram_message(text)
-        await self.send_webhook(event_type, data)
-        await self.send_discord_message(title=title, description=text, color=color)
-        await self.send_pushover_message(title=title, message=db_msg)
+        try:
+            await db_service.save_alert(
+                alert_type=event_type,
+                title=title,
+                message=db_msg
+            )
+        except Exception as e:
+            logger.error(f"Failed to persist alert in SQLite: {e}")
+
+        try:
+            await self.send_telegram_message(text)
+        except Exception as e:
+            logger.error(f"Telegram alert error: {e}")
+
+        try:
+            await self.send_webhook(event_type, data)
+        except Exception as e:
+            logger.error(f"Webhook alert error: {e}")
+
+        try:
+            await self.send_discord_message(title=title, description=text, color=color)
+        except Exception as e:
+            logger.error(f"Discord alert error: {e}")
+
+        try:
+            await self.send_pushover_message(title=title, message=db_msg)
+        except Exception as e:
+            logger.error(f"Pushover alert error: {e}")
 
     async def notify_new_device(self, device: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)
