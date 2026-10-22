@@ -307,7 +307,7 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
     return {"status": "success", "message": tr("automations.notifications_saved")}
 
 
-@router.post("/notifications/test")
+@router.post("/notifications/test", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def test_notification_channels(payload: Optional[NotificationTestRequest] = None):
     """Invia un messaggio di prova per verificare che Telegram, Webhook, Discord e Pushover funzionino."""
     lang = payload.language if payload else None
@@ -374,21 +374,21 @@ async def test_mqtt_publishing(
     }
 
 
-@router.get("/alerts")
+@router.get("/alerts", dependencies=[Depends(require_permission("view_logs"))])
 async def get_recent_alerts():
     """Restituisce il log degli ultimi allarmi e notifiche della dashboard."""
     alerts = await db_service.get_alerts(limit=50)
     return {"status": "success", "count": len(alerts), "alerts": alerts}
 
 
-@router.post("/alerts/read")
+@router.post("/alerts/read", dependencies=[Depends(require_permission("view_logs"))])
 async def mark_all_alerts_read():
     """Segna tutti gli allarmi come letti."""
     await db_service.mark_alerts_read()
     return {"status": "success", "message": tr("automations.alerts_marked_read")}
 
 
-@router.get("/digest")
+@router.get("/digest", dependencies=[Depends(require_permission("view_logs"))])
 async def get_digest_settings():
     """Restituisce le impostazioni del report digest giornaliero."""
     val = await db_service.get_setting("daily_digest_enabled", "true")
@@ -402,7 +402,7 @@ async def get_digest_settings():
     }
 
 
-@router.post("/digest")
+@router.post("/digest", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def update_digest_settings(payload: DigestSettingsRequest):
     """Aggiorna lo stato di abilitazione e l'orario del report digest giornaliero."""
     await db_service.set_setting("daily_digest_enabled", "true" if payload.enabled else "false")
@@ -417,7 +417,7 @@ async def update_digest_settings(payload: DigestSettingsRequest):
     }
 
 
-@router.post("/digest/generate")
+@router.post("/digest/generate", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def generate_immediate_digest(payload: Optional[DigestGenerateRequest] = None):
     """Genera e invia immediatamente il report di riepilogo della rete."""
     try:

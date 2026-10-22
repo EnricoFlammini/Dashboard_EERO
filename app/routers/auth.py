@@ -1,11 +1,12 @@
 import asyncio
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.services.eero_client import eero_client
+from app.services.rate_limiter import cloud_auth_limiter, get_client_ip
 from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
@@ -95,8 +96,17 @@ async def switch_mode(payload: ModeSwitchRequest):
 
 
 @router.post("/login")
-async def request_login(payload: LoginRequest):
-    """Invia la richiesta di accesso per ricevere il codice OTP a 6 cifre."""
+async def request_login(payload: LoginRequest, request: Request):
+    """Invia la richiesta di accesso per ricevere il codice OTP a 6 cifre con protezione anti-abuse."""
+    ip = get_client_ip(request)
+    is_limited, retry_after = cloud_auth_limiter.record_hit(ip)
+    if is_limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=tr("auth.too_many_requests", retry_after=retry_after),
+            headers={"Retry-After": str(retry_after)},
+        )
+
     try:
         res = await eero_client.request_login_code(payload.login.strip())
         return res
@@ -106,8 +116,17 @@ async def request_login(payload: LoginRequest):
 
 
 @router.post("/verify")
-async def verify_otp(payload: VerifyOTPRequest):
-    """Verifica il codice OTP e salva il session token persistente."""
+async def verify_otp(payload: VerifyOTPRequest, request: Request):
+    """Verifica il codice OTP e salva il session token persistente con protezione anti-abuse."""
+    ip = get_client_ip(request)
+    is_limited, retry_after = cloud_auth_limiter.record_hit(ip)
+    if is_limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=tr("auth.too_many_requests", retry_after=retry_after),
+            headers={"Retry-After": str(retry_after)},
+        )
+
     try:
         res = await eero_client.verify_login_code(payload.code.strip(), payload.user_token)
         try:

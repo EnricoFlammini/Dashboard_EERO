@@ -4943,7 +4943,7 @@ async def run_all_tests():
         runner.assert_true(isinstance(dt_default, datetime), "_get_local_now() restituisce istanza datetime")
 
         # 2. Endpoint API /api/automations/digest (GET & POST)
-        res_get_digest = await client.get("/api/automations/digest")
+        res_get_digest = await client.get("/api/automations/digest", headers=adm_hdr)
         runner.assert_true(res_get_digest.status_code == 200, "GET /api/automations/digest risponde HTTP 200")
         digest_data = res_get_digest.json()
         runner.assert_true("enabled" in digest_data, "GET /api/automations/digest include 'enabled'")
@@ -4951,18 +4951,18 @@ async def run_all_tests():
         runner.assert_true("last_sent_date" in digest_data, "GET /api/automations/digest include 'last_sent_date'")
 
         # Aggiornamento orario valido (es. ore 20)
-        res_post_digest = await client.post("/api/automations/digest", json={"enabled": True, "hour": 20})
+        res_post_digest = await client.post("/api/automations/digest", json={"enabled": True, "hour": 20}, headers=adm_hdr)
         runner.assert_true(res_post_digest.status_code == 200, "POST /api/automations/digest con hour=20 risponde HTTP 200")
         runner.assert_true(res_post_digest.json().get("hour") == 20, "Risposta POST conferma hour=20")
 
         # Verifica persistenza su GET
-        res_verify_digest = await client.get("/api/automations/digest")
+        res_verify_digest = await client.get("/api/automations/digest", headers=adm_hdr)
         runner.assert_true(res_verify_digest.json().get("hour") == 20, "GET successivo conferma persistenza hour=20")
 
         # Validazione range orario (rifiuto valori non compresi tra 0 e 23)
-        res_invalid_high = await client.post("/api/automations/digest", json={"enabled": True, "hour": 25})
+        res_invalid_high = await client.post("/api/automations/digest", json={"enabled": True, "hour": 25}, headers=adm_hdr)
         runner.assert_true(res_invalid_high.status_code == 422, "POST /api/automations/digest con hour=25 rifiutato con HTTP 422")
-        res_invalid_low = await client.post("/api/automations/digest", json={"enabled": True, "hour": -1})
+        res_invalid_low = await client.post("/api/automations/digest", json={"enabled": True, "hour": -1}, headers=adm_hdr)
         runner.assert_true(res_invalid_low.status_code == 422, "POST /api/automations/digest con hour=-1 rifiutato con HTTP 422")
 
         # 3. Test guard persistente SQLite e Idempotency al riavvio del container (Issue #70)
@@ -5356,6 +5356,79 @@ async def run_all_tests():
             runner.assert_true(float(poller.cached_network["speedtest"].get("ping_under_load")) == 13.0, "cached_network arricchita con ping_under_load 13.0")
         finally:
             poller.cached_network = saved_cn
+
+        # -----------------------------------------------------------------
+        # 36. TEST SECURITY HARDENING & VULNERABILITY ASSESSMENT (v1.6.2)
+        # -----------------------------------------------------------------
+        print("\n🛡️ [36/36] TEST SECURITY HARDENING & VULNERABILITY MITIGATION (v1.6.2)")
+        
+        # 1. HTTP Defensive Security Headers
+        res_sec_hdr = await client.get("/api/health")
+        runner.assert_true(res_sec_hdr.status_code == 200, "GET /api/health risponde HTTP 200")
+        runner.assert_true(res_sec_hdr.headers.get("x-content-type-options") == "nosniff", "Header X-Content-Type-Options: nosniff presente")
+        runner.assert_true(res_sec_hdr.headers.get("x-frame-options") == "SAMEORIGIN", "Header X-Frame-Options: SAMEORIGIN presente")
+        runner.assert_true(res_sec_hdr.headers.get("referrer-policy") == "strict-origin-when-cross-origin", "Header Referrer-Policy: strict-origin-when-cross-origin presente")
+        runner.assert_true("geolocation=()" in res_sec_hdr.headers.get("permissions-policy", ""), "Header Permissions-Policy restrittivo presente")
+
+        # 2. Anti-SSRF in DNS Manager
+        from app.services.dns_manager import is_safe_dns_url
+        is_safe_meta, _ = is_safe_dns_url("http://169.254.169.254/latest/meta-data")
+        runner.assert_true(is_safe_meta is False, "Anti-SSRF: IP link-local / cloud metadata (169.254.169.254) tassativamente bloccato")
+        is_safe_cloud_host, _ = is_safe_dns_url("http://metadata.google.internal/computeMetadata/v1/")
+        runner.assert_true(is_safe_cloud_host is False, "Anti-SSRF: Host metadata cloud (metadata.google.internal) tassativamente bloccato")
+        is_safe_lan, _ = is_safe_dns_url("http://192.168.4.1:8080")
+        runner.assert_true(is_safe_lan is True, "Anti-SSRF: IP LAN privato valido (192.168.4.1) consentito")
+        is_safe_host_lan, _ = is_safe_dns_url("http://pihole.lan:80")
+        runner.assert_true(is_safe_host_lan is True, "Anti-SSRF: Hostname locale valido (pihole.lan) consentito")
+
+        res_ssrf_test = await dns_mgr.test_instance({"engine": "adguard", "url": "http://169.254.169.254"})
+        runner.assert_true(res_ssrf_test.get("success") is False, "test_instance rifiuta URL link-local con success: False")
+        runner.assert_true("Anti-SSRF" in res_ssrf_test.get("message", ""), "Messaggio di errore esplicito Anti-SSRF generato")
+
+        # 3. Anti-Brute Force Sliding Window Rate Limiter
+        from app.services.rate_limiter import InMemoryRateLimiter
+        test_limiter = InMemoryRateLimiter(max_attempts=3, window_seconds=2, block_seconds=5)
+        k_test = "192.0.2.1"
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is False, "Rate limiter inizialmente non attivo per IP nuovo")
+        test_limiter.record_failure(k_test)
+        test_limiter.record_failure(k_test)
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is False, "Rate limiter consente tentativi inferiori alla soglia (2/3)")
+        is_blocked, retry = test_limiter.record_failure(k_test)
+        runner.assert_true(is_blocked is True, "Rate limiter applica il blocco al 3° tentativo fallito")
+        runner.assert_true(retry > 0, "Rate limiter calcola correttamente Retry-After in secondi")
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is True, "is_limited conferma stato di blocco attivo")
+        test_limiter.reset(k_test)
+        is_lim_after, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim_after is False, "reset() rimuove correttamente il blocco (login riuscito)")
+
+        # 4. Anti-XSS Link Sanitization in Markdown Parser
+        app_js_text = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("cleanHref = (href || '').trim()" in app_js_text, "app.js sanitizza href dei link markdown")
+        runner.assert_true("/^(?:https?:\\/\\/|mailto:|\\/|#)/i.test(cleanHref)" in app_js_text, "app.js consente solo protocolli web sicuri (http, https, mailto, /, #)")
+        runner.assert_true("<span class=\"text-sky-400 font-medium\">${label}</span>" in app_js_text, "app.js neutralizza protocolli pericolosi (es. javascript:) in span non cliccabili")
+
+        # 5. Anti-Stored XSS in AI Diagnostic Summary
+        index_html_text = Path("app/templates/index.html").read_text(encoding="utf-8")
+        runner.assert_true("x-html=\"renderSimpleMarkdown(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en)\"" in index_html_text, "index.html usa renderSimpleMarkdown per isolare ed eseguire escape HTML di narrative_it")
+
+        # 6. Protezione RBAC su tutte le rotte operative identificate nell'audit
+        from app.routers import system, automations, network
+        runner.assert_true(len(system.router.routes) > 0, "Router system caricato")
+        update_trigger_route = next((r for r in system.router.routes if r.path == "/api/system/update/trigger"), None)
+        runner.assert_true(update_trigger_route is not None, "Route /api/system/update/trigger registrata")
+        runner.assert_true(len(update_trigger_route.dependencies) > 0, "Route /api/system/update/trigger protetta da dependency RBAC")
+
+        alerts_read_route = next((r for r in automations.router.routes if r.path == "/api/automations/alerts/read"), None)
+        runner.assert_true(alerts_read_route is not None and len(alerts_read_route.dependencies) > 0, "Route /api/automations/alerts/read protetta da dependency RBAC")
+
+        digest_route = next((r for r in automations.router.routes if r.path == "/api/automations/digest" and "POST" in r.methods), None)
+        runner.assert_true(digest_route is not None and len(digest_route.dependencies) > 0, "Route POST /api/automations/digest protetta da dependency RBAC")
+
+        leds_route = next((r for r in network.router.routes if r.path == "/api/network/leds"), None)
+        runner.assert_true(leds_route is not None and len(leds_route.dependencies) > 0, "Route POST /api/network/leds protetta da dependency RBAC")
 
         runner.print_summary()
 

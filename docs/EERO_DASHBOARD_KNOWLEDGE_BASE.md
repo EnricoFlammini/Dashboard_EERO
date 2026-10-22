@@ -470,6 +470,14 @@ In risposta a 4 segnalazioni di sicurezza GitHub Security Advisory (remediation 
 * **Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube):**
   Rimozione di traduttori legacy e regex (~90 righe potate in `app.js`), esposizione di `affected_items_i18n` e `suggested_eero_name_i18n` renderizzati nella lingua dell'utente e fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `run_pre_release_tests.py` se `DATA_DIR` non è definita.
 
+### 4.25 Hardening di Sicurezza Applicativa & Vulnerability Mitigation (v1.6.2)
+A seguito di un Vulnerability Assessment sistematico sul codice sorgente condotto secondo gli standard OWASP Top 10 e CWE, sono stati integrati i seguenti presidi di difesa in profondità:
+* **Chiusura Access Control (RBAC):** Protezione delle route operative `/api/system/update/trigger` (`action_manage_rules`), `/api/automations/digest` (lettura con `view_logs`, modifica con `action_manage_rules`), `/api/automations/notifications/test`, `/api/automations/alerts/read`, `/api/network/leds` e `/api/system/eero-news/refresh`.
+* **Rate Limiting Anti Brute-Force (`InMemoryRateLimiter`):** Modulo con sliding window a 60 secondi e blocco temporaneo di 5 minuti dopo 5 tentativi consecutivi errati, applicato sia al login locale (`/api/auth/local/login`) sia alle route OTP cloud eero (`/api/auth/login`, `/api/auth/verify`). Restituisce HTTP 429 Too Many Requests con header standard `Retry-After`.
+* **Mitigazione SSRF su DNS Manager (`is_safe_dns_url`):** Blocco proattivo di destinazioni verso indirizzi di link-local metadata cloud (`169.254.0.0/16`, `fe80::/10`) e hostname di metadata di istanze virtuali (`metadata.google.internal`, `instance-data`).
+* **Prevenzione XSS Client-Side:** Sanitizzazione degli schemi URL nei link markdown in `renderSimpleMarkdown()` (accettati solo `http://`, `https://`, `mailto:`, `/`, `#`; schemi pericolosi come `javascript:` vengono neutralizzati in `<span>` statici) ed escape HTML di sicurezza nel modulo narrativo di AI Diagnostic Summary.
+* **HTTP Security Headers & Cookie Secure Dinamico:** Middleware automatico in `main.py` per l'iniezione degli header difensivi OWASP (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`) e attivazione automatica del flag `Secure` sui cookie di sessione quando le richieste transitano su HTTPS o reverse proxy con terminazione TLS (`x-forwarded-proto == "https"`).
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)

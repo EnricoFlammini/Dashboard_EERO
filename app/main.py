@@ -134,6 +134,17 @@ def _is_cross_origin_write(request: Request) -> bool:
 
 
 @app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Aggiunge header HTTP di sicurezza difensivi raccomandati da OWASP."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    return response
+
+
+@app.middleware("http")
 async def block_cross_origin_writes(request: Request, call_next):
     """Rifiuta POST/PUT/PATCH/DELETE inviati da pagine di altri siti: le POST senza body non passano dal preflight CORS."""
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):

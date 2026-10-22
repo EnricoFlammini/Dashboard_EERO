@@ -762,6 +762,13 @@ gantt
 - [x] **Penalità Salute Dinamiche:** Aggiunto `affected_items_i18n` e `suggested_eero_name_i18n` per rendering nella lingua del visualizzatore.
 - [x] **Isolamento Sicuro Test:** Fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `run_pre_release_tests.py`.
 
+#### 8. 🛡️ Vulnerability Assessment & Security Hardening
+- [x] **Protezione Access Control (RBAC):** Protezione delle route operative sensibili `/api/system/update/trigger`, `/api/automations/digest`, `/api/automations/notifications/test`, `/api/automations/alerts/read`, `/api/network/leds` e `/api/system/eero-news/refresh`.
+- [x] **Sliding Window Rate Limiter:** Modulo in-memory anti brute-force per login locale e cloud (5 tentativi/min con blocco temporaneo di 5 minuti, HTTP 429 e header `Retry-After`).
+- [x] **Mitigazione SSRF su DNS Manager:** Blocco verso range cloud metadata (`169.254.0.0/16`, `fe80::/10`) e host riservati (`is_safe_dns_url`).
+- [x] **Sanitizzazione XSS Client-Side:** Blocco di schemi `javascript:` nei link markdown (`renderSimpleMarkdown`) ed escape HTML della narrativa dell'AI Summary in `index.html`.
+- [x] **Security Headers & Cookie Dinamico:** Iniezione automatica degli header difensivi OWASP (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`) e rilevamento dinamico del flag `Secure` su HTTPS.
+
 ---
 
 

@@ -190,7 +190,7 @@ async def reboot_single_eero(eero_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/eeros/{eero_id}/led")
+@router.post("/eeros/{eero_id}/led", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def toggle_eero_led(eero_id: str, payload: ToggleLEDRequest):
     """Accende o spegne il LED di un singolo nodo eero."""
     try:
@@ -201,7 +201,7 @@ async def toggle_eero_led(eero_id: str, payload: ToggleLEDRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/leds")
+@router.post("/leds", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def toggle_all_leds(payload: ToggleLEDRequest):
     """Accende o spegne contemporaneamente i LED di tutti i nodi eero."""
     try:

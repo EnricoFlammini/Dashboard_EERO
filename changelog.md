@@ -6,6 +6,21 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.2] - 2026-10-23
 
+### 🛡️ Vulnerability Assessment & Security Hardening
+* **🔒 Chiusura & Protezione Granulare Access Control (RBAC):**
+  * Protetta la route sensibile di riavvio container `/api/system/update/trigger` con controllo di autorizzazione RBAC (`action_manage_rules`).
+  * Aggiunte protezioni di autorizzazione e sessione su `/api/automations/digest`, `/api/automations/notifications/test`, `/api/automations/alerts/read`, `/api/network/leds` e `/api/system/eero-news/refresh`.
+* **🚫 Protezione Anti Brute-Force & Sliding Window Rate Limiting:**
+  * Introdotto un modulo leggero `InMemoryRateLimiter` a zero dipendenze per mitigare attacchi a dizionario e abusi su login locale (`/api/auth/local/login`) e login cloud eero (`/api/auth/login`, `/api/auth/verify`), applicando una soglia di 5 tentativi/minuto con blocco temporaneo (HTTP 429 Too Many Requests con header `Retry-After`).
+* **🌐 Mitigazione SSRF su DNS Manager:**
+  * Implementata la funzione `is_safe_dns_url()` in `dns_manager.py` che blocca in modo proattivo richieste verso indirizzi di link-local metadata cloud (`169.254.0.0/16`, `fe80::/10`) e hostname di metadata riservati.
+* **🛡️ Prevenzione Client-Side XSS:**
+  * Sanitizzazione rigorosa dello schema degli URL in `renderSimpleMarkdown()` (`app.js`), accettando esclusivamente protocolli sicuri (`http://`, `https://`, `mailto:`, `#`, `/`) e neutralizzando protocolli pericolosi come `javascript:`, `data:` o `vbscript:` in tag `<span>` inerti.
+  * Isolamento ed escape HTML dei testi dell'AI Diagnostic Summary (`narrative_it` / `narrative_en`) prima del rendering nel DOM.
+* **🔒 Header di Sicurezza HTTP & Flag Cookie Dinamico:**
+  * Aggiunto middleware in `main.py` per l'iniezione automatica dei security headers raccomandati da OWASP: `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy`.
+  * Rilevamento dinamico dell'ambiente HTTPS (anche dietro reverse proxy TLS) per abilitare automaticamente il flag `Secure` sui cookie di sessione.
+
 ### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
 * **💯 100% Parità Cataloghi Linguistici:**
   * Allineati completamente tutti i cataloghi di traduzione: 457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`.

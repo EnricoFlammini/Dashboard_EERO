@@ -29,6 +29,42 @@ def normalize_dns_url(url: str) -> str:
     return clean
 
 
+def is_safe_dns_url(url: str) -> Tuple[bool, str]:
+    """
+    Verifica che l'URL dell'istanza DNS sia sicuro e non punti a indirizzi riservati o cloud metadata (anti-SSRF).
+    Blocca tassativamente:
+      - 169.254.0.0/16 (IPv4 link-local / Cloud Instance Metadata Services come AWS/GCP/Azure)
+      - fe80::/10 (IPv6 link-local)
+      - Host cloud metadata riservati
+    """
+    if not url:
+        return False, "URL vuoto o non specificato"
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        hostname = parsed.hostname
+        if not hostname:
+            return False, "Hostname mancante o non valido"
+
+        # Controlla se hostname è un indirizzo IP numerico
+        try:
+            ip_obj = ipaddress.ip_address(hostname.strip("[]"))
+            if ip_obj.is_link_local:
+                return False, f"Indirizzo link-local / metadata riservato non consentito ({ip_obj})"
+            if ip_obj.is_multicast:
+                return False, f"Indirizzo multicast non consentito ({ip_obj})"
+            if ip_obj.is_unspecified:
+                return False, f"Indirizzo non specificato non consentito ({ip_obj})"
+        except ValueError:
+            # È un hostname/dominio
+            lower_host = hostname.lower()
+            if lower_host in ("metadata.google.internal", "instance-data", "metadata"):
+                return False, f"Host cloud metadata riservato non consentito ({hostname})"
+
+        return True, ""
+    except Exception as e:
+        return False, f"URL non analizzabile: {e}"
+
+
 def sanitize_dns_hostname(name: str, fallback: str = "device") -> str:
     """Sanitizza un nome apparato in un hostname RFC 1123 valido per DNS (lettere a-z, numeri, trattini).
 
@@ -354,6 +390,14 @@ class DNSManager:
 
     async def test_instance(self, instance_data: Dict[str, Any]) -> Dict[str, Any]:
         """Testa la connessione e le credenziali verso una specifica istanza DNS."""
+        url = normalize_dns_url(instance_data.get("url", ""))
+        if not url:
+            return {"success": False, "message": tr("dns.url_missing")}
+
+        is_safe, error_reason = is_safe_dns_url(url)
+        if not is_safe:
+            return {"success": False, "message": f"URL non consentito (Anti-SSRF): {error_reason}"}
+
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
             engine = instance_data.get("engine", "adguard")
@@ -363,15 +407,12 @@ class DNSManager:
                 "success": True,
                 "status_code": 200,
                 "engine": engine,
-                "normalized_url": normalize_dns_url(instance_data.get("url", "")),
+                "normalized_url": url,
                 "message": tr("dns.demo_test_success", engine=engine_name, count=18),
                 "existing_clients_count": 18
             }
 
         engine = str(instance_data.get("engine") or "adguard").strip().lower()
-        url = normalize_dns_url(instance_data.get("url", ""))
-        if not url:
-            return {"success": False, "message": tr("dns.url_missing")}
 
         # Se la password o il token non sono passati, cercali nei setting salvati, ma SOLO se la richiesta
         # punta alla stessa istanza registrata (stesso id, URL, motore e account): un URL o un account

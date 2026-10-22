@@ -55,7 +55,7 @@ async def get_runtime():
     return {"status": "success", **get_runtime_info()}
 
 
-@router.post("/update/trigger")
+@router.post("/update/trigger", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def trigger_update():
     """Avvia l'aggiornamento automatico del container Docker tramite Docker Socket o Watchtower."""
     try:
@@ -78,7 +78,7 @@ async def get_eero_news(force: bool = Query(False, description="Forza il ricalco
         raise HTTPException(status_code=500, detail=tr("system.news_fetch_failed", error=str(e)))
 
 
-@router.post("/eero-news/refresh")
+@router.post("/eero-news/refresh", dependencies=[Depends(require_permission("view_topology"))])
 async def refresh_eero_news():
     """Forza il controllo e re-scraping immediato delle release notes eeroOS da Zendesk API."""
     try:

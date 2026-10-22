@@ -6552,7 +6552,7 @@
               <p class="font-medium" x-text="currentLanguage === 'it' ? healthDetails?.ai_summary?.overview_it : healthDetails?.ai_summary?.overview_en"></p>
               <template x-if="healthDetails?.ai_summary && (healthDetails.ai_summary.narrative_it || healthDetails.ai_summary.narrative_en)">
                 <div class="p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-[11px] space-y-1">
-                  <div x-html="(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en) ? (currentLanguage === 'it' ? healthDetails.ai_summary.narrative_it : healthDetails.ai_summary.narrative_en).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') : ''"></div>
+                  <div x-html="renderSimpleMarkdown(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en)"></div>
                 </div>
               </template>
             </div>
