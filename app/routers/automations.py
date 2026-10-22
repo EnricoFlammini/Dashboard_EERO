@@ -53,6 +53,7 @@ class MQTTConfigRequest(BaseModel):
     password: Optional[str] = None
     base_topic: Optional[str] = None
     ha_discovery_prefix: Optional[str] = None
+    discovery_prefix: Optional[str] = None
     discovery_enabled: Optional[bool] = None
     publish_interval: Optional[int] = None
 
@@ -332,7 +333,8 @@ async def test_notification_channels(payload: Optional[NotificationTestRequest] 
 @router.get("/mqtt/config")
 async def get_mqtt_configuration():
     """Restituisce la configurazione MQTT e lo stato di connessione."""
-    return await mqtt_service.get_config()
+    cfg = await mqtt_service.get_config()
+    return {"status": "success", "config": cfg, **cfg}
 
 
 @router.post("/mqtt/config")

@@ -3502,13 +3502,14 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/mqtt/config');
         const json = await res.json();
-        if (json.status === 'success' && json.config) {
+        const cfg = (json && typeof json === 'object') ? (json.config || json) : null;
+        if (cfg && typeof cfg === 'object') {
           this.mqttSettings = {
             ...this.mqttSettings,
-            ...json.config,
-            connected: Boolean(json.config.connected),
-            available: Boolean(json.config.available),
-            stats: json.config.stats || {
+            ...cfg,
+            connected: Boolean(cfg.connected),
+            available: Boolean(cfg.available),
+            stats: cfg.stats || {
               messages_published: 0,
               last_published: null,
               last_error: null

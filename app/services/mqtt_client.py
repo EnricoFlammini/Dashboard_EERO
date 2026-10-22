@@ -184,8 +184,9 @@ class MQTTService:
             self._base_topic = str(config_data["base_topic"]).strip().strip("/")
             await db_service.set_setting("mqtt_base_topic", self._base_topic)
 
-        if "ha_discovery_prefix" in config_data and config_data["ha_discovery_prefix"]:
-            self._ha_prefix = str(config_data["ha_discovery_prefix"]).strip().strip("/")
+        ha_prefix = config_data.get("ha_discovery_prefix") or config_data.get("discovery_prefix")
+        if ha_prefix:
+            self._ha_prefix = str(ha_prefix).strip().strip("/")
             await db_service.set_setting("mqtt_ha_discovery_prefix", self._ha_prefix)
 
         if "discovery_enabled" in config_data:
