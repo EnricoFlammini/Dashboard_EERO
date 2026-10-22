@@ -2,6 +2,7 @@ import asyncio
 import ipaddress
 import json
 import logging
+import re
 import ssl
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -25,6 +26,23 @@ def normalize_dns_url(url: str) -> str:
     clean = clean.rstrip("/")
     if not clean.startswith("http://") and not clean.startswith("https://"):
         clean = f"http://{clean}"
+    return clean
+
+
+def sanitize_dns_hostname(name: str, fallback: str = "device") -> str:
+    """Sanitizza un nome apparato in un hostname RFC 1123 valido per DNS (lettere a-z, numeri, trattini).
+
+    Rimuove parentesi, caratteri speciali, spazi e simboli che causano il fallimento di Pi-hole v6
+    e Technitium, garantendo che le etichette DNS non inizino né finiscano con trattini.
+    """
+    clean = (name or "").lower().strip()
+    clean = clean.replace(" ", "-").replace("_", "-")
+    clean = re.sub(r"[^a-z0-9-]", "", clean)
+    clean = re.sub(r"-+", "-", clean).strip("-")
+    clean = clean[:63].rstrip("-")
+    if not clean:
+        fb_clean = re.sub(r"[^a-z0-9-]", "", fallback.lower().replace(" ", "-").replace("_", "-")).strip("-")
+        clean = fb_clean[:63].rstrip("-") or "device"
     return clean
 
 
@@ -623,9 +641,14 @@ class DNSManager:
                 used_names[base_name] = 1
                 unique_name = base_name
 
+            mac_suffix = mac[-5:].replace(":", "").lower() if mac else "node"
+            ip_suffix = ip.split(".")[-1] if (ip and "." in ip) else mac_suffix
+            fallback_host = f"eero-{ip_suffix}"
+            clean_host = sanitize_dns_hostname(base_name, fallback=fallback_host)
+
             prepared.append({
                 "name": unique_name,
-                "hostname": base_name.lower().replace(" ", "-").replace("_", "-"),
+                "hostname": clean_host,
                 "ip": ip if (ip and "." in ip and not ip.startswith("169.254.")) else None,
                 "mac": mac.upper() if mac else None,
                 "ids": ids,
@@ -914,7 +937,8 @@ class DNSManager:
                         hostname = client_item.get("hostname")
                         if not ip or not hostname:
                             continue
-                        target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+                        safe_host = sanitize_dns_hostname(hostname, fallback=f"device-{ip.split('.')[-1] if '.' in ip else 'client'}")
+                        target_name = f"{safe_host}.{raw_zone}" if raw_zone else safe_host
                         pair_key = (ip.lower().strip(), target_name.lower().strip())
                         if pair_key not in seen_pairs:
                             seen_pairs.add(pair_key)
@@ -943,6 +967,10 @@ class DNSManager:
                             "message": tr("dns.pihole_v6_sync_ok", count=synced, zone_label=zone_label)
                         }
 
+                    logger.warning(
+                        f"Pi-hole v6 PATCH /api/config returned HTTP {patch_res.status_code}: {patch_res.text[:200]}"
+                    )
+
                     # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
                     # ed eventuale DELETE dei record obsoleti identificati se prune_stale
                     if prune_stale:
@@ -960,12 +988,16 @@ class DNSManager:
                         hostname = client_item.get("hostname")
                         if not ip or not hostname:
                             continue
-                        target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+                        safe_host = sanitize_dns_hostname(hostname, fallback=f"device-{ip.split('.')[-1] if '.' in ip else 'client'}")
+                        target_name = f"{safe_host}.{raw_zone}" if raw_zone else safe_host
                         val_quoted = urllib.parse.quote(f"{ip} {target_name}")
                         put_res = await client.put(f"{url}/api/config/dns/hosts/{val_quoted}", headers=v6_headers)
                         if put_res.status_code in (200, 201, 204) or (put_res.status_code == 400 and "already present" in put_res.text.lower()):
                             put_synced += 1
                         else:
+                            logger.warning(
+                                f"Pi-hole v6 PUT host '{ip} {target_name}' failed ({put_res.status_code}): {put_res.text[:150]}"
+                            )
                             put_failed += 1
 
                     return {
