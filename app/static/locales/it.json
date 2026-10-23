@@ -652,7 +652,17 @@
     "banner_update_title": "Nuova Versione Disponibile: v{version}",
     "banner_update_desc": "È disponibile un aggiornamento dell'immagine Docker. Puoi avviarlo con 1-click se il socket Docker è montato o tramite comando manuale.",
     "updating_short": "Aggiornamento...",
-    "update_now_short": "Aggiorna Ora (1-Click)"
+    "update_now_short": "Aggiorna Ora (1-Click)",
+    "condensed_changelog_title": "Novità Principali & Changelog Ridotto:",
+    "condensed_changelog_subtitle": "Punti salienti della nuova versione pronti da consultare",
+    "prompt_title": "Nuovo Aggiornamento Disponibile: v{version}",
+    "prompt_desc": "È disponibile una nuova versione della dashboard con importanti novità e miglioramenti. Consulta i punti salienti per decidere se procedere con l'aggiornamento.",
+    "prompt_proceed": "⚡ Procedi con l'aggiornamento",
+    "prompt_view_details": "Note Complete & Dettagli",
+    "prompt_later": "Ricordamelo più tardi",
+    "show_full_notes": "Mostra tutte le note di rilascio complete",
+    "hide_full_notes": "Nascondi note complete",
+    "no_highlights": "Nessun punto saliente specificato per questa release."
   },
   "toasts": {
     "saved": "Salvato",

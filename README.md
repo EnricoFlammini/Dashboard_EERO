@@ -50,6 +50,10 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🚀 Condensed Changelog & Interactive Update Decision Prompt (v1.6.2):**
+  - **Dynamic Highlight Extraction:** Automated synthesis of local `changelog.md` or remote Docker Hub / GitHub Release notes into 4–8 clean, noise-free highlights via `extract_condensed_changelog` and dedicated REST endpoint `GET /api/system/update/changelog`.
+  - **Actionable Update Proposal Banner:** An interactive Fluent card appears when a new version is detected (`v1.6.2 → vX.Y.Z`), showing key highlights with 3 direct options: *⚡ Proceed with Update* (1-click auto-install or copyable CLI command), *Full Release Notes & Details*, and *Remind me later* (session-based deferral via `sessionStorage`).
+  - **Enhanced Update Modal & Settings:** Prominent condensed changelog display with smooth expandable full release notes toggle across both the update modal and the Settings > Updates tab.
 * **🌐 Complete Frontend & Backend Localization Parity & i18n Architecture (v1.6.2 - PR #79, Issue #82):**
   - **100% Translation Parity:** Full catalog parity across backend (457 keys) and frontend (1051 keys in `en.json` and `it.json`) with automated parity audit scripts.
   - **Architectural Cleanup:** Pruned ~90 lines of dead regex-based health translators, dynamic viewer-language rendering for Network Health penalties (`affected_items_i18n`), and automatic test suite isolation via `tempfile.mkdtemp()`.
@@ -438,6 +442,10 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🚀 Changelog Ridotto Dinamico & Banner di Proposta Aggiornamento (v1.6.2):**
+  - **Estrazione Punti Salienti Intelligente:** Sintesi automatica delle note di rilascio locali (`changelog.md`) o remote (Docker Hub / GitHub Releases) in 4–8 punti salienti immediati tramite `extract_condensed_changelog` ed endpoint REST dedicato `GET /api/system/update/changelog`.
+  - **Banner Decisionale Interattivo:** Comparsa automatica all'avvio/refresh quando viene rilevato un aggiornamento (`v1.6.2 → vX.Y.Z`), con anteprima delle novità e 3 azioni rapide: *⚡ Procedi con l'aggiornamento* (1-click auto-install o comando CLI), *Note Complete & Dettagli* e *Ricordamelo più tardi* (posticipo sessione via `sessionStorage`).
+  - **Modale e Impostazioni Arricchiti:** Visualizzazione prioritaria delle novità principali con toggle fluido per espandere le note integrali sia nel modale che nella scheda Impostazioni > Aggiornamenti.
 * **🌐 Parità Completa Traduzioni Frontend & Backend e Pulizia Architetturale (v1.6.2 - PR #79, Issue #82):**
   - **Parità Linguistica al 100%:** Allineamento totale di tutti i cataloghi (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`) con script di verifica automatica in CI/CD.
   - **Refactoring Architetturale i18n:** Eliminazione di ~90 righe di traduttori legacy e regex, rendering dinamico delle penalità di salute nella lingua del visualizzatore (`affected_items_i18n`) e isolamento sicuro della suite di test con cartella temporanea (`tempfile.mkdtemp()`).

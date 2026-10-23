@@ -49,6 +49,27 @@ async def check_for_updates(force: bool = Query(False, description="Forza il con
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/update/changelog")
+async def get_update_changelog(version: Optional[str] = Query(None, description="Versione specifica o ultima")):
+    """Restituisce le note di rilascio e il changelog ridotto per una versione o per l'aggiornamento disponibile."""
+    try:
+        from app.services.updater import extract_condensed_changelog, extract_release_notes_from_changelog
+        info = await updater_service.check_for_updates(force=False)
+        target_version = version or info.get("latest_version") or settings.app_version
+        raw_notes = extract_release_notes_from_changelog(target_version)
+        if not raw_notes and target_version == info.get("latest_version"):
+            raw_notes = info.get("release_notes", "")
+        condensed = extract_condensed_changelog(target_version, raw_notes=raw_notes)
+        return {
+            "status": "success",
+            "version": target_version,
+            "release_notes": raw_notes,
+            "condensed_changelog": condensed
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/runtime", dependencies=[Depends(require_permission("view_logs"))])
 async def get_runtime():
     """Reports where this instance runs (local, Docker, Kubernetes) and its source branch/commit."""

@@ -75,7 +75,7 @@ def extract_release_notes_from_changelog(version: str) -> str:
         Path("changelog.md")
     ]
     clean = version.lstrip("vV")
-    pattern = rf"##\s*\[?v?{re.escape(clean)}\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##|\Z)"
+    pattern = rf"##\s*\[?v?{re.escape(clean)}\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##(?!\#)|\Z)"
     for p in candidates:
         if p.exists():
             try:
@@ -88,6 +88,55 @@ def extract_release_notes_from_changelog(version: str) -> str:
     return ""
 
 
+def extract_condensed_changelog(version: str, raw_notes: str = "") -> List[str]:
+    """
+    Estrae un changelog ridotto (punti salienti sintetici) per la versione specificata.
+    Analizza prima changelog.md; se non disponibile, analizza raw_notes (es. da GitHub Release).
+    Restituisce una lista di 3-8 punti salienti concisi, puliti e immediatamente leggibili.
+    """
+    notes_text = extract_release_notes_from_changelog(version)
+    if not notes_text and raw_notes:
+        notes_text = raw_notes.strip()
+
+    if not notes_text:
+        return []
+
+    highlights: List[str] = []
+
+    # 1. Cerca sezioni '### Titolo'
+    section_headers = re.findall(r'^[ \t]*###[ \t]+([^\r\n]+)', notes_text, flags=re.MULTILINE)
+    if len(section_headers) >= 1:
+        for header in section_headers:
+            clean = header.strip()
+            # Rimuove riferimenti Issue/PR/GHSA tra parentesi (es. '(PR #79 - @user)')
+            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
+            # Rimuove link markdown
+            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            if clean and clean not in highlights:
+                highlights.append(clean)
+                if len(highlights) >= 8:
+                    break
+
+    # 2. Se non ci sono sezioni '###' o sono meno di 2, cerca punti elenco primari '* **Titolo:**' o '- Titolo'
+    if len(highlights) < 2:
+        bullet_matches = re.findall(r'^[ \t]*[*+-][ \t]+(?:\*\*)?([^*\r\n]+)(?:\*\*)?', notes_text, flags=re.MULTILINE)
+        for b in bullet_matches:
+            clean = b.strip().rstrip(":")
+            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
+            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            if clean and clean not in highlights and not clean.startswith("http"):
+                highlights.append(clean)
+                if len(highlights) >= 8:
+                    break
+
+    # 3. Se ancora vuoto, prendi i primi paragrafi significativi
+    if not highlights:
+        lines = [line.strip() for line in notes_text.splitlines() if line.strip() and not line.strip().startswith("#")]
+        highlights = lines[:4]
+
+    return highlights
+
+
 class UpdaterService:
     """Gestisce il rilevamento e l'installazione automatica delle nuove release dell'applicazione."""
 
@@ -95,6 +144,16 @@ class UpdaterService:
         self._cached_update_info: Optional[Dict[str, Any]] = None
         self._last_check_time: Optional[datetime] = None
         self._is_updating: bool = False
+
+    @staticmethod
+    def extract_condensed_changelog(version: str, raw_notes: str = "") -> List[str]:
+        """Estrae i punti salienti del changelog per la versione indicata."""
+        return extract_condensed_changelog(version, raw_notes=raw_notes)
+
+    @staticmethod
+    def extract_release_notes(version: str) -> str:
+        """Estrae le note di rilascio integrali per la versione indicata."""
+        return extract_release_notes_from_changelog(version)
 
     @property
     def is_docker_socket_available(self) -> bool:
@@ -204,6 +263,16 @@ class UpdaterService:
         watchtower = self.is_watchtower_configured
         can_auto = bool(docker_sock or watchtower)
 
+        # Estrazione del changelog ridotto (punti salienti)
+        condensed = extract_condensed_changelog(latest_ver, raw_notes=release_notes)
+        if not condensed and latest_ver != current_ver:
+            # Fallback a release notes locali se disponibili
+            condensed = extract_condensed_changelog(current_ver, raw_notes=release_notes)
+        if not condensed and update_avail:
+            condensed = [
+                f"Release v{latest_full_ver} disponibile con miglioramenti di prestazioni, stabilità e sicurezza."
+            ]
+
         result = {
             "status": "success",
             "current_version": current_ver,
@@ -215,6 +284,7 @@ class UpdaterService:
             "update_available": update_avail,
             "release_title": release_title,
             "release_notes": release_notes,
+            "condensed_changelog": condensed,
             "published_at": published_at,
             "release_url": html_url,
             "docker_image": f"{DOCKER_IMAGE}:latest",

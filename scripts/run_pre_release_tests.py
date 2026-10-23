@@ -5430,6 +5430,70 @@ async def run_all_tests():
         leds_route = next((r for r in network.router.routes if r.path == "/api/network/leds"), None)
         runner.assert_true(leds_route is not None and len(leds_route.dependencies) > 0, "Route POST /api/network/leds protetta da dependency RBAC")
 
+        # -----------------------------------------------------------------
+        # 37. TEST CONDENSED CHANGELOG & UPDATE PROPOSAL SYSTEM (v1.6.2)
+        # -----------------------------------------------------------------
+        print("\n🚀 [37/37] TEST CONDENSED CHANGELOG & UPDATE PROPOSAL SYSTEM (v1.6.2)")
+
+        # 1. Test estrazione changelog ridotto (extract_condensed_changelog)
+        from app.services.updater import extract_condensed_changelog, extract_release_notes_from_changelog, updater_service
+        notes_162 = extract_release_notes_from_changelog("1.6.2")
+        runner.assert_true(len(notes_162) > 0, "extract_release_notes_from_changelog estrae le note per 1.6.2 da changelog.md")
+        runner.assert_true("Vulnerability Assessment" in notes_162, "Note di rilascio 1.6.2 contengono la sezione Vulnerability Assessment")
+
+        condensed_162 = extract_condensed_changelog("1.6.2")
+        runner.assert_true(len(condensed_162) >= 3, f"extract_condensed_changelog estrae almeno 3 punti salienti (estratti: {len(condensed_162)})")
+        runner.assert_true(any("Vulnerability Assessment" in h for h in condensed_162), "Punto saliente 'Vulnerability Assessment' presente")
+        runner.assert_true(any("Parità Completa Traduzioni" in h for h in condensed_162), "Punto saliente 'Parità Completa Traduzioni' presente")
+        runner.assert_true(all("PR #" not in h and "@" not in h for h in condensed_162), "Tag PR/Issue/User rimossi dai titoli sintetici")
+
+        # Fallback su raw_notes con elenco puntato
+        raw_mock = "## v2.0.0\n* **🚀 Feature A:** Descrizione\n* **⚡ Feature B:** Altra descrizione\n* **🛡️ Feature C:** Sicurezza"
+        condensed_mock = extract_condensed_changelog("2.0.0", raw_notes=raw_mock)
+        runner.assert_true(len(condensed_mock) == 3, f"extract_condensed_changelog su raw_notes puntate estrae 3 punti (estratti: {len(condensed_mock)})")
+
+        # Accesso via metodo updater_service
+        condensed_obj = updater_service.extract_condensed_changelog("1.6.2")
+        runner.assert_true(len(condensed_obj) == len(condensed_162), "updater_service.extract_condensed_changelog allineato alla funzione standalone")
+
+        # 2. Endpoint GET /api/system/update/changelog
+        res_changelog = await client.get("/api/system/update/changelog?version=1.6.2")
+        runner.assert_true(res_changelog.status_code == 200, "GET /api/system/update/changelog risponde HTTP 200")
+        changelog_json = res_changelog.json()
+        runner.assert_true(changelog_json.get("status") == "success", "Response status è success")
+        runner.assert_true(changelog_json.get("version") == "1.6.2", "Response version è 1.6.2")
+        runner.assert_true(len(changelog_json.get("condensed_changelog", [])) >= 3, "Endpoint restituisce almeno 3 punti salienti condensed_changelog")
+        runner.assert_true(len(changelog_json.get("release_notes", "")) > 0, "Endpoint restituisce release_notes integrali")
+
+        # 3. Verifica parità chiavi i18n per prompt & condensed changelog
+        it_upd = it_locale.get("update_modal", {})
+        en_upd = en_locale.get("update_modal", {})
+        for req_k in [
+            "condensed_changelog_title",
+            "condensed_changelog_subtitle",
+            "prompt_title",
+            "prompt_desc",
+            "prompt_proceed",
+            "prompt_view_details",
+            "prompt_later",
+            "show_full_notes",
+            "hide_full_notes",
+            "no_highlights"
+        ]:
+            runner.assert_true(req_k in it_upd, f"Chiave '{req_k}' presente in it.json under update_modal")
+            runner.assert_true(req_k in en_upd, f"Chiave '{req_k}' presente in en.json under update_modal")
+
+        # 4. Verifica binding Frontend (app.js e index.html)
+        runner.assert_true("condensed_changelog: []" in app_js_text, "app.js include condensed_changelog nello state updateInfo")
+        runner.assert_true("showUpdatePrompt" in app_js_text, "app.js gestisce flag showUpdatePrompt")
+        runner.assert_true("dismissUpdatePrompt" in app_js_text, "app.js implementa dismissUpdatePrompt")
+        runner.assert_true("showFullReleaseNotes" in app_js_text, "app.js gestisce toggle showFullReleaseNotes")
+
+        runner.assert_true("updateInfo.condensed_changelog" in index_html_text, "index.html itera su updateInfo.condensed_changelog")
+        runner.assert_true("showUpdatePrompt" in index_html_text, "index.html condiziona il banner di prompt a showUpdatePrompt")
+        runner.assert_true("proceedUpdateFromPrompt" in index_html_text, "index.html collega il pulsante procedi a proceedUpdateFromPrompt")
+        runner.assert_true("t('update_modal.condensed_changelog_title')" in index_html_text, "index.html usa stringa i18n per titolo changelog ridotto")
+
         runner.print_summary()
 
 

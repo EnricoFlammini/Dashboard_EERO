@@ -543,6 +543,7 @@ document.addEventListener('alpine:init', () => {
       latest_full_version: '1.6.2 build 1',
       release_title: '',
       release_notes: '',
+      condensed_changelog: [],
       docker_socket_available: false,
       watchtower_configured: false,
       can_auto_install: false,
@@ -551,6 +552,8 @@ document.addEventListener('alpine:init', () => {
     isCheckingUpdate: false,
     isTriggeringUpdate: false,
     showUpdateModal: false,
+    showUpdatePrompt: false,
+    showFullReleaseNotes: false,
     updateProgressMsg: '',
     copiedCliCommand: false,
 
@@ -2599,12 +2602,37 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.updateInfo = data;
+          if (data && data.update_available) {
+            const versionId = data.latest_full_version || data.latest_version || 'new';
+            const dismissed = sessionStorage.getItem('dismissed_update_' + versionId);
+            this.showUpdatePrompt = !dismissed;
+          } else {
+            this.showUpdatePrompt = false;
+          }
         }
       } catch (err) {
         console.warn("Update check failed:", err);
       } finally {
         this.isCheckingUpdate = false;
       }
+    },
+
+    dismissUpdatePrompt(temporary = true) {
+      this.showUpdatePrompt = false;
+      if (temporary && this.updateInfo) {
+        const versionId = this.updateInfo.latest_full_version || this.updateInfo.latest_version || 'new';
+        try {
+          sessionStorage.setItem('dismissed_update_' + versionId, 'true');
+        } catch (e) {}
+      }
+    },
+
+    proceedUpdateFromPrompt() {
+      this.openUpdateModal(false, false);
+    },
+
+    toggleFullReleaseNotes() {
+      this.showFullReleaseNotes = !this.showFullReleaseNotes;
     },
 
     async fetchRuntimeInfo() {
@@ -2624,9 +2652,12 @@ document.addEventListener('alpine:init', () => {
       return env ? this.t(`settings_updates.env_${env}`) : '';
     },
 
-    openUpdateModal(force = false) {
+    openUpdateModal(force = false, showFull = false) {
       this.showUpdateModal = true;
       this.copiedCliCommand = false;
+      if (showFull !== undefined) {
+        this.showFullReleaseNotes = !!showFull;
+      }
       if (force || !this.updateInfo.latest_version) {
         this.checkForUpdates(true);
       }

@@ -6,6 +6,23 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.6.2] - 2026-10-23
 
+### 🚀 Proposta Intelligente Aggiornamenti con Changelog Ridotto & Decisione Utente
+* **✨ Changelog Ridotto Dinamico (`extract_condensed_changelog`):**
+  * Analisi e sintesi automatica delle note di rilascio locali (`changelog.md`) o remote (GitHub Releases / Docker Hub) per estrarre 4–8 punti salienti immediati, privi di marcature rumorose o tag Issue/PR.
+  * Esposto sia come funzione standalone di modulo che come metodo statico su `UpdaterService`.
+* **🌐 Nuovo Endpoint REST (`GET /api/system/update/changelog`):**
+  * Restituisce versione bersaglio, changelog ridotto sintetico e note di rilascio integrali per qualsiasi release o per l'aggiornamento pendente.
+* **⚡ Banner Reattivo di Proposta Aggiornamento & Decisione Utente:**
+  * Banner Fluent in rilievo con badge di transizione versione (`v1.6.2 → vX.Y.Z`) e visualizzazione sintetica delle novità rilevanti.
+  * Tre opzioni operative istantanee:
+    1. **⚡ Procedi con l'aggiornamento:** trigger diretto 1-click se il socket Docker è presente o apertura facilitata del modale con comando CLI pronto alla copia.
+    2. **Note Complete & Dettagli:** consultazione approfondita delle note di rilascio dettagliate.
+    3. **Ricordamelo più tardi:** posticipo della notifica per la sessione utente corrente tramite `sessionStorage`.
+* **📑 Modale Aggiornamenti & Scheda Impostazioni Potenziati:**
+  * Visualizzazione prioritaria dei punti salienti del changelog ridotto con toggle fluido ("Mostra tutte le note complete" / "Nascondi note complete") sia nel modale `#updateModal` che nella scheda Aggiornamenti.
+* **🛡️ Suite di Test Pre-Rilascio Estesa (Modulo 37):**
+  * 41 nuove asserzioni per la validazione di regex, estrazione dei punti salienti, endpoint REST, parità al 100% delle chiavi i18n (`it.json`/`en.json`) e integrità dei binding Alpine.js (1536 test totali superati al 100%).
+
 ### 🛡️ Vulnerability Assessment & Security Hardening
 * **🔒 Chiusura & Protezione Granulare Access Control (RBAC):**
   * Protetta la route sensibile di riavvio container `/api/system/update/trigger` con controllo di autorizzazione RBAC (`action_manage_rules`).

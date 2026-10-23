@@ -652,7 +652,17 @@
     "banner_update_title": "New Version Available: v{version}",
     "banner_update_desc": "A new Docker image is ready. Install it with 1-click if the Docker socket is mounted, or with the manual command below.",
     "updating_short": "Updating...",
-    "update_now_short": "Update Now (1-Click)"
+    "update_now_short": "Update Now (1-Click)",
+    "condensed_changelog_title": "Key Highlights & Condensed Changelog:",
+    "condensed_changelog_subtitle": "Summary of what's new in this release at a glance",
+    "prompt_title": "New Update Available: v{version}",
+    "prompt_desc": "A new version of the dashboard is available with key improvements and new features. Review the highlights below to decide whether to update now.",
+    "prompt_proceed": "⚡ Proceed with Update",
+    "prompt_view_details": "Full Release Notes & Details",
+    "prompt_later": "Remind me later",
+    "show_full_notes": "Show full release notes",
+    "hide_full_notes": "Hide full release notes",
+    "no_highlights": "No key highlights specified for this release."
   },
   "toasts": {
     "saved": "Saved",

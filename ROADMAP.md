@@ -14,7 +14,8 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
-| **v1.6.2** | 🌐 **i18n Parity, 🛡️ Pi-hole v6 RFC 1123, ⚙️ MQTT Save, 🦊 Firefox Fix, 🔔 Webhooks & 🎨 UI Polish** | Parità completa traduzioni backend/frontend (PR #79, Issue #82), sanificazione hostname RFC 1123 e rimozione 404 (Issue #83), caricamento resiliente MQTT (Issue #81), fix rendering tabelle Firefox (Issue #80), serializzazione webhook per Home Assistant (Issue #85), 11 rifiniture UI/UX e tooltip nomi troncati (Issue #84). |
+| **v1.6.2** | 🚀 **Changelog Ridotto & Auto-Update Prompt, 🌐 i18n Parity, 🛡️ Pi-hole v6 RFC 1123, ⚙️ MQTT Save, 🦊 Firefox Fix, 🔔 Webhooks & 🎨 UI Polish** | Proposta intelligente aggiornamenti con changelog ridotto e opzioni decisionali, parità completa traduzioni backend/frontend (PR #79, Issue #82), sanificazione hostname RFC 1123 e rimozione 404 (Issue #83), caricamento resiliente MQTT (Issue #81), fix rendering tabelle Firefox (Issue #80), serializzazione webhook per Home Assistant (Issue #85), 11 rifiniture UI/UX e tooltip nomi troncati (Issue #84). |
+| **v1.7.0** | 🚀 **Amazon OAuth, 🤖 eero AI Chatbot, 📶 Mesh Placement, 🛡️ Guardian VPN, 📱 Mobile Onboarding & 🌍 European i18n (7 Nuove Lingue)** | Autenticazione nativa Amazon (OAuth2/PKCE), Integrazione assistente AI streaming eero Cloud, Diagnostica Placement test nodi mesh, Stato benefit & slot Guardian VPN, Flussi di configurazione e onboarding 1:1 (creazione rete, aggiunta nodi per seriale, gestione inviti), Espansione multilingua europea a 7 nuove lingue (Francese, Spagnolo, Tedesco, Olandese, Portoghese, Polacco, Greco). |
 
 ---
 
@@ -56,11 +57,17 @@ gantt
     Device Sort by First Seen & New Badge (Issue #60) :done, v1_6_recent, after v1_6_assets, 2d
     Reverse NDP & AdGuard ULA Enrichment (Issue #57)  :done, v1_6_ndp, after v1_6_recent, 2d
     section v1.6.1 - Columns, MQTT, Security, Auth & Deploy
-    Selettore Colonne Tabella Dispositivi (Issue #60) :active, v1_61_cols, 2026-10-10, 2d
-    Pannello Visuale Configurazione MQTT & HA Discovery: v1_61_mqtt, after v1_61_cols, 2d
-    Hardening Immagine Docker & Mitigazione CVE Scout  : v1_61_sec, after v1_61_mqtt, 2d
-    Gestione Sessioni e Opzione 'Ricordami' Auth       : v1_61_auth, after v1_61_sec, 2d
+    Selettore Colonne Tabella Dispositivi (Issue #60) :done, v1_61_cols, 2026-10-10, 2d
+    Pannello Visuale Configurazione MQTT & HA Discovery:done, v1_61_mqtt, after v1_61_cols, 2d
+    Hardening Immagine Docker & Mitigazione CVE Scout  :done, v1_61_sec, after v1_61_mqtt, 2d
+    Gestione Sessioni e Opzione 'Ricordami' Auth       :done, v1_61_auth, after v1_61_sec, 2d
     Template Deploy Synology DSM 7.2 (PR #66)          :done, v1_61_syno, 2026-10-10, 1d
+    section v1.7.0 - Mobile Parity, Amazon Auth & European i18n
+    Amazon OAuth2 / PKCE Login Flow                   : v1_7_auth, 2026-10-25, 4d
+    eero Cloud AI Streaming Assistant                 : v1_7_chat, after v1_7_auth, 3d
+    Mesh Node Placement Test & Guardian VPN Entitlements: v1_7_diag, after v1_7_chat, 2d
+    Mobile Onboarding 1:1 (Create Net, Serial Claim)  : v1_7_onboard, after v1_7_diag, 4d
+    European i18n (FR, ES, DE, NL, PT, PL, EL)        : v1_7_i18n, after v1_7_onboard, 4d
 ```
 
 ---
@@ -769,8 +776,66 @@ gantt
 - [x] **Sanitizzazione XSS Client-Side:** Blocco di schemi `javascript:` nei link markdown (`renderSimpleMarkdown`) ed escape HTML della narrativa dell'AI Summary in `index.html`.
 - [x] **Security Headers & Cookie Dinamico:** Iniezione automatica degli header difensivi OWASP (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`) e rilevamento dinamico del flag `Secure` su HTTPS.
 
+#### 9. 🚀 Sistema di Proposta Aggiornamento con Changelog Ridotto & Decisione Utente
+- [x] **Estrazione Changelog Ridotto (`extract_condensed_changelog`):** Sintesi automatica delle note di rilascio locali o remote in 4–8 punti salienti puliti ed esaustivi, rimozione di tag Issue/PR e markdown rumoroso.
+- [x] **Endpoint Dedicato (`GET /api/system/update/changelog`):** Endpoint pubblico per l'interrogazione mirata di changelog ridotto e note complete per qualsiasi versione.
+- [x] **Banner Reattivo di Proposta & Decisione Utente:** Banner Fluent in rilievo con badge di transizione versione (`v1.6.2 → vX.Y.Z`), sintesi delle novità e 3 azioni: "Procedi con l'aggiornamento" (1-click trigger / copia CLI), "Note Complete & Dettagli" e "Ricordamelo più tardi" (deferral in `sessionStorage`).
+- [x] **Integrazione Modale e Impostazioni:** Changelog ridotto con toggle fluido per espandere/comprimere le note dettagliate in `#updateModal` e nella scheda Aggiornamenti.
+- [x] **Estensione Suite di Test Pre-Rilascio (Modulo 37):** 41 nuove asserzioni per la validazione di regex, endpoint API, parità chiavi i18n e binding Alpine.js (1536 test totali superati al 100%).
+
 ---
 
+### 📦 Release v1.7.0 — Amazon OAuth, eero AI Chatbot, Mesh Placement, Guardian VPN, Mobile Onboarding & European i18n (7 Nuove Lingue)
+
+> **Obiettivo:** Estendere la suite colmando il divario funzionale con l'app mobile ufficiale eero e l'ecosistema Windows nativo: abilitare il login con account Amazon, integrare l'assistente di troubleshooting AI in streaming, diagnostica di posizionamento nodi mesh e stato Guardian VPN, flussi completi di configurazione/onboarding per seriale ed internazionalizzazione completa per 7 nuove lingue europee (FR, ES, DE, NL, PT, PL, EL).
+
+#### 1. 🔑 Autenticazione Nativa Amazon (OAuth2 + PKCE)
+- [ ] **Supporto Flusso OpenID / OAuth2 con PKCE (RFC 7636):**
+  - Integrazione dell'endpoint token Amazon (`https://api.amazon.com/auth/token`) e generazione client-side di `code_verifier` crittografico e `code_challenge` S256.
+  - Client ID e device profile conformi all'identità mobile eero (`amzn_eero_mobile_android_us` / `device:client_id`).
+- [ ] **Interfaccia Web per Amazon Sign-In:**
+  - Pulsante dedicato *"Accedi con Amazon"* nella pagina di login.
+  - Flusso redirect/popup gestito dal backend FastAPI (`/api/auth/amazon/login`, `/api/auth/amazon/callback`) per catturare l'authorization code ed effettuare l'exchange sicuro con il cookie/token di sessione eero senza esporre credenziali Amazon all'utente.
+  - Supporto per fallback seamless tra login SMS/Email e login Amazon.
+
+#### 2. 🤖 Assistente AI eero Streaming (Troubleshooting & Chatbot)
+- [ ] **Client Streaming eero Cloud (`JsonObjectStream`):**
+  - Integrazione delle API cloud di conversazione eero per il supporto di rete (`/2.2/conversations`).
+  - Parser streaming in grado di elaborare chunk JSON concatenati in tempo reale (gestione profondità e buffer senza blocchi).
+- [ ] **Interfaccia Chat Interattiva nella Dashboard:**
+  - Nuovo pannello / modale "eero AI Assistant" con supporto streaming reattivo (SSE - Server-Sent Events via FastAPI ed EventSource in Alpine.js).
+  - Diagnostica interattiva dei problemi di rete guidata dal modello di troubleshooting eero con cronologia della sessione e messaggi suggeriti.
+
+#### 3. 📶 Placement Test dei Nodi Mesh & 🛡️ Guardian VPN Entitlements
+- [ ] **Mesh Node Placement Diagnostics:**
+  - Endpoint `POST /api/network/placement_test` per avviare il test di posizionamento cloud ufficiale eero tra i satelliti mesh (`runPlacementTest`).
+  - Visualizzazione visiva dei rating di segnale (ottimale, accettabile, scarso) con consigli dinamici per il riposizionamento dei nodi fisici.
+- [ ] **Monitoraggio Stato & Slot Guardian VPN (eero Plus):**
+  - Verifica della disponibilità e titolarità del servizio VPN Guardian (`seats_available`).
+  - Visualizzazione del numero di dispositivi registrati, slot rimanenti e server gateway supportati (`connect-api.guardianapp.com`).
+
+#### 4. 📱 Flussi di Configurazione & Onboarding Mobile 1:1
+- [ ] **Creazione Nuova Rete & Claiming Gateway per Seriale:**
+  - Wizard guidato nella dashboard per inizializzare una nuova rete cablata DHCP e registrare l'eero gateway tramite codice seriale fisico (`/2.2/networks` e `addEeroWithSerial`).
+- [ ] **Aggiunta o Sostituzione Nodo Mesh via Seriale:**
+  - Modale dedicato per associare un nuovo eero alla rete esistente o sostituire un nodo guasto senza dover ricorrere all'app mobile.
+- [ ] **Gestione Inviti Amministratori di Rete:**
+  - Ricerca, visualizzazione e risposta agli inviti amministratore (`/2.2/inviteQuery` e `/2.2/networks/{id}/invites/response`) con supporto all'accettazione o rifiuto guidato con link o codice alfanumerico.
+
+#### 5. 🌍 Espansione Multilingua Europea (7 Nuove Lingue - i18n Estesa)
+- [ ] **Integrazione Nuove Lingue nei Cataloghi Frontend & Backend:**
+  - 🇫🇷 Francese (`fr` / `fr.json`)
+  - 🇪🇸 Spagnolo (`es` / `es.json`)
+  - 🇩🇪 Tedesco (`de` / `de.json`)
+  - 🇳🇱 Olandese (`nl` / `nl.json`)
+  - 🇵🇹 Portoghese (`pt` / `pt.json`)
+  - 🇵🇱 Polacco (`pl` / `pl.json` — supporto completo ai caratteri diacritici dell'Europa dell'Est)
+  - 🇬🇷 Greco (`el` / `el.json` — supporto all'alfabeto ellenico nativo)
+- [ ] **Estensione Selettore Lingua & Fallback Intelligente:**
+  - Aggiornamento della lingua di sistema in `app/i18n.py`, `app/config.py` e nel selettore a tendina UI in `index.html`.
+  - Fallback automatico a `en` qualora una chiave regionale non sia definita.
+- [ ] **Parità Traduzioni 100% Automatizzata:**
+  - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (457 backend, 1051 frontend) su tutti i 7 nuovi cataloghi linguistici.
 
 ---
 
