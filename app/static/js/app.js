@@ -844,6 +844,15 @@ document.addEventListener('alpine:init', () => {
       if (this.currentTab === 'analytics' || this.currentTab === 'quality-analytics') {
         this.renderAnalyticsCharts();
       }
+      // Server-side localized payloads: Demo Mode sample names and the update-check
+      // release notes come back in the request language, so refetch them now
+      // instead of waiting for the next polling cycle.
+      if (this.isDemoMode && typeof this.manualRefresh === 'function') {
+        this.manualRefresh();
+      }
+      if (this.updateInfo && this.updateInfo.checked_at) {
+        this.checkForUpdates(false);
+      }
     },
 
     // =========================================================================

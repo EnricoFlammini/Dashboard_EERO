@@ -1003,7 +1003,7 @@ class EeroClient:
             node["status"] = "online"
 
         # Name / Location / Model
-        node["name"] = node.get("location") or node.get("name") or node.get("nickname") or node.get("model") or "Nodo eero"
+        node["name"] = node.get("location") or node.get("name") or node.get("nickname") or node.get("model") or tr("eero.node_name_fallback")
         node["model"] = node.get("model") or node.get("model_number") or node.get("product_name") or "eero"
 
         # IP address
@@ -1394,7 +1394,7 @@ class EeroClient:
             dev["url"] = dev.get("url") or (f"/2.2/devices/{dev_id}" if dev_id else "")
             
             # Hostname & Display Name
-            dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or "Dispositivo"
+            dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or tr("eero.device_name_fallback")
 
             # Helper to extract clean IP string from str or dict (eero can return dicts like {'address': 'fe80::...', 'scope': 'link'})
             def _clean_ip(item: Any) -> Optional[str]:

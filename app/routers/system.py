@@ -53,17 +53,18 @@ async def check_for_updates(force: bool = Query(False, description="Forza il con
 async def get_update_changelog(version: Optional[str] = Query(None, description="Versione specifica o ultima")):
     """Restituisce le note di rilascio e il changelog ridotto per una versione o per l'aggiornamento disponibile."""
     try:
-        from app.services.updater import extract_condensed_changelog, extract_release_notes_from_changelog
+        from app.services.updater import extract_condensed_changelog, select_release_notes
         info = await updater_service.check_for_updates(force=False)
         target_version = version or info.get("latest_version") or settings.app_version
-        raw_notes = extract_release_notes_from_changelog(target_version)
-        if not raw_notes and target_version == info.get("latest_version"):
-            raw_notes = info.get("release_notes", "")
-        condensed = extract_condensed_changelog(target_version, raw_notes=raw_notes)
+        # The GitHub body (English) only describes the latest release; changelog.md (Italian) covers every version.
+        github_notes = info.get("release_notes_github", "") if target_version == info.get("latest_version") else ""
+        notes = select_release_notes(target_version, github_notes=github_notes)
+        condensed = extract_condensed_changelog(target_version, raw_notes=github_notes)
         return {
             "status": "success",
             "version": target_version,
-            "release_notes": raw_notes,
+            "language": info.get("language"),
+            "release_notes": notes,
             "condensed_changelog": condensed
         }
     except Exception as e:

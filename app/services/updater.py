@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from app.config import settings
 from app.services.runtime_info import get_runtime_info
-from app.i18n import log_event, tr
+from app.i18n import current_language, log_event, normalize_language, tr
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +88,29 @@ def extract_release_notes_from_changelog(version: str) -> str:
     return ""
 
 
-def extract_condensed_changelog(version: str, raw_notes: str = "") -> List[str]:
+def select_release_notes(version: str, github_notes: str = "", lang: Optional[str] = None) -> str:
+    """
+    Picks the release-notes text for ``version`` in the caller's language.
+
+    ``changelog.md`` is maintained in Italian only, while GitHub release bodies are written in
+    English. English (and any non-Italian) readers therefore get the GitHub body first and the
+    local changelog only as a fallback; Italian readers keep the local changelog first.
+    """
+    active = normalize_language(lang) or current_language()
+    local_notes = extract_release_notes_from_changelog(version)
+    github_notes = (github_notes or "").strip()
+    if active == "it":
+        return local_notes or github_notes
+    return github_notes or local_notes
+
+
+def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optional[str] = None) -> List[str]:
     """
     Estrae un changelog ridotto (punti salienti sintetici) per la versione specificata.
-    Analizza prima changelog.md; se non disponibile, analizza raw_notes (es. da GitHub Release).
-    Restituisce una lista di 3-8 punti salienti concisi, puliti e immediatamente leggibili.
+    La sorgente (changelog.md in italiano o note GitHub in inglese) è scelta in base alla lingua
+    tramite ``select_release_notes``. Restituisce una lista di 3-8 punti salienti concisi.
     """
-    notes_text = extract_release_notes_from_changelog(version)
-    if not notes_text and raw_notes:
-        notes_text = raw_notes.strip()
+    notes_text = select_release_notes(version, github_notes=raw_notes, lang=lang)
 
     if not notes_text:
         return []
@@ -146,9 +160,37 @@ class UpdaterService:
         self._is_updating: bool = False
 
     @staticmethod
-    def extract_condensed_changelog(version: str, raw_notes: str = "") -> List[str]:
-        """Estrae i punti salienti del changelog per la versione indicata."""
-        return extract_condensed_changelog(version, raw_notes=raw_notes)
+    def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optional[str] = None) -> List[str]:
+        """Estrae i punti salienti del changelog per la versione indicata, nella lingua richiesta."""
+        return extract_condensed_changelog(version, raw_notes=raw_notes, lang=lang)
+
+    @staticmethod
+    def localize_update_info(info: Dict[str, Any], lang: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Returns a copy of a cached update-check result with ``release_notes`` and
+        ``condensed_changelog`` rendered for ``lang`` (default: the current request language).
+        The cache itself stays language-neutral so one check serves both EN and IT readers.
+        """
+        active = normalize_language(lang) or current_language()
+        latest_ver = info.get("latest_version") or settings.app_version
+        current_ver = info.get("current_version") or settings.app_version
+        github_notes = info.get("release_notes_github") or ""
+
+        notes = select_release_notes(latest_ver, github_notes=github_notes, lang=active)
+        if not notes:
+            notes = info.get("release_notes_fallback") or ""
+
+        condensed = extract_condensed_changelog(latest_ver, raw_notes=github_notes, lang=active)
+        if not condensed and latest_ver != current_ver:
+            condensed = extract_condensed_changelog(current_ver, raw_notes=github_notes, lang=active)
+        if not condensed and info.get("update_available"):
+            condensed = [tr("updater.generic_release_available", lang=active, version=info.get("latest_full_version", latest_ver))]
+
+        localized = dict(info)
+        localized["release_notes"] = notes
+        localized["condensed_changelog"] = condensed
+        localized["language"] = active
+        return localized
 
     @staticmethod
     def extract_release_notes(version: str) -> str:
@@ -174,7 +216,7 @@ class UpdaterService:
         if not force and self._cached_update_info and self._last_check_time:
             elapsed = (now - self._last_check_time).total_seconds()
             if elapsed < (settings.update_check_interval_hours * 3600):
-                return self._cached_update_info
+                return self.localize_update_info(self._cached_update_info)
 
         current_ver = settings.app_version
         current_build = settings.build_number
@@ -184,7 +226,8 @@ class UpdaterService:
         latest_build = current_build
         latest_full_ver = current_full
         release_title = f"v{current_full}"
-        release_notes = ""
+        release_notes = ""  # GitHub release body (English)
+        release_notes_fallback = ""  # generic notice when neither GitHub nor changelog.md has notes
         published_at = ""
         html_url = f"https://github.com/{GITHUB_REPO}/releases"
 
@@ -250,11 +293,9 @@ class UpdaterService:
                                 published_at = best_tag_obj.get("last_updated", "")
                             release_title = f"v{latest_full_ver}"
                             if not release_notes:
-                                local_notes = extract_release_notes_from_changelog(cand_ver)
-                                if local_notes:
-                                    release_notes = local_notes
-                                else:
-                                    release_notes = f"Release v{latest_full_ver} available on Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
+                                # No GitHub body: localize_update_info() uses changelog.md when it has this
+                                # version, otherwise this generic Docker Hub notice.
+                                release_notes_fallback = f"Release v{latest_full_ver} available on Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
         except Exception as e:
             log_event(logger, logging.WARNING, "log_system.update_check_dockerhub_failed", error=e)
 
@@ -262,16 +303,6 @@ class UpdaterService:
         docker_sock = self.is_docker_socket_available
         watchtower = self.is_watchtower_configured
         can_auto = bool(docker_sock or watchtower)
-
-        # Estrazione del changelog ridotto (punti salienti)
-        condensed = extract_condensed_changelog(latest_ver, raw_notes=release_notes)
-        if not condensed and latest_ver != current_ver:
-            # Fallback a release notes locali se disponibili
-            condensed = extract_condensed_changelog(current_ver, raw_notes=release_notes)
-        if not condensed and update_avail:
-            condensed = [
-                f"Release v{latest_full_ver} disponibile con miglioramenti di prestazioni, stabilità e sicurezza."
-            ]
 
         result = {
             "status": "success",
@@ -283,8 +314,8 @@ class UpdaterService:
             "latest_full_version": latest_full_ver,
             "update_available": update_avail,
             "release_title": release_title,
-            "release_notes": release_notes,
-            "condensed_changelog": condensed,
+            "release_notes_github": release_notes,
+            "release_notes_fallback": release_notes_fallback,
             "published_at": published_at,
             "release_url": html_url,
             "docker_image": f"{DOCKER_IMAGE}:latest",
@@ -298,7 +329,7 @@ class UpdaterService:
         self._cached_update_info = result
         self._last_check_time = now
         log_event(logger, logging.INFO, "log_system.update_check_completed", current=current_ver, latest=latest_ver, update_available=update_avail)
-        return result
+        return self.localize_update_info(result)
 
     async def trigger_update(self) -> Dict[str, Any]:
         """Esegue l'aggiornamento automatico del container Docker tramite Docker Socket o Watchtower."""

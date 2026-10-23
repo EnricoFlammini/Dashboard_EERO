@@ -1,3 +1,4 @@
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 from app import i18n
 from app.i18n import log_event
 from app.config import settings
+from app.services.demo_i18n import localize_demo_payload
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
     metrics, network, profiles, schedules, speedtest, system, users
@@ -150,6 +152,28 @@ async def block_cross_origin_writes(request: Request, call_next):
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):
         return JSONResponse(status_code=403, content={"detail": i18n.tr("common.cross_origin_blocked")})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def localize_demo_payloads(request: Request, call_next):
+    """
+    Demo Mode only: translates the simulator's Italian sample names (nodes, devices, profiles) in
+    JSON API responses for non-Italian readers. Live-network responses are passed through untouched.
+    """
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/") or not eero_client.is_demo_mode:
+        return response
+    lang = i18n.normalize_language(request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")) or i18n.get_system_language()
+    if lang == "it" or not response.headers.get("content-type", "").startswith("application/json"):
+        return response
+    body = b"".join([chunk async for chunk in response.body_iterator])
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return Response(content=body, status_code=response.status_code, headers=dict(response.headers), media_type=response.media_type)
+    localized = json.dumps(localize_demo_payload(payload, lang), ensure_ascii=False).encode("utf-8")
+    headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+    return Response(content=localized, status_code=response.status_code, headers=headers, media_type="application/json")
 
 
 @app.middleware("http")

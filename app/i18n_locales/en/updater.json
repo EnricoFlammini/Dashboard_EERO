@@ -4,5 +4,6 @@
   "watchtower_bad_status": "Watchtower responded with status {code}: {body}",
   "watchtower_error": "Watchtower trigger error: {error}",
   "docker_started": "Update started: downloading the new Docker image. The application will restart automatically.",
-  "manual_required": "No Docker socket or Watchtower configured. Run '{command}' on the server."
+  "manual_required": "No Docker socket or Watchtower configured. Run '{command}' on the server.",
+  "generic_release_available": "Release v{version} is available with performance, stability and security improvements."
 }

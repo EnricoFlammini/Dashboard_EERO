@@ -29,5 +29,7 @@
   "profile_delete_error": "Errore eliminazione profilo eero: {error}",
   "device_id_missing": "ID o MAC del dispositivo non specificato.",
   "target_profile_not_found": "Profilo target '{profile_id}' non trovato.",
-  "no_network_selected": "Nessuna rete selezionata"
+  "no_network_selected": "Nessuna rete selezionata",
+  "node_name_fallback": "Nodo eero",
+  "device_name_fallback": "Dispositivo"
 }

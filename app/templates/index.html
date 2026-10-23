@@ -785,7 +785,7 @@
     </aside>
 
     <!-- MAIN CONTENT CONTAINER -->
-    <main class="app-main flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto overflow-x-hidden">
+    <main class="app-main flex-1 w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto overflow-x-hidden" :class="{ 'app-main-wide': currentTab === 'devices' }">
 
       <!-- TELEMETRY RESILIENCE BANNER (Issue #55) -->
       <template x-if="telemetryStale || telemetryAuthExpired">
@@ -1959,7 +1959,7 @@
                 </th>
 
                 <!-- Col: Actions -->
-                <th class="device-col-actions py-3.5 px-4 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md" x-text="t('devices.col_actions')"></th>
+                <th class="device-col-actions py-3.5 px-2 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md"><span class="sr-only" x-text="t('devices.col_actions')"></span></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
@@ -2006,8 +2006,9 @@
                   </td>
 
                   <!-- IP & MAC with Static / DHCP badge -->
-                  <td x-show="isTableColumnVisible('address')" class="py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
-                    <div class="flex items-center space-x-2">
+                  <td x-show="isTableColumnVisible('address')" class="device-address-cell py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
+                    <!-- The DHCP/STATIC badge wraps under the IP when the column is narrow instead of spilling into the next column -->
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span class="text-slate-900 dark:text-slate-200 font-bold text-xs" x-text="dev.ip || '---'"></span>
                       <template x-if="dev.is_static">
                         <span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 tracking-wider inline-flex items-center shadow-xs dark:shadow-none" :title="t('devices.badge_static')">
@@ -2032,12 +2033,12 @@
                   </td>
 
                   <!-- Profile / User -->
-                  <td x-show="isTableColumnVisible('profile')" class="py-3 px-4" :data-label="t('devices.col_profile')">
+                  <td x-show="isTableColumnVisible('profile')" class="device-profile-cell py-3 px-4" :data-label="t('devices.col_profile')">
                     <template x-if="dev.profile_name">
-                      <!-- Long profile names wrap to two lines, then clamp; full name on hover -->
-                      <span class="device-profile inline-flex max-w-full items-start gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none" :title="dev.profile_name">
+                      <!-- Long profile names truncate with an ellipsis on one line; the full name is in the tooltip -->
+                      <span class="device-profile inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none" :title="dev.profile_name">
                         <span class="shrink-0">👤</span>
-                        <span class="min-w-0 line-clamp-2 break-words leading-snug" x-text="dev.profile_name"></span>
+                        <span class="min-w-0 truncate leading-snug" x-text="dev.profile_name"></span>
                       </span>
                     </template>
                     <template x-if="!dev.profile_name">
@@ -2046,7 +2047,7 @@
                   </td>
 
                   <!-- Connected eero -->
-                  <td x-show="isTableColumnVisible('node')" class="py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
+                  <td x-show="isTableColumnVisible('node')" class="device-node-cell py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
                     <div class="flex items-center space-x-1.5 flex-wrap gap-1">
                       <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
                       <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
@@ -2061,7 +2062,7 @@
                   </td>
 
                   <!-- Band / Channel -->
-                  <td x-show="isTableColumnVisible('band')" class="py-3 px-4" :data-label="t('devices.col_band')">
+                  <td x-show="isTableColumnVisible('band')" class="device-band-cell py-3 px-4" :data-label="t('devices.col_band')">
                     <div class="flex items-center space-x-2">
                       <span 
                         class="px-2.5 py-0.5 rounded text-[10px] font-mono font-extrabold shadow-xs dark:shadow-none inline-block"
