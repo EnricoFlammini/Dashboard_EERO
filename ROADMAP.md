@@ -15,7 +15,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Changelog Ridotto & Auto-Update Prompt, 🌐 i18n Parity, 🛡️ Pi-hole v6 RFC 1123, ⚙️ MQTT Save, 🦊 Firefox Fix, 🔔 Webhooks & 🎨 UI Polish** | Proposta intelligente aggiornamenti con changelog ridotto e opzioni decisionali, parità completa traduzioni backend/frontend (PR #79, Issue #82), sanificazione hostname RFC 1123 e rimozione 404 (Issue #83), caricamento resiliente MQTT (Issue #81), fix rendering tabelle Firefox (Issue #80), serializzazione webhook per Home Assistant (Issue #85), 11 rifiniture UI/UX e tooltip nomi troncati (Issue #84). |
-| **v1.7.0** | 🚀 **Amazon OAuth, 🤖 eero AI Chatbot, 📶 Mesh Placement, 🛡️ Guardian VPN, 📱 Mobile Onboarding & 🌍 European i18n (7 Nuove Lingue)** | Autenticazione nativa Amazon (OAuth2/PKCE), Integrazione assistente AI streaming eero Cloud, Diagnostica Placement test nodi mesh, Stato benefit & slot Guardian VPN, Flussi di configurazione e onboarding 1:1 (creazione rete, aggiunta nodi per seriale, gestione inviti), Espansione multilingua europea a 7 nuove lingue (Francese, Spagnolo, Tedesco, Olandese, Portoghese, Polacco, Greco). |
+| **v1.7.0** | 🚀 **Amazon OAuth, 🤖 eero AI Chatbot, 📶 Mesh Placement, 🛡️ Guardian VPN, 📱 Mobile Onboarding, 🎨 Follow System Theme (Issue #86) & 🌍 European i18n (7 Nuove Lingue)** | Autenticazione nativa Amazon (OAuth2/PKCE), Integrazione assistente AI streaming eero Cloud, Diagnostica Placement test nodi mesh, Stato benefit & slot Guardian VPN, Flussi di configurazione e onboarding 1:1, Selettore a 3 stati e supporto per seguire il tema di sistema OS (Issue #86), Espansione multilingua europea a 7 nuove lingue (Francese, Spagnolo, Tedesco, Olandese, Portoghese, Polacco, Greco). |
 
 ---
 
@@ -68,6 +68,7 @@ gantt
     Mesh Node Placement Test & Guardian VPN Entitlements: v1_7_diag, after v1_7_chat, 2d
     Mobile Onboarding 1:1 (Create Net, Serial Claim)  : v1_7_onboard, after v1_7_diag, 4d
     European i18n (FR, ES, DE, NL, PT, PL, EL)        : v1_7_i18n, after v1_7_onboard, 4d
+    Follow System Theme 3-State (Issue #86)            : v1_7_theme, after v1_7_i18n, 1d
 ```
 
 ---
@@ -785,9 +786,9 @@ gantt
 
 ---
 
-### 📦 Release v1.7.0 — Amazon OAuth, eero AI Chatbot, Mesh Placement, Guardian VPN, Mobile Onboarding & European i18n (7 Nuove Lingue)
+### 📦 Release v1.7.0 — Amazon OAuth, eero AI Chatbot, Mesh Placement, Guardian VPN, Mobile Onboarding, Follow System Theme (Issue #86) & European i18n (7 Nuove Lingue)
 
-> **Obiettivo:** Estendere la suite colmando il divario funzionale con l'app mobile ufficiale eero e l'ecosistema Windows nativo: abilitare il login con account Amazon, integrare l'assistente di troubleshooting AI in streaming, diagnostica di posizionamento nodi mesh e stato Guardian VPN, flussi completi di configurazione/onboarding per seriale ed internazionalizzazione completa per 7 nuove lingue europee (FR, ES, DE, NL, PT, PL, EL).
+> **Obiettivo:** Estendere la suite colmando il divario funzionale con l'app mobile ufficiale eero e l'ecosistema Windows nativo: abilitare il login con account Amazon, integrare l'assistente di troubleshooting AI in streaming, diagnostica di posizionamento nodi mesh e stato Guardian VPN, flussi completi di configurazione/onboarding per seriale, supporto per seguire il tema di sistema (Issue #86) ed internazionalizzazione per 7 nuove lingue europee (FR, ES, DE, NL, PT, PL, EL).
 
 #### 1. 🔑 Autenticazione Nativa Amazon (OAuth2 + PKCE)
 - [ ] **Supporto Flusso OpenID / OAuth2 con PKCE (RFC 7636):**
@@ -836,6 +837,16 @@ gantt
   - Fallback automatico a `en` qualora una chiave regionale non sia definita.
 - [ ] **Parità Traduzioni 100% Automatizzata:**
   - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (457 backend, 1051 frontend) su tutti i 7 nuovi cataloghi linguistici.
+
+#### 6. 🎨 Segui Tema di Sistema OS (Light/Dark Auto Mode - Issue #86 - @Hatton920)
+- [ ] **Selettore a 3 Stati Completo nella UI:**
+  - Introduzione del terzo pulsante *"💻 Sistema / Auto"* (oltre a *"Chiaro"* e *"Scuro"*) nel selettore temi della sidebar espansa e nel drawer compatto mobile/bottom bar.
+  - Supporto al toggle a tre stati a rotazione (`Light → Dark → System → Light`) sul pulsante iconico della sidebar collassata.
+- [ ] **Reattività Dinamica al Tema del Sistema Operativo:**
+  - Sincronizzazione in tempo reale con i cambiamenti del tema dell'OS tramite listener `matchMedia('(prefers-color-scheme: dark)')` quando impostato su `system`.
+  - Rimozione del vincolo permanente di `localStorage` una volta selezionata la modalità automatica, consentendo alla dashboard di adattarsi all'istante alle transizioni giorno/notte del dispositivo.
+- [ ] **Adattamento Grafici e QR Code Dinamico:**
+  - Ricalcolo automatico della palette Chart.js e del contrasto del codice QR ospiti al cambio di preferenza di sistema.
 
 ---
 
