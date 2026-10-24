@@ -941,29 +941,60 @@ html.dark .sidebar-btn-inactive:hover {
 
 .device-table-scroll {
   scrollbar-gutter: stable;
+  /* Column widths below are expressed in container-query units so the table
+     re-flows to the panel width (sidebar open/closed, hidden columns, window size). */
+  container-type: inline-size;
+  container-name: device-table;
 }
 
 .device-table {
-  min-width: max-content;
   width: 100%;
+  /* Below this width the columns can no longer shrink legibly; the panel scrolls
+     horizontally instead and the Status + Actions columns stay pinned on the right. */
+  min-width: 64rem;
   table-layout: fixed;
+  --device-col-actions-w: 3.25rem;
 }
 
-.device-table .device-col-name { width: 16.5rem; min-width: 14rem; }
-.device-table .device-col-address { width: 11rem; }
-.device-table .device-col-profile { width: 11rem; }
-.device-table .device-col-node { width: 8rem; }
-.device-table .device-col-band { width: 7rem; }
-.device-table .device-col-signal { width: 7rem; }
-.device-table .device-col-traffic { width: 11rem; }
-.device-table .device-col-first-seen { width: 9.5rem; }
-.device-table .device-col-status { width: 6.5rem; }
-.device-table .device-col-actions { width: 3.5rem; }
+/* The Name column has no fixed width: it absorbs whatever the other columns leave over,
+   so hiding a column widens the names instead of leaving a gap. */
+.device-table .device-col-address { width: clamp(9rem, 14cqw, 12rem); }
+.device-table .device-col-profile { width: clamp(7.5rem, 10cqw, 11rem); }
+.device-table .device-col-node { width: clamp(6.5rem, 8.5cqw, 10rem); }
+.device-table .device-col-band { width: clamp(7.75rem, 9cqw, 9.25rem); }
+.device-table .device-col-signal { width: clamp(6rem, 7cqw, 7.5rem); }
+.device-table .device-col-traffic { width: clamp(9.5rem, 11cqw, 12rem); }
+.device-table .device-col-first-seen { width: clamp(7rem, 9cqw, 9.5rem); }
+.device-table .device-col-status { width: clamp(5.5rem, 6.5cqw, 6.5rem); }
+.device-table .device-col-actions { width: var(--device-col-actions-w); }
 
 .device-table th,
 .device-table td {
-  padding: 0.75rem 0.875rem;
+  padding: 0.75rem 0.75rem;
   vertical-align: middle;
+  min-width: 0;
+}
+
+/* Free-text cells (name, profile, node) wrap inside their column instead of forcing the
+   table wider; badge/number cells keep their own white-space rules. */
+.device-table td.device-name-cell,
+.device-table td.device-profile-cell,
+.device-table td.device-node-cell {
+  overflow-wrap: break-word;
+}
+
+.device-table td.device-band-cell {
+  white-space: nowrap;
+}
+
+.device-table td.device-address-cell {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
+/* The Devices page is table-heavy: let it use more of a wide screen than the other pages. */
+.app-main.app-main-wide {
+  max-width: 100rem;
 }
 
 .device-table th.device-th-traffic,
@@ -978,6 +1009,12 @@ html.dark .sidebar-btn-inactive:hover {
 
 .device-table td.device-status-cell {
   white-space: nowrap;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.device-table td.device-first-seen-cell {
+  white-space: normal;
 }
 
 .device-table th {
@@ -1009,13 +1046,23 @@ html.dark .sidebar-btn-inactive:hover {
     right: 0;
   }
 
+  /* Status is pinned just left of Actions so Online/Offline is always visible,
+     even when a narrow panel forces horizontal scrolling. */
+  .device-table th.device-col-status,
+  .device-table td.device-status-cell {
+    position: sticky;
+    right: var(--device-col-actions-w);
+  }
+
   .device-table th:first-child,
-  .device-table th:last-child {
+  .device-table th:last-child,
+  .device-table th.device-col-status {
     z-index: 30;
   }
 
   .device-table td:first-child,
-  .device-table td:last-child {
+  .device-table td:last-child,
+  .device-table td.device-status-cell {
     z-index: 10;
     background: var(--bg-surface);
   }
@@ -1024,8 +1071,15 @@ html.dark .sidebar-btn-inactive:hover {
     box-shadow: 1px 0 var(--border-divider);
   }
 
-  .device-table td:last-child {
+  .device-table td:last-child,
+  .device-table td.device-status-cell {
     box-shadow: -1px 0 var(--border-divider);
+  }
+
+  /* Alpine's x-show hides the Status cell with display:none; when it is visible the
+     divider belongs on its left edge, not between Status and Actions. */
+  .device-table td.device-status-cell:not([style*="display: none"]) + td:last-child {
+    box-shadow: none;
   }
 }
 

@@ -1943,7 +1943,8 @@ async def run_all_tests():
         runner.assert_true(eero_client.current_network_id == "network_demo_mesh_02", "eero_client memorizza la nuova rete attiva")
 
         # 4. Verifica dettagli rete post-switch
-        det_res = await client.get("/api/network/overview")
+        # Demo sample names are translated for non-Italian callers (demo_i18n middleware): ask for IT explicitly
+        det_res = await client.get("/api/network/overview", headers={"X-Dashboard-Lang": "it"})
         runner.assert_true(det_res.status_code == 200, "GET /api/network/overview risponde HTTP 200 post-switch")
         det_data = det_res.json()
         cached_net = det_data.get("data", {}).get("network", {})
@@ -5493,6 +5494,86 @@ async def run_all_tests():
         runner.assert_true("showUpdatePrompt" in index_html_text, "index.html condiziona il banner di prompt a showUpdatePrompt")
         runner.assert_true("proceedUpdateFromPrompt" in index_html_text, "index.html collega il pulsante procedi a proceedUpdateFromPrompt")
         runner.assert_true("t('update_modal.condensed_changelog_title')" in index_html_text, "index.html usa stringa i18n per titolo changelog ridotto")
+
+        # -----------------------------------------------------------------
+        # 38. TEST LANGUAGE-AWARE UPDATE NOTES & DEMO PAYLOAD LOCALIZATION
+        # -----------------------------------------------------------------
+        print("\n🌐 [38/38] TEST LANGUAGE-AWARE UPDATE NOTES & DEMO PAYLOAD LOCALIZATION")
+
+        from app.services.updater import select_release_notes
+        from app.services.demo_i18n import DEMO_STRINGS_EN, localize_demo_payload, localize_demo_text
+        from app.i18n import tr
+
+        gh_body_en = "### 🛡️ Security Hardening\n* detail\n### 🏷️ Pi-hole RFC 1123 Fix\n* detail"
+        # English readers get the GitHub body (English) first; Italian readers keep changelog.md (Italian)
+        en_notes = select_release_notes("1.6.2", github_notes=gh_body_en, lang="en")
+        it_notes = select_release_notes("1.6.2", github_notes=gh_body_en, lang="it")
+        runner.assert_true(en_notes == gh_body_en, "select_release_notes(en) preferisce il corpo GitHub in inglese")
+        runner.assert_true("Vulnerability Assessment" in it_notes and it_notes != gh_body_en, "select_release_notes(it) preferisce changelog.md in italiano")
+        runner.assert_true(select_release_notes("1.6.2", github_notes="", lang="en") == it_notes, "select_release_notes(en) ricade su changelog.md senza note GitHub")
+        runner.assert_true(select_release_notes("9.9.9", github_notes="", lang="it") == "", "select_release_notes restituisce stringa vuota senza alcuna sorgente")
+
+        en_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="en")
+        it_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="it")
+        runner.assert_true(en_condensed == ["🛡️ Security Hardening", "🏷️ Pi-hole RFC 1123 Fix"], f"Condensed changelog EN estratto dal corpo GitHub (ottenuto: {en_condensed})")
+        runner.assert_true(any("Parità Completa Traduzioni" in h for h in it_condensed), "Condensed changelog IT estratto da changelog.md")
+
+        # localize_update_info: one language-neutral cache serves both languages
+        neutral = {
+            "current_version": "1.6.1", "latest_version": "1.6.2", "latest_full_version": "1.6.2 build 1",
+            "update_available": True, "release_notes_github": gh_body_en, "release_notes_fallback": "",
+        }
+        loc_en = updater_service.localize_update_info(neutral, lang="en")
+        loc_it = updater_service.localize_update_info(neutral, lang="it")
+        runner.assert_true(loc_en["release_notes"] == gh_body_en and loc_en["condensed_changelog"] == en_condensed and loc_en["language"] == "en", "localize_update_info(en) espone note e punti salienti in inglese")
+        runner.assert_true(loc_it["release_notes"] == it_notes and loc_it["language"] == "it", "localize_update_info(it) espone note in italiano")
+        runner.assert_true("release_notes_github" in neutral and "condensed_changelog" not in neutral, "La cache resta neutra rispetto alla lingua (nessun campo localizzato memorizzato)")
+        no_notes = updater_service.localize_update_info({**neutral, "current_version": "9.9.8", "latest_version": "9.9.9", "release_notes_github": "", "release_notes_fallback": "Release v9.9.9 available on Docker Hub"}, lang="en")
+        runner.assert_true(no_notes["release_notes"].startswith("Release v9.9.9") and no_notes["condensed_changelog"] == [tr("updater.generic_release_available", lang="en", version="1.6.2 build 1")], "Senza note disponibili usa il fallback Docker Hub e il punto saliente generico tradotto")
+        runner.assert_true(tr("updater.generic_release_available", lang="it", version="x") != tr("updater.generic_release_available", lang="en", version="x"), "Chiave updater.generic_release_available presente in EN e IT")
+
+        # /api/system/update/check & /update/changelog honour X-Dashboard-Lang
+        res_en = await client.get("/api/system/update/check", headers={"X-Dashboard-Lang": "en"})
+        res_it = await client.get("/api/system/update/check", headers={"X-Dashboard-Lang": "it"})
+        runner.assert_true(res_en.status_code == 200 and res_en.json().get("language") == "en", "GET /update/check con X-Dashboard-Lang: en risponde language=en")
+        runner.assert_true(res_it.status_code == 200 and res_it.json().get("language") == "it", "GET /update/check con X-Dashboard-Lang: it risponde language=it")
+        runner.assert_true("release_notes" in res_en.json() and "condensed_changelog" in res_en.json(), "Payload /update/check mantiene release_notes e condensed_changelog")
+        res_cl_it = await client.get("/api/system/update/changelog?version=1.6.2", headers={"X-Dashboard-Lang": "it"})
+        runner.assert_true(res_cl_it.status_code == 200 and any("Parità Completa Traduzioni" in h for h in res_cl_it.json().get("condensed_changelog", [])), "GET /update/changelog?version=1.6.2 (it) usa changelog.md")
+
+        # Demo payload localization
+        runner.assert_true(localize_demo_text("Gateway Soggiorno", lang="en") == "Living Room Gateway", "localize_demo_text traduce i nomi dei nodi demo in inglese")
+        runner.assert_true(localize_demo_text("Gateway Soggiorno", lang="it") == "Gateway Soggiorno", "localize_demo_text lascia intatto l'italiano")
+        runner.assert_true(localize_demo_text("Nuovo dispositivo iPad Cucina / Ricette su Gateway Soggiorno", lang="en") == "Nuovo dispositivo Kitchen iPad / Recipes su Living Room Gateway", "localize_demo_text sostituisce i nomi anche dentro frasi (match più lungo prioritario)")
+        sample = {"connected_eero_name": "Camera da Letto", "nested": [{"name": "Intrattenimento & Salotto", "mac": "AA:BB"}], "n": 3}
+        loc_sample = localize_demo_payload(sample, lang="en")
+        runner.assert_true(loc_sample["connected_eero_name"] == "Bedroom" and loc_sample["nested"][0]["name"] == "Entertainment & Lounge" and loc_sample["nested"][0]["mac"] == "AA:BB" and loc_sample["n"] == 3 and "connected_eero_name" in loc_sample, "localize_demo_payload traduce ricorsivamente solo i valori stringa, mai le chiavi")
+
+        # Every Italian demo literal in _init_demo_state must have an English mapping
+        import inspect as _inspect
+        demo_src = _inspect.getsource(eero_client._init_demo_state)
+        for lit in ("Gateway Soggiorno", "Camera da Letto", "Casa Rossi Mesh 6E", "Intrattenimento & Salotto", "iPad Cucina / Ricette", "Gateway Rack Ufficio", "Laboratorio & Workstation"):
+            runner.assert_true(lit in demo_src and lit in DEMO_STRINGS_EN, f"Letterale demo '{lit}' presente nel simulatore e mappato in DEMO_STRINGS_EN")
+
+        eero_client.set_demo_mode(True)
+        try:
+            # /api/devices is served from the poller cache (empty in this harness): use the eero node list
+            eeros_en = await client.get("/api/network/eeros", headers={"X-Dashboard-Lang": "en"})
+            eeros_it = await client.get("/api/network/eeros", headers={"X-Dashboard-Lang": "it"})
+            names_en = {e.get("name") for e in eeros_en.json().get("eeros", [])}
+            names_it = {e.get("name") for e in eeros_it.json().get("eeros", [])}
+            runner.assert_true("Living Room Gateway" in names_en and "Gateway Soggiorno" not in names_en, f"GET /api/network/eeros (demo, en) espone nodi in inglese (ottenuto: {sorted(n for n in names_en if n)})")
+            runner.assert_true("Gateway Soggiorno" in names_it, "GET /api/network/eeros (demo, it) mantiene i nomi italiani")
+            runner.assert_true(eeros_en.headers.get("content-length") == str(len(eeros_en.content)), "Il middleware demo ricalcola Content-Length dopo la traduzione")
+            ov_en = await client.get("/api/network/overview", headers={"X-Dashboard-Lang": "en"})
+            runner.assert_true("Rossi Home" in str(ov_en.json().get("data", {}).get("network", {}).get("name", "")) or "Office & Studio" in str(ov_en.json().get("data", {}).get("network", {}).get("name", "")), "GET /api/network/overview (demo, en) traduce il nome della rete")
+        finally:
+            eero_client.set_demo_mode(False)
+        dev_live = await client.get("/api/devices", headers={"X-Dashboard-Lang": "en"})
+        runner.assert_true(dev_live.status_code == 200, "Fuori dal Demo Mode il middleware non altera la risposta (HTTP 200)")
+
+        runner.assert_true(tr("eero.node_name_fallback", lang="en") == "eero node" and tr("eero.device_name_fallback", lang="en") == "Device", "Fallback nome nodo/dispositivo tradotti (EN)")
+        runner.assert_true(tr("eero.node_name_fallback", lang="it") == "Nodo eero" and tr("eero.device_name_fallback", lang="it") == "Dispositivo", "Fallback nome nodo/dispositivo tradotti (IT)")
 
         runner.print_summary()
 
