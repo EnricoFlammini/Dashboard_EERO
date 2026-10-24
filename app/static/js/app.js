@@ -4179,6 +4179,10 @@ document.addEventListener('alpine:init', () => {
       return num.toFixed(1) + 'M';
     },
 
+    formatSpeed(mbps) {
+      return this.formatTrafficRate(mbps);
+    },
+
     async fetchAvailableNetworks() {
       try {
         const res = await fetch('/api/network/list');

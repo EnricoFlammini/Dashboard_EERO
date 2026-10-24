@@ -2252,7 +2252,14 @@
               <div class="shrink-0 flex items-center gap-2 text-right">
                 <div class="flex flex-col items-end">
                   <template x-if="dev.connected && (dev.rx_rate > 0.05 || dev.tx_rate > 0.05)">
-                    <span class="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400" x-text="'↓ ' + formatSpeed(dev.rx_rate)"></span>
+                    <div class="flex flex-col items-end leading-tight">
+                      <template x-if="dev.rx_rate > 0.05">
+                        <span class="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400" x-text="'↓ ' + formatSpeed(dev.rx_rate)"></span>
+                      </template>
+                      <template x-if="dev.tx_rate > 0.05">
+                        <span class="font-mono text-[10px] font-medium text-emerald-600 dark:text-emerald-400" x-text="'↑ ' + formatSpeed(dev.tx_rate)"></span>
+                      </template>
+                    </div>
                   </template>
                   <template x-if="dev.connected && dev.wireless && dev.signal_bars">
                     <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400" x-text="'📶 ' + dev.signal_bars + '/5'"></span>

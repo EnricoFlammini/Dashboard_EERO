@@ -5575,6 +5575,14 @@ async def run_all_tests():
         runner.assert_true(tr("eero.node_name_fallback", lang="en") == "eero node" and tr("eero.device_name_fallback", lang="en") == "Device", "Fallback nome nodo/dispositivo tradotti (EN)")
         runner.assert_true(tr("eero.node_name_fallback", lang="it") == "Nodo eero" and tr("eero.device_name_fallback", lang="it") == "Dispositivo", "Fallback nome nodo/dispositivo tradotti (IT)")
 
+        # Test Issue #80: formatSpeed definition in app.js and call in index.html
+        with open("app/static/js/app.js", "r", encoding="utf-8") as _fjs:
+            _app_js_content = _fjs.read()
+        with open("app/templates/index.html", "r", encoding="utf-8") as _fhtml:
+            _index_html_content = _fhtml.read()
+        runner.assert_true("formatSpeed(mbps)" in _app_js_content, "Metodo formatSpeed definito in app.js (Issue #80)")
+        runner.assert_true("formatSpeed(" in _index_html_content, "Chiamata a formatSpeed presente in index.html (Issue #80)")
+
         runner.print_summary()
 
 
