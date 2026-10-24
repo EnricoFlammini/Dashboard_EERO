@@ -848,6 +848,24 @@ gantt
 - [ ] **Adattamento Grafici e QR Code Dinamico:**
   - Ricalcolo automatico della palette Chart.js e del contrasto del codice QR ospiti al cambio di preferenza di sistema.
 
+#### 7. 💎 Riprogettazione Usabilità & UI Fluent Design (Concept Desktop Nativo)
+- [ ] **Hero Status Banner "At-a-Glance" (Panoramica Home):**
+  - Riquadro panoramico principale in cima alla dashboard con stato di salute complessivo immediato (*"Rete Operativa - Tutti i nodi sincronizzati"*), uptime continuo, velocità WAN live (Download/Upload) e gauge grafico della qualità della rete (Health Score).
+  - KPI cards a metriche ariose per dispositivi online/offline, nodi mesh attivi e latenza WAN verso l'ISP.
+- [ ] **Mappa Topologica Mesh Interattiva (Visual Node Hierarchy):**
+  - Rappresentazione visiva ad albero gerarchico della catena mesh (Gateway principale → Nodi eero satelliti collegati via Ethernet GbE o Wi-Fi 6GHz) con badge dei client connessi in tempo reale.
+  - Filtro rapido a click singolo: cliccando su un nodo nella mappa, la tabella client filtra istantaneamente mostrando solo i dispositivi collegati a quel nodo.
+- [ ] **Slide-Over Detail Drawer (Pannello Laterale Master-Detail):**
+  - Superamento delle modali popup centrate invasive (`deviceModal` a schermo intero) a favore di un cassetto laterale a scorrimento fluido da destra.
+  - Ispezione rapida e non bloccante dei singoli client: throughput istantaneo con bar graph, attributi tecnici completi, controlli rapidi per IP statico, assegnazione profilo e sospensione temporanea della connettività.
+- [ ] **Pillole di Filtro Rapido (Quick Filter Pills) & Ricerca Universale (`Ctrl + K`):**
+  - Pulsantini di filtro a pillola a click singolo con contatori numerici dinamici (`Tutti`, `🔌 Cablati`, `📶 Wi-Fi`, `⚠️ Roaming Sub-ottimale`, `👤 Ospiti`).
+  - Command Bar globale con scorciatoia da tastiera `Ctrl + K` (o `Cmd + K`) per la ricerca istantanea di dispositivi, hostname, IP, MAC o scorciatoie dirette alle sezioni della dashboard.
+- [ ] **Iconografia Hardware Vettoriale & Device Artwork Moderno:**
+  - Superamento graduale delle sole emoji browser in favore di icone SVG vettoriali moderne (Lucide Icons) per categorie di dispositivi (Laptop, Smartphone, Smart TV, Console, Audio/Smart Speaker, Domotica IoT, NAS/Storage).
+  - Silhouette grafiche dedicate per i modelli hardware eero riconosciuti (eero Pro 6E, eero Max 7, eero 6+, eero Beacon).
+  - *Riferimento prototipale:* Prototipo HTML interattivo archiviato in [`docs/mockup_fluent_ui.html`](docs/mockup_fluent_ui.html) e render grafico concettuale in [`docs/screenshots/mockup_fluent_concept.jpg`](docs/screenshots/mockup_fluent_concept.jpg).
+
 ---
 
 ## 🛠️ Note Operative per il Futuro
