@@ -252,7 +252,7 @@ document.addEventListener('alpine:init', () => {
     getCategoryFilterLabel() {
       if (this.selectedCategoryFilter === 'all') return this.t('devices.filter_all_categories');
       if (this.selectedCategoryFilter === 'favorites') return this.t('devices.filter_favorites');
-      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices') || '✨ Nuovi Dispositivi';
+      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices');
       const map = {
         Computer: this.t('devices.cat_computer'),
         Mobile: this.t('devices.cat_mobile'),
@@ -265,16 +265,15 @@ document.addEventListener('alpine:init', () => {
       return map[this.selectedCategoryFilter] || this.selectedCategoryFilter;
     },
     getSortLabel() {
-      const isIt = this.currentLanguage === 'it';
       if (this.deviceSortField === 'first_seen') {
-        return this.t('devices.sort_first_seen') || (isIt ? 'Primo Accesso' : 'Recently Joined');
+        return this.t('devices.sort_first_seen');
       }
-      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip') || 'IP';
-      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal') || (isIt ? 'Segnale' : 'Signal');
-      if (this.deviceSortField === 'download') return this.t('devices.sort_download') || 'Download';
-      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload') || 'Upload';
-      if (this.deviceSortField === 'status') return this.t('devices.sort_status') || (isIt ? 'Stato' : 'Status');
-      return this.t('devices.sort_name') || (isIt ? 'Nome (A-Z)' : 'Name (A-Z)');
+      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip');
+      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal');
+      if (this.deviceSortField === 'download') return this.t('devices.sort_download');
+      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload');
+      if (this.deviceSortField === 'status') return this.t('devices.sort_status');
+      return this.t('devices.sort_name');
     },
     getProfileFilterLabel() {
       if (this.selectedProfileFilter === 'all') return this.t('devices.filter_all_profiles');
@@ -970,7 +969,7 @@ document.addEventListener('alpine:init', () => {
     formatBackhaul(eero) {
       if (!eero) return '';
       if (eero.is_gateway) {
-        return this.t('dashboard.backhaul_gateway') || 'Gateway (WAN)';
+        return this.t('dashboard.backhaul_gateway');
       }
       const bh = String(eero.backhaul_type || '').trim();
       const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
@@ -981,13 +980,13 @@ document.addEventListener('alpine:init', () => {
         if (/\b1(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('1000') || bh.includes('1Gbps')) return 'Ethernet (1.0 Gbps)';
         if (/\b100\s*Mbps\b/i.test(bh) || bh.includes('100M')) return 'Ethernet (100 Mbps)';
         if (bh.includes('(') && bh.includes(')')) return bh;
-        return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
+        return this.t('dashboard.backhaul_wired');
       }
       if (bh) {
         const cleanBh = bh.replace(/\s*\((?:stimata|estimated)\)/gi, '').trim();
         const isEstimated = Boolean(eero.backhaul_estimated || /\((?:stimata|estimated)\)/i.test(bh));
         if (isEstimated) {
-          const estLabel = this.t('dashboard.backhaul_estimated') || (this.currentLanguage === 'it' ? '(Stimata)' : '(Estimated)');
+          const estLabel = this.t('dashboard.backhaul_estimated');
           return `${cleanBh} ${estLabel}`;
         }
         return cleanBh;
@@ -995,9 +994,9 @@ document.addEventListener('alpine:init', () => {
       const modelStr = String(eero.model || '').toLowerCase();
       const is6Eor7 = modelStr.includes('pro 6e') || modelStr.includes('max 7') || modelStr.includes('outdoor 7') || modelStr.includes('k010001') || modelStr.includes('s010001') || modelStr.includes('t010001');
       if (is6Eor7) {
-        return this.t('dashboard.backhaul_wireless_6ghz') || 'Wireless Mesh (6 GHz)';
+        return this.t('dashboard.backhaul_wireless_6ghz');
       }
-      return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5 GHz)';
+      return this.t('dashboard.backhaul_wireless');
     },
 
     formatNodeStatus(eero) {
@@ -1011,7 +1010,7 @@ document.addEventListener('alpine:init', () => {
       const isOnline = ['online', 'green'].includes(eero.status);
       const statusLabel = isOnline ? this.t('devices.status_online') : this.t('devices.status_offline');
       const healthLabel = isOnline 
-        ? (this.t('dashboard.status_normal') || (this.currentLanguage === 'it' ? 'Normale' : 'Normal'))
+        ? this.t('dashboard.status_normal')
         : (this.currentLanguage === 'it' ? 'Disconnesso' : 'Disconnected');
       return `${statusLabel} • ${healthLabel}`;
     },
@@ -1088,12 +1087,12 @@ document.addEventListener('alpine:init', () => {
     loadDeviceFiltersFromUrl() {
       if (typeof window === 'undefined' || !window.location) return;
       const params = new URLSearchParams(window.location.search);
-      this.deviceSearchQuery = params.get('search') || '';
-      this.selectedBandFilter = params.get('band') || 'all';
-      this.selectedNodeFilter = params.get('node') || 'all';
-      this.selectedCategoryFilter = params.get('category') || 'all';
-      this.selectedProfileFilter = params.get('profile') || 'all';
-      this.selectedIpTypeFilter = params.get('assignment') || 'all';
+      this.deviceSearchQuery = params.get('search');
+      this.selectedBandFilter = params.get('band');
+      this.selectedNodeFilter = params.get('node');
+      this.selectedCategoryFilter = params.get('category');
+      this.selectedProfileFilter = params.get('profile');
+      this.selectedIpTypeFilter = params.get('assignment');
       this.showConnectedOnly = params.get('connected') === 'true';
     },
 
@@ -1718,7 +1717,6 @@ document.addEventListener('alpine:init', () => {
       }
       const d = new Date(str);
       if (isNaN(d.getTime())) return String(ts);
-      const isIt = this.currentLanguage === 'it';
       return d.toLocaleString(this.dateLocale(), {
         year: 'numeric',
         month: 'short',
@@ -3995,7 +3993,7 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Open changelog error:", err);
-        const errMsg = this.t('changelog_modal.error_loading') || (this.currentLanguage === 'it' ? 'Impossibile caricare il changelog.' : 'Unable to load changelog.');
+        const errMsg = this.t('changelog_modal.error_loading');
         this.changelogContent = `<p class="text-rose-400 font-medium py-4">${errMsg}</p>`;
       } finally {
         this.changelogLoading = false;
@@ -4468,40 +4466,38 @@ document.addEventListener('alpine:init', () => {
     },
 
     formatCategoryName(category) {
-      if (!category) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      if (!category) return this.t('devices.cat_other');
       const cat = String(category).trim();
-      const isIt = this.currentLanguage === 'it';
       
       if (cat === 'Altro' || cat.toLowerCase() === 'other') {
-        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+        return this.t('devices.cat_other');
       }
       if (cat === 'Computer') {
-        return this.t('devices.cat_computer') || (isIt ? 'Computer & Laptop' : 'Computers & Laptops');
+        return this.t('devices.cat_computer');
       }
       if (cat === 'Mobile') {
-        return this.t('devices.cat_mobile') || (isIt ? 'Smartphone & Tablet' : 'Smartphones & Tablets');
+        return this.t('devices.cat_mobile');
       }
       if (cat === 'Smart Home') {
-        return this.t('devices.cat_smarthome') || (isIt ? 'Smart Home & Domotica' : 'Smart Home & IoT');
+        return this.t('devices.cat_smarthome');
       }
       if (cat === 'Intrattenimento' || cat.toLowerCase() === 'entertainment') {
-        return this.t('devices.cat_entertainment') || (isIt ? 'TV & Streaming' : 'Entertainment & TV');
+        return this.t('devices.cat_entertainment');
       }
       if (cat === 'Gaming') {
-        return this.t('devices.cat_gaming') || (isIt ? 'Console Gaming' : 'Gaming Consoles');
+        return this.t('devices.cat_gaming');
       }
       if (cat === 'Server/Rete' || cat === 'Server/NAS' || cat.toLowerCase() === 'server') {
-        return this.t('devices.cat_server') || (isIt ? 'Server & NAS' : 'Servers & Network');
+        return this.t('devices.cat_server');
       }
       return cat;
     },
 
     formatVendorName(vendor) {
-      if (!vendor) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      if (!vendor) return this.t('devices.cat_other');
       const v = String(vendor).trim();
-      const isIt = this.currentLanguage === 'it';
       if (v === 'Altro' || v.toLowerCase() === 'other') {
-        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+        return this.t('devices.cat_other');
       }
       return v;
     },
@@ -4691,7 +4687,6 @@ document.addEventListener('alpine:init', () => {
         const labels = cats.map(c => this.formatCategoryName(c.category));
         const data = cats.map(c => c.count);
         const colors = this.getChartThemeColors();
-        const isIt = this.currentLanguage === 'it';
 
         this.analyticsChartInstances['categories'] = new Chart(canvas, {
           type: 'doughnut',
@@ -4954,7 +4949,7 @@ document.addEventListener('alpine:init', () => {
           throw new Error(`Export failed: ${res.statusText}`);
         }
         const blob = await res.blob();
-        const disposition = res.headers.get('Content-Disposition') || '';
+        const disposition = res.headers.get('Content-Disposition');
         let filename = `eero_${dataType}_export.${format}`;
         const match = disposition.match(/filename="?([^";]+)"?/);
         if (match && match[1]) {
@@ -5923,7 +5918,7 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteSchedule(id) {
-      if (!confirm(this.t('schedules.delete_confirm'))) return;
+      if (!confirmthis.t('schedules.delete_confirm')) return;
       try {
         const res = await fetch(`/api/schedules/${encodeURIComponent(id)}`, {
           method: 'DELETE'
@@ -6028,37 +6023,36 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     getBufferbloatGrade(speedtestObj) {
       const st = speedtestObj || this.latestSpeedtest || {};
-      const isIt = (this.currentLanguage === 'it');
 
       const gradeStyles = {
         'A+': {
           grade: 'A+',
-          label: this.t('bufferbloat.label_a_plus') || (isIt ? 'Ottimale' : 'Optimal'),
+          label: this.t('bufferbloat.label_a_plus'),
           class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
         },
         'A': {
           grade: 'A',
-          label: this.t('bufferbloat.label_a') || (isIt ? 'Molto Buono' : 'Very Good'),
+          label: this.t('bufferbloat.label_a'),
           class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
         },
         'B': {
           grade: 'B',
-          label: this.t('bufferbloat.label_b') || (isIt ? 'Buono' : 'Good'),
+          label: this.t('bufferbloat.label_b'),
           class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
         },
         'C': {
           grade: 'C',
-          label: this.t('bufferbloat.label_c') || (isIt ? 'Sufficiente' : 'Fair'),
+          label: this.t('bufferbloat.label_c'),
           class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
         },
         'D': {
           grade: 'D',
-          label: this.t('bufferbloat.label_d') || (isIt ? 'Latenza Elevata' : 'High Latency'),
+          label: this.t('bufferbloat.label_d'),
           class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
         },
         'F': {
           grade: 'F',
-          label: this.t('bufferbloat.label_f') || (isIt ? 'Critico' : 'Critical'),
+          label: this.t('bufferbloat.label_f'),
           class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
         }
       };
@@ -6096,7 +6090,7 @@ document.addEventListener('alpine:init', () => {
 
       return {
         grade: 'n/a',
-        label: this.t('bufferbloat.not_available') || (isIt ? 'Non Disponibile' : 'Not Available'),
+        label: this.t('bufferbloat.not_available'),
         class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30'
       };
     },
