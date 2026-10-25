@@ -729,7 +729,7 @@
             @change="setLanguage($event.target.value)"
             class="text-[11px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] rounded-lg px-2 py-1 transition cursor-pointer focus:outline-none">
             <template x-for="code in supportedLanguages" :key="code">
-              <option :value="code" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+              <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
             </template>
           </select>
           <!-- Logout Button (when logged in) -->
@@ -8169,7 +8169,7 @@
             @change="setLanguage($event.target.value)"
             class="text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-xl px-2.5 py-2 transition cursor-pointer focus:outline-none">
             <template x-for="code in supportedLanguages" :key="code">
-              <option :value="code" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+              <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
             </template>
           </select>
 

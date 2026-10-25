@@ -507,7 +507,7 @@ class DiagnosticsService:
         if is_demo:
             # In modalità demo, restituisce 2 anomalie realistiche per dimostrare la feature
             now = datetime.now(timezone.utc).strftime("%Y-%m-%dT03:45:00Z")
-            return [
+            return with_i18n_maps([
                 {
                     "mac_address": "dc:a6:32:88:77:66",
                     "hostname": "Telecamera Giardino Esterno",
@@ -540,7 +540,7 @@ class DiagnosticsService:
                     "timestamp": now,
                     "is_demo": 1,
                 }
-            ]
+            ])
 
         # Analisi live su righe storiche
         if not usage_history_rows:
