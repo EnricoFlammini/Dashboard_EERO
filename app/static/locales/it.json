@@ -323,7 +323,9 @@
     "ipv6_tooltip_ndp": "Rilevato tramite Neighbor Discovery Protocol (NDP) o AdGuard Home",
     "copy_ipv6": "Copia indirizzo IPv6",
     "ipv6_copied": "Indirizzo IPv6 copiato negli appunti!",
-    "close_btn": "Chiudi"
+    "close_btn": "Chiudi",
+    "protocol_both": "Entrambi (TCP/UDP)",
+    "resolution_minutes": "{n} min"
   },
   "profiles": {
     "title": "Profili Famiglia & Utenti Cloud",
@@ -622,7 +624,10 @@
     "crafted_prefix": "Realizzato con ❤️ da",
     "crafted_middle": "per la community",
     "crafted_suffix": ".",
-    "support_title": "Sostieni Enrico Flammini su Buy Me a Coffee"
+    "support_title": "Sostieni Enrico Flammini su Buy Me a Coffee",
+    "crafted_community": "homelab & self-hosted",
+    "badge_contributor": "Contributor",
+    "badge_security_contributor": "Sicurezza & Contributor"
   },
   "update_modal": {
     "title": "Aggiornamento Disponibile",
@@ -847,7 +852,9 @@
     "installed_on_network": "Installata sulla tua rete",
     "source_disclaimer": "Fonte ufficiale: eero Customer Support (Zendesk Help Center API). I dati sono sincronizzati periodicamente in background con impatto nullo sulle prestazioni.",
     "load_error": "Impossibile caricare le novità eeroOS",
-    "connection_error": "Errore di connessione"
+    "connection_error": "Errore di connessione",
+    "reset_filters": "Reimposta Filtri",
+    "read_more": "Leggi →"
   },
   "auth_local": {
     "login_title": "Accesso Amministrazione",
@@ -1129,6 +1136,14 @@
     "action_sync_dns": "Sincronizzazione Host DNS Esterni",
     "action_manage_users": "Amministrazione Utenti & RBAC",
     "action_system_backup": "Esportazione & Ripristino Backup"
+  },
+  "charts": {
+    "download_mbps": "Download (Mbps)",
+    "upload_mbps": "Upload (Mbps)",
+    "ping_ms": "Ping (ms)",
+    "rssi_dbm": "Segnale RSSI (dBm)",
+    "axis_throughput_mbps": "Throughput (Mbps)",
+    "axis_latency_ms": "Latenza (ms)"
   }
 }
 

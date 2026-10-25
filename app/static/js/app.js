@@ -825,6 +825,7 @@ document.addEventListener('alpine:init', () => {
       this.translations = active || this.fallbackTranslations;
       this.translationsLoaded = Object.keys(this.translations).length > 0;
       document.body.classList.remove('i18n-pending');
+      if (this.translationsLoaded) document.title = this.t('app_title');
       if (syncServer) {
         try {
           await fetch('/api/system/language', {
@@ -1609,7 +1610,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: dlData,
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(0, 103, 192, 0.12)',
@@ -1620,7 +1621,7 @@ document.addEventListener('alpine:init', () => {
               pointHoverRadius: 5
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: ulData,
               borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
               backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.10)' : 'rgba(15, 123, 15, 0.10)',
@@ -2526,7 +2527,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: dl,
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(0, 103, 192, 0.1)',
@@ -2534,7 +2535,7 @@ document.addEventListener('alpine:init', () => {
               tension: 0.3
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: ul,
               borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
               backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 123, 15, 0.1)',
@@ -2846,7 +2847,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels.length > 0 ? labels : ['--'],
           datasets: [
             {
-              label: 'Segnale RSSI (dBm)',
+              label: this.t('charts.rssi_dbm'),
               data: rssiValues.length > 0 ? rssiValues : [null],
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(0, 103, 192, 0.10)',
@@ -4318,7 +4319,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: downRates,
               borderColor: '#0067c0',
               backgroundColor: isDark ? 'rgba(0, 103, 192, 0.25)' : 'rgba(0, 103, 192, 0.15)',
@@ -4329,7 +4330,7 @@ document.addEventListener('alpine:init', () => {
               borderWidth: 2
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: upRates,
               borderColor: '#10b981',
               backgroundColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)',
@@ -4864,7 +4865,7 @@ document.addEventListener('alpine:init', () => {
             labels: labels,
             datasets: [
               {
-                label: 'Download (Mbps)',
+                label: this.t('charts.download_mbps'),
                 data: dlData,
                 borderColor: '#0067c0',
                 backgroundColor: 'rgba(0, 103, 192, 0.1)',
@@ -4875,7 +4876,7 @@ document.addEventListener('alpine:init', () => {
                 yAxisID: 'y'
               },
               {
-                label: 'Upload (Mbps)',
+                label: this.t('charts.upload_mbps'),
                 data: ulData,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16, 185, 129, 0.05)',
@@ -4886,7 +4887,7 @@ document.addEventListener('alpine:init', () => {
                 yAxisID: 'y'
               },
               {
-                label: 'Ping (ms)',
+                label: this.t('charts.ping_ms'),
                 data: pingData,
                 borderColor: '#f59e0b',
                 borderWidth: 1.5,
@@ -4921,7 +4922,7 @@ document.addEventListener('alpine:init', () => {
                 beginAtZero: true,
                 ticks: { color: colors.ticksColor, font: { size: 10 } },
                 grid: { color: colors.gridColor },
-                title: { display: true, text: 'Throughput (Mbps)', color: colors.ticksColor, font: { size: 10 } }
+                title: { display: true, text: this.t('charts.axis_throughput_mbps'), color: colors.ticksColor, font: { size: 10 } }
               },
               y1: {
                 type: 'linear',
@@ -4930,7 +4931,7 @@ document.addEventListener('alpine:init', () => {
                 beginAtZero: true,
                 ticks: { color: '#f59e0b', font: { size: 10 } },
                 grid: { drawOnChartArea: false },
-                title: { display: true, text: 'Latenza (ms)', color: '#f59e0b', font: { size: 10 } }
+                title: { display: true, text: this.t('charts.axis_latency_ms'), color: '#f59e0b', font: { size: 10 } }
               }
             }
           }
@@ -5900,7 +5901,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(this.t('toasts.error'), err.detail || this.t('schedules.save_error'), 'error');
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5928,7 +5929,7 @@ document.addEventListener('alpine:init', () => {
           await this.fetchSchedules();
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5944,7 +5945,7 @@ document.addEventListener('alpine:init', () => {
           );
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 

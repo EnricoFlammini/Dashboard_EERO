@@ -323,7 +323,9 @@
     "ipv6_tooltip_ndp": "IPv6 ULA address discovered via Reverse NDP / AdGuard Home",
     "copy_ipv6": "Copy IPv6 address",
     "ipv6_copied": "IPv6 address copied to clipboard!",
-    "close_btn": "Close"
+    "close_btn": "Close",
+    "protocol_both": "Both (TCP/UDP)",
+    "resolution_minutes": "{n} min"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",
@@ -622,7 +624,10 @@
     "crafted_prefix": "Crafted with ❤️ by",
     "crafted_middle": "for the",
     "crafted_suffix": " community.",
-    "support_title": "Support Enrico Flammini on Buy Me a Coffee"
+    "support_title": "Support Enrico Flammini on Buy Me a Coffee",
+    "crafted_community": "homelab & self-hosted",
+    "badge_contributor": "Contributor",
+    "badge_security_contributor": "Security & Contributor"
   },
   "update_modal": {
     "title": "Update Available",
@@ -847,7 +852,9 @@
     "installed_on_network": "Installed on your network",
     "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead.",
     "load_error": "Unable to load eeroOS release notes",
-    "connection_error": "Connection error"
+    "connection_error": "Connection error",
+    "reset_filters": "Reset Filters",
+    "read_more": "Read →"
   },
   "auth_local": {
     "login_title": "Administration Sign In",
@@ -1129,6 +1136,14 @@
     "action_sync_dns": "Sync External DNS Hosts",
     "action_manage_users": "Administer Users & RBAC",
     "action_system_backup": "Backup & Disaster Recovery"
+  },
+  "charts": {
+    "download_mbps": "Download (Mbps)",
+    "upload_mbps": "Upload (Mbps)",
+    "ping_ms": "Ping (ms)",
+    "rssi_dbm": "RSSI Signal (dBm)",
+    "axis_throughput_mbps": "Throughput (Mbps)",
+    "axis_latency_ms": "Latency (ms)"
   }
 }
 

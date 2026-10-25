@@ -5025,7 +5025,7 @@
             <button 
               @click="eeroNewsSearchQuery = ''; setEeroNewsFilter('all')" 
               class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 transition cursor-pointer">
-              Reimposta Filtri
+              <span x-text="t('eero_news.reset_filters')"></span>
             </button>
           </div>
         </template>
@@ -5085,7 +5085,7 @@
                     target="_blank" 
                     rel="noopener noreferrer"
                     class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">
-                    Leggi →
+                    <span x-text="t('eero_news.read_more')"></span>
                   </a>
                 </div>
               </div>
@@ -5490,7 +5490,7 @@
                 <select x-model="newPortForward.protocol" class="glass-input w-full px-2 py-1.5 rounded-lg text-xs">
                   <option value="tcp">TCP</option>
                   <option value="udp">UDP</option>
-                  <option value="both">Both (TCP/UDP)</option>
+                  <option value="both" x-text="t('device_modal.protocol_both')"></option>
                 </select>
               </div>
               <div>
@@ -5554,28 +5554,28 @@
                   @click="loadDeviceUsage(null, 'daily', 10)"
                   class="px-2 py-0.5 rounded transition cursor-pointer"
                   :class="deviceUsageResolution === 10 ? 'bg-sky-500 text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'">
-                  10 min
+                  <span x-text="t('device_modal.resolution_minutes', { n: 10 })"></span>
                 </button>
                 <button 
                   type="button"
                   @click="loadDeviceUsage(null, 'daily', 15)"
                   class="px-2 py-0.5 rounded transition cursor-pointer"
                   :class="deviceUsageResolution === 15 ? 'bg-sky-500 text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'">
-                  15 min
+                  <span x-text="t('device_modal.resolution_minutes', { n: 15 })"></span>
                 </button>
                 <button 
                   type="button"
                   @click="loadDeviceUsage(null, 'daily', 20)"
                   class="px-2 py-0.5 rounded transition cursor-pointer"
                   :class="deviceUsageResolution === 20 ? 'bg-sky-500 text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'">
-                  20 min
+                  <span x-text="t('device_modal.resolution_minutes', { n: 20 })"></span>
                 </button>
                 <button 
                   type="button"
                   @click="loadDeviceUsage(null, 'daily', 30)"
                   class="px-2 py-0.5 rounded transition cursor-pointer"
                   :class="deviceUsageResolution === 30 ? 'bg-sky-500 text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'">
-                  30 min
+                  <span x-text="t('device_modal.resolution_minutes', { n: 30 })"></span>
                 </button>
               </div>
             </div>
@@ -6073,7 +6073,7 @@
         <!-- Dedication Box -->
         <div class="p-4 rounded-xl bg-indigo-50/70 dark:bg-gradient-to-br dark:from-indigo-950/60 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-500/30 text-center space-y-2.5 shadow-inner">
           <p class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
-            <span x-text="t('about_modal.crafted_prefix')">Crafted with ❤️ by</span> <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> <span x-text="t('about_modal.crafted_middle')">for the</span> <span class="text-indigo-700 dark:text-indigo-300 font-medium">homelab & self-hosted</span><span x-text="t('about_modal.crafted_suffix')"> community.</span>
+            <span x-text="t('about_modal.crafted_prefix')">Crafted with ❤️ by</span> <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> <span x-text="t('about_modal.crafted_middle')">for the</span> <span class="text-indigo-700 dark:text-indigo-300 font-medium" x-text="t('about_modal.crafted_community')"></span><span x-text="t('about_modal.crafted_suffix')"> community.</span>
           </p>
 
           <!-- Buy Me a Coffee Button -->
@@ -6126,7 +6126,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition font-mono text-xs">@jpatchMC</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6139,7 +6139,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition font-mono text-xs">@Hatton920</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6152,7 +6152,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition font-mono text-xs">@jimcampbell100</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6165,7 +6165,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition font-mono text-xs">@stevehoek</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6178,7 +6178,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition font-mono text-xs">@DannyFeliz</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6191,7 +6191,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition font-mono text-xs">@carbones73</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 self-center h-fit">Security & Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 self-center h-fit" x-text="t('about_modal.badge_security_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6204,7 +6204,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition font-mono text-xs">@WillFulmer</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6217,7 +6217,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition font-mono text-xs">@jonmacdonald</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -6230,7 +6230,7 @@
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center space-x-2 flex-wrap">
                     <span class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition font-mono text-xs">@todddube</span>
-                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 self-center h-fit">Contributor</span>
+                    <span class="shrink-0 whitespace-nowrap inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 self-center h-fit" x-text="t('about_modal.badge_contributor')"></span>
                   </div>
                   <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 transition shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 </div>
@@ -8150,13 +8150,13 @@
               @click="setTheme('light')" 
               :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
               class="flex-1 py-1.5 rounded-lg text-xs transition flex items-center justify-center cursor-pointer">
-              ☀️ Chiaro
+              ☀️ <span class="ml-1" x-text="t('header.theme_light')"></span>
             </button>
             <button 
               @click="setTheme('dark')" 
               :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
               class="flex-1 py-1.5 rounded-lg text-xs transition flex items-center justify-center cursor-pointer">
-              🌙 Scuro
+              🌙 <span class="ml-1" x-text="t('header.theme_dark')"></span>
             </button>
           </div>
 
