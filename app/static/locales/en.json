@@ -105,7 +105,9 @@
     "theme_dark": "Dark",
     "theme_system": "System",
     "switch_network_title": "Switch Active eero Network",
-    "available_networks": "Available Networks"
+    "available_networks": "Available Networks",
+    "logout_title": "Logout",
+    "switch_language_title": "Change language"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -325,7 +327,8 @@
     "ipv6_copied": "IPv6 address copied to clipboard!",
     "close_btn": "Close",
     "protocol_both": "Both (TCP/UDP)",
-    "resolution_minutes": "{n} min"
+    "resolution_minutes": "{n} min",
+    "eero_cloud_synced_title": "Synced from eero mobile app"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",
@@ -394,7 +397,8 @@
     "signal_range_excellent": "≥ -50 dBm",
     "signal_range_good": "-51 to -65 dBm",
     "signal_range_fair": "-66 to -75 dBm",
-    "signal_range_weak": "< -75 dBm"
+    "signal_range_weak": "< -75 dBm",
+    "readonly_notice": "Read-only mode: sign in as Admin to run speed test."
   },
   "controls": {
     "guest_title": "Smart Guest Wi-Fi & QR Code",
@@ -554,7 +558,9 @@
     "close_guide": "Close Guide",
     "prev_chapter": "Previous",
     "next_chapter": "Next",
-    "no_results": "No chapters found."
+    "no_results": "No chapters found.",
+    "chapters_word": "Chapters",
+    "chapter_position": "Chapter {n} / {total}"
   },
   "auth": {
     "title": "eero Mesh Suite Login",
@@ -745,7 +751,9 @@
     "priority_high": "High",
     "priority_medium": "Medium",
     "priority_low": "Low",
-    "force_roaming_tip": "Tip: To encourage roaming to a closer mesh node, turn Wi-Fi off and back on on the client device."
+    "force_roaming_tip": "Tip: To encourage roaming to a closer mesh node, turn Wi-Fi off and back on on the client device.",
+    "rssi_on_node": " on ",
+    "suggested_label": "Suggested:"
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
@@ -1056,7 +1064,12 @@
     "env_kubernetes": "Kubernetes Pod",
     "runtime_source_checkout": "Branch and commit are read live from the local git checkout this server runs from.",
     "runtime_source_build": "Branch and commit were recorded when this image was built.",
-    "runtime_source_missing": "This image was built without branch information. Rebuild with the GIT_BRANCH and GIT_COMMIT build arguments to show it here."
+    "runtime_source_missing": "This image was built without branch information. Rebuild with the GIT_BRANCH and GIT_COMMIT build arguments to show it here.",
+    "recheck_title": "Check Docker Hub and GitHub releases now",
+    "recheck_short": "Recheck",
+    "up_to_date_title": "Dashboard Up to Date",
+    "up_to_date_desc": "Installed version (v{installed}) matches or is ahead of public releases on Docker Hub / GitHub (v{latest}).",
+    "repull_btn": "⚡ Re-pull & Update Container"
   },
   "settings_export": {
     "title": "Data Export & Download Center",
@@ -1144,6 +1157,10 @@
     "rssi_dbm": "RSSI Signal (dBm)",
     "axis_throughput_mbps": "Throughput (Mbps)",
     "axis_latency_ms": "Latency (ms)"
+  },
+  "common": {
+    "devices": "devices",
+    "anomalies": "anomalies"
   }
 }
 

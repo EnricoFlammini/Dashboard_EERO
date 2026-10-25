@@ -1061,6 +1061,32 @@ document.addEventListener('alpine:init', () => {
       return typeof val === 'string' ? val : null;
     },
 
+    // Picks the viewer-language variant of a server payload field. Prefers a
+    // `<field>_i18n` map ({en, it, ...}), then legacy `<field>_<lang>` keys,
+    // then English, then the bare field.
+    localized(obj, field) {
+      if (!obj) return '';
+      const lang = this.currentLanguage;
+      const map = obj[`${field}_i18n`];
+      if (map && typeof map === 'object') {
+        if (map[lang]) return map[lang];
+        if (map.en) return map.en;
+      }
+      return obj[`${field}_${lang}`] ?? obj[`${field}_en`] ?? obj[field] ?? '';
+    },
+
+    languageFlags: { en: '🇬🇧', it: '🇮🇹' },
+    languageFlag(lang) {
+      return this.languageFlags[lang] || (lang || '').toUpperCase();
+    },
+
+    // Header toggle: steps through supportedLanguages in order.
+    cycleLanguage() {
+      const list = this.supportedLanguages;
+      const next = list[(list.indexOf(this.currentLanguage) + 1) % list.length];
+      return this.setLanguage(next);
+    },
+
     t(path, params = {}) {
       if (!path) return '';
       const keys = path.split('.');

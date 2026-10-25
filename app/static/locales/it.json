@@ -105,7 +105,9 @@
     "theme_dark": "Scuro",
     "theme_system": "Sistema",
     "switch_network_title": "Cambia Rete eero Attiva",
-    "available_networks": "Reti Disponibili"
+    "available_networks": "Reti Disponibili",
+    "logout_title": "Esci (Logout)",
+    "switch_language_title": "Cambia lingua"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -325,7 +327,8 @@
     "ipv6_copied": "Indirizzo IPv6 copiato negli appunti!",
     "close_btn": "Chiudi",
     "protocol_both": "Entrambi (TCP/UDP)",
-    "resolution_minutes": "{n} min"
+    "resolution_minutes": "{n} min",
+    "eero_cloud_synced_title": "Sincronizzato dall'app mobile eero"
   },
   "profiles": {
     "title": "Profili Famiglia & Utenti Cloud",
@@ -394,7 +397,8 @@
     "signal_range_excellent": "≥ -50 dBm",
     "signal_range_good": "da -51 a -65 dBm",
     "signal_range_fair": "da -66 a -75 dBm",
-    "signal_range_weak": "< -75 dBm"
+    "signal_range_weak": "< -75 dBm",
+    "readonly_notice": "Modalità sola lettura: accedi come Admin per eseguire lo speed test."
   },
   "controls": {
     "guest_title": "Smart Guest Wi-Fi & QR Code",
@@ -554,7 +558,9 @@
     "close_guide": "Chiudi Guida",
     "prev_chapter": "Precedente",
     "next_chapter": "Successivo",
-    "no_results": "Nessun capitolo trovato."
+    "no_results": "Nessun capitolo trovato.",
+    "chapters_word": "Capitoli",
+    "chapter_position": "Capitolo {n} / {total}"
   },
   "auth": {
     "title": "Accesso eero Mesh Suite",
@@ -745,7 +751,9 @@
     "priority_high": "Alta",
     "priority_medium": "Media",
     "priority_low": "Bassa",
-    "force_roaming_tip": "Consiglio: Per forzare il roaming su un nodo più vicino, disattiva e riattiva il Wi-Fi sul dispositivo."
+    "force_roaming_tip": "Consiglio: Per forzare il roaming su un nodo più vicino, disattiva e riattiva il Wi-Fi sul dispositivo.",
+    "rssi_on_node": " su ",
+    "suggested_label": "Consigliato:"
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted e containerizzata su Docker • Zero telemetria dei dati",
@@ -1056,7 +1064,12 @@
     "env_kubernetes": "Pod Kubernetes",
     "runtime_source_checkout": "Branch e commit sono letti in tempo reale dal checkout git locale da cui gira questo server.",
     "runtime_source_build": "Branch e commit sono stati registrati alla build di questa immagine.",
-    "runtime_source_missing": "Questa immagine è stata creata senza informazioni sul branch. Ricostruiscila con i build argument GIT_BRANCH e GIT_COMMIT per mostrarle qui."
+    "runtime_source_missing": "Questa immagine è stata creata senza informazioni sul branch. Ricostruiscila con i build argument GIT_BRANCH e GIT_COMMIT per mostrarle qui.",
+    "recheck_title": "Verifica subito release su Docker Hub e GitHub",
+    "recheck_short": "Ricontrolla",
+    "up_to_date_title": "Dashboard Aggiornata",
+    "up_to_date_desc": "La versione installata (v{installed}) è allineata o più recente rispetto alle release pubbliche su Docker Hub / GitHub (v{latest}).",
+    "repull_btn": "⚡ Re-pull & Aggiorna Container"
   },
   "settings_export": {
     "title": "Centro Download & Esportazione Dati",
@@ -1144,6 +1157,10 @@
     "rssi_dbm": "Segnale RSSI (dBm)",
     "axis_throughput_mbps": "Throughput (Mbps)",
     "axis_latency_ms": "Latenza (ms)"
+  },
+  "common": {
+    "devices": "dispositivi",
+    "anomalies": "anomalie"
   }
 }
 

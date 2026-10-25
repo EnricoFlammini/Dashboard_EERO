@@ -275,7 +275,7 @@
             <button 
               @click="performLocalLogout()"
               class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
-              :title="currentLanguage === 'it' ? 'Esci (Logout)' : 'Logout'">
+              :title="t('header.logout_title')">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
               </svg>
@@ -759,10 +759,10 @@
           </button>
           <!-- Language Toggle Button with Flag Icon -->
           <button 
-            @click="setLanguage(currentLanguage === 'it' ? 'en' : 'it')" 
+            @click="cycleLanguage()" 
             class="w-10 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
-            :title="currentLanguage === 'it' ? 'Switch to English (EN)' : 'Passa all\'Italiano (IT)'">
-            <span x-text="currentLanguage === 'it' ? '🇮🇹' : '🇬🇧'"></span>
+            :title="t('header.switch_language_title')">
+            <span x-text="languageFlag(currentLanguage)"></span>
           </button>
           <!-- Logout Button (when logged in) -->
           <button 
@@ -1242,7 +1242,7 @@
             <!-- Result Counter Badge -->
             <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 shadow-xs">
               <span class="font-bold text-slate-900 dark:text-white" x-text="filteredDevices.length"></span>
-              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + (currentLanguage === 'it' ? 'dispositivi' : 'devices')"></span>
+              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + t('common.devices')"></span>
             </div>
 
             <!-- Connected Only Toggle Pill -->
@@ -2053,7 +2053,7 @@
                       <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
                         <span 
                           class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 flex items-center space-x-0.5 cursor-help"
-                          :title="currentLanguage === 'it' ? dev.roaming_advisor.advice_it : dev.roaming_advisor.advice_en">
+                          :title="localized(dev.roaming_advisor, 'advice')">
                           <span>🔄</span>
                           <span x-text="t('devices.sticky_roaming_badge')"></span>
                         </span>
@@ -2311,7 +2311,7 @@
             <!-- Read-Only Notice when lacking action_run_speedtest -->
             <div x-show="!can('action_run_speedtest')" class="mt-4 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium flex items-center space-x-1.5 shadow-xs">
               <span>🔒</span>
-              <span x-text="currentLanguage === 'it' ? 'Modalità sola lettura: accedi come Admin per eseguire lo speed test.' : 'Read-only mode: sign in as Admin to run speed test.'"></span>
+              <span x-text="t('speedtest.readonly_notice')"></span>
             </div>
 
             <!-- Progress Bar -->
@@ -5207,7 +5207,7 @@
               <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold text-xs whitespace-nowrap truncate h-5 flex items-center" :title="t('device_modal.cloud_profile')" x-text="t('device_modal.cloud_profile')"></label>
               <div class="glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between text-slate-900 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 h-10">
                 <span class="font-bold text-sky-950 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-500/30 px-2 py-0.5 rounded-md truncate max-w-[110px]" x-text="selectedDevice && selectedDevice.profile_name ? ('👤 ' + selectedDevice.profile_name) : t('profiles.total_unassigned')"></span>
-                <span class="text-[10px] text-slate-500 font-mono shrink-0 ml-1" :title="currentLanguage === 'it' ? 'Sincronizzato dall\'app mobile eero' : 'Synced from eero mobile app'">eero Cloud</span>
+                <span class="text-[10px] text-slate-500 font-mono shrink-0 ml-1" :title="t('device_modal.eero_cloud_synced_title')">eero Cloud</span>
               </div>
             </div>
           </div>
@@ -5689,7 +5689,7 @@
           <div>
             <div class="flex items-center gap-2">
               <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white" x-text="t('manual.title')"></h3>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-semibold" x-text="(manualSections ? manualSections.length : 16) + ' ' + (currentLanguage === 'it' ? 'Capitoli' : 'Chapters')"></span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-semibold" x-text="(manualSections ? manualSections.length : 16) + ' ' + t('manual.chapters_word')"></span>
             </div>
             <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate max-w-md" x-text="t('manual.subtitle')"></p>
           </div>
@@ -5773,7 +5773,7 @@
           <div class="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 flex items-start justify-between gap-4 shrink-0">
             <div>
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20" x-text="(currentLanguage === 'it' ? 'Capitolo ' : 'Chapter ') + (currentManualSectionIndex + 1) + ' / ' + (manualSections.length)"></span>
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20" x-text="t('manual.chapter_position', { n: currentManualSectionIndex + 1, total: manualSections.length })"></span>
               </div>
               <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" x-text="selectedManualSection ? selectedManualSection.title : helpModalTitle"></h2>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="selectedManualSection ? selectedManualSection.summary : ''"></p>
@@ -6443,9 +6443,9 @@
             @click="checkForUpdates(true)" 
             :disabled="isCheckingUpdate || isTriggeringUpdate"
             class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent text-xs font-semibold flex items-center space-x-1 shadow-sm dark:shadow-none transition disabled:opacity-40 cursor-pointer"
-            :title="currentLanguage === 'it' ? 'Verifica subito release su Docker Hub e GitHub' : 'Check Docker Hub and GitHub releases now'">
+            :title="t('settings_updates.recheck_title')">
             <svg class="w-3.5 h-3.5" :class="isCheckingUpdate ? 'animate-spin text-amber-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span x-text="isCheckingUpdate ? (currentLanguage === 'it' ? 'Verifica...' : 'Checking...') : (currentLanguage === 'it' ? 'Ricontrolla' : 'Recheck')"></span>
+            <span x-text="isCheckingUpdate ? t('settings_updates.checking') : t('settings_updates.recheck_short')"></span>
           </button>
           <button 
             @click="showUpdateModal = false" 
@@ -6461,8 +6461,8 @@
         <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center space-x-3">
           <span class="text-emerald-500 dark:text-emerald-400 text-xl">✅</span>
           <div class="space-y-0.5">
-            <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="currentLanguage === 'it' ? 'Dashboard Aggiornata' : 'Dashboard Up to Date'"></span>
-            <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="currentLanguage === 'it' ? 'La versione installata (v' + fullVersion + ') è allineata o più recente rispetto alle release pubbliche su Docker Hub / GitHub (v' + (updateInfo.latest_full_version || updateInfo.latest_version || fullVersion) + ').' : 'Installed version (v' + fullVersion + ') matches or is ahead of public releases on Docker Hub / GitHub (v' + (updateInfo.latest_full_version || updateInfo.latest_version || fullVersion) + ').'"></p>
+            <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="t('settings_updates.up_to_date_title')"></span>
+            <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('settings_updates.up_to_date_desc', { installed: fullVersion, latest: (updateInfo.latest_full_version || updateInfo.latest_version || fullVersion) })"></p>
           </div>
         </div>
       </template>
@@ -6587,7 +6587,7 @@
               @click="triggerAutoUpdate()" 
               :disabled="isTriggeringUpdate"
               class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-50 cursor-pointer">
-              <span x-text="updateInfo.update_available ? t('update_modal.install_now_btn') : (currentLanguage === 'it' ? '⚡ Re-pull & Aggiorna Container' : '⚡ Re-pull & Update Container')"></span>
+              <span x-text="updateInfo.update_available ? t('update_modal.install_now_btn') : t('settings_updates.repull_btn')"></span>
             </button>
           </template>
         </div>
@@ -6683,10 +6683,10 @@
 
             <!-- Discursive Narrative -->
             <div class="space-y-2 text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
-              <p class="font-medium" x-text="currentLanguage === 'it' ? healthDetails?.ai_summary?.overview_it : healthDetails?.ai_summary?.overview_en"></p>
+              <p class="font-medium" x-text="localized(healthDetails?.ai_summary, 'overview')"></p>
               <template x-if="healthDetails?.ai_summary && (healthDetails.ai_summary.narrative_it || healthDetails.ai_summary.narrative_en)">
                 <div class="p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-[11px] space-y-1">
-                  <div x-html="renderSimpleMarkdown(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en)"></div>
+                  <div x-html="renderSimpleMarkdown(localized(healthDetails?.ai_summary, 'narrative'))"></div>
                 </div>
               </template>
             </div>
@@ -6699,17 +6699,17 @@
                     <svg class="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <span x-text="t('health_modal.roaming_advisor_title')"></span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold font-mono" x-text="healthDetails.roaming_advisor.sticky_count + ' ' + (currentLanguage === 'it' ? 'dispositivi' : 'devices')"></span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold font-mono" x-text="healthDetails.roaming_advisor.sticky_count + ' ' + t('common.devices')"></span>
                 </div>
                 <div class="space-y-1.5">
                   <template x-for="stk in (healthDetails.roaming_advisor.devices || [])" :key="stk.mac">
                     <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-amber-500/20 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                       <div>
                         <span class="font-bold text-slate-900 dark:text-white" x-text="stk.name"></span>
-                        <span class="text-slate-500 dark:text-slate-400"> (</span><span class="font-mono text-rose-600 dark:text-rose-400 font-bold" x-text="stk.current_rssi + ' dBm'"></span><span class="text-slate-500 dark:text-slate-400" x-text="currentLanguage === 'it' ? ' su ' : ' on '"></span><span class="font-medium text-slate-700 dark:text-slate-300" x-text="stk.connected_eero_name"></span><span class="text-slate-500 dark:text-slate-400">)</span>
+                        <span class="text-slate-500 dark:text-slate-400"> (</span><span class="font-mono text-rose-600 dark:text-rose-400 font-bold" x-text="stk.current_rssi + ' dBm'"></span><span class="text-slate-500 dark:text-slate-400" x-text="t('health_modal.rssi_on_node')"></span><span class="font-medium text-slate-700 dark:text-slate-300" x-text="stk.connected_eero_name"></span><span class="text-slate-500 dark:text-slate-400">)</span>
                       </div>
                       <div class="flex items-center space-x-1 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold">
-                        <span x-text="currentLanguage === 'it' ? 'Consigliato:' : 'Suggested:'">Consigliato:</span>
+                        <span x-text="t('health_modal.suggested_label')"></span>
                         <span class="font-bold text-slate-900 dark:text-white" x-text="(stk.suggested_eero_name_i18n && stk.suggested_eero_name_i18n[currentLanguage]) || stk.suggested_eero_name"></span>
                         <span class="text-emerald-600 dark:text-emerald-400 font-mono font-bold" x-text="'(+~' + stk.estimated_delta_dbm + ' dBm)'"></span>
                       </div>
@@ -6728,14 +6728,14 @@
                     <svg class="w-3.5 h-3.5 shrink-0 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                     <span x-text="t('health_modal.iot_anomalies_title')"></span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold font-mono" x-text="healthDetails.iot_anomalies.length + ' ' + (currentLanguage === 'it' ? 'anomalie' : 'anomalies')"></span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold font-mono" x-text="healthDetails.iot_anomalies.length + ' ' + t('common.anomalies')"></span>
                 </div>
                 <div class="space-y-1.5">
                   <template x-for="anom in healthDetails.iot_anomalies" :key="anom.mac_address + anom.timestamp">
                     <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-900/60 border border-purple-500/20 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <div>
                         <span class="font-bold text-slate-900 dark:text-white" x-text="anom.hostname"></span>:
-                        <span class="text-slate-600 dark:text-slate-300" x-text="currentLanguage === 'it' ? anom.description_it : anom.description_en"></span>
+                        <span class="text-slate-600 dark:text-slate-300" x-text="localized(anom, 'description')"></span>
                       </div>
                       <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9px] uppercase self-start sm:self-auto shrink-0"
                             :class="anom.severity === 'critical' ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'"
@@ -6768,8 +6768,8 @@
                             x-text="item.priority === 'critical' ? t('health_modal.priority_critical') : (item.priority === 'high' ? t('health_modal.priority_high') : (item.priority === 'medium' ? t('health_modal.priority_medium') : t('health_modal.priority_low')))">
                       </span>
                       <div class="space-y-0.5">
-                        <div class="font-bold text-slate-900 dark:text-white" x-text="currentLanguage === 'it' ? item.title_it : item.title_en"></div>
-                        <div class="text-slate-600 dark:text-slate-400 text-[10.5px]" x-text="currentLanguage === 'it' ? item.description_it : item.description_en"></div>
+                        <div class="font-bold text-slate-900 dark:text-white" x-text="localized(item, 'title')"></div>
+                        <div class="text-slate-600 dark:text-slate-400 text-[10.5px]" x-text="localized(item, 'description')"></div>
                       </div>
                     </div>
                   </template>
