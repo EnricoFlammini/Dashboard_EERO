@@ -5583,6 +5583,77 @@ async def run_all_tests():
         runner.assert_true("formatSpeed(mbps)" in _app_js_content, "Metodo formatSpeed definito in app.js (Issue #80)")
         runner.assert_true("formatSpeed(" in _index_html_content, "Chiamata a formatSpeed presente in index.html (Issue #80)")
 
+        # =====================================================================
+        # 39. TEST I18N COVERAGE: NESSUN TESTO HARDCODED, PARITÀ CHIAVI E PLACEHOLDER (Issue #82)
+        # =====================================================================
+        print("\n🌐 Test 39: Copertura i18n (Issue #82) - parità chiavi, nessun testo inline, placeholder coerenti...")
+        import glob as _glob
+        import re as _re_i18n
+        from app.i18n import SUPPORTED_LANGUAGES as _SUPPORTED, LOCALES_DIR as _SERVER_LOCALES
+
+        def _flatten_i18n(d, prefix=""):
+            out = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    out.update(_flatten_i18n(v, f"{prefix}{k}."))
+                else:
+                    out[f"{prefix}{k}"] = v
+            return out
+
+        _fe = {}
+        for _lang in _SUPPORTED:
+            _path = Path(f"app/static/locales/{_lang}.json")
+            runner.assert_true(_path.exists(), f"Locale frontend '{_lang}.json' presente")
+            _fe[_lang] = _flatten_i18n(json.loads(_path.read_text(encoding="utf-8"))) if _path.exists() else {}
+        _ref_keys = set(_fe.get("en", {}))
+        for _lang in _SUPPORTED:
+            if _lang == "en":
+                continue
+            _missing = sorted(_ref_keys - set(_fe[_lang]))
+            _extra = sorted(set(_fe[_lang]) - _ref_keys)
+            runner.assert_true(not _missing and not _extra, f"Parità chiavi frontend en.json ↔ {_lang}.json (mancanti: {_missing[:5]}, extra: {_extra[:5]})")
+            _ph_bad = [k for k in _ref_keys if k in _fe[_lang] and set(_re_i18n.findall(r"\{(\w+)\}", _fe["en"][k])) != set(_re_i18n.findall(r"\{(\w+)\}", _fe[_lang][k]))]
+            runner.assert_true(not _ph_bad, f"Placeholder {{param}} identici tra en.json e {_lang}.json (differenze: {_ph_bad[:5]})")
+
+        _html_src = Path("app/templates/index.html").read_text(encoding="utf-8")
+        _js_src = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        _used = set()
+        for _src in (_html_src, _js_src):
+            _used |= set(_re_i18n.findall(r"\bt\('([a-z0-9_.]+)'", _src))
+        _dynamic = {k for k in _used if k.endswith(".") or k.endswith("_")}
+        _unknown = sorted(k for k in _used - _dynamic if k not in _ref_keys)
+        runner.assert_true(not _unknown, f"Ogni chiave t('…') usata in index.html/app.js esiste in en.json (sconosciute: {_unknown[:8]})")
+        _tern = _re_i18n.findall(r"currentLanguage === 'it'\s*\?|\bisIt\s*\?", _html_src + _js_src)
+        runner.assert_true(len(_tern) == 0, f"Nessun ternario di lingua inline (currentLanguage === 'it' ? / isIt ?) residuo in index.html/app.js (trovati: {len(_tern)})")
+        _fallbacks = _re_i18n.findall(r"\bt\('[^']+'\)\s*\|\|\s*['\"`][A-Za-z]", _html_src + _js_src)
+        runner.assert_true(len(_fallbacks) == 0, f"Nessun fallback testuale t('…') || '…' residuo (trovati: {len(_fallbacks)})")
+        runner.assert_true("<option value=\"it\">" not in _html_src and "x-for=\"code in supportedLanguages\"" in _html_src, "Selettore lingua generato da supportedLanguages (nessuna option hardcoded)")
+
+        _be = {}
+        for _lang in _SUPPORTED:
+            _be[_lang] = {}
+            for _f in sorted(_glob.glob(str(_SERVER_LOCALES / _lang / "*.json"))):
+                _ns = Path(_f).stem
+                for k, v in json.loads(Path(_f).read_text(encoding="utf-8")).items():
+                    _be[_lang][f"{_ns}.{k}"] = v
+        _be_ref = set(_be.get("en", {}))
+        for _lang in _SUPPORTED:
+            if _lang == "en":
+                continue
+            _missing = sorted(_be_ref - set(_be[_lang]))
+            _extra = sorted(set(_be[_lang]) - _be_ref)
+            runner.assert_true(not _missing and not _extra, f"Parità cataloghi backend i18n_locales/en ↔ {_lang} (mancanti: {_missing[:5]}, extra: {_extra[:5]})")
+            _ph_bad = [k for k in _be_ref if k in _be[_lang] and set(_re_i18n.findall(r"\{(\w+)\}", _be["en"][k])) != set(_re_i18n.findall(r"\{(\w+)\}", _be[_lang][k]))]
+            runner.assert_true(not _ph_bad, f"Placeholder {{param}} identici nei cataloghi backend en ↔ {_lang} (differenze: {_ph_bad[:5]})")
+        _py_used = set()
+        for _f in _glob.glob("app/**/*.py", recursive=True):
+            _py_src = Path(_f).read_text(encoding="utf-8")
+            _py_used |= set(_re_i18n.findall(r"\btr(?:_all)?\(\s*[\"']([a-z0-9_]+\.[a-z0-9_]+)[\"']", _py_src))
+            _py_used |= set(_re_i18n.findall(r"\blog_event\([^,]+,[^,]+,\s*[\"']([a-z0-9_]+\.[a-z0-9_]+)[\"']", _py_src))
+        _py_unknown = sorted(k for k in _py_used if k not in _be_ref)
+        runner.assert_true(not _py_unknown, f"Ogni chiave tr()/tr_all()/log_event() statica nel backend esiste nei cataloghi en (sconosciute: {_py_unknown[:8]})")
+        runner.assert_true(len(_be_ref) > 400 and len(_ref_keys) > 1000, f"Cataloghi popolati (backend {len(_be_ref)} chiavi, frontend {len(_ref_keys)} chiavi)")
+
         runner.print_summary()
 
 
