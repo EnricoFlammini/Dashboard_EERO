@@ -5413,7 +5413,7 @@ async def run_all_tests():
 
         # 5. Anti-Stored XSS in AI Diagnostic Summary
         index_html_text = Path("app/templates/index.html").read_text(encoding="utf-8")
-        runner.assert_true("x-html=\"renderSimpleMarkdown(currentLanguage === 'it' ? healthDetails?.ai_summary?.narrative_it : healthDetails?.ai_summary?.narrative_en)\"" in index_html_text, "index.html usa renderSimpleMarkdown per isolare ed eseguire escape HTML di narrative_it")
+        runner.assert_true("x-html=\"renderSimpleMarkdown(localized(healthDetails?.ai_summary, 'narrative'))\"" in index_html_text, "index.html usa renderSimpleMarkdown per isolare ed eseguire escape HTML della narrativa AI (viewer language)")
 
         # 6. Protezione RBAC su tutte le rotte operative identificate nell'audit
         from app.routers import system, automations, network

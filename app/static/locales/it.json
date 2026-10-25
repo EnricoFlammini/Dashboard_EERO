@@ -1160,7 +1160,355 @@
   },
   "common": {
     "devices": "dispositivi",
-    "anomalies": "anomalie"
+    "anomalies": "anomalie",
+    "on": "Acceso",
+    "off": "Spento",
+    "on_plural": "Accesi",
+    "off_plural": "Spenti"
+  },
+  "js": {
+    "set_theme": {
+      "theme_updated": "Tema Aggiornato"
+    },
+    "format_node_status": {
+      "rebooting": "In Riavvio",
+      "reconnecting": "Riconnessione..."
+    },
+    "set_tab": {
+      "login_required": "Accesso Richiesto",
+      "please_sign_in_to": "Effettua l'accesso per consultare questa sezione.",
+      "access_restricted": "Accesso Riservato",
+      "please_sign_in_as": "Effettua prima l'accesso come Admin per accedere alla gestione utenti.",
+      "please_sign_in_as_2": "Effettua prima l'accesso come Admin per accedere a backup e ripristino."
+    },
+    "toggle_demo_mode": {
+      "mode_switched": "Modalità Aggiornata",
+      "demo_mode_active_your": "Modalità Demo attiva. Il tuo token live reale rimane salvato.",
+      "live_network_active_real": "Rete Live attiva. Dati eero in tempo reale caricati."
+    },
+    "request_otp": {
+      "code_sent": "Codice Inviato",
+      "enter_the_6_digit": "Inserisci il codice a 6 cifre ricevuto via SMS/Email.",
+      "login_error": "Errore Login"
+    },
+    "verify_otp": {
+      "otp_verification_failed": "Verifica OTP fallita",
+      "login_successful": "Accesso Riuscito",
+      "connected_to_eero_mesh": "Connessione con eero stabilita.",
+      "otp_error": "Errore OTP"
+    },
+    "logout": {
+      "logged_out": "Disconnesso",
+      "session_closed_successfully": "Sessione terminata con successo."
+    },
+    "manual_refresh": {
+      "data_refreshed": "Dati Aggiornati",
+      "dashboard_synchronized_in_real": "Dashboard sincronizzata in tempo reale con la rete eero.",
+      "refresh_error": "Errore Aggiornamento"
+    },
+    "reboot_network": {
+      "are_you_sure_you": "Sei sicuro di voler riavviare l'intera rete mesh eero? La connessione cadrà per 2-3 minuti.",
+      "network_reboot": "Riavvio Rete",
+      "reboot_command_sent": "Comando inviato.",
+      "reboot_error": "Errore Riavvio"
+    },
+    "reboot_eero": {
+      "reboot_node": "Riavviare il nodo '{name}'?",
+      "node_reboot": "Riavvio Nodo",
+      "rebooting_node": "Riavvio nodo {name} avviato."
+    },
+    "toggle_eero_led": {
+      "failed_to_update_led": "Impossibile modificare il LED via API eero",
+      "led_updated": "LED Aggiornato",
+      "led_error": "Errore LED",
+      "led_state": "LED {name}: {state}"
+    },
+    "toggle_all_leds": {
+      "failed_to_update_all": "Impossibile modificare tutti i LED",
+      "all_leds": "Tutti i LED",
+      "all_leds_set_to": "Tutti i LED impostati a: {state}"
+    },
+    "format_first_seen_relative": {
+      "just_now": "Adesso",
+      "m_ago": "{diffMin}m fa",
+      "h_ago": "{diffHours}h fa",
+      "yesterday": "Ieri",
+      "d_ago": "{diffDays} gg fa",
+      "w_ago": "{diffWeeks} sett. fa"
+    },
+    "toggle_device_sort": {
+      "invalid_ipv4_address_format": "Formato indirizzo IPv4 non valido (es. 192.168.4.50).",
+      "ip_is_the_eero": "L'IP {targetIp} è l'indirizzo del Gateway eero.",
+      "ip_is_assigned_to": "L'IP {targetIp} appartiene al nodo mesh '{name}'.",
+      "this_device_is_already": "Questo dispositivo sta già usando l'IP {targetIp}. Clicca 'Riserva' per confermarlo fisso e permanente su eero.",
+      "ip_is_currently_reserved": "L'IP {targetIp} è attualmente prenotato per '{description}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.",
+      "ip_is_currently_assigned": "L'IP {targetIp} è attualmente assegnato a '{custom_name}'. Cliccando 'Riserva', verrà riservato per questo dispositivo.",
+      "ip_address_is_available": "Indirizzo IP disponibile e pronto per la prenotazione."
+    },
+    "save_device_reservation": {
+      "ip_address_successfully_reserved": "Indirizzo {ip} prenotato con successo su eero.",
+      "ip_reservation_error": "Errore Prenotazione IP"
+    },
+    "remove_device_reservation": {
+      "error_removing_ip_reservation": "Errore durante la rimozione della prenotazione",
+      "static_ip_reservation_removed": "IP Statico rimosso. Il dispositivo utilizzerà DHCP dinamico.",
+      "removal_error": "Errore Rimozione"
+    },
+    "add_device_port_forward": {
+      "missing_ip": "IP Mancante",
+      "device_must_have_a": "Il dispositivo deve avere un indirizzo IP valido per aprire porte.",
+      "invalid_port": "Porta non valida",
+      "please_enter_valid_port": "Inserisci numeri di porta validi compresi tra 1 e 65535.",
+      "error_creating_port_forward": "Errore durante la creazione del port forward",
+      "rule_for_port_created": "Regola per porta {pFrom} creata con successo su eero.",
+      "port_forward_error": "Errore Port Forwarding"
+    },
+    "delete_device_port_forward": {
+      "error_deleting_forwarding_rule": "Errore durante la cancellazione della regola",
+      "port_forwarding_rule_deleted": "Port forwarding rimosso da eero.",
+      "deletion_error": "Errore Cancellazione"
+    },
+    "save_device_metadata": {
+      "device_metadata_and_category": "Metadati e categoria dispositivo salvati con successo.",
+      "save_error": "Errore Salvataggio"
+    },
+    "create_profile": {
+      "name_required": "Nome Richiesto",
+      "please_enter_a_profile": "Inserisci il nome del profilo o dell'utente.",
+      "unable_to_create_profile": "Impossibile creare il profilo",
+      "profile_created": "Profilo Creato",
+      "profile_created_successfully_on": "Profilo '{name}' creato con successo su eero.",
+      "profile_creation_error": "Errore Creazione Profilo"
+    },
+    "delete_profile": {
+      "this_profile": "questo profilo",
+      "are_you_sure_you": "Sei sicuro di voler eliminare il profilo '{pName}'?",
+      "unable_to_delete_profile": "Impossibile eliminare il profilo",
+      "profile_deleted": "Profilo Eliminato",
+      "profile_removed_from_eero": "Profilo '{pName}' rimosso da eero.",
+      "deletion_error": "Errore Eliminazione"
+    },
+    "assign_device_to_profile": {
+      "profile_assignment_error": "Errore assegnazione profilo",
+      "profile_updated": "Profilo Aggiornato",
+      "device_removed_from_profile": "Dispositivo rimosso dal profilo con successo.",
+      "device_assigned_to_profile": "Dispositivo assegnato al profilo con successo.",
+      "assignment_error": "Errore Assegnazione"
+    },
+    "trigger_auto_update": {
+      "pulling_new_docker_image": "Download nuova immagine Docker in corso...",
+      "restarting_container_auto_reconnecting": "Riavvio del container in corso... Riconnessione automatica..."
+    },
+    "poll_for_health_and_reload": {
+      "update_completed_reloading_dashboard": "Aggiornamento completato! Ricaricamento interfaccia..."
+    },
+    "copy_to_clipboard": {
+      "clipboard": "Appunti",
+      "copied_to_clipboard": "Copiato negli appunti!"
+    },
+    "fallback_copy_text": {
+      "copy_failed": "Errore durante la copia"
+    },
+    "copy_guest_credentials": {
+      "wi_fi_open_network": "Wi-Fi: {name}\n(Rete aperta senza password)",
+      "guest_wi_fi_credentials": "Credenziali Wi-Fi ospiti copiate negli appunti!"
+    },
+    "copy_guest_password": {
+      "open_network": "Rete aperta",
+      "guest_network_is_open": "La rete ospiti è aperta: non è richiesta alcuna password.",
+      "guest_password_copied_to": "Password ospiti copiata negli appunti!"
+    },
+    "toggle_focus_mode": {
+      "gaming_mode_activated": "Gaming Mode Attiva",
+      "gaming_mode_deactivated": "Gaming Mode Disattivata",
+      "focus_mode_error": "Errore Focus Mode"
+    },
+    "save_night_mode": {
+      "night_mode": "Modalità Notte",
+      "led_schedule_saved_successfully": "Orari LED salvati correttamente."
+    },
+    "save_notification_settings": {
+      "notifications_saved": "Notifiche Salvate",
+      "alert_channel_settings_updated": "Impostazioni canali di allarme aggiornate."
+    },
+    "test_notifications": {
+      "test_sent": "Test Inviato",
+      "test_error": "Errore Test"
+    },
+    "add_dns_instance": {
+      "new_instance_added": "Nuova Istanza Aggiunta"
+    },
+    "remove_dns_instance": {
+      "are_you_sure_you": "Sei sicuro di voler rimuovere l'istanza '{name}'?",
+      "instance_removed": "Istanza Rimossa"
+    },
+    "save_dns_settings": {
+      "multi_dns_settings_saved": "Configurazioni Multi-DNS salvate con successo."
+    },
+    "test_dns_instance": {
+      "connection_test_succeeded": "Test Connessione Riuscito",
+      "test_failed": "Test Fallito"
+    },
+    "test_all_dns": {
+      "all_tests_succeeded": "Test Globale Riuscito",
+      "all_dns_instances_are": "Tutte le {total_tested} istanze DNS sono operative!",
+      "some_tests_failed": "Verifica Parziale o Fallita",
+      "global_test_error": "Errore Test Globale"
+    },
+    "sync_dns_instance": {
+      "sync_succeeded": "Sincronizzazione Riuscita",
+      "sync_error": "Errore Sincronizzazione",
+      "completed": "Sincronizzazione completata con successo."
+    },
+    "sync_all_dns": {
+      "global_sync_completed": "Sincronizzazione Globale Completata",
+      "completed": "Tutte le istanze DNS sono state sincronizzate."
+    },
+    "save_ad_guard_settings": {
+      "settings_saved_successfully": "Impostazioni salvate con successo.",
+      "adguard_error": "Errore AdGuard",
+      "could_not_save_settings": "Impossibile salvare le impostazioni."
+    },
+    "test_ad_guard_connection": {
+      "could_not_connect_to": "Impossibile connettersi ad AdGuard Home"
+    },
+    "sync_ad_guard_now": {
+      "sync_completed": "Sincronizzazione Completata",
+      "synchronization_failed": "Sincronizzazione non riuscita.",
+      "completed": "Sincronizzazione AdGuard completata con successo."
+    },
+    "save_mqtt_settings": {
+      "mqtt_configuration": "Configurazione MQTT",
+      "mqtt_settings_saved_successfully": "Impostazioni MQTT salvate con successo!",
+      "mqtt_error": "Errore MQTT",
+      "failed_to_save_mqtt": "Errore salvataggio MQTT."
+    },
+    "test_mqtt_connection": {
+      "mqtt_connection_test": "Test Connessione MQTT",
+      "connection_to_broker_succeeded": "Connessione al broker riuscita!",
+      "mqtt_test_failed": "Test MQTT Fallito",
+      "could_not_connect_to": "Impossibile connettersi al broker MQTT.",
+      "mqtt_test_error": "Errore Test MQTT"
+    },
+    "toggle_mqtt_enabled": {
+      "mqtt_integration": "Integrazione MQTT",
+      "mqtt_enabled_and_started": "MQTT abilitato e avviato.",
+      "mqtt_disabled": "MQTT disattivato."
+    },
+    "digest_hour_badge_text": {
+      "text": "Ore {formatted}"
+    },
+    "save_digest_settings": {
+      "scheduled_digest_enabled": "Digest Programmato Attivo",
+      "scheduled_digest_disabled": "Digest Programmato Disattivato",
+      "automatic_daily_report_at": "Il report automatico delle {hStr} è abilitato.",
+      "automatic_daily_report_dispatch": "L'invio automatico del report è stato sospeso.",
+      "could_not_save_setting": "Impossibile salvare l'impostazione."
+    },
+    "trigger_digest": {
+      "digest_sent": "Digest Inviato",
+      "digest_generated_and_sent": "Riepilogo generato e inoltrato sui canali attivi.",
+      "digest_sending_error": "Errore Invio Digest",
+      "could_not_send_digest": "Impossibile inviare il digest.",
+      "digest_error": "Errore Digest"
+    },
+    "format_devices_tooltip_after_body": {
+      "devices": "Dispositivi (",
+      "and_more": "  ... e altri {length}"
+    },
+    "render_frequencies_chart": {
+      "connected_clients": " Client Connessi: "
+    },
+    "render_node_load_chart": {
+      "connected_clients": "Client Connessi: "
+    },
+    "export_data": {
+      "data_export": "Esportazione Dati",
+      "file_downloaded_successfully": "File {filename} scaricato con successo.",
+      "export_error": "Errore Esportazione"
+    },
+    "perform_admin_setup": {
+      "username_must_be_at": "Lo username deve contenere almeno 3 caratteri.",
+      "password_must_be_at": "La password deve contenere almeno 6 caratteri.",
+      "passwords_do_not_match": "Le password inserite non coincidono.",
+      "administrator_setup_complete": "Setup Amministratore Completato",
+      "welcome": "Benvenuto ",
+      "setup_failed": "Errore durante la configurazione"
+    },
+    "perform_local_login": {
+      "username_and_password_required": "Inserisci username e password",
+      "login_successful": "Accesso Eseguito",
+      "invalid_credentials": "Credenziali non valide"
+    },
+    "perform_local_logout": {
+      "local_session_terminated": "Sessione locale terminata"
+    },
+    "init_inactivity_watchdog": {
+      "session_expired": "Sessione Scaduta",
+      "automatically_logged_out_after": "Disconnessione automatica eseguita dopo {timeout} minuti di inattività."
+    },
+    "save_session_timeout": {
+      "setting_saved": "Impostazione Salvata",
+      "timeout_set": "Timeout inattività impostato a {val} minuti.",
+      "auto_logout_disabled": "Disconnessione automatica disattivata."
+    },
+    "start_create_user": {
+      "authentication_required": "Autenticazione Richiesta",
+      "log_in_as_administrator": "Accedi come amministratore per creare nuovi utenti."
+    },
+    "format_user_permissions_count": {
+      "all_active": "Tutti ({total} attivi)",
+      "active": "attivi"
+    },
+    "save_local_user": {
+      "log_in_as_administrator": "Accedi con l'account amministratore per salvare gli utenti.",
+      "username_is_required": "Username obbligatorio",
+      "user_saved_successfully": "Utente salvato correttamente",
+      "operation_failed": "Operazione fallita"
+    },
+    "delete_local_user": {
+      "are_you_sure_you": "Sei sicuro di voler eliminare l'utente \"{username}\"?",
+      "user_deleted": "Utente {username} eliminato",
+      "failed_to_delete_user": "Impossibile eliminare utente"
+    },
+    "download_backup": {
+      "error_during_backup_export": "Errore durante esportazione backup",
+      "backup_exported": "Backup Esportato",
+      "json_file_download_completed": "Download del file JSON completato",
+      "backup_error": "Errore Backup"
+    },
+    "upload_backup": {
+      "configuration_restored_successfully": "Configurazione ripristinata con successo!",
+      "restore_completed": "Ripristino Completato",
+      "data_restored_successfully": "I dati sono stati ripristinati correttamente",
+      "unable_to_restore_file": "Impossibile ripristinare il file",
+      "restore_error": "Errore Ripristino",
+      "restore_error_2": "Errore ripristino",
+      "parsing_error": "Errore di parsing",
+      "file_error": "Errore File",
+      "selected_file_is_not": "Il file selezionato non è un JSON valido"
+    },
+    "trigger_db_compaction": {
+      "database_compacted": "Database Compattato",
+      "compaction_and_optimization_completed": "Compattazione e ottimizzazione completate con successo."
+    },
+    "format_schedule_target": {
+      "user": "Utente: ",
+      "led": "Luce LED: ",
+      "led_all_nodes": "Luce LED: Tutti i Nodi",
+      "reboot": "Riavvio: ",
+      "reboot_entire_mesh": "Riavvio: Tutta la Rete",
+      "category": "Categoria: ",
+      "device": "Dispositivo: ",
+      "entire_network": "Tutta la Rete"
+    },
+    "format_schedule_action": {
+      "pause_connection": "Pausa Connessione",
+      "resume_connection": "Ripristino Connessione",
+      "led_off": "Spegnimento LED",
+      "led_on": "Accensione LED",
+      "scheduled_reboot": "Riavvio Programmato"
+    }
   }
 }
 
