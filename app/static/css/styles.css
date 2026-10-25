@@ -961,7 +961,7 @@ html.dark .sidebar-btn-inactive:hover {
 .device-table .device-col-address { width: clamp(9rem, 14cqw, 12rem); }
 .device-table .device-col-profile { width: clamp(7.5rem, 10cqw, 11rem); }
 .device-table .device-col-node { width: clamp(6.5rem, 8.5cqw, 10rem); }
-.device-table .device-col-band { width: clamp(7.75rem, 9cqw, 9.25rem); }
+.device-table .device-col-band { width: clamp(6.25rem, 7.5cqw, 7.5rem); }
 .device-table .device-col-signal { width: clamp(6rem, 7cqw, 7.5rem); }
 .device-table .device-col-traffic { width: clamp(9.5rem, 11cqw, 12rem); }
 .device-table .device-col-first-seen { width: clamp(7rem, 9cqw, 9.5rem); }
@@ -985,6 +985,11 @@ html.dark .sidebar-btn-inactive:hover {
 
 .device-table td.device-band-cell {
   white-space: nowrap;
+}
+
+/* Band sits above the channel in the cell, so the "Band / Channel" header may wrap too. */
+.device-table th.device-col-band {
+  white-space: normal;
 }
 
 .device-table td.device-address-cell {
