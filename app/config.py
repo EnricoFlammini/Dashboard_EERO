@@ -1,14 +1,16 @@
 import os
 from pathlib import Path
 
+from app.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
+
 def _normalize_language(value: object) -> str:
-    """Maps DASHBOARD_LANG values such as 'IT', 'it-IT' or 'it_IT' to 'en'/'it'; anything else is English."""
+    """Maps DASHBOARD_LANG values such as 'IT', 'it-IT' or 'it_IT' to a supported code; anything else is the default (English)."""
     code = str(value or "").strip().lower().replace("_", "-").split("-", 1)[0]
-    return code if code in ("en", "it") else "en"
+    return code if code in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
 
 
 def _default_language() -> str:
-    return _normalize_language(os.getenv("DASHBOARD_LANG", "en"))
+    return _normalize_language(os.getenv("DASHBOARD_LANG", DEFAULT_LANGUAGE))
 
 
 def _get_default_build_number() -> str:

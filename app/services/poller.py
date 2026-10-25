@@ -228,7 +228,7 @@ class BackgroundPoller:
                 "description": description_i18n[lang_now],
                 "description_i18n": description_i18n,
                 "affected_items": [item[lang_now] for item in degraded_backhaul_nodes],
-                "affected_items_i18n": {lang: [item[lang] for item in degraded_backhaul_nodes] for lang in ("it", "en")}
+                "affected_items_i18n": {lang: [item[lang] for item in degraded_backhaul_nodes] for lang in SUPPORTED_LANGUAGES}
             })
             add_recommendation(tr_all("health.rec_degraded_backhaul"))
 
@@ -258,7 +258,7 @@ class BackgroundPoller:
                 "description": description_i18n[lang_now],
                 "description_i18n": description_i18n,
                 "affected_items": [tr("health.item_wan_gateway")],
-                "affected_items_i18n": {lang: [tr("health.item_wan_gateway", lang=lang)] for lang in ("it", "en")}
+                "affected_items_i18n": {lang: [tr("health.item_wan_gateway", lang=lang)] for lang in SUPPORTED_LANGUAGES}
             })
             add_recommendation(tr_all("health.rec_wan_offline"))
         else:
@@ -280,7 +280,7 @@ class BackgroundPoller:
                     "description": description_i18n[lang_now],
                     "description_i18n": description_i18n,
                     "affected_items": [tr("health.item_ping_gateway", ping=ping_str)],
-                    "affected_items_i18n": {lang: [tr("health.item_ping_gateway", ping=ping_str, lang=lang)] for lang in ("it", "en")}
+                    "affected_items_i18n": {lang: [tr("health.item_ping_gateway", ping=ping_str, lang=lang)] for lang in SUPPORTED_LANGUAGES}
                 })
                 add_recommendation(tr_all("health.rec_high_latency"))
             elif ping_val > 45.0:
@@ -298,7 +298,7 @@ class BackgroundPoller:
                     "description": description_i18n[lang_now],
                     "description_i18n": description_i18n,
                     "affected_items": [tr("health.item_ping", ping=ping_str)],
-                    "affected_items_i18n": {lang: [tr("health.item_ping", ping=ping_str, lang=lang)] for lang in ("it", "en")}
+                    "affected_items_i18n": {lang: [tr("health.item_ping", ping=ping_str, lang=lang)] for lang in SUPPORTED_LANGUAGES}
                 })
 
         wan_status = "optimal" if wan_score >= 25 else ("warning" if wan_score >= 15 else "critical")
@@ -351,7 +351,7 @@ class BackgroundPoller:
                 "description": description_i18n[lang_now],
                 "description_i18n": description_i18n,
                 "affected_items": [item[lang_now] for item in all_affected[:6]],
-                "affected_items_i18n": {lang: [item[lang] for item in all_affected[:6]] for lang in ("it", "en")}
+                "affected_items_i18n": {lang: [item[lang] for item in all_affected[:6]] for lang in SUPPORTED_LANGUAGES}
             })
             devices_i18n = {lang: ", ".join(item[lang] for item in all_affected[:3]) for lang in SUPPORTED_LANGUAGES}
             add_recommendation(_tr_each("health.rec_weak_clients", devices=devices_i18n))
@@ -396,7 +396,7 @@ class BackgroundPoller:
                         tr("health.item_band_clients", band="5 GHz", count=c_5g, lang=lang),
                         tr("health.item_band_clients", band="6 GHz", count=c_6g, lang=lang),
                     ]
-                    for lang in ("it", "en")
+                    for lang in SUPPORTED_LANGUAGES
                 }
             })
             add_recommendation(tr_all("health.rec_band_24"))
@@ -422,7 +422,7 @@ class BackgroundPoller:
                         "affected_items": [_tr_each("health.item_node_clients", node=node_name, count=cnt)[lang_now]],
                         "affected_items_i18n": {
                             lang: [_tr_each("health.item_node_clients", node=node_name, count=cnt)[lang]]
-                            for lang in ("it", "en")
+                            for lang in SUPPORTED_LANGUAGES
                         }
                     })
                     break

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ default_language }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,9 +16,10 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
+        var supported = {{ supported_languages | tojson }};
         var l = localStorage.getItem('eero_lang');
-        if (l !== 'en' && l !== 'it') {
-          l = '{{ default_language }}' === 'it' ? 'it' : 'en';
+        if (supported.indexOf(l) === -1) {
+          l = supported.indexOf('{{ default_language }}') !== -1 ? '{{ default_language }}' : 'en';
         }
         document.documentElement.lang = l;
       } catch (e) {}
@@ -33,6 +34,7 @@
       buildNumber: "{{ build_number }}",
       fullVersion: "{{ full_version }}",
       defaultLanguage: "{{ default_language }}",
+      supportedLanguages: {{ supported_languages | tojson }},
       initialAuthenticated: "{{ 'true' if initial_authenticated else 'false' }}"
     };
   </script>
@@ -726,8 +728,9 @@
             x-model="currentLanguage" 
             @change="setLanguage($event.target.value)"
             class="text-[11px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] rounded-lg px-2 py-1 transition cursor-pointer focus:outline-none">
-            <option value="it">🇮🇹 IT</option>
-            <option value="en">🇬🇧 EN</option>
+            <template x-for="code in supportedLanguages" :key="code">
+              <option :value="code" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+            </template>
           </select>
           <!-- Logout Button (when logged in) -->
           <button 
@@ -8165,8 +8168,9 @@
             x-model="currentLanguage" 
             @change="setLanguage($event.target.value)"
             class="text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-xl px-2.5 py-2 transition cursor-pointer focus:outline-none">
-            <option value="it">🇮🇹 IT</option>
-            <option value="en">🇬🇧 EN</option>
+            <template x-for="code in supportedLanguages" :key="code">
+              <option :value="code" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+            </template>
           </select>
 
           <!-- Login Button (when unauthenticated) -->

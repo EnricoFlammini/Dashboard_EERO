@@ -29,14 +29,15 @@ document.addEventListener('alpine:init', () => {
     currentTheme: localStorage.getItem('eero_theme') || 'system',
 
     // i18n Multi-Language State
-    supportedLanguages: ['en', 'it'],
+    supportedLanguages: (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'],
     currentLanguage: (() => {
       // A choice saved in this browser wins; otherwise the server default
       // (saved system language, else DASHBOARD_LANG, else English).
+      const supported = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'];
       const saved = localStorage.getItem('eero_lang');
-      if (saved === 'en' || saved === 'it') return saved;
+      if (supported.includes(saved)) return saved;
       const serverDefault = (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.defaultLanguage) || '';
-      return serverDefault === 'it' ? 'it' : 'en';
+      return supported.includes(serverDefault) ? serverDefault : 'en';
     })(),
     translations: {},
     fallbackTranslations: {},
@@ -5378,8 +5379,7 @@ document.addEventListener('alpine:init', () => {
     permissionLabel(perm) {
       if (!perm) return '';
       return this.t(`permissions.${perm.key}`)
-        || (this.currentLanguage === 'en' && perm.label_en)
-        || perm.label
+        || this.localized(perm, 'label')
         || perm.key;
     },
 

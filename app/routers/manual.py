@@ -2,6 +2,8 @@ import logging
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
 
+from app.i18n import DEFAULT_LANGUAGE, normalize_language
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/manual", tags=["User Manual"])
@@ -763,15 +765,24 @@ In dual-stack home networks, connected devices frequently query local DNS resolv
 ]
 
 
+MANUAL_SECTIONS_BY_LANG: Dict[str, List[Dict[str, Any]]] = {"it": MANUAL_SECTIONS_IT, "en": MANUAL_SECTIONS_EN}
+
+
+def _resolve_lang(lang: Optional[str]) -> str:
+    """Maps the requested language to one that has a manual, falling back to English."""
+    code = normalize_language(lang) or DEFAULT_LANGUAGE
+    return code if code in MANUAL_SECTIONS_BY_LANG else DEFAULT_LANGUAGE
+
+
 @router.get("/sections")
 async def get_manual_sections(lang: Optional[str] = Query("en")):
-    """Restituisce tutti i capitoli del manuale utente nella lingua richiesta (it/en)."""
-    is_it = bool(lang and lang.lower().startswith("it"))
-    sections = MANUAL_SECTIONS_IT if is_it else MANUAL_SECTIONS_EN
+    """Restituisce tutti i capitoli del manuale utente nella lingua richiesta."""
+    code = _resolve_lang(lang)
+    sections = MANUAL_SECTIONS_BY_LANG[code]
     return {
         "status": "success",
         "count": len(sections),
-        "language": "it" if is_it else "en",
+        "language": code,
         "sections": sections
     }
 
@@ -779,12 +790,12 @@ async def get_manual_sections(lang: Optional[str] = Query("en")):
 @router.get("/sections/{section_id}")
 async def get_manual_section(section_id: str, lang: Optional[str] = Query("en")):
     """Restituisce una specifica sezione del manuale (utilizzata anche per i tooltip contestuali)."""
-    is_it = bool(lang and lang.lower().startswith("it"))
-    sections = MANUAL_SECTIONS_IT if is_it else MANUAL_SECTIONS_EN
+    code = _resolve_lang(lang)
+    sections = MANUAL_SECTIONS_BY_LANG[code]
     section = next((s for s in sections if s["id"] == section_id), None)
     if not section:
         return {"status": "error", "message": "Section not found."}
-    return {"status": "success", "language": "it" if is_it else "en", "section": section}
+    return {"status": "success", "language": code, "section": section}
 
 
 CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
@@ -1154,17 +1165,20 @@ Below is a summary of the main release highlights. The complete changelog with a
 """
 
 
+CHANGELOG_SUMMARY_BY_LANG: Dict[str, str] = {"it": CHANGELOG_SUMMARY_IT, "en": CHANGELOG_SUMMARY_EN}
+
+
 @router.get("/changelog")
 async def get_changelog(lang: Optional[str] = Query("en")):
     """Restituisce solo i titoli e gli highlight principali delle versioni nella lingua richiesta (it/en)."""
     from app.config import settings
 
-    is_it = bool(lang and lang.lower().startswith("it"))
-    content = CHANGELOG_SUMMARY_IT if is_it else CHANGELOG_SUMMARY_EN
+    code = _resolve_lang(lang)
+    content = CHANGELOG_SUMMARY_BY_LANG[code]
 
     return {
         "status": "success",
-        "language": "it" if is_it else "en",
+        "language": code,
         "version": settings.app_version,
         "content": content
     }

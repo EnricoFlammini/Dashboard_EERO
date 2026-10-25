@@ -11,6 +11,9 @@ from app.config import settings
 from app.services.runtime_info import get_runtime_info
 from app.i18n import current_language, log_event, normalize_language, tr
 
+# changelog.md is written in Italian; readers of that language get it before the GitHub release body.
+CHANGELOG_LANGUAGE = "it"
+
 logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "EnricoFlammini/Dashboard_EERO"
@@ -99,7 +102,7 @@ def select_release_notes(version: str, github_notes: str = "", lang: Optional[st
     active = normalize_language(lang) or current_language()
     local_notes = extract_release_notes_from_changelog(version)
     github_notes = (github_notes or "").strip()
-    if active == "it":
+    if active == CHANGELOG_LANGUAGE:
         return local_notes or github_notes
     return github_notes or local_notes
 

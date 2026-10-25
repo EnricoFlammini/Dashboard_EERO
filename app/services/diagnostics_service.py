@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.i18n import tr
+from app.i18n import SUPPORTED_LANGUAGES, tr
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +11,27 @@ logger = logging.getLogger(__name__)
 def _it_en(key: str, **params: Any) -> Tuple[str, str]:
     """Returns the (Italian, English) catalog texts for the paired *_it / *_en payload fields."""
     return tr(key, lang="it", **params), tr(key, lang="en", **params)
+
+
+def with_i18n_maps(obj: Any) -> Any:
+    """Adds a ``<field>_i18n`` map next to every legacy ``<field>_it`` / ``<field>_en`` pair.
+
+    Walks dicts and lists in place. The frontend reads the map through
+    ``localized(obj, field)`` and keeps working for any language in
+    SUPPORTED_LANGUAGES, while the legacy pair stays for older clients.
+    """
+    if isinstance(obj, list):
+        for item in obj:
+            with_i18n_maps(item)
+    elif isinstance(obj, dict):
+        for key in list(obj.keys()):
+            if key.endswith("_en") and f"{key[:-3]}_it" in obj and f"{key[:-3]}_i18n" not in obj:
+                base = key[:-3]
+                obj[f"{base}_i18n"] = {lang: obj[f"{base}_{lang}"] for lang in SUPPORTED_LANGUAGES if f"{base}_{lang}" in obj}
+        for value in obj.values():
+            if isinstance(value, (dict, list)):
+                with_i18n_maps(value)
+    return obj
 
 # Pattern per identificare apparati wireless tipicamente mobili (smartphone, tablet, laptop, smartwatch)
 MOBILE_DEVICE_PATTERNS = [
@@ -244,12 +265,12 @@ class DiagnosticsService:
                     rssi=rssi,
                     suggested=suggested_node or tr("diagnostics.fallback_nearby_node", lang=lang),
                 )
-                for lang in ("it", "en")
+                for lang in SUPPORTED_LANGUAGES
             )
 
             suggested_i18n = {
                 lang: suggested_node or tr("diagnostics.fallback_nearby_node", lang=lang)
-                for lang in ("it", "en")
+                for lang in SUPPORTED_LANGUAGES
             }
 
             advisor_data = {
@@ -268,6 +289,7 @@ class DiagnosticsService:
             }
 
             # Assegna il badge direttamente all'oggetto device
+            with_i18n_maps(advisor_data)
             d["roaming_advisor"] = advisor_data
             sticky_devices.append(advisor_data)
 
@@ -453,7 +475,7 @@ class DiagnosticsService:
         narrative_it = " ".join(narrative_it_parts) if narrative_it_parts else tr("diagnostics.narrative_none", lang="it")
         narrative_en = " ".join(narrative_en_parts) if narrative_en_parts else tr("diagnostics.narrative_none", lang="en")
 
-        return {
+        return with_i18n_maps({
             "score": score,
             "status": status,
             "overview_it": overview_it,
@@ -462,7 +484,7 @@ class DiagnosticsService:
             "narrative_en": narrative_en,
             "checklist": checklist,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        }
+        })
 
     def detect_iot_night_anomalies(
         self,
@@ -597,7 +619,7 @@ class DiagnosticsService:
                 }
                 anomalies.append(anom)
 
-        return anomalies
+        return with_i18n_maps(anomalies)
 
 
 # Istanza singleton del servizio

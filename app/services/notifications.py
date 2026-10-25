@@ -42,24 +42,24 @@ class NotificationService:
         }
 
     async def get_language(self, override_lang: Optional[str] = None) -> str:
-        """Determines the active notification language ('en' or 'it')."""
-        if override_lang and override_lang.lower() in ("it", "en"):
+        """Determines the active notification language (one of i18n.SUPPORTED_LANGUAGES)."""
+        if override_lang and override_lang.lower() in i18n.SUPPORTED_LANGUAGES:
             return override_lang.lower()
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode and "system_language" in self._demo_settings:
             demo_lang = self._demo_settings.get("system_language")
-            if demo_lang and demo_lang.lower() in ("it", "en"):
+            if demo_lang and demo_lang.lower() in i18n.SUPPORTED_LANGUAGES:
                 i18n.set_system_language(demo_lang)
                 return demo_lang.lower()
         lang = await db_service.get_setting("system_language", settings.dashboard_lang)
-        resolved = lang.lower() if lang and lang.lower() in ("it", "en") else "en"
+        resolved = lang.lower() if lang and lang.lower() in i18n.SUPPORTED_LANGUAGES else i18n.DEFAULT_LANGUAGE
         i18n.set_system_language(resolved)
         return resolved
 
     async def set_language(self, lang: str):
         """Sets the active system language."""
         lang = lang.lower().strip()
-        if lang in ("it", "en"):
+        if lang in i18n.SUPPORTED_LANGUAGES:
             self._demo_settings["system_language"] = lang
             await db_service.set_setting("system_language", lang)
             i18n.set_system_language(lang)
@@ -122,7 +122,7 @@ class NotificationService:
                 self._demo_settings["pushover_user_key"] = pushover_user_key.strip()
             if pushover_api_token is not None:
                 self._demo_settings["pushover_api_token"] = pushover_api_token.strip()
-            if language is not None and language.lower().strip() in ("it", "en"):
+            if language is not None and language.lower().strip() in i18n.SUPPORTED_LANGUAGES:
                 self._demo_settings["system_language"] = language.lower().strip()
                 i18n.set_system_language(language)
             return
@@ -143,7 +143,7 @@ class NotificationService:
             await db_service.set_setting("pushover_user_key", pushover_user_key.strip())
         if pushover_api_token is not None:
             await db_service.set_setting("pushover_api_token", pushover_api_token.strip())
-        if language is not None and language.lower().strip() in ("it", "en"):
+        if language is not None and language.lower().strip() in i18n.SUPPORTED_LANGUAGES:
             await db_service.set_setting("system_language", language.lower().strip())
             i18n.set_system_language(language)
 
