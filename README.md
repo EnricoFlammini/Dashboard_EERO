@@ -379,6 +379,34 @@ In dual-stack networks, local devices query DNS servers using local IPv6 **ULA**
 
 ---
 
+## 🧑‍💻 Local Development (run from source)
+
+Use this to try a branch or a fix in a browser without building a Docker image.
+
+```bash
+# 1. One-time setup: virtualenv + dependencies (Python 3.12+)
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. Start an isolated Demo Mode instance on http://localhost:8099
+#    (simulated mesh data, scratch data dir, no eero login needed)
+mkdir -p /tmp/eero-demo-data
+DEMO_MODE=true DATA_DIR=/tmp/eero-demo-data ADMIN_USER=qa ADMIN_PASSWORD='change-me' \
+  .venv/bin/uvicorn app.main:app --port 8099 --reload
+```
+
+Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD` you set, and use the 🇮🇹/🇬🇧 selector in the sidebar to switch language. `--reload` restarts the server when a `.py` file changes; for `index.html`, `app.js` or the locale JSON files a browser refresh is enough. Static assets are versioned by build number, so use a hard refresh (Ctrl/Cmd+Shift+R) if an old `app.js` seems cached.
+
+* **Against your real eero account:** drop `DEMO_MODE` and point `DATA_DIR` at a private directory, e.g. `DATA_DIR=./data`. The OTP login flow runs exactly as in Docker. Keep that directory out of git: it holds `session.json` and the SQLite database.
+* **Container build of your working tree:** `docker compose -f docker-compose.dev.yml up -d --build` builds the current checkout and serves it on port **8084** with `./data` mounted.
+* **Before opening a PR:** run the pre-release suite. It defaults to a temporary `DATA_DIR`, so it never touches a live install.
+  ```bash
+  .venv/bin/python scripts/run_pre_release_tests.py
+  ```
+* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to both `en` and `it`; the test suite checks key parity.
+
+---
+
 ## 🤖 Acknowledgements & AI Assistance
 
 This project stands on the shoulders of the open-source networking community and modern development tools:
@@ -660,6 +688,34 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    * **Chiusura del Ciclo ("Full-Circle"):** Alla sincronizzazione successiva, l'indirizzo ULA scoperto viene registrato nel client ufficiale su AdGuard Home, azzerando i client anonimi!
 
 > 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!
+
+---
+
+## 🧑‍💻 Sviluppo Locale (esecuzione dai sorgenti)
+
+Utile per provare un branch o una fix nel browser senza costruire un'immagine Docker.
+
+```bash
+# 1. Setup una tantum: virtualenv + dipendenze (Python 3.12+)
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. Avvia un'istanza isolata in Modalità Demo su http://localhost:8099
+#    (rete simulata, directory dati temporanea, nessun login eero richiesto)
+mkdir -p /tmp/eero-demo-data
+DEMO_MODE=true DATA_DIR=/tmp/eero-demo-data ADMIN_USER=qa ADMIN_PASSWORD='cambiami' \
+  .venv/bin/uvicorn app.main:app --port 8099 --reload
+```
+
+Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impostati sopra e usa il selettore 🇮🇹/🇬🇧 nella sidebar per cambiare lingua. `--reload` riavvia il server quando cambia un file `.py`; per `index.html`, `app.js` o i JSON delle lingue basta ricaricare la pagina. Gli asset statici sono versionati per build number: se `app.js` sembra in cache, usa un hard refresh (Ctrl/Cmd+Shift+R).
+
+* **Con il tuo account eero reale:** togli `DEMO_MODE` e punta `DATA_DIR` a una directory privata, es. `DATA_DIR=./data`. Il login OTP funziona esattamente come in Docker. Tieni quella directory fuori da git: contiene `session.json` e il database SQLite.
+* **Build container del tuo working tree:** `docker compose -f docker-compose.dev.yml up -d --build` costruisce il checkout corrente e lo espone sulla porta **8084** con `./data` montato.
+* **Prima di aprire una PR:** esegui la suite pre-rilascio. Usa di default una `DATA_DIR` temporanea, quindi non tocca mai un'installazione reale.
+  ```bash
+  .venv/bin/python scripts/run_pre_release_tests.py
+  ```
+* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave sia in `en` sia in `it`; la suite di test verifica la parità delle chiavi.
 
 ---
 

@@ -1,0 +1,22 @@
+{
+  "view_topology_label": "Visualizzazione Topologia Mesh & WAN",
+  "view_topology_desc": "Visualizzazione mappa nodi mesh, stato operativo e backhaul",
+  "view_clients_label": "Visualizzazione Flotta Dispositivi",
+  "view_clients_desc": "Accesso all'elenco dei dispositivi connessi/noti, IP, MAC e frequenze",
+  "view_analytics_label": "Visualizzazione Grafici & SLA",
+  "view_analytics_desc": "Consultazione grafici di traffico, latenza e metriche SLA",
+  "view_logs_label": "Visualizzazione Log & Audit",
+  "view_logs_desc": "Consultazione registro allarmi, audit di sistema e log eventi",
+  "action_reboot_nodes_label": "Riavvio Nodi Mesh eero",
+  "action_reboot_nodes_desc": "Autorizzazione al riavvio dell'intera rete mesh o dei singoli nodi",
+  "action_pause_devices_label": "Sospensione / Pausa Wi-Fi Dispositivi",
+  "action_pause_devices_desc": "Messa in pausa temporanea dell'accesso a Internet per dispositivi",
+  "action_manage_rules_label": "Gestione Regole & Port Forwarding",
+  "action_manage_rules_desc": "Creazione, modifica ed eliminazione di IP statici e inoltro porte",
+  "action_sync_dns_label": "Sincronizzazione Host DNS Esterni",
+  "action_sync_dns_desc": "Esecuzione manuale forzata del sync verso i server DNS locali",
+  "action_manage_users_label": "Amministrazione Utenti & RBAC",
+  "action_manage_users_desc": "Creazione, abilitazione e gestione utenti locali e permessi",
+  "action_system_backup_label": "Esportazione & Ripristino Backup",
+  "action_system_backup_desc": "Creazione snapshot di backup, download archivio e ripristino"
+}

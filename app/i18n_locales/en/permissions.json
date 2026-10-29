@@ -1,0 +1,22 @@
+{
+  "view_topology_label": "Mesh Topology & WAN View",
+  "view_topology_desc": "View mesh nodes map, operational status and backhaul",
+  "view_clients_label": "Device Fleet View",
+  "view_clients_desc": "Access to connected/known devices list, IP, MAC and bands",
+  "view_analytics_label": "Analytics & SLA View",
+  "view_analytics_desc": "Consult traffic graphs, latency and SLA metrics",
+  "view_logs_label": "Logs & Audit View",
+  "view_logs_desc": "Consult alert history, system audit and event logs",
+  "action_reboot_nodes_label": "Reboot Mesh Nodes",
+  "action_reboot_nodes_desc": "Authorization to reboot the entire mesh network or individual nodes",
+  "action_pause_devices_label": "Pause Devices Wi-Fi",
+  "action_pause_devices_desc": "Temporarily pause internet access for devices",
+  "action_manage_rules_label": "Manage DHCP Rules & Port Forwarding",
+  "action_manage_rules_desc": "Create, modify and delete static IP reservations and port forwards",
+  "action_sync_dns_label": "Sync External DNS Hosts",
+  "action_sync_dns_desc": "Forced manual execution of sync to local DNS servers",
+  "action_manage_users_label": "Administer Users & RBAC",
+  "action_manage_users_desc": "Create, enable and manage local users and permissions",
+  "action_system_backup_label": "Backup & Disaster Recovery",
+  "action_system_backup_desc": "Create backup snapshots, download archives and restore"
+}

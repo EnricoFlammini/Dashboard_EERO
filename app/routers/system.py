@@ -11,7 +11,7 @@ from app.services.eero_news_service import eero_news_service
 from app.services.notifications import notification_service
 from app.services.runtime_info import get_runtime_info
 from app.services.updater import updater_service
-from app.i18n import log_event, tr
+from app.i18n import SUPPORTED_LANGUAGES, log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ async def get_system_language():
 async def set_system_language(payload: LanguageRequest):
     """Aggiorna e persiste la lingua preferita per la dashboard e le notifiche."""
     lang = payload.language.lower().strip()
-    if lang not in ("it", "en"):
+    if lang not in SUPPORTED_LANGUAGES:
         raise HTTPException(status_code=400, detail=tr("system.language_unsupported"))
     await notification_service.set_language(lang)
     return {"status": "success", "language": lang}

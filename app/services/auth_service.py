@@ -11,7 +11,7 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.i18n import tr
+from app.i18n import tr, tr_all
 
 logger = logging.getLogger(__name__)
 
@@ -48,18 +48,40 @@ ALL_READ_PERMISSION_KEYS: List[str] = [p["key"] for p in READ_SCOPES]
 ALL_ACTION_PERMISSION_KEYS: List[str] = [p["key"] for p in ACTION_SCOPES]
 ALL_PERMISSION_KEYS: List[str] = ALL_READ_PERMISSION_KEYS + ALL_ACTION_PERMISSION_KEYS
 
-UI_PERMISSIONS_CATALOG: List[Dict[str, str]] = [
-    {"key": "view_topology", "label": "Visualizzazione Topologia Mesh & WAN", "label_en": "Mesh Topology & WAN View", "description": "Visualizzazione mappa nodi mesh, stato operativo e backhaul", "description_en": "View mesh nodes map, operational status and backhaul"},
-    {"key": "view_clients", "label": "Visualizzazione Flotta Dispositivi", "label_en": "Device Fleet View", "description": "Accesso all'elenco dei dispositivi connessi/noti, IP, MAC e frequenze", "description_en": "Access to connected/known devices list, IP, MAC and bands"},
-    {"key": "view_analytics", "label": "Visualizzazione Grafici & SLA", "label_en": "Analytics & SLA View", "description": "Consultazione grafici di traffico, latenza e metriche SLA", "description_en": "Consult traffic graphs, latency and SLA metrics"},
-    {"key": "view_logs", "label": "Visualizzazione Log & Audit", "label_en": "Logs & Audit View", "description": "Consultazione registro allarmi, audit di sistema e log eventi", "description_en": "Consult alert history, system audit and event logs"},
-    {"key": "action_reboot_nodes", "label": "Riavvio Nodi Mesh eero", "label_en": "Reboot Mesh Nodes", "description": "Autorizzazione al riavvio dell'intera rete mesh o dei singoli nodi", "description_en": "Authorization to reboot the entire mesh network or individual nodes"},
-    {"key": "action_pause_devices", "label": "Sospensione / Pausa Wi-Fi Dispositivi", "label_en": "Pause Devices Wi-Fi", "description": "Messa in pausa temporanea dell'accesso a Internet per dispositivi", "description_en": "Temporarily pause internet access for devices"},
-    {"key": "action_manage_rules", "label": "Gestione Regole & Port Forwarding", "label_en": "Manage DHCP Rules & Port Forwarding", "description": "Creazione, modifica ed eliminazione di IP statici e inoltro porte", "description_en": "Create, modify and delete static IP reservations and port forwards"},
-    {"key": "action_sync_dns", "label": "Sincronizzazione Host DNS Esterni", "label_en": "Sync External DNS Hosts", "description": "Esecuzione manuale forzata del sync verso i server DNS locali", "description_en": "Forced manual execution of sync to local DNS servers"},
-    {"key": "action_manage_users", "label": "Amministrazione Utenti & RBAC", "label_en": "Administer Users & RBAC", "description": "Creazione, abilitazione e gestione utenti locali e permessi", "description_en": "Create, enable and manage local users and permissions"},
-    {"key": "action_system_backup", "label": "Esportazione & Ripristino Backup", "label_en": "Backup & Disaster Recovery", "description": "Creazione snapshot di backup, download archivio e ripristino", "description_en": "Create backup snapshots, download archives and restore"}
+# Permission texts live in app/i18n_locales/<lang>/permissions.json as
+# "<key>_label" / "<key>_desc"; the order here is the display order in the UI.
+UI_PERMISSION_KEYS: List[str] = [
+    "view_topology",
+    "view_clients",
+    "view_analytics",
+    "view_logs",
+    "action_reboot_nodes",
+    "action_pause_devices",
+    "action_manage_rules",
+    "action_sync_dns",
+    "action_manage_users",
+    "action_system_backup"
 ]
+
+
+def build_permissions_catalog(lang: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns the permission catalog with label/description in ``lang`` (default: request language)
+    plus ``label_i18n`` / ``description_i18n`` maps for every supported language.
+    ``label_en`` / ``description_en`` stay for older clients."""
+    catalog: List[Dict[str, Any]] = []
+    for key in UI_PERMISSION_KEYS:
+        label_i18n = tr_all(f"permissions.{key}_label")
+        desc_i18n = tr_all(f"permissions.{key}_desc")
+        catalog.append({
+            "key": key,
+            "label": tr(f"permissions.{key}_label", lang=lang),
+            "label_en": label_i18n.get("en", ""),
+            "label_i18n": label_i18n,
+            "description": tr(f"permissions.{key}_desc", lang=lang),
+            "description_en": desc_i18n.get("en", ""),
+            "description_i18n": desc_i18n,
+        })
+    return catalog
 
 
 class AuthService:
@@ -122,7 +144,7 @@ class AuthService:
             "read_scopes": READ_SCOPES,
             "action_scopes": ACTION_SCOPES,
             "all_keys": ALL_PERMISSION_KEYS,
-            "permissions": UI_PERMISSIONS_CATALOG
+            "permissions": build_permissions_catalog()
         }
 
     @staticmethod

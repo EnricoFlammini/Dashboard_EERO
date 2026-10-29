@@ -154,6 +154,10 @@ async def block_cross_origin_writes(request: Request, call_next):
     return await call_next(request)
 
 
+# The Demo Mode simulator ships its sample names in Italian; readers of that language get the payload untouched.
+DEMO_SOURCE_LANGUAGE = "it"
+
+
 @app.middleware("http")
 async def localize_demo_payloads(request: Request, call_next):
     """
@@ -164,7 +168,7 @@ async def localize_demo_payloads(request: Request, call_next):
     if not request.url.path.startswith("/api/") or not eero_client.is_demo_mode:
         return response
     lang = i18n.normalize_language(request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")) or i18n.get_system_language()
-    if lang == "it" or not response.headers.get("content-type", "").startswith("application/json"):
+    if lang == DEMO_SOURCE_LANGUAGE or not response.headers.get("content-type", "").startswith("application/json"):
         return response
     body = b"".join([chunk async for chunk in response.body_iterator])
     try:
@@ -273,6 +277,7 @@ async def index_page(request: Request):
             "build_number": settings.build_number,
             "full_version": settings.full_version,
             "default_language": i18n.get_system_language(),
+            "supported_languages": list(i18n.SUPPORTED_LANGUAGES),
             # Stato iniziale locale (nessuna chiamata cloud): evita il flash del modale di login al refresh
             "initial_authenticated": eero_client.is_authenticated,
         }
