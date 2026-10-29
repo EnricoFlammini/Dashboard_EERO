@@ -1,5 +1,6 @@
 {
   "invalid_mac": "Invalid MAC address: {macs}",
   "profile_removed": "Device removed from profile.",
-  "profile_updated": "Device profile updated."
+  "profile_updated": "Device profile updated.",
+  "ula_cleared": "Discovered IPv6 ULA addresses cleared successfully."
 }

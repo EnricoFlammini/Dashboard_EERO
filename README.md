@@ -66,8 +66,16 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 * **🔔 Resilient Webhook Alerts & Notification Isolation (v1.6.2 - Issue #85):**
   - **Safe Payload Serialization:** Recursive `_json_safe()` serialization preventing silent JSON encoding failures on complex event payloads, restoring instant `node_offline` and `new_device` alerts to Home Assistant webhooks.
   - **Channel Isolation & MAC Warmup:** Independent error boundaries per notification channel and SQLite-backed MAC address cache warmup on container startup.
-* **🎨 UI/UX Polish & Truncated Device Names (v1.6.2 - Issue #84):**
-  - 11 targeted improvements including dynamic Fluent device category icons, 2-line clamp with hover tooltip `:title` on device names (`.device-col-name`), `whitespace-nowrap` on WAN throughput, expanded Top Bandwidth Hogs filters (up to 30 nodes), and preserved original GitHub release notes.
+* **🎨 UI/UX Polish, Compact Band/Channel & Truncated Device Names (v1.6.2 - Issue #84, PR #95):**
+  - 11 targeted improvements including dynamic Fluent device category icons, 2-line clamp with hover tooltip `:title` on device names (`.device-col-name`), vertical stacking of Wi-Fi frequency bands directly over the channel number for space efficiency, `whitespace-nowrap` on WAN throughput, expanded Top Bandwidth Hogs filters (up to 30 nodes), and preserved original GitHub release notes.
+* **🔒 TLS Certificate Error Diagnostics & Logging (v1.6.2 - Issue #89):**
+  - Specific inspection and descriptive warning logging for `SSLCertVerificationError` (`CERTIFICATE_VERIFY_FAILED`, host mismatch, self-signed CA) across AdGuard Home, Pi-hole, and Technitium DNS sync, immediately guiding users toward certificate remediation.
+* **🕒 Local Browser Timezone in System Logs & UTC Toggle (v1.6.2 - Issue #91):**
+  - Automatic conversion and rendering of system log timestamps in the client browser's local timezone and active locale formatting (`it-IT` / `en-US`), with a one-click toggle in the log header to switch to UTC.
+* **🧹 IPv6 ULA 7-Day Retention & Manual Pruning (v1.6.2 - Issue #88):**
+  - Automated 7-day retention cleanup for discovered NDP / AdGuard ULA addresses, memory and UI capping to 5 most recent entries, and dedicated in-app *"Clear ULA"* button with confirmation toast in the device modal.
+* **🏠 Home Assistant MQTT Device Tracker Offline State & Scalability (v1.6.2 - Issue #92):**
+  - Automatic `not_home` presence state dispatched for disconnected or departed devices, tracking ceiling raised to 250 devices with non-blocking async pacing, and retained discovery config deduplication.
 * **🛡️ Subnet-Aware IPv4 Prioritization & Pi-hole v6 Stale Record Pruning (v1.6.1 - Issue #72):**
   - **LAN Subnet Prioritization:** Multi-level scoring algorithm resolving multi-IP Linux and Docker host issues by prioritizing addresses belonging to the physical eero LAN subnet (e.g. `192.168.0.37`) while automatically deprioritizing virtual container bridge gateways (`172.17.0.1`, `172.24.0.1`, `10.88.0.1` ending in `.1`).
   - **Pi-hole v6 Intelligent Pruning:** Automatic removal of expired DHCP leases and obsolete IP mappings for managed hosts via atomic `PATCH /api/config` and Pi-hole v5 `customdns&action=delete`, while strictly preserving custom unmanaged DNS records.
@@ -486,8 +494,16 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 * **🔔 Notifiche Webhook Resilienti & Isolamento Canali (v1.6.2 - Issue #85):**
   - **Serializzazione Difensiva (`_json_safe`):** Risolto l'errore di serializzazione silente su payload complessi, ripristinando gli allarmi istantanei di nodo offline e nuovo dispositivo verso webhook Home Assistant.
   - **Isolamento Invio & Cache MAC all'Avvio:** Gestione indipendente degli errori per ciascun canale di notifica e pre-caricamento dei MAC storici da SQLite al boot del container.
-* **🎨 Rifiniture UI/UX, Localizzazione & Nomi Troncati (v1.6.2 - Issue #84):**
-  - 11 miglioramenti di interfaccia tra cui icone Fluent dinamiche in tabella, line-clamp a 2 righe con tooltip `:title` per nomi lunghi, Throughput WAN senza wrapping di "Mbps", filtri Top Bandwidth Hogs estesi a 30 elementi con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
+* **🎨 Rifiniture UI/UX, Layout Compatto Banda/Canale & Nomi Troncati (v1.6.2 - Issue #84, PR #95):**
+  - 11 miglioramenti di interfaccia tra cui icone Fluent dinamiche in tabella, line-clamp a 2 righe con tooltip `:title` per nomi lunghi, frequenza Wi-Fi incolonnata sopra il canale per ottimizzare lo spazio, Throughput WAN senza wrapping di "Mbps", filtri Top Bandwidth Hogs estesi a 30 elementi con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
+* **🔒 Diagnostica & Logging Errori Certificato TLS nel DNS Manager (v1.6.2 - Issue #89):**
+  - Intercettazione ed emissione di warning esplicativi nei log di sistema per `SSLCertVerificationError` (`CERTIFICATE_VERIFY_FAILED`, mismatch di hostname, certificati autofirmati privi di CA di root) durante i test e la sincronizzazione con AdGuard Home, Pi-hole e Technitium DNS.
+* **🕒 Fuso Orario Locale del Browser nei Log di Sistema & Toggle UTC (v1.6.2 - Issue #91):**
+  - Conversione e visualizzazione automatica dei timestamp del log viewer nell'orario locale del browser del client nel formato della lingua attiva (`it-IT` / `en-US`), con toggle a clic singolo per alternare con UTC.
+* **🧹 Retention IPv6 ULA a 7 Giorni & Reset Manuale (v1.6.2 - Issue #88):**
+  - Pulizia automatica periodica a 7 giorni per gli indirizzi scoperti via NDP / AdGuard, limite in memoria e a schermo a 5 indirizzi più recenti per singolo apparato e pulsante dedicato *"Pulisci ULA"* con conferma e toast nella modale dispositivo.
+* **🏠 Home Assistant MQTT Device Tracker: Stato Presenza Sconnessi & Scalabilità (v1.6.2 - Issue #92):**
+  - Pubblicazione automatica dello stato di presenza `not_home` per dispositivi offline o disconnessi dalla mesh, estensione del limite a 250 apparati tracciati con pacing asincrono non bloccante e deduplicazione delle configurazioni di discovery `retain=True`.
 * **🛡️ Prioritizzazione IPv4 Subnet LAN, Pruning Intelligente Pi-hole v6 ed Esclusione Dispositivi (v1.6.1 - Issue #72):**
   - **Prioritizzazione Subnet LAN:** Algoritmo a punteggio a 5 livelli per host multi-IP (es. Linux con Docker/Podman): priorità assoluta agli IP appartenenti alla subnet LAN fisica eero (`192.168.0.37`) e sistematica deprioritizzazione dei bridge container virtuali terminanti in `.1` (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`).
   - **Pruning Intelligente Pi-hole v6:** Eliminazione automatica di vecchi lease e record obsoleti per i dispositivi gestiti tramite `PATCH /api/config` (e Pi-hole v5), con preservazione assoluta dei record DNS manuali e unmanaged.

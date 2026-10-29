@@ -136,7 +136,24 @@ def _is_tls_verification_error(exc: Optional[BaseException]) -> bool:
     return False
 
 
-def _tls_error_result(url: str) -> Dict[str, Any]:
+def _tls_error_result(url: str, exc: Optional[BaseException] = None, engine: Optional[str] = None) -> Dict[str, Any]:
+    reason = None
+    curr = exc
+    seen = set()
+    while curr is not None and id(curr) not in seen:
+        if isinstance(curr, ssl.SSLCertVerificationError):
+            reason = str(curr)
+            break
+        seen.add(id(curr))
+        curr = curr.__cause__ or curr.__context__
+
+    if not reason and exc:
+        reason = str(exc)
+
+    engine_label = f"[{engine}] " if engine else ""
+    log_detail = f": {reason}" if reason else ""
+    logger.warning(f"TLS certificate verification failed for {engine_label}{url}{log_detail}")
+
     return {
         "success": False,
         "tls_error": True,
@@ -474,7 +491,7 @@ class DNSManager:
                     return {"success": False, "status_code": resp.status_code, "message": tr("dns.adguard_http_error", code=resp.status_code)}
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="AdGuard")
             return {"success": False, "message": tr("dns.adguard_connect_failed", url=url)}
         except httpx.TimeoutException:
             return {"success": False, "message": tr("dns.adguard_timeout", url=url)}
@@ -547,7 +564,7 @@ class DNSManager:
                 }
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="Pi-hole")
             return {"success": False, "message": tr("dns.pihole_unreachable", url=url)}
         except httpx.TimeoutException:
             return {"success": False, "message": tr("dns.pihole_timeout", url=url)}
@@ -585,7 +602,7 @@ class DNSManager:
                 return {"success": False, "message": tr("dns.technitium_http_error", code=resp.status_code)}
         except httpx.ConnectError as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="Technitium")
             return {"success": False, "message": tr("dns.technitium_unreachable", url=url)}
         except Exception as e:
             return {"success": False, "message": tr("dns.technitium_connection_error", error=str(e))}
@@ -875,7 +892,7 @@ class DNSManager:
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="AdGuard")
             return {"success": False, "message": tr("dns.adguard_sync_error", error=str(e))}
 
     async def _sync_single_pihole(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1101,7 +1118,7 @@ class DNSManager:
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="Pi-hole")
             return {"success": False, "message": tr("dns.pihole_sync_error", error=str(e))}
 
     async def _sync_single_technitium(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1145,7 +1162,7 @@ class DNSManager:
                 }
         except Exception as e:
             if _is_tls_verification_error(e):
-                return _tls_error_result(url)
+                return _tls_error_result(url, exc=e, engine="Technitium")
             return {"success": False, "message": tr("dns.technitium_sync_error", error=str(e))}
 
     async def sync_devices(

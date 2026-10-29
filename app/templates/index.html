@@ -3926,6 +3926,14 @@
 
               <!-- Storage & Records Stats Pills -->
               <div class="flex items-center space-x-2 text-xs text-slate-800 dark:text-slate-200 font-mono font-semibold shrink-0">
+                <button 
+                  @click="toggleLogTimezone()"
+                  type="button"
+                  class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer flex items-center space-x-1"
+                  :title="t('logs.tz_toggle_tooltip')">
+                  <span>⏱️</span>
+                  <span class="font-bold text-[11px]" x-text="logTimezoneMode === 'local' ? t('logs.tz_local') : t('logs.tz_utc')"></span>
+                </button>
                 <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-2xs" :title="t('logs.file_size')">
                   💾 <span x-text="(logStats.file_size_mb || 0) + ' MB'"></span>
                 </span>
@@ -3955,7 +3963,7 @@
                 <div class="py-1 px-1.5 rounded hover:bg-white/[0.06] transition flex flex-col space-y-1 border-b border-white/[0.04]">
                   <div class="flex items-start space-x-2 text-[11px] leading-snug">
                     <!-- Timestamp -->
-                    <span class="log-time shrink-0 select-all font-mono" x-text="l.timestamp"></span>
+                    <span class="log-time shrink-0 select-all font-mono" x-text="formatLogTimestamp(l.timestamp)" :title="l.timestamp + ' (UTC)'"></span>
 
                     <!-- Level Badge -->
                     <span 
@@ -5271,7 +5279,19 @@
                   <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                   <span x-text="t('device_modal.ipv6_section_title')"></span>
                 </span>
-                <span class="text-[10px] text-slate-500 font-mono" x-text="((selectedDevice.ipv6_all || selectedDevice.ipv6_addresses) ? (selectedDevice.ipv6_all || selectedDevice.ipv6_addresses).length : 1) + ' ' + t('device_modal.ipv6_addresses_count')"></span>
+                <div class="flex items-center space-x-2">
+                  <span class="text-[10px] text-slate-500 font-mono" x-text="((selectedDevice.ipv6_all || selectedDevice.ipv6_addresses) ? (selectedDevice.ipv6_all || selectedDevice.ipv6_addresses).length : 1) + ' ' + t('device_modal.ipv6_addresses_count')"></span>
+                  <template x-if="can('action_edit_devices') && selectedDevice.ipv6_details && selectedDevice.ipv6_details.some(d => d.origin === 'ndp_discovered')">
+                    <button 
+                      @click="clearDeviceDiscoveredUla(selectedDevice)"
+                      type="button"
+                      :disabled="isClearingUla"
+                      class="px-2 py-0.5 rounded text-[10px] font-bold bg-fuchsia-100 hover:bg-fuchsia-200 dark:bg-fuchsia-950/60 dark:hover:bg-fuchsia-900/80 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-300 dark:border-fuchsia-700/50 transition cursor-pointer"
+                      :title="t('device_modal.clear_ula_tooltip')">
+                      <span x-text="isClearingUla ? t('device_modal.clearing_ula') : t('device_modal.clear_ula_btn')"></span>
+                    </button>
+                  </template>
+                </div>
               </div>
               <div class="space-y-1.5 max-h-28 overflow-y-auto pr-0.5">
                 <template x-for="v6 in (selectedDevice.ipv6_all || selectedDevice.ipv6_addresses || [selectedDevice.ipv6])" :key="v6">

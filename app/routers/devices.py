@@ -530,6 +530,18 @@ async def get_device_usage(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/{mac}/clear-ula", dependencies=[Depends(require_permission("action_edit_devices"))])
+async def clear_device_discovered_ula(mac: str):
+    """Rimuove tutti gli indirizzi IPv6 ULA scoperti via NDP per il dispositivo specificato."""
+    from app.services.enrichment_service import enrichment_service
+    res = await enrichment_service.clear_device_discovered_ips(mac)
+    return {
+        "status": "success",
+        "message": tr("devices.ula_cleared"),
+        **res
+    }
+
+
 @router.get("/{device_id_or_mac:path}")
 async def get_device_detail(device_id_or_mac: str):
     """Restituisce la scheda completa del dispositivo: stato live e metadati locali (catch-all)."""

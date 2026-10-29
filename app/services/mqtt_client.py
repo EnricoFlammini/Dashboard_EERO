@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from app.config import settings
 from app.i18n import log_event, tr
@@ -42,6 +42,8 @@ class MQTTService:
         self._task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
         self._discovery_published: bool = False
+        self._published_tracker_configs: Set[str] = set()
+        self._tracker_last_state: Dict[str, str] = {}
         self._stats: Dict[str, Any] = {
             "messages_published": 0,
             "discovery_topics_published": 0,
@@ -392,38 +394,65 @@ class MQTTService:
         }
         await self._publish_message(client, f"{base}/state", full_payload, retain=False)
 
-        # Device Trackers for Home Assistant
+        # Device Trackers for Home Assistant (Issue #92)
         if self._discovery_enabled:
-            for dev in connected_devs[:50]:  # limit to 50 active to avoid broker flood
+            target_devices = devices[:250] if len(devices) > 250 else devices
+            current_cycle_macs = set()
+
+            for idx, dev in enumerate(target_devices):
                 mac = str(dev.get("mac") or dev.get("mac_address") or "").replace(":", "").lower()
                 if not mac:
                     continue
 
+                current_cycle_macs.add(mac)
                 hostname = dev.get("hostname") or dev.get("nickname") or f"eero_device_{mac[-4:]}"
+                is_connected = bool(dev.get("connected"))
+
                 tracker_config_topic = f"{self._ha_prefix}/device_tracker/{base}_{mac}/config"
                 tracker_state_topic = f"{base}/device/{mac}/state"
                 tracker_attr_topic = f"{base}/device/{mac}/attributes"
 
-                cfg = {
-                    "name": hostname,
-                    "unique_id": f"eero_tracker_{mac}",
-                    "state_topic": tracker_state_topic,
-                    "json_attributes_topic": tracker_attr_topic,
-                    "payload_home": "home",
-                    "payload_not_home": "not_home",
-                    "source_type": "router",
-                    "icon": "mdi:lan-connect" if dev.get("wireless") is False else "mdi:wifi",
-                    "device": self._get_device_dict()
-                }
-                await self._publish_message(client, tracker_config_topic, cfg, retain=True)
-                await self._publish_message(client, tracker_state_topic, "home", retain=False)
+                # 1. Pubblica configurazione discovery (retain=True) solo al primo rilevamento per questo MAC
+                if mac not in self._published_tracker_configs:
+                    cfg = {
+                        "name": hostname,
+                        "unique_id": f"eero_tracker_{mac}",
+                        "state_topic": tracker_state_topic,
+                        "json_attributes_topic": tracker_attr_topic,
+                        "payload_home": "home",
+                        "payload_not_home": "not_home",
+                        "source_type": "router",
+                        "icon": "mdi:lan-connect" if dev.get("wireless") is False else "mdi:wifi",
+                        "device": self._get_device_dict()
+                    }
+                    await self._publish_message(client, tracker_config_topic, cfg, retain=True)
+                    self._published_tracker_configs.add(mac)
+
+                # 2. Stato presenza: 'home' se connesso, 'not_home' se disconnesso/offline
+                state_val = "home" if is_connected else "not_home"
+                await self._publish_message(client, tracker_state_topic, state_val, retain=False)
+                self._tracker_last_state[mac] = state_val
+
+                # 3. Attributi dettagliati dispositivo
                 await self._publish_message(client, tracker_attr_topic, {
                     "ip": dev.get("ip"),
                     "mac": dev.get("mac"),
-                    "connected_eero": dev.get("connected_eero_name", "Gateway"),
+                    "connected": is_connected,
+                    "connected_eero": dev.get("connected_eero_name", "Gateway") if is_connected else "None",
                     "wireless": dev.get("wireless", True),
-                    "band": dev.get("wireless_band", "5 GHz")
+                    "band": dev.get("wireless_band", "5 GHz") if is_connected else "None"
                 }, retain=False)
+
+                # Pacing delicato ogni 10 dispositivi per proteggere broker con risorse limitate
+                if (idx + 1) % 10 == 0:
+                    await asyncio.sleep(0.005)
+
+            # 4. Dispositivi rimossi o non presenti nel ciclo corrente: se prima erano 'home', invia 'not_home'
+            stale_macs = set(self._tracker_last_state.keys()) - current_cycle_macs
+            for stale_mac in stale_macs:
+                if self._tracker_last_state.get(stale_mac) != "not_home":
+                    await self._publish_message(client, f"{base}/device/{stale_mac}/state", "not_home", retain=False)
+                    self._tracker_last_state[stale_mac] = "not_home"
 
     async def _worker_loop(self):
         """Background asynchronous MQTT client loop with auto-reconnect."""
@@ -467,6 +496,7 @@ class MQTTService:
                     self._connected = True
                     self._stats["connected"] = True
                     self._stats["last_error"] = None
+                    self._published_tracker_configs.clear()
                     log_event(logger, logging.INFO, "log_ops.mqtt_connected", host=self._broker_host, port=self._broker_port)
 
                     # Publish Home Assistant Discovery
@@ -506,6 +536,8 @@ class MQTTService:
     async def stop(self):
         """Stops the background MQTT client worker."""
         self._stop_event.set()
+        self._published_tracker_configs.clear()
+        self._tracker_last_state.clear()
         if self._task and not self._task.done():
             self._task.cancel()
             try:

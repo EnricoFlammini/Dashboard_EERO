@@ -323,6 +323,12 @@
     "ipv6_badge_ula_ndp": "ULA Enriched",
     "ipv6_badge_link_local": "Link-Local",
     "ipv6_tooltip_ndp": "Rilevato tramite Neighbor Discovery Protocol (NDP) o AdGuard Home",
+    "clear_ula_btn": "Pulisci ULA",
+    "clearing_ula": "Cancellazione...",
+    "clear_ula_tooltip": "Rimuovi gli indirizzi IPv6 ULA scoperti per questo dispositivo",
+    "clear_ula_confirm": "Cancellare tutti i {count} indirizzi ULA scoperti per questo dispositivo?",
+    "clear_ula_success": "Indirizzi ULA scoperti cancellati con successo",
+    "clear_ula_error": "Errore durante la cancellazione degli indirizzi ULA",
     "copy_ipv6": "Copia indirizzo IPv6",
     "ipv6_copied": "Indirizzo IPv6 copiato negli appunti!",
     "close_btn": "Chiudi",
@@ -1136,7 +1142,10 @@
     "retention_short_30d": "1m",
     "retention_days_placeholder": "Giorni",
     "clear_warning": "Attenzione: i dati storici del file log e della tabella SQLite non potranno essere recuperati.",
-    "management": "Gestione Log & Diagnostica"
+    "management": "Gestione Log & Diagnostica",
+    "tz_local": "Locale",
+    "tz_utc": "UTC",
+    "tz_toggle_tooltip": "Alterna tra fuso orario locale del browser e UTC"
   },
   "permissions": {
     "view_topology": "Visualizzazione Topologia Mesh & WAN",

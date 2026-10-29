@@ -323,6 +323,12 @@
     "ipv6_badge_ula_ndp": "ULA Enriched",
     "ipv6_badge_link_local": "Link-Local",
     "ipv6_tooltip_ndp": "IPv6 ULA address discovered via Reverse NDP / AdGuard Home",
+    "clear_ula_btn": "Clear ULAs",
+    "clearing_ula": "Clearing...",
+    "clear_ula_tooltip": "Clear discovered IPv6 ULA addresses for this device",
+    "clear_ula_confirm": "Clear all {count} discovered ULA addresses for this device?",
+    "clear_ula_success": "Discovered ULA addresses cleared successfully",
+    "clear_ula_error": "Failed to clear discovered ULA addresses",
     "copy_ipv6": "Copy IPv6 address",
     "ipv6_copied": "IPv6 address copied to clipboard!",
     "close_btn": "Close",
@@ -1136,7 +1142,10 @@
     "retention_short_30d": "1mo",
     "retention_days_placeholder": "Days",
     "clear_warning": "Warning: historical data in the log file and SQLite table cannot be recovered.",
-    "management": "Log Management & Diagnostics"
+    "management": "Log Management & Diagnostics",
+    "tz_local": "Local",
+    "tz_utc": "UTC",
+    "tz_toggle_tooltip": "Toggle between browser local time and UTC"
   },
   "permissions": {
     "view_topology": "Mesh Topology & WAN View",

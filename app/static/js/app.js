@@ -394,6 +394,7 @@ document.addEventListener('alpine:init', () => {
       description: ''
     },
     showDeviceModal: false,
+    isClearingUla: false,
 
     // Port Forwarding Global State
     allForwards: [],
@@ -2211,6 +2212,46 @@ document.addEventListener('alpine:init', () => {
         console.error("Load device rules error:", err);
       } finally {
         this.deviceRulesLoading = false;
+      }
+    },
+
+    async clearDeviceDiscoveredUla(device) {
+      if (!device || this.isClearingUla) return;
+      const mac = (device.mac || device.mac_address || '').toLowerCase();
+      if (!mac) return;
+      
+      const count = (device.ipv6_details ? device.ipv6_details.filter(d => d.origin === 'ndp_discovered').length : 0) || (device.discovered_ips ? device.discovered_ips.length : 1);
+      if (!confirm(this.t('device_modal.clear_ula_confirm', { count }))) {
+        return;
+      }
+
+      this.isClearingUla = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch(`/api/devices/${encodeURIComponent(mac)}/clear-ula`, {
+          method: 'POST',
+          headers
+        });
+        if (res.ok) {
+          if (this.selectedDevice) {
+            this.selectedDevice.ipv6_details = (this.selectedDevice.ipv6_details || []).filter(d => d.origin !== 'ndp_discovered');
+            const discSet = new Set((this.selectedDevice.discovered_ips || []).map(i => i.ip_address));
+            this.selectedDevice.ipv6_ula = (this.selectedDevice.ipv6_ula || []).filter(ip => !discSet.has(ip));
+            this.selectedDevice.ipv6_addresses = (this.selectedDevice.ipv6_addresses || []).filter(ip => !discSet.has(ip));
+            this.selectedDevice.ipv6_all = this.selectedDevice.ipv6_addresses;
+            this.selectedDevice.has_discovered_ips = false;
+            this.selectedDevice.discovered_ips = [];
+          }
+          this.showToast(this.t('toasts.success_title'), this.t('device_modal.clear_ula_success'), 'success');
+        } else {
+          this.showToast(this.t('toasts.error'), this.t('device_modal.clear_ula_error'), 'error');
+        }
+      } catch (err) {
+        console.error("Clear device ULA error:", err);
+        this.showToast(this.t('toasts.error'), this.t('device_modal.clear_ula_error'), 'error');
+      } finally {
+        this.isClearingUla = false;
       }
     },
 
@@ -6090,6 +6131,7 @@ document.addEventListener('alpine:init', () => {
     showClearLogsModal: false,
     isClearingLogs: false,
     expandedLogDetails: {},
+    logTimezoneMode: localStorage.getItem('eero_log_tz') || 'local',
 
     async fetchLogConfig() {
       try {
@@ -6299,6 +6341,37 @@ document.addEventListener('alpine:init', () => {
 
     toggleLogDetail(id) {
       this.expandedLogDetails[id] = !this.expandedLogDetails[id];
+    },
+
+    toggleLogTimezone() {
+      this.logTimezoneMode = this.logTimezoneMode === 'local' ? 'utc' : 'local';
+      try {
+        localStorage.setItem('eero_log_tz', this.logTimezoneMode);
+      } catch (e) {}
+    },
+
+    formatLogTimestamp(ts) {
+      if (!ts) return '';
+      if (this.logTimezoneMode === 'utc') {
+        return ts.replace('T', ' ').replace('Z', '') + ' UTC';
+      }
+      try {
+        const utcIso = ts.includes('T') ? (ts.endsWith('Z') ? ts : ts + 'Z') : ts.replace(' ', 'T') + 'Z';
+        const d = new Date(utcIso);
+        if (isNaN(d.getTime())) return ts;
+        const localeCode = this.dateLocales[this.currentLanguage] || 'en-US';
+        return d.toLocaleString(localeCode, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      } catch (e) {
+        return ts;
+      }
     },
 
     // =========================================================================

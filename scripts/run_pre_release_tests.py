@@ -4192,6 +4192,42 @@ async def run_all_tests():
         runner.assert_true("saveMqttSettings" in js_content, "saveMqttSettings presente in app.js")
         runner.assert_true("testMqttConnection" in js_content, "testMqttConnection presente in app.js")
 
+        # Test Issue #92: MQTT Device Tracker offline status & config deduplication
+        class _MockMqttClient:
+            def __init__(self):
+                self.messages = []
+            async def publish(self, topic, payload, retain=False, qos=0):
+                self.messages.append({"topic": topic, "payload": payload, "retain": retain})
+
+        mock_mqtt = _MockMqttClient()
+        mqtt_service._discovery_enabled = True
+        mqtt_service._published_tracker_configs.clear()
+        mqtt_service._tracker_last_state.clear()
+        
+        test_telemetry = {
+            "devices": [
+                {"mac": "aa:bb:cc:dd:ee:01", "hostname": "Online Phone", "connected": True, "ip": "192.168.1.10"},
+                {"mac": "aa:bb:cc:dd:ee:02", "hostname": "Offline Tablet", "connected": False, "ip": "192.168.1.11"}
+            ],
+            "eeros": [{"status": "online"}],
+            "health_score": 100,
+            "bufferbloat_grade": "A"
+        }
+        await mqtt_service.publish_telemetry(mock_mqtt, telemetry_data=test_telemetry)
+        
+        online_state_msgs = [m for m in mock_mqtt.messages if m["topic"].endswith("/device/aabbccddee01/state")]
+        offline_state_msgs = [m for m in mock_mqtt.messages if m["topic"].endswith("/device/aabbccddee02/state")]
+        runner.assert_true(len(online_state_msgs) == 1 and online_state_msgs[0]["payload"] == "home", "Device online riceve stato 'home'")
+        runner.assert_true(len(offline_state_msgs) == 1 and offline_state_msgs[0]["payload"] == "not_home", "Device offline riceve stato 'not_home' (Issue #92)")
+        
+        config_msgs_first = [m for m in mock_mqtt.messages if "/device_tracker/" in m["topic"] and m["topic"].endswith("/config")]
+        runner.assert_true(len(config_msgs_first) == 2, "Discovery config pubblicata per entrambi i dispositivi al primo ciclo")
+        
+        mock_mqtt.messages.clear()
+        await mqtt_service.publish_telemetry(mock_mqtt, telemetry_data=test_telemetry)
+        config_msgs_second = [m for m in mock_mqtt.messages if "/device_tracker/" in m["topic"] and m["topic"].endswith("/config")]
+        runner.assert_true(len(config_msgs_second) == 0, "Discovery config deduplicata e non ripubblicata inutilmente (Issue #92)")
+
         # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
         res_prom_root = await client.get("/metrics")
         runner.assert_true(res_prom_root.status_code == 200, "GET /metrics root risponde HTTP 200")
@@ -4502,6 +4538,20 @@ async def run_all_tests():
         runner.assert_true("fd12:3456:789a:1::99" in (enriched_dev.get("ipv6_all") or []), "enriched_dev popola correttamente ipv6_all con ULA")
         runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
 
+        # Test Issue #88: delete_discovered_ips_for_mac & POST /api/devices/{mac}/clear-ula
+        del_cnt = await db_service.delete_discovered_ips_for_mac(test_mac_ula)
+        runner.assert_true(del_cnt >= 1, "delete_discovered_ips_for_mac cancella i record da SQLite")
+        
+        await db_service.add_discovered_ips([{
+            "mac_address": test_mac_ula,
+            "ip_address": "fd12:3456:789a:1::101",
+            "ip_type": "ULA",
+            "source": "ndp_enrichment"
+        }])
+        res_clear_ula = await client.post(f"/api/devices/{test_mac_ula}/clear-ula", headers=adm_hdr)
+        runner.assert_true(res_clear_ula.status_code == 200, "POST /api/devices/{mac}/clear-ula risponde HTTP 200")
+        runner.assert_true(res_clear_ula.json().get("status") == "success", "clear-ula status success")
+
         # =====================================================================
         # [ISSUE #60] SELETTORE COLONNE & PERSONALIZZAZIONE VISIBILITÀ TABELLA
         # =====================================================================
@@ -4528,6 +4578,12 @@ async def run_all_tests():
             _index_html = _f_html.read()
         runner.assert_true("toggleTableColumn" in _index_html, "index.html contiene il selettore colonne con checkbox toggle")
         runner.assert_true("isTableColumnVisible('first_seen')" in _index_html, "index.html supporta visibilità colonna first_seen")
+
+        # Test Issue #91: Fuso orario nei log
+        runner.assert_true("logTimezoneMode:" in _app_js, "app.js gestisce lo stato logTimezoneMode")
+        runner.assert_true("formatLogTimestamp(" in _app_js, "app.js definisce il metodo formatLogTimestamp")
+        runner.assert_true("toggleLogTimezone(" in _app_js, "app.js implementa toggleLogTimezone")
+        runner.assert_true("formatLogTimestamp(l.timestamp)" in _index_html, "index.html usa formatLogTimestamp nei log")
         runner.assert_true("device-col-first-seen" in _index_html, "index.html include classe device-col-first-seen")
 
         with open("app/static/css/styles.css", "r", encoding="utf-8") as _f_css:

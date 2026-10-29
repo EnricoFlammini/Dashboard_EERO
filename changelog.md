@@ -93,6 +93,39 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🛡️ Isolamento Suite di Test Pre-Rilascio:**
   * Inserito fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `scripts/run_pre_release_tests.py` se `DATA_DIR` non è definita, proteggendo il database e la sessione reale da cancellazioni durante i test.
 
+### 🔒 Logging Dettagliato Errori Certificato TLS nel DNS Manager (Issue #89 - @todddube)
+* **🔍 Diagnostica Immediata `SSLCertVerificationError`:**
+  * Intercettazione esplicita degli errori di convalida SSL/TLS (`CERTIFICATE_VERIFY_FAILED`, mismatch di hostname, certificati autofirmati privi di CA di root di sistema) nelle chiamate HTTP client verso AdGuard Home, Pi-hole e Technitium DNS.
+  * Registrazione di log di avviso chiari ed esplicativi che indirizzano l'amministratore alla causa specifica (es. import certificato CA o toggle verifica SSL).
+
+### 🕒 Fuso Orario Locale del Browser nei Log di Sistema (Issue #91 - @Hatton920)
+* **🌐 Visualizzazione Timestamp nel Fuso Orario del Client:**
+  * I timestamp ISO degli eventi nel visualizzatore log di sistema vengono convertiti e renderizzati nell'orario locale del browser client in base alla lingua dell'utente (`it-IT` / `en-US`).
+* **🔄 Toggle Rapido Locale / UTC con Persistenza:**
+  * Aggiunto pulsante toggle Fluent compatto nell'header del log viewer (`app.js`, `index.html`) per alternare istantaneamente tra fuso orario locale del browser e tempo UTC, memorizzando la scelta in `localStorage`.
+
+### 🧹 Gestione Retention & Pulizia Manuale Indirizzi IPv6 ULA (Issue #88 - @EnricoFlammini)
+* **⏱️ Retention Periodica Ridotta a 7 Giorni:**
+  * Ridotto il periodo di conservazione degli indirizzi IP scoperti via NDP / AdGuard in `cleanup_stale_discovered_ips()` da 30 a 7 giorni, prevenendo la saturazione della tabella da indirizzi temporanei SLAAC/privacy.
+* **🏷️ Limitazione a 5 Indirizzi ULA per Dispositivo:**
+  * Capping a un massimo di 5 indirizzi ULA più recenti per apparato nel caricamento in memoria (`poller.py`) e nell'arricchimento visuale (`enrichment_service.py`), con contenitore scrollabile e contatore badge.
+* **🧼 Endpoint & Pulsante Reset ULA Manuale:**
+  * Introdotto l'endpoint protetto `POST /api/devices/{mac}/clear-ula` (`action_edit_devices`) e il pulsante *"Pulisci ULA"* con conferma e toast di notifica nella modale di dettaglio apparato (`#deviceModal`).
+
+### 🏠 Home Assistant MQTT Device Tracker: Stato Presenza & Scalabilità (Issue #92 - @jpatchMC)
+* **📍 Tracciamento Presenza Dispositivi Sconnessi (`not_home`):**
+  * Pubblicazione immediata dello stato `not_home` sul topic di stato quando un dispositivo si disconnette dalla rete eero o passa offline, risolvendo il blocco delle automazioni Home Assistant basate su presenza.
+* **🚀 Rimozione Hard Limit 50 Dispositivi & Pacing Asincrono:**
+  * Esteso il limite massimo di client tracciati contemporaneamente a 250 con pacing non bloccante (`asyncio.sleep(0.005)` ogni 10 dispositivi) per preservare le performance del broker MQTT.
+* **🎯 Deduplicazione Config Topic Retained:**
+  * Il payload di discovery per ciascun `device_tracker` viene ora pubblicato con flag `retain=True` unicamente al primo rilevamento dell'apparato o al riavvio, eliminando overhead e spam di discovery ad ogni intervallo di telemetria.
+
+### 🌐 Parità Completa Traduzioni & Layout Banda/Canale (PR #94 & PR #95 - @todddube)
+* **📐 Disposizione Compatta Frequenza e Canale:**
+  * Incolonnamento verticale della frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) direttamente sopra il numero di canale per una migliore leggibilità su schermi a media risoluzione.
+* **💯 Parità Totale Cataloghi i18n:**
+  * Allineate le ultime chiavi nei cataloghi di localizzazione frontend e backend.
+
 ## [1.6.1] - 2026-10-17
 
 ### 🌐 Bilinguismo Completo Impostazioni & Rimozione FOUT Caricamento (PR #78 - @todddube)

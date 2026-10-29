@@ -3305,6 +3305,22 @@ class DBService:
             await db.commit()
             return (cur.rowcount or 0) > 0
 
+    async def delete_discovered_ips_for_mac(self, mac_address: str) -> int:
+        """Elimina tutte le associazioni IP-MAC scoperte per un dato MAC address."""
+        if not mac_address:
+            return 0
+        clean_mac = mac_address.strip().lower()
+        async with self.get_connection() as db:
+            cur = await db.execute(
+                "DELETE FROM device_discovered_ips WHERE LOWER(mac_address) = ?",
+                (clean_mac,)
+            )
+            deleted_count = cur.rowcount if cur.rowcount is not None else 0
+            await db.commit()
+        if deleted_count > 0:
+            logger.info(f"NDP Enrichment: deleted {deleted_count} discovered IPs for MAC {clean_mac}.")
+        return deleted_count
+
     async def cleanup_stale_discovered_ips(self, retention_days: int = 30) -> int:
         """Elimina indirizzi scoperti la cui ultima rilevazione supera retention_days."""
         if retention_days <= 0:

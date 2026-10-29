@@ -359,7 +359,7 @@ class EnrichmentService:
             "results": results
         }
 
-    async def refresh_cached_devices_enrichment(self) -> None:
+    async def refresh_cached_devices_enrichment(self, force_clear_mac: Optional[str] = None) -> None:
         """
         Rifonde in RAM la tabella device_discovered_ips all'interno
         dei dispositivi memorizzati in background_poller.
@@ -367,21 +367,39 @@ class EnrichmentService:
         from app.services.poller import background_poller
 
         discovered_map = await db_service.get_all_discovered_ips_map()
-        if not discovered_map:
-            return
-
         cached_devices = background_poller.cached_devices or []
+        clean_force = (normalize_mac(force_clear_mac) or force_clear_mac).strip().lower() if force_clear_mac else None
+
         for dev in cached_devices:
             mac = str(dev.get("mac") or "").strip().lower()
-            if not mac or mac not in discovered_map:
+            if not mac:
+                continue
+
+            if clean_force and mac == clean_force:
+                # Ripristina stato pulito per il dispositivo forzato
+                dev["ipv6_details"] = [d for d in (dev.get("ipv6_details") or []) if d.get("origin") != "ndp_discovered"]
+                discovered_ips_set = {item.get("ip_address") for item in (dev.get("discovered_ips") or [])}
+                dev["ipv6_ula"] = [ip for ip in (dev.get("ipv6_ula") or []) if ip not in discovered_ips_set]
+                dev["ipv6_addresses"] = [ip for ip in (dev.get("ipv6_addresses") or []) if ip not in discovered_ips_set]
+                dev["ipv6_all"] = dev["ipv6_addresses"]
+                dev["has_discovered_ips"] = False
+                dev["discovered_ips"] = []
+                continue
+
+            if not discovered_map or mac not in discovered_map:
                 continue
 
             disc_list = discovered_map[mac]
+            # Limita gli ULA scoperti ai 5 più recenti (evita accumulo RFC 4941/8981 - Issue #88)
+            ula_items = [i for i in disc_list if str(i.get("ip_type") or "").upper() == "ULA"][:5]
+            other_items = [i for i in disc_list if str(i.get("ip_type") or "").upper() != "ULA"]
+            capped_disc_list = ula_items + other_items
+
             existing_ula = list(dev.get("ipv6_ula") or [])
             existing_all_v6 = list(dev.get("ipv6_addresses") or [])
             existing_details = list(dev.get("ipv6_details") or [])
 
-            for item in disc_list:
+            for item in capped_disc_list:
                 ip_addr = item.get("ip_address")
                 ip_type = item.get("ip_type") or "ULA"
                 ip_src = item.get("source") or "ndp_enrichment"
@@ -407,13 +425,20 @@ class EnrichmentService:
             dev["ipv6_all"] = existing_all_v6
             dev["ipv6_details"] = existing_details
             dev["has_discovered_ips"] = True
-            dev["discovered_ips"] = disc_list
+            dev["discovered_ips"] = capped_disc_list
 
             if not dev.get("ipv6") or str(dev.get("ipv6")).lower().startswith("fe80:"):
                 if existing_ula:
                     dev["ipv6"] = existing_ula[0]
         # Assicura il riferimento della lista dispositivi aggiornata in RAM
         background_poller.cached_devices = cached_devices
+
+    async def clear_device_discovered_ips(self, mac: str) -> Dict[str, Any]:
+        """Cancella gli IP scoperti via NDP/AdGuard per un dispositivo specifico e aggiorna la cache in RAM."""
+        clean_mac = normalize_mac(mac) or mac.strip()
+        deleted = await db_service.delete_discovered_ips_for_mac(clean_mac)
+        await self.refresh_cached_devices_enrichment(force_clear_mac=clean_mac)
+        return {"success": True, "deleted": deleted, "mac": clean_mac}
 
 
 enrichment_service = EnrichmentService()

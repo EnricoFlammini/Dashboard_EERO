@@ -751,14 +751,18 @@ class BackgroundPoller:
                     tx_b = float(tx_pkts * 280.0)
                     dev_copy["tx_bytes"] = tx_b
 
-                # Arricchimento Reverse NDP / Discovered IPs (Issue #57)
+                # Arricchimento Reverse NDP / Discovered IPs (Issue #57, #88)
                 disc_for_dev = discovered_ips_map.get(mac, [])
                 if disc_for_dev:
+                    ula_disc = [d for d in disc_for_dev if str(d.get("ip_type") or "").upper() == "ULA"][:5]
+                    non_ula_disc = [d for d in disc_for_dev if str(d.get("ip_type") or "").upper() != "ULA"]
+                    capped_disc = ula_disc + non_ula_disc
+
                     existing_ula = list(dev_copy.get("ipv6_ula") or [])
                     existing_all_v6 = list(dev_copy.get("ipv6_addresses") or [])
                     existing_details = list(dev_copy.get("ipv6_details") or [])
 
-                    for disc in disc_for_dev:
+                    for disc in capped_disc:
                         d_ip = disc.get("ip_address")
                         d_type = (disc.get("ip_type") or "ULA").upper()
                         d_src = disc.get("source") or "ndp_enrichment"
@@ -784,7 +788,7 @@ class BackgroundPoller:
                     dev_copy["ipv6_all"] = existing_all_v6
                     dev_copy["ipv6_details"] = existing_details
                     dev_copy["has_discovered_ips"] = True
-                    dev_copy["discovered_ips"] = disc_for_dev
+                    dev_copy["discovered_ips"] = capped_disc
 
                     # Promuovi a primario se il dispositivo non aveva IPv6 o aveva solo link-local
                     if not dev_copy.get("ipv6") or str(dev_copy.get("ipv6")).lower().startswith("fe80:"):
