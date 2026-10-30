@@ -403,7 +403,7 @@ document.addEventListener('alpine:init', () => {
       port_from: '',
       port_to: '',
       protocol: 'tcp',
-      description: 'Custom Service'
+      description: ''
     },
     showForwardModal: false,
 
@@ -1084,6 +1084,40 @@ document.addEventListener('alpine:init', () => {
       return this.languageFlags[lang] || (lang || '').toUpperCase();
     },
 
+    // RBAC role label: auth_local.role_<role>, falling back to the raw role code.
+    roleLabel(role) {
+      const code = String(role || 'user').toLowerCase();
+      const label = this.t('auth_local.role_' + code);
+      return label !== '' ? label : code;
+    },
+
+    // eero news tags: the backend emits tag keys (security, stability, performance,
+    // wifi7_6ghz, smart_home, bugfix, feature). Rows cached before that change still
+    // carry the legacy Italian/English words, so each key also matches its aliases.
+    newsTagAliases: {
+      security: ['security', 'sicurezza'],
+      stability: ['stability', 'stabilità'],
+      performance: ['performance', 'prestazioni'],
+      wifi7_6ghz: ['wifi7_6ghz', 'wifi7', 'wi-fi 7 / 6 ghz'],
+      smart_home: ['smart_home', 'smarthome', 'smart home'],
+      bugfix: ['bugfix', 'bug fix'],
+      feature: ['feature', 'novità']
+    },
+    newsTagKey(tag) {
+      const norm = String(tag || '').toLowerCase().trim();
+      for (const [key, aliases] of Object.entries(this.newsTagAliases)) {
+        if (aliases.includes(norm)) return key;
+      }
+      return norm;
+    },
+    newsTagIs(tag, key) {
+      return this.newsTagKey(tag) === key;
+    },
+    newsTagLabel(tag) {
+      const label = this.t('eero_news.tag_' + this.newsTagKey(tag));
+      return label !== '' ? label : String(tag || '');
+    },
+
     // Header toggle: steps through supportedLanguages in order.
     cycleLanguage() {
       const list = this.supportedLanguages;
@@ -1694,7 +1728,7 @@ document.addEventListener('alpine:init', () => {
     dateLocale() {
       const nav = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : '';
       if (nav.toLowerCase().startsWith(this.currentLanguage)) return nav;
-      return this.dateLocales[this.currentLanguage] || 'en-US';
+      return this.dateLocales[this.currentLanguage] || this.currentLanguage || 'en';
     },
 
     formatLocalTime(ts) {
@@ -1789,7 +1823,7 @@ document.addEventListener('alpine:init', () => {
         data: {
           labels: labels,
           datasets: [{
-            label: `Consumo Dati (${unit})`,
+            label: this.t('charts.data_usage_label', { unit: unit }),
             data: data,
             backgroundColor: [
               'rgba(0, 103, 192, 0.85)',
@@ -1819,8 +1853,8 @@ document.addEventListener('alpine:init', () => {
               borderColor: colors.tooltipBorder,
               borderWidth: 1,
               callbacks: {
-                label: function(context) {
-                  return `Consumo: ${context.parsed.x} ${unit}`;
+                label: (context) => {
+                  return this.t('charts.data_usage_tooltip', { value: context.parsed.x, unit: unit });
                 }
               }
             }
@@ -1985,7 +2019,7 @@ document.addEventListener('alpine:init', () => {
           case 'name': {
             const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
             const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
-            res = nameA.localeCompare(nameB);
+            res = nameA.localeCompare(nameB, this.dateLocale());
             break;
           }
           case 'ip': {
@@ -1993,20 +2027,20 @@ document.addEventListener('alpine:init', () => {
             const numB = ipToInt(b.ip);
             res = numA - numB;
             if (res === 0) {
-              res = (a.mac || '').localeCompare(b.mac || '');
+              res = (a.mac || '').localeCompare(b.mac || '', this.dateLocale());
             }
             break;
           }
           case 'profile': {
             const profA = (a.profile_name || '').toLowerCase();
             const profB = (b.profile_name || '').toLowerCase();
-            res = profA.localeCompare(profB);
+            res = profA.localeCompare(profB, this.dateLocale());
             break;
           }
           case 'node': {
-            const nodeA = (a.connected_eero_name || 'Gateway').toLowerCase();
-            const nodeB = (b.connected_eero_name || 'Gateway').toLowerCase();
-            res = nodeA.localeCompare(nodeB);
+            const nodeA = (a.connected_eero_name || this.t('common.gateway')).toLowerCase();
+            const nodeB = (b.connected_eero_name || this.t('common.gateway')).toLowerCase();
+            res = nodeA.localeCompare(nodeB, this.dateLocale());
             break;
           }
           case 'band': {
@@ -2016,7 +2050,7 @@ document.addEventListener('alpine:init', () => {
               if (d.wireless_band === '5GHz' || d.frequency_band === '5 GHz') return '3_5GHz';
               return '4_2.4GHz';
             };
-            res = getBandRank(a).localeCompare(getBandRank(b));
+            res = getBandRank(a).localeCompare(getBandRank(b), this.dateLocale());
             break;
           }
           case 'signal': {
@@ -2041,7 +2075,7 @@ document.addEventListener('alpine:init', () => {
             if (res === 0) {
               const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
               const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
-              res = nameA.localeCompare(nameB);
+              res = nameA.localeCompare(nameB, this.dateLocale());
             }
             break;
           }
@@ -2052,7 +2086,7 @@ document.addEventListener('alpine:init', () => {
             if (res === 0) {
               const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
               const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
-              res = nameA.localeCompare(nameB);
+              res = nameA.localeCompare(nameB, this.dateLocale());
             }
             break;
           }
@@ -2067,7 +2101,7 @@ document.addEventListener('alpine:init', () => {
             if (res === 0) {
               const nameA = (a.custom_name || a.nickname || a.hostname || '').toLowerCase();
               const nameB = (b.custom_name || b.nickname || b.hostname || '').toLowerCase();
-              res = nameA.localeCompare(nameB);
+              res = nameA.localeCompare(nameB, this.dateLocale());
             }
             break;
           }
@@ -2259,7 +2293,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedDevice || !this.deviceStaticIpInput) return;
       const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
       try {
-        const desc = this.deviceMetadataForm.custom_name || this.selectedDevice.nickname || this.selectedDevice.hostname || 'Device';
+        const desc = this.deviceMetadataForm.custom_name || this.selectedDevice.nickname || this.selectedDevice.hostname || this.t('devices.generic_device');
         const res = await fetch(`/api/devices/${mac}/reservation`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2335,7 +2369,7 @@ document.addEventListener('alpine:init', () => {
             port_from: pFrom,
             port_to: pTo,
             protocol: this.newPortForward.protocol || 'tcp',
-            description: this.newPortForward.description || 'Custom Forward'
+            description: this.newPortForward.description || this.t('js.add_device_port_forward.custom_forward')
           })
         });
         const data = await res.json();
@@ -2933,7 +2967,7 @@ document.addEventListener('alpine:init', () => {
                   const pt = (history || [])[items[0].dataIndex];
                   return pt ? this.formatLocalDateTime(pt.timestamp, true) : '';
                 },
-                label: (ctx) => ` Segnale RSSI: ${ctx.parsed.y} dBm`
+                label: (ctx) => this.t('charts.rssi_tooltip', { value: ctx.parsed.y })
               }
             }
           }
@@ -3047,7 +3081,7 @@ document.addEventListener('alpine:init', () => {
       const name = this.guestNetwork?.name || 'eero-guest';
       const password = this.guestNetwork?.password || '';
       const text = password 
-        ? `Wi-Fi: ${name}\nPassword: ${password}` 
+        ? this.t('js.copy_guest_credentials.wi_fi_with_password', { name: name, password: password })
         : (this.t('js.copy_guest_credentials.wi_fi_open_network', { name: name }));
       const msg = this.t('js.copy_guest_credentials.guest_wi_fi_credentials');
       this.copyToClipboard(text, msg);
@@ -3173,7 +3207,9 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         const title = this.t('js.test_notifications.test_sent');
-        this.showToast(title, `Telegram: ${json.telegram_sent ? 'OK' : 'No'} | Webhook: ${json.webhook_sent ? 'OK' : 'No'}`, "info");
+        const okLabel = this.t('js.test_notifications.status_ok');
+        const noLabel = this.t('js.test_notifications.status_no');
+        this.showToast(title, `Telegram: ${json.telegram_sent ? okLabel : noLabel} | Webhook: ${json.webhook_sent ? okLabel : noLabel}`, 'info');
       } catch (err) {
         const title = this.t('js.test_notifications.test_error');
         this.showToast(title, err.message, "error");
@@ -3202,7 +3238,7 @@ document.addEventListener('alpine:init', () => {
             enabled: Boolean(json.enabled),
             instances: (json.instances || []).map(i => ({
               id: i.id || ('inst-' + Math.random().toString(36).substr(2, 9)),
-              name: i.name || 'DNS Server',
+              name: i.name || this.t('controls.dns_default_name'),
               engine: i.engine || 'adguard',
               url: i.url || '',
               username: i.username || '',
@@ -3244,7 +3280,7 @@ document.addEventListener('alpine:init', () => {
     addDnsInstance() {
       const newInst = {
         id: 'inst-' + Date.now(),
-        name: 'DNS Server ' + (this.dnsSettings.instances.length + 1),
+        name: this.t('controls.dns_default_name_n', { n: this.dnsSettings.instances.length + 1 }),
         engine: 'adguard',
         url: 'http://192.168.1.50:80',
         username: '',
@@ -3377,7 +3413,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(title, msg, "success");
         } else {
           const title = this.t('js.test_all_dns.some_tests_failed');
-          this.showToast(title, json.message || "Una o più istanze DNS non rispondono.", "warning");
+          this.showToast(title, json.message || this.t('js.test_all_dns.instances_not_responding'), 'warning');
         }
       } catch (err) {
         const title = this.t('js.test_all_dns.global_test_error');
@@ -3984,11 +4020,11 @@ document.addEventListener('alpine:init', () => {
         });
       }
       if (this.eeroNewsFilter === 'security') {
-        list = list.filter(r => r.is_security_patch || (r.tags || []).includes('Sicurezza') || (r.tags || []).includes('Security'));
+        list = list.filter(r => r.is_security_patch || (r.tags || []).some(tg => this.newsTagIs(tg, 'security')));
       } else if (this.eeroNewsFilter === 'wifi7') {
-        list = list.filter(r => (r.tags || []).includes('Wi-Fi 7 / 6 GHz'));
+        list = list.filter(r => (r.tags || []).some(tg => this.newsTagIs(tg, 'wifi7_6ghz')));
       } else if (this.eeroNewsFilter === 'stability') {
-        list = list.filter(r => (r.tags || []).includes('Stabilità') || (r.tags || []).includes('Stability'));
+        list = list.filter(r => (r.tags || []).some(tg => this.newsTagIs(tg, 'stability')));
       }
       return list;
     },
@@ -4971,7 +5007,7 @@ document.addEventListener('alpine:init', () => {
         const url = `/api/analytics/export/${encodeURIComponent(dataType)}?format=${encodeURIComponent(format)}`;
         const res = await fetch(url);
         if (!res.ok) {
-          throw new Error(`Export failed: ${res.statusText}`);
+          throw new Error(this.t('js.export_data.export_failed', { status: res.statusText }));
         }
         const blob = await res.blob();
         const disposition = res.headers.get('Content-Disposition');
@@ -5669,7 +5705,7 @@ document.addEventListener('alpine:init', () => {
           this.showToast(this.t('js.trigger_db_compaction.database_compacted'), this.t('js.trigger_db_compaction.compaction_and_optimization_completed'), 'success');
           await this.fetchDbStats();
         } else {
-          this.showToast(this.t('toasts.error'), data.detail || 'Errore durante la compattazione', 'error');
+          this.showToast(this.t('toasts.error'), data.detail || this.t('js.trigger_db_compaction.compaction_error'), 'error');
         }
       } catch (err) {
         this.showToast(this.t('toasts.error'), String(err), 'error');
@@ -5970,7 +6006,7 @@ document.addEventListener('alpine:init', () => {
       return [...cats].sort((a, b) => {
         const nameA = (typeof this.formatCategoryName === 'function') ? (this.formatCategoryName(a) || String(a)) : String(a);
         const nameB = (typeof this.formatCategoryName === 'function') ? (this.formatCategoryName(b) || String(b)) : String(b);
-        return String(nameA).localeCompare(String(nameB));
+        return String(nameA).localeCompare(String(nameB), this.dateLocale());
       });
     },
 
@@ -6359,7 +6395,7 @@ document.addEventListener('alpine:init', () => {
         const utcIso = ts.includes('T') ? (ts.endsWith('Z') ? ts : ts + 'Z') : ts.replace(' ', 'T') + 'Z';
         const d = new Date(utcIso);
         if (isNaN(d.getTime())) return ts;
-        const localeCode = this.dateLocales[this.currentLanguage] || 'en-US';
+        const localeCode = this.dateLocale();
         return d.toLocaleString(localeCode, {
           year: 'numeric',
           month: '2-digit',

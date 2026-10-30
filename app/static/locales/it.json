@@ -66,7 +66,8 @@
     "settings_redirect_hint": "Per configurare SSID, attivare/disattivare la rete o generare una nuova password:",
     "go_to_settings": "Impostazioni → Controlli & Ospiti",
     "open_network_label": "Rete aperta (senza password)",
-    "qr_not_available": "QR Code non disponibile"
+    "qr_not_available": "QR Code non disponibile",
+    "qr_alt": "Codice QR Wi-Fi ospiti"
   },
   "quality_analytics": {
     "page_title": "Qualità Segnale & Analytics Rete",
@@ -237,7 +238,8 @@
     "badge_ula_enriched": "ULA Enriched",
     "badge_ula_enriched_tooltip": "Questo dispositivo include indirizzi IPv6 ULA arricchiti via NDP / AdGuard",
     "clear_search": "Cancella ricerca",
-    "generic_device": "Dispositivo"
+    "generic_device": "Dispositivo",
+    "sticky_badge": "Sticky"
   },
   "device_modal": {
     "reservation_error": "Errore durante la prenotazione DHCP",
@@ -334,7 +336,9 @@
     "close_btn": "Chiudi",
     "protocol_both": "Entrambi (TCP/UDP)",
     "resolution_minutes": "{n} min",
-    "eero_cloud_synced_title": "Sincronizzato dall'app mobile eero"
+    "eero_cloud_synced_title": "Sincronizzato dall'app mobile eero",
+    "phy_label": "PHY",
+    "usage_resolution": "({n} min)"
   },
   "profiles": {
     "title": "Profili Famiglia & Utenti Cloud",
@@ -554,7 +558,18 @@
     "mqtt_anonymous": "(anonimo)",
     "mqtt_interval_label": "Intervallo:",
     "mqtt_never": "Mai",
-    "mqtt_username_placeholder": "es. mqtt-user"
+    "mqtt_username_placeholder": "es. mqtt-user",
+    "dns_password_placeholder_adguard": "Password AdGuard",
+    "dns_token_placeholder_pihole": "Token WEBPASSWORD / Session SID",
+    "dns_token_placeholder_generic": "Token API o password",
+    "dns_default_name": "Server DNS",
+    "dns_default_name_n": "Server DNS {n}",
+    "dns_sync_hosts": "{n} host",
+    "mqtt_messages_unit": "msg",
+    "mqtt_broker_endpoint": "Endpoint Broker",
+    "mqtt_base_topic_label": "Topic Base",
+    "mqtt_ha_prefix_short": "Prefisso HA:",
+    "mqtt_ha_discovery_label": "Discovery Home Assistant"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",
@@ -825,7 +840,11 @@
     "export_btn_json": "Scarica JSON",
     "exporting": "Esportazione in corso...",
     "export_success": "File esportato con successo",
-    "clients_online": "client online"
+    "clients_online": "client online",
+    "sla_ok": "SLA OK",
+    "sla_degraded": "Degradato",
+    "jitter_note": "(±{n} ms di jitter)",
+    "distribution_total": "/ {n} tot."
   },
   "eero_news": {
     "title": "Novità & Note di Rilascio eeroOS",
@@ -868,7 +887,15 @@
     "load_error": "Impossibile caricare le novità eeroOS",
     "connection_error": "Errore di connessione",
     "reset_filters": "Reimposta Filtri",
-    "read_more": "Leggi →"
+    "read_more": "Leggi →",
+    "showing_count": "{shown} di {total} release",
+    "total_count": "{total} release",
+    "badge_early_rollout": "Rilascio Anticipato",
+    "badge_rolling_release": "Rilascio Graduale",
+    "tag_wifi7_6ghz": "Wi-Fi 7 / 6 GHz",
+    "tag_smart_home": "Smart Home",
+    "tag_bugfix": "Correzione Bug",
+    "tag_feature": "Nuova Funzionalità"
   },
   "auth_local": {
     "login_title": "Accesso Amministrazione",
@@ -903,7 +930,8 @@
     "password_min_length": "La password deve contenere almeno 6 caratteri",
     "username_min_length": "Lo username deve contenere almeno 3 caratteri",
     "setup_success": "Configurazione completata con successo!",
-    "login_btn_title": "Accedi come Amministratore o Utente Locale"
+    "login_btn_title": "Accedi come Amministratore o Utente Locale",
+    "role_user": "Utente"
   },
   "users_modal": {
     "title": "Gestione Utenti & Matrice Permessi",
@@ -1008,7 +1036,11 @@
     "deleted": "Regola eliminata",
     "evaluated_title": "Valutazione Completata",
     "evaluated_desc": "Regole attive: {evaluated}, azioni eseguite: {actions}",
-    "profile_devices_count": "{count} disp."
+    "profile_devices_count": "{count} disp.",
+    "loading": "Caricamento pianificazioni in corso...",
+    "edit_title": "Modifica Regola Oraria",
+    "group_profiles": "Utenti e Profili eero",
+    "group_nodes": "Nodi Mesh eero"
   },
   "resilience": {
     "stale_data_title": "Dati Telemetrici Non Aggiornati",
@@ -1165,7 +1197,10 @@
     "ping_ms": "Ping (ms)",
     "rssi_dbm": "Segnale RSSI (dBm)",
     "axis_throughput_mbps": "Throughput (Mbps)",
-    "axis_latency_ms": "Latenza (ms)"
+    "axis_latency_ms": "Latenza (ms)",
+    "data_usage_label": "Consumo Dati ({unit})",
+    "data_usage_tooltip": "Consumo: {value} {unit}",
+    "rssi_tooltip": " Segnale RSSI: {value} dBm"
   },
   "common": {
     "devices": "dispositivi",
@@ -1182,7 +1217,12 @@
       "fri": "Ven",
       "sat": "Sab",
       "sun": "Dom"
-    }
+    },
+    "gateway": "Gateway",
+    "ethernet": "Ethernet",
+    "custom": "Personalizzato",
+    "online_count": "{n} online",
+    "minutes_short": "{n} min"
   },
   "js": {
     "set_theme": {
@@ -1279,7 +1319,8 @@
       "please_enter_valid_port": "Inserisci numeri di porta validi compresi tra 1 e 65535.",
       "error_creating_port_forward": "Errore durante la creazione del port forward",
       "rule_for_port_created": "Regola per porta {pFrom} creata con successo su eero.",
-      "port_forward_error": "Errore Port Forwarding"
+      "port_forward_error": "Errore Port Forwarding",
+      "custom_forward": "Inoltro Personalizzato"
     },
     "delete_device_port_forward": {
       "error_deleting_forwarding_rule": "Errore durante la cancellazione della regola",
@@ -1329,7 +1370,8 @@
     },
     "copy_guest_credentials": {
       "wi_fi_open_network": "Wi-Fi: {name}\n(Rete aperta senza password)",
-      "guest_wi_fi_credentials": "Credenziali Wi-Fi ospiti copiate negli appunti!"
+      "guest_wi_fi_credentials": "Credenziali Wi-Fi ospiti copiate negli appunti!",
+      "wi_fi_with_password": "Wi-Fi: {name}\nPassword: {password}"
     },
     "copy_guest_password": {
       "open_network": "Rete aperta",
@@ -1351,7 +1393,9 @@
     },
     "test_notifications": {
       "test_sent": "Test Inviato",
-      "test_error": "Errore Test"
+      "test_error": "Errore Test",
+      "status_ok": "OK",
+      "status_no": "No"
     },
     "add_dns_instance": {
       "new_instance_added": "Nuova Istanza Aggiunta"
@@ -1371,7 +1415,8 @@
       "all_tests_succeeded": "Test Globale Riuscito",
       "all_dns_instances_are": "Tutte le {total_tested} istanze DNS sono operative!",
       "some_tests_failed": "Verifica Parziale o Fallita",
-      "global_test_error": "Errore Test Globale"
+      "global_test_error": "Errore Test Globale",
+      "instances_not_responding": "Una o più istanze DNS non rispondono."
     },
     "sync_dns_instance": {
       "sync_succeeded": "Sincronizzazione Riuscita",
@@ -1443,7 +1488,8 @@
     "export_data": {
       "data_export": "Esportazione Dati",
       "file_downloaded_successfully": "File {filename} scaricato con successo.",
-      "export_error": "Errore Esportazione"
+      "export_error": "Errore Esportazione",
+      "export_failed": "Esportazione non riuscita: {status}"
     },
     "perform_admin_setup": {
       "username_must_be_at": "Lo username deve contenere almeno 3 caratteri.",
@@ -1508,7 +1554,8 @@
     },
     "trigger_db_compaction": {
       "database_compacted": "Database Compattato",
-      "compaction_and_optimization_completed": "Compattazione e ottimizzazione completate con successo."
+      "compaction_and_optimization_completed": "Compattazione e ottimizzazione completate con successo.",
+      "compaction_error": "Errore durante la compattazione"
     },
     "format_schedule_target": {
       "user": "Utente: ",
