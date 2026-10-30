@@ -1,5 +1,12 @@
 {
   "unknown_device": "Device",
   "unknown_node": "eero node",
-  "invalid_data_type": "Invalid data type. Choose one of: {types}"
+  "invalid_data_type": "Invalid data type. Choose one of: {types}",
+  "export_status_online": "Online",
+  "export_status_offline": "Offline",
+  "export_wireless": "Wireless",
+  "export_wired": "Wired",
+  "export_yes": "Yes",
+  "export_no": "No",
+  "export_no_data": "no_data_available"
 }

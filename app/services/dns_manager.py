@@ -29,40 +29,51 @@ def normalize_dns_url(url: str) -> str:
     return clean
 
 
-def is_safe_dns_url(url: str) -> Tuple[bool, str]:
+def is_safe_dns_url(url: str) -> Tuple[bool, Dict[str, Any]]:
     """
     Verifica che l'URL dell'istanza DNS sia sicuro e non punti a indirizzi riservati o cloud metadata (anti-SSRF).
     Blocca tassativamente:
       - 169.254.0.0/16 (IPv4 link-local / Cloud Instance Metadata Services come AWS/GCP/Azure)
       - fe80::/10 (IPv6 link-local)
       - Host cloud metadata riservati
+
+    Returns ``(is_safe, reason)`` where ``reason`` is ``{"key": "dns.ssrf_*", "params": {...}}``
+    (empty dict when safe) so the caller can render it with ``tr()`` in the request language;
+    see ``ssrf_reason_text``.
     """
     if not url:
-        return False, "URL vuoto o non specificato"
+        return False, {"key": "dns.ssrf_url_empty", "params": {}}
     try:
         parsed = urllib.parse.urlsplit(url)
         hostname = parsed.hostname
         if not hostname:
-            return False, "Hostname mancante o non valido"
+            return False, {"key": "dns.ssrf_hostname_missing", "params": {}}
 
         # Controlla se hostname è un indirizzo IP numerico
         try:
             ip_obj = ipaddress.ip_address(hostname.strip("[]"))
             if ip_obj.is_link_local:
-                return False, f"Indirizzo link-local / metadata riservato non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_link_local", "params": {"ip": str(ip_obj)}}
             if ip_obj.is_multicast:
-                return False, f"Indirizzo multicast non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_multicast", "params": {"ip": str(ip_obj)}}
             if ip_obj.is_unspecified:
-                return False, f"Indirizzo non specificato non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_unspecified", "params": {"ip": str(ip_obj)}}
         except ValueError:
             # È un hostname/dominio
             lower_host = hostname.lower()
             if lower_host in ("metadata.google.internal", "instance-data", "metadata"):
-                return False, f"Host cloud metadata riservato non consentito ({hostname})"
+                return False, {"key": "dns.ssrf_cloud_metadata", "params": {"host": hostname}}
 
-        return True, ""
+        return True, {}
     except Exception as e:
-        return False, f"URL non analizzabile: {e}"
+        return False, {"key": "dns.ssrf_unparseable", "params": {"error": str(e)}}
+
+
+def ssrf_reason_text(reason: Dict[str, Any], lang: Optional[str] = None) -> str:
+    """Renders an ``is_safe_dns_url`` reason in ``lang`` (default: the request language)."""
+    if not reason or not reason.get("key"):
+        return ""
+    return tr(reason["key"], lang=lang, **(reason.get("params") or {}))
 
 
 def sanitize_dns_hostname(name: str, fallback: str = "device") -> str:
@@ -413,7 +424,7 @@ class DNSManager:
 
         is_safe, error_reason = is_safe_dns_url(url)
         if not is_safe:
-            return {"success": False, "message": f"URL non consentito (Anti-SSRF): {error_reason}"}
+            return {"success": False, "message": tr("dns.ssrf_url_rejected", reason=ssrf_reason_text(error_reason))}
 
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:

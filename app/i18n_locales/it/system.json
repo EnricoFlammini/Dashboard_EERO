@@ -7,5 +7,9 @@
   "db_stats_failed": "Errore recupero statistiche database: {error}",
   "db_compact_failed": "Errore durante la compattazione del database: {error}",
   "db_integrity_failed": "Errore controllo integrità database: {error}",
-  "db_backup_failed": "Errore creazione backup database: {error}"
+  "db_backup_failed": "Errore creazione backup database: {error}",
+  "update_check_failed": "Errore durante il controllo aggiornamenti: {error}",
+  "release_notes_failed": "Errore nel recupero delle note di rilascio: {error}",
+  "update_trigger_failed": "Errore durante l'avvio dell'aggiornamento: {error}",
+  "manual_section_not_found": "Sezione non trovata."
 }

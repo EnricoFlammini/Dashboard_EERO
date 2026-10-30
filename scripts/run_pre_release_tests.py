@@ -2310,14 +2310,15 @@ async def run_all_tests():
         runner.assert_true("August 15, 2026" in rel1["release_date"], f"Data release 1 corretta: {rel1['release_date']}")
         runner.assert_true(len(rel1["content"]) == 3, f"Release 1 ha 3 bullet points (trovati: {len(rel1['content'])})")
         runner.assert_true(rel1["is_security_patch"] is True, "Release 1 identificata correttamente come Security Patch")
-        runner.assert_true("Sicurezza" in rel1["tags"], "Tag 'Sicurezza' assegnato a Release 1")
-        runner.assert_true("Wi-Fi 7 / 6 GHz" in rel1["tags"], "Tag 'Wi-Fi 7 / 6 GHz' assegnato a Release 1")
-        runner.assert_true("Stabilità" in rel1["tags"], "Tag 'Stabilità' assegnato a Release 1")
+        runner.assert_true("security" in rel1["tags"], "Tag chiave 'security' assegnato a Release 1")
+        runner.assert_true("wifi7" in rel1["tags"], "Tag chiave 'wifi7' assegnato a Release 1")
+        runner.assert_true("stability" in rel1["tags"], "Tag chiave 'stability' assegnato a Release 1")
+        runner.assert_true(all(t.islower() and " " not in t for t in rel1["tags"] + parsed_notes[1]["tags"]), "I tag delle release sono chiavi stabili (nessun testo IT/EN inline)")
 
         rel2 = parsed_notes[1]
         runner.assert_true(rel2["version"] == "v7.16.1-50", f"Versione release 2 corretta: {rel2['version']}")
         runner.assert_true(rel2["is_security_patch"] is False, "Release 2 non contiene patch di sicurezza")
-        runner.assert_true("Smart Home" in rel2["tags"], "Tag 'Smart Home' assegnato a Release 2 per Thread/Matter")
+        runner.assert_true("smarthome" in rel2["tags"], "Tag chiave 'smarthome' assegnato a Release 2 per Thread/Matter")
 
         # 3. Test Persistenza SQLite (Tabella eero_release_notes)
         await db_service.clear_release_notes()

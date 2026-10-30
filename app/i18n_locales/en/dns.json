@@ -40,5 +40,13 @@
   "no_instances": "No DNS instances configured.",
   "unknown_engine_sync": "Unknown engine '{engine}'",
   "sync_done_default": "Sync completed",
-  "sync_completed": "Sync completed on {count} DNS instances."
+  "sync_completed": "Sync completed on {count} DNS instances.",
+  "ssrf_url_empty": "URL empty or not specified",
+  "ssrf_hostname_missing": "Hostname missing or invalid",
+  "ssrf_link_local": "Link-local / reserved metadata address not allowed ({ip})",
+  "ssrf_multicast": "Multicast address not allowed ({ip})",
+  "ssrf_unspecified": "Unspecified address not allowed ({ip})",
+  "ssrf_cloud_metadata": "Reserved cloud metadata host not allowed ({host})",
+  "ssrf_unparseable": "URL cannot be parsed: {error}",
+  "ssrf_url_rejected": "URL not allowed (Anti-SSRF): {reason}"
 }

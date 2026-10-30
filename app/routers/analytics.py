@@ -351,11 +351,11 @@ async def export_network_data(
         export_items = []
         for d in raw_devices:
             export_items.append({
-                "hostname": d.get("hostname") or d.get("nickname") or "Dispositivo",
+                "hostname": d.get("hostname") or d.get("nickname") or tr("analytics.unknown_device"),
                 "ip": d.get("ip") or "",
                 "mac_address": d.get("mac") or d.get("mac_address") or "",
-                "status": "Online" if d.get("connected") else "Offline",
-                "connection_type": d.get("connection_type") or ("Wireless" if d.get("wireless") else "Wired"),
+                "status": tr("analytics.export_status_online") if d.get("connected") else tr("analytics.export_status_offline"),
+                "connection_type": d.get("connection_type") or (tr("analytics.export_wireless") if d.get("wireless") else tr("analytics.export_wired")),
                 "frequency_band": d.get("wireless_band") or d.get("frequency_band") or "",
                 "channel": d.get("channel") or "",
                 "signal_rssi_dbm": d.get("signal_rssi") or "",
@@ -365,8 +365,8 @@ async def export_network_data(
                 "tx_bytes": d.get("tx_bytes") or 0,
                 "download_speed_mbps": d.get("download_rate_mbps") or 0,
                 "upload_speed_mbps": d.get("upload_rate_mbps") or 0,
-                "is_guest": "Si" if d.get("is_guest") else "No",
-                "is_static_ip": "Si" if d.get("is_static") else "No"
+                "is_guest": tr("analytics.export_yes") if d.get("is_guest") else tr("analytics.export_no"),
+                "is_static_ip": tr("analytics.export_yes") if d.get("is_static") else tr("analytics.export_no")
             })
 
     # 2. Dataset Speedtest
@@ -412,7 +412,7 @@ async def export_network_data(
         writer.writeheader()
         writer.writerows(export_items)
     else:
-        output.write("nessun_dato_disponibile\n")
+        output.write(tr("analytics.export_no_data") + "\n")
 
     csv_content = output.getvalue()
     return Response(

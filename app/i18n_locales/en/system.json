@@ -7,5 +7,9 @@
   "db_stats_failed": "Error retrieving database statistics: {error}",
   "db_compact_failed": "Error compacting the database: {error}",
   "db_integrity_failed": "Database integrity check error: {error}",
-  "db_backup_failed": "Error creating database backup: {error}"
+  "db_backup_failed": "Error creating database backup: {error}",
+  "update_check_failed": "Error checking for updates: {error}",
+  "release_notes_failed": "Error retrieving release notes: {error}",
+  "update_trigger_failed": "Error starting the update: {error}",
+  "manual_section_not_found": "Section not found."
 }

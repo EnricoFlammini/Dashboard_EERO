@@ -2131,17 +2131,19 @@ class DBService:
                     content_list = json.loads(c_json) if c_json else []
                 except Exception:
                     content_list = []
-                # Riconoscimento automatico tag euristici
+                # Riconoscimento automatico tag euristici: chiavi stabili, la UI le rende con t('eero_news.tag_' + tag)
                 full_text = " ".join(content_list).lower()
                 tags = []
                 if row["is_security_patch"]:
-                    tags.append("Sicurezza")
+                    tags.append("security")
                 if any(k in full_text for k in ("wi-fi 7", "wifi 7", "6 ghz", "6ghz", "truechannel", "awgn")):
-                    tags.append("Wi-Fi 7 / 6 GHz")
+                    tags.append("wifi7")
                 if any(k in full_text for k in ("stability", "crash", "reboot", "disconnection", "stabilità")):
-                    tags.append("Stabilità")
+                    tags.append("stability")
                 if any(k in full_text for k in ("performance", "throughput", "latency", "velocità", "prestazioni")):
-                    tags.append("Prestazioni")
+                    tags.append("performance")
+                if any(k in full_text for k in ("thread", "matter", "zigbee", "smart home", "iot")):
+                    tags.append("smarthome")
 
                 results.append({
                     "version": row["version"],
@@ -2154,7 +2156,10 @@ class DBService:
                     "fetched_at": row["fetched_at"]
                 })
             try:
-                from app.services.eero_news_service import parse_eero_version
+                from app.services.eero_news_service import localize_release, parse_eero_version
+                # Normalizza tag legacy e ricava summary (EN) + summary_i18n per le righe salvate prima della i18n
+                for r in results:
+                    localize_release(r)
                 results.sort(key=lambda r: parse_eero_version(r.get("version")), reverse=True)
             except Exception:
                 pass
