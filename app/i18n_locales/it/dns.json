@@ -40,5 +40,13 @@
   "no_instances": "Nessuna istanza DNS configurata.",
   "unknown_engine_sync": "Motore sconosciuto '{engine}'",
   "sync_done_default": "Sync completato",
-  "sync_completed": "Sincronizzazione completata su {count} istanze DNS."
+  "sync_completed": "Sincronizzazione completata su {count} istanze DNS.",
+  "ssrf_url_empty": "URL vuoto o non specificato",
+  "ssrf_hostname_missing": "Hostname mancante o non valido",
+  "ssrf_link_local": "Indirizzo link-local / metadata riservato non consentito ({ip})",
+  "ssrf_multicast": "Indirizzo multicast non consentito ({ip})",
+  "ssrf_unspecified": "Indirizzo non specificato non consentito ({ip})",
+  "ssrf_cloud_metadata": "Host cloud metadata riservato non consentito ({host})",
+  "ssrf_unparseable": "URL non analizzabile: {error}",
+  "ssrf_url_rejected": "URL non consentito (Anti-SSRF): {reason}"
 }

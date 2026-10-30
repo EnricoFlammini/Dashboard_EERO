@@ -1,5 +1,12 @@
 {
   "unknown_device": "Dispositivo",
   "unknown_node": "Nodo eero",
-  "invalid_data_type": "Tipo di dato non valido. Scegli tra: {types}"
+  "invalid_data_type": "Tipo di dato non valido. Scegli tra: {types}",
+  "export_status_online": "Online",
+  "export_status_offline": "Offline",
+  "export_wireless": "Wireless",
+  "export_wired": "Cablato",
+  "export_yes": "Sì",
+  "export_no": "No",
+  "export_no_data": "nessun_dato_disponibile"
 }

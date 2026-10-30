@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Query
 
-from app.i18n import DEFAULT_LANGUAGE, LOCALES_DIR, current_language, normalize_language
+from app.i18n import DEFAULT_LANGUAGE, LOCALES_DIR, current_language, normalize_language, tr
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ async def get_manual_section(section_id: str, lang: Optional[str] = Query(None))
     code = _resolve_lang(lang)
     section = next((s for s in load_manual_sections(code) if s["id"] == section_id), None)
     if not section:
-        return {"status": "error", "message": "Section not found."}
+        return {"status": "error", "message": tr("system.manual_section_not_found")}
     return {"status": "success", "language": code, "section": section}
 
 

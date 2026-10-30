@@ -46,7 +46,7 @@ async def check_for_updates(force: bool = Query(False, description="Forza il con
         info = await updater_service.check_for_updates(force=force)
         return info
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=tr("system.update_check_failed", error=str(e)))
 
 
 @router.get("/update/changelog")
@@ -68,7 +68,7 @@ async def get_update_changelog(version: Optional[str] = Query(None, description=
             "condensed_changelog": condensed
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=tr("system.release_notes_failed", error=str(e)))
 
 
 @router.get("/runtime", dependencies=[Depends(require_permission("view_logs"))])
@@ -84,7 +84,7 @@ async def trigger_update():
         res = await updater_service.trigger_update()
         return res
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=tr("system.update_trigger_failed", error=str(e)))
 
 
 @router.get("/eero-news")

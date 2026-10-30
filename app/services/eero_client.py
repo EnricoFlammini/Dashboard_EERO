@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from app.config import settings
-from app.i18n import log_event, tr
+from app.i18n import log_event, tr, tr_all
 
 logger = logging.getLogger(__name__)
 
@@ -1356,7 +1356,8 @@ class EeroClient:
             node.get("software_version") or 
             node.get("version")
         )
-        node["os_version"] = str(os_v) if os_v else "Aggiornato"
+        # None when the API reports no firmware: the UI renders its own localized placeholder.
+        node["os_version"] = str(os_v) if os_v else None
 
         # LED State (status_light, led_on, led_status, led_action)
         status_light = node.get("status_light")
@@ -2993,7 +2994,11 @@ class EeroClient:
         profile = dict(p)
         prof_id = str(profile.get("id") or profile.get("url", "").split("/")[-1])
         profile["id"] = prof_id
-        profile["name"] = profile.get("name") or "Profilo Utente"
+        if not profile.get("name"):
+            # Profiles are cached by the poller and rendered later: keep ``name`` English and ship
+            # ``name_i18n`` so the UI can pick the viewer's language via localized(p, 'name').
+            profile["name_i18n"] = tr_all("profiles.default_name")
+            profile["name"] = profile["name_i18n"]["en"]
         profile["paused"] = bool(profile.get("paused", False))
         
         # Normalizzazione lista dispositivi associati
