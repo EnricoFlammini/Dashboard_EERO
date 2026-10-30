@@ -1,37 +1,16 @@
 import logging
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from app.i18n import SUPPORTED_LANGUAGES, tr
+from app.i18n import SUPPORTED_LANGUAGES, localized_fields, tr, tr_all
 
 logger = logging.getLogger(__name__)
 
-
-def _it_en(key: str, **params: Any) -> Tuple[str, str]:
-    """Returns the (Italian, English) catalog texts for the paired *_it / *_en payload fields."""
-    return tr(key, lang="it", **params), tr(key, lang="en", **params)
-
-
-def with_i18n_maps(obj: Any) -> Any:
-    """Adds a ``<field>_i18n`` map next to every legacy ``<field>_it`` / ``<field>_en`` pair.
-
-    Walks dicts and lists in place. The frontend reads the map through
-    ``localized(obj, field)`` and keeps working for any language in
-    SUPPORTED_LANGUAGES, while the legacy pair stays for older clients.
-    """
-    if isinstance(obj, list):
-        for item in obj:
-            with_i18n_maps(item)
-    elif isinstance(obj, dict):
-        for key in list(obj.keys()):
-            if key.endswith("_en") and f"{key[:-3]}_it" in obj and f"{key[:-3]}_i18n" not in obj:
-                base = key[:-3]
-                obj[f"{base}_i18n"] = {lang: obj[f"{base}_{lang}"] for lang in SUPPORTED_LANGUAGES if f"{base}_{lang}" in obj}
-        for value in obj.values():
-            if isinstance(value, (dict, list)):
-                with_i18n_maps(value)
-    return obj
+# Every localized text in this module is built as a ``<field>_i18n`` map through
+# tr_all() (one entry per language in SUPPORTED_LANGUAGES) and expanded with
+# localized_fields(), which also emits the plain English ``<field>`` and the
+# legacy ``<field>_it`` / ``<field>_en`` pair for older clients and stored rows.
 
 # Pattern per identificare apparati wireless tipicamente mobili (smartphone, tablet, laptop, smartwatch)
 MOBILE_DEVICE_PATTERNS = [
@@ -256,22 +235,17 @@ class DiagnosticsService:
                     suggested_node = alt_nodes[0].get("name") or alt_nodes[0].get("location") or tr("diagnostics.fallback_secondary_node")
 
             severity = "critical" if rssi <= -82 else "warning"
-            advice_it, advice_en = (
-                tr(
-                    "diagnostics.advice_sticky",
-                    lang=lang,
-                    device=dev_name,
-                    node=curr_node_name,
-                    rssi=rssi,
-                    suggested=suggested_node or tr("diagnostics.fallback_nearby_node", lang=lang),
-                )
-                for lang in SUPPORTED_LANGUAGES
+            suggested_i18n = (
+                {lang: suggested_node for lang in SUPPORTED_LANGUAGES}
+                if suggested_node else tr_all("diagnostics.fallback_nearby_node")
             )
-
-            suggested_i18n = {
-                lang: suggested_node or tr("diagnostics.fallback_nearby_node", lang=lang)
-                for lang in SUPPORTED_LANGUAGES
-            }
+            advice_i18n = tr_all(
+                "diagnostics.advice_sticky",
+                device=dev_name,
+                node=curr_node_name,
+                rssi=rssi,
+                suggested=suggested_i18n,
+            )
 
             advisor_data = {
                 "mac": mac,
@@ -280,16 +254,13 @@ class DiagnosticsService:
                 "current_rssi": rssi,
                 "connected_eero_id": d.get("connected_eero_id"),
                 "connected_eero_name": curr_node_name,
-                "suggested_eero_name": suggested_node or tr("diagnostics.fallback_nearby_node"),
-                "suggested_eero_name_i18n": suggested_i18n,
+                **localized_fields("suggested_eero_name", suggested_i18n),
                 "estimated_delta_dbm": delta_est,
                 "severity": severity,
-                "advice_it": advice_it,
-                "advice_en": advice_en,
+                **localized_fields("advice", advice_i18n),
             }
 
             # Assegna il badge direttamente all'oggetto device
-            with_i18n_maps(advisor_data)
             d["roaming_advisor"] = advisor_data
             sticky_devices.append(advisor_data)
 
@@ -317,16 +288,30 @@ class DiagnosticsService:
 
         # 1. Overview Narrative
         if score >= 90:
-            overview_it, overview_en = _it_en("diagnostics.overview_excellent")
+            overview_i18n = tr_all("diagnostics.overview_excellent")
         elif score >= 70:
-            overview_it, overview_en = _it_en("diagnostics.overview_good")
+            overview_i18n = tr_all("diagnostics.overview_good")
         else:
-            overview_it, overview_en = _it_en("diagnostics.overview_critical")
+            overview_i18n = tr_all("diagnostics.overview_critical")
 
-        # 2. Penalty Explanations Narrative
-        narrative_it_parts: List[str] = []
-        narrative_en_parts: List[str] = []
+        # 2. Penalty Explanations Narrative (one sentence list per language)
+        narrative_parts: Dict[str, List[str]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
         checklist: List[Dict[str, Any]] = []
+
+        def add_narrative(text_i18n: Dict[str, str]) -> None:
+            for lang in SUPPORTED_LANGUAGES:
+                narrative_parts[lang].append(text_i18n[lang])
+
+        def checklist_item(item_id: str, priority: str, category: str, icon: str,
+                           title_i18n: Dict[str, str], description_i18n: Dict[str, str]) -> Dict[str, Any]:
+            return {
+                "id": item_id,
+                "priority": priority,
+                "category": category,
+                **localized_fields("title", title_i18n),
+                **localized_fields("description", description_i18n),
+                "icon": icon,
+            }
 
         # Analisi Nodi Offline
         offline_pen = next((
@@ -335,19 +320,17 @@ class DiagnosticsService:
         ), None)
         if offline_pen:
             aff = offline_pen.get("affected_items") or []
-            names_it, names_en = (", ".join(aff) if aff else tr("diagnostics.fallback_some_nodes", lang=lang) for lang in ("it", "en"))
-            narrative_it_parts.append(tr("diagnostics.narrative_offline_nodes", lang="it", names=names_it))
-            narrative_en_parts.append(tr("diagnostics.narrative_offline_nodes", lang="en", names=names_en))
-            checklist.append({
-                "id": "fix_offline_nodes",
-                "priority": "critical",
-                "category": "mesh",
-                "title_it": tr("diagnostics.check_offline_nodes_title", lang="it", names=names_it),
-                "title_en": tr("diagnostics.check_offline_nodes_title", lang="en", names=names_en),
-                "description_it": tr("diagnostics.check_offline_nodes_desc", lang="it"),
-                "description_en": tr("diagnostics.check_offline_nodes_desc", lang="en"),
-                "icon": "wifi-off",
-            })
+            # Node names are data; only the "some nodes" fallback is localized, so build the list per language.
+            names_i18n = (
+                {lang: ", ".join(aff) for lang in SUPPORTED_LANGUAGES}
+                if aff else tr_all("diagnostics.fallback_some_nodes")
+            )
+            add_narrative(tr_all("diagnostics.narrative_offline_nodes", names=names_i18n))
+            checklist.append(checklist_item(
+                "fix_offline_nodes", "critical", "mesh", "wifi-off",
+                tr_all("diagnostics.check_offline_nodes_title", names=names_i18n),
+                tr_all("diagnostics.check_offline_nodes_desc"),
+            ))
 
         # Analisi Backhaul Degradato o Cavi 100 Mbps
         backhaul_pen = next((
@@ -358,21 +341,12 @@ class DiagnosticsService:
         if backhaul_pen:
             aff = backhaul_pen.get("affected_items") or []
             items_str = "; ".join(aff)
-            narrative_it, narrative_en = _it_en("diagnostics.narrative_degraded_backhaul", items=items_str)
-            narrative_it_parts.append(narrative_it)
-            narrative_en_parts.append(narrative_en)
-            title_it, title_en = _it_en("diagnostics.check_degraded_backhaul_title")
-            description_it, description_en = _it_en("diagnostics.check_degraded_backhaul_desc")
-            checklist.append({
-                "id": "fix_degraded_backhaul",
-                "priority": "high",
-                "category": "cabling",
-                "title_it": title_it,
-                "title_en": title_en,
-                "description_it": description_it,
-                "description_en": description_en,
-                "icon": "cable",
-            })
+            add_narrative(tr_all("diagnostics.narrative_degraded_backhaul", items=items_str))
+            checklist.append(checklist_item(
+                "fix_degraded_backhaul", "high", "cabling", "cable",
+                tr_all("diagnostics.check_degraded_backhaul_title"),
+                tr_all("diagnostics.check_degraded_backhaul_desc"),
+            ))
 
         # Analisi Segnale Client Debole
         client_pen = next((p for p in penalties if p.get("id") == "weak_client_signal"), None)
@@ -380,111 +354,69 @@ class DiagnosticsService:
             aff = client_pen.get("affected_items") or []
             cnt = len(aff)
             devices_str = f"{', '.join(aff[:3])}{'...' if len(aff) > 3 else ''}"
-            narrative_it, narrative_en = _it_en("diagnostics.narrative_weak_clients", count=cnt, devices=devices_str)
-            narrative_it_parts.append(narrative_it)
-            narrative_en_parts.append(narrative_en)
-            title_it, title_en = _it_en("diagnostics.check_weak_clients_title")
-            description_it, description_en = _it_en("diagnostics.check_weak_clients_desc")
-            checklist.append({
-                "id": "fix_weak_clients",
-                "priority": "medium",
-                "category": "clients",
-                "title_it": title_it,
-                "title_en": title_en,
-                "description_it": description_it,
-                "description_en": description_en,
-                "icon": "signal",
-            })
+            add_narrative(tr_all("diagnostics.narrative_weak_clients", count=cnt, devices=devices_str))
+            checklist.append(checklist_item(
+                "fix_weak_clients", "medium", "clients", "signal",
+                tr_all("diagnostics.check_weak_clients_title"),
+                tr_all("diagnostics.check_weak_clients_desc"),
+            ))
 
         # Analisi Affollamento 2.4 GHz
         band_pen = next((p for p in penalties if p.get("id") == "band_24_crowding"), None)
         if band_pen:
-            narrative_it, narrative_en = _it_en("diagnostics.narrative_band_24")
-            narrative_it_parts.append(narrative_it)
-            narrative_en_parts.append(narrative_en)
-            title_it, title_en = _it_en("diagnostics.check_band_steering_title")
-            description_it, description_en = _it_en("diagnostics.check_band_steering_desc")
-            checklist.append({
-                "id": "enable_band_steering",
-                "priority": "low",
-                "category": "spectrum",
-                "title_it": title_it,
-                "title_en": title_en,
-                "description_it": description_it,
-                "description_en": description_en,
-                "icon": "radio",
-            })
+            add_narrative(tr_all("diagnostics.narrative_band_24"))
+            checklist.append(checklist_item(
+                "enable_band_steering", "low", "spectrum", "radio",
+                tr_all("diagnostics.check_band_steering_title"),
+                tr_all("diagnostics.check_band_steering_desc"),
+            ))
 
         # Analisi Roaming Advisor
         if roaming_info and roaming_info.get("sticky_count", 0) > 0:
             stk_cnt = roaming_info["sticky_count"]
             stk_devs = roaming_info.get("devices", [])
             dev_names = ", ".join(d.get("name") for d in stk_devs[:3])
-            narrative_it, narrative_en = _it_en("diagnostics.narrative_sticky_clients", count=stk_cnt, devices=dev_names)
-            narrative_it_parts.append(narrative_it)
-            narrative_en_parts.append(narrative_en)
-            title_it, title_en = _it_en("diagnostics.check_sticky_clients_title", count=stk_cnt)
-            description_it, description_en = _it_en("diagnostics.check_sticky_clients_desc")
-            checklist.append({
-                "id": "resolve_sticky_clients",
-                "priority": "medium",
-                "category": "clients",
-                "title_it": title_it,
-                "title_en": title_en,
-                "description_it": description_it,
-                "description_en": description_en,
-                "icon": "refresh-cw",
-            })
+            add_narrative(tr_all("diagnostics.narrative_sticky_clients", count=stk_cnt, devices=dev_names))
+            checklist.append(checklist_item(
+                "resolve_sticky_clients", "medium", "clients", "refresh-cw",
+                tr_all("diagnostics.check_sticky_clients_title", count=stk_cnt),
+                tr_all("diagnostics.check_sticky_clients_desc"),
+            ))
 
         # Analisi Anomalie Traffico Notturno IoT
         if recent_anomalies:
             crit_anom = [a for a in recent_anomalies if a.get("severity") in ("critical", "warning")]
             if crit_anom:
                 anom_names = ", ".join(a.get("hostname") or a.get("mac_address") for a in crit_anom[:2])
-                narrative_it, narrative_en = _it_en("diagnostics.narrative_iot_anomaly", devices=anom_names)
-                narrative_it_parts.append(narrative_it)
-                narrative_en_parts.append(narrative_en)
-                title_it, title_en = _it_en("diagnostics.check_iot_anomaly_title", devices=anom_names)
-                description_it, description_en = _it_en("diagnostics.check_iot_anomaly_desc")
-                checklist.append({
-                    "id": "investigate_iot_anomaly",
-                    "priority": "high",
-                    "category": "security",
-                    "title_it": title_it,
-                    "title_en": title_en,
-                    "description_it": description_it,
-                    "description_en": description_en,
-                    "icon": "alert-triangle",
-                })
+                add_narrative(tr_all("diagnostics.narrative_iot_anomaly", devices=anom_names))
+                checklist.append(checklist_item(
+                    "investigate_iot_anomaly", "high", "security", "alert-triangle",
+                    tr_all("diagnostics.check_iot_anomaly_title", devices=anom_names),
+                    tr_all("diagnostics.check_iot_anomaly_desc"),
+                ))
 
         # Se non ci sono penalità, aggiungi checklist ottimale
         if not checklist:
-            title_it, title_en = _it_en("diagnostics.check_optimal_title")
-            description_it, description_en = _it_en("diagnostics.check_optimal_desc")
-            checklist.append({
-                "id": "network_optimal",
-                "priority": "low",
-                "category": "mesh",
-                "title_it": title_it,
-                "title_en": title_en,
-                "description_it": description_it,
-                "description_en": description_en,
-                "icon": "check-circle",
-            })
+            checklist.append(checklist_item(
+                "network_optimal", "low", "mesh", "check-circle",
+                tr_all("diagnostics.check_optimal_title"),
+                tr_all("diagnostics.check_optimal_desc"),
+            ))
 
-        narrative_it = " ".join(narrative_it_parts) if narrative_it_parts else tr("diagnostics.narrative_none", lang="it")
-        narrative_en = " ".join(narrative_en_parts) if narrative_en_parts else tr("diagnostics.narrative_none", lang="en")
+        narrative_none = tr_all("diagnostics.narrative_none")
+        narrative_i18n = {
+            lang: " ".join(parts) if parts else narrative_none[lang]
+            for lang, parts in narrative_parts.items()
+        }
 
-        return with_i18n_maps({
+        return {
             "score": score,
             "status": status,
-            "overview_it": overview_it,
-            "overview_en": overview_en,
-            "narrative_it": narrative_it,
-            "narrative_en": narrative_en,
+            **localized_fields("overview", overview_i18n),
+            **localized_fields("narrative", narrative_i18n),
             "checklist": checklist,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        })
+        }
 
     def detect_iot_night_anomalies(
         self,
@@ -507,7 +439,7 @@ class DiagnosticsService:
         if is_demo:
             # In modalità demo, restituisce 2 anomalie realistiche per dimostrare la feature
             now = datetime.now(timezone.utc).strftime("%Y-%m-%dT03:45:00Z")
-            return with_i18n_maps([
+            return [
                 {
                     "mac_address": "dc:a6:32:88:77:66",
                     "hostname": "Telecamera Giardino Esterno",
@@ -519,8 +451,7 @@ class DiagnosticsService:
                     "baseline_megabytes": 15.0,
                     "baseline_mb": 15.0,
                     "severity": "critical",
-                    "description_it": tr("diagnostics.demo_anomaly_camera", lang="it"),
-                    "description_en": tr("diagnostics.demo_anomaly_camera", lang="en"),
+                    **localized_fields("description", tr_all("diagnostics.demo_anomaly_camera")),
                     "timestamp": now,
                     "is_demo": 1,
                 },
@@ -535,12 +466,11 @@ class DiagnosticsService:
                     "baseline_megabytes": 2.5,
                     "baseline_mb": 2.5,
                     "severity": "warning",
-                    "description_it": tr("diagnostics.demo_anomaly_relay", lang="it"),
-                    "description_en": tr("diagnostics.demo_anomaly_relay", lang="en"),
+                    **localized_fields("description", tr_all("diagnostics.demo_anomaly_relay")),
                     "timestamp": now,
                     "is_demo": 1,
                 }
-            ])
+            ]
 
         # Analisi live su righe storiche
         if not usage_history_rows:
@@ -598,7 +528,7 @@ class DiagnosticsService:
 
             if delta_vol > threshold:
                 sev = "critical" if delta_vol > (threshold * 2) else "warning"
-                description_it, description_en = _it_en(
+                description_i18n = tr_all(
                     "diagnostics.anomaly_night_traffic",
                     observed=f"{delta_vol:.1f}",
                     threshold=f"{threshold:.0f}",
@@ -612,14 +542,13 @@ class DiagnosticsService:
                     "megabytes_transferred": round(delta_vol, 1),
                     "baseline_megabytes": 10.0,
                     "severity": sev,
-                    "description_it": description_it,
-                    "description_en": description_en,
+                    **localized_fields("description", description_i18n),
                     "timestamp": now_str,
                     "is_demo": 0,
                 }
                 anomalies.append(anom)
 
-        return with_i18n_maps(anomalies)
+        return anomalies
 
 
 # Istanza singleton del servizio

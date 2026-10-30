@@ -1057,6 +1057,8 @@ document.addEventListener('alpine:init', () => {
         if (/\b5(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('5000') || bh.includes('5.0G')) return 'Ethernet (5.0 Gbps)';
         if (/\b1(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('1000') || bh.includes('1Gbps')) return 'Ethernet (1.0 Gbps)';
         if (/\b100\s*Mbps\b/i.test(bh) || bh.includes('100M')) return 'Ethernet (100 Mbps)';
+        // "Ethernet (Wired)" from the API (or "Ethernet (Cablato)" in older cached data) carries no speed: localize the label.
+        if (/\((?:wired|cablato)\)/i.test(bh)) return this.t('dashboard.backhaul_wired');
         if (bh.includes('(') && bh.includes(')')) return bh;
         return this.t('dashboard.backhaul_wired');
       }

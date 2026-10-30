@@ -92,6 +92,11 @@ def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] =
     """Maps native eero device_type and model/name to (Category, Icon).
     
     Categories: Computer, Mobile, Intrattenimento, Gaming, Smart Home, Server/Rete, Altro
+
+    The category strings are stable identifiers, not display text: they are stored in
+    device_metadata.category (user choice) and matched by filters, analytics and the
+    automations router, and the frontend maps them to t('devices.cat_*') labels. Do not
+    rename them; add a new language by translating the devices.cat_* keys instead.
     Icons: laptop, smartphone, tablet, tv, gamepad, iot, camera, speaker, server, printer, device
     """
     t = str(raw_type or "").strip().lower()
@@ -1280,7 +1285,7 @@ class EeroClient:
             if spd_fmt:
                 node["backhaul_type"] = f"Ethernet ({spd_fmt})"
             else:
-                node["backhaul_type"] = "Ethernet (Cablato)"
+                node["backhaul_type"] = "Ethernet (Wired)"
         else:
             node["wired"] = False
 
@@ -1342,7 +1347,7 @@ class EeroClient:
             # Nessun canale né frequenza: stima dal modello (Issue #56: trasparenza sulle bande dedotte da hardware)
             elif is_6e_or_7_hardware and channel == 0:
                 node["backhaul_estimated"] = True
-                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (stimata)"
+                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (estimated)"
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
@@ -2031,7 +2036,7 @@ class EeroClient:
                             spd_fmt = format_speed_mbps(spd_mbps)
                             if n.get("raw_wired") is True or (spd_mbps > 0 and n.get("raw_wired") is not False):
                                 n["wired"] = True
-                                n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Cablato)"
+                                n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Wired)"
                             elif is_6e_or_7 or "6" in str(n.get("wireless_band") or ""):
                                 n["wired"] = False
                                 n["backhaul_type"] = "Wireless Mesh (6 GHz)"

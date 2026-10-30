@@ -6705,7 +6705,7 @@
             <!-- Discursive Narrative -->
             <div class="space-y-2 text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
               <p class="font-medium" x-text="localized(healthDetails?.ai_summary, 'overview')"></p>
-              <template x-if="healthDetails?.ai_summary && (healthDetails.ai_summary.narrative_it || healthDetails.ai_summary.narrative_en)">
+              <template x-if="localized(healthDetails?.ai_summary, 'narrative')">
                 <div class="p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-[11px] space-y-1">
                   <div x-html="renderSimpleMarkdown(localized(healthDetails?.ai_summary, 'narrative'))"></div>
                 </div>
