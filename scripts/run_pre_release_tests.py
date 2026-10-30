@@ -4319,6 +4319,12 @@ async def run_all_tests():
         runner.assert_true(man_en_data.get("count") == 16, f"Manuale EN ha 16 capitoli (trovati {man_en_data.get('count')})")
         en_sec_ids = [s["id"] for s in man_en_data.get("sections", [])]
         runner.assert_true(it_sec_ids == en_sec_ids, "Parità 100% degli ID capitoli tra manuale IT ed EN")
+        from app.i18n import SUPPORTED_LANGUAGES as _manual_langs
+        for _ml in _manual_langs:
+            _ml_ids = [s["id"] for s in (await client.get(f"/api/manual/sections?lang={_ml}")).json().get("sections", [])]
+            runner.assert_true(_ml_ids == en_sec_ids, f"Manuale '{_ml}' ha lo stesso set e ordine di ID capitoli del manuale EN")
+        res_man_hdr = await client.get("/api/manual/sections", headers={"X-Dashboard-Lang": "it"})
+        runner.assert_true(res_man_hdr.json().get("language") == "it", "Senza ?lang= il manuale segue l'header X-Dashboard-Lang (it)")
 
         # 2. Test sommario changelog in-app (IT ed EN)
         res_ch_it = await client.get("/api/manual/changelog?lang=it")

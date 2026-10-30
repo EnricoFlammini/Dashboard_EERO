@@ -412,6 +412,7 @@ Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD`
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
 * **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to both `en` and `it`; the test suite checks key parity.
+* **Manual & changelog:** the in-app manual sections live in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + Markdown body) and the release summary in `app/i18n_locales/<lang>/changelog_summary.md`; a missing file falls back to the English one.
 
 ---
 
@@ -732,6 +733,7 @@ Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impos
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
 * **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave sia in `en` sia in `it`; la suite di test verifica la parità delle chiavi.
+* **Manuale & changelog:** i capitoli del manuale in-app vivono in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + corpo Markdown) e il sommario delle release in `app/i18n_locales/<lang>/changelog_summary.md`; un file mancante ricade su quello inglese.
 
 ---
 
