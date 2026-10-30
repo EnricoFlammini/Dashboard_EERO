@@ -1046,7 +1046,7 @@
                   <span :class="['online', 'green'].includes(eero.status) ? 'text-emerald-600 dark:text-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')" class="font-semibold" x-text="formatNodeStatus(eero)"></span>
                 </div>
                 <!-- Firmware OS Version -->
-                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.os_version">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400">
                   <span x-text="t('dashboard.firmware')"></span>
                   <span class="font-mono text-slate-800 dark:text-slate-300 text-[11px] font-medium" x-text="eero.os_version || t('dashboard.updated')"></span>
                 </div>
@@ -1508,7 +1508,7 @@
               <option value="all" x-text="t('devices.filter_all_profiles')"></option>
               <option value="unassigned" x-text="t('devices.filter_unassigned')"></option>
               <template x-for="prof in profiles" :key="prof.id">
-                <option :value="prof.id" x-text="prof.name"></option>
+                <option :value="prof.id" x-text="localized(prof, 'name')"></option>
               </template>
             </select>
 
@@ -1716,7 +1716,7 @@
               </button>
               <template x-for="prof in profiles" :key="prof.id">
                 <button type="button" @click="selectedProfileFilter = prof.id; closeDeviceDropdowns()" :class="selectedProfileFilter === prof.id ? 'is-selected' : ''" class="device-filter-option">
-                  <span class="truncate" x-text="'👤 ' + prof.name"></span>
+                  <span class="truncate" x-text="'👤 ' + localized(prof, 'name')"></span>
                   <span x-show="selectedProfileFilter === prof.id" class="text-xs">✓</span>
                 </button>
               </template>
@@ -1842,7 +1842,8 @@
       <!-- Devices Table (Desktop Only >= md) -->
       <div class="hidden md:block device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
         <div class="device-table-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
-          <table class="device-table w-full text-left border-collapse text-xs">
+          <table class="device-table w-full text-left border-collapse text-xs"
+                 x-effect="filteredDevices; JSON.stringify(deviceTableColumns); currentLanguage; $nextTick(() => fitDeviceNameColumn())">
             <caption class="sr-only" x-text="t('devices.title')"></caption>
             <thead class="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
               <tr class="text-slate-700 dark:text-slate-400 uppercase tracking-wider font-semibold">
@@ -4796,13 +4797,13 @@
                     <div class="flex flex-wrap items-center gap-2">
                       <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white" x-text="eeroNewsData.firmware_status === 'newer_than_published' ? t('eero_news.newer_than_published_title') : t('eero_news.up_to_date_title')"></h3>
                       <div class="inline-flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 whitespace-nowrap shrink-0" x-text="eeroNewsData.current_firmware"></span>
+                        <span class="inline-flex items-center font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 whitespace-nowrap shrink-0" x-text="eeroNewsData.current_firmware || t('eero_news.firmware_unknown')"></span>
                         <template x-if="eeroNewsData.firmware_status === 'newer_than_published'">
                           <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 uppercase whitespace-nowrap shrink-0" x-text="t('eero_news.badge_early_rollout')"></span>
                         </template>
                       </div>
                     </div>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5" x-text="eeroNewsData.firmware_status === 'newer_than_published' ? (t('eero_news.newer_than_published_desc').replace('{current}', eeroNewsData.current_firmware).replace('{version}', eeroNewsData.latest_firmware)) : (t('eero_news.up_to_date_desc').replace('{version}', eeroNewsData.latest_firmware))"></p>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5" x-text="eeroNewsData.firmware_status === 'newer_than_published' ? (t('eero_news.newer_than_published_desc').replace('{current}', eeroNewsData.current_firmware || t('eero_news.firmware_unknown')).replace('{version}', eeroNewsData.latest_firmware)) : (t('eero_news.up_to_date_desc').replace('{version}', eeroNewsData.latest_firmware))"></p>
                   </div>
                 </div>
                 <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
@@ -4818,7 +4819,7 @@
                   <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-xs">
                     <span class="w-2 h-2 rounded-full" :class="node.status === 'online' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
                     <span class="font-medium text-slate-800 dark:text-slate-200" x-text="node.name"></span>
-                    <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400" x-text="'(' + node.os_version + ')'"></span>
+                    <span class="font-mono text-[10px] text-slate-500 dark:text-slate-400" x-text="(node.os_version ? '(' + node.os_version + ')' : '')"></span>
                     <span x-show="node.is_gateway" class="text-[9px] uppercase font-bold px-1 rounded bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300" x-text="t('eero_news.node_gateway')"></span>
                   </div>
                 </template>
@@ -4841,7 +4842,7 @@
                       <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white" x-text="t('eero_news.update_avail_title').replace('{version}', eeroNewsData.target_firmware || eeroNewsData.latest_firmware)"></h3>
                       <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 uppercase whitespace-nowrap shrink-0" x-text="t('eero_news.badge_rolling_release')"></span>
                     </div>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed" x-text="t('eero_news.update_avail_desc').replace('{current}', eeroNewsData.current_firmware)"></p>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed" x-text="t('eero_news.update_avail_desc').replace('{current}', eeroNewsData.current_firmware || t('eero_news.firmware_unknown'))"></p>
                   </div>
                 </div>
                 <div class="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-400">
@@ -4858,12 +4859,12 @@
                     <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] text-xs">
                       <span class="w-2 h-2 rounded-full" :class="node.status === 'online' ? 'bg-emerald-400' : 'bg-rose-400'"></span>
                       <span class="font-medium text-slate-800 dark:text-slate-200" x-text="node.name"></span>
-                      <span class="font-mono text-[10px]" :class="node.os_version === (eeroNewsData.target_firmware || eeroNewsData.latest_firmware) ? 'text-emerald-500 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'" x-text="'(' + node.os_version + ')'"></span>
+                      <span class="font-mono text-[10px]" :class="node.os_version === (eeroNewsData.target_firmware || eeroNewsData.latest_firmware) ? 'text-emerald-500 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'" x-text="(node.os_version ? '(' + node.os_version + ')' : '')"></span>
                     </div>
                   </template>
                 </div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-3">
-                  <div><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.installed_version')"></span> <span class="font-mono font-bold" x-text="eeroNewsData.current_firmware"></span></div>
+                  <div><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.installed_version')"></span> <span class="font-mono font-bold" x-text="eeroNewsData.current_firmware || t('eero_news.firmware_unknown')"></span></div>
                   <div>→</div>
                   <div><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="t('eero_news.latest_release')"></span> <span class="font-mono font-bold text-sky-600 dark:text-sky-400" x-text="eeroNewsData.target_firmware || eeroNewsData.latest_firmware"></span></div>
                 </div>
@@ -4968,7 +4969,7 @@
                 </div>
 
                 <!-- Summary Line -->
-                <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 truncate" x-text="rel.summary"></p>
+                <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 truncate" x-text="localized(rel, 'summary')"></p>
               </div>
 
               <!-- Chevron Toggle -->
@@ -7487,7 +7488,7 @@
               <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
                 <option value="" disabled x-text="t('schedules.select_user_placeholder')"></option>
                 <template x-for="p in (profiles || [])" :key="p.id">
-                  <option :value="p.id" x-text="p.name + (p.devices && p.devices.length ? ' (' + t('schedules.profile_devices_count', { count: p.devices.length }) + ')' : '')"></option>
+                  <option :value="p.id" x-text="localized(p, 'name') + (p.devices && p.devices.length ? ' (' + t('schedules.profile_devices_count', { count: p.devices.length }) + ')' : '')"></option>
                 </template>
               </select>
             </template>

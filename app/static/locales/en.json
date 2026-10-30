@@ -870,6 +870,7 @@
     "mesh_nodes_status": "Mesh Fleet Firmware Status",
     "node_gateway": "Gateway",
     "node_beacon": "Extender Node",
+    "firmware_unknown": "Unknown",
     "tag_security": "Security",
     "tag_wifi7": "Wi-Fi 7 / 6 GHz",
     "tag_stability": "Stability",

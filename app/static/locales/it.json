@@ -870,6 +870,7 @@
     "mesh_nodes_status": "Stato Firmware Nodi Mesh",
     "node_gateway": "Gateway",
     "node_beacon": "Nodo Estensore",
+    "firmware_unknown": "Sconosciuta",
     "tag_security": "Sicurezza",
     "tag_wifi7": "Wi-Fi 7 / 6 GHz",
     "tag_stability": "Stabilità",

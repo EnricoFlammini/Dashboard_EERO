@@ -956,15 +956,19 @@ html.dark .sidebar-btn-inactive:hover {
   --device-col-actions-w: 3.25rem;
 }
 
-/* The Name column has no fixed width: it absorbs whatever the other columns leave over,
-   so hiding a column widens the names instead of leaving a gap. */
-.device-table .device-col-address { width: clamp(9rem, 14cqw, 12rem); }
-.device-table .device-col-profile { width: clamp(7.5rem, 10cqw, 11rem); }
-.device-table .device-col-node { width: clamp(6.5rem, 8.5cqw, 10rem); }
-.device-table .device-col-band { width: clamp(6.25rem, 7.5cqw, 7.5rem); }
-.device-table .device-col-signal { width: clamp(6rem, 7cqw, 7.5rem); }
-.device-table .device-col-traffic { width: clamp(9.5rem, 11cqw, 12rem); }
-.device-table .device-col-first-seen { width: clamp(7rem, 9cqw, 9.5rem); }
+/* The Name column is sized by fitDeviceNameColumn() (app.js) to the widest device name +
+   details currently listed (--device-col-name-w). When that would not fit the panel, the
+   other flexible columns are scaled down together (--device-col-squeeze, >= 0.7) so the
+   table still renders without horizontal scrolling. Without the variables (no JS yet) the
+   Name column simply absorbs whatever the other columns leave over. */
+.device-table .device-col-name { width: var(--device-col-name-w, auto); }
+.device-table .device-col-address { width: calc(clamp(9rem, 14cqw, 12rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-profile { width: calc(clamp(7.5rem, 10cqw, 11rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-node { width: calc(clamp(6.5rem, 8.5cqw, 10rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-band { width: calc(clamp(6.25rem, 7.5cqw, 7.5rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-signal { width: calc(clamp(6rem, 7cqw, 7.5rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-traffic { width: calc(clamp(9.5rem, 11cqw, 12rem) * var(--device-col-squeeze, 1)); }
+.device-table .device-col-first-seen { width: calc(clamp(7rem, 9cqw, 9.5rem) * var(--device-col-squeeze, 1)); }
 .device-table .device-col-status { width: clamp(5.5rem, 6.5cqw, 6.5rem); }
 .device-table .device-col-actions { width: var(--device-col-actions-w); }
 

@@ -341,6 +341,66 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {}
     },
 
+    /**
+     * Sizes the Devices table "Device / Host" column to the widest device name + details on
+     * screen, so names never wrap or clip. If that width does not fit next to the other
+     * columns, those columns are scaled down together (never below 70%) instead of letting
+     * the table scroll horizontally. Re-run whenever the device list, the visible columns,
+     * the language or the panel width changes.
+     */
+    fitDeviceNameColumn() {
+      const scroll = document.querySelector('.device-table-scroll');
+      const table = scroll ? scroll.querySelector('table.device-table') : null;
+      if (!table || !scroll.clientWidth) return;
+      const nameTh = table.querySelector('th.device-col-name');
+      const cells = table.querySelectorAll('td.device-name-cell .device-identity');
+      if (!nameTh || !cells.length) {
+        table.style.removeProperty('--device-col-name-w');
+        table.style.removeProperty('--device-col-squeeze');
+        return;
+      }
+      // Measure each identity block unwrapped, in a hidden probe that inherits the table styles.
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap;width:max-content;';
+      cells.forEach((el) => {
+        const clone = el.cloneNode(true);
+        clone.style.width = 'max-content';
+        clone.querySelectorAll('.flex-wrap').forEach((n) => n.classList.remove('flex-wrap'));
+        clone.querySelectorAll('.truncate').forEach((n) => n.classList.remove('truncate'));
+        clone.querySelectorAll('.device-name').forEach((n) => {
+          n.style.display = 'block';
+          n.style.maxWidth = 'none';
+          n.style.whiteSpace = 'nowrap';
+          n.style.webkitLineClamp = 'unset';
+        });
+        probe.appendChild(clone);
+      });
+      table.appendChild(probe);
+      let widest = 0;
+      probe.childNodes.forEach((c) => { widest = Math.max(widest, c.scrollWidth); });
+      probe.remove();
+      const cs = getComputedStyle(nameTh);
+      const wanted = Math.ceil(widest + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2);
+      // Natural width of the other visible columns (measured unsqueezed).
+      table.style.setProperty('--device-col-squeeze', '1');
+      let others = 0;
+      table.querySelectorAll('thead th').forEach((th) => {
+        if (th !== nameTh && th.offsetParent !== null) others += th.getBoundingClientRect().width;
+      });
+      const available = scroll.clientWidth;
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      let squeeze = 1;
+      let nameWidth;
+      if (wanted + others <= available) {
+        nameWidth = Math.max(wanted, available - others); // absorb the leftover, as before
+      } else {
+        squeeze = Math.max(0.7, (available - wanted) / others);
+        nameWidth = Math.max(10 * rem, available - others * squeeze);
+      }
+      table.style.setProperty('--device-col-squeeze', String(Number(squeeze.toFixed(3))));
+      table.style.setProperty('--device-col-name-w', Math.floor(nameWidth) + 'px');
+    },
+
     isTableColumnVisible(colKey) {
       if (colKey === 'name' || colKey === 'actions') return true;
       return this.deviceTableColumns[colKey] !== false;
@@ -670,6 +730,13 @@ document.addEventListener('alpine:init', () => {
     async init() {
       console.log("Initializing eero Custom Dashboard application...");
       this.currentTab = this.tabFromPath();
+      // Keep the Devices table Name column fitted when the panel resizes (sidebar, window).
+      this.$nextTick(() => {
+        const scroll = document.querySelector('.device-table-scroll');
+        if (scroll && typeof ResizeObserver !== 'undefined') {
+          new ResizeObserver(() => this.fitDeviceNameColumn()).observe(scroll);
+        }
+      });
       if (typeof window !== 'undefined' && window.location && window.location.pathname === '/') {
         window.history.replaceState({}, '', this.routes.overview);
       }
@@ -1152,12 +1219,14 @@ document.addEventListener('alpine:init', () => {
     loadDeviceFiltersFromUrl() {
       if (typeof window === 'undefined' || !window.location) return;
       const params = new URLSearchParams(window.location.search);
-      this.deviceSearchQuery = params.get('search');
-      this.selectedBandFilter = params.get('band');
-      this.selectedNodeFilter = params.get('node');
-      this.selectedCategoryFilter = params.get('category');
-      this.selectedProfileFilter = params.get('profile');
-      this.selectedIpTypeFilter = params.get('assignment');
+      // Missing params mean "no filter": restore the neutral defaults, not null
+      // (null would make every device fail the category/profile comparisons).
+      this.deviceSearchQuery = params.get('search') || '';
+      this.selectedBandFilter = params.get('band') || 'all';
+      this.selectedNodeFilter = params.get('node') || 'all';
+      this.selectedCategoryFilter = params.get('category') || 'all';
+      this.selectedProfileFilter = params.get('profile') || 'all';
+      this.selectedIpTypeFilter = params.get('assignment') || 'all';
       this.showConnectedOnly = params.get('connected') === 'true';
     },
 
@@ -4014,7 +4083,7 @@ document.addEventListener('alpine:init', () => {
         list = list.filter(r => {
           const verMatch = (r.version || '').toLowerCase().includes(q);
           const dateMatch = (r.release_date || '').toLowerCase().includes(q);
-          const summaryMatch = (r.summary || '').toLowerCase().includes(q);
+          const summaryMatch = (r.summary || '').toLowerCase().includes(q) || (this.localized(r, 'summary') || '').toLowerCase().includes(q);
           const contentMatch = (r.content || []).some(c => c.toLowerCase().includes(q));
           return verMatch || dateMatch || summaryMatch || contentMatch;
         });
@@ -5010,7 +5079,7 @@ document.addEventListener('alpine:init', () => {
           throw new Error(this.t('js.export_data.export_failed', { status: res.statusText }));
         }
         const blob = await res.blob();
-        const disposition = res.headers.get('Content-Disposition');
+        const disposition = res.headers.get('Content-Disposition') || '';
         let filename = `eero_${dataType}_export.${format}`;
         const match = disposition.match(/filename="?([^";]+)"?/);
         if (match && match[1]) {
