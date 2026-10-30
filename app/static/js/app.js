@@ -344,7 +344,7 @@ document.addEventListener('alpine:init', () => {
     /**
      * Sizes the Devices table "Device / Host" column to the widest device name + details on
      * screen, so names never wrap or clip. If that width does not fit next to the other
-     * columns, those columns are scaled down together (never below 70%) instead of letting
+     * columns, those columns are scaled down together (never below 85%) instead of letting
      * the table scroll horizontally. Re-run whenever the device list, the visible columns,
      * the language or the panel width changes.
      */
@@ -365,6 +365,9 @@ document.addEventListener('alpine:init', () => {
       cells.forEach((el) => {
         const clone = el.cloneNode(true);
         clone.style.width = 'max-content';
+        // Only the name row (icon + name + badges) must fit on one line; the category /
+        // first-seen details row may still wrap underneath it.
+        clone.querySelectorAll('div').forEach((n) => { if (n.className.includes('text-[11px]')) n.remove(); });
         clone.querySelectorAll('.flex-wrap').forEach((n) => n.classList.remove('flex-wrap'));
         clone.querySelectorAll('.truncate').forEach((n) => n.classList.remove('truncate'));
         clone.querySelectorAll('.device-name').forEach((n) => {
@@ -399,7 +402,7 @@ document.addEventListener('alpine:init', () => {
       if (wanted + flexible + fixed <= available) {
         nameWidth = Math.max(wanted, available - flexible - fixed); // absorb the leftover, as before
       } else {
-        squeeze = flexible > 0 ? Math.max(0.7, (available - wanted - fixed) / flexible) : 1;
+        squeeze = flexible > 0 ? Math.max(0.85, (available - wanted - fixed) / flexible) : 1;
         nameWidth = Math.max(10 * rem, available - fixed - flexible * squeeze);
       }
       table.style.setProperty('--device-col-squeeze', String(Number(squeeze.toFixed(3))));
