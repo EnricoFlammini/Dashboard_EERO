@@ -152,7 +152,7 @@ def _tls_error_result(url: str, exc: Optional[BaseException] = None, engine: Opt
 
     engine_label = f"[{engine}] " if engine else ""
     log_detail = f": {reason}" if reason else ""
-    logger.warning(f"TLS certificate verification failed for {engine_label}{url}{log_detail}")
+    log_event(logger, logging.WARNING, "log_ops.dns_tls_verify_failed", engine_label=engine_label, url=url, detail=log_detail)
 
     return {
         "success": False,
@@ -264,7 +264,7 @@ class DNSManager:
             try:
                 instances = json.loads(instances_json)
             except Exception as e:
-                logger.warning(f"Failed to load dns_instances from SQLite: {e}")
+                log_event(logger, logging.WARNING, "log_ops.dns_instances_load_failed", error=str(e))
 
         # Se non ci sono istanze strutturate, controlla la configurazione legacy AdGuard
         if not instances:
@@ -1025,8 +1025,9 @@ class DNSManager:
                             "message": tr("dns.pihole_v6_sync_ok", count=synced, zone_label=zone_label)
                         }
 
-                    logger.warning(
-                        f"Pi-hole v6 PATCH /api/config returned HTTP {patch_res.status_code}: {patch_res.text[:200]}"
+                    log_event(
+                        logger, logging.WARNING, "log_ops.pihole_v6_patch_status",
+                        status=patch_res.status_code, response=patch_res.text[:200],
                     )
 
                     # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
@@ -1053,8 +1054,9 @@ class DNSManager:
                         if put_res.status_code in (200, 201, 204) or (put_res.status_code == 400 and "already present" in put_res.text.lower()):
                             put_synced += 1
                         else:
-                            logger.warning(
-                                f"Pi-hole v6 PUT host '{ip} {target_name}' failed ({put_res.status_code}): {put_res.text[:150]}"
+                            log_event(
+                                logger, logging.WARNING, "log_ops.pihole_v6_put_host_failed",
+                                ip=ip, name=target_name, status=put_res.status_code, response=put_res.text[:150],
                             )
                             put_failed += 1
 
@@ -1090,7 +1092,7 @@ class DNSManager:
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
                     except Exception as e:
-                        logger.warning(f"Pi-hole v5: customdns pruning check failed: {e}")
+                        log_event(logger, logging.WARNING, "log_ops.pihole_v5_prune_check_failed", error=str(e))
 
                 synced = 0
                 failed = 0

@@ -24,5 +24,21 @@
   "user_created": "Local Auth: Utente '{username}' (id: {user_id}, admin: {is_admin}) creato con successo da '{admin}'.",
   "user_updated": "Local Auth: Utente id={user_id} aggiornato con successo dall'admin '{admin}'.",
   "user_deleted": "Local Auth: Utente '{username}' (id={user_id}) eliminato dall'admin '{admin}'.",
-  "permission_denied": "Accesso negato: utente '{username}' non ha il permesso richiesto '{permission}'."
+  "permission_denied": "Accesso negato: utente '{username}' non ha il permesso richiesto '{permission}'.",
+  "app_starting": "Avvio di {app_name} v{version}",
+  "data_directory": "Directory dati: {path}",
+  "language_resolved": "Lingua: {language} (DASHBOARD_LANG={env_lang}, impostazione salvata={saved})",
+  "account_refresh_failed": "Aggiornamento in background delle informazioni account non riuscito: {error}",
+  "account_status_fetch_failed": "Impossibile recuperare le informazioni account durante il controllo stato: {error}",
+  "poller_refresh_mode_switch_failed": "Aggiornamento del poller dopo il cambio modalità: {error}",
+  "poller_refresh_otp_failed": "Aggiornamento del poller dopo la verifica OTP: {error}",
+  "signal_overview_failed": "Errore nel recupero della panoramica segnale: {error}",
+  "signal_history_failed": "Errore nel recupero dello storico segnale per {mac}: {error}",
+  "db_stats_failed": "Errore nel recupero delle statistiche del database: {error}",
+  "analytics_distribution_failed": "Errore nella generazione della distribuzione analytics: {error}",
+  "sla_trend_failed": "Errore nel recupero del trend SLA: {error}",
+  "password_verify_failed": "Errore durante la verifica della password: {error}",
+  "dns_cache_enabled": "Cache DNS in memoria abilitata (TTL: {ttl}s).",
+  "dns_cache_disabled": "Cache DNS in memoria disabilitata.",
+  "docker_api_pull": "Pull tramite API Docker: {url}"
 }

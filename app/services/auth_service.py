@@ -11,7 +11,7 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.i18n import tr, tr_all
+from app.i18n import log_event, tr, tr_all
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class AuthService:
             expected_digest = bytes.fromhex(password_hash)
             return hmac.compare_digest(computed_digest, expected_digest)
         except Exception as e:
-            logger.warning(f"Error while verifying password: {e}")
+            log_event(logger, logging.WARNING, "log_system.password_verify_failed", error=str(e))
             return False
 
     @staticmethod
