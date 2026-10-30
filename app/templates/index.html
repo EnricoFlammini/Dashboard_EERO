@@ -271,7 +271,7 @@
               </div>
               <div class="hidden md:flex flex-col text-left">
                 <span class="text-xs font-bold leading-none text-slate-800 dark:text-slate-200" x-text="currentUser.display_name || currentUser.username"></span>
-                <span class="text-[9px] font-mono leading-none text-slate-400 uppercase mt-0.5" x-text="(currentUser.is_admin || currentUser.role === 'admin') ? 'Admin' : (currentUser.role || 'User')"></span>
+                <span class="text-[9px] font-mono leading-none text-slate-400 uppercase mt-0.5" x-text="roleLabel((currentUser.is_admin || currentUser.role === 'admin') ? 'admin' : currentUser.role)"></span>
               </div>
             </div>
             <button 
@@ -1019,7 +1019,7 @@
                   <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-show="eero.model" x-text="eero.model"></p>
                 </div>
                 <template x-if="eero.is_gateway">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider">Gateway</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider" x-text="t('common.gateway')"></span>
                 </template>
               </div>
 
@@ -1119,7 +1119,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_category')"></span>
             <select x-model="hogsCategoryFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all" x-text="t('top_hogs.filter_all')">All</option>
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
               <template x-for="cat in availableCategories" :key="cat">
                 <option :value="cat" x-text="formatCategoryName(cat)"></option>
               </template>
@@ -1130,11 +1130,11 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_band')"></span>
             <select x-model="hogsBandFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
-              <option value="all" x-text="t('top_hogs.filter_all')">All</option>
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
               <option value="6ghz">6 GHz</option>
               <option value="5ghz">5 GHz</option>
               <option value="2.4ghz">2.4 GHz</option>
-              <option value="wired" x-text="t('top_hogs.filter_wired')">Wired</option>
+              <option value="wired" x-text="t('top_hogs.filter_wired')"></option>
             </select>
           </div>
 
@@ -1142,7 +1142,7 @@
           <div class="flex items-center space-x-1.5">
             <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_node')"></span>
             <select x-model="hogsNodeFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none max-w-[140px] truncate">
-              <option value="all" x-text="t('top_hogs.filter_all_nodes')">All nodes</option>
+              <option value="all" x-text="t('top_hogs.filter_all_nodes')"></option>
               <template x-for="eero in eeros" :key="eero.id">
                 <option :value="eero.id" x-text="eero.location || eero.model || eero.id"></option>
               </template>
@@ -1183,12 +1183,12 @@
                     </div>
                   </div>
                   <div class="text-right flex-shrink-0 ml-2 space-y-0.5">
-                    <div class="text-xs font-mono font-bold text-sky-600 dark:text-sky-400 flex items-center justify-end space-x-1" title="Download">
+                    <div class="text-xs font-mono font-bold text-sky-600 dark:text-sky-400 flex items-center justify-end space-x-1" :title="t('devices.col_download')">
                       <span class="text-slate-400 text-[10px] font-normal">DL</span>
                       <span>↓</span>
                       <span x-text="formatBytes(hog.rx_bytes)"></span>
                     </div>
-                    <div class="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end space-x-1" title="Upload">
+                    <div class="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end space-x-1" :title="t('devices.col_upload')">
                       <span class="text-slate-400 text-[10px] font-normal">UL</span>
                       <span>↑</span>
                       <span x-text="formatBytes(hog.tx_bytes)"></span>
@@ -1486,7 +1486,7 @@
             <select x-model="selectedNodeFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
               <option value="all" x-text="t('devices.filter_all_nodes')"></option>
               <template x-for="node in eeros" :key="node.id">
-                <option :value="node.id" x-text="node.name + (node.is_gateway ? ' (Gateway)' : '')"></option>
+                <option :value="node.id" x-text="node.name + (node.is_gateway ? ' (' + t('common.gateway') + ')' : '')"></option>
               </template>
             </select>
 
@@ -1922,13 +1922,13 @@
                 <!-- Col: Traffic (Download & Upload) -->
                 <th x-show="isTableColumnVisible('traffic')" class="device-col-traffic device-th-traffic py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
                   <div class="flex items-center space-x-1 text-[11px]">
-                    <div @click="toggleDeviceSort('download')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'download' ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400'" title="Download">
+                    <div @click="toggleDeviceSort('download')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'download' ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400'" :title="t('devices.col_download')">
                       <span>↓DL</span>
                       <svg x-show="deviceSortField === 'download' && deviceSortDirection === 'asc'" class="w-3 h-3 text-sky-600 dark:text-sky-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'download' && deviceSortDirection === 'desc'" class="w-3 h-3 text-sky-600 dark:text-sky-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </div>
                     <span class="text-slate-300 dark:text-slate-600">/</span>
-                    <div @click="toggleDeviceSort('upload')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'upload' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'" title="Upload">
+                    <div @click="toggleDeviceSort('upload')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'upload' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'" :title="t('devices.col_upload')">
                       <span>↑UL</span>
                       <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'asc'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
                       <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -1977,7 +1977,7 @@
                       </div>
                       <div class="min-w-0">
                         <div class="flex min-w-0 items-center gap-1.5 flex-wrap">
-                          <div class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm" :title="dev.custom_name || dev.nickname || dev.hostname || 'Device'" x-text="dev.custom_name || dev.nickname || dev.hostname || 'Device'"></div>
+                          <div class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm" :title="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></div>
                           <template x-if="dev.is_new">
                             <span
                               @click="if (can('action_edit_devices')) setDevicesSeen([dev.mac || dev.mac_address])"
@@ -2052,7 +2052,7 @@
                   <!-- Connected eero -->
                   <td x-show="isTableColumnVisible('node')" class="device-node-cell py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
                     <div class="flex items-center space-x-1.5 flex-wrap gap-1">
-                      <span class="font-semibold" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                      <span class="font-semibold" x-text="dev.connected_eero_name || t('common.gateway')"></span>
                       <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
                         <span 
                           class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 flex items-center space-x-0.5 cursor-help"
@@ -2075,7 +2075,7 @@
                           'bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border border-amber-400 dark:border-amber-500/40': (dev.wireless_band !== '6GHz' && dev.frequency_band !== '6 GHz' && dev.frequency_band !== '6GHz' && (dev.wireless_band === '2.4GHz' || dev.frequency_band === '2.4 GHz' || dev.frequency_band === '2.4GHz' || (dev.channel && dev.channel >= 1 && dev.channel <= 14))),
                           'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40': (dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired')
                         }"
-                        x-text="(dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? 'Ethernet' : (dev.frequency_band && dev.frequency_band !== 'Cablato' && dev.frequency_band !== 'Ethernet' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : (dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz'))))">
+                        x-text="(dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? t('common.ethernet') : (dev.frequency_band && dev.frequency_band !== 'Cablato' && dev.frequency_band !== 'Ethernet' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : (dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz'))))">
                       </span>
                       <template x-if="dev.channel">
                         <span class="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">CH <span x-text="dev.channel"></span></span>
@@ -2233,14 +2233,14 @@
                         x-text="dev.wireless ? (dev.frequency ? dev.frequency.replace(' ', '') : 'Wi-Fi') : t('devices.wired_tag')"></span>
                   <!-- Sticky Roaming badge -->
                   <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 whitespace-nowrap">Sticky</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 whitespace-nowrap" x-text="t('devices.sticky_badge')"></span>
                   </template>
                 </div>
                 
                 <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   <span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 font-semibold" x-text="dev.ip || 'No IP'"></span>
                   <span>•</span>
-                  <span class="truncate" x-text="dev.connected_eero_name || 'Gateway'"></span>
+                  <span class="truncate" x-text="dev.connected_eero_name || t('common.gateway')"></span>
                   <template x-if="dev.first_seen && formatFirstSeenRelative(dev.first_seen)">
                     <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :title="t('device_modal.first_seen') + ' ' + formatFirstSeenFull(dev.first_seen)">
                       <span>•</span>
@@ -2271,7 +2271,7 @@
                     <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">🔌 GbE</span>
                   </template>
                   <template x-if="!dev.connected">
-                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Offline</span>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase" x-text="t('devices.status_offline')"></span>
                   </template>
                 </div>
                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -2433,7 +2433,7 @@
         <!-- QR Code Container -->
         <div class="relative p-5 rounded-2xl bg-white shadow-2xl border border-slate-200 dark:border-slate-700 mb-8 transition-transform hover:scale-[1.02]">
           <template x-if="guestQrCodeUrl">
-            <img :src="guestQrCodeUrl" alt="Guest Wi-Fi QR Code" class="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl">
+            <img :src="guestQrCodeUrl" :alt="t('guests_page.qr_alt')" class="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl">
           </template>
           <template x-if="!guestQrCodeUrl">
             <div class="w-56 h-56 sm:w-64 sm:h-64 flex flex-col items-center justify-center text-slate-400">
@@ -2680,7 +2680,7 @@
                       </div>
                       <span class="text-[10px] text-slate-500 font-mono block mt-0.5" x-text="wd.mac_address"></span>
                     </td>
-                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300" x-text="wd.connected_eero_name || 'Gateway'"></td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300" x-text="wd.connected_eero_name || t('common.gateway')"></td>
                     <td class="py-3 px-4">
                       <span class="font-mono text-slate-700 dark:text-slate-300" x-text="(wd.frequency_band || 'Wi-Fi') + (wd.channel ? ' • CH ' + wd.channel : '')"></span>
                     </td>
@@ -2731,7 +2731,7 @@
               <span 
                 class="px-2 py-0.5 rounded-full text-[10px] font-bold"
                 :class="(analyticsSla && analyticsSla.reliability_score >= 90) ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'"
-                x-text="(analyticsSla && analyticsSla.reliability_score >= 90) ? 'SLA OK' : 'Degraded'">
+                x-text="(analyticsSla && analyticsSla.reliability_score >= 90) ? t('analytics.sla_ok') : t('analytics.sla_degraded')">
               </span>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400" x-text="t('analytics.kpi_isp_reliability_sub')"></div>
@@ -2769,7 +2769,7 @@
             </div>
             <div class="flex items-baseline space-x-2">
               <span class="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono" x-text="analyticsSla ? (analyticsSla.avg_ping_ms + ' ms') : '--'"></span>
-              <span class="text-xs font-mono text-slate-500 dark:text-slate-400" x-text="analyticsSla ? ('(±' + analyticsSla.avg_jitter_ms + ' ms jitter)') : ''"></span>
+              <span class="text-xs font-mono text-slate-500 dark:text-slate-400" x-text="analyticsSla ? t('analytics.jitter_note', { n: analyticsSla.avg_jitter_ms }) : ''"></span>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400" x-text="t('analytics.kpi_latency_jitter_sub')"></div>
           </div>
@@ -2784,8 +2784,8 @@
             </div>
             <div class="flex items-baseline space-x-2">
               <span class="text-3xl font-extrabold text-slate-900 dark:text-white font-mono" x-text="analyticsDistribution ? analyticsDistribution.active_devices : 0"></span>
-              <span class="text-xs text-slate-500 font-medium" x-text="t('analytics.clients_online')">clients online</span>
-              <span class="text-xs text-slate-400" x-text="analyticsDistribution ? ('/ ' + analyticsDistribution.total_devices + ' tot') : ''"></span>
+              <span class="text-xs text-slate-500 font-medium" x-text="t('analytics.clients_online')"></span>
+              <span class="text-xs text-slate-400" x-text="analyticsDistribution ? t('analytics.distribution_total', { n: analyticsDistribution.total_devices }) : ''"></span>
             </div>
             <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
               <span x-text="t('analytics.kpi_mesh_density_sub')"></span>: <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="(analyticsDistribution && analyticsDistribution.node_load && analyticsDistribution.node_load.length > 0) ? (Number(analyticsDistribution.active_devices / analyticsDistribution.node_load.length).toFixed(1) + ' ' + t('analytics.clients_per_node')) : '--'"></span>
@@ -2939,7 +2939,7 @@
             <!-- QR Code Display -->
             <div class="flex flex-col items-center justify-center p-4 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-none">
               <template x-if="guestQrCodeUrl">
-                <img :src="guestQrCodeUrl" alt="WiFi QR Code" class="w-44 h-44 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-200">
+                <img :src="guestQrCodeUrl" :alt="t('guests_page.qr_alt')" class="w-44 h-44 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 transition-all duration-200">
               </template>
               <template x-if="!guestQrCodeUrl">
                 <div class="w-44 h-44 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-600 dark:text-slate-400 text-center p-2" x-text="t('controls.qr_disabled')">
@@ -3083,7 +3083,7 @@
                         </div>
                         <div>
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_password')"></label>
-                          <input type="password" x-model="inst.password" :placeholder="inst.has_password ? t('controls.dns_password_unchanged') : 'Password AdGuard'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="password" x-model="inst.password" :placeholder="inst.has_password ? t('controls.dns_password_unchanged') : t('controls.dns_password_placeholder_adguard')" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                       </div>
                     </template>
@@ -3093,7 +3093,7 @@
                       <div class="sm:col-span-12 grid grid-cols-1 sm:grid-cols-12 gap-2">
                         <div class="sm:col-span-8">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token')"></label>
-                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? t('controls.dns_password_unchanged') : 'Token WEBPASSWORD / Session SID'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? t('controls.dns_password_unchanged') : t('controls.dns_token_placeholder_pihole')" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone')"></label>
@@ -3111,7 +3111,7 @@
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_token')"></label>
-                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? t('controls.dns_password_unchanged') : 'Token API o Password'" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                          <input type="password" x-model="inst.token" :placeholder="inst.has_token ? t('controls.dns_password_unchanged') : t('controls.dns_token_placeholder_generic')" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
                         </div>
                         <div class="sm:col-span-4">
                           <label class="block text-slate-600 dark:text-slate-400 mb-0.5 text-[11px]" x-text="t('controls.dns_zone')"></label>
@@ -3145,7 +3145,7 @@
                       <span class="w-1.5 h-1.5 rounded-full" :class="inst.last_sync_time ? 'bg-emerald-500' : 'bg-slate-400'"></span>
                       <span x-text="inst.last_sync_time ? (t('controls.dns_last_sync_prefix') + formatLocalDateTime(inst.last_sync_time, true)) : t('controls.dns_never_synced')"></span>
                       <template x-if="inst.last_sync_count > 0">
-                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-black/[0.05] dark:bg-white/[0.05]" x-text="inst.last_sync_count + ' host'"></span>
+                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-black/[0.05] dark:bg-white/[0.05]" x-text="t('controls.dns_sync_hosts', { n: inst.last_sync_count })"></span>
                       </template>
                     </div>
 
@@ -3387,7 +3387,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <!-- Card A: Broker Endpoint -->
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Broker Endpoint</span>
+                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block" x-text="t('controls.mqtt_broker_endpoint')"></span>
                 <div class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 truncate" :title="mqttSettings.broker_host + ':' + mqttSettings.broker_port">
                   <span x-text="mqttSettings.broker_host || 'localhost'"></span>:<span x-text="mqttSettings.broker_port || 1883"></span>
                 </div>
@@ -3398,18 +3398,18 @@
 
               <!-- Card B: Topic & Discovery -->
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Base Topic</span>
+                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block" x-text="t('controls.mqtt_base_topic_label')"></span>
                 <div class="font-mono text-xs font-bold text-sky-600 dark:text-sky-400 truncate">
                   <span x-text="mqttSettings.base_topic || 'eero'"></span>/#
                 </div>
                 <div class="text-[10px] text-slate-400 truncate">
-                  HA Prefix: <span class="font-mono" x-text="mqttSettings.ha_discovery_prefix || mqttSettings.discovery_prefix || 'homeassistant'"></span>
+                  <span x-text="t('controls.mqtt_ha_prefix_short')"></span> <span class="font-mono" x-text="mqttSettings.ha_discovery_prefix || mqttSettings.discovery_prefix || 'homeassistant'"></span>
                 </div>
               </div>
 
               <!-- Card C: Discovery & Auto-Configuration -->
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
-                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block">Home Assistant Discovery</span>
+                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block" x-text="t('controls.mqtt_ha_discovery_label')"></span>
                 <div class="text-xs font-bold flex items-center space-x-1.5" :class="mqttSettings.discovery_enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
                   <span x-text="mqttSettings.discovery_enabled ? t('controls.mqtt_discovery_active') : t('controls.mqtt_discovery_inactive')"></span>
                 </div>
@@ -3422,7 +3422,7 @@
               <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-black/[0.06] dark:border-white/10 space-y-1">
                 <span class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold block" x-text="t('controls.mqtt_messages_count')"></span>
                 <div class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 font-mono">
-                  <span x-text="(mqttSettings.stats && mqttSettings.stats.messages_published) ? mqttSettings.stats.messages_published.toLocaleString(dateLocale()) : '0'"></span> msg
+                  <span x-text="(mqttSettings.stats && mqttSettings.stats.messages_published) ? mqttSettings.stats.messages_published.toLocaleString(dateLocale()) : '0'"></span> <span x-text="t('controls.mqtt_messages_unit')"></span>
                 </div>
                 <div class="text-[10px] text-slate-400 truncate">
                   <span x-text="t('controls.mqtt_last_published')"></span>: 
@@ -3502,7 +3502,7 @@
                     :class="sessionTimeoutMinutes === mins 
                       ? 'bg-[#0067c0] text-white border-[#0067c0] dark:bg-sky-500 dark:border-sky-500 shadow-md shadow-sky-500/20 ring-2 ring-sky-500/30' 
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'">
-                    <span class="text-sm font-extrabold" x-text="mins === 0 ? t('controls.session_never') : (mins + ' min')"></span>
+                    <span class="text-sm font-extrabold" x-text="mins === 0 ? t('controls.session_never') : t('common.minutes_short', { n: mins })"></span>
                     <span class="text-[9px] font-normal opacity-80" x-text="mins === 15 ? t('controls.session_default') : (mins === 0 ? t('controls.session_disabled') : t('controls.session_inactivity'))"></span>
                   </button>
                 </template>
@@ -3553,7 +3553,7 @@
 
           <!-- Schedules List Grid -->
           <div x-show="schedulesLoading" class="py-8 text-center text-xs text-slate-400">
-            <span class="animate-spin inline-block mr-2">⏳</span> Caricamento pianificazioni in corso...
+            <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('schedules.loading')"></span>
           </div>
 
           <div x-show="!schedulesLoading">
@@ -3948,7 +3948,7 @@
               
               <template x-if="logLoading && logsList.length === 0">
                 <div class="py-12 text-center text-slate-400">
-                  <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('logs.loading')">Loading system logs...</span>
+                  <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('logs.loading')"></span>
                 </div>
               </template>
 
@@ -4151,9 +4151,9 @@
               <div>
                 <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.role')"></label>
                 <select x-model="userForm.role" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-                  <option value="admin">Admin</option>
-                  <option value="operator">Operator</option>
-                  <option value="viewer">Viewer</option>
+                  <option value="admin" x-text="t('auth_local.role_admin')"></option>
+                  <option value="operator" x-text="t('auth_local.role_operator')"></option>
+                  <option value="viewer" x-text="t('auth_local.role_viewer')"></option>
                 </select>
               </div>
 
@@ -4798,7 +4798,7 @@
                       <div class="inline-flex items-center gap-1.5 flex-wrap">
                         <span class="inline-flex items-center font-mono text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 whitespace-nowrap shrink-0" x-text="eeroNewsData.current_firmware"></span>
                         <template x-if="eeroNewsData.firmware_status === 'newer_than_published'">
-                          <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 uppercase whitespace-nowrap shrink-0">Early Rollout</span>
+                          <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/40 uppercase whitespace-nowrap shrink-0" x-text="t('eero_news.badge_early_rollout')"></span>
                         </template>
                       </div>
                     </div>
@@ -4839,7 +4839,7 @@
                   <div>
                     <div class="flex flex-wrap items-center gap-2">
                       <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white" x-text="t('eero_news.update_avail_title').replace('{version}', eeroNewsData.target_firmware || eeroNewsData.latest_firmware)"></h3>
-                      <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 uppercase whitespace-nowrap shrink-0">Rolling Release</span>
+                      <span class="inline-flex items-center font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 uppercase whitespace-nowrap shrink-0" x-text="t('eero_news.badge_rolling_release')"></span>
                     </div>
                     <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed" x-text="t('eero_news.update_avail_desc').replace('{current}', eeroNewsData.current_firmware)"></p>
                   </div>
@@ -4908,7 +4908,7 @@
 
         <!-- Right Expand/Collapse All -->
         <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
-          <span class="text-xs text-slate-400 font-mono mr-2" x-text="!eeroNewsShowAllReleases && filteredEeroReleases.length > eeroNewsDefaultLimit ? (visibleEeroReleases.length + ' di ' + filteredEeroReleases.length + ' release') : (filteredEeroReleases.length + ' release')"></span>
+          <span class="text-xs text-slate-400 font-mono mr-2" x-text="!eeroNewsShowAllReleases && filteredEeroReleases.length > eeroNewsDefaultLimit ? t('eero_news.showing_count', { shown: visibleEeroReleases.length, total: filteredEeroReleases.length }) : t('eero_news.total_count', { total: filteredEeroReleases.length })"></span>
           <button 
             @click="expandAllReleases()" 
             class="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-black/[0.03] dark:bg-white/[0.05] rounded-lg transition cursor-pointer"
@@ -4960,9 +4960,9 @@
                   <!-- Dynamic Tags -->
                   <template x-for="tag in rel.tags" :key="tag">
                     <span 
-                      x-show="tag !== 'Sicurezza' && tag !== 'Security'"
+                      x-show="!newsTagIs(tag, 'security')"
                       class="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] whitespace-nowrap shrink-0"
-                      x-text="tag">
+                      x-text="newsTagLabel(tag)">
                     </span>
                   </template>
                 </div>
@@ -5231,15 +5231,15 @@
             </div>
             <div>
               <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.connected_node')"></span>
-              <span class="text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.connected_eero_name || 'Gateway') : '---'"></span>
+              <span class="text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.connected_eero_name || t('common.gateway')) : '---'"></span>
             </div>
             <div>
               <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_band')"></span>
-              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? (selectedDevice.wireless_band || selectedDevice.frequency_band || 'Wi-Fi') + (selectedDevice.channel ? ' (CH ' + selectedDevice.channel + ')' : '') : (selectedDevice.ethernet_speed || 'Ethernet')) : '---'"></span>
+              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? (selectedDevice.wireless_band || selectedDevice.frequency_band || 'Wi-Fi') + (selectedDevice.channel ? ' (CH ' + selectedDevice.channel + ')' : '') : (selectedDevice.ethernet_speed || t('common.ethernet'))) : '---'"></span>
             </div>
             <div>
               <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_signal')"></span>
-              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • PHY ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed ? selectedDevice.ethernet_speed + ' • Ethernet' : 'Ethernet')) : '---'"></span>
+              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • ' + t('device_modal.phy_label') + ' ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed ? selectedDevice.ethernet_speed + ' • Ethernet' : 'Ethernet')) : '---'"></span>
             </div>
           </div>
 
@@ -5358,7 +5358,7 @@
                   <div>
                     <div class="font-bold text-emerald-900 dark:text-emerald-300" x-text="t('device_modal.static_active_title')"></div>
                     <div class="text-xs text-slate-700 dark:text-slate-300 mt-0.5"><span x-text="t('device_modal.static_active_desc')"></span> <strong class="font-mono text-emerald-700 dark:text-emerald-400 text-sm" x-text="deviceReservation.ip"></strong></div>
-                    <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('device_modal.cloud_label') + ' ' + (deviceReservation.description || 'Device')"></div>
+                    <div class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('device_modal.cloud_label') + ' ' + (deviceReservation.description || t('devices.generic_device'))"></div>
                   </div>
                 </div>
                 <button 
@@ -5431,7 +5431,7 @@
                   <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-xs">
                     <div class="flex items-center space-x-2">
                       <span class="text-sky-700 dark:text-sky-400 font-bold" x-text="res.ip || res.ip_address"></span>
-                      <span class="text-slate-700 dark:text-slate-400 font-sans font-medium" x-text="res.description || res.name || res.nickname || 'Device'"></span>
+                      <span class="text-slate-700 dark:text-slate-400 font-sans font-medium" x-text="res.description || res.name || res.nickname || t('devices.generic_device')"></span>
                     </div>
                     <span class="text-slate-500 text-[10px]" x-text="res.mac || res.mac_address"></span>
                   </div>
@@ -5470,7 +5470,7 @@
               <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
                 <template x-for="fwd in deviceForwards" :key="fwd.id || fwd.url">
                   <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                    <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || fwd.name || 'Custom'"></td>
+                    <td class="py-2.5 px-3 font-sans text-slate-800 dark:text-slate-200" x-text="fwd.description || fwd.name || t('common.custom')"></td>
                     <td class="py-2.5 px-3 text-sky-600 dark:text-sky-400 font-bold" x-text="fwd.port_from || fwd.gateway_port || fwd.external_port || fwd.port || '-'"></td>
                     <td class="py-2.5 px-3 text-slate-700 dark:text-slate-300" x-text="fwd.port_to || fwd.client_port || fwd.internal_port || fwd.port || fwd.port_from || '-'"></td>
                     <td class="py-2.5 px-3">
@@ -5657,13 +5657,13 @@
                 <canvas id="deviceUsageChartCanvas"></canvas>
               </div>
               <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                <span x-text="t('device_modal.usage_chart_hint') + (deviceUsagePeriod === 'daily' ? ' (' + (deviceUsageData && deviceUsageData.resolution_minutes ? deviceUsageData.resolution_minutes : (deviceUsageResolution || 15)) + ' min)' : '')"></span>
+                <span x-text="t('device_modal.usage_chart_hint') + (deviceUsagePeriod === 'daily' ? ' ' + t('device_modal.usage_resolution', { n: (deviceUsageData && deviceUsageData.resolution_minutes ? deviceUsageData.resolution_minutes : (deviceUsageResolution || 15)) }) : '')"></span>
                 <span class="font-mono" x-text="deviceUsageData && deviceUsageData.period ? (t('device_modal.period_' + deviceUsageData.period) || deviceUsageData.period) : ''"></span>
               </div>
               <div class="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/60 text-[10px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
                 <span class="flex items-center gap-1.5">
                   <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  <span x-text="t('device_modal.usage_realtime_counters_hint')">Dati stimati in tempo reale dai contatori fisici eero</span>
+                  <span x-text="t('device_modal.usage_realtime_counters_hint')"></span>
                 </span>
                 <button @click.stop="showUsageInfoModal = true" type="button" class="text-sky-500 dark:text-sky-400 hover:underline font-medium cursor-pointer" x-text="t('device_modal.usage_more_info_btn')"></button>
               </div>
@@ -6021,7 +6021,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-white" x-text="t('changelog_modal.title')"></h3>
-            <span class="text-[11px] text-slate-400" x-text="t('changelog_modal.subtitle')">Release Notes & Version History</span>
+            <span class="text-[11px] text-slate-400" x-text="t('changelog_modal.subtitle')"></span>
           </div>
         </div>
         <button @click="showChangelogModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
@@ -6081,8 +6081,8 @@
             </svg>
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('about_modal.title')">About & Crediti</h3>
-            <span class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.subtitle')">Informazioni sul progetto</span>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('about_modal.title')"></h3>
+            <span class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.subtitle')"></span>
           </div>
         </div>
         <button @click="showAboutModal = false" class="text-slate-500 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
@@ -6096,7 +6096,7 @@
         <!-- Dedication Box -->
         <div class="p-4 rounded-xl bg-indigo-50/70 dark:bg-gradient-to-br dark:from-indigo-950/60 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-500/30 text-center space-y-2.5 shadow-inner">
           <p class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
-            <span x-text="t('about_modal.crafted_prefix')">Crafted with ❤️ by</span> <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> <span x-text="t('about_modal.crafted_middle')">for the</span> <span class="text-indigo-700 dark:text-indigo-300 font-medium" x-text="t('about_modal.crafted_community')"></span><span x-text="t('about_modal.crafted_suffix')"> community.</span>
+            <span x-text="t('about_modal.crafted_prefix')"></span> <strong class="text-[#0067c0] dark:text-sky-300">Enrico Flammini</strong> <span x-text="t('about_modal.crafted_middle')"></span> <span class="text-indigo-700 dark:text-indigo-300 font-medium" x-text="t('about_modal.crafted_community')"></span><span x-text="t('about_modal.crafted_suffix')"></span>
           </p>
 
           <!-- Buy Me a Coffee Button -->
@@ -6113,7 +6113,7 @@
                 <line x1="10" y1="1" x2="10" y2="4"></line>
                 <line x1="14" y1="1" x2="14" y2="4"></line>
               </svg>
-              <span x-text="t('about_modal.buy_me_a_coffee')">Buy me a coffee</span>
+              <span x-text="t('about_modal.buy_me_a_coffee')"></span>
             </a>
           </div>
         </div>
@@ -6125,21 +6125,19 @@
               <svg class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
               </svg>
-              <span x-text="t('about_modal.credits_title')">Ringraziamenti Speciali & Community</span>
+              <span x-text="t('about_modal.credits_title')"></span>
             </h4>
             <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 whitespace-nowrap self-start sm:self-center h-fit">
-              <span x-text="t('about_modal.credits_badge')">Hall of Fame</span>
+              <span x-text="t('about_modal.credits_badge')"></span>
             </span>
           </div>
 
           <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('about_modal.credits_desc')">
-            Un ringraziamento sincero a tutti gli utenti che con issue, test e proposte hanno reso possibile l'evoluzione della dashboard:
           </p>
 
           <!-- Implemented Features & Community Proposals Subtitle -->
           <div class="space-y-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block" x-text="t('about_modal.credits_features_subtitle')">
-              Proposte & Sviluppi Implementati
             </span>
 
             <div class="grid grid-cols-1 gap-2">
@@ -6265,7 +6263,6 @@
           <!-- Bug Hunters & Testers Subtitle -->
           <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block" x-text="t('about_modal.credits_bugs_subtitle')">
-              Bug Hunter & Contributori
             </span>
             <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('about_modal.contrib_bug_hunters_desc')">
             </p>
@@ -6275,7 +6272,7 @@
         <!-- Useful Links & Open Source Section -->
         <div class="space-y-2">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center space-x-1.5">
-            <span x-text="t('about_modal.links_title')">Link Utili & Open Source</span>
+            <span x-text="t('about_modal.links_title')"></span>
           </h4>
           <div class="space-y-2">
             
@@ -6290,8 +6287,8 @@
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition" x-text="t('about_modal.source_code')">Source Code: GitHub Repository</div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.source_code_desc')">Consulta il codice sorgente, proponi PR o apri issues</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition" x-text="t('about_modal.source_code')"></div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.source_code_desc')"></div>
                 </div>
               </div>
               <svg class="w-4 h-4 text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -6308,8 +6305,8 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" x-text="t('about_modal.license')">License: MIT License</div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.license_desc')">Open Source & 100% Free to use</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" x-text="t('about_modal.license')"></div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.license_desc')"></div>
                 </div>
               </div>
               <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -6326,8 +6323,8 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                 </div>
                 <div>
-                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" x-text="t('about_modal.deployment')">Deployment: Docker Container</div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.deployment_desc')">Docker Hub Multi-Arch Container</div>
+                  <div class="font-bold text-slate-900 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" x-text="t('about_modal.deployment')"></div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-400" x-text="t('about_modal.deployment_desc')"></div>
                 </div>
               </div>
               <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
@@ -6339,16 +6336,16 @@
         <!-- Fun Notes Section -->
         <div class="space-y-2">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center space-x-1.5">
-            <span x-text="t('about_modal.fun_notes_title')">Fun Notes</span>
+            <span x-text="t('about_modal.fun_notes_title')"></span>
           </h4>
           <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2 text-slate-700 dark:text-slate-300">
             <div class="flex items-start space-x-2">
               <span class="text-sky-500 font-bold">•</span>
-              <p class="leading-relaxed" x-text="t('about_modal.coffee_note')">Powered by coffee, late-night packet sniffing, and private eero APIs.</p>
+              <p class="leading-relaxed" x-text="t('about_modal.coffee_note')"></p>
             </div>
             <div class="flex items-start space-x-2">
               <span class="text-sky-500 font-bold">•</span>
-              <p class="leading-relaxed" x-text="t('about_modal.telemetry_note')">Zero Cloud Telemetry: Your data lives strictly in your local volume.</p>
+              <p class="leading-relaxed" x-text="t('about_modal.telemetry_note')"></p>
             </div>
           </div>
         </div>
@@ -6640,8 +6637,8 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('health_modal.title')">Network Health Score & Diagnostica</h3>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="t('health_modal.subtitle')">Analisi in tempo reale dei fattori di stabilità della rete</span>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('health_modal.title')"></h3>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="t('health_modal.subtitle')"></span>
           </div>
         </div>
         <button @click="showHealthModal = false" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
@@ -6669,7 +6666,7 @@
             </div>
             <div>
               <div class="flex items-center space-x-2">
-                <span class="text-sm font-bold text-slate-900 dark:text-white" x-text="t('health_modal.score_label')">Punteggio di Salute</span>
+                <span class="text-sm font-bold text-slate-900 dark:text-white" x-text="t('health_modal.score_label')"></span>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
                       :class="healthScore >= 90 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600' : (healthScore >= 70 ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-600' : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-600')"
                       x-text="healthScore >= 90 ? t('health_modal.status_optimal') : (healthScore >= 70 ? t('health_modal.status_good') : (healthScore >= 50 ? t('health_modal.status_warning') : t('health_modal.status_critical')))">
@@ -6686,7 +6683,7 @@
               :disabled="isRefreshing"
               class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition flex items-center space-x-1.5 cursor-pointer shadow-sm">
               <svg class="w-3.5 h-3.5" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              <span x-text="t('health_modal.refresh_diagnostics')">Aggiorna</span>
+              <span x-text="t('health_modal.refresh_diagnostics')"></span>
             </button>
           </div>
         </div>
@@ -6808,7 +6805,7 @@
           <div class="flex items-center justify-between">
             <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
               <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              <span x-text="t('health_modal.penalties_title')">Fattori che Influenzano il Punteggio</span>
+              <span x-text="t('health_modal.penalties_title')"></span>
             </h4>
             <span class="text-[10px] text-slate-500" x-text="healthDetails && healthDetails.penalties ? healthDetails.penalties.length + ' ' + t('health_modal.detected') : '0'"></span>
           </div>
@@ -6820,8 +6817,8 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
               </div>
               <div>
-                <div class="font-bold text-xs" x-text="t('health_modal.no_penalties_title')">Tutti i parametri al 100%</div>
-                <div class="text-[11px] opacity-80" x-text="t('health_modal.no_penalties_desc')">Nessun problema rilevato. Tutti i nodi sono online con ottimo segnale e bassa latenza.</div>
+                <div class="font-bold text-xs" x-text="t('health_modal.no_penalties_title')"></div>
+                <div class="text-[11px] opacity-80" x-text="t('health_modal.no_penalties_desc')"></div>
               </div>
             </div>
           </template>
@@ -6862,7 +6859,7 @@
         <div class="space-y-2.5">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
             <svg class="w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            <span x-text="t('health_modal.pillars_title')">Pilastri di Salute Rete</span>
+            <span x-text="t('health_modal.pillars_title')"></span>
           </h4>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -6872,7 +6869,7 @@
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                   <svg class="w-3.5 h-3.5 shrink-0 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-                  <span x-text="t('health_modal.pillar_mesh')">Topologia Mesh & Nodi</span>
+                  <span x-text="t('health_modal.pillar_mesh')"></span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.mesh_topology?.score || 40) >= 35 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.mesh_topology?.score ?? 40) + ' / ' + (healthDetails?.pillars?.mesh_topology?.max_score ?? 40)"></span>
               </div>
@@ -6889,7 +6886,7 @@
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                   <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                  <span x-text="t('health_modal.pillar_wan')">Gateway WAN & Internet</span>
+                  <span x-text="t('health_modal.pillar_wan')"></span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.wan_gateway?.score || 30) >= 25 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.wan_gateway?.score ?? 30) + ' / ' + (healthDetails?.pillars?.wan_gateway?.max_score ?? 30)"></span>
               </div>
@@ -6906,7 +6903,7 @@
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                   <svg class="w-3.5 h-3.5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
-                  <span x-text="t('health_modal.pillar_signal')">Qualità Segnale Wi-Fi Client</span>
+                  <span x-text="t('health_modal.pillar_signal')"></span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.client_signal?.score || 20) >= 18 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.client_signal?.score ?? 20) + ' / ' + (healthDetails?.pillars?.client_signal?.max_score ?? 20)"></span>
               </div>
@@ -6923,7 +6920,7 @@
               <div class="flex items-center justify-between">
                 <span class="font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                   <svg class="w-3.5 h-3.5 shrink-0 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.828a5 5 0 010-7.072m7.072 0a5 5 0 010 7.072M13 12a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
-                  <span x-text="t('health_modal.pillar_channels')">Distribuzione Frequenze & Canali</span>
+                  <span x-text="t('health_modal.pillar_channels')"></span>
                 </span>
                 <span class="font-mono font-bold text-xs" :class="(healthDetails?.pillars?.channel_density?.score || 10) >= 8 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'" x-text="(healthDetails?.pillars?.channel_density?.score ?? 10) + ' / ' + (healthDetails?.pillars?.channel_density?.max_score ?? 10)"></span>
               </div>
@@ -6942,7 +6939,7 @@
         <div class="space-y-2" x-show="healthDetails && healthDetails.recommendations && healthDetails.recommendations.length > 0">
           <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
             <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-            <span x-text="t('health_modal.recommendations_title')">Raccomandazioni & Suggerimenti</span>
+            <span x-text="t('health_modal.recommendations_title')"></span>
           </h4>
           <div class="p-3.5 rounded-xl bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-500/20 space-y-1.5">
             <template x-for="(rec, idx) in (healthDetails?.recommendations || [])" :key="idx">
@@ -7044,10 +7041,10 @@
           </div>
           <div>
             <div class="flex items-center space-x-2">
-              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('auth_local.setup_title')">Initial Administrator Setup</h3>
-              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40" x-text="t('auth_local.setup_badge')">FIRST RUN</span>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('auth_local.setup_title')"></h3>
+              <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40" x-text="t('auth_local.setup_badge')"></span>
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_subtitle')">Create the administrator account to securely protect your dashboard</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_subtitle')"></p>
           </div>
         </div>
       </div>
@@ -7056,31 +7053,31 @@
       <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1">
         <div class="flex items-center space-x-1.5 font-bold text-emerald-700 dark:text-emerald-400">
           <span>🔒</span>
-          <span x-text="t('auth_local.setup_security_title')">Zero-Default Security</span>
+          <span x-text="t('auth_local.setup_security_title')"></span>
         </div>
-        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc')">Zero default passwords: the credentials chosen here will secure your local dashboard.</p>
+        <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400" x-text="t('auth_local.setup_desc')"></p>
       </div>
 
       <!-- Setup Form -->
       <form @submit.prevent="performAdminSetup()" class="space-y-4 text-xs" autocomplete="off">
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username')">Username</label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.username')"></label>
           <input type="text" x-model="localSetupData.username" required minlength="3" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="off">
         </div>
 
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password')">Password</label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password')"></label>
           <input type="password" x-model="localSetupData.password" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <div>
-          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm')">Confirm Password</label>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('auth_local.password_confirm')"></label>
           <input type="password" x-model="localSetupData.passwordConfirm" required minlength="6" placeholder="" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none" autocomplete="new-password">
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
           <input type="checkbox" id="localSetupRememberMe" x-model="localSetupData.remember_me" class="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer">
-          <label for="localSetupRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me')">Stay signed in / Remember me</label>
+          <label for="localSetupRememberMe" class="text-slate-700 dark:text-slate-300 select-none cursor-pointer font-medium" x-text="t('auth_local.remember_me')"></label>
         </div>
 
         <template x-if="localSetupData.error">
@@ -7090,7 +7087,7 @@
         <div class="pt-2 flex items-center justify-end space-x-2">
           <button type="submit" :disabled="localSetupData.loading" class="w-full px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-bold transition shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center space-x-1.5">
             <span x-show="localSetupData.loading" class="animate-spin text-xs">⏳</span>
-            <span x-text="localSetupData.loading ? t('auth_local.setting_up') : t('auth_local.setup_btn')">Create Administrator & Sign In</span>
+            <span x-text="localSetupData.loading ? t('auth_local.setting_up') : t('auth_local.setup_btn')"></span>
           </button>
         </div>
       </form>
@@ -7147,7 +7144,7 @@
       <!-- Mode 1: Users List View -->
       <div x-show="userModalMode === 'list'" class="flex-1 overflow-y-auto space-y-4">
         <div x-show="usersLoading" class="py-8 text-center text-xs text-slate-400">
-          <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('users_modal.loading_users')">Loading users...</span>
+          <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('users_modal.loading_users')"></span>
         </div>
 
         <div x-show="!usersLoading">
@@ -7158,7 +7155,7 @@
                   <tr>
                     <th class="p-3" x-text="t('users_modal.col_user')"></th>
                     <th class="p-3" x-text="t('users_modal.col_role')"></th>
-                    <th class="p-3" x-text="t('users_modal.col_permissions')">Permissions</th>
+                    <th class="p-3" x-text="t('users_modal.col_permissions')"></th>
                     <th class="p-3" x-text="t('users_modal.col_status')"></th>
                     <th class="p-3 text-right" x-text="t('users_modal.col_actions')"></th>
                   </tr>
@@ -7240,7 +7237,7 @@
 
             <div>
               <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                <span>Password</span>
+                <span x-text="t('auth_local.password')"></span>
                 <span x-show="userModalMode === 'edit'" class="text-[10px] text-slate-400 font-normal ml-1" x-text="'(' + t('users_modal.password_placeholder') + ')'"></span>
               </label>
               <input type="password" x-model="userForm.password" :required="userModalMode === 'create'" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
@@ -7406,7 +7403,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="scheduleModalMode === 'create' ? t('schedules.add_btn') : 'Modifica Regola Oraria'"></h3>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="scheduleModalMode === 'create' ? t('schedules.add_btn') : t('schedules.edit_title')"></h3>
             <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('schedules.modal_subtitle')"></p>
           </div>
         </div>
@@ -7469,11 +7466,11 @@
           <div>
             <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.target_type')"></label>
             <select x-model="scheduleForm.target_type" @change="onScheduleTargetTypeChange()" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
-              <optgroup label="Utenti e Profili eero">
+              <optgroup :label="t('schedules.group_profiles')">
                 <option value="profile" x-text="t('schedules.target_user')"></option>
                 <option value="all_profiles" x-text="t('schedules.target_all_users')"></option>
               </optgroup>
-              <optgroup label="Nodi Mesh eero">
+              <optgroup :label="t('schedules.group_nodes')">
                 <option value="node_led" x-text="t('schedules.target_node_led')"></option>
                 <option value="all_nodes_led" x-text="t('schedules.target_all_nodes_led')"></option>
                 <option value="node_reboot" x-text="t('schedules.target_node_reboot')"></option>
@@ -7976,7 +7973,7 @@
               <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
               <span class="text-sm" x-text="t('nav.devices')"></span>
             </div>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 font-mono" x-text="devices.length + ' online'"></span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 font-mono" x-text="t('common.online_count', { n: devices.length })"></span>
           </button>
 
           <!-- 3. Speed test -->
