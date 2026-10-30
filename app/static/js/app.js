@@ -381,21 +381,26 @@ document.addEventListener('alpine:init', () => {
       probe.remove();
       const cs = getComputedStyle(nameTh);
       const wanted = Math.ceil(widest + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2);
-      // Natural width of the other visible columns (measured unsqueezed).
+      // Natural width of the other visible columns (measured unsqueezed). Status and
+      // Actions are pinned at a fixed width and never scaled, so track them apart.
       table.style.setProperty('--device-col-squeeze', '1');
-      let others = 0;
+      let flexible = 0;
+      let fixed = 0;
       table.querySelectorAll('thead th').forEach((th) => {
-        if (th !== nameTh && th.offsetParent !== null) others += th.getBoundingClientRect().width;
+        if (th === nameTh || th.offsetParent === null) return;
+        const w = th.getBoundingClientRect().width;
+        if (th.classList.contains('device-col-status') || th.classList.contains('device-col-actions')) fixed += w;
+        else flexible += w;
       });
       const available = scroll.clientWidth;
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
       let squeeze = 1;
       let nameWidth;
-      if (wanted + others <= available) {
-        nameWidth = Math.max(wanted, available - others); // absorb the leftover, as before
+      if (wanted + flexible + fixed <= available) {
+        nameWidth = Math.max(wanted, available - flexible - fixed); // absorb the leftover, as before
       } else {
-        squeeze = Math.max(0.7, (available - wanted) / others);
-        nameWidth = Math.max(10 * rem, available - others * squeeze);
+        squeeze = flexible > 0 ? Math.max(0.7, (available - wanted - fixed) / flexible) : 1;
+        nameWidth = Math.max(10 * rem, available - fixed - flexible * squeeze);
       }
       table.style.setProperty('--device-col-squeeze', String(Number(squeeze.toFixed(3))));
       table.style.setProperty('--device-col-name-w', Math.floor(nameWidth) + 'px');
