@@ -2119,24 +2119,33 @@ async def run_all_tests():
             "wan_ping": 11.5,
         }
 
+        async def _recent_alert(title, limit=10):
+            # Background jobs (news refresh, poller) can insert alerts between a notify_*
+            # call and the read-back, so look for the expected title among the latest rows
+            # instead of asserting on row [0].
+            for a in await db_service.get_alerts(limit=limit):
+                if a.get("title") == title:
+                    return a
+            return {}
+
         # Invio digest in Inglese
         await notification_service.notify_digest(sample_digest, lang="en")
-        alerts_en = await db_service.get_alerts(limit=1)
-        runner.assert_true(len(alerts_en) > 0, "Alert salvato su DB per digest EN")
-        runner.assert_true(alerts_en[0].get("title") == "📊 eero Mesh Daily Digest", "Titolo Digest in Inglese corretto (Issue #38)")
-        runner.assert_true("Daily digest report sent" in alerts_en[0].get("message", ""), "Messaggio Digest in Inglese corretto")
+        alert_digest_en = await _recent_alert("📊 eero Mesh Daily Digest")
+        runner.assert_true(bool(alert_digest_en), "Alert salvato su DB per digest EN")
+        runner.assert_true(alert_digest_en.get("title") == "📊 eero Mesh Daily Digest", "Titolo Digest in Inglese corretto (Issue #38)")
+        runner.assert_true("Daily digest report sent" in alert_digest_en.get("message", ""), "Messaggio Digest in Inglese corretto")
 
         # Invio digest in Italiano
         await notification_service.notify_digest(sample_digest, lang="it")
-        alerts_it = await db_service.get_alerts(limit=1)
-        runner.assert_true(alerts_it[0].get("title") == "📊 Riepilogo Giornaliero eero Mesh", "Titolo Digest in Italiano corretto")
-        runner.assert_true("Report giornaliero inviato" in alerts_it[0].get("message", ""), "Messaggio Digest in Italiano corretto")
+        alert_digest_it = await _recent_alert("📊 Riepilogo Giornaliero eero Mesh")
+        runner.assert_true(alert_digest_it.get("title") == "📊 Riepilogo Giornaliero eero Mesh", "Titolo Digest in Italiano corretto")
+        runner.assert_true("Report giornaliero inviato" in alert_digest_it.get("message", ""), "Messaggio Digest in Italiano corretto")
 
         # Test trigger digest via API con override language
         res_dig_en = await client.post("/api/automations/digest/generate", json={"language": "en"})
         runner.assert_true(res_dig_en.status_code == 200, "POST /api/automations/digest/generate con language='en' risponde HTTP 200")
-        alerts_api_en = await db_service.get_alerts(limit=1)
-        runner.assert_true(alerts_api_en[0].get("title") == "📊 eero Mesh Daily Digest", "API digest genera titolo EN con language='en'")
+        alerts_api_en = await db_service.get_alerts(limit=3)
+        runner.assert_true(any(a.get("title") == "📊 eero Mesh Daily Digest" for a in alerts_api_en), "API digest genera titolo EN con language='en'")
 
         # 3. Test Allarme Nuovo Dispositivo (EN vs IT)
         sample_dev = {
@@ -2147,23 +2156,23 @@ async def run_all_tests():
             "connected_eero_name": "Living Room"
         }
         await notification_service.notify_new_device(sample_dev, lang="en")
-        alert_dev_en = (await db_service.get_alerts(limit=1))[0]
+        alert_dev_en = await _recent_alert("🚨 New Device Detected on eero Network!")
         runner.assert_true(alert_dev_en.get("title") == "🚨 New Device Detected on eero Network!", "Titolo nuovo device in Inglese corretto")
         runner.assert_true("connected to node" in alert_dev_en.get("message", ""), "Messaggio nuovo device in Inglese corretto")
 
         await notification_service.notify_new_device(sample_dev, lang="it")
-        alert_dev_it = (await db_service.get_alerts(limit=1))[0]
+        alert_dev_it = await _recent_alert("🚨 Nuovo Dispositivo Rilevato nella Rete eero!")
         runner.assert_true(alert_dev_it.get("title") == "🚨 Nuovo Dispositivo Rilevato nella Rete eero!", "Titolo nuovo device in Italiano corretto")
         runner.assert_true("collegato al nodo" in alert_dev_it.get("message", ""), "Messaggio nuovo device in Italiano corretto")
 
         # 4. Test Allarme Nodo Offline (EN vs IT)
         sample_node = {"name": "Studio eero", "ip": "192.168.4.2"}
         await notification_service.notify_node_offline(sample_node, lang="en")
-        alert_node_en = (await db_service.get_alerts(limit=1))[0]
+        alert_node_en = await _recent_alert("⚠️ eero Mesh Node Offline!")
         runner.assert_true(alert_node_en.get("title") == "⚠️ eero Mesh Node Offline!", "Titolo nodo offline in Inglese corretto")
 
         await notification_service.notify_node_offline(sample_node, lang="it")
-        alert_node_it = (await db_service.get_alerts(limit=1))[0]
+        alert_node_it = await _recent_alert("⚠️ Nodo eero Mesh Offline!")
         runner.assert_true(alert_node_it.get("title") == "⚠️ Nodo eero Mesh Offline!", "Titolo nodo offline in Italiano corretto")
 
         # 5. Test Endpoint Notifiche / Test con language
