@@ -2094,7 +2094,7 @@
                           <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
                         </template>
                         <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
-                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="dev.connected ? 'Wi-Fi' : 'Offline'"></div>
+                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="dev.connected ? 'Wi-Fi' : t('devices.status_offline')"></div>
                         </template>
                       </div>
                     </template>
@@ -3600,7 +3600,7 @@
                         <template x-for="d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']" :key="d">
                           <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold"
                                 :class="s.days && s.days.includes(d) ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-300 font-bold' : 'text-slate-400 line-through opacity-40'"
-                                x-text="d === 'mon' ? 'Lun' : (d === 'tue' ? 'Mar' : (d === 'wed' ? 'Mer' : (d === 'thu' ? 'Gio' : (d === 'fri' ? 'Ven' : (d === 'sat' ? 'Sab' : 'Dom')))))"></span>
+                                x-text="t('common.weekday_short.' + d)"></span>
                         </template>
                       </div>
                     </div>
@@ -7426,21 +7426,13 @@
         <div>
           <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5" x-text="t('schedules.days')"></label>
           <div class="flex flex-wrap gap-1.5">
-            <template x-for="d in [
-              { key: 'mon', label: 'Lun' },
-              { key: 'tue', label: 'Mar' },
-              { key: 'wed', label: 'Mer' },
-              { key: 'thu', label: 'Gio' },
-              { key: 'fri', label: 'Ven' },
-              { key: 'sat', label: 'Sab' },
-              { key: 'sun', label: 'Dom' }
-            ]" :key="d.key">
+            <template x-for="d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']" :key="d">
               <button 
                 type="button"
-                @click="toggleScheduleDay(d.key)"
+                @click="toggleScheduleDay(d)"
                 class="px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer"
-                :class="scheduleForm.days.includes(d.key) ? 'bg-[#0067c0] text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
-                x-text="d.label">
+                :class="scheduleForm.days.includes(d) ? 'bg-[#0067c0] text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+                x-text="t('common.weekday_short.' + d)">
               </button>
             </template>
           </div>

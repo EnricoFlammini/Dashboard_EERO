@@ -5684,6 +5684,22 @@ async def run_all_tests():
         _fallbacks = _re_i18n.findall(r"\bt\('[^']+'\)\s*\|\|\s*['\"`][A-Za-z]", _html_src + _js_src)
         runner.assert_true(len(_fallbacks) == 0, f"Nessun fallback testuale t('…') || '…' residuo (trovati: {len(_fallbacks)})")
         runner.assert_true("<option value=\"it\">" not in _html_src and "x-for=\"code in supportedLanguages\"" in _html_src, "Selettore lingua generato da supportedLanguages (nessuna option hardcoded)")
+        # Raw Italian literals (weekday/month names, common UI words) must not appear as quoted strings in
+        # template/JS code: they bypass t() and only ever render in one language (regression guard for #84).
+        _it_words = (
+            "Lun|Mar|Mer|Gio|Ven|Sab|Dom|Lunedì|Martedì|Mercoledì|Giovedì|Venerdì|Sabato|Domenica|"
+            "Gennaio|Febbraio|Marzo|Aprile|Maggio|Giugno|Luglio|Agosto|Settembre|Ottobre|Novembre|Dicembre|"
+            "Nessun[ao]?|Aggiorna(?:mento)?|Caricamento|Salva(?:to)?|Elimina(?:to)?|Annulla|Chiudi|Errore|Attenzione|"
+            "Tutti|Oggi|Ieri|Dispositiv[oi]|Impostazioni|Conferma|Segnale|Velocità|Cerca|Giorn[oi]|Minuti|Secondi"
+        )
+        _raw_it = []
+        for _name, _src in (("index.html", _html_src), ("app.js", _js_src)):
+            for _m in _re_i18n.finditer(r"(?<![\w.])(['\"])(" + _it_words + r")\1", _src):
+                _line = _src.count("\n", 0, _m.start()) + 1
+                _raw_it.append(f"{_name}:{_line}:{_m.group(2)}")
+        runner.assert_true(not _raw_it, f"Nessun letterale italiano grezzo (giorni/mesi/parole UI) fuori da t() in index.html/app.js (trovati: {_raw_it[:6]})")
+        _wd = {f"common.weekday_short.{d}" for d in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")}
+        runner.assert_true(_wd <= _ref_keys, f"Chiavi common.weekday_short.* presenti per tutti i giorni (mancanti: {sorted(_wd - _ref_keys)})")
 
         _be = {}
         for _lang in _SUPPORTED:

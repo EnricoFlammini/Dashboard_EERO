@@ -1173,7 +1173,16 @@
     "on": "ON",
     "off": "OFF",
     "on_plural": "ON",
-    "off_plural": "OFF"
+    "off_plural": "OFF",
+    "weekday_short": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
   },
   "js": {
     "set_theme": {

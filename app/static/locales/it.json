@@ -1173,7 +1173,16 @@
     "on": "Acceso",
     "off": "Spento",
     "on_plural": "Accesi",
-    "off_plural": "Spenti"
+    "off_plural": "Spenti",
+    "weekday_short": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Gio",
+      "fri": "Ven",
+      "sat": "Sab",
+      "sun": "Dom"
+    }
   },
   "js": {
     "set_theme": {
