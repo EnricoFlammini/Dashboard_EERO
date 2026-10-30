@@ -79,7 +79,7 @@ async def get_iot_night_anomalies(limit: int = 50, days: int = 7):
             "anomalies": all_anomalies,
         }
     except Exception as e:
-        logger.error(f"Error fetching IoT anomalies: {e}")
+        log_event(logger, logging.ERROR, "log_eero.iot_anomalies_fetch_failed", error=str(e))
         return {"status": "error", "message": str(e), "data": []}
 
 
@@ -153,7 +153,7 @@ async def get_debug_raw():
                 "devices": devices_summary
             }
     except Exception as e:
-        logger.error(f"Debug raw error: {e}")
+        log_event(logger, logging.ERROR, "log_eero.debug_raw_failed", error=str(e))
         return {"status": "error", "error": str(e)}
 
 
@@ -164,7 +164,7 @@ async def get_mesh_nodes():
         eeros = await eero_client.get_eeros()
         return {"status": "success", "count": len(eeros), "eeros": eeros}
     except Exception as e:
-        logger.error(f"Error fetching eeros: {e}")
+        log_event(logger, logging.ERROR, "log_eero.eeros_list_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -237,7 +237,7 @@ async def get_guest_network():
             "qr_code_data_url_dark": qr_data_url_dark,
         }
     except Exception as e:
-        logger.error(f"Error fetching guest network: {e}")
+        log_event(logger, logging.ERROR, "log_eero.guest_fetch_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -294,7 +294,7 @@ async def get_advanced_settings():
             "band_steering_enabled": network.get("band_steering_enabled", True),
         }
     except Exception as e:
-        logger.error(f"Error fetching advanced settings: {e}")
+        log_event(logger, logging.ERROR, "log_eero.advanced_fetch_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -330,7 +330,7 @@ async def list_available_networks():
             "networks": networks
         }
     except Exception as e:
-        logger.error(f"Error listing available networks: {e}")
+        log_event(logger, logging.ERROR, "log_eero.networks_list_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),
@@ -396,7 +396,7 @@ async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
             "top_hogs": hogs
         }
     except Exception as e:
-        logger.error(f"Error getting top bandwidth hogs: {e}")
+        log_event(logger, logging.ERROR, "log_eero.bandwidth_hogs_failed", error=str(e))
         return {"status": "error", "message": str(e), "top_hogs": []}
 
 

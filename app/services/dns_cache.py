@@ -13,6 +13,8 @@ import time
 import logging
 from typing import Any, Dict, Tuple
 
+from app.i18n import log_event
+
 logger = logging.getLogger(__name__)
 
 _orig_getaddrinfo = socket.getaddrinfo
@@ -57,7 +59,7 @@ def enable_dns_cache(ttl_seconds: int = 300) -> None:
     if not _dns_cache_enabled:
         socket.getaddrinfo = _cached_getaddrinfo
         _dns_cache_enabled = True
-        logger.info(f"In-memory DNS caching enabled (TTL: {_dns_cache_ttl}s).")
+        log_event(logger, logging.INFO, "log_system.dns_cache_enabled", ttl=_dns_cache_ttl)
 
 
 def disable_dns_cache() -> None:
@@ -68,7 +70,7 @@ def disable_dns_cache() -> None:
         _dns_cache_enabled = False
         with _dns_lock:
             _dns_cache.clear()
-        logger.info("In-memory DNS caching disabled.")
+        log_event(logger, logging.INFO, "log_system.dns_cache_disabled")
 
 
 def clear_dns_cache() -> None:

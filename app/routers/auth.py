@@ -34,7 +34,7 @@ async def _refresh_account_info():
     try:
         await eero_client.fetch_account_info()
     except Exception as e:
-        logger.warning(f"Background account info refresh failed: {e}")
+        log_event(logger, logging.WARNING, "log_system.account_refresh_failed", error=str(e))
 
 
 @router.get("/status")
@@ -59,7 +59,7 @@ async def get_auth_status():
             try:
                 account = await eero_client.fetch_account_info()
             except Exception as e:
-                logger.warning(f"Failed to fetch account info on status check: {e}")
+                log_event(logger, logging.WARNING, "log_system.account_status_fetch_failed", error=str(e))
     elif is_demo:
         account = eero_client.account_info or {"name": "Demo Administrator", "email": "admin@demo-eero.lan"}
 
@@ -83,7 +83,7 @@ async def switch_mode(payload: ModeSwitchRequest):
         background_poller.invalidate_cache()
         await background_poller.poll_once()
     except Exception as e:
-        logger.warning(f"Poller refresh after mode switch: {e}")
+        log_event(logger, logging.WARNING, "log_system.poller_refresh_mode_switch_failed", error=str(e))
 
     return {
         "status": "success",
@@ -134,7 +134,7 @@ async def verify_otp(payload: VerifyOTPRequest, request: Request):
             background_poller.invalidate_cache()
             await background_poller.poll_once()
         except Exception as ep:
-            logger.warning(f"Poller refresh after OTP verification: {ep}")
+            log_event(logger, logging.WARNING, "log_system.poller_refresh_otp_failed", error=str(ep))
         return res
     except Exception as e:
         log_event(logger, logging.ERROR, "log_system.eero_otp_failed", error=e)

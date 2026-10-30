@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -282,7 +282,7 @@ async def get_network_distribution() -> Dict[str, Any]:
             "vendors": vendor_list
         }
     except Exception as e:
-        logger.error(f"Error generating analytics distribution: {e}")
+        log_event(logger, logging.ERROR, "log_system.analytics_distribution_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),
@@ -306,7 +306,7 @@ async def get_isp_sla_trend(days: int = Query(30, ge=1, le=365)) -> Dict[str, An
             "sla": sla_data
         }
     except Exception as e:
-        logger.error(f"Error fetching SLA trend: {e}")
+        log_event(logger, logging.ERROR, "log_system.sla_trend_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),

@@ -258,9 +258,9 @@ class EeroNewsService:
                             log_event(logger, logging.INFO, "log_ops.news_fetched", url=url)
                             break
                     else:
-                        logger.warning(f"Zendesk API {url} returned status {resp.status_code}")
+                        log_event(logger, logging.WARNING, "log_ops.news_zendesk_status", url=url, status=resp.status_code)
                 except Exception as ex:
-                    logger.warning(f"Error connecting to eero Zendesk API at {url}: {ex}")
+                    log_event(logger, logging.WARNING, "log_ops.news_zendesk_connect_failed", url=url, error=str(ex))
 
         # Se il recupero remoto ha avuto successo
         if html_body:
@@ -427,7 +427,7 @@ class EeroNewsService:
             else:
                 eeros_list = await eero_client.get_eeros()
         except Exception as ex:
-            logger.warning(f"Unable to read mesh nodes firmware: {ex}")
+            log_event(logger, logging.WARNING, "log_ops.news_firmware_read_failed", error=str(ex))
             eeros_list = []
 
         nodes_summary = []

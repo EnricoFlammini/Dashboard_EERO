@@ -36,8 +36,8 @@ logger = logging.getLogger("eero_dashboard")
 async def lifespan(app: FastAPI):
     """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
     logger.info("=" * 60)
-    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    logger.info(f"Data directory: {settings.data_path.resolve()}")
+    log_event(logger, logging.INFO, "log_system.app_starting", app_name=settings.app_name, version=settings.app_version)
+    log_event(logger, logging.INFO, "log_system.data_directory", path=settings.data_path.resolve())
     logger.info("=" * 60)
 
     # 0. Attivazione In-Memory DNS Caching (Issue #24)
@@ -51,9 +51,9 @@ async def lifespan(app: FastAPI):
     from app.services.notifications import notification_service
     saved_lang = await db_service.get_setting("system_language", None)
     i18n.set_system_language(await notification_service.get_language())
-    logger.info(
-        f"Language: {i18n.get_system_language()} "
-        f"(DASHBOARD_LANG={settings.dashboard_lang}, saved setting={saved_lang or 'none'})"
+    log_event(
+        logger, logging.INFO, "log_system.language_resolved",
+        language=i18n.get_system_language(), env_lang=settings.dashboard_lang, saved=saved_lang or "none",
     )
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)

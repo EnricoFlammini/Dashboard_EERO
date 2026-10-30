@@ -171,7 +171,7 @@ async def get_database_statistics():
         stats["last_retention_run"] = retention_worker.last_run.strftime("%Y-%m-%dT%H:%M:%SZ") if retention_worker.last_run else None
         return stats
     except Exception as e:
-        logger.error(f"Error fetching database stats: {e}")
+        log_event(logger, logging.ERROR, "log_system.db_stats_failed", error=str(e))
         raise HTTPException(status_code=500, detail=tr("system.db_stats_failed", error=str(e)))
 
 

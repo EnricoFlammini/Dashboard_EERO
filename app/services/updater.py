@@ -392,7 +392,7 @@ class UpdaterService:
             async with httpx.AsyncClient(transport=transport, timeout=180.0, base_url="http://docker") as client:
                 # 1. Pull immagine latest da Docker Hub
                 pull_url = f"/images/create?fromImage={DOCKER_IMAGE}&tag=latest"
-                logger.info(f"Docker API pull: {pull_url}")
+                log_event(logger, logging.INFO, "log_system.docker_api_pull", url=pull_url)
                 pull_resp = await client.post(pull_url)
                 if pull_resp.status_code != 200:
                     log_event(logger, logging.ERROR, "log_system.docker_pull_failed", status=pull_resp.status_code, response=pull_resp.text)

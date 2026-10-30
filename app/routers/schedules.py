@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.scheduler import schedule_engine
-from app.i18n import tr
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ async def create_schedule(
     try:
         await schedule_engine.evaluate_schedules()
     except Exception as ex:
-        logger.warning(f"Error evaluating schedules after create: {ex}")
+        log_event(logger, logging.WARNING, "log_ops.schedule_eval_after_create_failed", error=str(ex))
 
     return {"status": "success", "schedule": created}
 
@@ -144,7 +144,7 @@ async def update_schedule(
     try:
         await schedule_engine.evaluate_schedules()
     except Exception as ex:
-        logger.warning(f"Error evaluating schedules after update: {ex}")
+        log_event(logger, logging.WARNING, "log_ops.schedule_eval_after_update_failed", error=str(ex))
 
     return {"status": "success", "schedule": updated}
 
@@ -183,7 +183,7 @@ async def toggle_schedule(
     try:
         await schedule_engine.evaluate_schedules()
     except Exception as ex:
-        logger.warning(f"Error evaluating schedules after toggle: {ex}")
+        log_event(logger, logging.WARNING, "log_ops.schedule_eval_after_toggle_failed", error=str(ex))
 
     return {"status": "success", "schedule": updated}
 
