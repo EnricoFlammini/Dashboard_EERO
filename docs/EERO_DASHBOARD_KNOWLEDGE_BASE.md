@@ -53,6 +53,7 @@
    * 4.36 [Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (v1.6.1 - Issue #71)](#436-risoluzione-bug-bufferbloat-wan--localizzazione-abbreviazioni-durata-v161---issue-71)
    * 4.37 [Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (v1.6.1 - Issue #73, #74)](#437-compattazione-selettiva-multi-tier-indici-timestamp--parsing-bitrate-v161---issue-73-74)
    * 4.38 [Parità Traduzioni, RFC 1123, MQTT, Firefox & Webhook Isolation (v1.6.2)](#438-parità-traduzioni-rfc-1123-mqtt-firefox--webhook-isolation-v162)
+   * 4.39 [Logging TLS, Fuso Orario Locale, Retention ULA & MQTT Tracker (v1.6.2 - Issues #88, #89, #91, #92)](#439-logging-tls-fuso-orario-locale-retention-ula--mqtt-tracker-v162---issues-88-89-91-92)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -478,6 +479,25 @@ A seguito di un Vulnerability Assessment sistematico sul codice sorgente condott
 * **Prevenzione XSS Client-Side:** Sanitizzazione degli schemi URL nei link markdown in `renderSimpleMarkdown()` (accettati solo `http://`, `https://`, `mailto:`, `/`, `#`; schemi pericolosi come `javascript:` vengono neutralizzati in `<span>` statici) ed escape HTML di sicurezza nel modulo narrativo di AI Diagnostic Summary.
 * **HTTP Security Headers & Cookie Secure Dinamico:** Middleware automatico in `main.py` per l'iniezione degli header difensivi OWASP (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`) e attivazione automatica del flag `Secure` sui cookie di sessione quando le richieste transitano su HTTPS o reverse proxy con terminazione TLS (`x-forwarded-proto == "https"`).
 
+### 4.39 Logging TLS, Fuso Orario Locale, Retention ULA & MQTT Tracker (v1.6.2 - Issues #88, #89, #91, #92)
+* **Diagnostica & Logging Dettagliato Errori Certificato TLS (Issue #89 - @jpatchMC):**
+  * `_tls_error_result(url, exc, engine)` in `app/services/dns_manager.py` ora esamina la catena `__cause__` e `__context__` per estrarre esplicitamente `ssl.SSLCertVerificationError` (`CERTIFICATE_VERIFY_FAILED`, hostname mismatch, CA autofirmata non fidata).
+  * Emissione di `logger.warning()` strutturato nei log di sistema visibili nel Live Log Viewer, fornendo indicazioni chiare sulla necessità di importare il certificato root dell'istanza (AdGuard Home, Pi-hole, Technitium) o disabilitare il toggle "Verifica SSL".
+* **Fuso Orario Locale del Browser nei Log & Toggle UTC (Issue #91 - @jpatchMC):**
+  * I timestamp ISO degli eventi (`l.timestamp`) vengono renderizzati tramite `formatLogTimestamp(ts)` sfruttando le API native `Intl.DateTimeFormat` nel fuso orario del browser client con la locale attiva (`en-US` / `it-IT`).
+  * Aggiunto pulsante toggle Fluent compatto nell'header del log viewer (`app.js`, `index.html`) per alternare istantaneamente tra fuso orario locale e UTC assoluto, con persistenza della preferenza in `localStorage` (`eero_log_tz_mode`).
+* **Retention IPv6 ULA a 7 Giorni & Reset Manuale Chirurgico (Issue #88 - @EnricoFlammini / @jpatchMC):**
+  * In `retention_worker.py`, il periodo di conservazione per gli IP scoperti via NDP / AdGuard in `cleanup_stale_discovered_ips(retention_days=7)` è stato ridotto da 30 a 7 giorni, prevenendo l'accumulo di prefissi privacy effimeri.
+  * Capping a 5 indirizzi più recenti per singolo MAC address in memoria (`poller.py`) e nell'arricchimento (`enrichment_service.py`), con contenitore scrollabile e contatore badge nella UI.
+  * Nuovo endpoint protetto `POST /api/devices/{mac}/clear-ula` (`action_edit_devices`) in `devices.py` e metodo `delete_discovered_ips_for_mac(mac)` in `db.py` che consentono il reset manuale immediato tramite pulsante *"Pulisci ULA"* con modale di conferma e toast di notifica.
+* **Home Assistant MQTT Device Tracker Presenza & Deduplicazione Discovery (Issue #92 - @markharrison):**
+  * **Stato `not_home`:** Pubblicazione automatica dello stato `not_home` sul topic `state_topic` (`eero/device_tracker/.../state`) quando un apparato si disconnette o passa offline, sbloccando le automazioni di presenza in Home Assistant.
+  * **Rimozione Hard Limit 50 Dispositivi & Pacing Asincrono:** Esteso il limite massimo di dispositivi tracciati contemporaneamente da 50 a 250 con pacing non bloccante (`asyncio.sleep(0.005)` ogni 10 apparati) per azzerare spike e congestioni sul broker.
+  * **Deduplicazione Config Topic Retained:** La configurazione di discovery MQTT (`retain=True`) viene pubblicata esclusivamente alla prima rilevazione dell'apparato (`_published_tracker_configs`) o al riavvio del worker, evitando riscritture inutili e spam ad ogni intervallo di telemetria.
+* **Layout Banda e Canale Wi-Fi Sovrapposti & Parità Totale Traduzioni (PR #94 & PR #95 - @todddube):**
+  * Disposizione verticale compatta con frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) posizionata sopra il canale radio per massimizzare la visibilità orizzontale su display a risoluzione media.
+  * 100% di parità garantita su 483 chiavi backend e 1312 chiavi frontend senza alcun testo inline, con validazione continua in `run_pre_release_tests.py` (1594 test superati).
+
 ---
 
 ## 5. Specifiche del Database SQLite (`metrics.db`)
@@ -638,6 +658,7 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **DELETE** | `/api/devices/{mac}/rules/reservation` | Rimuove prenotazione IP statico dal cloud eero | Nessuno |
 | **POST** | `/api/devices/{mac}/rules/forward` | Crea regola di port forwarding per il dispositivo | `{"port_from": 80, "port_to": 80, "protocol": "tcp", "description": "Web"}` |
 | **DELETE** | `/api/devices/{mac}/rules/forward/{rule_id}` | Elimina una specifica regola di inoltro porte | Nessuno |
+| **POST** | `/api/devices/{mac}/clear-ula` | Pulisce chirurgicamente gli indirizzi IPv6 ULA scoperti per il dispositivo (v1.6.2 - Issue #88) | Nessuno |
 | **POST** | `/api/devices/metadata` | Salva metadati locali (nome personalizzato, categoria, note, ⭐) | `{"mac": "...", "custom_name": "...", ...}` |
 | **GET** | `/api/devices/export/hosts` | Esporta lista host in formato standard `/etc/hosts` | `?domain_suffix=lan` |
 | **GET** | `/api/devices/export/adguard` | Esporta lista client in formato REST per AdGuard Home | `?include_ipv6=true/false` |
@@ -885,6 +906,31 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Sintomo:** Circa 100 righe di traduttori legacy con regex morti in `app.js`, penalità di salute visualizzate nella lingua del server anziché del client, e rischio di cancellazione del database reale durante l'esecuzione dei test pre-rilascio.
 * **Causa Radice:** Rimanenze storiche pre-PR #79 e percorso predefinito `DATA_DIR` non isolato nello script di test.
 * **Risoluzione:** Rimozione di `translatePillarSummaryEn` e regex obsolete, adozione di `affected_items_i18n` bilingue dal backend e isolamento automatico dei test su cartella temporanea (`tempfile.mkdtemp()`).
+
+### Issue #89 — TLS / SSL Certificate Error Diagnostics in DNS Manager (@jpatchMC)
+* **Sintomo:** I test di connettività e la sincronizzazione verso istanze DNS locali sicure (AdGuard Home, Pi-hole o Technitium) con certificati HTTPS autofirmati o CA interne fallivano con errore generico di connessione senza specificare la causa del blocco SSL/TLS.
+* **Causa Radice:** In `dns_manager.py`, le eccezioni HTTP client (`httpx.ConnectError` o `httpx.HTTPError`) incapsulavano l'errore di verifica certificato senza estrarre esplicitamente `ssl.SSLCertVerificationError` dalla catena di contesto/causa (`__cause__` / `__context__`).
+* **Risoluzione:** Implementata la funzione `_tls_error_result()` che estrae la stringa d'errore nativa di verifica del certificato ed emette un `logger.warning()` esplicativo nel Live Log Viewer, guidando l'utente a importare il certificato root della CA o a disabilitare il controllo SSL per l'istanza.
+
+### Issue #91 — Browser Local Timezone in System Logs & UTC Toggle (@jpatchMC)
+* **Sintomo:** I log di sistema visualizzati nella console live mostravano esclusivamente l'orario UTC globale (`Z`), creando disallineamento temporale rispetto all'ora locale dell'amministratore e rendendo difficoltosa la correlazione degli eventi.
+* **Causa Radice:** Il rendering dei log in `index.html` stampava direttamente la stringa ISO 8601 restituita dal backend (`l.timestamp`) senza conversioni fuso orario client-side.
+* **Risoluzione:** Introdotto l'helper `formatLogTimestamp(ts)` in `app.js` basato sull'oggetto nativo `Intl.DateTimeFormat` con la locale dell'utente (`dateLocales[currentLanguage]`), affiancato da un pulsante toggle Fluent compatto nell'header del log viewer per commutare istantaneamente tra fuso orario locale del browser e UTC assoluto, memorizzando la scelta in `localStorage` (`eero_log_tz_mode`).
+
+### Issue #88 — IPv6 ULA Stale Lease Pruning & Manual Reset Button (@jpatchMC / @EnricoFlammini)
+* **Sintomo:** Gli indirizzi IPv6 ULA scoperti via Neighbor Discovery (NDP) e AdGuard Home si accumulavano all'infinito per ciascun dispositivo nella modale di dettaglio (anche decine di IP SLAAC/privacy scaduti da settimane), senza possibilità di azzerarli manualmente.
+* **Causa Radice:** La finestra di retention in `cleanup_stale_discovered_ips()` era fissata a 30 giorni e non esisteva alcun meccanismo di limitazione (capping) in fase di lettura né endpoint per la cancellazione manuale dei record ULA obsoleti per singolo MAC.
+* **Risoluzione:** Ridotta la retention periodica a 7 giorni, applicato un limite di visualizzazione e caricamento in RAM ai 5 record più recenti con box a scorrimento verticale e badge numerico, e implementato l'endpoint protetto `POST /api/devices/{mac}/clear-ula` (`action_edit_devices`) azionabile dal pulsante dedicato *"Pulisci ULA"* con dialogo di conferma e notifica toast.
+
+### Issue #92 — Home Assistant MQTT Device Tracking: Offline State & 50-Device Limit (@markharrison)
+* **Sintomo:** In Home Assistant i dispositivi gestiti dal tracker MQTT non venivano mai contrassegnati come disconnessi (`not_home`), il numero massimo di apparati tracciabili era bloccato a 50, e la configurazione di discovery MQTT (`retain=True`) veniva riscritta inutilmente sul broker ad ogni ciclo di telemetria.
+* **Causa Radice:** In `mqtt_client.py` lo stato veniva pubblicato solo con payload `"home"`, la lista dispositivi era limitata con slice rigida `[:50]`, e il payload di configurazione veniva inviato ripetutamente senza tracciamento di idempotenza in sessione.
+* **Risoluzione:** Aggiunta la pubblicazione automatica dello stato `not_home` quando il dispositivo è offline o non più presente nella mesh; innalzato il limite da 50 a 250 dispositivi con pacing asincrono non bloccante (`asyncio.sleep(0.005)` ogni 10 apparati); e deduplicata la pubblicazione del topic `config` tramite il set `_published_tracker_configs` per trasmettere il discovery una sola volta per dispositivo.
+
+### PR #95 — Compact Frequency & Channel Stacking in Devices Table (@todddube)
+* **Sintomo:** Su schermi a media risoluzione o finestre browser ridimensionate, la tabella dispositivi richiedeva uno scroll orizzontale marcato per visualizzare tutte le colonne.
+* **Causa Radice:** La banda di frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) e il numero di canale radio occupavano due colonne separate o erano disposti orizzontalmente con spaziatura eccessiva.
+* **Risoluzione:** Riorganizzato il template Alpine.js in `index.html` e `styles.css` per impilare verticalmente la frequenza Wi-Fi direttamente sopra il numero di canale in un'unica cella compatta, preservando chiarezza e riducendo l'ingombro orizzontale.
 
 ---
 
