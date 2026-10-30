@@ -1226,7 +1226,13 @@ class BackgroundPoller:
             count_6ghz = sum(1 for d in connected_devices if "6" in str(d.get("wireless_band", "")))
             count_5ghz = sum(1 for d in connected_devices if "5" in str(d.get("wireless_band", "")))
             count_24ghz = sum(1 for d in connected_devices if "2.4" in str(d.get("wireless_band", "")))
-            count_wired = sum(1 for d in connected_devices if d.get("wired") or "wired" in str(d.get("connection_type", "")).lower() or "cablato" in str(d.get("wireless_band", "")).lower())
+            # wireless_band is "Ethernet" for wired clients (eero_client); "wired"/"cablato" cover older cached payloads.
+            count_wired = sum(
+                1 for d in connected_devices
+                if d.get("wired")
+                or "wired" in str(d.get("connection_type", "")).lower()
+                or any(w in str(d.get("wireless_band", "")).lower() for w in ("ethernet", "wired", "cablato"))
+            )
 
             # Informazioni sui nodi mesh
             total_nodes = len(self.cached_eeros)

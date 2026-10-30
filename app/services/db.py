@@ -8,9 +8,27 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 import aiosqlite
 from app.config import settings
-from app.i18n import tr
+from app.i18n import LEGACY_FIELD_LANGUAGES, localized_fields, tr
 
 logger = logging.getLogger(__name__)
+
+
+def _anomaly_description_map(row: Dict[str, Any]) -> Dict[str, str]:
+    """Returns the {lang: description} map of an anomaly payload or SQLite row.
+
+    Prefers ``description_i18n`` (dict, or the JSON string stored in the column) and falls
+    back to a map built from the legacy ``description_it`` / ``description_en`` fields, so
+    rows written before the column existed still localize.
+    """
+    raw = row.get("description_i18n")
+    if isinstance(raw, str) and raw:
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            raw = None
+    if isinstance(raw, dict) and raw:
+        return {str(k): str(v) for k, v in raw.items() if v}
+    return {lang: row[f"description_{lang}"] for lang in LEGACY_FIELD_LANGUAGES if row.get(f"description_{lang}")}
 
 
 class DBService:
@@ -221,9 +239,16 @@ class DBService:
                     severity TEXT NOT NULL,
                     description_it TEXT,
                     description_en TEXT,
+                    description_i18n TEXT,
                     is_demo INTEGER DEFAULT 0
                 );
             """)
+            # description_i18n: JSON {lang: text} for every language in SUPPORTED_LANGUAGES; the two
+            # legacy columns are still written (derived from the map) for older rows and clients.
+            try:
+                await db.execute("ALTER TABLE iot_traffic_anomalies ADD COLUMN description_i18n TEXT;")
+            except Exception:
+                pass
             await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_time ON iot_traffic_anomalies(timestamp);")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_iot_anomalies_mac ON iot_traffic_anomalies(mac_address);")
 
@@ -2173,7 +2198,11 @@ class DBService:
 
     # ----------------- IOT NIGHT ANOMALIES & HISTORIC NODE LOOKUP (v1.6.0) -----------------
     async def save_iot_anomalies(self, anomalies: List[Dict[str, Any]]) -> int:
-        """Salva o aggiorna eventi di anomalia sul traffico notturno IoT."""
+        """Salva o aggiorna eventi di anomalia sul traffico notturno IoT.
+
+        ``description_i18n`` (JSON map, every supported language) is the source of truth; the
+        legacy ``description_it`` / ``description_en`` columns are derived from it.
+        """
         if not anomalies:
             return 0
         inserted = 0
@@ -2189,8 +2218,9 @@ class DBService:
                 mb_transferred = float(a.get("megabytes_transferred") or 0.0)
                 baseline_mb = float(a.get("baseline_megabytes") or 0.0)
                 severity = a.get("severity") or "warning"
-                desc_it = a.get("description_it") or ""
-                desc_en = a.get("description_en") or ""
+                desc_i18n = _anomaly_description_map(a)
+                desc_it = desc_i18n.get("it") or ""
+                desc_en = desc_i18n.get("en") or ""
                 is_demo = 1 if a.get("is_demo") else 0
                 ts = a.get("timestamp") or now
 
@@ -2198,9 +2228,10 @@ class DBService:
                     INSERT INTO iot_traffic_anomalies (
                         timestamp, mac_address, hostname, device_category, anomaly_type,
                         megabytes_transferred, baseline_megabytes, severity,
-                        description_it, description_en, is_demo
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (ts, mac, hostname, category, anom_type, mb_transferred, baseline_mb, severity, desc_it, desc_en, is_demo))
+                        description_it, description_en, description_i18n, is_demo
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (ts, mac, hostname, category, anom_type, mb_transferred, baseline_mb, severity,
+                      desc_it, desc_en, json.dumps(desc_i18n, ensure_ascii=False), is_demo))
                 inserted += 1
             await db.commit()
         return inserted
@@ -2213,14 +2244,21 @@ class DBService:
             cursor = await db.execute("""
                 SELECT id, timestamp, mac_address, hostname, device_category, anomaly_type,
                        megabytes_transferred, baseline_megabytes, severity,
-                       description_it, description_en, is_demo
+                       description_it, description_en, description_i18n, is_demo
                 FROM iot_traffic_anomalies
                 WHERE timestamp >= ? OR timestamp >= ?
                 ORDER BY timestamp DESC
                 LIMIT ?
             """, (cutoff, cutoff_z, limit))
             rows = await cursor.fetchall()
-            return [dict(r) for r in rows]
+            anomalies = []
+            for r in rows:
+                row = dict(r)
+                desc_i18n = _anomaly_description_map(row)
+                row.pop("description_i18n", None)
+                row.update(localized_fields("description", desc_i18n))
+                anomalies.append(row)
+            return anomalies
 
     async def clear_iot_anomalies(self):
         """Svuota la tabella delle anomalie IoT (utilizzato nei test)."""

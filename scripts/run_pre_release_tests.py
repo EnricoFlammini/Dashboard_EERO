@@ -515,7 +515,7 @@ async def run_all_tests():
             "signal_rssi": -48
         }
         node_6ghz_hw_norm = eero_client._normalize_eero_node(node_6ghz_hw_raw)
-        runner.assert_true(node_6ghz_hw_norm["backhaul_type"] in ("Wireless Mesh (6 GHz / -48 dBm)", "Wireless Mesh (6 GHz / -48 dBm) (stimata)"), f"Nodo hardware Pro 6E senza freq API adotta 'Wireless Mesh (6 GHz / -48 dBm)' (ottenuto: {node_6ghz_hw_norm['backhaul_type']})")
+        runner.assert_true(node_6ghz_hw_norm["backhaul_type"] in ("Wireless Mesh (6 GHz / -48 dBm)", "Wireless Mesh (6 GHz / -48 dBm) (estimated)"), f"Nodo hardware Pro 6E senza freq API adotta 'Wireless Mesh (6 GHz / -48 dBm)' (ottenuto: {node_6ghz_hw_norm['backhaul_type']})")
 
         # Test 6d: Nodo Wi-Fi 7 hardware (eero Max 7 su 320MHz width)
         node_max7_raw = {
@@ -776,7 +776,7 @@ async def run_all_tests():
         closet_res = next(n for n in norm_nodes if n["name"] == "Wiring Closet")
         
         runner.assert_true(bedroom_res["is_gateway"] is False, "Bedroom marcato is_gateway=False (non è gateway)")
-        runner.assert_true(bedroom_res["backhaul_type"] == "Ethernet (Cablato)", f"Bedroom backhaul è 'Ethernet (Cablato)' (ottenuto: {bedroom_res['backhaul_type']})")
+        runner.assert_true(bedroom_res["backhaul_type"] == "Ethernet (Wired)", f"Bedroom backhaul è 'Ethernet (Wired)' (ottenuto: {bedroom_res['backhaul_type']})")
         runner.assert_true(office_res["is_gateway"] is False, "Office marcato is_gateway=False")
         runner.assert_true(office2_res["is_gateway"] is False, "Office 2 marcato is_gateway=False")
         runner.assert_true(closet_res["is_gateway"] is True, "Wiring Closet marcato is_gateway=True (Primary Gateway univoco)")
@@ -916,7 +916,7 @@ async def run_all_tests():
                 spd_fmt = format_speed_mbps(spd_mbps)
                 if n.get("raw_wired") is True:
                     n["wired"] = True
-                    n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Cablato)"
+                    n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Wired)"
                 elif is_6e_or_7 or "6" in str(n.get("wireless_band") or ""):
                     n["wired"] = False
                     n["backhaul_type"] = "Wireless Mesh (6 GHz)"
@@ -1650,12 +1650,13 @@ async def run_all_tests():
         has_offline_penalty = any(p["id"] == "offline_nodes" for p in deg_calc["penalties"])
         runner.assert_true(has_offline_penalty, "Penalità 'offline_nodes' correttamente rilevata per Nodo Cucina")
 
-        # Test bilingue i18n (Issue #15 / i18n fix)
+        # Test multilingua i18n (Issue #15 / i18n fix): ogni pilastro ha una traduzione per ogni lingua supportata
+        from app.i18n import SUPPORTED_LANGUAGES as _langs_health
         for p_key in ["mesh_topology", "wan_gateway", "client_signal", "channel_density"]:
             pillar_obj = deg_calc["pillars"].get(p_key, {})
             runner.assert_true("summary_i18n" in pillar_obj, f"Pilastro '{p_key}' contiene 'summary_i18n'")
-            runner.assert_true("en" in pillar_obj.get("summary_i18n", {}), f"Pilastro '{p_key}' ha traduzione 'en'")
-            runner.assert_true("it" in pillar_obj.get("summary_i18n", {}), f"Pilastro '{p_key}' ha traduzione 'it'")
+            for _lang in _langs_health:
+                runner.assert_true(_lang in pillar_obj.get("summary_i18n", {}), f"Pilastro '{p_key}' ha traduzione '{_lang}'")
 
         first_penalty = deg_calc["penalties"][0]
         runner.assert_true("title_i18n" in first_penalty and "en" in first_penalty["title_i18n"], "Penalità include title_i18n con chiave 'en'")
@@ -2083,8 +2084,8 @@ async def run_all_tests():
         runner.assert_true(lang_get.status_code == 200, "GET /api/system/language risponde HTTP 200")
         runner.assert_true(lang_get.json().get("status") == "success", "GET /api/system/language restituisce status success")
 
-        # Rifiuta lingua non supportata
-        lang_invalid = await client.post("/api/system/language", json={"language": "de"})
+        # Rifiuta lingua non supportata ("xx" non è un codice ISO 639-1 assegnato: non entrerà mai in SUPPORTED_LANGUAGES)
+        lang_invalid = await client.post("/api/system/language", json={"language": "xx"})
         runner.assert_true(lang_invalid.status_code == 400, "POST /api/system/language con lingua non supportata risponde HTTP 400")
 
         # Imposta lingua italiana
@@ -2509,6 +2510,14 @@ async def run_all_tests():
         )
         runner.assert_true(bool(health_summary["overview_it"]) and bool(health_summary["overview_en"]), "Health summary produce panoramica bilingue")
         runner.assert_true(bool(health_summary["narrative_it"]) and bool(health_summary["narrative_en"]), "Health summary produce narrativa bilingue dettagliata")
+        from app.i18n import SUPPORTED_LANGUAGES as _langs_diag
+        for _field in ("overview", "narrative"):
+            _map = health_summary.get(f"{_field}_i18n") or {}
+            runner.assert_true(set(_map) == set(_langs_diag) and all(_map.values()), f"Health summary '{_field}_i18n' copre tutte le lingue supportate {list(_langs_diag)}")
+            runner.assert_true(health_summary.get(_field) == _map.get("en"), f"Health summary '{_field}' (campo piatto) è l'inglese della mappa")
+        _ck = health_summary["checklist"][0]
+        runner.assert_true(set(_ck.get("title_i18n") or {}) == set(_langs_diag) and set(_ck.get("description_i18n") or {}) == set(_langs_diag), "Checklist: title_i18n/description_i18n coprono tutte le lingue supportate")
+        runner.assert_true(_ck.get("title_it") == _ck["title_i18n"].get("it") and _ck.get("title_en") == _ck["title_i18n"].get("en"), "Checklist: campi legacy title_it/title_en derivati dalla mappa title_i18n")
         runner.assert_true("100 Mbps" in health_summary["narrative_it"], "Narrativa IT menziona la limitazione 100 Mbps del cavo")
         runner.assert_true("100 Mbps" in health_summary["narrative_en"], "Narrativa EN menziona la limitazione 100 Mbps del cavo")
         runner.assert_true(len(health_summary["checklist"]) >= 2, f"Checklist contiene azioni correttive (trovate: {len(health_summary['checklist'])})")
@@ -2526,12 +2535,28 @@ async def run_all_tests():
         sample_anom = detected_demo_anomalies[0]
         runner.assert_true("mac_address" in sample_anom and "device_name" in sample_anom, "Anomalia include MAC e Device Name")
         runner.assert_true("observed_mb" in sample_anom and "baseline_mb" in sample_anom, "Anomalia include metriche di traffico")
+        runner.assert_true(set(sample_anom.get("description_i18n") or {}) == set(_langs_diag), f"Anomalia include description_i18n per tutte le lingue supportate {list(_langs_diag)}")
+        runner.assert_true(sample_anom.get("description_it") == sample_anom["description_i18n"].get("it") and sample_anom.get("description_en") == sample_anom["description_i18n"].get("en"), "Anomalia: description_it/description_en legacy derivati dalla mappa")
 
         saved_anom_count = await db_service.save_iot_anomalies(detected_demo_anomalies)
         runner.assert_true(saved_anom_count == len(detected_demo_anomalies), "save_iot_anomalies persiste correttamente tutte le anomalie")
 
         retrieved_anomalies = await db_service.get_iot_anomalies(limit=10)
         runner.assert_true(len(retrieved_anomalies) == len(detected_demo_anomalies), "get_iot_anomalies recupera le anomalie salvate")
+        _stored = retrieved_anomalies[0] if retrieved_anomalies else {}
+        runner.assert_true(isinstance(_stored.get("description_i18n"), dict) and set(_stored["description_i18n"]) == set(_langs_diag), "get_iot_anomalies restituisce description_i18n (JSON decodificato) per tutte le lingue supportate")
+        runner.assert_true(_stored.get("description_it") == _stored["description_i18n"].get("it") and _stored.get("description_en") == _stored["description_i18n"].get("en"), "get_iot_anomalies: colonne legacy description_it/_en coerenti con la mappa")
+        # Righe scritte prima della colonna description_i18n (solo colonne legacy) vengono ricostruite in mappa
+        async with db_service.get_connection() as _db_legacy:
+            await _db_legacy.execute(
+                "INSERT INTO iot_traffic_anomalies (timestamp, mac_address, hostname, device_category, anomaly_type, megabytes_transferred, baseline_megabytes, severity, description_it, description_en, is_demo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+                ("2099-01-01T03:00:00Z", "00:11:22:33:44:55", "Legacy Row", "iot", "unexpected_activity", 100.0, 1.0, "warning", "Descrizione legacy", "Legacy description"),
+            )
+            await _db_legacy.commit()
+        _legacy_rows = [r for r in await db_service.get_iot_anomalies(limit=20) if r.get("mac_address") == "00:11:22:33:44:55"]
+        runner.assert_true(bool(_legacy_rows) and _legacy_rows[0].get("description_i18n") == {"it": "Descrizione legacy", "en": "Legacy description"} and _legacy_rows[0].get("description") == "Legacy description", "get_iot_anomalies ricostruisce description_i18n dalle colonne legacy per righe pre-migrazione")
+        await db_service.clear_iot_anomalies()
+        await db_service.save_iot_anomalies(detected_demo_anomalies)
 
         # 5. Test Endpoint REST GET /api/diagnostics/iot-anomalies
         res_iot_api = await client.get("/api/diagnostics/iot-anomalies")
@@ -2868,7 +2893,7 @@ async def run_all_tests():
             "channel": 0
         }
         norm_node_est = eero_client._normalize_eero_node(raw_node_est)
-        runner.assert_true("(stimata)" in norm_node_est["backhaul_type"], f"Banda mesh stimata da hardware include '(stimata)' (ottenuto: {norm_node_est['backhaul_type']})")
+        runner.assert_true("(estimated)" in norm_node_est["backhaul_type"], f"Banda mesh stimata da hardware include '(estimated)' (ottenuto: {norm_node_est['backhaul_type']})")
         runner.assert_true(norm_node_est.get("backhaul_estimated") is True, "Flag backhaul_estimated è True")
 
         # 3. Test Issue #57: Supporto Completo IPv6 ULA (RFC 4193)

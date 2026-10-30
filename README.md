@@ -411,7 +411,20 @@ Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD`
   ```bash
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
-* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to both `en` and `it`; the test suite checks key parity.
+* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to every language in `SUPPORTED_LANGUAGES`; the test suite checks key parity.
+* **`DASHBOARD_LANG`** accepts any code in `SUPPORTED_LANGUAGES` (`app/i18n.py`, currently `en`, `it`).
+
+### Adding a language
+
+Nothing in the code assumes a fixed set of languages: every localized payload field is a `<field>_i18n` map built from `SUPPORTED_LANGUAGES`. To add, say, German (`de`):
+
+1. Add `"de"` to `SUPPORTED_LANGUAGES` in `app/i18n.py`.
+2. Create `app/static/locales/de.json` (frontend strings; copy `en.json` and translate, same keys and `{param}` placeholders).
+3. Create `app/i18n_locales/de/*.json` (backend catalogs: the 25 namespaces of `app/i18n_locales/en/`, same keys and placeholders).
+4. Optionally add a `languageFlags` entry and a `dateLocales` BCP 47 region for `de` in `app/static/js/app.js` (the header toggle falls back to the upper-cased code).
+5. Add the manual and changelog files for the new language (the in-app manual and changelog are per-language files).
+
+The pre-release suite verifies key and placeholder parity against `en` for every language in `SUPPORTED_LANGUAGES`. Legacy `<field>_it` / `<field>_en` fields stay in the API for older clients and are derived from the maps.
 
 ---
 
@@ -731,7 +744,20 @@ Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impos
   ```bash
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
-* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave sia in `en` sia in `it`; la suite di test verifica la parità delle chiavi.
+* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave in ogni lingua di `SUPPORTED_LANGUAGES`; la suite di test verifica la parità delle chiavi.
+* **`DASHBOARD_LANG`** accetta qualsiasi codice presente in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`).
+
+### Aggiungere una lingua
+
+Nessuna parte del codice presuppone un insieme fisso di lingue: ogni campo localizzato dei payload è una mappa `<campo>_i18n` costruita da `SUPPORTED_LANGUAGES`. Per aggiungere ad esempio il tedesco (`de`):
+
+1. Aggiungi `"de"` a `SUPPORTED_LANGUAGES` in `app/i18n.py`.
+2. Crea `app/static/locales/de.json` (stringhe frontend; copia `en.json` e traduci, stesse chiavi e stessi segnaposto `{param}`).
+3. Crea `app/i18n_locales/de/*.json` (cataloghi backend: i 25 namespace di `app/i18n_locales/en/`, stesse chiavi e segnaposto).
+4. Facoltativo: aggiungi una voce `languageFlags` e una regione BCP 47 in `dateLocales` per `de` in `app/static/js/app.js` (il selettore nell'header ripiega sul codice in maiuscolo).
+5. Aggiungi i file del manuale e del changelog per la nuova lingua (manuale e changelog integrati sono file per lingua).
+
+La suite pre-rilascio verifica la parità di chiavi e segnaposto rispetto a `en` per ogni lingua di `SUPPORTED_LANGUAGES`. I campi legacy `<campo>_it` / `<campo>_en` restano nelle API per i client più vecchi e sono derivati dalle mappe.
 
 ---
 
