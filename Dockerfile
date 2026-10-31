@@ -32,7 +32,7 @@ FROM python:3.12-alpine AS runner
 
 # Build arguments per versionamento e build number (iniettati in CI/CD)
 ARG APP_VERSION="1.6.2"
-ARG BUILD_NUMBER="1"
+ARG BUILD_NUMBER="2"
 # Source branch/commit shown on the Updates page (.git is not copied into the image)
 ARG GIT_BRANCH=""
 ARG GIT_COMMIT=""
