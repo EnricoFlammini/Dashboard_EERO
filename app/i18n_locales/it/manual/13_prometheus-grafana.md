@@ -10,7 +10,7 @@ La dashboard espone un endpoint nativo conforme alle specifiche **Prometheus / O
 
 * **Endpoint di Scraping:**
   - Accessibile direttamente all'indirizzo `GET /metrics` (o `/api/metrics/prometheus`).
-  - Risponde in formato `text/plain; version=0.0.4; charset=utf-8`.
+  - Risponde nel formato testuale di esposizione Prometheus (`text/plain; version=0.0.4; charset=utf-8`).
 * **Serie Temporali Esposte:**
   - `eero_info`: Metadati della dashboard, versione e nome della rete mesh.
   - `eero_clients_total`: Client rilevati con etichetta `status="connected"` o `"disconnected"`.

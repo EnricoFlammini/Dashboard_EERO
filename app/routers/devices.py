@@ -169,7 +169,7 @@ async def export_hosts(
             clean_name = f"device-{ip.replace('.', '-')}"
 
         host_fqdn = f"{clean_name}{suffix}"
-        mac = d.get("mac") or "N/D"
+        mac = d.get("mac") or tr("notifications.not_available")
         lines.append(f"{ip:<16} {host_fqdn:<32} # {raw_name} ({mac})")
 
     return "\n".join(lines) + "\n"

@@ -10,7 +10,7 @@ The dashboard provides a native **Prometheus / OpenMetrics** export endpoint for
 
 * **Scraping Endpoint:**
   - Directly accessible at `GET /metrics` (or `/api/metrics/prometheus`).
-  - Serves standard OpenMetrics text (`text/plain; version=0.0.4; charset=utf-8`).
+  - Serves the Prometheus text exposition format (`text/plain; version=0.0.4; charset=utf-8`).
 * **Exported Metrics Series:**
   - `eero_info`: Metadata, version tag, and active mesh network name.
   - `eero_clients_total`: Client counts tagged with `status="connected"` or `"disconnected"`.

@@ -21,7 +21,7 @@ La dashboard si integra nativamente nel tuo ambiente HomeLab tramite il protocol
     - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
   - **Device Tracker dei Client di Rete:**
     - Generazione automatica di entità `device_tracker` per ciascun dispositivo della rete.
-    - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di attestazione e interfaccia radio (5 GHz / 6 GHz / Ethernet).
-* **Configurazione Broker & Sicurezza:**
+    - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di collegamento e interfaccia radio (2.4 GHz / 5 GHz / 6 GHz / Ethernet).
+* **Configurazione Broker & Affidabilità:**
   - Supporta broker locali e remoti (Mosquitto, EMQX, HiveMQ) con autenticazione via username e password.
-  - Riconnessione asincrona automatica e gestione trasparente in modalità Demo.
+  - Riconnessione asincrona automatica con backoff esponenziale e gestione trasparente in modalità Demo.

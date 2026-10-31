@@ -2,7 +2,7 @@
   "refreshed": "Dati rete aggiornati con successo.",
   "not_authenticated": "Non autenticato con eero",
   "advanced_updated": "Impostazioni avanzate aggiornate.",
-  "switched": "Rete passata a '{network_id}' con successo.",
+  "switched": "Passaggio alla rete '{network_id}' completato.",
   "mapping_removed": "Associazione {ip} <-> {mac} rimossa.",
   "mapping_not_found": "Nessuna corrispondenza trovata per l'eliminazione."
 }

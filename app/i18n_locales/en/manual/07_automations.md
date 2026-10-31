@@ -6,7 +6,7 @@ summary: Smart Guest Wi-Fi with QR, native AdGuard Home sync, Telegram/Webhook a
 ---
 ### Advanced Features & Automations Hub
 
-The **Automations & Controls** tab organizes your network tools into a clean 2x2 grid:
+The **Controls & Guest QR** tab organizes your network tools into a clean 2x2 grid of four cards, plus a fifth item, Gaming Mode, located in the top header:
 
 1. **Smart Guest Wi-Fi with Dual-Theme Dynamic QR Code (Top-Left):**
    - Instantly renders a printable, scannable QR Code with pure white background for Light Mode and dark slate for Dark Mode, automatically synchronized with the active theme.

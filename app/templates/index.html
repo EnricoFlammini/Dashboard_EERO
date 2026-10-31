@@ -5385,7 +5385,7 @@
                     <input 
                       type="text" 
                       x-model="deviceStaticIpInput" 
-                      placeholder="es. 192.168.4.50" 
+                      placeholder="192.168.4.50" 
                       class="glass-input flex-1 px-3 py-2 rounded-xl text-sm font-mono font-semibold">
                     <button 
                       x-show="can('action_manage_rules')"
@@ -5503,11 +5503,11 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div>
                 <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.wan_port_label')"></label>
-                <input type="number" x-model="newPortForward.port_from" placeholder="es. 8080" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                <input type="number" x-model="newPortForward.port_from" placeholder="8080" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
               </div>
               <div>
                 <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.lan_port_label')"></label>
-                <input type="number" x-model="newPortForward.port_to" placeholder="es. 80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
+                <input type="number" x-model="newPortForward.port_to" placeholder="80" class="glass-input w-full px-2.5 py-1.5 rounded-lg font-mono text-xs">
               </div>
               <div>
                 <label class="block text-slate-400 text-[11px] mb-1" x-text="t('device_modal.protocol_label')"></label>
@@ -6032,7 +6032,7 @@
       
       <div x-show="changelogLoading" class="py-12 text-center text-slate-500 dark:text-slate-400">
         <svg class="w-6 h-6 animate-spin mx-auto mb-2 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        Loading...
+        <span x-text="t('changelog_modal.loading')"></span>
       </div>
 
       <div x-show="!changelogLoading" class="overflow-y-auto manual-content text-xs pr-2 space-y-2 select-text" x-html="changelogContent"></div>

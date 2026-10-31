@@ -230,7 +230,7 @@
     "mark_all_seen": "Mark all as seen",
     "new_badge_click_hint": "Click to mark as seen",
     "marked_seen_title": "Marked as seen",
-    "marked_seen_msg": "{count} device(s) no longer flagged as new.",
+    "marked_seen_msg": "Devices no longer flagged as new: {count}",
     "marked_new_title": "Marked as new",
     "marked_new_msg": "The NEW badge is back for this device.",
     "mark_seen_error": "Could not update devices",
@@ -615,7 +615,8 @@
     "view_on_github": "View Full Changelog on GitHub",
     "error_loading": "Unable to load changelog.",
     "check_updates": "Check for Updates",
-    "close": "Close"
+    "close": "Close",
+    "loading": "Loading..."
   },
   "about_modal": {
     "title": "About & Credits",
@@ -984,7 +985,7 @@
     "restore_warning": "Warning: Restoring will overwrite existing configurations with the data from the backup file.",
     "upload_btn": "Start Restore",
     "close": "Close",
-    "restore_in_progress": "Restoring in progress..."
+    "restore_in_progress": "Restore in progress..."
   },
   "schedules": {
     "title": "Parental Scheduling & Time Windows",
@@ -1186,7 +1187,7 @@
     "view_analytics": "Analytics & SLA View",
     "view_logs": "Logs & Audit View",
     "action_reboot_nodes": "Reboot Mesh Nodes",
-    "action_pause_devices": "Pause Devices Wi-Fi",
+    "action_pause_devices": "Pause Device Wi-Fi",
     "action_manage_rules": "Manage DHCP Rules & Port Forwarding",
     "action_sync_dns": "Sync External DNS Hosts",
     "action_manage_users": "Administer Users & RBAC",

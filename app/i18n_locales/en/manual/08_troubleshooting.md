@@ -18,7 +18,7 @@ summary: Frequently asked questions regarding telemetry, in-app Docker auto-upda
   - **Interactive OpenAPI/Swagger Disabled by Default:** `/docs`, `/redoc`, and `/openapi.json` are only mounted when `API_DOCS=true` to protect operational endpoints.
   - **0600 File Permissions on session.json:** The eero session token file is created with atomic `0600` permissions (owner read/write only).
 * **How do I configure the AdGuard Home integration?**
-  - Under the *Automations & Controls* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
+  - Under the *Controls & Guest QR* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
 * **What should I do if my session expires?**
   - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
 * **How do I back up local configurations and custom metadata?**

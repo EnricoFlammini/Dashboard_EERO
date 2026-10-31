@@ -8,5 +8,12 @@
   "export_wired": "Wired",
   "export_yes": "Yes",
   "export_no": "No",
-  "export_no_data": "no_data_available"
+  "export_no_data": "no_data_available",
+  "export_cat_computer": "Computers & Laptops",
+  "export_cat_mobile": "Smartphones & Tablets",
+  "export_cat_smart_home": "Smart Home & IoT",
+  "export_cat_entertainment": "TV & Streaming",
+  "export_cat_gaming": "Gaming Consoles",
+  "export_cat_server": "Servers & NAS",
+  "export_cat_other": "Other"
 }

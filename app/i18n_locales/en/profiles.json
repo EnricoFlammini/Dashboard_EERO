@@ -2,6 +2,6 @@
   "created": "Profile '{name}' created.",
   "updated": "Profile updated.",
   "deleted": "Profile deleted.",
-  "devices_assigned": "{count} devices assigned to the profile.",
+  "devices_assigned": "Devices assigned to the profile: {count}.",
   "default_name": "User Profile"
 }

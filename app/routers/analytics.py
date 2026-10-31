@@ -131,6 +131,23 @@ def _resolve_vendor_from_mac_and_name(mac: str, hostname: str) -> str:
     return "Other"
 
 
+# Device categories are stored as language-neutral enum values; exports show them in the request language.
+_EXPORT_CATEGORY_KEYS = {
+    "Computer": "analytics.export_cat_computer",
+    "Mobile": "analytics.export_cat_mobile",
+    "Smart Home": "analytics.export_cat_smart_home",
+    "Intrattenimento": "analytics.export_cat_entertainment",
+    "Gaming": "analytics.export_cat_gaming",
+    "Server/Rete": "analytics.export_cat_server",
+    "Altro": "analytics.export_cat_other",
+}
+
+
+def _export_category(category):
+    key = _EXPORT_CATEGORY_KEYS.get(category or "")
+    return tr(key) if key else (category or "")
+
+
 @router.get("/distribution")
 async def get_network_distribution() -> Dict[str, Any]:
     """
@@ -360,7 +377,7 @@ async def export_network_data(
                 "channel": d.get("channel") or "",
                 "signal_rssi_dbm": d.get("signal_rssi") or "",
                 "connected_eero_node": d.get("source_name") or d.get("connected_eero_name") or "",
-                "category": d.get("category") or "",
+                "category": _export_category(d.get("category")),
                 "rx_bytes": d.get("rx_bytes") or 0,
                 "tx_bytes": d.get("tx_bytes") or 0,
                 "download_speed_mbps": d.get("download_rate_mbps") or 0,

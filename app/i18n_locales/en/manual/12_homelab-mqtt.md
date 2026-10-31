@@ -21,7 +21,7 @@ The dashboard natively integrates into your HomeLab ecosystem via **MQTT**:
     - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
   - **Client Device Trackers:**
     - Automatic `device_tracker` creation for client devices on the network.
-    - Reports `home` / `not_home` state, local IP, MAC address, connected mesh node, and connection medium (5 GHz / 6 GHz / Wired).
+    - Reports `home` / `not_home` state, local IP, MAC address, connected mesh node, and connection medium (2.4 GHz / 5 GHz / 6 GHz / Ethernet).
 * **Broker Configuration & Reliability:**
   - Compatible with standard brokers (Eclipse Mosquitto, EMQX, HiveMQ) with username/password authentication.
   - Asynchronous background reconnection with exponential backoff and seamless Demo mode simulation.

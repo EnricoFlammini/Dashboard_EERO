@@ -8,5 +8,12 @@
   "export_wired": "Cablato",
   "export_yes": "Sì",
   "export_no": "No",
-  "export_no_data": "nessun_dato_disponibile"
+  "export_no_data": "nessun_dato_disponibile",
+  "export_cat_computer": "Computer & Laptop",
+  "export_cat_mobile": "Smartphone & Tablet",
+  "export_cat_smart_home": "Smart Home & Domotica",
+  "export_cat_entertainment": "TV & Streaming",
+  "export_cat_gaming": "Console Gaming",
+  "export_cat_server": "Server & NAS",
+  "export_cat_other": "Altro"
 }

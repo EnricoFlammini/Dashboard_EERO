@@ -2137,9 +2137,9 @@ async def run_all_tests():
 
         # Invio digest in Italiano
         await notification_service.notify_digest(sample_digest, lang="it")
-        alert_digest_it = await _recent_alert("📊 Riepilogo Giornaliero eero Mesh")
-        runner.assert_true(alert_digest_it.get("title") == "📊 Riepilogo Giornaliero eero Mesh", "Titolo Digest in Italiano corretto")
-        runner.assert_true("Report giornaliero inviato" in alert_digest_it.get("message", ""), "Messaggio Digest in Italiano corretto")
+        alert_digest_it = await _recent_alert("📊 Riepilogo giornaliero eero Mesh")
+        runner.assert_true(alert_digest_it.get("title") == "📊 Riepilogo giornaliero eero Mesh", "Titolo Digest in Italiano corretto")
+        runner.assert_true("Riepilogo giornaliero inviato" in alert_digest_it.get("message", ""), "Messaggio Digest in Italiano corretto")
 
         # Test trigger digest via API con override language
         res_dig_en = await client.post("/api/automations/digest/generate", json={"language": "en"})
@@ -2172,8 +2172,8 @@ async def run_all_tests():
         runner.assert_true(alert_node_en.get("title") == "⚠️ eero Mesh Node Offline!", "Titolo nodo offline in Inglese corretto")
 
         await notification_service.notify_node_offline(sample_node, lang="it")
-        alert_node_it = await _recent_alert("⚠️ Nodo eero Mesh Offline!")
-        runner.assert_true(alert_node_it.get("title") == "⚠️ Nodo eero Mesh Offline!", "Titolo nodo offline in Italiano corretto")
+        alert_node_it = await _recent_alert("⚠️ Nodo Mesh eero Offline!")
+        runner.assert_true(alert_node_it.get("title") == "⚠️ Nodo Mesh eero Offline!", "Titolo nodo offline in Italiano corretto")
 
         # 5. Test Endpoint Notifiche / Test con language
         res_notif_en = await client.post("/api/automations/notifications/test", json={"language": "en"})
@@ -3991,7 +3991,7 @@ async def run_all_tests():
         runner.assert_true(clear_res.get("status") == "success", "clear_logs restituisce status success")
         post_clear_logs = await db_service.get_system_logs(limit=10)
         runner.assert_true(len(post_clear_logs) == 1, "Dopo clear_logs rimane solo l'audit log di svuotamento")
-        runner.assert_true(any(t in post_clear_logs[0]["message"] for t in ("cancellati con successo", "cleared successfully")), "Audit log di svuotamento registrato correttamente")
+        runner.assert_true(any(t in post_clear_logs[0]["message"] for t in ("svuotati", "cleared successfully")), "Audit log di svuotamento registrato correttamente")
 
         # 4. REST API Endpoint Testing (/api/system/logs) (v1.6.0 Modulo 4 - Fase 2)
         # GET /api/system/logs/config con admin

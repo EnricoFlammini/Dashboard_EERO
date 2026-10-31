@@ -1,5 +1,5 @@
 {
   "test_ok_simulated": "Connessione al broker MQTT ({broker}) riuscita.",
-  "aiomqtt_missing": "Modulo aiomqtt non disponibile nel container. Installare aiomqtt per connettersi al broker.",
-  "test_ok": "Connessione al broker MQTT ({broker}) riuscita con successo."
+  "aiomqtt_missing": "Modulo aiomqtt non disponibile nel container. Installa aiomqtt per connetterti al broker.",
+  "test_ok": "Connessione al broker MQTT ({broker}) riuscita."
 }

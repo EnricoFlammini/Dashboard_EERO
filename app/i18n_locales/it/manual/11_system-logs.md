@@ -18,13 +18,13 @@ La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestio
     - `ERROR`: Critico. Limita i log esclusivamente alle eccezioni bloccanti e agli errori di comunicazione.
 * **Periodo di Conservazione (Retention Temporale):**
   - Imposta il periodo di persistenza: **24 Ore (24h)**, **7 Giorni (7gg/7d)**, **15 Giorni (15gg/15d)**, **1 Mese (1m/1mo)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
-  - Un worker di background compila e rimuove periodicamente i log obsoleti garantendo che lo storage non si saturi mai.
+  - Un worker di background individua e rimuove periodicamente i log scaduti, contribuendo a evitare la saturazione dello storage.
 * **Console Live Log Viewer:**
-  - Box terminale ad alto contrasto con font monospazio (`Fira Code`).
+  - Box terminale ad alto contrasto con font monospazio (`JetBrains Mono`).
   - Ricerca rapida full-text sul testo dei messaggi e sul nome del modulo (`logger_name`).
   - Filtro rapido a chip per livello di gravità (`TUTTI`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
   - Esplorazione interattiva dei dettagli JSON per ogni record (chiamate HTTP, payload, audit di sicurezza).
   - Toggle per **Auto-Refresh ogni 10s**.
 * **Strumenti di Esportazione & Svuotamento:**
   - **Download Log:** Esportazione del log completo in formato testo `.log` standard RFC 5424 oppure in formato strutturato `.json`.
-  - **Svuotamento Sicuro (Clear Logs):** Pulsante protetto da permessi RBAC con modale di conferma per azzerare tabella e file di log in un clic.
+  - **Svuotamento Sicuro (Svuota Log):** Pulsante protetto da permessi RBAC con modale di conferma per azzerare tabella e file di log in un clic.

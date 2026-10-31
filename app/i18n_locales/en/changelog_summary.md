@@ -50,7 +50,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Strict Telemetry, RF Accuracy & Node Stability (PRs #47-#53):** Fixes for 5 GHz UNII-3 vs 6 GHz radio channels, live/demo session isolation, exact URL-segment gateway matching, removal of placeholder speedtest/RSSI values and network ID resolution on DHCP/port rules (credits to @carbones73).
 * **Security Hardening & Vulnerability Remediation (4 GHSA Advisories):** Cross-Origin & CSRF protection (`CORS_ORIGINS`), Wi-Fi credential sanitization from public overview, interactive `/docs` Swagger toggle (`API_DOCS`), and restrictive `0600` file permissions on `session.json` (credits to @carbones73).
 * **Dual-Stack IPv6 Visibility & Instant Search (Issue #43):** Extraction and display of Global Unicast and Link-Local (`fe80::`) IPv6 addresses with 1-click clipboard copy, unobtrusive device table badge, and instant search (credits to @jpatchMC).
-* **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Home Mesh 6E and Office & Studio Pro Mesh).
+* **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Casa Rossi Mesh 6E and Office & Studio Pro Mesh).
 
 ---
 
@@ -78,7 +78,7 @@ Below is a summary of the main release highlights. The complete changelog with a
 * **Multi-Engine DNS Synchronizer Suite (Simultaneous Instances: AdGuard, Pi-hole, Technitium)**
 * **In-App 1-Click Docker Auto-Update Engine (/api/system/update)**
 * **Automated New Release Detection via Docker Hub & GitHub Releases**
-* **Continuous Wireless Client RSSI Signal Storicization in SQLite**
+* **Continuous Wireless Client RSSI Signal History Logging in SQLite**
 * **New Wi-Fi Signal Quality & Mesh Coverage Suite with Chart.js Graphs**
 * **Weak Signal Watchlist & Proactive Node Repositioning Recommendations**
 * **Fix & Cloud DHCP Reservations Normalization ("Other Active Reservations")**

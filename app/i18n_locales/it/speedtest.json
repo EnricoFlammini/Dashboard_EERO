@@ -1,6 +1,6 @@
 {
   "already_running_wait": "Uno Speed Test è già in corso. Attendi il completamento.",
-  "completed": "Speed Test completato con successo.",
+  "completed": "Speed Test completato.",
   "already_running": "Uno Speed Test è già in corso di esecuzione.",
   "invalid_metrics": "Lo Speed Test del gateway eero non ha restituito metriche di throughput valide."
 }

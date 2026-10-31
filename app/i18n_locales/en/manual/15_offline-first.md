@@ -9,10 +9,10 @@ summary: Total dashboard resilience with 100% locally bundled fonts and librarie
 The dashboard adopts a 100% offline-first architecture to deliver maximum privacy, instant page rendering, and uninterrupted reliability even during internet outages or WAN blackouts:
 
 * **Complete Local Dependency Vendoring:**
-  - All client-side libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons, and QR Code generation engines) are bundled locally and served directly from `/app/static/vendor/`.
+  - All client-side libraries (Tailwind CSS, Alpine.js, Chart.js, and Lucide Icons) are bundled locally and served directly from `/app/static/vendor/`.
   - Zero requests to external public CDNs (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): absolute third-party tracking immunity and resilience against DNS filters or aggressive ad-blockers.
 * **Self-Hosted Typography Fonts:**
-  - High-legibility web fonts **Inter** (UI design system) and **JetBrains Mono** / **Fira Code** (Live Log Console and data tables) are packaged inside the container as high-performance WOFF2 files in `/app/static/fonts/`.
+  - High-legibility web fonts **Inter** (UI design system) and **JetBrains Mono** (Live Log Console and data tables) are packaged inside the container as high-performance WOFF2 files in `/app/static/fonts/`.
   - Instant typography rendering with zero round-trips to Google Fonts or remote providers.
 * **Air-Gapped & Isolated Homelab Readiness:**
   - The dashboard starts, initializes, and functions flawlessly inside isolated management VLANs, air-gapped lab servers, or offline local networks without outbound WAN access.
