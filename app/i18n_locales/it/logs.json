@@ -2,16 +2,16 @@
   "invalid_level": "Livello log '{level}' non valido. Valori ammessi: {allowed}",
   "invalid_level_short": "Livello log non valido: {level}. Ammessi: {allowed}",
   "change_level": "livello: {level}",
-  "change_state_on": "stato: ATTIVO",
+  "change_state_on": "stato: ATTIVATO",
   "change_state_off": "stato: DISATTIVATO",
-  "change_retention": "retention: {days} giorni",
+  "change_retention": "conservazione: {days} giorni",
   "no_valid_params": "Nessun parametro valido fornito per l'aggiornamento della configurazione.",
   "config_updated_alert_title": "⚙️ Configurazione Log Aggiornata",
   "config_updated_alert_message": "Impostazioni di diagnostica modificate da '{actor}': {changes}.",
   "config_updated": "Configurazione log aggiornata con successo ({changes}).",
-  "cleared_alert_title": "🗑️ Registro Log di Sistema Svuotato",
-  "cleared_alert_message": "I log di sistema sono stati azzerati dall'utente '{actor}' (rimossi {count} eventi).",
-  "cleared": "Registro eventi azzerato con successo ({count} record rimossi).",
+  "cleared_alert_title": "🗑️ Log di Sistema Svuotati",
+  "cleared_alert_message": "I log di sistema sono stati svuotati dall'utente '{actor}' (rimossi {count} eventi).",
+  "cleared": "Registro eventi svuotato ({count} record rimossi).",
   "no_logs_recorded": "Nessun log registrato.",
-  "cleared_audit_entry": "Log di sistema cancellati con successo (rimossi {count} record precedenti)."
+  "cleared_audit_entry": "Log di sistema svuotati ({count} record precedenti rimossi)."
 }

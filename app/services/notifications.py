@@ -322,27 +322,27 @@ class NotificationService:
                 message=db_msg
             )
         except Exception as e:
-            logger.error(f"Failed to persist alert in SQLite: {e}")
+            log_event(logger, logging.ERROR, "log_ops.alert_persist_failed", error=str(e))
 
         try:
             await self.send_telegram_message(text)
         except Exception as e:
-            logger.error(f"Telegram alert error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.telegram_alert_error", error=str(e))
 
         try:
             await self.send_webhook(event_type, data)
         except Exception as e:
-            logger.error(f"Webhook alert error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.webhook_alert_error", error=str(e))
 
         try:
             await self.send_discord_message(title=title, description=text, color=color)
         except Exception as e:
-            logger.error(f"Discord alert error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.discord_alert_error", error=str(e))
 
         try:
             await self.send_pushover_message(title=title, message=db_msg)
         except Exception as e:
-            logger.error(f"Pushover alert error: {e}")
+            log_event(logger, logging.ERROR, "log_ops.pushover_alert_error", error=str(e))
 
     async def notify_new_device(self, device: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)

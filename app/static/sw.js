@@ -3,7 +3,7 @@
  * Provides offline shell caching and fast background sync
  */
 
-const CACHE_NAME = 'eero-dashboard-v1.6.2';
+const CACHE_NAME = 'eero-dashboard-v1.6.2-i18n-1';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -14,10 +14,12 @@ const STATIC_ASSETS = [
   '/static/vendor/chart.umd.min.js',
   '/static/vendor/lucide.min.js',
   '/static/js/app.js',
-  '/static/locales/it.json',
-  '/static/locales/en.json',
   '/static/manifest.json'
 ];
+// Locale files (/static/locales/<lang>.json) are not listed here on purpose: the
+// language set comes from the server (SUPPORTED_LANGUAGES), and the network-first
+// branch of the fetch handler below caches each locale the first time the page
+// requests it, so the offline fallback covers every language the viewer has used.
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

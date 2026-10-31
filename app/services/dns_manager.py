@@ -29,40 +29,51 @@ def normalize_dns_url(url: str) -> str:
     return clean
 
 
-def is_safe_dns_url(url: str) -> Tuple[bool, str]:
+def is_safe_dns_url(url: str) -> Tuple[bool, Dict[str, Any]]:
     """
     Verifica che l'URL dell'istanza DNS sia sicuro e non punti a indirizzi riservati o cloud metadata (anti-SSRF).
     Blocca tassativamente:
       - 169.254.0.0/16 (IPv4 link-local / Cloud Instance Metadata Services come AWS/GCP/Azure)
       - fe80::/10 (IPv6 link-local)
       - Host cloud metadata riservati
+
+    Returns ``(is_safe, reason)`` where ``reason`` is ``{"key": "dns.ssrf_*", "params": {...}}``
+    (empty dict when safe) so the caller can render it with ``tr()`` in the request language;
+    see ``ssrf_reason_text``.
     """
     if not url:
-        return False, "URL vuoto o non specificato"
+        return False, {"key": "dns.ssrf_url_empty", "params": {}}
     try:
         parsed = urllib.parse.urlsplit(url)
         hostname = parsed.hostname
         if not hostname:
-            return False, "Hostname mancante o non valido"
+            return False, {"key": "dns.ssrf_hostname_missing", "params": {}}
 
         # Controlla se hostname è un indirizzo IP numerico
         try:
             ip_obj = ipaddress.ip_address(hostname.strip("[]"))
             if ip_obj.is_link_local:
-                return False, f"Indirizzo link-local / metadata riservato non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_link_local", "params": {"ip": str(ip_obj)}}
             if ip_obj.is_multicast:
-                return False, f"Indirizzo multicast non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_multicast", "params": {"ip": str(ip_obj)}}
             if ip_obj.is_unspecified:
-                return False, f"Indirizzo non specificato non consentito ({ip_obj})"
+                return False, {"key": "dns.ssrf_unspecified", "params": {"ip": str(ip_obj)}}
         except ValueError:
             # È un hostname/dominio
             lower_host = hostname.lower()
             if lower_host in ("metadata.google.internal", "instance-data", "metadata"):
-                return False, f"Host cloud metadata riservato non consentito ({hostname})"
+                return False, {"key": "dns.ssrf_cloud_metadata", "params": {"host": hostname}}
 
-        return True, ""
+        return True, {}
     except Exception as e:
-        return False, f"URL non analizzabile: {e}"
+        return False, {"key": "dns.ssrf_unparseable", "params": {"error": str(e)}}
+
+
+def ssrf_reason_text(reason: Dict[str, Any], lang: Optional[str] = None) -> str:
+    """Renders an ``is_safe_dns_url`` reason in ``lang`` (default: the request language)."""
+    if not reason or not reason.get("key"):
+        return ""
+    return tr(reason["key"], lang=lang, **(reason.get("params") or {}))
 
 
 def sanitize_dns_hostname(name: str, fallback: str = "device") -> str:
@@ -152,7 +163,7 @@ def _tls_error_result(url: str, exc: Optional[BaseException] = None, engine: Opt
 
     engine_label = f"[{engine}] " if engine else ""
     log_detail = f": {reason}" if reason else ""
-    logger.warning(f"TLS certificate verification failed for {engine_label}{url}{log_detail}")
+    log_event(logger, logging.WARNING, "log_ops.dns_tls_verify_failed", engine_label=engine_label, url=url, detail=log_detail)
 
     return {
         "success": False,
@@ -264,7 +275,7 @@ class DNSManager:
             try:
                 instances = json.loads(instances_json)
             except Exception as e:
-                logger.warning(f"Failed to load dns_instances from SQLite: {e}")
+                log_event(logger, logging.WARNING, "log_ops.dns_instances_load_failed", error=str(e))
 
         # Se non ci sono istanze strutturate, controlla la configurazione legacy AdGuard
         if not instances:
@@ -413,7 +424,7 @@ class DNSManager:
 
         is_safe, error_reason = is_safe_dns_url(url)
         if not is_safe:
-            return {"success": False, "message": f"URL non consentito (Anti-SSRF): {error_reason}"}
+            return {"success": False, "message": tr("dns.ssrf_url_rejected", reason=ssrf_reason_text(error_reason))}
 
         from app.services.eero_client import eero_client
         if eero_client.is_demo_mode:
@@ -1025,8 +1036,9 @@ class DNSManager:
                             "message": tr("dns.pihole_v6_sync_ok", count=synced, zone_label=zone_label)
                         }
 
-                    logger.warning(
-                        f"Pi-hole v6 PATCH /api/config returned HTTP {patch_res.status_code}: {patch_res.text[:200]}"
+                    log_event(
+                        logger, logging.WARNING, "log_ops.pihole_v6_patch_status",
+                        status=patch_res.status_code, response=patch_res.text[:200],
                     )
 
                     # Fallback Pi-hole v6: PUT record per record su /api/config/dns/hosts/{value}
@@ -1053,8 +1065,9 @@ class DNSManager:
                         if put_res.status_code in (200, 201, 204) or (put_res.status_code == 400 and "already present" in put_res.text.lower()):
                             put_synced += 1
                         else:
-                            logger.warning(
-                                f"Pi-hole v6 PUT host '{ip} {target_name}' failed ({put_res.status_code}): {put_res.text[:150]}"
+                            log_event(
+                                logger, logging.WARNING, "log_ops.pihole_v6_put_host_failed",
+                                ip=ip, name=target_name, status=put_res.status_code, response=put_res.text[:150],
                             )
                             put_failed += 1
 
@@ -1090,7 +1103,7 @@ class DNSManager:
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
                     except Exception as e:
-                        logger.warning(f"Pi-hole v5: customdns pruning check failed: {e}")
+                        log_event(logger, logging.WARNING, "log_ops.pihole_v5_prune_check_failed", error=str(e))
 
                 synced = 0
                 failed = 0

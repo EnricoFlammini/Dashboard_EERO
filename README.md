@@ -9,7 +9,7 @@
 [![i18n](https://img.shields.io/badge/i18n-IT%20%7C%20EN-purple.svg)](#)
 [![AI-Assisted](https://img.shields.io/badge/AI--Assisted-Open%20Source-8A2BE2.svg)](#-acknowledgements--ai-assistance)
 
-> **Language / Lingua:** [🇬🇧 English](#-english) | [🇮🇹 Italiano](#-italiano)
+> **Language / Lingua:** [🇬🇧 English](#english) | [🇮🇹 Italiano](#italiano)
 
 <p align="center">
   <img src="docs/screenshots/dashboard_overview.png" alt="eero Dashboard Overview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
@@ -55,7 +55,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
   - **Actionable Update Proposal Banner:** An interactive Fluent card appears when a new version is detected (`v1.6.2 → vX.Y.Z`), showing key highlights with 3 direct options: *⚡ Proceed with Update* (1-click auto-install or copyable CLI command), *Full Release Notes & Details*, and *Remind me later* (session-based deferral via `sessionStorage`).
   - **Enhanced Update Modal & Settings:** Prominent condensed changelog display with smooth expandable full release notes toggle across both the update modal and the Settings > Updates tab.
 * **🌐 Complete Frontend & Backend Localization Parity & i18n Architecture (v1.6.2 - PR #79, Issue #82):**
-  - **100% Translation Parity:** Full catalog parity across backend (457 keys) and frontend (1051 keys in `en.json` and `it.json`) with automated parity audit scripts.
+  - **100% Translation Parity:** Full catalog parity across the backend catalogs and the frontend `en.json` / `it.json` files, enforced by automated parity audit tests.
   - **Architectural Cleanup:** Pruned ~90 lines of dead regex-based health translators, dynamic viewer-language rendering for Network Health penalties (`affected_items_i18n`), and automatic test suite isolation via `tempfile.mkdtemp()`.
 * **🛡️ RFC 1123 Hostname Sanitization & Clean Endpoint Polling (v1.6.2 - Issue #83):**
   - **Pi-hole v6 RFC 1123 Compliance:** Automatic sanitization of device hostnames containing parentheses or special characters (e.g. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), preventing bulk batch rejection on Pi-hole v6 `PATCH /api/config`.
@@ -113,7 +113,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 * **❤️ Interactive Network Health Score Breakdown & Diagnostics (v1.4.0 - Issue #15):** Clickable radial health badge opening a comprehensive diagnostics modal based on 4 health pillars (**Mesh Topology & Nodes, WAN Gateway & Internet, Client Wi-Fi Signal Quality, Channel Distribution & Density**), tracking active point deductions/penalties with affected devices/nodes and actionable recommendations.
 * **🛡️ Multi-Engine DNS Synchronizer Suite (v1.4.0):** Unified synchronizer supporting simultaneous heterogeneous instances (e.g. 2 AdGuard Home + 1 Pi-hole / Technitium) with per-instance testing and 1-click global sync.
 * **🔄 1-Click Docker In-App Auto-Update & Version Checker (v1.4.0):** Continuous background and manual version checking against Docker Hub and GitHub Releases, animated update alert badge in the header, and 1-click in-app container recreation via Docker socket (`/var/run/docker.sock`), Watchtower webhooks, or assisted terminal commands.
-* **📶 Wi-Fi Signal Quality & Mesh Coverage Analytics (v1.4.0):** Continuous SQLite storicization (`device_signal_history`) of client RSSI levels (dBm), frequencies and PHY rates, household average signal score, interactive Chart.js time-series analysis (24h/7d), and a Weak Signal Watchlist with mesh repositioning suggestions.
+* **📶 Wi-Fi Signal Quality & Mesh Coverage Analytics (v1.4.0):** Continuous SQLite recording (`device_signal_history`) of client RSSI levels (dBm), frequencies and PHY rates, household average signal score, interactive Chart.js time-series analysis (24h/7d), and a Weak Signal Watchlist with mesh repositioning suggestions.
 * **🖥️ Certified Hardware Telemetry & Interactive Sorting:** Full client table with explicit frequency band badges (**2.4 GHz, 5 GHz, 6 GHz, Wired Ethernet**), wireless channels (`CH 11`, `CH 36`, etc.), eero Cloud User Profiles integration (`👤 [Profile Name]`), connected mesh node, RSSI signal strength (dBm), negotiated physical PHY rate, **Static IP vs Dynamic DHCP indicators**, **interactive column sorting (Name, IPv4, Node, Band, Signal, Status)**, and a **locked sticky header bar**.
 * **🛡️ Native In-App Multi-Instance AdGuard Home Sync:** Dedicated visual configuration panel to seamlessly sync eero device nicknames, MAC addresses, official tags (`device_laptop`, `device_phone`, `device_pc`, `device_tv`, etc.), and static/dynamic IP leases directly to **one or multiple AdGuard Home DNS servers** (e.g. Primary and Secondary DNS) with automatic background synchronization.
 * **⚙️ DHCP Reservations & Port Forwarding:** Dedicated device modals with custom nicknames (synced to eero cloud), categories, local documentation notes, favorite flags (⭐), **DHCP static IP reservations with reassignment support**, and integrated **Port Forwarding rule management** (WAN port -> LAN port, TCP/UDP).
@@ -199,9 +199,12 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `8000` | Internal container port (mapped to 8085 externally in compose) |
-| `TZ` | `UTC` | Timezone for timestamps and daily digests (e.g. `Europe/Rome`) |
+| `HOST_PORT` | `8085` | Port exposed on the host machine (the container listens on 8000 internally) |
+| `TZ` | `Europe/Rome` | Timezone for timestamps and daily digests (default in the provided compose files; the bare image defaults to `UTC`) |
 | `DATA_DIR` | `/app/data` | Path to persistent storage volume (SQLite DB & session) |
+| `POLL_INTERVAL` | `30` | Seconds between samples from the eero APIs |
+| `HISTORY_RETENTION_DAYS` | `30` | Days of history kept before automatic cleanup |
+| `SPEEDTEST_INTERVAL_HOURS` | `12` | Interval of the automatic Speed Test (hours, `0` to disable) |
 | `DEMO_MODE` | `false` | Enable/Disable simulated demo environment on startup |
 | `API_DOCS` | `false` | Serve the interactive API docs at `/docs`, `/redoc` and `/openapi.json` (the API has no authentication, so keep it off unless you need it) |
 | `ADMIN_USER` | `admin` | Initial administrator username for headless Docker setup |
@@ -211,7 +214,9 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 | `DISCORD_WEBHOOK_URL` | *(empty)* | Discord webhook URL for rich embed notifications |
 | `PUSHOVER_USER_KEY` | *(empty)* | Pushover user key for push notifications |
 | `PUSHOVER_API_TOKEN` | *(empty)* | Pushover application token for push notifications |
-| `POLL_INTERVAL_SECONDS` | `15` | Polling frequency for eero cloud and AdGuard background sync |
+| `TELEGRAM_BOT_TOKEN` | *(optional)* | Telegram bot token for alerts and daily digests |
+| `TELEGRAM_CHAT_ID` | *(optional)* | Telegram recipient chat ID |
+| `WEBHOOK_URL` | *(optional)* | HTTP POST endpoint that receives events as JSON |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
 | `EERO_NETWORK_ID` | *(empty)* | Specific eero network ID to monitor (useful for accounts with multiple networks or delegated access) |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
@@ -222,20 +227,7 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 
 When notifications are enabled, the dashboard sends structured HTTP POST JSON payloads to your configured webhook URL:
 
-```json
-{
-  "event": "new_device",
-  "timestamp": "2026-08-30T18:00:00+02:00",
-  "data": {
-    "hostname": "iPhone-17-Pro",
-    "ip_address": "192.168.4.105",
-    "mac_address": "AA:BB:CC:11:22:33",
-    "connected_eero": "Living Room (Gateway)",
-    "frequency_band": "6 GHz",
-    "channel": 69
-  }
-}
-```
+The full set of events and their JSON payloads is listed below.
 
 ---
 
@@ -411,7 +403,21 @@ Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD`
   ```bash
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
-* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to both `en` and `it`; the test suite checks key parity.
+* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to every language in `SUPPORTED_LANGUAGES`; the test suite checks key parity.
+* **Manual & changelog:** the in-app manual sections live in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + Markdown body) and the release summary in `app/i18n_locales/<lang>/changelog_summary.md`; a missing file falls back to the English one.
+* **`DASHBOARD_LANG`** accepts any code in `SUPPORTED_LANGUAGES` (`app/i18n.py`, currently `en`, `it`).
+
+### Adding a language
+
+Nothing in the code assumes a fixed set of languages: every localized payload field is a `<field>_i18n` map built from `SUPPORTED_LANGUAGES`. To add, say, German (`de`):
+
+1. Add `"de"` to `SUPPORTED_LANGUAGES` in `app/i18n.py`.
+2. Create `app/static/locales/de.json` (frontend strings; copy `en.json` and translate, same keys and `{param}` placeholders).
+3. Create `app/i18n_locales/de/*.json` (backend catalogs: the 26 namespaces of `app/i18n_locales/en/`, same keys and placeholders).
+4. Optionally add a `languageFlags` entry and a `dateLocales` BCP 47 region for `de` in `app/static/js/app.js` (the header toggle falls back to the upper-cased code).
+5. Add the manual and changelog files for the new language (the in-app manual and changelog are per-language files).
+
+The pre-release suite verifies key and placeholder parity against `en` for every language in `SUPPORTED_LANGUAGES`. Legacy `<field>_it` / `<field>_en` fields stay in the API for older clients and are derived from the maps.
 
 ---
 
@@ -483,7 +489,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
   - **Banner Decisionale Interattivo:** Comparsa automatica all'avvio/refresh quando viene rilevato un aggiornamento (`v1.6.2 → vX.Y.Z`), con anteprima delle novità e 3 azioni rapide: *⚡ Procedi con l'aggiornamento* (1-click auto-install o comando CLI), *Note Complete & Dettagli* e *Ricordamelo più tardi* (posticipo sessione via `sessionStorage`).
   - **Modale e Impostazioni Arricchiti:** Visualizzazione prioritaria delle novità principali con toggle fluido per espandere le note integrali sia nel modale che nella scheda Impostazioni > Aggiornamenti.
 * **🌐 Parità Completa Traduzioni Frontend & Backend e Pulizia Architetturale (v1.6.2 - PR #79, Issue #82):**
-  - **Parità Linguistica al 100%:** Allineamento totale di tutti i cataloghi (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`) con script di verifica automatica in CI/CD.
+  - **Parità Linguistica al 100%:** Allineamento totale dei cataloghi backend e dei file frontend `en.json` / `it.json`, garantito da test automatici di parità.
   - **Refactoring Architetturale i18n:** Eliminazione di ~90 righe di traduttori legacy e regex, rendering dinamico delle penalità di salute nella lingua del visualizzatore (`affected_items_i18n`) e isolamento sicuro della suite di test con cartella temporanea (`tempfile.mkdtemp()`).
 * **🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (v1.6.2 - Issue #83):**
   - **Conformità RFC 1123:** Sanificazione automatica degli hostname contenenti parentesi o caratteri speciali (es. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), prevenendo il rigetto a cascata dell'intero payload atomico `PATCH /api/config` su Pi-hole v6.
@@ -644,7 +650,7 @@ Template Docker Compose preconfigurato e guida passo-passo per Synology DSM 7.2+
 | `TELEGRAM_BOT_TOKEN` | *(opzionale)* | Token del Bot Telegram per invio allarmi e digest |
 | `TELEGRAM_CHAT_ID` | *(opzionale)* | Chat ID Telegram destinatario |
 | `DAILY_DIGEST_HOUR` | `21` | Ora di invio del riepilogo giornaliero (0-23 nel fuso locale) |
-| `TZ` | `Europe/Rome` | Fuso orario dell'applicazione per timestamp e digest |
+| `TZ` | `Europe/Rome` | Fuso orario dell'applicazione per timestamp e riepilogo giornaliero (default nei compose forniti; l'immagine senza compose usa `UTC`) |
 | `EERO_NETWORK_ID` | *(vuoto)* | ID specifico della rete eero da monitorare (utile per account con reti multiple o permessi delegati) |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
 | `CORS_ORIGINS` | *(vuoto)* | Origini browser aggiuntive autorizzate a chiamare le API, separate da virgola (es. `http://homeassistant.local:8123`). Lasciare vuoto salvo che un'altra web app debba chiamare le API della dashboard dal browser. Le richieste di modifica (POST/PUT/PATCH/DELETE) da qualsiasi altra origine web ricevono 403; i client senza header `Origin` (curl, Home Assistant REST, script) non sono toccati. Se un reverse proxy riscrive l'header `Host` senza impostare `X-Forwarded-Host`, aggiungere qui l'URL pubblico della dashboard. `*` ripristina il vecchio comportamento aperto a tutti (sconsigliato). |
@@ -731,7 +737,21 @@ Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impos
   ```bash
   .venv/bin/python scripts/run_pre_release_tests.py
   ```
-* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave sia in `en` sia in `it`; la suite di test verifica la parità delle chiavi.
+* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave in ogni lingua di `SUPPORTED_LANGUAGES`; la suite di test verifica la parità delle chiavi.
+* **Manuale & changelog:** i capitoli del manuale in-app vivono in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + corpo Markdown) e il sommario delle release in `app/i18n_locales/<lang>/changelog_summary.md`; un file mancante ricade su quello inglese.
+* **`DASHBOARD_LANG`** accetta qualsiasi codice presente in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`).
+
+### Aggiungere una lingua
+
+Nessuna parte del codice presuppone un insieme fisso di lingue: ogni campo localizzato dei payload è una mappa `<campo>_i18n` costruita da `SUPPORTED_LANGUAGES`. Per aggiungere ad esempio il tedesco (`de`):
+
+1. Aggiungi `"de"` a `SUPPORTED_LANGUAGES` in `app/i18n.py`.
+2. Crea `app/static/locales/de.json` (stringhe frontend; copia `en.json` e traduci, stesse chiavi e stessi segnaposto `{param}`).
+3. Crea `app/i18n_locales/de/*.json` (cataloghi backend: i 26 namespace di `app/i18n_locales/en/`, stesse chiavi e segnaposto).
+4. Facoltativo: aggiungi una voce `languageFlags` e una regione BCP 47 in `dateLocales` per `de` in `app/static/js/app.js` (il selettore nell'header ripiega sul codice in maiuscolo).
+5. Aggiungi i file del manuale e del changelog per la nuova lingua (manuale e changelog integrati sono file per lingua).
+
+La suite pre-rilascio verifica la parità di chiavi e segnaposto rispetto a `en` per ogni lingua di `SUPPORTED_LANGUAGES`. I campi legacy `<campo>_it` / `<campo>_en` restano nelle API per i client più vecchi e sono derivati dalle mappe.
 
 ---
 

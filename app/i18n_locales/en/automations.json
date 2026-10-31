@@ -1,9 +1,9 @@
 {
   "focus_alert_on_title": "🎮 Gaming / Focus Mode Enabled",
-  "focus_alert_on_message": "Focus Mode enabled. {count} secondary devices paused.",
+  "focus_alert_on_message": "Gaming / Focus Mode enabled. {count} secondary devices paused.",
   "focus_on": "Gaming Mode enabled! {count} secondary devices paused.",
   "focus_alert_off_title": "🎮 Gaming / Focus Mode Disabled",
-  "focus_alert_off_message": "Focus Mode disabled. All devices may reconnect.",
+  "focus_alert_off_message": "Gaming / Focus Mode disabled. All devices may reconnect.",
   "focus_off": "Gaming Mode disabled. Traffic restored across the network.",
   "night_mode_saved": "Night Mode settings saved.",
   "notifications_saved": "Notification settings saved.",

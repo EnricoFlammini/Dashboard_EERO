@@ -14,7 +14,17 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Optional
 
-from app.i18n import normalize_language
+from app.i18n import DEFAULT_LANGUAGE, normalize_language
+
+# The Demo Mode simulator ships its sample names in this language; readers of it get the payload
+# untouched. Every other language in SUPPORTED_LANGUAGES receives the English mapping below:
+# demo names are data, not catalog strings, so there is one translation table, not one per language.
+DEMO_SOURCE_LANGUAGE = "it"
+
+
+def is_demo_source_language(lang: Optional[str]) -> bool:
+    """True when ``lang`` resolves to the simulator's own language (no translation needed)."""
+    return (normalize_language(lang) or DEFAULT_LANGUAGE) == DEMO_SOURCE_LANGUAGE
 
 # Italian demo literal -> English. Keep entries in sync with eero_client._init_demo_state and the demo
 # branches in routers/metrics.py. Brand/person names (TIM, Fastweb, Mario Rossi, Giulia, Marco) stay.
@@ -57,15 +67,15 @@ _PATTERN = re.compile("|".join(re.escape(k) for k in sorted(DEMO_STRINGS_EN, key
 
 
 def localize_demo_text(text: str, lang: Optional[str] = None) -> str:
-    """Translates known demo literals inside ``text`` for non-Italian readers; Italian is returned as is."""
-    if (normalize_language(lang) or "en") == "it" or not text:
+    """Translates known demo literals inside ``text`` for readers of other languages (they get English)."""
+    if is_demo_source_language(lang) or not text:
         return text
     return _PATTERN.sub(lambda m: DEMO_STRINGS_EN[m.group(0)], text)
 
 
 def localize_demo_payload(data: Any, lang: Optional[str] = None) -> Any:
     """Recursively translates string values (never keys) of a JSON-like payload."""
-    if (normalize_language(lang) or "en") == "it":
+    if is_demo_source_language(lang):
         return data
     if isinstance(data, str):
         return localize_demo_text(data, lang)

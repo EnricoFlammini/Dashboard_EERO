@@ -41,7 +41,7 @@ async def list_profiles():
         try:
             profiles = await eero_client.get_profiles()
         except Exception as e:
-            logger.warning(f"Failed to directly fetch profiles: {e}")
+            log_event(logger, logging.WARNING, "log_eero.profiles_direct_fetch_failed", error=str(e))
             profiles = []
 
     return {

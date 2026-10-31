@@ -1,784 +1,114 @@
+"""In-app user manual and changelog summary.
+
+Content lives in per-language files under ``app/i18n_locales/<lang>/``:
+
+* ``manual/<NN>_<slug>.md`` - one section per file, ordered by the ``NN`` prefix.
+  Each file starts with a ``---`` front-matter block of ``key: value`` lines
+  (``id``, ``title``, ``icon``, ``summary``); the Markdown body is the section ``content``.
+* ``changelog_summary.md`` - the release-notes summary shown in the changelog modal.
+
+Resolution: ``?lang=`` wins, else the request language (``X-Dashboard-Lang`` header),
+else English. A language without a manual directory falls back to English entirely;
+a language missing a single section file falls back to the English file for that section.
+"""
 import logging
 from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, Query
 
-from app.i18n import DEFAULT_LANGUAGE, normalize_language
+from app.i18n import DEFAULT_LANGUAGE, LOCALES_DIR, current_language, normalize_language, tr
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/manual", tags=["User Manual"])
 
-MANUAL_SECTIONS_IT: List[Dict[str, Any]] = [
-    {
-        "id": "intro",
-        "title": "1. Introduzione & Architettura",
-        "icon": "book-open",
-        "summary": "Panoramica dell'architettura self-hosted, sicurezza 2FA e persistenza dei dati.",
-        "content": """
-### Cos'è eero Custom Dashboard & Management Suite?
-Questa applicazione web è un sistema completo e self-hosted per il monitoraggio, il controllo e l'analisi avanzata della tua infrastruttura mesh **Amazon eero**.
+SECTION_META_KEYS = ("id", "title", "icon", "summary")
 
-#### Caratteristiche Architetturali:
-1. **Self-Hosted & Riservatezza:** L'applicazione viene eseguita all'interno di un container Docker isolato sul tuo server locale o NAS (HomeLab). Immagine ufficiale Docker Hub multi-architettura pronta per `linux/amd64` e `linux/arm64` (Raspberry Pi 4/5, Synology, QNAP, TrueNAS, Apple Silicon).
-2. **Autenticazione Sicura 2FA OTP:** La connessione iniziale con il cloud eero avviene tramite il meccanismo ufficiale a doppio fattore (One-Time Password via SMS o Email).
-3. **Persistenza e Isolamento:** Il token di sessione (`session.json`) e il database SQLite (`metrics.db`) risiedono esclusivamente nel volume persistente `./data:/app/data`.
-4. **Zero-Latency In-Memory Poller:** Un worker asincrono in background interroga periodicamente la rete e mantiene una cache in memoria RAM, garantendo navigazione istantanea senza rallentamenti o sovraccarico di richieste (rate-limiting).
-        """
-    },
-    {
-        "id": "auth-flow",
-        "title": "2. Autenticazione & Gestione Accessi (RBAC / 2FA)",
-        "icon": "key",
-        "summary": "Setup iniziale amministratore (Zero-Default), ruoli locali RBAC e procedura di accesso 2FA eero.",
-        "content": """
-### Gestione degli Accessi, Setup Iniziale & Autenticazione
-
-#### 1. Setup Iniziale Amministratore (Zero-Default Security)
-Al primissimo avvio dell'applicazione, la suite adotta una rigida politica di sicurezza senza credenziali predefinite hardcoded:
-- **Wizard Guidato di Configurazione:** Se non è ancora presente alcun account nel database, si apre automaticamente un modale di onboarding a tutto schermo che richiede all'amministratore di impostare il proprio nome utente e una password sicura con conferma.
-- **Bypass Headless Docker (Opzionale):** Per installazioni automatizzate o in ambienti container senza interfaccia, è possibile pre-popolare le variabili d'ambiente `ADMIN_USER` e `ADMIN_PASSWORD` nel file `.env` o in `docker-compose.yml`. Al primo avvio, l'applicazione creerà automaticamente l'utente amministratore bypassando il wizard interattivo.
-- **Ruoli & Permessi Granulari (RBAC):** Dalla sezione *Impostazioni -> Gestione Utenti & Permessi*, l'amministratore può creare ulteriori account con ruoli differenziati (`Admin`, `Operator`, `Viewer`) e attivare/disattivare specifici permessi operativi (gestione DNS, comandi di rete, export dati, visualizzazione log).
-
-#### 2. Autenticazione con il Cloud eero (2FA OTP)
-Una volta effettuato l'accesso locale (o se l'autenticazione locale non è richiesta):
-1. **Richiesta del Codice OTP:**
-   - Inserisci nella schermata di login l'email o il numero di telefono associato al tuo account eero (es. `+393401234567` o `tuonome@email.com`).
-   - Clicca su **"Invia Codice OTP"**.
-2. **Verifica del Codice:**
-   - Riceverai un codice numerico a 6 cifre via SMS o Email da parte di eero.
-   - Digita il codice nel campo e conferma.
-3. **Salvataggio Sessione:**
-   - Il token verificato viene salvato in `/app/data/session.json` con permessi restrittivi `0600`. Ad ogni riavvio del container Docker, la sessione verrà ripristinata automaticamente senza dover reinserire l'OTP.
-4. **Modalità Demo & Switch Rapido:**
-   - Se desideri esplorare l'applicazione senza inserire credenziali, puoi attivare la modalità dimostrativa con il pulsante dedicato o impostando `DEMO_MODE=true` nel file `.env`.
-   - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** posizionato nella parte inferiore della barra laterale sinistra per visualizzare i dati demo senza perdere la sessione. Quando la modalità demo è attiva, il pulsante assume una vivace colorazione verde smeraldo con indicatore ad alta visibilità **"DEMO ATTIVA"** (e un badge di stato sincronizzato compare nell'header superiore); cliccando nuovamente si torna all'istante alla rete live con **"⚡ Torna a Live"**.
-        """
-    },
-    {
-        "id": "dashboard-mesh",
-        "title": "3. Dashboard & Topologia Mesh",
-        "icon": "network",
-        "summary": "Interpretazione dello Health Score, stato dei nodi e controlli rapidi.",
-        "content": """
-### Comprensione della Dashboard Generale
-
-* **Network Health Score (1-100):** Un indicatore sintetico dello stato di salute della rete, calcolato analizzando la disponibilità dei nodi mesh, la presenza del gateway e la qualità del segnale RSSI dei client.
-* **Topologia Nodi eero:**
-  - *Gateway Node:* Il nodo principale connesso direttamente al modem/ONT dell'operatore.
-  - *Beacon / Mesh Extender:* Nodi secondari che estendono la copertura.
-  - *Tipo di Backhaul:* Visualizza se il collegamento tra i nodi avviene via cavo Ethernet (1 Gbps o 2.5 Gbps) oppure tramite canale Wireless dedicato (5GHz/6GHz).
-* **Azioni Rapide sui Nodi:**
-  - **Riavvio Rete:** Invia un comando di riavvio controllato a tutta l'infrastruttura.
-  - **Riavvio Singolo Nodo:** Riavvia unicamente il nodo selezionato senza interrompere il resto della casa.
-        """
-    },
-    {
-        "id": "devices-table",
-        "title": "4. Dispositivi Connessi & Analisi Frequenze",
-        "icon": "devices",
-        "summary": "Tabella live dei client, ordinamento colonne, barra titoli sticky, badge bande Wi-Fi e profili.",
-        "content": """
-### Inventario Client in Tempo Reale
-
-* **Ordinamento Interattivo Multi-Colonna:** Clicca su qualunque intestazione di colonna (Dispositivo/Nome, Indirizzo IP numerico IPv4, Profilo, Nodo Mesh, Banda, Segnale RSSI in dBm e Stato) per commutare istantaneamente l'ordine crescente e decrescente.
-* **Barra dei Titoli Bloccata (Sticky Header):** L'intestazione della tabella rimane sempre visibile in cima allo schermo durante lo scorrimento di elenchi con decine o centinaia di apparati.
-* **Indicatori di Banda & Canale Wi-Fi:** Badge espliciti per ciascun dispositivo (**6 GHz, 5 GHz, 2.4 GHz, Cablato Ethernet**) e canale wireless attivo (**CH 36, CH 11**, ecc.).
-* **Profili Utente Cloud eero:** Visualizzazione del membro della famiglia assegnato a ciascun apparato direttamente sincronizzato con l'app eero.
-* **Filtri Multi-Criterio Avanzati:** Filtra rapidamente per Frequenza di Banda, Profilo Utente, Nodo Mesh di attestazione o Tipo di Assegnazione IP (Statico vs DHCP).
-* **Badge IPv6 & Ricerca Istantanea (v1.5.0 - Issue #43):** Badge compatto `IPv6` accanto al MAC address con tooltip al passaggio del mouse che elenca tutti gli indirizzi associati (SLAAC e Link-Local); la barra di ricerca della tabella filtra in tempo reale per prefissi, ottetti o indirizzi IPv6 completi.
-        """
-    },
-    {
-        "id": "device-details",
-        "title": "5. Metadati Dispositivo, IP Statici & Port Forwarding",
-        "icon": "adjustments",
-        "summary": "Personalizzazione nomi, categorie, note locali, prenotazioni DHCP, IPv6 e port forwarding.",
-        "content": """
-### Gestione e Configurazione del Singolo Dispositivo
-
-* **Modale Dettaglio Dispositivo:**
-  - **Nome e Categoria Personalizzata:** Assegna categorie (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Altro) salvate nel database SQLite locale.
-  - **Note & Documentazione Locale:** Campo note libero per salvare credenziali locali, ubicazione o porte di servizio.
-  - **Indirizzi IPv6 Dual-Stack & Copia con 1 Clic (v1.5.0 - Issue #43):** Box dedicato nella scheda Generale che elenca tutti gli indirizzi IPv6, con badge cromatici di categoria (*SLAAC / Global* vs *Link-Local*) e pulsante rapido di copia negli appunti con feedback visivo.
-  - **Prenotazione DHCP (IP Statico):** Assegna un indirizzo IP permanente a un dispositivo con verifica automatica dei conflitti.
-  - **Port Forwarding Integrato:** Aggiungi e rimuovi regole di apertura porte (Porta Esterna WAN -> Porta Interna LAN, Protocolli TCP/UDP).
-        """
-    },
-    {
-        "id": "speedtest",
-        "title": "6. Speed Test, Diagnostica & Qualità Segnale Wi-Fi",
-        "icon": "gauge",
-        "summary": "Esecuzione test di velocità, storico misurazioni, analisi del segnale RSSI e copertura mesh.",
-        "content": """
-### Diagnostica di Velocità & Copertura Wi-Fi
-
-* **Test Manuale di Velocità:** Clicca sul pulsante **"Avvia Speed Test"** per lanciare una misurazione in tempo reale di Download, Upload, Latenza (Ping) e Jitter direttamente dal Gateway eero.
-* **Test Automatici Pianificati:** Il sistema monitora e storicizza periodicamente i test eseguiti dall'infrastruttura mesh per valutare la costanza della linea FTTH/VDSL.
-* **Grafico Storico & Statistiche:**
-  - Grafico dell'andamento di velocità e stabilità della linea nel corso dei giorni.
-  - Calcolo automatico di velocità media, picco massimo e latenza minima.
-* **Qualità Wi-Fi & Copertura Mesh (v1.4.0):**
-  - **Storicizzazione Continua Segnale (dBm):** Il poller registra in automatico i livelli RSSI, frequenze e bitrate di tutti i dispositivi wireless attivi nel database SQLite locale (`device_signal_history`).
-  - **Segnale Medio & Fasce di Qualità:** KPI con livello medio dell'intera abitazione e ripartizione per fasce: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico* (< -75 dBm).
-  - **Grafico Temporale Interattivo:** Seleziona qualunque client wireless per visualizzare il grafico temporale Chart.js delle ultime 24 ore o 7 giorni con valori attuali, minimi, massimi e medi.
-  - **Weak Signal Watchlist:** Elenco degli apparati con segnale debole e consigli di riposizionamento dei nodi mesh.
-        """
-    },
-    {
-        "id": "automations",
-        "title": "7. Automazioni, QR Ospiti, AdGuard Home, Telegram & Notifiche",
-        "icon": "zap",
-        "summary": "Smart Guest Wi-Fi con QR, integrazione AdGuard Home, allarmi Telegram/Webhook con toggle e report digest.",
-        "content": """
-### Funzionalità Avanzate e Centro Automazioni
-
-La scheda **Controlli & QR Ospiti** organizza le automazioni della tua rete in 4 comodi quadranti:
-
-1. **Smart Guest Wi-Fi con QR Code Dinamico & Dual-Theme (In alto a sinistra):**
-   - Genera all'istante un QR Code ad alta risoluzione con sfondo bianco puro per il tema Chiaro e sfondo ardesia scuro per il tema Scuro, sincronizzato in tempo reale con il selettore del tema.
-   - Toggle per abilitare/disabilitare la rete ospiti con un clic.
-   - Generatore integrato di password sicure e aggiornamento credenziali senza accedere all'app mobile.
-2. **Multi-Engine DNS Synchronizer (In alto a destra):**
-   - **Supporto Multi-Engine Eterogeneo:** Gestione simultanea di molteplici istanze di AdGuard Home, Pi-hole (v5 & v6) e Technitium DNS (record diretti A e Reverse PTR).
-   - **Auto-Sync Continuo:** Il poller di background allinea automaticamente i server DNS configurati all'accesso di nuovi dispositivi.
-   - **Intelligent Address Pruning & Esclusione IPv6 (v1.5.0, v1.6.1):** Opzioni dedicate per singola istanza DNS per potare automaticamente vecchi IP scaduti e lease obsoleti (anche per Pi-hole v6 via PATCH `/api/config`), con prioritizzazione automatica della subnet LAN fisica eero rispetto ai bridge virtuali Docker (`172.17.x.x`). Include il toggle per singolo apparato *"Escludi da sincronizzazione DNS"* (`dns_sync_excluded`) nel modale dispositivo.
-   - **Pulsanti "Test" e "Sincronizza":** Verifica rapida della singola istanza o globale, con trigger di sincronizzazione immediata con un solo clic.
-   - **Esportazione Standard:** Endpoint `/api/devices/export/hosts` (standard `/etc/hosts`) e `/api/devices/export/adguard` (JSON provisioning).
-3. **Notifiche Telegram & Webhook (In basso a sinistra):**
-   - **Registro Persistente Dispositivi Noti:** Tabella SQLite `known_devices` per memorizzare gli apparati già visti ed evitare qualsiasi invio di notifiche duplicate al riavvio o all'aggiornamento del container.
-   - **Toggle di Abilitazione Dedicato:** Attiva o disattiva l'invio delle notifiche Telegram con un semplice clic senza eliminare le chiavi salvate.
-   - **Nuovo Dispositivo Connesso:** Alert istantaneo quando un apparato mai visto prima si connette alla rete.
-   - **Nodo Mesh Offline:** Notifica immediata se un ripetitore eero perde la connessione.
-   - **Pulsante "Invia Test":** Verifica il corretto recapito dei messaggi verso il bot Telegram e l'URL Webhook.
-4. **Report Digest Giornaliero (In basso a destra):**
-   - **Toggle di Abilitazione Programmata & Orario Personalizzabile (v1.6.1):** Consente di attivare o sospendere l'inoltro automatico e selezionare l'orario desiderato (00:00 - 23:00, default 21:00) con supporto alle variabili `DAILY_DIGEST_HOUR` e `TZ`.
-   - **Protezione Idempotente ai Riavvii:** Tracciamento su SQLite di `last_daily_digest_date` per garantire un solo invio al giorno senza duplicati in caso di riavvio del container.
-   - Invia un riepilogo dettagliato con: stato di salute della rete, ISP, nodi mesh online, client connessi suddivisi per frequenza (**6 GHz, 5 GHz, 2.4 GHz, Cablati**) e velocità Speed Test Gateway.
-   - Pulsante **"Genera & Invia Digest Ora"** per richiedere l'inoltro immediato del report in qualsiasi momento.
-5. **Gaming & Focus Mode (Bassa Latenza):**
-   - Accessibile direttamente dalla barra superiore: sospende temporaneamente il traffico dei dispositivi secondari (Smart TV, download di backup) per azzerare la latenza e il jitter a favore delle postazioni da gioco competitive.
-        """
-    },
-    {
-        "id": "troubleshooting",
-        "title": "8. Risoluzione Problemi, Aggiornamenti & FAQ",
-        "icon": "wrench",
-        "summary": "FAQ su telemetria, motore di auto-aggiornamento Docker, sicurezza, backup e manutenzione.",
-        "content": """
-### Domande Frequenti & Troubleshooting
-
-* **Come funziona il motore di Auto-Update Docker in-App (v1.4.0)?**
-  - La dashboard controlla periodicamente la presenza di nuove versioni su Docker Hub e GitHub Releases.
-  - Se è montato il Docker Socket (`/var/run/docker.sock`), puoi aggiornare il container in 1 clic: l'applicazione scaricherà la nuova immagine, ricreerà il container preservando la cartella dati `./data` e ricaricherà automaticamente la pagina.
-  - In alternativa sono supportati trigger via **Watchtower Webhook** e modalità assistita da riga di comando.
-* **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
-  - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Ethernet Cablato**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
-* **Hardening di Sicurezza & Protezione Dati (v1.5.0 - 4 Advisory GHSA):**
-  - **CORS & Protezione CSRF:** Accesso cross-origin disabilitato di default (configurabile con `CORS_ORIGINS`) e blocco delle richieste cross-site mutanti con intestazioni `Sec-Fetch-Site`.
-  - **Sanitizzazione Password Wi-Fi:** Le credenziali Wi-Fi sono rimosse ricorsivamente prima dell'esposizione nella cache pubblica `/api/network/overview`.
-  - **Documentazione Interattiva FastAPI Disattivata di Default:** `/docs`, `/redoc` e `/openapi.json` sono montati solo con `API_DOCS=true` per proteggere gli endpoint operativi.
-  - **Permessi Restrittivi 0600 su session.json:** Il token cloud eero viene creato e salvato con permessi `0600` (lettura/scrittura esclusiva del proprietario del file).
-* **Come configurare l'integrazione con AdGuard Home?**
-  - Nel tab *Automazioni & Controlli*, inserisci l'URL della tua istanza (es. `http://192.168.4.100:8085` o semplicemente `192.168.4.100:8085`), il tuo username e la password. Clicca su **Test Connessione** per verificare il collegamento e poi su **Salva Impostazioni AdGuard**. La password viene salvata in modo sicuro nel database SQLite locale e non viene mai esposta in chiaro.
-* **Cosa fare se la sessione scade?**
-  - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
-* **Come effettuare il backup delle configurazioni e metadati locali?**
-  - Tutti i dati personalizzati (nomi custom, icone, note, impostazioni notifiche, storico segnale e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
-* **Protezione da Rate Limiting:**
-  - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.
-        """
-    },
-    {
-        "id": "multi-network",
-        "title": "9. Gestione Multi-Rete & Switch a Caldo",
-        "icon": "globe",
-        "summary": "Gestione di account eero multi-sede, switch istantaneo in-app e persistenza della rete attiva.",
-        "content": """
-### Gestione Multi-Rete (v1.5.0 - Issue #22)
-
-* **Selettore a Tendina Dinamico (Header Fluent):** Se il tuo account eero gestisce più reti mesh (es. Casa principale, Ufficio, Seconda casa), l'intestazione della dashboard mostra un comodo menu a tendina interattivo che indica per ciascuna rete il numero di nodi mesh e di client online.
-* **Switch Istantaneo a Caldo:** Selezionando una rete diversa, la dashboard commuta immediatamente senza necessità di riavviare il container o inserire nuove credenziali OTP. La RAM cache viene rigenerata all'istante e i widget si aggiornano in tempo reale.
-* **Persistenza dell'Elezione della Rete:** La rete selezionata viene memorizzata in `session.json` e nel database SQLite locale, garantendo che i cicli periodici di polling non ripristino forzatamente la rete predefinita e che la scelta persista anche dopo il riavvio del container Docker.
-* **Supporto in Modalità Demo:** Include un simulatore multi-rete a due ambienti indipendenti (*Casa Rossi Mesh 6E* e *Ufficio & Studio Pro Mesh*) per testare e dimostrare le funzionalità anche senza account live.
-        """
-    },
-    {
-        "id": "statistics-usage",
-        "title": "10. Statistiche, Consumo Dati Dispositivi & Centro Esportazione",
-        "icon": "chart-bar",
-        "summary": "Suite di consumo dati per apparato, widget Top Bandwidth Hogs, grafici di distribuzione e Centro Esportazione CSV/JSON.",
-        "content": """
-### Statistiche Avanzate, Consumo Dati & Data Export Center (v1.5.0)
-
-* **Device Data Usage Insights Suite:**
-  - Accedendo alla scheda **"Consumo Dati"** nel modale del dispositivo, è possibile analizzare il volume di traffico scaricato e caricato su 3 orizzonti temporali: **Ultime 24 ore** (con andamento orario in Mbps), **Ultimi 7 giorni** (consumo giornaliero) e **Ultimi 30 giorni** (panoramica mensile).
-  - Grafico interattivo Chart.js a doppia linea con indicatori KPI di Download totale, Upload totale e Traffico combinato.
-  - **Trasparenza di Calcolo:** Algoritmo resiliente a standby, disconnessioni temporanee e azzeramenti contatori hardware, con modale esplicativo accessibile tramite i pulsanti `?` di aiuto.
-  - **Nota Tecnica Commutazione Cablata:** Per i dispositivi collegati via cavo Ethernet, l'indicatore `↓ — / ↑ — (Cablato)` riflette la commutazione trasparente Layer 2 hardware dello switch ASIC eero.
-* **Widget "Top Bandwidth Hogs":**
-  - Card dedicata nella dashboard principale che evidenzia in tempo reale i dispositivi che hanno generato il maggior volume di traffico, con accesso rapido alla vista dettagliata in un solo clic.
-* **Sezione Statistiche & Analytics di Rete:**
-  - **Ripartizione Frequenze Wi-Fi:** Distribuzione in percentuale e conteggio client tra 2.4 GHz, 5 GHz, 6 GHz e Cablati.
-  - **Bilanciamento Carico Nodi Mesh:** Monitoraggio del carico di apparati attestati su ciascun eero per ottimizzare il posizionamento dei ripetitori.
-  - **Categorie & Vendor OUI:** Ripartizione per tipologia di apparato e costruttore hardware (Apple, Samsung, Espressif, ecc.).
-  - **Tooltip Interattivi con Elenco Dispositivi:** Passando il cursore su qualunque barra o fetta di grafico, un tooltip avanzato elenca i nomi di tutti i dispositivi corrispondenti (fino a 15 con troncamento intelligente).
-  - **Trend Prestazioni Linea & Diagnostica SLA ISP:** Grafici storici a 7 e 30 giorni per velocità di download/upload, latenza ping e indice di stabilità complessiva della linea FTTH/VDSL.
-* **Centro Esportazione Dati (RFC 4180 CSV & JSON):**
-  - Esportazione rapida e standardizzata dell'inventario dispositivi, storico speedtest, campionamenti del segnale RSSI e storico consumo dati per integrazione con fogli di calcolo, Grafana o Home Assistant.
-        """
-    },
-    {
-        "id": "system-logs",
-        "title": "11. Gestione Log di Sistema & Diagnostica Avanzata",
-        "icon": "terminal",
-        "summary": "Console live dei log, livelli di dettaglio dinamici (DEBUG/INFO/WARNING/ERROR), retention, esportazione e svuotamento sicuro.",
-        "content": """
-### Gestione Log di Sistema & Diagnostica Avanzata (v1.6.0)
-
-La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestione Log & Diagnostica**:
-
-* **Master Switch Logging:**
-  - Toggle rapido per attivare o sospendere la scrittura degli eventi nel database locale SQLite (`system_logs`) e nel file rotativo su disco (`data/system.log`).
-* **Profondità di Analisi (Livelli di Dettaglio a Caldo):**
-  - Seleziona istantaneamente il livello di severità senza riavviare il container:
-    - `DEBUG`: Dettagliato. Traccia tutte le chiamate API interne, le risposte del cloud e le sincronizzazioni di rete.
-    - `INFO`: Normale (predefinito). Registra gli eventi significativi, variazioni di stato dei nodi e connessioni client.
-    - `WARNING`: Avvisi. Segnala degradi di latenza, disconnessioni temporanee e anomalie di sincronizzazione.
-    - `ERROR`: Critico. Limita i log esclusivamente alle eccezioni bloccanti e agli errori di comunicazione.
-* **Periodo di Conservazione (Retention Temporale):**
-  - Imposta il periodo di persistenza: **24 Ore (24h)**, **7 Giorni (7gg/7d)**, **15 Giorni (15gg/15d)**, **1 Mese (1m/1mo)** o **Personalizzato** (inserimento del numero esatto di giorni, con `0` per conservazione illimitata).
-  - Un worker di background compila e rimuove periodicamente i log obsoleti garantendo che lo storage non si saturi mai.
-* **Console Live Log Viewer:**
-  - Box terminale ad alto contrasto con font monospazio (`Fira Code`).
-  - Ricerca rapida full-text sul testo dei messaggi e sul nome del modulo (`logger_name`).
-  - Filtro rapido a chip per livello di gravità (`TUTTI`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
-  - Esplorazione interattiva dei dettagli JSON per ogni record (chiamate HTTP, payload, audit di sicurezza).
-  - Toggle per **Auto-Refresh ogni 10s**.
-* **Strumenti di Esportazione & Svuotamento:**
-  - **Download Log:** Esportazione del log completo in formato testo `.log` standard RFC 5424 oppure in formato strutturato `.json`.
-  - **Svuotamento Sicuro (Clear Logs):** Pulsante protetto da permessi RBAC con modale di conferma per azzerare tabella e file di log in un clic.
-        """
-    },
-    {
-        "id": "homelab-mqtt",
-        "title": "12. Integrazione Homelab via MQTT & Home Assistant Discovery",
-        "icon": "share",
-        "summary": "Connessione a broker MQTT, Home Assistant MQTT Auto-Discovery, sensori telemetrici e device tracking dei client.",
-        "content": """
-### Integrazione Homelab via MQTT & Home Assistant Discovery (v1.6.0)
-
-La dashboard si integra nativamente nel tuo ambiente HomeLab tramite il protocollo **MQTT**:
-
-* **Home Assistant MQTT Auto-Discovery:**
-  - Rilevamento istantaneo senza configurazioni YAML manuali: tutte le entità vengono create automaticamente sotto il prefisso standard `homeassistant/`.
-  - **Sensori Telemetrici:**
-    - `eero WAN Download` & `eero WAN Upload` (Velocità in Mbps con `device_class: data_rate`).
-    - `eero Network Health` (Punteggio di salute 0-100%).
-    - `eero Connected Clients` (Conteggio client attivi con icona `mdi:devices`).
-    - `eero Mesh Nodes Online` (Nodi mesh operativi).
-    - `eero Bufferbloat Grade` (Voto di reattività linea da A+ a F).
-  - **Sensori Binari di Connettività:**
-    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
-    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
-  - **Device Tracker dei Client di Rete:**
-    - Generazione automatica di entità `device_tracker` per ciascun dispositivo della rete.
-    - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di attestazione e interfaccia radio (5 GHz / 6 GHz / Ethernet).
-* **Configurazione Broker & Sicurezza:**
-  - Supporta broker locali e remoti (Mosquitto, EMQX, HiveMQ) con autenticazione via username e password.
-  - Riconnessione asincrona automatica e gestione trasparente in modalità Demo.
-        """
-    },
-    {
-        "id": "prometheus-grafana",
-        "title": "13. Metriche Prometheus & Dashboard Grafana",
-        "icon": "presentation-chart-line",
-        "summary": "Scraping OpenMetrics nativo (/metrics), time-series esposte e template Grafana preconfigurato.",
-        "content": """
-### Metriche Prometheus & Dashboard Grafana (v1.6.0)
-
-La dashboard espone un endpoint nativo conforme alle specifiche **Prometheus / OpenMetrics** per consentire il monitoraggio centralizzato dell'infrastruttura mesh:
-
-* **Endpoint di Scraping:**
-  - Accessibile direttamente all'indirizzo `GET /metrics` (o `/api/metrics/prometheus`).
-  - Risponde in formato `text/plain; version=0.0.4; charset=utf-8`.
-* **Serie Temporali Esposte:**
-  - `eero_info`: Metadati della dashboard, versione e nome della rete mesh.
-  - `eero_clients_total`: Client rilevati con etichetta `status="connected"` o `"disconnected"`.
-  - `eero_clients_band_total`: Client attivi raggruppati per banda (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
-  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Throughput istantaneo aggregato della WAN.
-  - `eero_wan_ping_ms`: Latenza gateway verso l'esterno.
-  - `eero_health_score`: Punteggio sintetico di efficienza della rete (0-100).
-  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Stato e conteggio dei nodi mesh.
-  - `eero_bufferbloat_grade_numeric` & latenze (`unloaded`, `download`, `upload` in ms).
-  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Contatori cumulativi di traffico.
-* **Template Dashboard Grafana Incluso:**
-  - File pronto all'uso disponibile in `deploy/grafana/eero_dashboard.json`.
-  - Comprende 13 pannelli grafici (gauge di salute, grafici di velocità, ripartizione bande Wi-Fi, metriche bufferbloat e stato nodi).
-        """
-    },
-    {
-        "id": "multi-channel-alerts",
-        "title": "14. Allarmi Multi-Canale & Notifiche Emergenza",
-        "icon": "bell",
-        "summary": "Dispatcher multi-canale (Telegram, Discord, Webhook, Pushover) e allarmi specializzati di sicurezza, degradamento linea e backup.",
-        "content": """
-### Allarmi Multi-Canale & Notifiche di Emergenza (v1.6.0)
-
-Il motore di notifica supporta una strategia di inoltro multi-canale per avvisi critici ed eventi di rete:
-
-* **Canali Supportati:**
-  - **Telegram Bot:** Messaggistica istantanea formattata HTML con pulsanti di interazione rapida.
-  - **Discord Webhook:** Notifiche ricche con embed card grafiche, codici colore e metadati evento.
-  - **Pushover:** Notifiche push prioritarie per smartphone con supporto alert di emergenza.
-  - **Generic Webhook:** Payload JSON per l'integrazione con Node-RED, Home Assistant automations o script custom.
-* **Allarmi Specializzati Integrati:**
-  - **Degrado Bufferbloat:** Notifica tempestiva quando la latenza sotto carico peggiora (Grade D o F, o latenza caricata > 100ms).
-  - **Anomalie Qualità Nodo Mesh:** Avviso su canali DFS radar o degrado del backhaul wireless di un nodo mesh.
-  - **Allarme Sicurezza Autenticazione (Brute-Force):** Segnalazione di tentativi consecutivi di login fallito da indirizzi IP sospetti.
-  - **Esito Backup Notturno:** Conferma di avvenuto backup dei dati SQLite e dei file di log o notifica di errore.
-        """
-    },
-    {
-        "id": "offline-first",
-        "title": "15. Architettura Offline-First & Asset Locali",
-        "icon": "shield-check",
-        "summary": "Resilienza totale della dashboard con font e librerie salvati in locale, zero dipendenze CDN esterne e funzionamento air-gapped.",
-        "content": """
-### Architettura Offline-First & Asset Locali (v1.6.0)
-
-La dashboard adotta un'architettura 100% offline-first per garantire privacy assoluta, velocità istantanea di rendering e operatività anche in assenza di connettività internet o in blackout WAN:
-
-* **Vendoring Locale Completo delle Dipendenze:**
-  - Tutte le librerie client-side (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons e generatori QR Code) sono archiviate e servite direttamente dalla directory locale `/app/static/vendor/`.
-  - Nessuna richiesta verso CDN pubbliche esterne (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): zero tracking da parte di terzi e immunità totale rispetto a blocchi DNS, filtri parental control o ad-blocker aggressivi.
-* **Self-Hosting dei Font Tipografici:**
-  - I font ad alta leggibilità **Inter** (interfaccia utente) e **JetBrains Mono** / **Fira Code** (console terminale e tabelle telemetriche) sono inclusi nel container in formato WOFF2 ad alte prestazioni in `/app/static/fonts/`.
-  - Caricamento istantaneo senza alcun contatto con Google Fonts o server esterni.
-* **Resilienza Air-Gapped & Homelab Isolati:**
-  - La dashboard si avvia, carica e renderizza con fluidità al 100% all'interno di reti LAN isolate, VLAN di gestione o server homelab senza accesso alla rete internet pubblica.
-* **Progressive Web App (PWA) & Service Worker:**
-  - Il Service Worker integrato (`sw.js`) effettua il pre-caching di tutte le risorse essenziali, consentendo l'apertura e la consultazione della dashboard anche durante interruzioni temporanee della rete locale.
-        """
-    },
-    {
-        "id": "reverse-enrichment",
-        "title": "16. Reverse Client Enrichment & Scoperta IPv6 ULA",
-        "icon": "arrows-right-left",
-        "summary": "Arricchimento bidirezionale delle interfacce secondarie dai server DNS locali, discovery IPv6 Unique Local Address (ULA) e client Recently Joined.",
-        "content": """
-### Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0)
-
-Nelle reti dual-stack, i dispositivi interrogano spesso i server DNS locali (AdGuard Home, Pi-hole, Technitium) utilizzando indirizzi **IPv6 ULA** (*Unique Local Address*, prefissi `fc00::/7` e `fd00::/8`). Poiché questo traffico rimane confinato a livello Layer 2 locale e non attraversa la WAN, il cloud eero non ha visibilità su tali indirizzi.
-
-* **Reverse Client Enrichment via NDP & Ingestion REST:**
-  - **Worker di Scansione Automatica:** Il servizio di enrichment esegue periodicamente la scansione della tabella di vicinato (Neighbor Discovery Protocol - NDP / ARP del kernel) e interroga le API dei server DNS locali per mappare gli indirizzi ULA orfani ai relativi indirizzi MAC fisici.
-  - **API di Ingestion Esterna (`POST /api/network/enrichment/neighbors`):** Consente a script di cron, container sidecar o server DNS esterni di inviare associazioni IP-MAC in tempo reale.
-  - **Sincronizzazione Completa (Full-Circle):** Gli indirizzi ULA scoperti vengono integrati nel profilo del client e propagati nei cicli successivi di sincronizzazione DNS, raggruppando automaticamente i record sotto il nome del dispositivo.
-* **Badge Distintivo UI & Ispezione Dettagliata:**
-  - La tabella dispositivi e il modale di dettaglio evidenziano gli indirizzi scoperti con il badge distintivo fucsia/ametista **`ULA Enriched`** o **`ULA (NDP / AdGuard)`**.
-  - Ricerca fulminea nella tabella dispositivi per prefisso o indirizzo IPv6 ULA completo.
-* **Dispositivi "Recently Joined" & Badge "NEW":**
-  - La dashboard traccia la data di prima apparizione (`first_seen`) di ciascun apparato nella tabella persistente `known_devices`.
-  - I dispositivi rilevati nelle ultime 24-48 ore vengono evidenziati con il badge visivo ad alta visibilità **`NEW`** con indicatore animato verde smeraldo, ed è disponibile un ordinamento rapido per data di primo accesso.
-* **Ciclo di Pulizia & Auto-Pruning:**
-  - Una routine programmata di manutenzione notturna rimuove automaticamente gli indirizzi ULA transitori non più rinnovati dopo 30 giorni di inattività, preservando le prestazioni del database SQLite.
-        """
-    }
-]
-
-MANUAL_SECTIONS_EN: List[Dict[str, Any]] = [
-    {
-        "id": "intro",
-        "title": "1. Introduction & Architecture",
-        "icon": "book-open",
-        "summary": "Overview of the self-hosted architecture, 2FA security, and data persistence.",
-        "content": """
-### What is eero Custom Dashboard & Management Suite?
-This web application is a full-featured, self-hosted management and monitoring platform for your **Amazon eero** mesh Wi-Fi network.
-
-#### Architectural Features:
-1. **Self-Hosted & Private:** Runs inside an isolated Docker container on your local server or NAS (HomeLab). Multi-Arch official Docker Hub image for `linux/amd64` and `linux/arm64` (Raspberry Pi, Synology, QNAP, TrueNAS, Apple Silicon).
-2. **Official 2FA OTP Authentication:** Initial connection to the eero cloud utilizes the official two-factor authentication (One-Time Password via SMS or Email).
-3. **Persistence & Isolation:** User session token (`session.json`) and SQLite database (`metrics.db`) reside exclusively in the persistent `./data:/app/data` volume.
-4. **Zero-Latency In-Memory Poller:** An asynchronous background worker periodically polls the network and maintains an in-memory cache, providing instant UI navigation with zero rate-limiting risk.
-        """
-    },
-    {
-        "id": "auth-flow",
-        "title": "2. Authentication & Access Control (RBAC / 2FA)",
-        "icon": "key",
-        "summary": "Initial administrator setup (Zero-Default), local RBAC roles, and eero 2FA login procedure.",
-        "content": """
-### Access Management, Initial Setup & Authentication
-
-#### 1. Initial Administrator Setup (Zero-Default Security)
-On first launch, the suite enforces a strict zero-default credential policy:
-- **Guided Setup Wizard:** If no user accounts exist in the local database, an interactive full-screen onboarding modal prompts you to define your administrator username and secure password with confirmation.
-- **Headless Docker Bypass (Optional):** For automated deployments or headless container environments, supply `ADMIN_USER` and `ADMIN_PASSWORD` in your `.env` or `docker-compose.yml`. On startup, the container provisions the administrator account automatically and bypasses the web setup wizard.
-- **Granular Roles & Permissions (RBAC):** From *Settings -> User Management & Permissions*, the administrator can create accounts with distinct roles (`Admin`, `Operator`, `Viewer`) and toggle individual operational permissions (DNS management, network commands, data exports, log inspection).
-
-#### 2. eero Cloud Authentication (2FA OTP)
-Once local authentication is complete (or if local authentication is not required):
-1. **Requesting the OTP Code:**
-   - In the login screen, enter the phone number or email address associated with your eero account (e.g., `+1234567890` or `user@example.com`).
-   - Click **"Send OTP Code"**.
-2. **Verifying the Code:**
-   - You will receive a 6-digit verification code from eero via SMS or Email.
-   - Enter the code into the verification input and confirm.
-3. **Session Persistence:**
-   - The verified authentication token is saved to `/app/data/session.json` with restrictive `0600` owner permissions. When the Docker container restarts, your session is automatically restored without prompting for another OTP.
-4. **Demo Mode & Quick Switcher:**
-   - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
-   - If authenticated, you can switch anytime using the **"✨ Demo Mode"** button in the lower left sidebar to inspect mock telemetry without losing your live session. When active, it displays a vibrant emerald green button with an explicit **"DEMO ATTIVA"** indicator (and a top header status pill); clicking it again returns immediately to your live network.
-        """
-    },
-    {
-        "id": "dashboard-mesh",
-        "title": "3. Dashboard & Mesh Topology",
-        "icon": "network",
-        "summary": "Network Health Score, node status cards, and one-click actions.",
-        "content": """
-### Understanding the Overview Dashboard
-
-* **Network Health Score (1-100):** A comprehensive real-time score calculated from mesh node availability, gateway status, and client RSSI signal quality.
-* **eero Mesh Nodes Topology:**
-  - *Gateway Node:* The primary node connected directly to your modem/ONT.
-  - *Beacon / Mesh Extenders:* Secondary nodes extending wireless coverage.
-  - *Backhaul Type:* Displays whether inter-node links use high-speed Ethernet (1 Gbps / 2.5 Gbps) or dedicated wireless mesh backhaul (5 GHz / 6 GHz).
-* **Quick Node Actions:**
-  - **Reboot Network:** Dispatches a controlled reboot command across the entire mesh infrastructure.
-  - **Reboot Single Node:** Reboots only the selected node without disrupting the rest of the household.
-        """
-    },
-    {
-        "id": "devices-table",
-        "title": "4. Connected Devices & Frequency Analysis",
-        "icon": "devices",
-        "summary": "Live device table, multi-column sorting, sticky headers, Wi-Fi band badges, and eero cloud profiles.",
-        "content": """
-### Real-Time Device Inventory
-
-* **Interactive Multi-Column Sorting:** Click any column header (Device/Name, Numerical IPv4 Address, Profile, Mesh Node, Band, RSSI Signal dBm, or Status) to toggle ascending and descending sort order.
-* **Locked Sticky Header Bar:** The table header stays permanently anchored at the top of the viewport while scrolling through dozens of clients.
-* **Wi-Fi Band & Channel Indicators:** Explicit frequency badges (**6 GHz, 5 GHz, 2.4 GHz, Wired Ethernet**) and active wireless channels (**CH 36, CH 11**, etc.).
-* **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
-* **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
-* **IPv6 Badge & Instant Search (v1.5.0 - Issue #43):** Compact `IPv6` badge next to the MAC address with a tooltip displaying all associated addresses (SLAAC & Link-Local); the search bar filters instantly by prefixes, octets, or full IPv6 addresses.
-        """
-    },
-    {
-        "id": "device-details",
-        "title": "5. Device Metadata, Static IP & Port Forwarding",
-        "icon": "adjustments",
-        "summary": "Custom names, categories, local notes, DHCP reservations, IPv6, and port forwarding.",
-        "content": """
-### Device Management & Rules
-
-* **Device Detail Modal:**
-  - **Custom Name & Category:** Assign categories (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Other) saved to the local SQLite database.
-  - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
-  - **Dual-Stack IPv6 Addresses & 1-Click Copy (v1.5.0 - Issue #43):** Dedicated box in the General tab listing all IPv6 addresses with category badges (*SLAAC / Global* vs *Link-Local*) and a 1-click clipboard copy button with visual feedback.
-  - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
-  - **Integrated Port Forwarding:** Create and delete port forwarding rules (External WAN Port -> Internal LAN Port, TCP/UDP protocols).
-        """
-    },
-    {
-        "id": "speedtest",
-        "title": "6. Speed Test, Performance Diagnostics & Wi-Fi Signal Quality",
-        "icon": "gauge",
-        "summary": "On-demand speed testing, historical performance tracking, RSSI signal analytics, and mesh coverage.",
-        "content": """
-### Performance Diagnostics & Wi-Fi Coverage
-
-* **Manual Speed Test:** Click **"Start Speedtest"** to trigger a real-time measurement of Download, Upload, Ping/Latency, and Jitter.
-* **Automated Scheduled Testing:** The system can be scheduled to run automated background tests (e.g., every 12 hours) to track line consistency over time.
-* **Historical Charts & Statistics:**
-  - Visual time-series graph of speeds and latency over days and weeks.
-  - Aggregate statistics including average download/upload, maximum peak speeds, and average ping.
-* **Wi-Fi Signal Quality & Mesh Coverage (v1.4.0):**
-  - **Continuous RSSI Storicization (dBm):** The background poller continuously samples wireless signal levels, frequencies, and link rates into local SQLite (`device_signal_history`).
-  - **Household Average Signal & Quality Bands:** High-level KPI and percentage breakdown across *Excellent* (≥ -50 dBm), *Good* (-51 to -65 dBm), *Fair* (-66 to -75 dBm), and *Critical* (< -75 dBm).
-  - **Interactive Chart.js Time-Series:** Select any client to analyze signal trends over the past 24 hours or 7 days with current, min, max, and average RSSI.
-  - **Weak Signal Watchlist:** Filtered table of devices with marginal signal along with actionable mesh node repositioning suggestions.
-        """
-    },
-    {
-        "id": "automations",
-        "title": "7. Automations, Guest QR, AdGuard Home, Telegram & Notifications",
-        "icon": "zap",
-        "summary": "Smart Guest Wi-Fi with QR, native AdGuard Home sync, Telegram/Webhook alerts with toggle, and Daily Digest.",
-        "content": """
-### Advanced Features & Automations Hub
-
-The **Automations & Controls** tab organizes your network tools into a clean 2x2 grid:
-
-1. **Smart Guest Wi-Fi with Dual-Theme Dynamic QR Code (Top-Left):**
-   - Instantly renders a printable, scannable QR Code with pure white background for Light Mode and dark slate for Dark Mode, automatically synchronized with the active theme.
-   - One-click toggle to enable or disable the guest network at any time.
-   - Built-in secure password generator and credentials updater.
-2. **Multi-Engine DNS Synchronizer (Top-Right):**
-   - **Heterogeneous Multi-Engine Support:** Simultaneous management of multiple instances across AdGuard Home, Pi-hole (v5 & v6 REST API), and Technitium DNS (direct A and Reverse PTR records).
-   - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into all active DNS servers.
-   - **Intelligent Address Pruning & IPv6 Exclusions (v1.5.0, v1.6.1):** Dedicated per-instance options to automatically prune obsolete IPs and expired leases (covering Pi-hole v6 atomic `PATCH /api/config` as well), with automatic LAN subnet prioritization over Docker virtual bridge gateways (`172.17.x.x`). Includes per-device *"Exclude from DNS Sync"* toggle (`dns_sync_excluded`) in the device modal.
-   - **Individual & Global Test and Sync:** Quickly test individual or all instances, with instant 1-click manual synchronization.
-   - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
-3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
-   - **Persistent Known Devices Registry:** SQLite `known_devices` table tracking previously discovered MACs to prevent duplicate alerts on container restarts.
-   - **Dedicated Activation Toggle:** Enable or disable Telegram notifications with one click while safely preserving your Bot Token and Chat ID.
-   - **New Device Alert:** Receive an instant alert when an unknown MAC address connects to your mesh.
-   - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
-   - **"Send Test" Button:** Instantly tests message delivery to your Telegram bot and Webhook URL.
-4. **Daily Digest Report (Bottom-Right):**
-   - **Scheduled Dispatch Toggle & Configurable Hour (v1.6.1):** Enable or suspend the automatic summary and customize dispatch hour (00:00 - 23:00, default 21:00) with `DAILY_DIGEST_HOUR` and `TZ` support.
-   - **Restart Idempotency Protection:** Persistent SQLite tracking of `last_daily_digest_date` ensuring exactly one dispatch per calendar day across container restarts.
-   - Automated report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
-   - **"Generate & Send Digest Now"** button for immediate on-demand dispatch.
-5. **One-Click Gaming / Focus Mode (Low Latency):**
-   - Located in the top header: pauses tagged background streaming/downloading devices with a single click to eliminate latency and jitter for competitive gaming setups.
-        """
-    },
-    {
-        "id": "troubleshooting",
-        "title": "8. Troubleshooting, Docker Updates & FAQ",
-        "icon": "wrench",
-        "summary": "Frequently asked questions regarding telemetry, in-app Docker auto-updates, security hardening, backups, and maintenance.",
-        "content": """
-### Troubleshooting, Docker Updates & FAQ
-
-* **How does In-App 1-Click Docker Auto-Update work (v1.4.0)?**
-  - The dashboard automatically checks for new releases on Docker Hub and GitHub Releases.
-  - If the Docker Socket is mounted (`/var/run/docker.sock`), clicking "Update Container Now" pulls the latest image, recreates the container preserving your `./data` volume, and reloads the browser once the new version is healthy.
-  - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
-* **Which client metrics come directly from eero hardware?**
-  - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
-* **Security Hardening & Data Protection (v1.5.0 - 4 GHSA Advisories):**
-  - **CORS & Anti-CSRF Middleware:** Cross-origin access disabled by default (configured via `CORS_ORIGINS`) and cross-site mutating requests blocked via `Sec-Fetch-Site` inspection.
-  - **Wi-Fi Credential Sanitization:** Sensitive Wi-Fi passwords and keys are recursively stripped prior to caching in `/api/network/overview`.
-  - **Interactive OpenAPI/Swagger Disabled by Default:** `/docs`, `/redoc`, and `/openapi.json` are only mounted when `API_DOCS=true` to protect operational endpoints.
-  - **0600 File Permissions on session.json:** The eero session token file is created with atomic `0600` permissions (owner read/write only).
-* **How do I configure the AdGuard Home integration?**
-  - Under the *Automations & Controls* tab, enter your instance URL (e.g., `http://192.168.4.100:8085` or `192.168.4.100:8085`), username, and password. Click **Test Connection** and then **Save AdGuard Settings**. Credentials are encrypted and stored safely in the local SQLite database.
-* **What should I do if my session expires?**
-  - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
-* **How do I back up local configurations and custom metadata?**
-  - All custom device names, categories, notes, notification settings, signal history, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
-* **Rate Limiting Protection:**
-  - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.
-        """
-    },
-    {
-        "id": "multi-network",
-        "title": "9. Multi-Network Fleet Management & Hot-Swap",
-        "icon": "globe",
-        "summary": "Multi-location eero account support, instant in-app switching, and network election persistence.",
-        "content": """
-### Multi-Network Fleet Management (v1.5.0 - Issue #22)
-
-* **Dynamic Header Dropdown Selector (Windows 11 Fluent):** If your eero account manages multiple networks or physical locations (e.g., Main Residence, Office, Vacation Home), the dashboard header automatically displays an interactive dropdown showing mesh node and active client counts for each location.
-* **Instant In-Memory Hot-Swap:** Selecting another network switches the dashboard immediately without restarting the Docker container or prompting for new 2FA credentials. The RAM cache is immediately flushed and refreshed, updating all widgets and tables in real time.
-* **Network Election Persistence:** The chosen active network is stored in `session.json` and local SQLite `app_settings`, ensuring periodic polling cycles never force-reset your selection and that preferences survive container restarts.
-* **Demo Mode Support:** Includes an independent dual-network simulated fleet (*Home Mesh 6E* and *Office & Studio Pro Mesh*) to demonstrate fleet capabilities without needing an active live account.
-        """
-    },
-    {
-        "id": "statistics-usage",
-        "title": "10. Statistics, Device Data Usage & Data Export Center",
-        "icon": "chart-bar",
-        "summary": "Device data usage suite, Top Bandwidth Hogs, network distribution charts, and RFC 4180 CSV/JSON export.",
-        "content": """
-### Network Analytics, Data Usage & Data Export Center (v1.5.0)
-
-* **Device Data Usage Insights Suite:**
-  - Open the **"Data Usage"** tab in any device details modal to inspect bandwidth consumption across 3 distinct time horizons: **Last 24 Hours** (hourly Mbps throughput), **Last 7 Days** (daily totals), and **Last 30 Days** (monthly summary).
-  - Dual-line Chart.js telemetry curves with instant KPI pills for Total Download, Total Upload, and Combined Traffic.
-  - **Transparent Delta Estimation:** Resilient calculation algorithm designed to handle client sleep, roaming, and hardware counter resets, with a dedicated explanation modal accessible via contextual `?` buttons.
-  - **Ethernet Hardware Switching Technical Note:** For wired clients, the `↓ — / ↑ — (Wired)` indicator accurately reflects Layer 2 hardware ASIC switching within eero nodes.
-* **"Top Bandwidth Hogs" Widget:**
-  - Dedicated dashboard card showcasing top bandwidth consumers over configurable timeframes with 1-click drill-down into device telemetry.
-* **Network Statistics & Analytics View:**
-  - **Frequency Distribution:** Real-time breakdown across 2.4 GHz, 5 GHz, 6 GHz, and Wired Ethernet.
-  - **Mesh Node Load Balancing:** Identifies client distribution across all eero nodes to optimize beacon placement and eliminate coverage bottlenecks.
-  - **Device Categories & Hardware Vendors:** Visual breakdown by device type and manufacturer OUI fingerprinting.
-  - **Interactive Tooltip with Device Previews:** Hovering over chart bars or donut slices displays an interactive dark popover listing the actual devices contributing to that segment (up to 15 with smart truncation).
-  - **ISP SLA & Line Stability Trends:** 7-day and 30-day dual-axis charts tracking throughput consistency, latency trends, and overall line health.
-* **Data Export Center (RFC 4180 CSV & Structured JSON):**
-  - One-click standard data export for client devices inventory, WAN speedtest logs, wireless RSSI signal samples, and device bandwidth usage for external reporting or Grafana/Home Assistant ingestion.
-        """
-    },
-    {
-        "id": "system-logs",
-        "title": "11. System Logging & Advanced Diagnostics",
-        "icon": "terminal",
-        "summary": "Live log viewer console, dynamic log levels (DEBUG/INFO/WARNING/ERROR), retention policies, export and secure clearing.",
-        "content": """
-### System Logging & Advanced Diagnostics (v1.6.0)
-
-The **Controls & Guest QR** tab now features Card 7 dedicated to **System Logs & Diagnostics**:
-
-* **Master Logging Switch:**
-  - Instant toggle to enable or suspend event logging into the local SQLite database (`system_logs`) and rotating disk file (`data/system.log`).
-* **Dynamic Log Levels (Runtime Depth):**
-  - Switch log verbosity instantly without restarting the container:
-    - `DEBUG`: Verbose. Records detailed API calls, cloud round-trips, and background synchronization events.
-    - `INFO`: Normal (default). Records significant network lifecycle events, node states, and device connections.
-    - `WARNING`: Alerts. Captures latency spikes, intermittent disconnects, and DNS synchronization warnings.
-    - `ERROR`: Critical. Restricts logging strictly to unexpected exceptions and fatal connection failures.
-* **Retention Policies:**
-  - Configure automatic log lifecycle: **24 Hours (24h)**, **7 Days (7d/7gg)**, **15 Days (15d/15gg)**, **1 Month (1mo/1m)**, or **Custom** (specific day count, or `0` for unlimited).
-  - An automated background retention worker purges expired records periodically to safeguard flash storage.
-* **Live Log Viewer Console:**
-  - Acrylic terminal box styled with monospace typography.
-  - Real-time text search filtering by log message or logger module name.
-  - Severity chip filters (`ALL`, `DEBUG`, `INFO`, `WARNING`, `ERROR`).
-  - Expandable JSON structured details for each log entry (HTTP calls, request parameters, security audits).
-  - Optional **Auto-Refresh (10s)** toggle.
-* **Export & Maintenance Actions:**
-  - **Download Logs:** Export the full log stream in standard RFC 5424 `.log` format or structured `.json`.
-  - **Secure Purge (Clear Logs):** RBAC-protected action with confirmation modal to zero disk files and database records.
-        """
-    },
-    {
-        "id": "homelab-mqtt",
-        "title": "12. Homelab Integration via MQTT & Home Assistant Discovery",
-        "icon": "share",
-        "summary": "MQTT broker connectivity, Home Assistant MQTT Auto-Discovery, telemetry sensors and client device tracking.",
-        "content": """
-### Homelab Integration via MQTT & Home Assistant Discovery (v1.6.0)
-
-The dashboard natively integrates into your HomeLab ecosystem via **MQTT**:
-
-* **Home Assistant MQTT Auto-Discovery:**
-  - Zero-configuration discovery: all entities are automatically declared under the standard `homeassistant/` discovery prefix.
-  - **Telemetry Sensors:**
-    - `eero WAN Download` & `eero WAN Upload` (Speed in Mbps with `device_class: data_rate`).
-    - `eero Network Health` (Health score from 0 to 100%).
-    - `eero Connected Clients` (Active client count with `mdi:devices`).
-    - `eero Mesh Nodes Online` (Operational mesh nodes count).
-    - `eero Bufferbloat Grade` (Line responsiveness grade from A+ to F).
-  - **Connectivity Binary Sensors:**
-    - `eero Internet Status` (`ONLINE` / `OFFLINE`).
-    - `eero Cloud Status` (`CONNECTED` / `DISCONNECTED`).
-  - **Client Device Trackers:**
-    - Automatic `device_tracker` creation for client devices on the network.
-    - Reports `home` / `not_home` state, local IP, MAC address, connected mesh node, and connection medium (5 GHz / 6 GHz / Wired).
-* **Broker Configuration & Reliability:**
-  - Compatible with standard brokers (Eclipse Mosquitto, EMQX, HiveMQ) with username/password authentication.
-  - Asynchronous background reconnection with exponential backoff and seamless Demo mode simulation.
-        """
-    },
-    {
-        "id": "prometheus-grafana",
-        "title": "13. Prometheus Metrics & Grafana Dashboard",
-        "icon": "presentation-chart-line",
-        "summary": "Native OpenMetrics scraping (/metrics), exported time-series and ready-to-import Grafana dashboard template.",
-        "content": """
-### Prometheus Metrics & Grafana Dashboard (v1.6.0)
-
-The dashboard provides a native **Prometheus / OpenMetrics** export endpoint for centralized homelab observability:
-
-* **Scraping Endpoint:**
-  - Directly accessible at `GET /metrics` (or `/api/metrics/prometheus`).
-  - Serves standard OpenMetrics text (`text/plain; version=0.0.4; charset=utf-8`).
-* **Exported Metrics Series:**
-  - `eero_info`: Metadata, version tag, and active mesh network name.
-  - `eero_clients_total`: Client counts tagged with `status="connected"` or `"disconnected"`.
-  - `eero_clients_band_total`: Active clients partitioned by band (`2.4ghz`, `5ghz`, `6ghz`, `wired`).
-  - `eero_wan_download_mbps` & `eero_wan_upload_mbps`: Real-time aggregated WAN throughput.
-  - `eero_wan_ping_ms`: Gateway round-trip latency in milliseconds.
-  - `eero_health_score`: Comprehensive health index (0 to 100).
-  - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Mesh node operational counts.
-  - `eero_bufferbloat_grade_numeric` & latency breakdown (`unloaded`, `download`, `upload` in ms).
-  - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Monotonic transfer counters.
-* **Prebuilt Grafana Dashboard Template:**
-  - Ready-to-import dashboard located at `deploy/grafana/eero_dashboard.json`.
-  - Features 13 preconfigured panels covering speed gauges, historical bandwidth curves, frequency breakdowns, and mesh node statuses.
-        """
-    },
-    {
-        "id": "multi-channel-alerts",
-        "title": "14. Multi-Channel Alerts & Emergency Notifications",
-        "icon": "bell",
-        "summary": "Multi-channel dispatcher (Telegram, Discord, Webhook, Pushover) and specialized alerts for bufferbloat, mesh quality and security.",
-        "content": """
-### Multi-Channel Alerts & Emergency Notifications (v1.6.0)
-
-The notification engine features a unified multi-channel dispatch architecture for critical alerts and network events:
-
-* **Supported Channels:**
-  - **Telegram Bot:** Instant HTML-formatted alerts with direct node and client details.
-  - **Discord Webhook:** Rich embed cards with color-coded severity bars and structured fields.
-  - **Pushover:** High-priority mobile push notifications for immediate delivery.
-  - **Generic Webhook:** Raw JSON payloads for custom pipelines (Node-RED, n8n, Home Assistant).
-* **Integrated Specialized Alerts:**
-  - **Bufferbloat Degradation Warning:** Triggered when loaded latency degrades significantly (Grade D or F, or loaded delta > 100ms).
-  - **Mesh Node Signal Anomaly:** Proactive notice on DFS radar interference or weak wireless backhaul.
-  - **Authentication Security Alert (Brute-Force):** Security warning upon repeated failed local login attempts from specific IPs.
-  - **Nightly Backup Report:** Automated success/failure reporting for database and configuration archives.
-        """
-    },
-    {
-        "id": "offline-first",
-        "title": "15. Offline-First Architecture & Local Assets",
-        "icon": "shield-check",
-        "summary": "Total dashboard resilience with 100% locally bundled fonts and libraries, zero external CDN dependencies, and air-gapped operation.",
-        "content": """
-### Offline-First Architecture & Local Assets (v1.6.0)
-
-The dashboard adopts a 100% offline-first architecture to deliver maximum privacy, instant page rendering, and uninterrupted reliability even during internet outages or WAN blackouts:
-
-* **Complete Local Dependency Vendoring:**
-  - All client-side libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons, and QR Code generation engines) are bundled locally and served directly from `/app/static/vendor/`.
-  - Zero requests to external public CDNs (`cdn.tailwindcss.com`, `cdn.jsdelivr.net`, `unpkg.com`): absolute third-party tracking immunity and resilience against DNS filters or aggressive ad-blockers.
-* **Self-Hosted Typography Fonts:**
-  - High-legibility web fonts **Inter** (UI design system) and **JetBrains Mono** / **Fira Code** (Live Log Console and data tables) are packaged inside the container as high-performance WOFF2 files in `/app/static/fonts/`.
-  - Instant typography rendering with zero round-trips to Google Fonts or remote providers.
-* **Air-Gapped & Isolated Homelab Readiness:**
-  - The dashboard starts, initializes, and functions flawlessly inside isolated management VLANs, air-gapped lab servers, or offline local networks without outbound WAN access.
-* **Progressive Web App (PWA) & Service Worker:**
-  - Built-in Service Worker (`sw.js`) pre-caches core assets, enabling seamless dashboard launch and offline status review during transient local connectivity hiccups.
-        """
-    },
-    {
-        "id": "reverse-enrichment",
-        "title": "16. Reverse Client Enrichment & IPv6 ULA Discovery",
-        "icon": "arrows-right-left",
-        "summary": "Bidirectional secondary interface enrichment from local DNS engines, IPv6 Unique Local Address (ULA) discovery, and Recently Joined clients.",
-        "content": """
-### Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0)
-
-In dual-stack home networks, connected devices frequently query local DNS resolvers (such as AdGuard Home, Pi-hole, Technitium) using **IPv6 ULA** (*Unique Local Address*, prefixes `fc00::/7` and `fd00::/8`). Because this traffic remains strictly on local Layer 2 switches and never traverses the WAN gateway, the eero cloud platform has zero visibility into these ULA assignments.
-
-* **Reverse Client Enrichment via NDP & Ingestion REST:**
-  - **Automated Scan Worker:** The background enrichment service regularly inspects the kernel neighbor cache (Neighbor Discovery Protocol - NDP / ARP) and polls local DNS resolver APIs to map orphan ULA addresses back to their physical MAC addresses.
-  - **External Ingestion REST API (`POST /api/network/enrichment/neighbors`):** Allows custom cron jobs, sidecar containers, or external script engines to submit live IP-to-MAC associations.
-  - **Full-Circle DNS Synchronization:** Discovered ULA addresses are merged into client records and synced back to DNS resolvers, automatically associating bare IP queries with friendly device hostnames.
-* **Distinctive UI Badges & Deep Inspection:**
-  - The client table and device modal sheet prominently highlight discovered addresses with a magenta/amethyst **`ULA Enriched`** or **`ULA (NDP / AdGuard)`** badge with rich context tooltips.
-  - Instant live filtering in the devices table by ULA prefix or complete IPv6 address strings.
-* **"Recently Joined" Devices & "NEW" Badge:**
-  - The system tracks first discovery timestamps (`first_seen`) within the persistent `known_devices` SQLite table.
-  - Newly joined clients in the last 24-48 hours display an eye-catching **`NEW`** badge with an emerald pulsing dot, accompanied by quick "Recently Joined" sorting options.
-* **Automated Maintenance & Pruning:**
-  - Nightly maintenance tasks periodically prune stale or decommissioned ULA addresses that have not been observed in 30 days, keeping the SQLite database lean and responsive.
-        """
-    }
-]
+_sections_cache: Dict[str, List[Dict[str, Any]]] = {}
+_changelog_cache: Dict[str, str] = {}
 
 
-MANUAL_SECTIONS_BY_LANG: Dict[str, List[Dict[str, Any]]] = {"it": MANUAL_SECTIONS_IT, "en": MANUAL_SECTIONS_EN}
+def _parse_section_file(text: str) -> Optional[Dict[str, Any]]:
+    """Parses a '---' front-matter block of 'key: value' lines followed by the Markdown body."""
+    if not text.startswith("---"):
+        return None
+    head, sep, body = text[3:].partition("\n---")
+    if not sep:
+        return None
+    meta: Dict[str, str] = {}
+    for line in head.strip().splitlines():
+        key, colon, value = line.partition(":")
+        if colon:
+            meta[key.strip()] = value.strip()
+    if not meta.get("id"):
+        return None
+    section: Dict[str, Any] = {key: meta.get(key, "") for key in SECTION_META_KEYS}
+    section["content"] = body.strip()
+    return section
+
+
+def _read_language_sections(lang: str) -> Dict[str, Dict[str, Any]]:
+    """Loads every section file of a language, keyed by section id, in file-name order."""
+    manual_dir = LOCALES_DIR / lang / "manual"
+    sections: Dict[str, Dict[str, Any]] = {}
+    if not manual_dir.is_dir():
+        return sections
+    for path in sorted(manual_dir.glob("*.md")):
+        try:
+            section = _parse_section_file(path.read_text(encoding="utf-8"))
+        except OSError as e:
+            logger.error(f"manual: cannot read {path}: {e}")
+            continue
+        if section is None:
+            logger.error(f"manual: invalid front matter in {path}")
+            continue
+        sections[section["id"]] = section
+    return sections
+
+
+def load_manual_sections(lang: str) -> List[Dict[str, Any]]:
+    """Returns the ordered sections for ``lang``; order and the per-section fallback come from English."""
+    if lang in _sections_cache:
+        return _sections_cache[lang]
+    base = _read_language_sections(DEFAULT_LANGUAGE)
+    localized = base if lang == DEFAULT_LANGUAGE else _read_language_sections(lang)
+    ordered = [localized.get(section_id, section) for section_id, section in base.items()]
+    ordered += [section for section_id, section in localized.items() if section_id not in base]
+    _sections_cache[lang] = ordered
+    return ordered
+
+
+def load_changelog_summary(lang: str) -> str:
+    """Returns the changelog summary for ``lang``, falling back to the English file."""
+    if lang in _changelog_cache:
+        return _changelog_cache[lang]
+    text = ""
+    for code in (lang, DEFAULT_LANGUAGE):
+        path = LOCALES_DIR / code / "changelog_summary.md"
+        if path.is_file():
+            text = path.read_text(encoding="utf-8").strip()
+            break
+    _changelog_cache[lang] = text
+    return text
+
+
+def clear_cache() -> None:
+    """Drops the loaded content so the next request re-reads the files (used by tests)."""
+    _sections_cache.clear()
+    _changelog_cache.clear()
 
 
 def _resolve_lang(lang: Optional[str]) -> str:
-    """Maps the requested language to one that has a manual, falling back to English."""
-    code = normalize_language(lang) or DEFAULT_LANGUAGE
-    return code if code in MANUAL_SECTIONS_BY_LANG else DEFAULT_LANGUAGE
+    """``?lang=`` if given, else the request language; languages without a manual map to English."""
+    code = (normalize_language(lang) if lang else current_language()) or DEFAULT_LANGUAGE
+    return code if (LOCALES_DIR / code / "manual").is_dir() else DEFAULT_LANGUAGE
 
 
 @router.get("/sections")
-async def get_manual_sections(lang: Optional[str] = Query("en")):
+async def get_manual_sections(lang: Optional[str] = Query(None)):
     """Restituisce tutti i capitoli del manuale utente nella lingua richiesta."""
     code = _resolve_lang(lang)
-    sections = MANUAL_SECTIONS_BY_LANG[code]
+    sections = load_manual_sections(code)
     return {
         "status": "success",
         "count": len(sections),
@@ -788,397 +118,24 @@ async def get_manual_sections(lang: Optional[str] = Query("en")):
 
 
 @router.get("/sections/{section_id}")
-async def get_manual_section(section_id: str, lang: Optional[str] = Query("en")):
+async def get_manual_section(section_id: str, lang: Optional[str] = Query(None)):
     """Restituisce una specifica sezione del manuale (utilizzata anche per i tooltip contestuali)."""
     code = _resolve_lang(lang)
-    sections = MANUAL_SECTIONS_BY_LANG[code]
-    section = next((s for s in sections if s["id"] == section_id), None)
+    section = next((s for s in load_manual_sections(code) if s["id"] == section_id), None)
     if not section:
-        return {"status": "error", "message": "Section not found."}
+        return {"status": "error", "message": tr("system.manual_section_not_found")}
     return {"status": "success", "language": code, "section": section}
 
 
-CHANGELOG_SUMMARY_IT = """# Changelog - Sommario Versioni
-
-Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
-
-## v1.6.2
-* **Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube):** Parità al 100% dei cataloghi linguistici (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`), audit automatizzato e validazione continua in CI/CD.
-* **Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (Issue #83 - @richlilly2004):** Sanificazione rigorosa degli hostname per sincronizzazione Pi-hole v6 (conversione caratteri speciali e parentesi in trattini) e rimozione delle chiamate ridondanti a `/port_forwards`.
-* **Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC):** Allineamento payload API, supporto bi-direzionale per `discovery_prefix` / `homeassistant_prefix` e destrutturazione difensiva nel frontend.
-* **Risoluzione Glitch Layout Tabella Dispositivi su Firefox (Issue #80 - @jpatchMC):** Eliminazione del tag `<colgroup>` dinamico a favore di definizioni native a celle per prevenire collassi o sfarfallii su Gecko.
-* **Serializzazione Payload Notifiche Webhook & Isolamento Canali (Issue #85 - @Hatton920):** Serializzatore difensivo `_json_safe()`, ripristino allarmi istantanei di nodi offline e nuovi dispositivi su Home Assistant, e popolamento di `_known_macs` all'avvio.
-* **Rifiniture UI/UX, Localizzazione & Nomi Dispositivi Troncati (Issue #84 - @XprofQ):** 11 perfezionamenti mirati: icone dinamiche fluent in tabella, tooltip e line-clamp a 2 righe per nomi lunghi, throughput WAN `whitespace-nowrap`, dropdown estesi a 30 con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
-* **Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube):** Eliminazione traduttori legacy e regex (~90 righe potate), `affected_items_i18n` renderizzati nella lingua del visualizzatore e isolamento del database di test su cartella temporanea (`tempfile.mkdtemp`).
-
-## v1.6.1
-* **Bilinguismo Completo Impostazioni & Eliminazione FOUT Caricamento (PR #78 - @todddube):** Traduzione al 100% di tutte le schede e modali Impostazioni (Controlli, Utenti, Backup, Export, Aggiornamenti, MQTT, Schedulazioni, Pulizia Log), interpolazione nativa dei parametri e rimozione del flash di testo all'avvio (`body.i18n-pending`).
-* **Prioritizzazione IPv4 Subnet LAN, Pruning Record Obsoleti Pi-hole v6 ed Esclusione Dispositivi (Issue #72):** Algoritmo a 5 livelli in `_sort_ipv4_candidates` che privilegia gli IP appartenenti alla subnet LAN fisica eero e penalizza i bridge container (`172.17.x.x`), potatura automatica (`prune_stale_ips`) dei vecchi record su Pi-hole v6 preservando i record manuali, e nuovo switch "Escludi da sincronizzazione DNS" (`dns_sync_excluded`).
-* **Rilevamento Reti Robusto, Fallback EERO_NETWORK_ID e Guida Zero-Reti (Issue #69):** Parsing flessibile per payload eero singolari o atipici, fallback trasparente su variabile d'ambiente `EERO_NETWORK_ID`, banner guida reattivo "Nessuna Rete Rilevata" e protezione assoluta da inquinamento del database con dati demo su sessioni reali.
-* **Scheduler Daily Digest Idempotente ai Riavvii & Orario Flessibile (Issue #70):** Tracciamento persistente su SQLite di `last_daily_digest_date` per eliminare lo spam di notifiche duplicate ai riavvii, orario di invio configurabile (`DAILY_DIGEST_HOUR` e `TZ`) con selettore orario interattivo nella card riepilogo.
-* **Risoluzione Bug Bufferbloat WAN & Localizzazione Abbreviazioni Durata (Issue #71):** Riconoscimento immediato di `bufferbloat_grade`, `ping_under_load` e `bufferbloat_delta_ms` dal frontend `app.js` e arricchimento della cache `poller.py`, rating localizzati dinamicamente (IT/EN) e abbreviazioni di durata responsive (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
-* **Compattazione Selettiva Multi-Tier, Indici Timestamp & Parsing Bitrate (Issue #73, #74):** Compattazione incrementale selettiva delle sole ore non ancora aggregate (risparmio CPU del 99.4%), indici B-tree su espressioni temporali SQLite, parser universale dei bitrate con unità di misura e strumenti di verifica integrità e backup deframmentato a caldo (`VACUUM INTO`).
-
-## v1.6.0
-* **Modulo 1 - Autenticazione Locale, RBAC & Smart Automations:** Gestione accessi multi-utente con ruoli `Admin`, `Operator` e `Viewer`, parental scheduling avanzato a fasce orarie e giorni della settimana, motore di manutenzione notturna programmata e backup di emergenza.
-* **Modulo 2 - Compattazione Dati Multi-Tier, Bufferbloat & PWA Offline-First:** Compattazione scalabile SQLite (Raw 48h -> Oraria 30gg -> Giornaliera 365gg), indicatore analitico Bufferbloat con grading da A+ a F e latenze a riposo/carico, supporto Progressive Web App (PWA) con Service Worker per consultazione offline.
-* **Modulo 3 - Notifiche & Disaster Recovery Snapshot:** Sistema di esportazione e ripristino snapshot crittografati/validati della configurazione, gestione scheduler parentale interattivo da interfaccia.
-* **Modulo 4 - Gestione Log di Sistema, Live Console & Integrazioni Homelab:** Card di controllo per profondità di logging a caldo (`DEBUG`, `INFO`, `WARNING`, `ERROR`), retention temporale configurabile (24h, 7gg, 15gg, 1m, custom), Live Console Viewer acrilica con ricerca e filtri per severità, download log (.log / .json) e svuotamento sicuro con modale di conferma; integrazione MQTT con Home Assistant Auto-Discovery e device tracking; esportazione metrica nativa Prometheus/OpenMetrics (`/metrics`) con dashboard Grafana (13 pannelli); dispatcher notifiche multi-canale esteso a Discord Webhook e Pushover con allarmi per degrado bufferbloat, interferenze mesh, brute-force e backup.
-* **Hub Note di Rilascio eeroOS & Community Feedback (Issue #55):** Monitoraggio firmware ufficiale via Zendesk REST API e feed Reddit r/amazoneero, con confronto allineamento flotta locale vs release cloud (Up-to-date, Update Available, Newer than published).
-* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Diagnostica intelligente in linguaggio naturale con narrative bilingue (IT/EN), checklist correttiva prioritaria, rilevamento sticky client con raccomandazione roaming e monitoraggio anomalie traffico notturno IoT.
-* **Deep-Linking Navigazione & Sincronizzazione Stato URL (PR #28 / Issue #45):** Routing completo con sincronizzazione bidirezionale dell'URL hash/query e supporto cronologia browser.
-* **Responsive App Shell, Header Windows 11 Fluent & Mobile Drawer (PR #29 / Issue #46):** Sidebar scorrevole con scrim su schermi mobile, header responsive con menu impostazioni Fluent, tabella dispositivi a schede su schermi piccoli e frame grafici ad altezza dinamica.
-* **Modulo 6 - 100% Offline-First & Asset Locali (Issue #58) & Dispositivi "Recently Joined" (Issue #60):** Vendoring locale completo di librerie (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) e font WOFF2 (`Inter`, `JetBrains Mono`) per funzionamento 100% offline e air-gapped; tracciamento data primo accesso (`first_seen`), badge animato smeraldo "NEW" e ordinamento per data d'ingresso.
-* **Modulo 7 - Reverse Client Enrichment & Scoperta IPv6 ULA (Issue #57):** Risoluzione del limite di routing L2 eero per query DNS locali; API REST di ingestion (`/api/network/enrichment/neighbors`), worker di probe ICMP/NDP, tabella persistente `device_discovered_ips` e chiusura del ciclo con sync "full-circle" su AdGuard Home; badge fucsia "ULA Enriched" con tooltip contestuale.
-* **Modulo 8 - Concorrenza SQLite WAL, QR Code Wi-Fi Ospiti Aperti & Trasparenza Notifiche (Issue #62, #63, #64):** Risoluzione definitiva lock contention SQLite con semaforo `_write_lock`, timeout 60s e pragmi `busy_timeout=60000`; generazione QR Code standard Wi-Fi per reti ospiti aperte (`T:nopass;`) o protette; trasparenza canali di recapito (Telegram, Discord, Pushover, Webhook) nel Daily Digest Report.
-* **Modulo 9 - Perfezionamento Discovery IPv6 ULA & Filtri Tabella Client (Issue #65):** Risoluzione visualizzazione e sincronizzazione IPv6 ULA su client dual-stack con fallback resiliente `ipv6_all || ipv6_addresses || [ipv6]`; completamento localizzazioni mancanti in inglese; lifecycle e auto-pruning notturno degli indirizzi scoperti obsoleti dopo 30 giorni.
-* **Setup Wizard Iniziale Amministratore (Zero-Default Security):** Modale di onboarding guidato al primo accesso web per l'impostazione sicura di username e password admin; rimozione definitiva delle credenziali hardcoded da interfaccia e supporto al deploy headless Docker via `ADMIN_USER` e `ADMIN_PASSWORD`.
-
----
-
-## v1.5.0
-* **Statistiche & Analytics di Rete, Analisi SLA ISP & Data Export Center:** Nuova vista con grafici di ripartizione frequenze, carico nodi mesh, categorie, vendor e trend SLA con esportazione CSV/JSON.
-* **Device Data Usage Insights Suite:** Nuova scheda "Consumo Dati" con selettore temporale (Ultime 24h, 7 Giorni, 30 Giorni), curve Chart.js e widget Top Bandwidth Hogs.
-* **Multi-Network Fleet Management & Hot-Swap Dinamico (Issue #22):** Gestione di account multi-rete eero con switch immediato e conservazione della rete attiva nei cicli di polling.
-* **Intelligent Address Pruning & Esclusione IPv6 DNS (Issue #31 & #30):** Pruning automatico di IP obsoleti e lease SLAAC IPv6 scaduti su AdGuard Home e DNS multipli.
-* **Localizzazione Multilingua Daily Digest Telegram & Scheda Controlli (Issue #38):** Supporto bilingue completo EN/IT per report giornalieri, allarmi e preferenze utente.
-* **Risoluzione Collisione Nodi Mesh & Localizzazione "Other/Altro" (Issue #41):** Match deterministico esatto per nomi a sottostringa e localizzazione dinamica di categorie e vendor.
-* **Correzione Primary Gateway in Topologie Multi-Ethernet (Issue #36):** Gerarchia di elezione rigorosa del gateway primario su switch e reti cablate.
-* **Chiarimento Telemetria Hardware Layer 2 & Dispositivi Cablati (Issue #40 & #42):** Eliminazione disclaimer fuorvianti e corretta spiegazione della commutazione hardware Ethernet.
-* **Isolamento Release CI/CD Docker Hub:** Build isolate per branch di test senza sovrascrittura accidentale del tag `latest` stabile.
-* **Community Hall of Fame & Crediti:** Sezione speciale nel modale About con ringraziamenti ai contributori e ai tester della community.
-* **Telemetria Rigorosa, Accuratezza RF & Stabilità Nodi (PR #47-#53):** Correzioni per canali 5 GHz UNII-3 vs 6 GHz, isolamento sessione live/demo, elezione Primary Gateway per segmento URL, bonifica speedtest/RSSI sintetici e risoluzione network ID su regole/prenotazioni (crediti a @carbones73).
-* **Hardening di Sicurezza & Vulnerability Remediation (4 Advisory GHSA):** Protezione Cross-Origin e middleware CSRF (`CORS_ORIGINS`), sanitizzazione credenziali Wi-Fi dall'overview pubblico, disattivazione documentazione interattiva `/docs` di default (`API_DOCS`) e permessi `0600` su `session.json` (crediti a @carbones73).
-* **Visibilità & Ricerca Indirizzi IPv6 (Issue #43):** Estrazione dual-stack Global Unicast e Link-Local (`fe80::`), ricerca per IPv6 nella tabella client e sezione dedicata nel modale dispositivo con copia con 1 clic (crediti a @jpatchMC).
-* **Simulatore Multi-Rete in Demo Mode:** Supporto dual-network indipendente (Casa Rossi Mesh 6E e Ufficio & Studio Pro Mesh).
-
----
-
-## v1.4.02
-* **Fix Lock SQLite all'Avvio durante la Pulizia dei Dati Mock Speedtest (Issue #35)**
-
----
-
-## v1.4.01
-* **Fix Risoluzione Accurata Primary Gateway con Nodi PoE e Mesh Misti (Issue #26)**
-* **Risoluzione Server DNS Personalizzati & Rimozione Fallback IP Sviluppatore (Issue #30)**
-* **Riconoscimento Dinamico Backhaul Wireless 6 GHz sui Nodi Mesh Wi-Fi 6E / Wi-Fi 7**
-* **Fix Risoluzione Bug Filtri di Frequenza Tabella Dispositivi (ReferenceError)**
-* **Allineamento Metriche Daily Digest & Esposizione Campo `line_stability` nei Webhook (Issue #32)**
-* **Rilevamento Accurato Nodi Mesh Offline & Distinzione Nodi in Fase di Riavvio (Issue #34)**
-* **Prevenzione Infiltrazione Dati Mock TIM nello Storico Speedtest & Purge SQLite (Issue #35)**
-
----
-
-## v1.4.0
-* **Restyling Windows 11 Fluent Design & Dual Theme Engine (Dark & Light Mode)**
-* **Navigazione a Barra Laterale Collassabile (Stile Windows 11 Fluent) con Memoria di Stato**
-* **Riposizionamento Controlli Rapidi (Gaming Focus & Demo Mode) con Indicatore Verde Smeraldo ad Alta Visibilità**
-* **Network Health Score Breakdown & Modale Diagnostico Interattivo a 4 Pilastri (Issue #15)**
-* **Multi-Engine DNS Synchronizer (Istanze Multiple Simultanee: AdGuard, Pi-hole, Technitium)**
-* **Motore di Auto-Update Docker in-App a 1-Clic (/api/system/update)**
-* **Rilevamento Automatico Nuove Versioni Docker Hub & GitHub Releases**
-* **Storicizzazione Continua Segnale RSSI Dispositivi Wireless (SQLite)**
-* **Nuova Sezione Qualità Wi-Fi & Copertura Mesh con Grafici Interattivi**
-* **Watchlist Dispositivi con Segnale Critico & Suggerimenti Ottimizzazione**
-* **Fix & Normalizzazione Prenotazioni DHCP Cloud ("Altre Prenotazioni Attive")**
-* **Fix & Normalizzazione Regole Port Forwarding Multi-Formato per Dispositivo**
-* **Supporto Nativo Pi-hole v6 REST API & Hostname Senza Dominio (Issue #25)**
-
----
-
-## v1.03.03
-* **Fix Risoluzione Accurata Primary Gateway Mesh in Bridge & Routed Mode (Issue #19)**
-* **Preservazione Integrale Regole, Filtri, Upstreams e Blacklist AdGuard Home su Sync (Issue #21)**
-* **Distinzione Accurata Tag Desktop / PC vs Laptop (`device_pc` / `device_laptop`)**
-* **Eliminazione Falsi Positivi Gateway su Nodi Satellite da Stringhe URL API eero**
-* **Riconciliazione Univoca del Nodo Gateway Principale della Rete**
-
----
-
-## v1.03.02
-* **Fix Formattazione Velocità Backhaul 2.5 Gbps su Card Nodi Mesh (Issue #14)**
-* **Riconoscimento Frequenze e Canali Wi-Fi 6E & Wi-Fi 7 a 6 GHz (5900-7200 MHz, EHT 320MHz)**
-* **Isolamento Grafico Badge 6 GHz e Prevenzione Sovrapposizione con 5 GHz**
-* **Cache-Busting Automatico Asset Statici (Issue #17)**
-* **Supporto Account Amministratori Invitati e Reti Condivise (Amazon Workaround)**
-* **Mapping Categorie Native eero e Tag Ufficiali AdGuard (Issue #13)**
-
----
-
-## v1.03.01
-* **Fix Rilevamento Velocità Porte Ethernet Nodi Mesh (Issue #14)**
-* **Distinzione Rigorosa Backhaul Wi-Fi vs Client Cablati su Nodi Satellite**
-* **Velocità Link Ethernet Dispositivi Reale (Zero Hardcoding)**
-* **Estrazione Avanzata Segnale Wireless RSSI (dBm) sui Beacon**
-
----
-
-## v1.03.00
-* **Risoluzione Universale Nodi e Client Mesh Multi-Generazione (Pro 7 / 6E / 6+)**
-* **Switch Istantaneo Modalità Demo / Rete Live senza perdita Token**
-* **Rilevamento Dinamico Velocità Ethernet 2.5G/10G & Telemetria Segnale dBm/PHY**
-* **Sincronizzazione Profili Famiglia / Utente Cloud eero in Tabella e Dettaglio**
-* **Distribuzione Ufficiale Docker Hub Multi-Arch (amd64/arm64)**
-* **Integrazione Nativa AdGuard Home in-App (DNS & DHCP Sync)**
-* **Pulsante Disconnessione Sicura con Modale di Conferma OTP**
-* **Fix & Arricchimento Report Daily Digest Telegram**
-* **Riorganizzazione Scheda Automazioni & Toggle Notifiche Dedicati**
-* **Registro Persistente Dispositivi Noti (Zero Notifiche Duplicate al Riavvio)**
-* **Ordinamento Dispositivi & Barra dei Titoli Bloccata (Sticky Header)**
-* **Normalizzazione Dinamica Dispositivi & Gestione Flessibile Nodi/Sensori**
-* **Modale About & Dedica Open Source**
-* **Rendering Ottimizzato del Manuale & Liste Markdown**
-* **Esportazione DNS (/etc/hosts, JSON) & Webhooks**
-
----
-
-## v1.02.00
-* **Telemetria Frequenze Wi-Fi (2.4 / 5 / 6 GHz) & Canali Radio**
-* **Integrazione Profili Famiglia / Utente Cloud eero**
-* **Filtri Multi-Criterio Avanzati su Tabella Client**
-
----
-
-## v1.01.00
-* **Supporto Multilingua Dinamico (Italiano & Inglese)**
-* **Selettore Lingua nell'Header & Persistenza Preferenze**
-* **Standard Open Source GitHub & Licenza MIT**
-
----
-
-## v1.00.08
-* **Sincronizzazione Totale Speed Test & Statistiche Gateway**
-
----
-
-## v1.00.07
-* **Indicatori Visivi Tipo IP (Badge STATICO vs DHCP)**
-
----
-
-## v1.00.06
-* **Assegnazione IP Corrente & Riassegnazione Intelligente**
-
----
-
-## v1.00.05
-* **Gestione Nativa IP Statici (DHCP) & Port Forwarding**
-
----
-
-## v1.00.04
-* **Gestione Dispositivi, Icone, Categorie e Preferiti**
-
----
-
-## v1.00.01 - v1.00.03
-* **Eliminazione Dati Fittizi a Favore di Telemetria Certificata 100%**
-
----
-
-## v1.0.0
-* **Release Iniziale: Architettura Self-Hosted Docker, 2FA OTP & Poller**
-"""
-
-CHANGELOG_SUMMARY_EN = """# Changelog - Release Summary
-
-Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
-
-## v1.6.2
-* **Complete Frontend & Backend Translation Parity (PR #79 - @todddube):** 100% key parity across all linguistic catalogs (457 backend keys and 1051 frontend keys in `en.json` and `it.json`), automated parity audit and CI/CD validation.
-* **RFC 1123 Hostname Sanitization for Pi-hole v6 & Silenced 404 Endpoint Probe (Issue #83 - @richlilly2004):** Strict RFC 1123 hostname sanitization for Pi-hole v6 sync (converting parentheses and special characters to hyphens) and removal of redundant `/port_forwards` API probes.
-* **Resilient MQTT Configuration Save & Load (Issue #81 - @jpatchMC):** Aligned REST API responses, added bidirectional support for `discovery_prefix` / `homeassistant_prefix`, and resilient frontend destructuring.
-* **Fixed Firefox Device Table Rendering Glitch (Issue #80 - @jpatchMC):** Removed dynamic `<colgroup>` declaration in favor of direct cell constraints, completely eliminating column collapsing and scroll flicker in Gecko.
-* **Webhook Payload Serialization & Isolated Channel Dispatch (Issue #85 - @Hatton920):** Recursive `_json_safe()` serialization, restored instant real-time alerts for offline nodes and new devices in Home Assistant, and pre-populated `_known_macs` on startup.
-* **UI/UX Polish, Localization & Truncated Device Names (Issue #84 - @XprofQ):** 11 targeted improvements: dynamic Fluent category icons in tables, 2-line clamp with hover tooltip for long names, `whitespace-nowrap` on WAN throughput, Top Bandwidth Hogs dropdowns expanded to 30 with fixed wired detection logic, and preserved original GitHub release notes.
-* **Architectural i18n Refactoring & Test Suite Safety (Issue #82 - @todddube):** Pruned dead regex-based health translators (~90 lines removed), rendered health `affected_items_i18n` in viewer active language, and isolated pre-release test suite to a secure temporary directory (`tempfile.mkdtemp`).
-
-## v1.6.1
-* **Complete Settings Localization & Loading Flash Prevention (PR #78 - @todddube):** 100% translation of all Settings pages and modals (Controls, Users, Backup, Export, Updates, MQTT, Schedules, Clear Logs), parameter interpolation, and loading flash prevention via `body.i18n-pending`.
-* **Subnet-Aware IPv4 Prioritization, Pi-hole v6 Stale Record Pruning & Device Exclusions (Issue #72):** Multi-level scoring algorithm prioritizing physical eero LAN subnet addresses over virtual container bridge gateways (`172.17.x.x`), automated atomic pruning of expired DHCP leases and obsolete mappings for Pi-hole v6 while strictly preserving custom unmanaged records, and a dedicated per-device "Exclude from DNS Sync" toggle (`dns_sync_excluded`).
-* **Robust Network Discovery, EERO_NETWORK_ID Fallback & Zero-Network Guidance (Issue #69):** Universal parsing of eero API responses, transparent fallback to `EERO_NETWORK_ID` for delegated or multi-network accounts, zero-network guidance banner with quick retry, and prevention of demo device leakage into live production databases.
-* **Daily Digest Restart Idempotency & Custom Dispatch Hour (Issue #70):** Persistent SQLite tracking of `last_daily_digest_date` preventing notification spam on container restarts, paired with configurable `DAILY_DIGEST_HOUR` (0-23) and `TZ` support with an interactive time-picker UI.
-* **Speed Test Bufferbloat Accuracy & Localized Duration Units (Issue #71):** Direct frontend recognition of stored `bufferbloat_grade`, `ping_under_load`, and `bufferbloat_delta_ms` resolving `"n/a Non Disponibile"` reporting, bilingual localized ratings, and dynamic duration abbreviations in retention buttons (`7d`/`7gg`, `15d`/`15gg`, `1mo`/`1m`).
-* **Multi-Tier Selective Compaction, Timestamp Indexes & Resilient Bitrate Parsing (Issues #73, #74):** Selective retention engine processing only uncompacted hours (reducing CPU overhead by 99.4%), SQLite B-tree expression indexes on cleaned timestamps, universal `parse_bitrate_float()` handling units (`Mbps`, `MBit/s`), database health integrity check endpoints, and defragmented online hot backups via `VACUUM INTO`.
-
-## v1.6.0
-* **Module 1 - Local Authentication, RBAC & Smart Automations:** Multi-user authentication with `Admin`, `Operator`, and `Viewer` roles, advanced parental time scheduling with day-of-week matrices, nightly maintenance engine, and disaster recovery emergency backups.
-* **Module 2 - Multi-Tier Data Compaction, Bufferbloat & PWA Offline-First:** Scalable multi-tier SQLite archiving (Raw 48h -> Hourly 30d -> Daily 365d), analytical Bufferbloat rating gauge (A+ to F with loaded/unloaded latencies), Progressive Web App (PWA) offline-first service worker support.
-* **Module 3 - Notifications & Disaster Recovery Snapshot:** Validated and encrypted configuration snapshots export/restore suite, interactive parental control schedule editor.
-* **Module 4 - System Logging, Live Console & Homelab Integrations:** Runtime log depth controls (`DEBUG`, `INFO`, `WARNING`, `ERROR`), configurable retention policies (24h, 7d, 15d, 1m, custom), acrylic Live Console Viewer with full-text search and severity chips, full stream download (.log / .json) and secure purge modal; MQTT integration with Home Assistant Auto-Discovery and device trackers; native Prometheus/OpenMetrics (`/metrics`) endpoint with 13-panel prebuilt Grafana dashboard; multi-channel notification dispatcher extended to Discord Webhooks and Pushover with dedicated alerts for bufferbloat degradation, mesh anomalies, brute-force attempts and backup status.
-* **Official eeroOS Release Notes Hub & Community Feedback (Issue #55):** Real-time firmware tracking via Zendesk REST API and r/amazoneero Reddit feed, with local fleet firmware alignment comparison (Up-to-date, Update Available, Newer than published).
-* **AI Network Diagnostics, Roaming Advisor & IoT Night Anomaly Detection (Issue #56):** Natural language AI diagnostic engine with bilingual narratives (EN/IT), prioritized action checklist, sticky client roaming advisor, and off-hours IoT traffic anomaly detection.
-* **Navigation Deep-Linking & URL State Synchronization (PR #28 / Issue #45):** Bidirectional URL hash and query parameter synchronization with browser history support and shareable direct links.
-* **Responsive App Shell, Windows 11 Fluent Header & Mobile Drawer (PR #29 / Issue #46):** Sliding mobile drawer sidebar with scrim backdrop, responsive header with Fluent settings menu, responsive device table cards on small screens, and clamp-height dynamic chart frames.
-* **Module 6 - 100% Offline-First & Local Asset Bundling (Issue #58) & "Recently Joined" Devices (Issue #60):** Complete local vendoring of client libraries (Tailwind CSS, Alpine.js, Chart.js, Lucide Icons) and self-hosted WOFF2 fonts (`Inter`, `JetBrains Mono`) for 100% offline and air-gapped readiness; persistent `first_seen` tracking with animated emerald "NEW" badges and dedicated "Recently Joined" sorting.
-* **Module 7 - Reverse Client Enrichment & IPv6 ULA Discovery (Issue #57):** Resolving eero Layer 2 routing visibility limit for local DNS queries; ingestion REST API (`/api/network/enrichment/neighbors`), ICMP/NDP probe worker, persistent `device_discovered_ips` table, and full-circle sync to AdGuard Home; magenta "ULA Enriched" badges with context tooltips.
-* **Module 8 - SQLite WAL Concurrency, Open Guest Wi-Fi QR Codes & Notification Transparency (Issues #62, #63, #64):** Definitive resolution of SQLite lock contention via `_write_lock` serialization, 60s timeout, and `busy_timeout=60000` pragmas; ZXing-compliant Wi-Fi QR Code generation for open guest networks (`T:nopass;`) and disabled network state handling; active multi-channel delivery transparency (Telegram, Discord, Pushover, Webhook) on Daily Digest cards.
-* **Module 9 - IPv6 ULA Discovery Refinement, ULA Enriched Badge & Table Filtering (Issue #65):** Fixed IPv6 ULA display and synchronization on dual-stack devices with resilient `ipv6_all || ipv6_addresses || [ipv6]` fallback; completed missing English localization keys; nightly lifecycle auto-pruning for stale discovered addresses after 30 days.
-* **Initial Administrator Setup Wizard (Zero-Default Security):** Guided first-run web onboarding wizard for secure admin username and password configuration; complete removal of hardcoded default credentials from the UI, with optional headless Docker bypass via `ADMIN_USER` and `ADMIN_PASSWORD`.
-
----
-
-## v1.5.0
-* **Network Statistics & Analytics, ISP SLA Analysis & Data Export Center:** New main view with frequency breakdown, mesh node load, device categories, vendors, and SLA trends with CSV/JSON export.
-* **Device Data Usage Insights Suite:** New "Data Usage" tab per device with time-range selector (Last 24h, 7 Days, 30 Days), Chart.js telemetry charts, and Top Bandwidth Hogs widget.
-* **Multi-Network Fleet Management & Dynamic Hot-Swap (Issue #22):** Multi-network eero account switching with instant active network persistence across polling cycles.
-* **Intelligent Address Pruning & IPv6 DNS Exclusions (Issue #31 & #30):** Automated pruning of obsolete IP addresses and expired SLAAC IPv6 leases on AdGuard Home and multi-DNS sync.
-* **Bilingual Daily Digest Telegram & Controls Tab (Issue #38):** Full EN/IT bilingual support for daily digest reports, disconnections alerts, and user language synchronization.
-* **Mesh Node Collision Resolution & "Other/Altro" Localization (Issue #41):** Strict exact name matching for substring nodes and dynamic real-time localization of categories and vendors.
-* **Primary Gateway Reconciliation in Multi-Ethernet Topologies (Issue #36):** Strict election hierarchy for primary gateway identification across switches and leaf nodes.
-* **Layer 2 Hardware Switching Telemetry Clarification (Issue #40 & #42):** Clear technical explanation of Ethernet hardware switching and removal of misleading subscription disclaimers.
-* **CI/CD Docker Hub Release Isolation:** Test branch builds isolated to prevent accidental overwrite of production `latest` tag.
-* **Community Hall of Fame & Special Thanks:** Dedicated recognition section in About modal honoring community contributors and testers.
-* **Strict Telemetry, RF Accuracy & Node Stability (PRs #47-#53):** Fixes for 5 GHz UNII-3 vs 6 GHz radio channels, live/demo session isolation, exact URL-segment gateway matching, removal of placeholder speedtest/RSSI values and network ID resolution on DHCP/port rules (credits to @carbones73).
-* **Security Hardening & Vulnerability Remediation (4 GHSA Advisories):** Cross-Origin & CSRF protection (`CORS_ORIGINS`), Wi-Fi credential sanitization from public overview, interactive `/docs` Swagger toggle (`API_DOCS`), and restrictive `0600` file permissions on `session.json` (credits to @carbones73).
-* **Dual-Stack IPv6 Visibility & Instant Search (Issue #43):** Extraction and display of Global Unicast and Link-Local (`fe80::`) IPv6 addresses with 1-click clipboard copy, unobtrusive device table badge, and instant search (credits to @jpatchMC).
-* **Dual-Network Simulator in Demo Mode:** Simultaneous independent mock environments (Home Mesh 6E and Office & Studio Pro Mesh).
-
----
-
-## v1.4.02
-* **Fix SQLite Lock on Startup during Mock Speedtest Data Purge (Issue #35)**
-
----
-
-## v1.4.01
-* **Fix Primary Gateway Resolution with PoE & Mixed Mesh Nodes (Issue #26)**
-* **Custom DNS Servers Extraction & Developer IP Fallback Removal (Issue #30)**
-* **Dynamic 6 GHz Wireless Backhaul Detection for Wi-Fi 6E / Wi-Fi 7 Mesh Nodes**
-* **Fix Device Table Frequency Band Filters (ReferenceError Resolution)**
-* **Align Daily Digest Metrics & Expose `line_stability` in Webhook Payload (Issue #32)**
-* **Accurate Mesh Offline Node Detection & Rebooting State Differentiation (Issue #34)**
-* **Prevent Mock TIM Telemetry Leakage into Performance History & SQLite Purge (Issue #35)**
-
----
-
-## v1.4.0
-* **Windows 11 Fluent Design Restyling & Dual Theme Engine (Dark & Light Mode)**
-* **Collapsible Left Sidebar Navigation (Windows 11 Fluent Style) with State Persistence**
-* **Relocated Quick Controls (Gaming Focus & Demo Mode) with High-Visibility Emerald Green Indicator**
-* **Network Health Score Breakdown & Interactive 4-Pillar Diagnostics Modal (Issue #15)**
-* **Multi-Engine DNS Synchronizer Suite (Simultaneous Instances: AdGuard, Pi-hole, Technitium)**
-* **In-App 1-Click Docker Auto-Update Engine (/api/system/update)**
-* **Automated New Release Detection via Docker Hub & GitHub Releases**
-* **Continuous Wireless Client RSSI Signal Storicization in SQLite**
-* **New Wi-Fi Signal Quality & Mesh Coverage Suite with Chart.js Graphs**
-* **Weak Signal Watchlist & Proactive Node Repositioning Recommendations**
-* **Fix & Cloud DHCP Reservations Normalization ("Other Active Reservations")**
-* **Fix & Multi-Format Port Forwarding Rules Normalization per Device**
-* **Native Pi-hole v6 REST API Sync & Bare Hostnames Support (Issue #25)**
-
----
-
-## v1.03.03
-* **Fix Mesh Primary Gateway Resolution in Bridge & Routed Modes (Issue #19)**
-* **Preserve AdGuard Home Custom Rules, Upstreams, Blocked Services & Tags on Sync (Issue #21)**
-* **Accurate Desktop / PC vs Laptop Tag Mapping (`device_pc` / `device_laptop`)**
-* **Eliminate False-Positive Gateway Flags from eero Cloud API URL Strings**
-* **Guaranteed Certified Single Primary Gateway Resolution & Backhaul Badging**
-
----
-
-## v1.03.02
-* **Fix 2.5 Gbps Backhaul Speed Formatting on Mesh Node Cards (Issue #14)**
-* **Wi-Fi 6E & Wi-Fi 7 6 GHz Frequency Detection (5900-7200 MHz, EHT 320MHz)**
-* **Isolated 6 GHz Sky-Blue Badging & Styling De-confliction with 5 GHz**
-* **Automatic Cache-Busting Versioning on Static Assets (Issue #17)**
-* **Invited Administrator Accounts & Shared Networks Resolution Support**
-* **Native eero Category Mapping & Official AdGuard Client Tags (Issue #13)**
-
----
-
-## v1.03.01
-* **Fix Mesh Node Ethernet Port Negotiation Speeds (Issue #14)**
-* **Strict Separation of Wireless Mesh Backhaul vs Local Wired Client Devices**
-* **Authentic Device Ethernet Speeds (Zero Hardcoding)**
-* **Expanded Wireless Node RSSI (dBm) Signal Telemetry on Beacons**
-
----
-
-## v1.03.00
-* **Universal Multi-Generation Mesh Nodes & Client Resolution (Pro 7 / 6E / 6+)**
-* **Instant Demo Mode / Live Network Switcher without Token Loss**
-* **Dynamic 2.5G/10G Ethernet Speed Detection & Signal dBm/PHY Rate Telemetry**
-* **eero Cloud User & Family Profile Telemetry in Table and Modal**
-* **Official Multi-Arch Docker Hub Image (amd64/arm64)**
-* **Native In-App AdGuard Home Integration (DNS & DHCP Sync)**
-* **Secure Logout Button with OTP Confirmation Modal**
-* **Daily Digest Report Fixes & Rich Live Telemetry**
-* **Automations Tab 2x2 Layout & Dedicated Notification Toggles**
-* **Persistent Known Devices Registry (Zero Duplicate Alerts on Restart)**
-* **Interactive Device Sorting & Sticky Table Header Bar**
-* **Dynamic Device Discovery & Adaptive Hardware Sensor Display**
-* **About Modal & Open Source Dedication**
-* **Optimized In-App Markdown Rendering & Ordered Lists**
-* **DNS (/etc/hosts, JSON) & Webhook Exporting**
-
----
-
-## v1.02.00
-* **Wi-Fi Band Telemetry (2.4 / 5 / 6 GHz) & Channel Badges**
-* **eero Cloud User & Family Profile Integration**
-* **Advanced Multi-Criteria Client Table Filters**
-
----
-
-## v1.01.00
-* **Dynamic Multilingual Support (Italian & English)**
-* **Header Language Selector & Preference Persistence**
-* **GitHub Open Source Standards & MIT License**
-
----
-
-## v1.00.08
-* **Total Speed Test Synchronization & Gateway Statistics**
-
----
-
-## v1.00.07
-* **Visual IP Assignment Badges (STATIC vs DHCP)**
-
----
-
-## v1.00.06
-* **Current IP Lease Binding & Smart IP Reassignment**
-
----
-
-## v1.00.05
-* **Native Cloud DHCP Reservations & Port Forwarding Rules**
-
----
-
-## v1.00.04
-* **Device Management, Custom Icons, Categories & Favorites**
-
----
-
-## v1.00.01 - v1.00.03
-* **Synthetic Data Removal in Favor of 100% Certified Telemetry**
-
----
-
-## v1.0.0
-* **Initial Release: Self-Hosted Docker Architecture, 2FA OTP & Poller**
-"""
-
-
-CHANGELOG_SUMMARY_BY_LANG: Dict[str, str] = {"it": CHANGELOG_SUMMARY_IT, "en": CHANGELOG_SUMMARY_EN}
-
-
 @router.get("/changelog")
-async def get_changelog(lang: Optional[str] = Query("en")):
-    """Restituisce solo i titoli e gli highlight principali delle versioni nella lingua richiesta (it/en)."""
+async def get_changelog(lang: Optional[str] = Query(None)):
+    """Restituisce solo i titoli e gli highlight principali delle versioni nella lingua richiesta."""
     from app.config import settings
 
     code = _resolve_lang(lang)
-    content = CHANGELOG_SUMMARY_BY_LANG[code]
-
     return {
         "status": "success",
         "language": code,
         "version": settings.app_version,
-        "content": content
+        "content": load_changelog_summary(code)
     }

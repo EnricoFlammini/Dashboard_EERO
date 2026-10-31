@@ -24,5 +24,21 @@
   "user_created": "Local Auth: user '{username}' (id: {user_id}, admin: {is_admin}) created by '{admin}'.",
   "user_updated": "Local Auth: user id={user_id} updated by admin '{admin}'.",
   "user_deleted": "Local Auth: user '{username}' (id={user_id}) deleted by admin '{admin}'.",
-  "permission_denied": "Access denied: user '{username}' lacks the required permission '{permission}'."
+  "permission_denied": "Access denied: user '{username}' lacks the required permission '{permission}'.",
+  "app_starting": "Starting {app_name} v{version}",
+  "data_directory": "Data directory: {path}",
+  "language_resolved": "Language: {language} (DASHBOARD_LANG={env_lang}, saved setting={saved})",
+  "account_refresh_failed": "Background account info refresh failed: {error}",
+  "account_status_fetch_failed": "Failed to fetch account info on status check: {error}",
+  "poller_refresh_mode_switch_failed": "Poller refresh after mode switch: {error}",
+  "poller_refresh_otp_failed": "Poller refresh after OTP verification: {error}",
+  "signal_overview_failed": "Error fetching signal overview: {error}",
+  "signal_history_failed": "Error fetching signal history for {mac}: {error}",
+  "db_stats_failed": "Error fetching database stats: {error}",
+  "analytics_distribution_failed": "Error generating analytics distribution: {error}",
+  "sla_trend_failed": "Error fetching SLA trend: {error}",
+  "password_verify_failed": "Error while verifying password: {error}",
+  "dns_cache_enabled": "In-memory DNS caching enabled (TTL: {ttl}s).",
+  "dns_cache_disabled": "In-memory DNS caching disabled.",
+  "docker_api_pull": "Docker API pull: {url}"
 }

@@ -857,7 +857,7 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **GET** | `/api/manual/chapter/{id}` | Contenuto HTML formattato di un capitolo del manuale | `?lang=it|en` |
 | **GET** | `/api/manual/changelog` | Restituisce il sommario formattato del changelog e release notes (v1.6.0) | `?lang=it|en` |
 | **GET** | `/api/system/language` | Restituisce la preferenza di lingua attiva e persistita su SQLite (v1.5.0) | Nessuno |
-| **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "en"\|"it"}` |
+| **POST** | `/api/system/language` | Salva e sincronizza la lingua di sistema per dashboard e digest (v1.5.0) | `{"language": "<codice>"}` — qualsiasi codice in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`); altri codici → HTTP 400 |
 | **GET** | `/api/automations/mqtt/config` | Restituisce lo stato e la configurazione del broker MQTT (v1.6.1) | Nessuno |
 | **POST** | `/api/automations/mqtt/config` | Salva la configurazione MQTT e aggiorna il client a caldo (hot-reload) (v1.6.1) | `{"enabled": true, "broker": "...", "port": 1883, ...}` |
 | **POST** | `/api/automations/mqtt/test` | Verifica la connessione al broker MQTT in tempo reale anche con parametri non salvati (v1.6.1) | Opzionale `{"broker": "...", "port": 1883, ...}` |
@@ -917,7 +917,7 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Percorso socket Docker per consentire l'auto-update in-app |
 | `WATCHTOWER_URL` | `""` | URL opzionale webhook Watchtower per triggerare il pull dell'immagine |
 | `UPDATE_CHECK_INTERVAL_HOURS`| `6` | Frequenza controllo nuove versioni su Docker Hub (ore) |
-| `DASHBOARD_LANG` | `"en"` | Lingua predefinita della dashboard e delle notifiche Telegram (`"en"` o `"it"`) |
+| `DASHBOARD_LANG` | `"en"` | Lingua predefinita della dashboard e delle notifiche Telegram: qualsiasi codice in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`) |
 | `CORS_ORIGINS` | `""` | Origini consentite per chiamate Cross-Origin (separate da virgola, es. `http://localhost:3000`) |
 | `API_DOCS` | `false` | Se `true`, abilita la documentazione interattiva Swagger UI (`/docs`, `/redoc`, `/openapi.json`) |
 
@@ -1118,7 +1118,7 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 ### Issue #91 — Browser Local Timezone in System Logs & UTC Toggle (@jpatchMC)
 * **Sintomo:** I log di sistema visualizzati nella console live mostravano esclusivamente l'orario UTC globale (`Z`), creando disallineamento temporale rispetto all'ora locale dell'amministratore e rendendo difficoltosa la correlazione degli eventi.
 * **Causa Radice:** Il rendering dei log in `index.html` stampava direttamente la stringa ISO 8601 restituita dal backend (`l.timestamp`) senza conversioni fuso orario client-side.
-* **Risoluzione:** Introdotto l'helper `formatLogTimestamp(ts)` in `app.js` basato sull'oggetto nativo `Intl.DateTimeFormat` con la locale dell'utente (`dateLocales[currentLanguage]`), affiancato da un pulsante toggle Fluent compatto nell'header del log viewer per commutare istantaneamente tra fuso orario locale del browser e UTC assoluto, memorizzando la scelta in `localStorage` (`eero_log_tz_mode`).
+* **Risoluzione:** Introdotto l'helper `formatLogTimestamp(ts)` in `app.js` basato su `Date.prototype.toLocaleString` con la locale dell'utente (`dateLocales[currentLanguage]`), affiancato da un pulsante toggle Fluent compatto nell'header del log viewer per commutare istantaneamente tra fuso orario locale del browser e UTC assoluto, memorizzando la scelta in `localStorage` (chiave `eero_log_tz`).
 
 ### Issue #88 — IPv6 ULA Stale Lease Pruning & Manual Reset Button (@jpatchMC / @EnricoFlammini)
 * **Sintomo:** Gli indirizzi IPv6 ULA scoperti via Neighbor Discovery (NDP) e AdGuard Home si accumulavano all'infinito per ciascun dispositivo nella modale di dettaglio (anche decine di IP SLAAC/privacy scaduti da settimane), senza possibilità di azzerarli manualmente.

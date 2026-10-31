@@ -169,7 +169,7 @@ async def export_hosts(
             clean_name = f"device-{ip.replace('.', '-')}"
 
         host_fqdn = f"{clean_name}{suffix}"
-        mac = d.get("mac") or "N/D"
+        mac = d.get("mac") or tr("notifications.not_available")
         lines.append(f"{ip:<16} {host_fqdn:<32} # {raw_name} ({mac})")
 
     return "\n".join(lines) + "\n"
@@ -369,7 +369,7 @@ async def get_device_rules(mac_address: str):
             "all_forwards": all_forwards,
         }
     except Exception as e:
-        logger.error(f"Error fetching device rules for {mac_address}: {e}", exc_info=True)
+        log_event(logger, logging.ERROR, "log_eero.device_rules_fetch_failed", exc_info=True, mac=mac_address, error=str(e))
         return {
             "status": "success",
             "mac_address": mac_address.lower(),
@@ -451,7 +451,7 @@ async def get_port_forwards_and_reservations():
         res = await eero_client.get_forwards_and_reservations()
         return {"status": "success", **res}
     except Exception as e:
-        logger.error(f"Error fetching port forwards: {e}")
+        log_event(logger, logging.ERROR, "log_eero.forwards_list_failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -526,7 +526,7 @@ async def get_device_usage(
             "data": usage_data
         }
     except Exception as e:
-        logger.error(f"Error fetching usage for device {mac_address}: {e}")
+        log_event(logger, logging.ERROR, "log_eero.device_usage_fetch_failed", mac=mac_address, error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 

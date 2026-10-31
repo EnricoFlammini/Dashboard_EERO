@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
-from app.i18n import tr
+from app.i18n import log_event, tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
@@ -129,6 +129,23 @@ def _resolve_vendor_from_mac_and_name(mac: str, hostname: str) -> str:
         return "Intel"
 
     return "Other"
+
+
+# Device categories are stored as language-neutral enum values; exports show them in the request language.
+_EXPORT_CATEGORY_KEYS = {
+    "Computer": "analytics.export_cat_computer",
+    "Mobile": "analytics.export_cat_mobile",
+    "Smart Home": "analytics.export_cat_smart_home",
+    "Intrattenimento": "analytics.export_cat_entertainment",
+    "Gaming": "analytics.export_cat_gaming",
+    "Server/Rete": "analytics.export_cat_server",
+    "Altro": "analytics.export_cat_other",
+}
+
+
+def _export_category(category):
+    key = _EXPORT_CATEGORY_KEYS.get(category or "")
+    return tr(key) if key else (category or "")
 
 
 @router.get("/distribution")
@@ -282,7 +299,7 @@ async def get_network_distribution() -> Dict[str, Any]:
             "vendors": vendor_list
         }
     except Exception as e:
-        logger.error(f"Error generating analytics distribution: {e}")
+        log_event(logger, logging.ERROR, "log_system.analytics_distribution_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),
@@ -306,7 +323,7 @@ async def get_isp_sla_trend(days: int = Query(30, ge=1, le=365)) -> Dict[str, An
             "sla": sla_data
         }
     except Exception as e:
-        logger.error(f"Error fetching SLA trend: {e}")
+        log_event(logger, logging.ERROR, "log_system.sla_trend_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),
@@ -351,22 +368,22 @@ async def export_network_data(
         export_items = []
         for d in raw_devices:
             export_items.append({
-                "hostname": d.get("hostname") or d.get("nickname") or "Dispositivo",
+                "hostname": d.get("hostname") or d.get("nickname") or tr("analytics.unknown_device"),
                 "ip": d.get("ip") or "",
                 "mac_address": d.get("mac") or d.get("mac_address") or "",
-                "status": "Online" if d.get("connected") else "Offline",
-                "connection_type": d.get("connection_type") or ("Wireless" if d.get("wireless") else "Wired"),
+                "status": tr("analytics.export_status_online") if d.get("connected") else tr("analytics.export_status_offline"),
+                "connection_type": d.get("connection_type") or (tr("analytics.export_wireless") if d.get("wireless") else tr("analytics.export_wired")),
                 "frequency_band": d.get("wireless_band") or d.get("frequency_band") or "",
                 "channel": d.get("channel") or "",
                 "signal_rssi_dbm": d.get("signal_rssi") or "",
                 "connected_eero_node": d.get("source_name") or d.get("connected_eero_name") or "",
-                "category": d.get("category") or "",
+                "category": _export_category(d.get("category")),
                 "rx_bytes": d.get("rx_bytes") or 0,
                 "tx_bytes": d.get("tx_bytes") or 0,
                 "download_speed_mbps": d.get("download_rate_mbps") or 0,
                 "upload_speed_mbps": d.get("upload_rate_mbps") or 0,
-                "is_guest": "Si" if d.get("is_guest") else "No",
-                "is_static_ip": "Si" if d.get("is_static") else "No"
+                "is_guest": tr("analytics.export_yes") if d.get("is_guest") else tr("analytics.export_no"),
+                "is_static_ip": tr("analytics.export_yes") if d.get("is_static") else tr("analytics.export_no")
             })
 
     # 2. Dataset Speedtest
@@ -412,7 +429,7 @@ async def export_network_data(
         writer.writeheader()
         writer.writerows(export_items)
     else:
-        output.write("nessun_dato_disponibile\n")
+        output.write(tr("analytics.export_no_data") + "\n")
 
     csv_content = output.getvalue()
     return Response(

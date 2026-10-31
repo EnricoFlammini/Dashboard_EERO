@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from app.config import settings
-from app.i18n import log_event
+from app.i18n import log_event, tr, tr_all
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -57,6 +57,93 @@ def compare_eero_versions(v1: Optional[str], v2: Optional[str]) -> int:
     elif t1 < t2:
         return -1
     return 0
+
+
+# Release tags are stable keys; the UI renders them as t('eero_news.tag_' + tag).
+TAG_SECURITY = "security"
+TAG_WIFI7 = "wifi7"
+TAG_STABILITY = "stability"
+TAG_PERFORMANCE = "performance"
+TAG_SMARTHOME = "smarthome"
+RELEASE_TAG_KEYS = (TAG_SECURITY, TAG_WIFI7, TAG_STABILITY, TAG_PERFORMANCE, TAG_SMARTHOME)
+
+# Legacy display values (Italian/English) stored or cached before tags became keys.
+_LEGACY_TAG_KEYS: Dict[str, str] = {
+    "sicurezza": TAG_SECURITY,
+    "security": TAG_SECURITY,
+    "wi-fi 7 / 6 ghz": TAG_WIFI7,
+    "wifi 7 / 6 ghz": TAG_WIFI7,
+    "wi-fi 7": TAG_WIFI7,
+    "stabilità": TAG_STABILITY,
+    "stabilita": TAG_STABILITY,
+    "stability": TAG_STABILITY,
+    "prestazioni": TAG_PERFORMANCE,
+    "performance": TAG_PERFORMANCE,
+    "smart home": TAG_SMARTHOME,
+    "smarthome": TAG_SMARTHOME,
+    "smart_home": TAG_SMARTHOME,
+}
+
+# Summaries the backend generates itself (fallback + demo releases); stored rows carry the English
+# text (or the legacy Italian one) and are mapped back to a key on read to build ``summary_i18n``.
+_GENERATED_SUMMARY_KEYS = (
+    "eero_news.summary_fallback",
+    "eero_news.demo_summary_1",
+    "eero_news.demo_summary_2",
+    "eero_news.demo_summary_3",
+    "eero_news.demo_summary_4",
+    "eero_news.demo_summary_5",
+)
+
+
+def normalize_release_tag(tag: Any) -> str:
+    """Maps a stored/legacy tag value ("Sicurezza", "Security", "security") to its stable key."""
+    raw = str(tag or "").strip()
+    if not raw:
+        return ""
+    if raw in RELEASE_TAG_KEYS:
+        return raw
+    return _LEGACY_TAG_KEYS.get(raw.lower(), raw)
+
+
+def normalize_release_tags(tags: Any) -> List[str]:
+    """Normalizes a list of tags to unique stable keys, preserving order."""
+    out: List[str] = []
+    for t in tags or []:
+        key = normalize_release_tag(t)
+        if key and key not in out:
+            out.append(key)
+    return out
+
+
+def localize_release_summary(summary: Any) -> Tuple[str, Optional[Dict[str, str]]]:
+    """Returns ``(summary_en, summary_i18n)`` for a stored release summary.
+
+    Backend-generated summaries (fallback text, demo releases) are recognised in any supported
+    language and come back as English text plus a per-language map; scraped eero bullet text is
+    returned unchanged with ``None`` (the UI falls back to ``summary``).
+    """
+    text = str(summary or "").strip()
+    if not text:
+        i18n = tr_all("eero_news.summary_fallback")
+        return i18n["en"], i18n
+    for key in _GENERATED_SUMMARY_KEYS:
+        i18n = tr_all(key)
+        if text in i18n.values():
+            return i18n["en"], i18n
+    return text, None
+
+
+def localize_release(release: Dict[str, Any]) -> Dict[str, Any]:
+    """Applies tag-key normalization and ``summary_i18n`` to a release dict (in place) and returns it."""
+    release["tags"] = normalize_release_tags(release.get("tags"))
+    summary_en, summary_i18n = localize_release_summary(release.get("summary"))
+    release["summary"] = summary_en
+    if summary_i18n:
+        release["summary_i18n"] = summary_i18n
+    else:
+        release.pop("summary_i18n", None)
+    return release
 
 
 def is_newer_eero_version(target_ver: str, base_ver: str) -> bool:
@@ -196,29 +283,29 @@ class EeroNewsService:
             tags: List[str] = []
 
             if is_security:
-                tags.append("Sicurezza")
+                tags.append(TAG_SECURITY)
             if any(k in full_text for k in ("wi-fi 7", "wifi 7", "6 ghz", "6ghz", "truechannel", "awgn")):
-                tags.append("Wi-Fi 7 / 6 GHz")
+                tags.append(TAG_WIFI7)
             if any(k in full_text for k in ("stability", "crash", "reboot", "disconnection", "stabilità")):
-                tags.append("Stabilità")
+                tags.append(TAG_STABILITY)
             if any(k in full_text for k in ("performance", "throughput", "latency", "velocità", "prestazioni")):
-                tags.append("Prestazioni")
+                tags.append(TAG_PERFORMANCE)
             if any(k in full_text for k in ("thread", "matter", "zigbee", "smart home", "iot")):
-                tags.append("Smart Home")
+                tags.append(TAG_SMARTHOME)
 
-            summary = bullets[0] if bullets else "Aggiornamento firmware eeroOS"
-
-            releases.append(
-                {
-                    "version": version,
-                    "release_date": release_date,
-                    "title": f"eeroOS: {version}",
-                    "summary": summary,
-                    "content": bullets,
-                    "tags": tags,
-                    "is_security_patch": is_security,
-                }
-            )
+            # ``summary`` stays English for API consumers; ``summary_i18n`` lets the UI pick its language.
+            release: Dict[str, Any] = {
+                "version": version,
+                "release_date": release_date,
+                "title": f"eeroOS: {version}",
+                "summary": bullets[0] if bullets else tr("eero_news.summary_fallback", lang="en"),
+                "content": bullets,
+                "tags": tags,
+                "is_security_patch": is_security,
+            }
+            if not bullets:
+                release["summary_i18n"] = tr_all("eero_news.summary_fallback")
+            releases.append(release)
 
         return releases
 
@@ -258,9 +345,9 @@ class EeroNewsService:
                             log_event(logger, logging.INFO, "log_ops.news_fetched", url=url)
                             break
                     else:
-                        logger.warning(f"Zendesk API {url} returned status {resp.status_code}")
+                        log_event(logger, logging.WARNING, "log_ops.news_zendesk_status", url=url, status=resp.status_code)
                 except Exception as ex:
-                    logger.warning(f"Error connecting to eero Zendesk API at {url}: {ex}")
+                    log_event(logger, logging.WARNING, "log_ops.news_zendesk_connect_failed", url=url, error=str(ex))
 
         # Se il recupero remoto ha avuto successo
         if html_body:
@@ -413,8 +500,8 @@ class EeroNewsService:
 
         versione installata vs target firmware e feedback community.
         """
-        # 1. Recupero note di rilascio
-        releases = await self.fetch_official_release_notes(force=force)
+        # 1. Recupero note di rilascio (tag come chiavi stabili + summary_i18n, anche per righe legacy)
+        releases = [localize_release(dict(r)) for r in await self.fetch_official_release_notes(force=force)]
 
         # 2. Informazioni firmware dei nodi locali
         eeros_list: List[Dict[str, Any]] = []
@@ -427,13 +514,14 @@ class EeroNewsService:
             else:
                 eeros_list = await eero_client.get_eeros()
         except Exception as ex:
-            logger.warning(f"Unable to read mesh nodes firmware: {ex}")
+            log_event(logger, logging.WARNING, "log_ops.news_firmware_read_failed", error=str(ex))
             eeros_list = []
 
         nodes_summary = []
         gateway_version = None
         for node in eeros_list:
-            os_ver = node.get("os_version") or "Sconosciuta"
+            # None when the eero API did not report a firmware: the UI shows its own placeholder.
+            os_ver = node.get("os_version") or None
             is_gw = node.get("is_gateway", False)
             if is_gw and not gateway_version:
                 gateway_version = os_ver
@@ -450,7 +538,9 @@ class EeroNewsService:
             )
 
         # Versione attualmente in esecuzione
-        current_firmware = gateway_version or (nodes_summary[0]["os_version"] if nodes_summary else "v7.5.2-192")
+        current_firmware = gateway_version or (
+            next((n["os_version"] for n in nodes_summary if n["os_version"]), "") if nodes_summary else "v7.5.2-192"
+        )
 
         # Ultima release ufficiale censita
         latest_release = releases[0] if releases else None
@@ -499,73 +589,82 @@ class EeroNewsService:
         }
 
     def _get_demo_releases(self) -> List[Dict[str, Any]]:
-        """Restituisce un set realistico e ricco di release notes eeroOS per la modalità Demo e test."""
+        """Restituisce un set realistico e ricco di release notes eeroOS per la modalità Demo e test.
+
+        ``summary`` is English (API contract); ``summary_i18n`` carries every supported language.
+        """
+        s = [tr_all(f"eero_news.demo_summary_{i}") for i in range(1, 6)]
         return [
             {
                 "version": "v7.16.0-9483",
                 "release_date": "July 21, 2026",
                 "title": "eeroOS: v7.16.0-9483",
-                "summary": "Migliorata la gestione TrueChannel delle interferenze AWGN su 6 GHz e ottimizzazioni stabilità.",
+                "summary": s[0]["en"],
+                "summary_i18n": s[0],
                 "content": [
                     "Improved TrueChannel handling of Additive White Gaussian Noise (AWGN) interference on 6 GHz band",
                     "Performance and stability improvements for multi-node mesh backhaul",
                     "Security patches for core network stack",
                     "Update file size: up to 175 MB compressed (600 MB installed)",
                 ],
-                "tags": ["Sicurezza", "Wi-Fi 7 / 6 GHz", "Stabilità", "Prestazioni"],
+                "tags": [TAG_SECURITY, TAG_WIFI7, TAG_STABILITY, TAG_PERFORMANCE],
                 "is_security_patch": True,
             },
             {
                 "version": "v7.15.1-119",
                 "release_date": "June 19, 2026",
                 "title": "eeroOS: v7.15.1-119",
-                "summary": "Miglioramenti generali alle prestazioni e stabilità del mesh.",
+                "summary": s[1]["en"],
+                "summary_i18n": s[1],
                 "content": [
                     "Performance and stability improvements across all eero 6 and 7 models",
                     "Resolved edge-case DHCP lease renewal delays on busy IoT segments",
                     "Update file size: up to 175 MB compressed (600 MB installed)",
                 ],
-                "tags": ["Stabilità", "Prestazioni"],
+                "tags": [TAG_STABILITY, TAG_PERFORMANCE],
                 "is_security_patch": False,
             },
             {
                 "version": "v7.15.0-9714",
                 "release_date": "May 28, 2026",
                 "title": "eeroOS: v7.15.0-9714",
-                "summary": "Miglioramento del client roaming advisor e gestione canali DFS.",
+                "summary": s[2]["en"],
+                "summary_i18n": s[2],
                 "content": [
                     "Enhanced dynamic channel selection during radar detection on DFS channels",
                     "Improved client steering for Wi-Fi 6E/7 dual-band connected devices",
                     "Security enhancements and protocol robustness",
                     "Update file size: up to 180 MB compressed",
                 ],
-                "tags": ["Sicurezza", "Wi-Fi 7 / 6 GHz", "Stabilità"],
+                "tags": [TAG_SECURITY, TAG_WIFI7, TAG_STABILITY],
                 "is_security_patch": True,
             },
             {
                 "version": "v7.14.1-137",
                 "release_date": "April 22, 2026",
                 "title": "eeroOS: v7.14.1-137",
-                "summary": "Miglioramenti di stabilità per eero Signal e sincronizzazione mesh.",
+                "summary": s[3]["en"],
+                "summary_i18n": s[3],
                 "content": [
                     "Stability improvements for eero Signal metrics and mesh latency calculation",
                     "Refined band steering algorithm for legacy 2.4 GHz IoT sensors",
                     "Performance optimizations under heavy WAN load",
                 ],
-                "tags": ["Stabilità", "Prestazioni"],
+                "tags": [TAG_STABILITY, TAG_PERFORMANCE],
                 "is_security_patch": False,
             },
             {
                 "version": "v7.5.2-192",
                 "release_date": "September 15, 2024",
                 "title": "eeroOS: v7.5.2-192",
-                "summary": "Patch di sicurezza cumulativa e supporto esteso per i nodi eero Pro 6E.",
+                "summary": s[4]["en"],
+                "summary_i18n": s[4],
                 "content": [
                     "Security, performance, and stability improvements",
                     "Fix for occasional packet retransmission on wired PoE backhauls",
                     "Optimized memory footprint for long uptimes",
                 ],
-                "tags": ["Sicurezza", "Stabilità"],
+                "tags": [TAG_SECURITY, TAG_STABILITY],
                 "is_security_patch": True,
             },
         ]

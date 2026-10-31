@@ -1,5 +1,19 @@
 {
   "unknown_device": "Device",
   "unknown_node": "eero node",
-  "invalid_data_type": "Invalid data type. Choose one of: {types}"
+  "invalid_data_type": "Invalid data type. Choose one of: {types}",
+  "export_status_online": "Online",
+  "export_status_offline": "Offline",
+  "export_wireless": "Wireless",
+  "export_wired": "Wired",
+  "export_yes": "Yes",
+  "export_no": "No",
+  "export_no_data": "no_data_available",
+  "export_cat_computer": "Computers & Laptops",
+  "export_cat_mobile": "Smartphones & Tablets",
+  "export_cat_smart_home": "Smart Home & IoT",
+  "export_cat_entertainment": "TV & Streaming",
+  "export_cat_gaming": "Gaming Consoles",
+  "export_cat_server": "Servers & NAS",
+  "export_cat_other": "Other"
 }

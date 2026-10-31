@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from app.config import settings
-from app.i18n import log_event, tr
+from app.i18n import log_event, tr, tr_all
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,11 @@ def map_eero_device_type(raw_type: Optional[str], model_or_name: Optional[str] =
     """Maps native eero device_type and model/name to (Category, Icon).
     
     Categories: Computer, Mobile, Intrattenimento, Gaming, Smart Home, Server/Rete, Altro
+
+    The category strings are stable identifiers, not display text: they are stored in
+    device_metadata.category (user choice) and matched by filters, analytics and the
+    automations router, and the frontend maps them to t('devices.cat_*') labels. Do not
+    rename them; add a new language by translating the devices.cat_* keys instead.
     Icons: laptop, smartphone, tablet, tv, gamepad, iot, camera, speaker, server, printer, device
     """
     t = str(raw_type or "").strip().lower()
@@ -552,7 +557,7 @@ class EeroClient:
                 resp = await client.get(f"{EERO_API_BASE}/user", headers=self._get_headers())
 
             if resp.status_code != 200:
-                logger.error(f"Failed to fetch account info ({resp.status_code}): {resp.text}")
+                log_event(logger, logging.ERROR, "log_eero.account_info_fetch_failed", status=resp.status_code, response=resp.text)
                 return self.account_info or {}
 
             data = resp.json().get("data", {})
@@ -601,7 +606,7 @@ class EeroClient:
                                     elif isinstance(v, list):
                                         raw_networks.extend(v)
                 except Exception as e:
-                    logger.warning(f"Fallback fetch /networks failed: {e}")
+                    log_event(logger, logging.WARNING, "log_eero.networks_fallback_failed", error=str(e))
 
             # 3. Normalizzazione lista reti disponibili (Multi-Network Fleet Management - Issue #22, Issue #69)
             parsed_networks = []
@@ -1280,7 +1285,7 @@ class EeroClient:
             if spd_fmt:
                 node["backhaul_type"] = f"Ethernet ({spd_fmt})"
             else:
-                node["backhaul_type"] = "Ethernet (Cablato)"
+                node["backhaul_type"] = "Ethernet (Wired)"
         else:
             node["wired"] = False
 
@@ -1342,7 +1347,7 @@ class EeroClient:
             # Nessun canale né frequenza: stima dal modello (Issue #56: trasparenza sulle bande dedotte da hardware)
             elif is_6e_or_7_hardware and channel == 0:
                 node["backhaul_estimated"] = True
-                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (stimata)"
+                node["backhaul_type"] = f"Wireless Mesh (6 GHz{signal_str}) (estimated)"
             else:
                 node["backhaul_type"] = f"Wireless Mesh (5 GHz{signal_str})"
 
@@ -1356,7 +1361,8 @@ class EeroClient:
             node.get("software_version") or 
             node.get("version")
         )
-        node["os_version"] = str(os_v) if os_v else "Aggiornato"
+        # None when the API reports no firmware: the UI renders its own localized placeholder.
+        node["os_version"] = str(os_v) if os_v else None
 
         # LED State (status_light, led_on, led_status, led_action)
         status_light = node.get("status_light")
@@ -1917,7 +1923,7 @@ class EeroClient:
             dev["is_paused"] = is_paused_val
             return dev
         except Exception as ex:
-            logger.error(f"Error normalizing single device: {ex}")
+            log_event(logger, logging.ERROR, "log_eero.device_normalize_failed", error=str(ex))
             return dict(d)
 
     # =========================================================================
@@ -1937,7 +1943,7 @@ class EeroClient:
         async with self._client_session() as client:
             resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}", headers=self._get_headers())
             if resp.status_code != 200:
-                logger.error(f"Error fetching network details: {resp.status_code} {resp.text}")
+                log_event(logger, logging.ERROR, "log_eero.network_details_fetch_failed", status=resp.status_code, response=resp.text)
                 return self._last_network_details or {}
             norm = self._normalize_network_details(resp.json().get("data", {}))
             self._last_network_details = norm
@@ -1957,7 +1963,7 @@ class EeroClient:
         async with self._client_session() as client:
             resp = await client.get(f"{EERO_API_BASE}/networks/{self.current_network_id}/eeros", headers=self._get_headers())
             if resp.status_code != 200:
-                logger.error(f"Error fetching eeros: {resp.status_code} {resp.text}")
+                log_event(logger, logging.ERROR, "log_eero.eeros_fetch_failed", status=resp.status_code, response=resp.text)
                 return self._last_eeros or []
             raw_list = resp.json().get("data", [])
             nodes = []
@@ -1965,7 +1971,7 @@ class EeroClient:
                 try:
                     nodes.append(self._normalize_eero_node(n))
                 except Exception as ex:
-                    logger.error(f"Error normalizing eero node: {ex}")
+                    log_event(logger, logging.ERROR, "log_eero.node_normalize_failed", error=str(ex))
 
             # Reconciliazione Primary Gateway: garantisce l'elezione di un unico nodo Gateway univoco (Issue #19, Issue #26 & Issue #36)
             if nodes:
@@ -2030,7 +2036,7 @@ class EeroClient:
                             spd_fmt = format_speed_mbps(spd_mbps)
                             if n.get("raw_wired") is True or (spd_mbps > 0 and n.get("raw_wired") is not False):
                                 n["wired"] = True
-                                n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Cablato)"
+                                n["backhaul_type"] = f"Ethernet ({spd_fmt})" if spd_fmt else "Ethernet (Wired)"
                             elif is_6e_or_7 or "6" in str(n.get("wireless_band") or ""):
                                 n["wired"] = False
                                 n["backhaul_type"] = "Wireless Mesh (6 GHz)"
@@ -2098,7 +2104,7 @@ class EeroClient:
                         elif isinstance(data.get("clients"), list):
                             raw_list = data["clients"]
             except Exception as e:
-                logger.warning(f"Error fetching /devices endpoint: {e}")
+                log_event(logger, logging.WARNING, "log_eero.devices_endpoint_failed", error=str(e))
 
             # Fallback 1: recupero dispositivi dai dettagli completi della rete se /devices era vuoto o assente
             if not raw_list:
@@ -2112,7 +2118,7 @@ class EeroClient:
                             elif isinstance(net_data.get("clients"), list) and net_data["clients"]:
                                 raw_list = net_data["clients"]
                 except Exception as e:
-                    logger.warning(f"Error fetching devices fallback from /networks: {e}")
+                    log_event(logger, logging.WARNING, "log_eero.devices_fallback_failed", error=str(e))
 
         # Se non ci sono dispositivi connessi/noti sulla rete reale, ritorna lista vuota dinamica
         if not raw_list:
@@ -2159,7 +2165,7 @@ class EeroClient:
                         d["tx_bytes"] = du.get("tx_bytes") or du.get("upload") or du.get("bytes_transmitted")
                 devices_list.append(self._normalize_device(d))
             except Exception as ex:
-                logger.error(f"Error normalizing device item: {ex}")
+                log_event(logger, logging.ERROR, "log_eero.device_item_normalize_failed", error=str(ex))
                 devices_list.append(dict(d))
         return devices_list
 
@@ -2704,7 +2710,7 @@ class EeroClient:
             try:
                 await self.fetch_account_info()
             except Exception as e:
-                logger.warning(f"Could not resolve network ID in get_forwards_and_reservations: {e}")
+                log_event(logger, logging.WARNING, "log_eero.forwards_network_id_unresolved", error=str(e))
 
         if settings.demo_mode or not self.is_authenticated or self.user_token.startswith("demo_"):
             raw_res = self._demo_state.get("reservations", [])
@@ -2730,9 +2736,9 @@ class EeroClient:
                 if res_reservations.status_code == 200:
                     raw_res_payload = res_reservations.json()
                 else:
-                    logger.warning(f"eero reservations response status {res_reservations.status_code}: {res_reservations.text}")
+                    log_event(logger, logging.WARNING, "log_eero.reservations_response_status", status=res_reservations.status_code, response=res_reservations.text)
             except Exception as e:
-                logger.warning(f"Failed to fetch reservations from eero: {e}")
+                log_event(logger, logging.WARNING, "log_eero.reservations_fetch_failed", error=str(e))
 
             try:
                 res_forwards = await client.get(
@@ -2753,7 +2759,7 @@ class EeroClient:
                     except Exception:
                         pass
             except Exception as e:
-                logger.warning(f"Failed to fetch forwards from eero: {e}")
+                log_event(logger, logging.WARNING, "log_eero.forwards_fetch_failed", error=str(e))
 
             raw_res_data = raw_res_payload.get("data", raw_res_payload) if isinstance(raw_res_payload, dict) else (raw_res_payload or [])
             raw_fwd_data = raw_fwd_payload.get("data", raw_fwd_payload) if isinstance(raw_fwd_payload, dict) else (raw_fwd_payload or [])
@@ -2993,7 +2999,11 @@ class EeroClient:
         profile = dict(p)
         prof_id = str(profile.get("id") or profile.get("url", "").split("/")[-1])
         profile["id"] = prof_id
-        profile["name"] = profile.get("name") or "Profilo Utente"
+        if not profile.get("name"):
+            # Profiles are cached by the poller and rendered later: keep ``name`` English and ship
+            # ``name_i18n`` so the UI can pick the viewer's language via localized(p, 'name').
+            profile["name_i18n"] = tr_all("profiles.default_name")
+            profile["name"] = profile["name_i18n"]["en"]
         profile["paused"] = bool(profile.get("paused", False))
         
         # Normalizzazione lista dispositivi associati
@@ -3054,9 +3064,9 @@ class EeroClient:
                                 if isinstance(raw_list, list) and raw_list:
                                     break
                             else:
-                                logger.warning(f"Error fetching profiles from {endpoint} ({resp.status_code}): {resp.text}")
+                                log_event(logger, logging.WARNING, "log_eero.profiles_endpoint_status", endpoint=endpoint, status=resp.status_code, response=resp.text)
                         except Exception as e:
-                            logger.warning(f"Failed to fetch profiles from {endpoint}: {e}")
+                            log_event(logger, logging.WARNING, "log_eero.profiles_endpoint_failed", endpoint=endpoint, error=str(e))
 
                 profiles = []
                 if isinstance(raw_list, list):
@@ -3065,7 +3075,7 @@ class EeroClient:
                             if isinstance(p, dict):
                                 profiles.append(self._normalize_profile(p))
                         except Exception as ex:
-                            logger.error(f"Error normalizing profile item: {ex}")
+                            log_event(logger, logging.ERROR, "log_eero.profile_item_normalize_failed", error=str(ex))
 
         all_devs = []
         try:
@@ -3094,7 +3104,7 @@ class EeroClient:
                         enriched_pdevs.append(pdev)
                 prof["devices"] = enriched_pdevs
         except Exception as enrich_ex:
-            logger.warning(f"Profile device enrichment warning: {enrich_ex}")
+            log_event(logger, logging.WARNING, "log_eero.profile_enrichment_warning", error=str(enrich_ex))
 
         # Sincronizzazione e override con il Database Locale (SQLite)
         try:
@@ -3133,7 +3143,7 @@ class EeroClient:
             for prof in profiles:
                 prof["device_count"] = len(prof.get("devices", []))
         except Exception as db_ex:
-            logger.warning(f"Error syncing profile device overrides from database: {db_ex}")
+            log_event(logger, logging.WARNING, "log_eero.profile_overrides_sync_failed", error=str(db_ex))
 
         return profiles
 
@@ -3290,7 +3300,7 @@ class EeroClient:
                 for method in methods:
                     for payload in payloads:
                         try:
-                            logger.info(f"Trying profile update: {method} {url} with {payload}")
+                            log_event(logger, logging.INFO, "log_eero.profile_update_attempt", method=method, url=url, payload=payload)
                             if method == "PUT":
                                 resp = await client.put(url, json=payload, headers=headers)
                             elif method == "POST":
@@ -3365,7 +3375,7 @@ class EeroClient:
                         try:
                             await self.update_device(device_id=d_id, paused=paused)
                         except Exception as d_ex:
-                            logger.warning(f"Failed to pause individual device {d_id}: {d_ex}")
+                            log_event(logger, logging.WARNING, "log_eero.profile_device_pause_failed", device_id=d_id, error=str(d_ex))
         except Exception as ex:
             log_event(logger, logging.WARNING, "log_eero.profile_pause_devices_failed", profile_id=clean_id, error=ex)
 
@@ -3458,7 +3468,10 @@ class EeroClient:
 
         clean_dev_id = target_id.split("/")[-1] if "/" in target_id else target_id
 
-        logger.info(f"assign_device_to_profile -> dev_key='{dev_key}', target_mac='{target_mac}', clean_dev_id='{clean_dev_id}', target_url='{target_url}', target_profile_id='{clean_target_pid}'")
+        log_event(
+            logger, logging.INFO, "log_eero.device_profile_assign_resolved",
+            dev_key=dev_key, target_mac=target_mac, device_id=clean_dev_id, url=target_url, profile_id=clean_target_pid,
+        )
 
         # 1. Salva la modifica nel Database Locale per garantire persistenza ed effetto immediato
         try:
@@ -3476,9 +3489,9 @@ class EeroClient:
                     mac_address=k,
                     profile_id=clean_target_pid if clean_target_pid else "NONE"
                 )
-            logger.info(f"Persisted device profile mapping in local database for keys {keys_to_save} -> {clean_target_pid or 'NONE'}")
+            log_event(logger, logging.INFO, "log_eero.device_profile_mapping_persisted", keys=keys_to_save, profile_id=clean_target_pid or "NONE")
         except Exception as db_err:
-            logger.error(f"Error persisting profile mapping in database: {db_err}")
+            log_event(logger, logging.ERROR, "log_eero.device_profile_mapping_persist_failed", error=str(db_err))
 
         # 2. Tenta la sincronizzazione diretta su eero Cloud (best effort)
         try:

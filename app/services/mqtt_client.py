@@ -217,6 +217,8 @@ class MQTTService:
 
     def _get_discovery_payloads(self) -> List[Dict[str, Any]]:
         """Returns the list of Home Assistant auto-discovery configs."""
+        # Entity/device "name" values below are intentionally English: they are Home Assistant entity
+        # names (stable identifiers users reference in HA), not dashboard UI text, so they are not localized.
         dev = self._get_device_dict()
         base = self._base_topic
         

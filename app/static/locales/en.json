@@ -66,7 +66,8 @@
     "settings_redirect_hint": "To configure SSID, enable/disable the network or generate a new password:",
     "go_to_settings": "Settings → Controls & Guests",
     "open_network_label": "Open network (no password)",
-    "qr_not_available": "QR Code not available"
+    "qr_not_available": "QR Code not available",
+    "qr_alt": "Guest Wi-Fi QR code"
   },
   "quality_analytics": {
     "page_title": "Signal Quality & Network Analytics",
@@ -229,7 +230,7 @@
     "mark_all_seen": "Mark all as seen",
     "new_badge_click_hint": "Click to mark as seen",
     "marked_seen_title": "Marked as seen",
-    "marked_seen_msg": "{count} device(s) no longer flagged as new.",
+    "marked_seen_msg": "Devices no longer flagged as new: {count}",
     "marked_new_title": "Marked as new",
     "marked_new_msg": "The NEW badge is back for this device.",
     "mark_seen_error": "Could not update devices",
@@ -237,7 +238,8 @@
     "badge_ula_enriched": "ULA Enriched",
     "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard",
     "clear_search": "Clear search",
-    "generic_device": "Device"
+    "generic_device": "Device",
+    "sticky_badge": "Sticky"
   },
   "device_modal": {
     "reservation_error": "Error while creating the DHCP reservation",
@@ -334,7 +336,9 @@
     "close_btn": "Close",
     "protocol_both": "Both (TCP/UDP)",
     "resolution_minutes": "{n} min",
-    "eero_cloud_synced_title": "Synced from eero mobile app"
+    "eero_cloud_synced_title": "Synced from eero mobile app",
+    "phy_label": "PHY",
+    "usage_resolution": "({n} min)"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",
@@ -554,7 +558,18 @@
     "mqtt_anonymous": "(anonymous)",
     "mqtt_interval_label": "Interval:",
     "mqtt_never": "Never",
-    "mqtt_username_placeholder": "e.g. mqtt-user"
+    "mqtt_username_placeholder": "e.g. mqtt-user",
+    "dns_password_placeholder_adguard": "AdGuard password",
+    "dns_token_placeholder_pihole": "WEBPASSWORD token / Session SID",
+    "dns_token_placeholder_generic": "API token or password",
+    "dns_default_name": "DNS Server",
+    "dns_default_name_n": "DNS Server {n}",
+    "dns_sync_hosts": "{n} hosts",
+    "mqtt_messages_unit": "msg",
+    "mqtt_broker_endpoint": "Broker Endpoint",
+    "mqtt_base_topic_label": "Base Topic",
+    "mqtt_ha_prefix_short": "HA Prefix:",
+    "mqtt_ha_discovery_label": "Home Assistant Discovery"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -600,7 +615,8 @@
     "view_on_github": "View Full Changelog on GitHub",
     "error_loading": "Unable to load changelog.",
     "check_updates": "Check for Updates",
-    "close": "Close"
+    "close": "Close",
+    "loading": "Loading..."
   },
   "about_modal": {
     "title": "About & Credits",
@@ -825,7 +841,11 @@
     "export_btn_json": "Download JSON",
     "exporting": "Exporting...",
     "export_success": "File exported successfully",
-    "clients_online": "clients online"
+    "clients_online": "clients online",
+    "sla_ok": "SLA OK",
+    "sla_degraded": "Degraded",
+    "jitter_note": "(±{n} ms jitter)",
+    "distribution_total": "/ {n} total"
   },
   "eero_news": {
     "title": "eeroOS Release Notes & Community Updates",
@@ -851,6 +871,7 @@
     "mesh_nodes_status": "Mesh Fleet Firmware Status",
     "node_gateway": "Gateway",
     "node_beacon": "Extender Node",
+    "firmware_unknown": "Unknown",
     "tag_security": "Security",
     "tag_wifi7": "Wi-Fi 7 / 6 GHz",
     "tag_stability": "Stability",
@@ -868,7 +889,15 @@
     "load_error": "Unable to load eeroOS release notes",
     "connection_error": "Connection error",
     "reset_filters": "Reset Filters",
-    "read_more": "Read →"
+    "read_more": "Read →",
+    "showing_count": "{shown} of {total} releases",
+    "total_count": "{total} releases",
+    "badge_early_rollout": "Early Rollout",
+    "badge_rolling_release": "Rolling Release",
+    "tag_wifi7_6ghz": "Wi-Fi 7 / 6 GHz",
+    "tag_smart_home": "Smart Home",
+    "tag_bugfix": "Bug Fix",
+    "tag_feature": "New Feature"
   },
   "auth_local": {
     "login_title": "Administration Sign In",
@@ -903,7 +932,8 @@
     "password_min_length": "Password must be at least 6 characters",
     "username_min_length": "Username must be at least 3 characters",
     "setup_success": "Administrator setup completed successfully!",
-    "login_btn_title": "Sign in as Administrator or Local User"
+    "login_btn_title": "Sign in as Administrator or Local User",
+    "role_user": "User"
   },
   "users_modal": {
     "title": "Users Management & Permission Matrix",
@@ -955,7 +985,7 @@
     "restore_warning": "Warning: Restoring will overwrite existing configurations with the data from the backup file.",
     "upload_btn": "Start Restore",
     "close": "Close",
-    "restore_in_progress": "Restoring in progress..."
+    "restore_in_progress": "Restore in progress..."
   },
   "schedules": {
     "title": "Parental Scheduling & Time Windows",
@@ -1008,7 +1038,11 @@
     "deleted": "Rule deleted",
     "evaluated_title": "Evaluation Completed",
     "evaluated_desc": "Active rules: {evaluated}, actions taken: {actions}",
-    "profile_devices_count": "{count} dev."
+    "profile_devices_count": "{count} dev.",
+    "loading": "Loading schedules...",
+    "edit_title": "Edit Time Rule",
+    "group_profiles": "eero Users & Profiles",
+    "group_nodes": "eero Mesh Nodes"
   },
   "resilience": {
     "stale_data_title": "Telemetry Data is Stale",
@@ -1153,7 +1187,7 @@
     "view_analytics": "Analytics & SLA View",
     "view_logs": "Logs & Audit View",
     "action_reboot_nodes": "Reboot Mesh Nodes",
-    "action_pause_devices": "Pause Devices Wi-Fi",
+    "action_pause_devices": "Pause Device Wi-Fi",
     "action_manage_rules": "Manage DHCP Rules & Port Forwarding",
     "action_sync_dns": "Sync External DNS Hosts",
     "action_manage_users": "Administer Users & RBAC",
@@ -1165,7 +1199,10 @@
     "ping_ms": "Ping (ms)",
     "rssi_dbm": "RSSI Signal (dBm)",
     "axis_throughput_mbps": "Throughput (Mbps)",
-    "axis_latency_ms": "Latency (ms)"
+    "axis_latency_ms": "Latency (ms)",
+    "data_usage_label": "Data Usage ({unit})",
+    "data_usage_tooltip": "Usage: {value} {unit}",
+    "rssi_tooltip": " RSSI signal: {value} dBm"
   },
   "common": {
     "devices": "devices",
@@ -1173,7 +1210,21 @@
     "on": "ON",
     "off": "OFF",
     "on_plural": "ON",
-    "off_plural": "OFF"
+    "off_plural": "OFF",
+    "weekday_short": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "gateway": "Gateway",
+    "ethernet": "Ethernet",
+    "custom": "Custom",
+    "online_count": "{n} online",
+    "minutes_short": "{n} min"
   },
   "js": {
     "set_theme": {
@@ -1270,7 +1321,8 @@
       "please_enter_valid_port": "Please enter valid port numbers between 1 and 65535.",
       "error_creating_port_forward": "Error creating port forward",
       "rule_for_port_created": "Rule for port {pFrom} created on eero.",
-      "port_forward_error": "Port Forward Error"
+      "port_forward_error": "Port Forward Error",
+      "custom_forward": "Custom Forward"
     },
     "delete_device_port_forward": {
       "error_deleting_forwarding_rule": "Error deleting forwarding rule",
@@ -1320,7 +1372,8 @@
     },
     "copy_guest_credentials": {
       "wi_fi_open_network": "Wi-Fi: {name}\n(Open network, no password)",
-      "guest_wi_fi_credentials": "Guest Wi-Fi credentials copied to clipboard!"
+      "guest_wi_fi_credentials": "Guest Wi-Fi credentials copied to clipboard!",
+      "wi_fi_with_password": "Wi-Fi: {name}\nPassword: {password}"
     },
     "copy_guest_password": {
       "open_network": "Open network",
@@ -1342,7 +1395,9 @@
     },
     "test_notifications": {
       "test_sent": "Test Sent",
-      "test_error": "Test Error"
+      "test_error": "Test Error",
+      "status_ok": "OK",
+      "status_no": "No"
     },
     "add_dns_instance": {
       "new_instance_added": "New Instance Added"
@@ -1362,7 +1417,8 @@
       "all_tests_succeeded": "All Tests Succeeded",
       "all_dns_instances_are": "All {total_tested} DNS instances are operational!",
       "some_tests_failed": "Some Tests Failed",
-      "global_test_error": "Global Test Error"
+      "global_test_error": "Global Test Error",
+      "instances_not_responding": "One or more DNS instances are not responding."
     },
     "sync_dns_instance": {
       "sync_succeeded": "Sync Succeeded",
@@ -1434,7 +1490,8 @@
     "export_data": {
       "data_export": "Data Export",
       "file_downloaded_successfully": "File {filename} downloaded successfully.",
-      "export_error": "Export Error"
+      "export_error": "Export Error",
+      "export_failed": "Export failed: {status}"
     },
     "perform_admin_setup": {
       "username_must_be_at": "Username must be at least 3 characters.",
@@ -1499,7 +1556,8 @@
     },
     "trigger_db_compaction": {
       "database_compacted": "Database Compacted",
-      "compaction_and_optimization_completed": "Compaction and optimization completed successfully."
+      "compaction_and_optimization_completed": "Compaction and optimization completed successfully.",
+      "compaction_error": "Error during compaction"
     },
     "format_schedule_target": {
       "user": "User: ",

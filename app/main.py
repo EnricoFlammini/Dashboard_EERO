@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from app import i18n
 from app.i18n import log_event
 from app.config import settings
-from app.services.demo_i18n import localize_demo_payload
+from app.services.demo_i18n import is_demo_source_language, localize_demo_payload
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
     metrics, network, profiles, schedules, speedtest, system, users
@@ -36,8 +36,8 @@ logger = logging.getLogger("eero_dashboard")
 async def lifespan(app: FastAPI):
     """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
     logger.info("=" * 60)
-    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-    logger.info(f"Data directory: {settings.data_path.resolve()}")
+    log_event(logger, logging.INFO, "log_system.app_starting", app_name=settings.app_name, version=settings.app_version)
+    log_event(logger, logging.INFO, "log_system.data_directory", path=settings.data_path.resolve())
     logger.info("=" * 60)
 
     # 0. Attivazione In-Memory DNS Caching (Issue #24)
@@ -51,9 +51,9 @@ async def lifespan(app: FastAPI):
     from app.services.notifications import notification_service
     saved_lang = await db_service.get_setting("system_language", None)
     i18n.set_system_language(await notification_service.get_language())
-    logger.info(
-        f"Language: {i18n.get_system_language()} "
-        f"(DASHBOARD_LANG={settings.dashboard_lang}, saved setting={saved_lang or 'none'})"
+    log_event(
+        logger, logging.INFO, "log_system.language_resolved",
+        language=i18n.get_system_language(), env_lang=settings.dashboard_lang, saved=saved_lang or "none",
     )
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
@@ -154,21 +154,18 @@ async def block_cross_origin_writes(request: Request, call_next):
     return await call_next(request)
 
 
-# The Demo Mode simulator ships its sample names in Italian; readers of that language get the payload untouched.
-DEMO_SOURCE_LANGUAGE = "it"
-
-
 @app.middleware("http")
 async def localize_demo_payloads(request: Request, call_next):
     """
-    Demo Mode only: translates the simulator's Italian sample names (nodes, devices, profiles) in
-    JSON API responses for non-Italian readers. Live-network responses are passed through untouched.
+    Demo Mode only: translates the simulator's sample names (nodes, devices, profiles) in JSON API
+    responses for readers of any language other than the simulator's own (DEMO_SOURCE_LANGUAGE in
+    demo_i18n); those readers receive the English names. Live-network responses pass through untouched.
     """
     response = await call_next(request)
     if not request.url.path.startswith("/api/") or not eero_client.is_demo_mode:
         return response
     lang = i18n.normalize_language(request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")) or i18n.get_system_language()
-    if lang == DEMO_SOURCE_LANGUAGE or not response.headers.get("content-type", "").startswith("application/json"):
+    if is_demo_source_language(lang) or not response.headers.get("content-type", "").startswith("application/json"):
         return response
     body = b"".join([chunk async for chunk in response.body_iterator])
     try:

@@ -8,7 +8,7 @@
   "state_started": "Started",
   "state_ended": "Ended",
   "transition_alert_title": "🕒 Scheduled Rule '{name}'",
-  "transition_alert_message": "The scheduled rule '{name}' was applied: status {state} on {count} target(s) ({target_type}).",
+  "transition_alert_message": "The scheduled rule '{name}' was applied: status {state}, targets: {count} ({target_type}).",
   "maintenance_reason_beacons": "Critical health score ({score}/{threshold}) and {count} degraded beacon nodes.",
   "maintenance_reason_network": "Critical overall health score ({score}/{threshold}). Preventive network reboot.",
   "maintenance_whole_network": "Entire eero Mesh Network",

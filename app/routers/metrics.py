@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Query, Response
 
 from app.config import settings
+from app.i18n import log_event
 from app.services.db import db_service
 from app.services.poller import background_poller
 from app.services.eero_client import eero_client
@@ -224,7 +225,7 @@ async def get_signal_overview():
             "overview": overview
         }
     except Exception as e:
-        logger.error(f"Error fetching signal overview: {e}")
+        log_event(logger, logging.ERROR, "log_system.signal_overview_failed", error=str(e))
         return {
             "status": "error",
             "message": str(e),
@@ -288,7 +289,7 @@ async def get_device_signal_history(
             "history": history
         }
     except Exception as e:
-        logger.error(f"Error fetching signal history for {mac}: {e}")
+        log_event(logger, logging.ERROR, "log_system.signal_history_failed", mac=mac, error=str(e))
         return {
             "status": "error",
             "message": str(e),

@@ -127,7 +127,7 @@ class BackgroundPoller:
         self.cached_health_details = {}
         self.cached_iot_anomalies = []
         self._prev_device_metrics = {}
-        logger.info("Poller RAM cache invalidated.")
+        log_event(logger, logging.INFO, "log_ops.poller_cache_invalidated")
 
     def get_cached_state(self) -> Dict[str, Any]:
         """Restituisce istantaneamente lo stato in RAM con latenza zero."""
@@ -553,7 +553,7 @@ class BackgroundPoller:
                     self._known_macs.update(db_macs)
                     self._initial_macs_loaded = True
                 except Exception as e:
-                    logger.warning(f"Error loading known MACs from DB: {e}")
+                    log_event(logger, logging.WARNING, "log_ops.known_macs_load_failed", error=str(e))
 
             # 1. Recupero dati da eero client con resilienza ad outage/timeout cloud (Issue #55)
             try:
@@ -965,7 +965,7 @@ class BackgroundPoller:
                     try:
                         await db_service.record_device_signal_samples(wireless_samples, is_demo=0)
                     except Exception as sig_err:
-                        logger.warning(f"Device signal sampling error: {sig_err}")
+                        log_event(logger, logging.WARNING, "log_ops.signal_sampling_failed", error=str(sig_err))
 
                 # Rilevamento disconnessione / uscita da casa per dispositivi wireless: bonifica campioni transitori
                 current_connected_wireless_macs = {
@@ -1226,7 +1226,13 @@ class BackgroundPoller:
             count_6ghz = sum(1 for d in connected_devices if "6" in str(d.get("wireless_band", "")))
             count_5ghz = sum(1 for d in connected_devices if "5" in str(d.get("wireless_band", "")))
             count_24ghz = sum(1 for d in connected_devices if "2.4" in str(d.get("wireless_band", "")))
-            count_wired = sum(1 for d in connected_devices if d.get("wired") or "wired" in str(d.get("connection_type", "")).lower() or "cablato" in str(d.get("wireless_band", "")).lower())
+            # wireless_band is "Ethernet" for wired clients (eero_client); "wired"/"cablato" cover older cached payloads.
+            count_wired = sum(
+                1 for d in connected_devices
+                if d.get("wired")
+                or "wired" in str(d.get("connection_type", "")).lower()
+                or any(w in str(d.get("wireless_band", "")).lower() for w in ("ethernet", "wired", "cablato"))
+            )
 
             # Informazioni sui nodi mesh
             total_nodes = len(self.cached_eeros)

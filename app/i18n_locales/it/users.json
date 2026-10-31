@@ -1,9 +1,9 @@
 {
-  "username_in_use": "Lo username '{username}' è già in uso.",
+  "username_in_use": "Il nome utente '{username}' è già in uso.",
   "create_failed": "Errore durante la creazione dell'utente.",
   "created": "Utente '{username}' creato con successo.",
   "not_found": "Utente non trovato.",
-  "username_taken": "Username '{username}' già utilizzato da un altro utente.",
+  "username_taken": "Il nome utente '{username}' è già utilizzato da un altro utente.",
   "last_admin_demote": "Impossibile revocare i permessi di amministratore: deve rimanere almeno un amministratore attivo nel sistema.",
   "update_failed": "Errore durante l'aggiornamento dell'utente.",
   "updated": "Utente aggiornato con successo.",
