@@ -342,26 +342,32 @@ document.addEventListener('alpine:init', () => {
     },
 
     /**
-     * Sizes the Devices table "Device / Host" column to the widest device name + details on
-     * screen, so names never wrap or clip. If that width does not fit next to the other
-     * columns, those columns are scaled down together (never below 85%) instead of letting
-     * the table scroll horizontally. Re-run whenever the device list, the visible columns,
-     * the language or the panel width changes.
+     * Sizes the Devices table "Device / Host" and "Profile / User" columns to the widest
+     * device name (+ badges) and profile name on screen, so neither wraps or clips. Profile
+     * is capped at 16rem; Device / Host absorbs whatever space is left. If both do not fit
+     * next to the other columns, those are scaled down together (never below 85%), then
+     * Profile gives way (never below 7.5rem) so the device name keeps priority. Re-run whenever the device list, the visible
+     * columns, the language or the panel width changes.
      */
     fitDeviceNameColumn() {
       const scroll = document.querySelector('.device-table-scroll');
       const table = scroll ? scroll.querySelector('table.device-table') : null;
       if (!table || !scroll.clientWidth) return;
       const nameTh = table.querySelector('th.device-col-name');
+      const profileTh = table.querySelector('th.device-col-profile');
+      const profileVisible = !!profileTh && profileTh.offsetParent !== null;
       const cells = table.querySelectorAll('td.device-name-cell .device-identity');
+      const profiles = profileVisible ? table.querySelectorAll('td.device-profile-cell .device-profile') : [];
       if (!nameTh || !cells.length) {
-        table.style.removeProperty('--device-col-name-w');
-        table.style.removeProperty('--device-col-squeeze');
+        ['--device-col-name-w', '--device-col-profile-w', '--device-col-squeeze'].forEach((v) => table.style.removeProperty(v));
         return;
       }
-      // Measure each identity block unwrapped, in a hidden probe that inherits the table styles.
+      // Measure each block unwrapped, in a hidden probe that inherits the table styles.
       const probe = document.createElement('div');
       probe.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap;width:max-content;';
+      const nameProbe = document.createElement('div');
+      const profileProbe = document.createElement('div');
+      probe.append(nameProbe, profileProbe);
       cells.forEach((el) => {
         const clone = el.cloneNode(true);
         clone.style.width = 'max-content';
@@ -376,37 +382,63 @@ document.addEventListener('alpine:init', () => {
           n.style.whiteSpace = 'nowrap';
           n.style.webkitLineClamp = 'unset';
         });
-        probe.appendChild(clone);
+        nameProbe.appendChild(clone);
+      });
+      profiles.forEach((el) => {
+        const clone = el.cloneNode(true);
+        clone.style.maxWidth = 'none';
+        clone.style.width = 'max-content';
+        clone.querySelectorAll('.truncate').forEach((n) => n.classList.remove('truncate'));
+        profileProbe.appendChild(clone);
       });
       table.appendChild(probe);
       let widest = 0;
-      probe.childNodes.forEach((c) => { widest = Math.max(widest, c.scrollWidth); });
+      nameProbe.childNodes.forEach((c) => { widest = Math.max(widest, c.scrollWidth); });
+      let widestProfile = 0;
+      profileProbe.childNodes.forEach((c) => { widestProfile = Math.max(widestProfile, c.scrollWidth); });
       probe.remove();
-      const cs = getComputedStyle(nameTh);
-      const wanted = Math.ceil(widest + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2);
+      const pad = (th) => {
+        const c = getComputedStyle(th);
+        return parseFloat(c.paddingLeft) + parseFloat(c.paddingRight) + 2;
+      };
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const wanted = Math.ceil(widest + pad(nameTh));
+      // Profile keeps at least the old minimum (7.5rem) and is capped so one very long
+      // name cannot starve the rest of the table (it then truncates with a tooltip).
+      const profileWanted = profileVisible
+        ? Math.min(16 * rem, Math.max(7.5 * rem, Math.ceil(widestProfile + pad(profileTh))))
+        : 0;
       // Natural width of the other visible columns (measured unsqueezed). Status and
       // Actions are pinned at a fixed width and never scaled, so track them apart.
       table.style.setProperty('--device-col-squeeze', '1');
+      table.style.removeProperty('--device-col-profile-w');
       let flexible = 0;
       let fixed = 0;
       table.querySelectorAll('thead th').forEach((th) => {
-        if (th === nameTh || th.offsetParent === null) return;
+        if (th === nameTh || th === profileTh || th.offsetParent === null) return;
         const w = th.getBoundingClientRect().width;
         if (th.classList.contains('device-col-status') || th.classList.contains('device-col-actions')) fixed += w;
         else flexible += w;
       });
-      const available = scroll.clientWidth;
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      // The table never gets narrower than its CSS min-width (the panel scrolls instead).
+      const available = Math.max(scroll.clientWidth, parseFloat(getComputedStyle(table).minWidth) || 0);
+      const profileMin = profileVisible ? Math.min(profileWanted, 7.5 * rem) : 0;
       let squeeze = 1;
+      let profileWidth = profileWanted;
       let nameWidth;
-      if (wanted + flexible + fixed <= available) {
-        nameWidth = Math.max(wanted, available - flexible - fixed); // absorb the leftover, as before
+      if (wanted + profileWanted + flexible + fixed <= available) {
+        nameWidth = Math.max(wanted, available - profileWanted - flexible - fixed); // absorb the leftover, as before
       } else {
-        squeeze = flexible > 0 ? Math.max(0.85, (available - wanted - fixed) / flexible) : 1;
-        nameWidth = Math.max(10 * rem, available - fixed - flexible * squeeze);
+        // Over budget: squeeze the other columns first (floor 85%), then let Profile give way
+        // (floor 7.5rem) so the device name keeps priority.
+        squeeze = flexible > 0 ? Math.max(0.85, (available - wanted - profileWanted - fixed) / flexible) : 1;
+        const room = available - fixed - flexible * squeeze;
+        profileWidth = Math.max(profileMin, Math.min(profileWanted, room - wanted));
+        nameWidth = Math.max(10 * rem, room - profileWidth);
       }
       table.style.setProperty('--device-col-squeeze', String(Number(squeeze.toFixed(3))));
       table.style.setProperty('--device-col-name-w', Math.floor(nameWidth) + 'px');
+      if (profileVisible) table.style.setProperty('--device-col-profile-w', Math.floor(profileWidth) + 'px');
     },
 
     isTableColumnVisible(colKey) {

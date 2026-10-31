@@ -3,7 +3,7 @@
  * Provides offline shell caching and fast background sync
  */
 
-const CACHE_NAME = 'eero-dashboard-v1.6.2';
+const CACHE_NAME = 'eero-dashboard-v1.6.2-i18n-1';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
