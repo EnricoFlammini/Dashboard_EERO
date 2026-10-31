@@ -31,8 +31,11 @@ RUN pip install --no-cache-dir --upgrade "pip>=26.2.0" "setuptools>=83.0.0" whee
 FROM python:3.12-alpine AS runner
 
 # Build arguments per versionamento e build number (iniettati in CI/CD)
-ARG APP_VERSION="1.6.1"
+ARG APP_VERSION="1.6.2"
 ARG BUILD_NUMBER="1"
+# Source branch/commit shown on the Updates page (.git is not copied into the image)
+ARG GIT_BRANCH=""
+ARG GIT_COMMIT=""
 
 # Imposta variabili d'ambiente per Python, metadati di release e path virtualenv
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -40,6 +43,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TZ=UTC \
     APP_VERSION=${APP_VERSION} \
     BUILD_NUMBER=${BUILD_NUMBER} \
+    GIT_BRANCH=${GIT_BRANCH} \
+    GIT_COMMIT=${GIT_COMMIT} \
     PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app

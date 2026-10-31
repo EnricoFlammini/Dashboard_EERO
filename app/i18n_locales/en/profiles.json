@@ -1,0 +1,6 @@
+{
+  "created": "Profile '{name}' created.",
+  "updated": "Profile updated.",
+  "deleted": "Profile deleted.",
+  "devices_assigned": "{count} devices assigned to the profile."
+}

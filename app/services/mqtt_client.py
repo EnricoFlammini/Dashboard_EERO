@@ -2,9 +2,10 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from app.config import settings
+from app.i18n import log_event, tr
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 
@@ -41,6 +42,8 @@ class MQTTService:
         self._task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
         self._discovery_published: bool = False
+        self._published_tracker_configs: Set[str] = set()
+        self._tracker_last_state: Dict[str, str] = {}
         self._stats: Dict[str, Any] = {
             "messages_published": 0,
             "discovery_topics_published": 0,
@@ -114,7 +117,7 @@ class MQTTService:
             return {
                 "success": True,
                 "simulated": is_demo or target_host in ("localhost", "127.0.0.1", "demo"),
-                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita.",
+                "message": tr("mqtt.test_ok_simulated", broker=f"{target_host}:{target_port}"),
                 "broker": f"{target_host}:{target_port}",
                 "base_topic": self._base_topic
             }
@@ -122,7 +125,7 @@ class MQTTService:
         if not self.is_available:
             return {
                 "success": False,
-                "error": "Modulo aiomqtt non disponibile nel container. Installare aiomqtt per connettersi al broker.",
+                "error": tr("mqtt.aiomqtt_missing"),
                 "broker": f"{target_host}:{target_port}"
             }
 
@@ -145,12 +148,12 @@ class MQTTService:
             return {
                 "success": True,
                 "simulated": False,
-                "message": f"Connessione al broker MQTT ({target_host}:{target_port}) riuscita con successo.",
+                "message": tr("mqtt.test_ok", broker=f"{target_host}:{target_port}"),
                 "broker": f"{target_host}:{target_port}",
                 "base_topic": self._base_topic
             }
         except Exception as e:
-            logger.warning(f"[MQTT] Test connessione fallito verso {target_host}:{target_port}: {e}")
+            log_event(logger, logging.WARNING, "log_ops.mqtt_test_failed", host=target_host, port=target_port, error=str(e))
             return {
                 "success": False,
                 "error": str(e),
@@ -183,8 +186,9 @@ class MQTTService:
             self._base_topic = str(config_data["base_topic"]).strip().strip("/")
             await db_service.set_setting("mqtt_base_topic", self._base_topic)
 
-        if "ha_discovery_prefix" in config_data and config_data["ha_discovery_prefix"]:
-            self._ha_prefix = str(config_data["ha_discovery_prefix"]).strip().strip("/")
+        ha_prefix = config_data.get("ha_discovery_prefix") or config_data.get("discovery_prefix")
+        if ha_prefix:
+            self._ha_prefix = str(ha_prefix).strip().strip("/")
             await db_service.set_setting("mqtt_ha_discovery_prefix", self._ha_prefix)
 
         if "discovery_enabled" in config_data:
@@ -345,7 +349,7 @@ class MQTTService:
             self._stats["discovery_topics_published"] += 1
 
         self._discovery_published = True
-        logger.info(f"[MQTT] Pubblicati {len(payloads)} topic di Home Assistant Auto-Discovery.")
+        log_event(logger, logging.INFO, "log_ops.mqtt_discovery_published", count=len(payloads))
 
     async def publish_telemetry(self, client: Any, telemetry_data: Optional[Dict[str, Any]] = None):
         """Publishes current network telemetry and device tracker states."""
@@ -390,43 +394,70 @@ class MQTTService:
         }
         await self._publish_message(client, f"{base}/state", full_payload, retain=False)
 
-        # Device Trackers for Home Assistant
+        # Device Trackers for Home Assistant (Issue #92)
         if self._discovery_enabled:
-            for dev in connected_devs[:50]:  # limit to 50 active to avoid broker flood
+            target_devices = devices[:250] if len(devices) > 250 else devices
+            current_cycle_macs = set()
+
+            for idx, dev in enumerate(target_devices):
                 mac = str(dev.get("mac") or dev.get("mac_address") or "").replace(":", "").lower()
                 if not mac:
                     continue
 
+                current_cycle_macs.add(mac)
                 hostname = dev.get("hostname") or dev.get("nickname") or f"eero_device_{mac[-4:]}"
+                is_connected = bool(dev.get("connected"))
+
                 tracker_config_topic = f"{self._ha_prefix}/device_tracker/{base}_{mac}/config"
                 tracker_state_topic = f"{base}/device/{mac}/state"
                 tracker_attr_topic = f"{base}/device/{mac}/attributes"
 
-                cfg = {
-                    "name": hostname,
-                    "unique_id": f"eero_tracker_{mac}",
-                    "state_topic": tracker_state_topic,
-                    "json_attributes_topic": tracker_attr_topic,
-                    "payload_home": "home",
-                    "payload_not_home": "not_home",
-                    "source_type": "router",
-                    "icon": "mdi:lan-connect" if dev.get("wireless") is False else "mdi:wifi",
-                    "device": self._get_device_dict()
-                }
-                await self._publish_message(client, tracker_config_topic, cfg, retain=True)
-                await self._publish_message(client, tracker_state_topic, "home", retain=False)
+                # 1. Pubblica configurazione discovery (retain=True) solo al primo rilevamento per questo MAC
+                if mac not in self._published_tracker_configs:
+                    cfg = {
+                        "name": hostname,
+                        "unique_id": f"eero_tracker_{mac}",
+                        "state_topic": tracker_state_topic,
+                        "json_attributes_topic": tracker_attr_topic,
+                        "payload_home": "home",
+                        "payload_not_home": "not_home",
+                        "source_type": "router",
+                        "icon": "mdi:lan-connect" if dev.get("wireless") is False else "mdi:wifi",
+                        "device": self._get_device_dict()
+                    }
+                    await self._publish_message(client, tracker_config_topic, cfg, retain=True)
+                    self._published_tracker_configs.add(mac)
+
+                # 2. Stato presenza: 'home' se connesso, 'not_home' se disconnesso/offline
+                state_val = "home" if is_connected else "not_home"
+                await self._publish_message(client, tracker_state_topic, state_val, retain=False)
+                self._tracker_last_state[mac] = state_val
+
+                # 3. Attributi dettagliati dispositivo
                 await self._publish_message(client, tracker_attr_topic, {
                     "ip": dev.get("ip"),
                     "mac": dev.get("mac"),
-                    "connected_eero": dev.get("connected_eero_name", "Gateway"),
+                    "connected": is_connected,
+                    "connected_eero": dev.get("connected_eero_name", "Gateway") if is_connected else "None",
                     "wireless": dev.get("wireless", True),
-                    "band": dev.get("wireless_band", "5 GHz")
+                    "band": dev.get("wireless_band", "5 GHz") if is_connected else "None"
                 }, retain=False)
+
+                # Pacing delicato ogni 10 dispositivi per proteggere broker con risorse limitate
+                if (idx + 1) % 10 == 0:
+                    await asyncio.sleep(0.005)
+
+            # 4. Dispositivi rimossi o non presenti nel ciclo corrente: se prima erano 'home', invia 'not_home'
+            stale_macs = set(self._tracker_last_state.keys()) - current_cycle_macs
+            for stale_mac in stale_macs:
+                if self._tracker_last_state.get(stale_mac) != "not_home":
+                    await self._publish_message(client, f"{base}/device/{stale_mac}/state", "not_home", retain=False)
+                    self._tracker_last_state[stale_mac] = "not_home"
 
     async def _worker_loop(self):
         """Background asynchronous MQTT client loop with auto-reconnect."""
         from app.services.eero_client import eero_client
-        logger.info(f"[MQTT] Avvio worker MQTT (Broker: {self._broker_host}:{self._broker_port}, Base Topic: {self._base_topic})")
+        log_event(logger, logging.INFO, "log_ops.mqtt_worker_started", host=self._broker_host, port=self._broker_port, topic=self._base_topic)
 
         while not self._stop_event.is_set():
             if not self._enabled:
@@ -434,7 +465,7 @@ class MQTTService:
                 continue
 
             if not self.is_available:
-                logger.warning("[MQTT] Modulo aiomqtt non disponibile. Installare aiomqtt per abilitare la pubblicazione MQTT.")
+                log_event(logger, logging.WARNING, "log_ops.mqtt_aiomqtt_missing")
                 await asyncio.sleep(60)
                 continue
 
@@ -465,7 +496,8 @@ class MQTTService:
                     self._connected = True
                     self._stats["connected"] = True
                     self._stats["last_error"] = None
-                    logger.info(f"[MQTT] Connesso con successo al broker {self._broker_host}:{self._broker_port}")
+                    self._published_tracker_configs.clear()
+                    log_event(logger, logging.INFO, "log_ops.mqtt_connected", host=self._broker_host, port=self._broker_port)
 
                     # Publish Home Assistant Discovery
                     await self.publish_discovery_configs(client)
@@ -481,18 +513,18 @@ class MQTTService:
                 self._connected = False
                 self._stats["connected"] = False
                 self._stats["last_error"] = str(e)
-                logger.warning(f"[MQTT] Errore connessione broker {self._broker_host}:{self._broker_port} ({e}). Riprovo tra 15s...")
+                log_event(logger, logging.WARNING, "log_ops.mqtt_connect_failed", host=self._broker_host, port=self._broker_port, error=str(e))
                 await asyncio.sleep(15)
 
         self._connected = False
         self._stats["connected"] = False
-        logger.info("[MQTT] Worker MQTT terminato.")
+        log_event(logger, logging.INFO, "log_ops.mqtt_worker_stopped")
 
     async def start(self):
         """Starts the background MQTT client worker."""
         await self.load_settings()
         if not self._enabled:
-            logger.info("[MQTT] Servizio MQTT disabilitato da configurazione.")
+            log_event(logger, logging.INFO, "log_ops.mqtt_disabled")
             return
 
         if self._task and not self._task.done():
@@ -504,6 +536,8 @@ class MQTTService:
     async def stop(self):
         """Stops the background MQTT client worker."""
         self._stop_event.set()
+        self._published_tracker_configs.clear()
+        self._tracker_last_state.clear()
         if self._task and not self._task.done():
             self._task.cancel()
             try:

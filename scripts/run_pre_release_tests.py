@@ -32,6 +32,12 @@ if sys.platform == "win32":
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import tempfile
+# Default to an isolated temporary DATA_DIR to protect production databases
+if not os.environ.get("DATA_DIR"):
+    _test_data_dir = tempfile.mkdtemp(prefix="eero_dashboard_test_")
+    os.environ["DATA_DIR"] = _test_data_dir
+
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
@@ -123,14 +129,14 @@ async def run_all_tests():
         runner.assert_true("192.168.1.50" in ag_data.get("url", ""), "URL AdGuard in Demo è fittizio (192.168.1.50)")
         runner.assert_true(ag_data.get("username") == "demo_admin", "Username AdGuard in Demo è 'demo_admin'")
         runner.assert_true(ag_data.get("has_password") is True, "Indicator password AdGuard presente")
-        runner.assert_true("Simulazione Demo" in ag_data.get("last_sync_status", ""), "Stato sync riporta '[Simulazione Demo]'")
+        runner.assert_true(any(t in ag_data.get("last_sync_status", "") for t in ("Simulazione Demo", "Demo Simulation")), "Stato sync riporta '[Simulazione Demo]'")
 
         # Test Connessione AdGuard in Demo Mode (nessuna chiamata HTTP esterna)
         res = await client.post("/api/automations/adguard/test", json={})
         runner.assert_true(res.status_code == 200, "Endpoint POST /api/automations/adguard/test risponde HTTP 200")
         test_res = res.json()
         runner.assert_true(test_res.get("success") is True, "Test connessione AdGuard simulato con successo")
-        runner.assert_true("Ambiente Demo Simulato" in test_res.get("message", ""), "Messaggio esplicito di ambiente Demo simulato")
+        runner.assert_true(any(t in test_res.get("message", "") for t in ("Ambiente Demo Simulato", "Simulated demo environment")), "Messaggio esplicito di ambiente Demo simulato")
 
         # Test Sincronizzazione Dispositivi AdGuard in Demo Mode
         res = await client.post("/api/automations/adguard/sync", json={})
@@ -1126,7 +1132,7 @@ async def run_all_tests():
         runner.assert_true(check_res.status_code == 200, "Endpoint GET /api/system/update/check risponde HTTP 200")
         check_data = check_res.json()
         runner.assert_true(check_data.get("status") == "success", "Stato update check è 'success'")
-        runner.assert_true(check_data.get("current_version") == "1.6.1", f"Versione corrente rilevata è 1.6.1 (ottenuta: {check_data.get('current_version')})")
+        runner.assert_true(check_data.get("current_version") == "1.6.2", f"Versione corrente rilevata è 1.6.2 (ottenuta: {check_data.get('current_version')})")
         runner.assert_true("cli_command" in check_data, "Comando CLI assistito presente nel payload di update")
 
         # 2. Test Endpoint /api/system/update/trigger (modalità manuale/assistita in test env)
@@ -1484,13 +1490,13 @@ async def run_all_tests():
             await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="selfsigned.lan")))
             for inst_id, engine, _host in tls_engines:
                 test_res = (await client.post("/api/automations/dns/test", json={"instance_id": inst_id})).json()
-                runner.assert_true(test_res.get("success") is False and test_res.get("tls_error") is True and "Accetta certificato HTTPS non verificato" in test_res.get("message", ""), f"Test {engine}: certificato non verificabile → tls_error e messaggio con l'opzione da abilitare")
+                runner.assert_true(test_res.get("success") is False and test_res.get("tls_error") is True and any(t in test_res.get("message", "") for t in ("Accetta certificato HTTPS non verificato", "Accept unverified HTTPS certificate")), f"Test {engine}: certificato non verificabile → tls_error e messaggio con l'opzione da abilitare")
                 sync_res = await dns_service.sync_devices(tls_devices, instance_id=inst_id)
                 sync_item = (sync_res.get("results") or [{}])[0]
                 runner.assert_true(sync_item.get("success") is False and sync_item.get("tls_error") is True, f"Sync {engine}: certificato non verificabile → tls_error")
             await db_service.set_setting("dns_instances", json.dumps(_tls_instances(insecure=False, host_override="unreachable.lan")))
             test_res = (await client.post("/api/automations/dns/test", json={"instance_id": "tls_adguard"})).json()
-            runner.assert_true(test_res.get("success") is False and not test_res.get("tls_error") and "Impossibile connettersi" in test_res.get("message", ""), "Errore di connessione non TLS: messaggio invariato, nessun tls_error")
+            runner.assert_true(test_res.get("success") is False and not test_res.get("tls_error") and any(t in test_res.get("message", "") for t in ("Impossibile connettersi", "Cannot connect")), "Errore di connessione non TLS: messaggio invariato, nessun tls_error")
 
             # Pi-hole: errore di certificato durante /api/auth (dopo un 401) non viene assorbito
             await db_service.set_setting("dns_instances", json.dumps([{"id": "tls_pihole_auth", "name": "Pi-hole auth", "engine": "pihole", "url": "https://pihole-auth.lan", "token": "tok-tls", "insecure_tls": False, "enabled": True}]))
@@ -1937,7 +1943,8 @@ async def run_all_tests():
         runner.assert_true(eero_client.current_network_id == "network_demo_mesh_02", "eero_client memorizza la nuova rete attiva")
 
         # 4. Verifica dettagli rete post-switch
-        det_res = await client.get("/api/network/overview")
+        # Demo sample names are translated for non-Italian callers (demo_i18n middleware): ask for IT explicitly
+        det_res = await client.get("/api/network/overview", headers={"X-Dashboard-Lang": "it"})
         runner.assert_true(det_res.status_code == 200, "GET /api/network/overview risponde HTTP 200 post-switch")
         det_data = det_res.json()
         cached_net = det_data.get("data", {}).get("network", {})
@@ -2192,7 +2199,7 @@ async def run_all_tests():
         # 7. Test Manuale In-App & Package Versioning (v1.6.0)
         import importlib
         app_pkg = importlib.import_module("app")
-        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.1", f"app.__version__ è '1.6.1' (trovato: {getattr(app_pkg, '__version__', None)})")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.2", f"app.__version__ è '1.6.2' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
         runner.assert_true(res_man_it.json().get("count") >= 10, f"Manuale IT contiene almeno 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
@@ -2200,11 +2207,11 @@ async def run_all_tests():
         runner.assert_true(res_man_en.status_code == 200, "GET /api/manual/sections?lang=en risponde HTTP 200")
         runner.assert_true(res_man_en.json().get("count") >= 10, f"Manuale EN contiene almeno 10 sezioni complete (trovate: {res_man_en.json().get('count')})")
         res_ch_it = await client.get("/api/manual/changelog?lang=it")
-        runner.assert_true(res_ch_it.json().get("version") == "1.6.1", "Versione restituita da changelog IT è 1.6.1")
-        runner.assert_true("## v1.6.1" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.1")
+        runner.assert_true(res_ch_it.json().get("version") == "1.6.2", "Versione restituita da changelog IT è 1.6.2")
+        runner.assert_true("## v1.6.2" in res_ch_it.json().get("content", ""), "Changelog in-app IT include la release v1.6.2")
         res_ch_en = await client.get("/api/manual/changelog?lang=en")
-        runner.assert_true(res_ch_en.json().get("version") == "1.6.1", "Versione restituita da changelog EN è 1.6.1")
-        runner.assert_true("## v1.6.1" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.1")
+        runner.assert_true(res_ch_en.json().get("version") == "1.6.2", "Versione restituita da changelog EN è 1.6.2")
+        runner.assert_true("## v1.6.2" in res_ch_en.json().get("content", ""), "Changelog in-app EN include la release v1.6.2")
 
         # 8. Test Build Number & Full Versioning (es. '1.6.0 build 1')
         runner.assert_true(hasattr(settings, "build_number") and bool(settings.build_number), "settings.build_number configurato")
@@ -2801,6 +2808,7 @@ async def run_all_tests():
         runner.assert_true(test_poller._cloud_alert_sent is True, "Dopo 3 fallimenti consecutivi _cloud_alert_sent diventa True")
 
         # Verifica soppressione falsi allarmi nodi offline durante cloud outage
+        await asyncio.sleep(0.1)  # Consente il completamento del dispatch background di notify_cloud_unreachable
         test_poller._known_eeros_status["node_test_1"] = "online"
         fake_offline_node = {"id": "node_test_1", "status": "offline"}
         alerts_before = len(await db_service.get_alerts(limit=50))
@@ -3948,7 +3956,7 @@ async def run_all_tests():
         runner.assert_true(clear_res.get("status") == "success", "clear_logs restituisce status success")
         post_clear_logs = await db_service.get_system_logs(limit=10)
         runner.assert_true(len(post_clear_logs) == 1, "Dopo clear_logs rimane solo l'audit log di svuotamento")
-        runner.assert_true("cancellati con successo" in post_clear_logs[0]["message"], "Audit log di svuotamento registrato correttamente")
+        runner.assert_true(any(t in post_clear_logs[0]["message"] for t in ("cancellati con successo", "cleared successfully")), "Audit log di svuotamento registrato correttamente")
 
         # 4. REST API Endpoint Testing (/api/system/logs) (v1.6.0 Modulo 4 - Fase 2)
         # GET /api/system/logs/config con admin
@@ -4183,6 +4191,42 @@ async def run_all_tests():
         runner.assert_true("fetchMqttSettings" in js_content, "fetchMqttSettings presente in app.js")
         runner.assert_true("saveMqttSettings" in js_content, "saveMqttSettings presente in app.js")
         runner.assert_true("testMqttConnection" in js_content, "testMqttConnection presente in app.js")
+
+        # Test Issue #92: MQTT Device Tracker offline status & config deduplication
+        class _MockMqttClient:
+            def __init__(self):
+                self.messages = []
+            async def publish(self, topic, payload, retain=False, qos=0):
+                self.messages.append({"topic": topic, "payload": payload, "retain": retain})
+
+        mock_mqtt = _MockMqttClient()
+        mqtt_service._discovery_enabled = True
+        mqtt_service._published_tracker_configs.clear()
+        mqtt_service._tracker_last_state.clear()
+        
+        test_telemetry = {
+            "devices": [
+                {"mac": "aa:bb:cc:dd:ee:01", "hostname": "Online Phone", "connected": True, "ip": "192.168.1.10"},
+                {"mac": "aa:bb:cc:dd:ee:02", "hostname": "Offline Tablet", "connected": False, "ip": "192.168.1.11"}
+            ],
+            "eeros": [{"status": "online"}],
+            "health_score": 100,
+            "bufferbloat_grade": "A"
+        }
+        await mqtt_service.publish_telemetry(mock_mqtt, telemetry_data=test_telemetry)
+        
+        online_state_msgs = [m for m in mock_mqtt.messages if m["topic"].endswith("/device/aabbccddee01/state")]
+        offline_state_msgs = [m for m in mock_mqtt.messages if m["topic"].endswith("/device/aabbccddee02/state")]
+        runner.assert_true(len(online_state_msgs) == 1 and online_state_msgs[0]["payload"] == "home", "Device online riceve stato 'home'")
+        runner.assert_true(len(offline_state_msgs) == 1 and offline_state_msgs[0]["payload"] == "not_home", "Device offline riceve stato 'not_home' (Issue #92)")
+        
+        config_msgs_first = [m for m in mock_mqtt.messages if "/device_tracker/" in m["topic"] and m["topic"].endswith("/config")]
+        runner.assert_true(len(config_msgs_first) == 2, "Discovery config pubblicata per entrambi i dispositivi al primo ciclo")
+        
+        mock_mqtt.messages.clear()
+        await mqtt_service.publish_telemetry(mock_mqtt, telemetry_data=test_telemetry)
+        config_msgs_second = [m for m in mock_mqtt.messages if "/device_tracker/" in m["topic"] and m["topic"].endswith("/config")]
+        runner.assert_true(len(config_msgs_second) == 0, "Discovery config deduplicata e non ripubblicata inutilmente (Issue #92)")
 
         # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
         res_prom_root = await client.get("/metrics")
@@ -4494,6 +4538,20 @@ async def run_all_tests():
         runner.assert_true("fd12:3456:789a:1::99" in (enriched_dev.get("ipv6_all") or []), "enriched_dev popola correttamente ipv6_all con ULA")
         runner.assert_true(enriched_dev.get("has_discovered_ips") is True, "enriched_dev imposta has_discovered_ips su True")
 
+        # Test Issue #88: delete_discovered_ips_for_mac & POST /api/devices/{mac}/clear-ula
+        del_cnt = await db_service.delete_discovered_ips_for_mac(test_mac_ula)
+        runner.assert_true(del_cnt >= 1, "delete_discovered_ips_for_mac cancella i record da SQLite")
+        
+        await db_service.add_discovered_ips([{
+            "mac_address": test_mac_ula,
+            "ip_address": "fd12:3456:789a:1::101",
+            "ip_type": "ULA",
+            "source": "ndp_enrichment"
+        }])
+        res_clear_ula = await client.post(f"/api/devices/{test_mac_ula}/clear-ula", headers=adm_hdr)
+        runner.assert_true(res_clear_ula.status_code == 200, "POST /api/devices/{mac}/clear-ula risponde HTTP 200")
+        runner.assert_true(res_clear_ula.json().get("status") == "success", "clear-ula status success")
+
         # =====================================================================
         # [ISSUE #60] SELETTORE COLONNE & PERSONALIZZAZIONE VISIBILITÀ TABELLA
         # =====================================================================
@@ -4520,6 +4578,12 @@ async def run_all_tests():
             _index_html = _f_html.read()
         runner.assert_true("toggleTableColumn" in _index_html, "index.html contiene il selettore colonne con checkbox toggle")
         runner.assert_true("isTableColumnVisible('first_seen')" in _index_html, "index.html supporta visibilità colonna first_seen")
+
+        # Test Issue #91: Fuso orario nei log
+        runner.assert_true("logTimezoneMode:" in _app_js, "app.js gestisce lo stato logTimezoneMode")
+        runner.assert_true("formatLogTimestamp(" in _app_js, "app.js definisce il metodo formatLogTimestamp")
+        runner.assert_true("toggleLogTimezone(" in _app_js, "app.js implementa toggleLogTimezone")
+        runner.assert_true("formatLogTimestamp(l.timestamp)" in _index_html, "index.html usa formatLogTimestamp nei log")
         runner.assert_true("device-col-first-seen" in _index_html, "index.html include classe device-col-first-seen")
 
         with open("app/static/css/styles.css", "r", encoding="utf-8") as _f_css:
@@ -4936,7 +5000,7 @@ async def run_all_tests():
         runner.assert_true(isinstance(dt_default, datetime), "_get_local_now() restituisce istanza datetime")
 
         # 2. Endpoint API /api/automations/digest (GET & POST)
-        res_get_digest = await client.get("/api/automations/digest")
+        res_get_digest = await client.get("/api/automations/digest", headers=adm_hdr)
         runner.assert_true(res_get_digest.status_code == 200, "GET /api/automations/digest risponde HTTP 200")
         digest_data = res_get_digest.json()
         runner.assert_true("enabled" in digest_data, "GET /api/automations/digest include 'enabled'")
@@ -4944,18 +5008,18 @@ async def run_all_tests():
         runner.assert_true("last_sent_date" in digest_data, "GET /api/automations/digest include 'last_sent_date'")
 
         # Aggiornamento orario valido (es. ore 20)
-        res_post_digest = await client.post("/api/automations/digest", json={"enabled": True, "hour": 20})
+        res_post_digest = await client.post("/api/automations/digest", json={"enabled": True, "hour": 20}, headers=adm_hdr)
         runner.assert_true(res_post_digest.status_code == 200, "POST /api/automations/digest con hour=20 risponde HTTP 200")
         runner.assert_true(res_post_digest.json().get("hour") == 20, "Risposta POST conferma hour=20")
 
         # Verifica persistenza su GET
-        res_verify_digest = await client.get("/api/automations/digest")
+        res_verify_digest = await client.get("/api/automations/digest", headers=adm_hdr)
         runner.assert_true(res_verify_digest.json().get("hour") == 20, "GET successivo conferma persistenza hour=20")
 
         # Validazione range orario (rifiuto valori non compresi tra 0 e 23)
-        res_invalid_high = await client.post("/api/automations/digest", json={"enabled": True, "hour": 25})
+        res_invalid_high = await client.post("/api/automations/digest", json={"enabled": True, "hour": 25}, headers=adm_hdr)
         runner.assert_true(res_invalid_high.status_code == 422, "POST /api/automations/digest con hour=25 rifiutato con HTTP 422")
-        res_invalid_low = await client.post("/api/automations/digest", json={"enabled": True, "hour": -1})
+        res_invalid_low = await client.post("/api/automations/digest", json={"enabled": True, "hour": -1}, headers=adm_hdr)
         runner.assert_true(res_invalid_low.status_code == 422, "POST /api/automations/digest con hour=-1 rifiutato con HTTP 422")
 
         # 3. Test guard persistente SQLite e Idempotency al riavvio del container (Issue #70)
@@ -5264,7 +5328,7 @@ async def run_all_tests():
 
             sw_js_path = Path("app/static/sw.js")
             sw_js_content = sw_js_path.read_text(encoding="utf-8")
-            runner.assert_true("eero-dashboard-v1.6.1" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.1 per invalidazione cache obsoleta")
+            runner.assert_true("eero-dashboard-v1.6.2" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.2 per invalidazione cache obsoleta")
 
         finally:
             # Ripristina stato originale eero_client
@@ -5349,6 +5413,302 @@ async def run_all_tests():
             runner.assert_true(float(poller.cached_network["speedtest"].get("ping_under_load")) == 13.0, "cached_network arricchita con ping_under_load 13.0")
         finally:
             poller.cached_network = saved_cn
+
+        # -----------------------------------------------------------------
+        # 36. TEST SECURITY HARDENING & VULNERABILITY ASSESSMENT (v1.6.2)
+        # -----------------------------------------------------------------
+        print("\n🛡️ [36/36] TEST SECURITY HARDENING & VULNERABILITY MITIGATION (v1.6.2)")
+        
+        # 1. HTTP Defensive Security Headers
+        res_sec_hdr = await client.get("/api/health")
+        runner.assert_true(res_sec_hdr.status_code == 200, "GET /api/health risponde HTTP 200")
+        runner.assert_true(res_sec_hdr.headers.get("x-content-type-options") == "nosniff", "Header X-Content-Type-Options: nosniff presente")
+        runner.assert_true(res_sec_hdr.headers.get("x-frame-options") == "SAMEORIGIN", "Header X-Frame-Options: SAMEORIGIN presente")
+        runner.assert_true(res_sec_hdr.headers.get("referrer-policy") == "strict-origin-when-cross-origin", "Header Referrer-Policy: strict-origin-when-cross-origin presente")
+        runner.assert_true("geolocation=()" in res_sec_hdr.headers.get("permissions-policy", ""), "Header Permissions-Policy restrittivo presente")
+
+        # 2. Anti-SSRF in DNS Manager
+        from app.services.dns_manager import is_safe_dns_url
+        is_safe_meta, _ = is_safe_dns_url("http://169.254.169.254/latest/meta-data")
+        runner.assert_true(is_safe_meta is False, "Anti-SSRF: IP link-local / cloud metadata (169.254.169.254) tassativamente bloccato")
+        is_safe_cloud_host, _ = is_safe_dns_url("http://metadata.google.internal/computeMetadata/v1/")
+        runner.assert_true(is_safe_cloud_host is False, "Anti-SSRF: Host metadata cloud (metadata.google.internal) tassativamente bloccato")
+        is_safe_lan, _ = is_safe_dns_url("http://192.168.4.1:8080")
+        runner.assert_true(is_safe_lan is True, "Anti-SSRF: IP LAN privato valido (192.168.4.1) consentito")
+        is_safe_host_lan, _ = is_safe_dns_url("http://pihole.lan:80")
+        runner.assert_true(is_safe_host_lan is True, "Anti-SSRF: Hostname locale valido (pihole.lan) consentito")
+
+        res_ssrf_test = await dns_mgr.test_instance({"engine": "adguard", "url": "http://169.254.169.254"})
+        runner.assert_true(res_ssrf_test.get("success") is False, "test_instance rifiuta URL link-local con success: False")
+        runner.assert_true("Anti-SSRF" in res_ssrf_test.get("message", ""), "Messaggio di errore esplicito Anti-SSRF generato")
+
+        # 3. Anti-Brute Force Sliding Window Rate Limiter
+        from app.services.rate_limiter import InMemoryRateLimiter
+        test_limiter = InMemoryRateLimiter(max_attempts=3, window_seconds=2, block_seconds=5)
+        k_test = "192.0.2.1"
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is False, "Rate limiter inizialmente non attivo per IP nuovo")
+        test_limiter.record_failure(k_test)
+        test_limiter.record_failure(k_test)
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is False, "Rate limiter consente tentativi inferiori alla soglia (2/3)")
+        is_blocked, retry = test_limiter.record_failure(k_test)
+        runner.assert_true(is_blocked is True, "Rate limiter applica il blocco al 3° tentativo fallito")
+        runner.assert_true(retry > 0, "Rate limiter calcola correttamente Retry-After in secondi")
+        is_lim, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim is True, "is_limited conferma stato di blocco attivo")
+        test_limiter.reset(k_test)
+        is_lim_after, _ = test_limiter.is_limited(k_test)
+        runner.assert_true(is_lim_after is False, "reset() rimuove correttamente il blocco (login riuscito)")
+
+        # 4. Anti-XSS Link Sanitization in Markdown Parser
+        app_js_text = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("cleanHref = (href || '').trim()" in app_js_text, "app.js sanitizza href dei link markdown")
+        runner.assert_true("/^(?:https?:\\/\\/|mailto:|\\/|#)/i.test(cleanHref)" in app_js_text, "app.js consente solo protocolli web sicuri (http, https, mailto, /, #)")
+        runner.assert_true("<span class=\"text-sky-400 font-medium\">${label}</span>" in app_js_text, "app.js neutralizza protocolli pericolosi (es. javascript:) in span non cliccabili")
+
+        # 5. Anti-Stored XSS in AI Diagnostic Summary
+        index_html_text = Path("app/templates/index.html").read_text(encoding="utf-8")
+        runner.assert_true("x-html=\"renderSimpleMarkdown(localized(healthDetails?.ai_summary, 'narrative'))\"" in index_html_text, "index.html usa renderSimpleMarkdown per isolare ed eseguire escape HTML della narrativa AI (viewer language)")
+
+        # 6. Protezione RBAC su tutte le rotte operative identificate nell'audit
+        from app.routers import system, automations, network
+        runner.assert_true(len(system.router.routes) > 0, "Router system caricato")
+        update_trigger_route = next((r for r in system.router.routes if r.path == "/api/system/update/trigger"), None)
+        runner.assert_true(update_trigger_route is not None, "Route /api/system/update/trigger registrata")
+        runner.assert_true(len(update_trigger_route.dependencies) > 0, "Route /api/system/update/trigger protetta da dependency RBAC")
+
+        alerts_read_route = next((r for r in automations.router.routes if r.path == "/api/automations/alerts/read"), None)
+        runner.assert_true(alerts_read_route is not None and len(alerts_read_route.dependencies) > 0, "Route /api/automations/alerts/read protetta da dependency RBAC")
+
+        digest_route = next((r for r in automations.router.routes if r.path == "/api/automations/digest" and "POST" in r.methods), None)
+        runner.assert_true(digest_route is not None and len(digest_route.dependencies) > 0, "Route POST /api/automations/digest protetta da dependency RBAC")
+
+        leds_route = next((r for r in network.router.routes if r.path == "/api/network/leds"), None)
+        runner.assert_true(leds_route is not None and len(leds_route.dependencies) > 0, "Route POST /api/network/leds protetta da dependency RBAC")
+
+        # -----------------------------------------------------------------
+        # 37. TEST CONDENSED CHANGELOG & UPDATE PROPOSAL SYSTEM (v1.6.2)
+        # -----------------------------------------------------------------
+        print("\n🚀 [37/37] TEST CONDENSED CHANGELOG & UPDATE PROPOSAL SYSTEM (v1.6.2)")
+
+        # 1. Test estrazione changelog ridotto (extract_condensed_changelog)
+        from app.services.updater import extract_condensed_changelog, extract_release_notes_from_changelog, updater_service
+        notes_162 = extract_release_notes_from_changelog("1.6.2")
+        runner.assert_true(len(notes_162) > 0, "extract_release_notes_from_changelog estrae le note per 1.6.2 da changelog.md")
+        runner.assert_true("Vulnerability Assessment" in notes_162, "Note di rilascio 1.6.2 contengono la sezione Vulnerability Assessment")
+
+        condensed_162 = extract_condensed_changelog("1.6.2")
+        runner.assert_true(len(condensed_162) >= 3, f"extract_condensed_changelog estrae almeno 3 punti salienti (estratti: {len(condensed_162)})")
+        runner.assert_true(any("Vulnerability Assessment" in h for h in condensed_162), "Punto saliente 'Vulnerability Assessment' presente")
+        runner.assert_true(any("Parità Completa Traduzioni" in h for h in condensed_162), "Punto saliente 'Parità Completa Traduzioni' presente")
+        runner.assert_true(all("PR #" not in h and "@" not in h for h in condensed_162), "Tag PR/Issue/User rimossi dai titoli sintetici")
+
+        # Fallback su raw_notes con elenco puntato
+        raw_mock = "## v2.0.0\n* **🚀 Feature A:** Descrizione\n* **⚡ Feature B:** Altra descrizione\n* **🛡️ Feature C:** Sicurezza"
+        condensed_mock = extract_condensed_changelog("2.0.0", raw_notes=raw_mock)
+        runner.assert_true(len(condensed_mock) == 3, f"extract_condensed_changelog su raw_notes puntate estrae 3 punti (estratti: {len(condensed_mock)})")
+
+        # Accesso via metodo updater_service
+        condensed_obj = updater_service.extract_condensed_changelog("1.6.2")
+        runner.assert_true(len(condensed_obj) == len(condensed_162), "updater_service.extract_condensed_changelog allineato alla funzione standalone")
+
+        # 2. Endpoint GET /api/system/update/changelog
+        res_changelog = await client.get("/api/system/update/changelog?version=1.6.2")
+        runner.assert_true(res_changelog.status_code == 200, "GET /api/system/update/changelog risponde HTTP 200")
+        changelog_json = res_changelog.json()
+        runner.assert_true(changelog_json.get("status") == "success", "Response status è success")
+        runner.assert_true(changelog_json.get("version") == "1.6.2", "Response version è 1.6.2")
+        runner.assert_true(len(changelog_json.get("condensed_changelog", [])) >= 3, "Endpoint restituisce almeno 3 punti salienti condensed_changelog")
+        runner.assert_true(len(changelog_json.get("release_notes", "")) > 0, "Endpoint restituisce release_notes integrali")
+
+        # 3. Verifica parità chiavi i18n per prompt & condensed changelog
+        it_upd = it_locale.get("update_modal", {})
+        en_upd = en_locale.get("update_modal", {})
+        for req_k in [
+            "condensed_changelog_title",
+            "condensed_changelog_subtitle",
+            "prompt_title",
+            "prompt_desc",
+            "prompt_proceed",
+            "prompt_view_details",
+            "prompt_later",
+            "show_full_notes",
+            "hide_full_notes",
+            "no_highlights"
+        ]:
+            runner.assert_true(req_k in it_upd, f"Chiave '{req_k}' presente in it.json under update_modal")
+            runner.assert_true(req_k in en_upd, f"Chiave '{req_k}' presente in en.json under update_modal")
+
+        # 4. Verifica binding Frontend (app.js e index.html)
+        runner.assert_true("condensed_changelog: []" in app_js_text, "app.js include condensed_changelog nello state updateInfo")
+        runner.assert_true("showUpdatePrompt" in app_js_text, "app.js gestisce flag showUpdatePrompt")
+        runner.assert_true("dismissUpdatePrompt" in app_js_text, "app.js implementa dismissUpdatePrompt")
+        runner.assert_true("showFullReleaseNotes" in app_js_text, "app.js gestisce toggle showFullReleaseNotes")
+
+        runner.assert_true("updateInfo.condensed_changelog" in index_html_text, "index.html itera su updateInfo.condensed_changelog")
+        runner.assert_true("showUpdatePrompt" in index_html_text, "index.html condiziona il banner di prompt a showUpdatePrompt")
+        runner.assert_true("proceedUpdateFromPrompt" in index_html_text, "index.html collega il pulsante procedi a proceedUpdateFromPrompt")
+        runner.assert_true("t('update_modal.condensed_changelog_title')" in index_html_text, "index.html usa stringa i18n per titolo changelog ridotto")
+
+        # -----------------------------------------------------------------
+        # 38. TEST LANGUAGE-AWARE UPDATE NOTES & DEMO PAYLOAD LOCALIZATION
+        # -----------------------------------------------------------------
+        print("\n🌐 [38/38] TEST LANGUAGE-AWARE UPDATE NOTES & DEMO PAYLOAD LOCALIZATION")
+
+        from app.services.updater import select_release_notes
+        from app.services.demo_i18n import DEMO_STRINGS_EN, localize_demo_payload, localize_demo_text
+        from app.i18n import tr
+
+        gh_body_en = "### 🛡️ Security Hardening\n* detail\n### 🏷️ Pi-hole RFC 1123 Fix\n* detail"
+        # English readers get the GitHub body (English) first; Italian readers keep changelog.md (Italian)
+        en_notes = select_release_notes("1.6.2", github_notes=gh_body_en, lang="en")
+        it_notes = select_release_notes("1.6.2", github_notes=gh_body_en, lang="it")
+        runner.assert_true(en_notes == gh_body_en, "select_release_notes(en) preferisce il corpo GitHub in inglese")
+        runner.assert_true("Vulnerability Assessment" in it_notes and it_notes != gh_body_en, "select_release_notes(it) preferisce changelog.md in italiano")
+        runner.assert_true(select_release_notes("1.6.2", github_notes="", lang="en") == it_notes, "select_release_notes(en) ricade su changelog.md senza note GitHub")
+        runner.assert_true(select_release_notes("9.9.9", github_notes="", lang="it") == "", "select_release_notes restituisce stringa vuota senza alcuna sorgente")
+
+        en_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="en")
+        it_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="it")
+        runner.assert_true(en_condensed == ["🛡️ Security Hardening", "🏷️ Pi-hole RFC 1123 Fix"], f"Condensed changelog EN estratto dal corpo GitHub (ottenuto: {en_condensed})")
+        runner.assert_true(any("Parità Completa Traduzioni" in h for h in it_condensed), "Condensed changelog IT estratto da changelog.md")
+
+        # localize_update_info: one language-neutral cache serves both languages
+        neutral = {
+            "current_version": "1.6.1", "latest_version": "1.6.2", "latest_full_version": "1.6.2 build 1",
+            "update_available": True, "release_notes_github": gh_body_en, "release_notes_fallback": "",
+        }
+        loc_en = updater_service.localize_update_info(neutral, lang="en")
+        loc_it = updater_service.localize_update_info(neutral, lang="it")
+        runner.assert_true(loc_en["release_notes"] == gh_body_en and loc_en["condensed_changelog"] == en_condensed and loc_en["language"] == "en", "localize_update_info(en) espone note e punti salienti in inglese")
+        runner.assert_true(loc_it["release_notes"] == it_notes and loc_it["language"] == "it", "localize_update_info(it) espone note in italiano")
+        runner.assert_true("release_notes_github" in neutral and "condensed_changelog" not in neutral, "La cache resta neutra rispetto alla lingua (nessun campo localizzato memorizzato)")
+        no_notes = updater_service.localize_update_info({**neutral, "current_version": "9.9.8", "latest_version": "9.9.9", "release_notes_github": "", "release_notes_fallback": "Release v9.9.9 available on Docker Hub"}, lang="en")
+        runner.assert_true(no_notes["release_notes"].startswith("Release v9.9.9") and no_notes["condensed_changelog"] == [tr("updater.generic_release_available", lang="en", version="1.6.2 build 1")], "Senza note disponibili usa il fallback Docker Hub e il punto saliente generico tradotto")
+        runner.assert_true(tr("updater.generic_release_available", lang="it", version="x") != tr("updater.generic_release_available", lang="en", version="x"), "Chiave updater.generic_release_available presente in EN e IT")
+
+        # /api/system/update/check & /update/changelog honour X-Dashboard-Lang
+        res_en = await client.get("/api/system/update/check", headers={"X-Dashboard-Lang": "en"})
+        res_it = await client.get("/api/system/update/check", headers={"X-Dashboard-Lang": "it"})
+        runner.assert_true(res_en.status_code == 200 and res_en.json().get("language") == "en", "GET /update/check con X-Dashboard-Lang: en risponde language=en")
+        runner.assert_true(res_it.status_code == 200 and res_it.json().get("language") == "it", "GET /update/check con X-Dashboard-Lang: it risponde language=it")
+        runner.assert_true("release_notes" in res_en.json() and "condensed_changelog" in res_en.json(), "Payload /update/check mantiene release_notes e condensed_changelog")
+        res_cl_it = await client.get("/api/system/update/changelog?version=1.6.2", headers={"X-Dashboard-Lang": "it"})
+        runner.assert_true(res_cl_it.status_code == 200 and any("Parità Completa Traduzioni" in h for h in res_cl_it.json().get("condensed_changelog", [])), "GET /update/changelog?version=1.6.2 (it) usa changelog.md")
+
+        # Demo payload localization
+        runner.assert_true(localize_demo_text("Gateway Soggiorno", lang="en") == "Living Room Gateway", "localize_demo_text traduce i nomi dei nodi demo in inglese")
+        runner.assert_true(localize_demo_text("Gateway Soggiorno", lang="it") == "Gateway Soggiorno", "localize_demo_text lascia intatto l'italiano")
+        runner.assert_true(localize_demo_text("Nuovo dispositivo iPad Cucina / Ricette su Gateway Soggiorno", lang="en") == "Nuovo dispositivo Kitchen iPad / Recipes su Living Room Gateway", "localize_demo_text sostituisce i nomi anche dentro frasi (match più lungo prioritario)")
+        sample = {"connected_eero_name": "Camera da Letto", "nested": [{"name": "Intrattenimento & Salotto", "mac": "AA:BB"}], "n": 3}
+        loc_sample = localize_demo_payload(sample, lang="en")
+        runner.assert_true(loc_sample["connected_eero_name"] == "Bedroom" and loc_sample["nested"][0]["name"] == "Entertainment & Lounge" and loc_sample["nested"][0]["mac"] == "AA:BB" and loc_sample["n"] == 3 and "connected_eero_name" in loc_sample, "localize_demo_payload traduce ricorsivamente solo i valori stringa, mai le chiavi")
+
+        # Every Italian demo literal in _init_demo_state must have an English mapping
+        import inspect as _inspect
+        demo_src = _inspect.getsource(eero_client._init_demo_state)
+        for lit in ("Gateway Soggiorno", "Camera da Letto", "Casa Rossi Mesh 6E", "Intrattenimento & Salotto", "iPad Cucina / Ricette", "Gateway Rack Ufficio", "Laboratorio & Workstation"):
+            runner.assert_true(lit in demo_src and lit in DEMO_STRINGS_EN, f"Letterale demo '{lit}' presente nel simulatore e mappato in DEMO_STRINGS_EN")
+
+        eero_client.set_demo_mode(True)
+        try:
+            # /api/devices is served from the poller cache (empty in this harness): use the eero node list
+            eeros_en = await client.get("/api/network/eeros", headers={"X-Dashboard-Lang": "en"})
+            eeros_it = await client.get("/api/network/eeros", headers={"X-Dashboard-Lang": "it"})
+            names_en = {e.get("name") for e in eeros_en.json().get("eeros", [])}
+            names_it = {e.get("name") for e in eeros_it.json().get("eeros", [])}
+            runner.assert_true("Living Room Gateway" in names_en and "Gateway Soggiorno" not in names_en, f"GET /api/network/eeros (demo, en) espone nodi in inglese (ottenuto: {sorted(n for n in names_en if n)})")
+            runner.assert_true("Gateway Soggiorno" in names_it, "GET /api/network/eeros (demo, it) mantiene i nomi italiani")
+            runner.assert_true(eeros_en.headers.get("content-length") == str(len(eeros_en.content)), "Il middleware demo ricalcola Content-Length dopo la traduzione")
+            ov_en = await client.get("/api/network/overview", headers={"X-Dashboard-Lang": "en"})
+            runner.assert_true("Rossi Home" in str(ov_en.json().get("data", {}).get("network", {}).get("name", "")) or "Office & Studio" in str(ov_en.json().get("data", {}).get("network", {}).get("name", "")), "GET /api/network/overview (demo, en) traduce il nome della rete")
+        finally:
+            eero_client.set_demo_mode(False)
+        dev_live = await client.get("/api/devices", headers={"X-Dashboard-Lang": "en"})
+        runner.assert_true(dev_live.status_code == 200, "Fuori dal Demo Mode il middleware non altera la risposta (HTTP 200)")
+
+        runner.assert_true(tr("eero.node_name_fallback", lang="en") == "eero node" and tr("eero.device_name_fallback", lang="en") == "Device", "Fallback nome nodo/dispositivo tradotti (EN)")
+        runner.assert_true(tr("eero.node_name_fallback", lang="it") == "Nodo eero" and tr("eero.device_name_fallback", lang="it") == "Dispositivo", "Fallback nome nodo/dispositivo tradotti (IT)")
+
+        # Test Issue #80: formatSpeed definition in app.js and call in index.html
+        with open("app/static/js/app.js", "r", encoding="utf-8") as _fjs:
+            _app_js_content = _fjs.read()
+        with open("app/templates/index.html", "r", encoding="utf-8") as _fhtml:
+            _index_html_content = _fhtml.read()
+        runner.assert_true("formatSpeed(mbps)" in _app_js_content, "Metodo formatSpeed definito in app.js (Issue #80)")
+        runner.assert_true("formatSpeed(" in _index_html_content, "Chiamata a formatSpeed presente in index.html (Issue #80)")
+
+        # =====================================================================
+        # 39. TEST I18N COVERAGE: NESSUN TESTO HARDCODED, PARITÀ CHIAVI E PLACEHOLDER (Issue #82)
+        # =====================================================================
+        print("\n🌐 Test 39: Copertura i18n (Issue #82) - parità chiavi, nessun testo inline, placeholder coerenti...")
+        import glob as _glob
+        import re as _re_i18n
+        from app.i18n import SUPPORTED_LANGUAGES as _SUPPORTED, LOCALES_DIR as _SERVER_LOCALES
+
+        def _flatten_i18n(d, prefix=""):
+            out = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    out.update(_flatten_i18n(v, f"{prefix}{k}."))
+                else:
+                    out[f"{prefix}{k}"] = v
+            return out
+
+        _fe = {}
+        for _lang in _SUPPORTED:
+            _path = Path(f"app/static/locales/{_lang}.json")
+            runner.assert_true(_path.exists(), f"Locale frontend '{_lang}.json' presente")
+            _fe[_lang] = _flatten_i18n(json.loads(_path.read_text(encoding="utf-8"))) if _path.exists() else {}
+        _ref_keys = set(_fe.get("en", {}))
+        for _lang in _SUPPORTED:
+            if _lang == "en":
+                continue
+            _missing = sorted(_ref_keys - set(_fe[_lang]))
+            _extra = sorted(set(_fe[_lang]) - _ref_keys)
+            runner.assert_true(not _missing and not _extra, f"Parità chiavi frontend en.json ↔ {_lang}.json (mancanti: {_missing[:5]}, extra: {_extra[:5]})")
+            _ph_bad = [k for k in _ref_keys if k in _fe[_lang] and set(_re_i18n.findall(r"\{(\w+)\}", _fe["en"][k])) != set(_re_i18n.findall(r"\{(\w+)\}", _fe[_lang][k]))]
+            runner.assert_true(not _ph_bad, f"Placeholder {{param}} identici tra en.json e {_lang}.json (differenze: {_ph_bad[:5]})")
+
+        _html_src = Path("app/templates/index.html").read_text(encoding="utf-8")
+        _js_src = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        _used = set()
+        for _src in (_html_src, _js_src):
+            _used |= set(_re_i18n.findall(r"\bt\('([a-z0-9_.]+)'", _src))
+        _dynamic = {k for k in _used if k.endswith(".") or k.endswith("_")}
+        _unknown = sorted(k for k in _used - _dynamic if k not in _ref_keys)
+        runner.assert_true(not _unknown, f"Ogni chiave t('…') usata in index.html/app.js esiste in en.json (sconosciute: {_unknown[:8]})")
+        _tern = _re_i18n.findall(r"currentLanguage === 'it'\s*\?|\bisIt\s*\?", _html_src + _js_src)
+        runner.assert_true(len(_tern) == 0, f"Nessun ternario di lingua inline (currentLanguage === 'it' ? / isIt ?) residuo in index.html/app.js (trovati: {len(_tern)})")
+        _fallbacks = _re_i18n.findall(r"\bt\('[^']+'\)\s*\|\|\s*['\"`][A-Za-z]", _html_src + _js_src)
+        runner.assert_true(len(_fallbacks) == 0, f"Nessun fallback testuale t('…') || '…' residuo (trovati: {len(_fallbacks)})")
+        runner.assert_true("<option value=\"it\">" not in _html_src and "x-for=\"code in supportedLanguages\"" in _html_src, "Selettore lingua generato da supportedLanguages (nessuna option hardcoded)")
+
+        _be = {}
+        for _lang in _SUPPORTED:
+            _be[_lang] = {}
+            for _f in sorted(_glob.glob(str(_SERVER_LOCALES / _lang / "*.json"))):
+                _ns = Path(_f).stem
+                for k, v in json.loads(Path(_f).read_text(encoding="utf-8")).items():
+                    _be[_lang][f"{_ns}.{k}"] = v
+        _be_ref = set(_be.get("en", {}))
+        for _lang in _SUPPORTED:
+            if _lang == "en":
+                continue
+            _missing = sorted(_be_ref - set(_be[_lang]))
+            _extra = sorted(set(_be[_lang]) - _be_ref)
+            runner.assert_true(not _missing and not _extra, f"Parità cataloghi backend i18n_locales/en ↔ {_lang} (mancanti: {_missing[:5]}, extra: {_extra[:5]})")
+            _ph_bad = [k for k in _be_ref if k in _be[_lang] and set(_re_i18n.findall(r"\{(\w+)\}", _be["en"][k])) != set(_re_i18n.findall(r"\{(\w+)\}", _be[_lang][k]))]
+            runner.assert_true(not _ph_bad, f"Placeholder {{param}} identici nei cataloghi backend en ↔ {_lang} (differenze: {_ph_bad[:5]})")
+        _py_used = set()
+        for _f in _glob.glob("app/**/*.py", recursive=True):
+            _py_src = Path(_f).read_text(encoding="utf-8")
+            _py_used |= set(_re_i18n.findall(r"\btr(?:_all)?\(\s*[\"']([a-z0-9_]+\.[a-z0-9_]+)[\"']", _py_src))
+            _py_used |= set(_re_i18n.findall(r"\blog_event\([^,]+,[^,]+,\s*[\"']([a-z0-9_]+\.[a-z0-9_]+)[\"']", _py_src))
+        _py_unknown = sorted(k for k in _py_used if k not in _be_ref)
+        runner.assert_true(not _py_unknown, f"Ogni chiave tr()/tr_all()/log_event() statica nel backend esiste nei cataloghi en (sconosciute: {_py_unknown[:8]})")
+        runner.assert_true(len(_be_ref) > 400 and len(_ref_keys) > 1000, f"Cataloghi popolati (backend {len(_be_ref)} chiavi, frontend {len(_ref_keys)} chiavi)")
 
         runner.print_summary()
 

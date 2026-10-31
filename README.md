@@ -50,6 +50,32 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🚀 Condensed Changelog & Interactive Update Decision Prompt (v1.6.2):**
+  - **Dynamic Highlight Extraction:** Automated synthesis of local `changelog.md` or remote Docker Hub / GitHub Release notes into 4–8 clean, noise-free highlights via `extract_condensed_changelog` and dedicated REST endpoint `GET /api/system/update/changelog`.
+  - **Actionable Update Proposal Banner:** An interactive Fluent card appears when a new version is detected (`v1.6.2 → vX.Y.Z`), showing key highlights with 3 direct options: *⚡ Proceed with Update* (1-click auto-install or copyable CLI command), *Full Release Notes & Details*, and *Remind me later* (session-based deferral via `sessionStorage`).
+  - **Enhanced Update Modal & Settings:** Prominent condensed changelog display with smooth expandable full release notes toggle across both the update modal and the Settings > Updates tab.
+* **🌐 Complete Frontend & Backend Localization Parity & i18n Architecture (v1.6.2 - PR #79, Issue #82):**
+  - **100% Translation Parity:** Full catalog parity across backend (457 keys) and frontend (1051 keys in `en.json` and `it.json`) with automated parity audit scripts.
+  - **Architectural Cleanup:** Pruned ~90 lines of dead regex-based health translators, dynamic viewer-language rendering for Network Health penalties (`affected_items_i18n`), and automatic test suite isolation via `tempfile.mkdtemp()`.
+* **🛡️ RFC 1123 Hostname Sanitization & Clean Endpoint Polling (v1.6.2 - Issue #83):**
+  - **Pi-hole v6 RFC 1123 Compliance:** Automatic sanitization of device hostnames containing parentheses or special characters (e.g. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), preventing bulk batch rejection on Pi-hole v6 `PATCH /api/config`.
+  - **Silenced Redundant Probes:** Eliminated 404 error log spam by removing the deprecated `/port_forwards` polling request.
+* **🦊 Firefox Compatibility & Resilient MQTT Configuration (v1.6.2 - Issues #80, #81):**
+  - **Gecko Engine Rendering:** Removed problematic `<colgroup>` declarations, eliminating scroll flickering, blank rows, and collapsed columns on non-Chromium browsers like Firefox.
+  - **MQTT Configuration Persistence:** Dual-payload REST schema and bidirectional parameter aliases (`discovery_prefix` / `homeassistant_prefix`) for rock-solid Home Assistant integration.
+* **🔔 Resilient Webhook Alerts & Notification Isolation (v1.6.2 - Issue #85):**
+  - **Safe Payload Serialization:** Recursive `_json_safe()` serialization preventing silent JSON encoding failures on complex event payloads, restoring instant `node_offline` and `new_device` alerts to Home Assistant webhooks.
+  - **Channel Isolation & MAC Warmup:** Independent error boundaries per notification channel and SQLite-backed MAC address cache warmup on container startup.
+* **🎨 UI/UX Polish, Compact Band/Channel & Truncated Device Names (v1.6.2 - Issue #84, PR #95):**
+  - 11 targeted improvements including dynamic Fluent device category icons, 2-line clamp with hover tooltip `:title` on device names (`.device-col-name`), vertical stacking of Wi-Fi frequency bands directly over the channel number for space efficiency, `whitespace-nowrap` on WAN throughput, expanded Top Bandwidth Hogs filters (up to 30 nodes), and preserved original GitHub release notes.
+* **🔒 TLS Certificate Error Diagnostics & Logging (v1.6.2 - Issue #89):**
+  - Specific inspection and descriptive warning logging for `SSLCertVerificationError` (`CERTIFICATE_VERIFY_FAILED`, host mismatch, self-signed CA) across AdGuard Home, Pi-hole, and Technitium DNS sync, immediately guiding users toward certificate remediation.
+* **🕒 Local Browser Timezone in System Logs & UTC Toggle (v1.6.2 - Issue #91):**
+  - Automatic conversion and rendering of system log timestamps in the client browser's local timezone and active locale formatting (`it-IT` / `en-US`), with a one-click toggle in the log header to switch to UTC.
+* **🧹 IPv6 ULA 7-Day Retention & Manual Pruning (v1.6.2 - Issue #88):**
+  - Automated 7-day retention cleanup for discovered NDP / AdGuard ULA addresses, memory and UI capping to 5 most recent entries, and dedicated in-app *"Clear ULA"* button with confirmation toast in the device modal.
+* **🏠 Home Assistant MQTT Device Tracker Offline State & Scalability (v1.6.2 - Issue #92):**
+  - Automatic `not_home` presence state dispatched for disconnected or departed devices, tracking ceiling raised to 250 devices with non-blocking async pacing, and retained discovery config deduplication.
 * **🛡️ Subnet-Aware IPv4 Prioritization & Pi-hole v6 Stale Record Pruning (v1.6.1 - Issue #72):**
   - **LAN Subnet Prioritization:** Multi-level scoring algorithm resolving multi-IP Linux and Docker host issues by prioritizing addresses belonging to the physical eero LAN subnet (e.g. `192.168.0.37`) while automatically deprioritizing virtual container bridge gateways (`172.17.0.1`, `172.24.0.1`, `10.88.0.1` ending in `.1`).
   - **Pi-hole v6 Intelligent Pruning:** Automatic removal of expired DHCP leases and obsolete IP mappings for managed hosts via atomic `PATCH /api/config` and Pi-hole v5 `customdns&action=delete`, while strictly preserving custom unmanaged DNS records.
@@ -361,6 +387,34 @@ In dual-stack networks, local devices query DNS servers using local IPv6 **ULA**
 
 ---
 
+## 🧑‍💻 Local Development (run from source)
+
+Use this to try a branch or a fix in a browser without building a Docker image.
+
+```bash
+# 1. One-time setup: virtualenv + dependencies (Python 3.12+)
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. Start an isolated Demo Mode instance on http://localhost:8099
+#    (simulated mesh data, scratch data dir, no eero login needed)
+mkdir -p /tmp/eero-demo-data
+DEMO_MODE=true DATA_DIR=/tmp/eero-demo-data ADMIN_USER=qa ADMIN_PASSWORD='change-me' \
+  .venv/bin/uvicorn app.main:app --port 8099 --reload
+```
+
+Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD` you set, and use the 🇮🇹/🇬🇧 selector in the sidebar to switch language. `--reload` restarts the server when a `.py` file changes; for `index.html`, `app.js` or the locale JSON files a browser refresh is enough. Static assets are versioned by build number, so use a hard refresh (Ctrl/Cmd+Shift+R) if an old `app.js` seems cached.
+
+* **Against your real eero account:** drop `DEMO_MODE` and point `DATA_DIR` at a private directory, e.g. `DATA_DIR=./data`. The OTP login flow runs exactly as in Docker. Keep that directory out of git: it holds `session.json` and the SQLite database.
+* **Container build of your working tree:** `docker compose -f docker-compose.dev.yml up -d --build` builds the current checkout and serves it on port **8084** with `./data` mounted.
+* **Before opening a PR:** run the pre-release suite. It defaults to a temporary `DATA_DIR`, so it never touches a live install.
+  ```bash
+  .venv/bin/python scripts/run_pre_release_tests.py
+  ```
+* **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to both `en` and `it`; the test suite checks key parity.
+
+---
+
 ## 🤖 Acknowledgements & AI Assistance
 
 This project stands on the shoulders of the open-source networking community and modern development tools:
@@ -424,6 +478,32 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🚀 Changelog Ridotto Dinamico & Banner di Proposta Aggiornamento (v1.6.2):**
+  - **Estrazione Punti Salienti Intelligente:** Sintesi automatica delle note di rilascio locali (`changelog.md`) o remote (Docker Hub / GitHub Releases) in 4–8 punti salienti immediati tramite `extract_condensed_changelog` ed endpoint REST dedicato `GET /api/system/update/changelog`.
+  - **Banner Decisionale Interattivo:** Comparsa automatica all'avvio/refresh quando viene rilevato un aggiornamento (`v1.6.2 → vX.Y.Z`), con anteprima delle novità e 3 azioni rapide: *⚡ Procedi con l'aggiornamento* (1-click auto-install o comando CLI), *Note Complete & Dettagli* e *Ricordamelo più tardi* (posticipo sessione via `sessionStorage`).
+  - **Modale e Impostazioni Arricchiti:** Visualizzazione prioritaria delle novità principali con toggle fluido per espandere le note integrali sia nel modale che nella scheda Impostazioni > Aggiornamenti.
+* **🌐 Parità Completa Traduzioni Frontend & Backend e Pulizia Architetturale (v1.6.2 - PR #79, Issue #82):**
+  - **Parità Linguistica al 100%:** Allineamento totale di tutti i cataloghi (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`) con script di verifica automatica in CI/CD.
+  - **Refactoring Architetturale i18n:** Eliminazione di ~90 righe di traduttori legacy e regex, rendering dinamico delle penalità di salute nella lingua del visualizzatore (`affected_items_i18n`) e isolamento sicuro della suite di test con cartella temporanea (`tempfile.mkdtemp()`).
+* **🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (v1.6.2 - Issue #83):**
+  - **Conformità RFC 1123:** Sanificazione automatica degli hostname contenenti parentesi o caratteri speciali (es. `Amazon Echo (G4)` -> `amazon-echo-g4.lan`), prevenendo il rigetto a cascata dell'intero payload atomico `PATCH /api/config` su Pi-hole v6.
+  - **Log Poller Puliti:** Rimossa la chiamata ridondante a `/port_forwards`, azzerando i falsi errori 404 nei log.
+* **🦊 Compatibilità Firefox & Persistenza Configurazione MQTT (v1.6.2 - Issues #80, #81):**
+  - **Rendering Gecko Nativo:** Rimosso il tag `<colgroup>` dinamico, risolvendo definitivamente lo sfarfallio e il mancato render della tabella apparati su browser non-Chromium (Firefox).
+  - **Salvataggio MQTT Resiliente:** Supporto a schema REST duale e alias bi-direzionali (`discovery_prefix` / `homeassistant_prefix`) per la perfetta persistenza dei parametri broker.
+* **🔔 Notifiche Webhook Resilienti & Isolamento Canali (v1.6.2 - Issue #85):**
+  - **Serializzazione Difensiva (`_json_safe`):** Risolto l'errore di serializzazione silente su payload complessi, ripristinando gli allarmi istantanei di nodo offline e nuovo dispositivo verso webhook Home Assistant.
+  - **Isolamento Invio & Cache MAC all'Avvio:** Gestione indipendente degli errori per ciascun canale di notifica e pre-caricamento dei MAC storici da SQLite al boot del container.
+* **🎨 Rifiniture UI/UX, Layout Compatto Banda/Canale & Nomi Troncati (v1.6.2 - Issue #84, PR #95):**
+  - 11 miglioramenti di interfaccia tra cui icone Fluent dinamiche in tabella, line-clamp a 2 righe con tooltip `:title` per nomi lunghi, frequenza Wi-Fi incolonnata sopra il canale per ottimizzare lo spazio, Throughput WAN senza wrapping di "Mbps", filtri Top Bandwidth Hogs estesi a 30 elementi con conteggio cablati corretto e note di rilascio GitHub originali bilingue.
+* **🔒 Diagnostica & Logging Errori Certificato TLS nel DNS Manager (v1.6.2 - Issue #89):**
+  - Intercettazione ed emissione di warning esplicativi nei log di sistema per `SSLCertVerificationError` (`CERTIFICATE_VERIFY_FAILED`, mismatch di hostname, certificati autofirmati privi di CA di root) durante i test e la sincronizzazione con AdGuard Home, Pi-hole e Technitium DNS.
+* **🕒 Fuso Orario Locale del Browser nei Log di Sistema & Toggle UTC (v1.6.2 - Issue #91):**
+  - Conversione e visualizzazione automatica dei timestamp del log viewer nell'orario locale del browser del client nel formato della lingua attiva (`it-IT` / `en-US`), con toggle a clic singolo per alternare con UTC.
+* **🧹 Retention IPv6 ULA a 7 Giorni & Reset Manuale (v1.6.2 - Issue #88):**
+  - Pulizia automatica periodica a 7 giorni per gli indirizzi scoperti via NDP / AdGuard, limite in memoria e a schermo a 5 indirizzi più recenti per singolo apparato e pulsante dedicato *"Pulisci ULA"* con conferma e toast nella modale dispositivo.
+* **🏠 Home Assistant MQTT Device Tracker: Stato Presenza Sconnessi & Scalabilità (v1.6.2 - Issue #92):**
+  - Pubblicazione automatica dello stato di presenza `not_home` per dispositivi offline o disconnessi dalla mesh, estensione del limite a 250 apparati tracciati con pacing asincrono non bloccante e deduplicazione delle configurazioni di discovery `retain=True`.
 * **🛡️ Prioritizzazione IPv4 Subnet LAN, Pruning Intelligente Pi-hole v6 ed Esclusione Dispositivi (v1.6.1 - Issue #72):**
   - **Prioritizzazione Subnet LAN:** Algoritmo a punteggio a 5 livelli per host multi-IP (es. Linux con Docker/Podman): priorità assoluta agli IP appartenenti alla subnet LAN fisica eero (`192.168.0.37`) e sistematica deprioritizzazione dei bridge container virtuali terminanti in `.1` (`172.17.0.1`, `172.24.0.1`, `10.88.0.1`).
   - **Pruning Intelligente Pi-hole v6:** Eliminazione automatica di vecchi lease e record obsoleti per i dispositivi gestiti tramite `PATCH /api/config` (e Pi-hole v5), con preservazione assoluta dei record DNS manuali e unmanaged.
@@ -624,6 +704,34 @@ Quando viene impostata la variabile `WEBHOOK_URL` in `.env` (o tramite il pannel
    * **Chiusura del Ciclo ("Full-Circle"):** Alla sincronizzazione successiva, l'indirizzo ULA scoperto viene registrato nel client ufficiale su AdGuard Home, azzerando i client anonimi!
 
 > 🛡️ **Integrazione Nativa AdGuard Home in-App:** Puoi configurare AdGuard Home direttamente dalla scheda **Automazioni & Controlli** con test di connessione in 1 clic, sincronizzazione automatica continua in background e pulsante "Sincronizza Ora Tutti i Client"!
+
+---
+
+## 🧑‍💻 Sviluppo Locale (esecuzione dai sorgenti)
+
+Utile per provare un branch o una fix nel browser senza costruire un'immagine Docker.
+
+```bash
+# 1. Setup una tantum: virtualenv + dipendenze (Python 3.12+)
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. Avvia un'istanza isolata in Modalità Demo su http://localhost:8099
+#    (rete simulata, directory dati temporanea, nessun login eero richiesto)
+mkdir -p /tmp/eero-demo-data
+DEMO_MODE=true DATA_DIR=/tmp/eero-demo-data ADMIN_USER=qa ADMIN_PASSWORD='cambiami' \
+  .venv/bin/uvicorn app.main:app --port 8099 --reload
+```
+
+Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impostati sopra e usa il selettore 🇮🇹/🇬🇧 nella sidebar per cambiare lingua. `--reload` riavvia il server quando cambia un file `.py`; per `index.html`, `app.js` o i JSON delle lingue basta ricaricare la pagina. Gli asset statici sono versionati per build number: se `app.js` sembra in cache, usa un hard refresh (Ctrl/Cmd+Shift+R).
+
+* **Con il tuo account eero reale:** togli `DEMO_MODE` e punta `DATA_DIR` a una directory privata, es. `DATA_DIR=./data`. Il login OTP funziona esattamente come in Docker. Tieni quella directory fuori da git: contiene `session.json` e il database SQLite.
+* **Build container del tuo working tree:** `docker compose -f docker-compose.dev.yml up -d --build` costruisce il checkout corrente e lo espone sulla porta **8084** con `./data` montato.
+* **Prima di aprire una PR:** esegui la suite pre-rilascio. Usa di default una `DATA_DIR` temporanea, quindi non tocca mai un'installazione reale.
+  ```bash
+  .venv/bin/python scripts/run_pre_release_tests.py
+  ```
+* **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave sia in `en` sia in `it`; la suite di test verifica la parità delle chiavi.
 
 ---
 

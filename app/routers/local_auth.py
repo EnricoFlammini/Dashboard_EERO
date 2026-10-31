@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field
 from app.routers.dependencies import get_current_user, _extract_token_from_request
 from app.services.auth_service import auth_service
 from app.services.db import db_service
+from app.services.rate_limiter import auth_rate_limiter, get_client_ip
+from app.i18n import log_event, tr
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ async def get_local_auth_status():
 
 
 @router.post("/setup")
-async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Response):
+async def setup_initial_admin(payload: LocalAdminSetupRequest, request: Request, response: Response):
     """
     Esegue il primo setup dell'amministratore (Setup Wizard) quando nessun admin è registrato.
     Crea l'account admin iniziale con pieni permessi RBAC e restituisce il token di sessione.
@@ -55,14 +57,14 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
     if not setup_required:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La configurazione iniziale dell'amministratore è già stata completata. Esegui il login normale."
+            detail=tr("auth.setup_already_done")
         )
 
     username = payload.username.strip()
     if not username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nome utente non valido."
+            detail=tr("auth.invalid_username")
         )
 
     p_hash, p_salt = auth_service.hash_password(payload.password)
@@ -89,13 +91,14 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
     token = await db_service.create_user_session(user_id=user_id, duration_days=duration_days)
     await db_service.update_user_last_login(user_id=user_id)
 
+    is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").lower() == "https"
     response.set_cookie(
         key="session_token",
         value=token,
         max_age=cookie_max_age,
         httponly=True,
         samesite="lax",
-        secure=False
+        secure=is_https
     )
 
     clean_user = {
@@ -110,10 +113,10 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
         "last_login": None
     }
 
-    logger.info(f"Local Auth: Setup iniziale completato per l'amministratore '{username}'.")
+    log_event(logger, logging.INFO, "log_system.admin_setup_completed", username=username)
     return {
         "status": "success",
-        "message": "Configurazione amministratore completata con successo.",
+        "message": tr("auth.setup_completed"),
         "token": token,
         "remember_me": bool(payload.remember_me),
         "user": clean_user
@@ -121,17 +124,27 @@ async def setup_initial_admin(payload: LocalAdminSetupRequest, response: Respons
 
 
 @router.post("/login")
-async def local_login(payload: LocalLoginRequest, response: Response):
+async def local_login(payload: LocalLoginRequest, request: Request, response: Response):
     """
     Autentica un utente locale tramite username e password PBKDF2/SHA-256.
-    Restituisce un session token e imposta un cookie HTTP-only sicuro.
+    Include protezione anti brute-force via sliding window rate limiter e cookie sicuro.
     """
+    ip = get_client_ip(request)
+    is_limited, retry_after = auth_rate_limiter.is_limited(ip)
+    if is_limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=tr("auth.too_many_attempts", retry_after=retry_after),
+            headers={"Retry-After": str(retry_after)},
+        )
+
     username = payload.username.strip()
     user = await db_service.get_local_user_by_username(username)
     if not user:
+        auth_rate_limiter.record_failure(ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenziali non valide (username o password errati)."
+            detail=tr("auth.invalid_credentials")
         )
 
     # Verifica password
@@ -141,17 +154,21 @@ async def local_login(payload: LocalLoginRequest, response: Response):
         user.get("salt", "")
     )
     if not is_valid:
+        auth_rate_limiter.record_failure(ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenziali non valide (username o password errati)."
+            detail=tr("auth.invalid_credentials")
         )
 
     # Verifica se l'account è disattivato dall'amministratore
     if user.get("is_active") is False or user.get("is_active") == 0:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account disattivato dall'amministratore. Contatta l'amministratore di sistema."
+            detail=tr("auth.account_disabled")
         )
+
+    # Login riuscito: reset tentativi falliti per questo client IP
+    auth_rate_limiter.reset(ip)
 
     user_id = user["id"]
     duration_days = 7 if payload.remember_me else 1
@@ -160,14 +177,15 @@ async def local_login(payload: LocalLoginRequest, response: Response):
     token = await db_service.create_user_session(user_id=user_id, duration_days=duration_days)
     await db_service.update_user_last_login(user_id=user_id)
 
-    # Impostazione cookie HTTP-only
+    # Impostazione cookie HTTP-only (Secure se su HTTPS o reverse proxy HTTPS)
+    is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").lower() == "https"
     response.set_cookie(
         key="session_token",
         value=token,
         max_age=cookie_max_age,
         httponly=True,
         samesite="lax",
-        secure=False  # Consentito anche su reti locali HTTP standard
+        secure=is_https
     )
 
     clean_user = {
@@ -182,7 +200,7 @@ async def local_login(payload: LocalLoginRequest, response: Response):
         "last_login": user.get("last_login")
     }
 
-    logger.info(f"Local Auth: Utente '{username}' autenticato con successo.")
+    log_event(logger, logging.INFO, "log_system.user_logged_in", username=username)
     return {
         "status": "success",
         "token": token,
@@ -203,7 +221,7 @@ async def local_logout(request: Request, response: Response):
     response.delete_cookie(key="session_token")
     return {
         "status": "success",
-        "message": "Sessione terminata con successo."
+        "message": tr("auth.logged_out")
     }
 
 
@@ -253,10 +271,10 @@ async def get_session_timeout():
 async def set_session_timeout(payload: SessionTimeoutRequest):
     """Aggiorna il timeout di inattività per il logout automatico in minuti."""
     await db_service.set_setting("session_timeout_minutes", str(payload.minutes))
-    logger.info(f"Local Auth: Aggiornato timeout inattività a {payload.minutes} minuti.")
+    log_event(logger, logging.INFO, "log_system.session_timeout_updated", minutes=payload.minutes)
     return {
         "status": "success",
         "session_timeout_minutes": payload.minutes,
-        "message": f"Timeout sessione impostato a {payload.minutes} minuti." if payload.minutes > 0 else "Logout automatico disattivato."
+        "message": tr("auth.session_timeout_set", minutes=payload.minutes) if payload.minutes > 0 else tr("auth.session_timeout_disabled")
     }
 

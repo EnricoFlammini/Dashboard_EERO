@@ -1,6 +1,18 @@
 import os
 from pathlib import Path
 
+from app.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
+
+def _normalize_language(value: object) -> str:
+    """Maps DASHBOARD_LANG values such as 'IT', 'it-IT' or 'it_IT' to a supported code; anything else is the default (English)."""
+    code = str(value or "").strip().lower().replace("_", "-").split("-", 1)[0]
+    return code if code in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+
+
+def _default_language() -> str:
+    return _normalize_language(os.getenv("DASHBOARD_LANG", DEFAULT_LANGUAGE))
+
+
 def _get_default_build_number() -> str:
     env_b = os.getenv("BUILD_NUMBER")
     if env_b and env_b.strip():
@@ -17,12 +29,13 @@ def _get_default_build_number() -> str:
 
 
 try:
+    from pydantic import field_validator
     from pydantic_settings import BaseSettings, SettingsConfigDict
     
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = os.getenv("APP_VERSION", "1.6.1")
+        app_version: str = os.getenv("APP_VERSION", "1.6.2")
         build_number: str = _get_default_build_number()
         debug: bool = False
         
@@ -48,7 +61,7 @@ try:
         telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
         telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
         webhook_url: str = os.getenv("WEBHOOK_URL", "")
-        dashboard_lang: str = os.getenv("DASHBOARD_LANG", "en")
+        dashboard_lang: str = _default_language()
         daily_digest_hour: int = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
         tz: str = os.getenv("TZ", "")
 
@@ -89,6 +102,11 @@ try:
         pushover_api_token: str = os.getenv("PUSHOVER_API_TOKEN", "")
         pushover_alerts_enabled: bool = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
+        @field_validator("dashboard_lang", mode="before")
+        @classmethod
+        def _validate_dashboard_lang(cls, value: object) -> str:
+            return _normalize_language(value)
+
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -126,7 +144,7 @@ except ImportError:
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = os.getenv("APP_VERSION", "1.6.1")
+            self.app_version = os.getenv("APP_VERSION", "1.6.2")
             self.build_number = _get_default_build_number()
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
@@ -138,7 +156,7 @@ except ImportError:
             self.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
             self.webhook_url = os.getenv("WEBHOOK_URL", "")
-            self.dashboard_lang = os.getenv("DASHBOARD_LANG", "en")
+            self.dashboard_lang = _default_language()
             self.daily_digest_hour = int(os.getenv("DAILY_DIGEST_HOUR", "21"))
             self.tz = os.getenv("TZ", "")
             self.docker_socket_path = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")

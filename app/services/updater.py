@@ -8,6 +8,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from app.config import settings
+from app.services.runtime_info import get_runtime_info
+from app.i18n import current_language, log_event, normalize_language, tr
+
+# changelog.md is written in Italian; readers of that language get it before the GitHub release body.
+CHANGELOG_LANGUAGE = "it"
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +78,7 @@ def extract_release_notes_from_changelog(version: str) -> str:
         Path("changelog.md")
     ]
     clean = version.lstrip("vV")
-    pattern = rf"##\s*\[?v?{re.escape(clean)}\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##|\Z)"
+    pattern = rf"##\s*\[?v?{re.escape(clean)}\]?[^\r\n]*\r?\n(.*?)(?=\r?\n##(?!\#)|\Z)"
     for p in candidates:
         if p.exists():
             try:
@@ -86,6 +91,69 @@ def extract_release_notes_from_changelog(version: str) -> str:
     return ""
 
 
+def select_release_notes(version: str, github_notes: str = "", lang: Optional[str] = None) -> str:
+    """
+    Picks the release-notes text for ``version`` in the caller's language.
+
+    ``changelog.md`` is maintained in Italian only, while GitHub release bodies are written in
+    English. English (and any non-Italian) readers therefore get the GitHub body first and the
+    local changelog only as a fallback; Italian readers keep the local changelog first.
+    """
+    active = normalize_language(lang) or current_language()
+    local_notes = extract_release_notes_from_changelog(version)
+    github_notes = (github_notes or "").strip()
+    if active == CHANGELOG_LANGUAGE:
+        return local_notes or github_notes
+    return github_notes or local_notes
+
+
+def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optional[str] = None) -> List[str]:
+    """
+    Estrae un changelog ridotto (punti salienti sintetici) per la versione specificata.
+    La sorgente (changelog.md in italiano o note GitHub in inglese) è scelta in base alla lingua
+    tramite ``select_release_notes``. Restituisce una lista di 3-8 punti salienti concisi.
+    """
+    notes_text = select_release_notes(version, github_notes=raw_notes, lang=lang)
+
+    if not notes_text:
+        return []
+
+    highlights: List[str] = []
+
+    # 1. Cerca sezioni '### Titolo'
+    section_headers = re.findall(r'^[ \t]*###[ \t]+([^\r\n]+)', notes_text, flags=re.MULTILINE)
+    if len(section_headers) >= 1:
+        for header in section_headers:
+            clean = header.strip()
+            # Rimuove riferimenti Issue/PR/GHSA tra parentesi (es. '(PR #79 - @user)')
+            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
+            # Rimuove link markdown
+            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            if clean and clean not in highlights:
+                highlights.append(clean)
+                if len(highlights) >= 8:
+                    break
+
+    # 2. Se non ci sono sezioni '###' o sono meno di 2, cerca punti elenco primari '* **Titolo:**' o '- Titolo'
+    if len(highlights) < 2:
+        bullet_matches = re.findall(r'^[ \t]*[*+-][ \t]+(?:\*\*)?([^*\r\n]+)(?:\*\*)?', notes_text, flags=re.MULTILINE)
+        for b in bullet_matches:
+            clean = b.strip().rstrip(":")
+            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
+            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            if clean and clean not in highlights and not clean.startswith("http"):
+                highlights.append(clean)
+                if len(highlights) >= 8:
+                    break
+
+    # 3. Se ancora vuoto, prendi i primi paragrafi significativi
+    if not highlights:
+        lines = [line.strip() for line in notes_text.splitlines() if line.strip() and not line.strip().startswith("#")]
+        highlights = lines[:4]
+
+    return highlights
+
+
 class UpdaterService:
     """Gestisce il rilevamento e l'installazione automatica delle nuove release dell'applicazione."""
 
@@ -93,6 +161,44 @@ class UpdaterService:
         self._cached_update_info: Optional[Dict[str, Any]] = None
         self._last_check_time: Optional[datetime] = None
         self._is_updating: bool = False
+
+    @staticmethod
+    def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optional[str] = None) -> List[str]:
+        """Estrae i punti salienti del changelog per la versione indicata, nella lingua richiesta."""
+        return extract_condensed_changelog(version, raw_notes=raw_notes, lang=lang)
+
+    @staticmethod
+    def localize_update_info(info: Dict[str, Any], lang: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Returns a copy of a cached update-check result with ``release_notes`` and
+        ``condensed_changelog`` rendered for ``lang`` (default: the current request language).
+        The cache itself stays language-neutral so one check serves both EN and IT readers.
+        """
+        active = normalize_language(lang) or current_language()
+        latest_ver = info.get("latest_version") or settings.app_version
+        current_ver = info.get("current_version") or settings.app_version
+        github_notes = info.get("release_notes_github") or ""
+
+        notes = select_release_notes(latest_ver, github_notes=github_notes, lang=active)
+        if not notes:
+            notes = info.get("release_notes_fallback") or ""
+
+        condensed = extract_condensed_changelog(latest_ver, raw_notes=github_notes, lang=active)
+        if not condensed and latest_ver != current_ver:
+            condensed = extract_condensed_changelog(current_ver, raw_notes=github_notes, lang=active)
+        if not condensed and info.get("update_available"):
+            condensed = [tr("updater.generic_release_available", lang=active, version=info.get("latest_full_version", latest_ver))]
+
+        localized = dict(info)
+        localized["release_notes"] = notes
+        localized["condensed_changelog"] = condensed
+        localized["language"] = active
+        return localized
+
+    @staticmethod
+    def extract_release_notes(version: str) -> str:
+        """Estrae le note di rilascio integrali per la versione indicata."""
+        return extract_release_notes_from_changelog(version)
 
     @property
     def is_docker_socket_available(self) -> bool:
@@ -113,7 +219,7 @@ class UpdaterService:
         if not force and self._cached_update_info and self._last_check_time:
             elapsed = (now - self._last_check_time).total_seconds()
             if elapsed < (settings.update_check_interval_hours * 3600):
-                return self._cached_update_info
+                return self.localize_update_info(self._cached_update_info)
 
         current_ver = settings.app_version
         current_build = settings.build_number
@@ -123,7 +229,8 @@ class UpdaterService:
         latest_build = current_build
         latest_full_ver = current_full
         release_title = f"v{current_full}"
-        release_notes = ""
+        release_notes = ""  # GitHub release body (English)
+        release_notes_fallback = ""  # generic notice when neither GitHub nor changelog.md has notes
         published_at = ""
         html_url = f"https://github.com/{GITHUB_REPO}/releases"
 
@@ -147,7 +254,7 @@ class UpdaterService:
                         published_at = data.get("published_at") or ""
                         html_url = data.get("html_url") or html_url
         except Exception as e:
-            logger.warning(f"Error checking GitHub Releases: {e}")
+            log_event(logger, logging.WARNING, "log_system.update_check_github_failed", error=e)
 
         # 2. Interroga sempre anche Docker Hub Tags API per identificare l'effettiva immagine Docker più recente
         try:
@@ -188,13 +295,12 @@ class UpdaterService:
                             if best_tag_obj:
                                 published_at = best_tag_obj.get("last_updated", "")
                             release_title = f"v{latest_full_ver}"
-                            local_notes = extract_release_notes_from_changelog(cand_ver)
-                            if local_notes:
-                                release_notes = local_notes
-                            else:
-                                release_notes = f"Release v{latest_full_ver} pubblicata su Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
+                            if not release_notes:
+                                # No GitHub body: localize_update_info() uses changelog.md when it has this
+                                # version, otherwise this generic Docker Hub notice.
+                                release_notes_fallback = f"Release v{latest_full_ver} available on Docker Hub ({DOCKER_IMAGE}:{best_tag_obj.get('name') if best_tag_obj else 'latest'})."
         except Exception as e:
-            logger.warning(f"Error checking Docker Hub: {e}")
+            log_event(logger, logging.WARNING, "log_system.update_check_dockerhub_failed", error=e)
 
         update_avail = is_newer_version(current_full, latest_full_ver)
         docker_sock = self.is_docker_socket_available
@@ -211,21 +317,22 @@ class UpdaterService:
             "latest_full_version": latest_full_ver,
             "update_available": update_avail,
             "release_title": release_title,
-            "release_notes": release_notes,
+            "release_notes_github": release_notes,
+            "release_notes_fallback": release_notes_fallback,
             "published_at": published_at,
             "release_url": html_url,
             "docker_image": f"{DOCKER_IMAGE}:latest",
             "docker_socket_available": docker_sock,
             "watchtower_configured": watchtower,
             "can_auto_install": can_auto,
-            "cli_command": "docker compose pull && docker compose up -d",
+            "cli_command": "git pull && pip install -r requirements.txt" if get_runtime_info()["environment"] == "local" else "docker compose pull && docker compose up -d",
             "checked_at": now.isoformat()
         }
 
         self._cached_update_info = result
         self._last_check_time = now
-        logger.info(f"Update check completed: current={current_ver}, latest={latest_ver}, update_available={update_avail}")
-        return result
+        log_event(logger, logging.INFO, "log_system.update_check_completed", current=current_ver, latest=latest_ver, update_available=update_avail)
+        return self.localize_update_info(result)
 
     async def trigger_update(self) -> Dict[str, Any]:
         """Esegue l'aggiornamento automatico del container Docker tramite Docker Socket o Watchtower."""
@@ -233,7 +340,7 @@ class UpdaterService:
             return {
                 "success": True,
                 "status": "in_progress",
-                "message": "Un aggiornamento è già in corso..."
+                "message": tr("updater.already_in_progress")
             }
 
         # 1. Se configurato Watchtower Webhook
@@ -246,20 +353,20 @@ class UpdaterService:
                         return {
                             "success": True,
                             "method": "watchtower",
-                            "message": "Segnale di aggiornamento inviato con successo a Watchtower. Il container si riavvierà a breve."
+                            "message": tr("updater.watchtower_sent")
                         }
                     else:
-                        raise RuntimeError(f"Watchtower ha risposto con codice {resp.status_code}: {resp.text}")
+                        raise RuntimeError(tr("updater.watchtower_bad_status", code=resp.status_code, body=resp.text))
             except Exception as ex:
                 self._is_updating = False
-                logger.error(f"Errore trigger Watchtower: {ex}")
-                raise RuntimeError(f"Errore trigger Watchtower: {ex}")
+                log_event(logger, logging.ERROR, "log_system.watchtower_trigger_failed", error=ex)
+                raise RuntimeError(tr("updater.watchtower_error", error=ex))
 
         # 2. Se è montato il Docker Socket (/var/run/docker.sock)
         if self.is_docker_socket_available:
             self._is_updating = True
             sock_path = settings.docker_socket_path
-            logger.info(f"Avvio auto-update tramite Docker Socket: {sock_path}")
+            log_event(logger, logging.INFO, "log_system.docker_socket_update_started", socket=sock_path)
             
             # Esegui in background il pull e il recreate
             asyncio.create_task(self._perform_docker_socket_update(sock_path))
@@ -267,14 +374,14 @@ class UpdaterService:
             return {
                 "success": True,
                 "method": "docker_socket",
-                "message": "Aggiornamento avviato: download della nuova immagine Docker in corso. L'applicazione si riavvierà automaticamente."
+                "message": tr("updater.docker_started")
             }
 
         # 3. Modalità assistita se nessun metodo automatico è disponibile
         return {
             "success": False,
             "method": "manual",
-            "message": "Nessun Docker Socket o Watchtower configurato. Esegui il comando 'docker compose pull && docker compose up -d' sul server.",
+            "message": tr("updater.manual_required", command="docker compose pull && docker compose up -d"),
             "cli_command": "docker compose pull && docker compose up -d"
         }
 
@@ -288,10 +395,10 @@ class UpdaterService:
                 logger.info(f"Docker API pull: {pull_url}")
                 pull_resp = await client.post(pull_url)
                 if pull_resp.status_code != 200:
-                    logger.error(f"Docker pull fallito ({pull_resp.status_code}): {pull_resp.text}")
+                    log_event(logger, logging.ERROR, "log_system.docker_pull_failed", status=pull_resp.status_code, response=pull_resp.text)
                     return
 
-                logger.info("Docker image pull completato con successo. Segnalazione restart...")
+                log_event(logger, logging.INFO, "log_system.docker_pull_completed")
                 await asyncio.sleep(2.0)
                 
                 # 2. Invia segnale di restart al container corrente
@@ -299,11 +406,11 @@ class UpdaterService:
                 if hostname:
                     try:
                         await client.post(f"/containers/{hostname}/restart?t=5")
-                        logger.info(f"Container {hostname} restarted via Docker Socket.")
+                        log_event(logger, logging.INFO, "log_system.container_restarted", container=hostname)
                     except Exception as e:
-                        logger.warning(f"Could not restart container by hostname: {e}")
+                        log_event(logger, logging.WARNING, "log_system.container_restart_failed", error=e)
         except Exception as ex:
-            logger.error(f"Errore durante l'aggiornamento via Docker Socket: {ex}")
+            log_event(logger, logging.ERROR, "log_system.docker_socket_update_failed", error=ex)
         finally:
             self._is_updating = False
 

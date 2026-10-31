@@ -3,19 +3,44 @@
  * Powered by Alpine.js & Chart.js
  */
 
+// Tag every same-origin API call with the dashboard language so the server
+// answers (errors, confirmations) in the language the user is reading.
+(() => {
+  if (typeof window === 'undefined' || !window.fetch) return;
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init = {}) => {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const sameOriginApi = url.startsWith('/api/') || url.startsWith(`${window.location.origin}/api/`);
+    if (!sameOriginApi || typeof input !== 'string') return nativeFetch(input, init);
+    const headers = new Headers(init.headers || {});
+    if (!headers.has('X-Dashboard-Lang')) headers.set('X-Dashboard-Lang', document.documentElement.lang || 'en');
+    return nativeFetch(input, { ...init, headers });
+  };
+})();
+
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.1',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.2',
     buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.1 build 1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.2 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
 
     // i18n Multi-Language State
-    currentLanguage: localStorage.getItem('eero_lang') || 'en',
+    supportedLanguages: (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'],
+    currentLanguage: (() => {
+      // A choice saved in this browser wins; otherwise the server default
+      // (saved system language, else DASHBOARD_LANG, else English).
+      const supported = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'];
+      const saved = localStorage.getItem('eero_lang');
+      if (supported.includes(saved)) return saved;
+      const serverDefault = (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.defaultLanguage) || '';
+      return supported.includes(serverDefault) ? serverDefault : 'en';
+    })(),
     translations: {},
+    fallbackTranslations: {},
     translationsLoaded: false,
 
     // Navigation & Sidebar State
@@ -75,17 +100,26 @@ document.addEventListener('alpine:init', () => {
     },
     getDeviceIconPath(cat) {
       const c = (cat || '').toLowerCase();
-      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone')) {
+      if (c.includes('game') || c.includes('gaming') || c.includes('console') || c.includes('playstation') || c.includes('xbox') || c.includes('nintendo') || c.includes('switch')) {
+        return 'M6 11h4m-2-2v4m7-2h.01m3 0h.01M4 9a5 5 0 0110-3h2a5 5 0 015 5v4a4 4 0 01-4 4l-2-2h-6l-2 2a4 4 0 01-4-4V9z';
+      }
+      if (c.includes('server') || c.includes('rete') || c.includes('network') || c.includes('nas') || c.includes('storage') || c.includes('switch') || c.includes('router')) {
+        return 'M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01';
+      }
+      if (c.includes('audio') || c.includes('speaker') || c.includes('sound') || c.includes('music') || c.includes('echo') || c.includes('homepod') || c.includes('sonos')) {
+        return 'M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z';
+      }
+      if (c.includes('phone') || c.includes('mobile') || c.includes('smartphone') || c.includes('iphone') || c.includes('android')) {
         return 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z';
       }
       if (c.includes('tablet') || c.includes('ipad')) {
         return 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z';
       }
-      if (c.includes('tv') || c.includes('media') || c.includes('entertainment')) {
+      if (c.includes('tv') || c.includes('media') || c.includes('entertainment') || c.includes('intrattenimento') || c.includes('streaming') || c.includes('chromecast') || c.includes('firetv') || c.includes('apple tv')) {
         return 'M7 4h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2zm-3 16h16';
       }
-      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay')) {
-        return 'M13 10V3L4 14h7v7l9-11h-7z';
+      if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay') || c.includes('light') || c.includes('lamp') || c.includes('sensor') || c.includes('camera') || c.includes('thermostat')) {
+        return 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z';
       }
       return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
@@ -219,7 +253,7 @@ document.addEventListener('alpine:init', () => {
     getCategoryFilterLabel() {
       if (this.selectedCategoryFilter === 'all') return this.t('devices.filter_all_categories');
       if (this.selectedCategoryFilter === 'favorites') return this.t('devices.filter_favorites');
-      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices') || '✨ Nuovi Dispositivi';
+      if (this.selectedCategoryFilter === 'new') return this.t('devices.filter_new_devices');
       const map = {
         Computer: this.t('devices.cat_computer'),
         Mobile: this.t('devices.cat_mobile'),
@@ -232,16 +266,15 @@ document.addEventListener('alpine:init', () => {
       return map[this.selectedCategoryFilter] || this.selectedCategoryFilter;
     },
     getSortLabel() {
-      const isIt = this.currentLanguage === 'it';
       if (this.deviceSortField === 'first_seen') {
-        return this.t('devices.sort_first_seen') || (isIt ? 'Primo Accesso' : 'Recently Joined');
+        return this.t('devices.sort_first_seen');
       }
-      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip') || 'IP';
-      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal') || (isIt ? 'Segnale' : 'Signal');
-      if (this.deviceSortField === 'download') return this.t('devices.sort_download') || 'Download';
-      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload') || 'Upload';
-      if (this.deviceSortField === 'status') return this.t('devices.sort_status') || (isIt ? 'Stato' : 'Status');
-      return this.t('devices.sort_name') || (isIt ? 'Nome (A-Z)' : 'Name (A-Z)');
+      if (this.deviceSortField === 'ip') return this.t('devices.sort_ip');
+      if (this.deviceSortField === 'signal') return this.t('devices.sort_signal');
+      if (this.deviceSortField === 'download') return this.t('devices.sort_download');
+      if (this.deviceSortField === 'upload') return this.t('devices.sort_upload');
+      if (this.deviceSortField === 'status') return this.t('devices.sort_status');
+      return this.t('devices.sort_name');
     },
     getProfileFilterLabel() {
       if (this.selectedProfileFilter === 'all') return this.t('devices.filter_all_profiles');
@@ -361,6 +394,7 @@ document.addEventListener('alpine:init', () => {
       description: ''
     },
     showDeviceModal: false,
+    isClearingUla: false,
 
     // Port Forwarding Global State
     allForwards: [],
@@ -498,15 +532,19 @@ document.addEventListener('alpine:init', () => {
     // Estimated Data Usage Info Modal State
     showUsageInfoModal: false,
 
-    // Auto-Update State (v1.6.1)
+    // Where this instance runs (local / Docker / Kubernetes) and its source branch
+    runtimeInfo: null,
+
+    // Auto-Update State (v1.6.2)
     updateInfo: {
       update_available: false,
-      current_version: '1.6.1',
-      latest_version: '1.6.1',
+      current_version: '1.6.2',
+      latest_version: '1.6.2',
       latest_build_number: '1',
-      latest_full_version: '1.6.1 build 1',
+      latest_full_version: '1.6.2 build 1',
       release_title: '',
       release_notes: '',
+      condensed_changelog: [],
       docker_socket_available: false,
       watchtower_configured: false,
       can_auto_install: false,
@@ -515,6 +553,8 @@ document.addEventListener('alpine:init', () => {
     isCheckingUpdate: false,
     isTriggeringUpdate: false,
     showUpdateModal: false,
+    showUpdatePrompt: false,
+    showFullReleaseNotes: false,
     updateProgressMsg: '',
     copiedCliCommand: false,
 
@@ -588,6 +628,7 @@ document.addEventListener('alpine:init', () => {
     showBackupModal: false,
     backupLoading: false,
     backupRestoreStatus: '',
+    backupRestoreIsError: false,
     dbStats: null,
     dbStatsLoading: false,
     dbCompacting: false,
@@ -659,7 +700,7 @@ document.addEventListener('alpine:init', () => {
       };
       await Promise.all([
         syncVersion(),
-        this.setLanguage(this.currentLanguage),
+        this.setLanguage(this.currentLanguage, { syncServer: false }),
         this.checkAuthStatus()
       ]);
       await this.checkLocalAuthSession();
@@ -729,6 +770,7 @@ document.addEventListener('alpine:init', () => {
           this.fetchDbStats();
         } else if (tab === 'settings-updates') {
           this.checkForUpdates(false);
+          this.fetchRuntimeInfo();
         } else if (tab === 'news') {
           this.fetchEeroNews();
         }
@@ -757,27 +799,45 @@ document.addEventListener('alpine:init', () => {
       await this.setTab(this.currentTab, false);
     },
 
-    async setLanguage(lang) {
-      this.currentLanguage = lang || 'en';
-      localStorage.setItem('eero_lang', this.currentLanguage);
+    async fetchLocale(lang) {
+      const cfg = (typeof window !== 'undefined' && window.APP_CONFIG) || {};
+      const ver = (cfg.version && !cfg.version.startsWith('{')) ? `${cfg.version}.b${cfg.buildNumber || ''}` : this.appVersion;
       try {
-        const res = await fetch(`/static/locales/${this.currentLanguage}.json`);
-        if (res.ok) {
-          this.translations = await res.json();
-          this.translationsLoaded = true;
-        }
+        const res = await fetch(`/static/locales/${lang}.json?v=${encodeURIComponent(ver)}`);
+        if (res.ok) return await res.json();
       } catch (e) {
-        console.warn("Could not load translations for", this.currentLanguage, e);
+        console.warn("Could not load translations for", lang, e);
       }
+      return null;
+    },
+
+    // syncServer: an explicit user switch also updates the server's alert
+    // language; the page-load call must not, or every browser that opens the
+    // dashboard would overwrite it.
+    async setLanguage(lang, { syncServer = true } = {}) {
+      this.currentLanguage = this.supportedLanguages.includes(lang) ? lang : 'en';
+      localStorage.setItem('eero_lang', this.currentLanguage);
+      document.documentElement.lang = this.currentLanguage;
+      // English is the reference locale: keep it loaded so any key missing from
+      // the active locale still renders in English instead of blank.
+      if (!this.fallbackTranslations || !Object.keys(this.fallbackTranslations).length) {
+        this.fallbackTranslations = (await this.fetchLocale('en')) || {};
+      }
+      const active = this.currentLanguage === 'en' ? this.fallbackTranslations : await this.fetchLocale(this.currentLanguage);
+      this.translations = active || this.fallbackTranslations;
+      this.translationsLoaded = Object.keys(this.translations).length > 0;
       document.body.classList.remove('i18n-pending');
-      try {
-        await fetch('/api/system/language', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: this.currentLanguage })
-        });
-      } catch (e) {
-        console.warn("Could not sync language with backend:", e);
+      if (this.translationsLoaded) document.title = this.t('app_title');
+      if (syncServer) {
+        try {
+          await fetch('/api/system/language', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: this.currentLanguage })
+          });
+        } catch (e) {
+          console.warn("Could not sync language with backend:", e);
+        }
       }
       await this.loadManualSections();
       if (this.showChangelogModal) {
@@ -785,6 +845,15 @@ document.addEventListener('alpine:init', () => {
       }
       if (this.currentTab === 'analytics' || this.currentTab === 'quality-analytics') {
         this.renderAnalyticsCharts();
+      }
+      // Server-side localized payloads: Demo Mode sample names and the update-check
+      // release notes come back in the request language, so refetch them now
+      // instead of waiting for the next polling cycle.
+      if (this.isDemoMode && typeof this.manualRefresh === 'function') {
+        this.manualRefresh();
+      }
+      if (this.updateInfo && this.updateInfo.checked_at) {
+        this.checkForUpdates(false);
       }
     },
 
@@ -809,10 +878,10 @@ document.addEventListener('alpine:init', () => {
       this.currentTheme = mode;
       localStorage.setItem('eero_theme', mode);
       this.applyTheme(mode);
-      const title = this.currentLanguage === 'it' ? "Tema Aggiornato" : "Theme Updated";
-      const modeLabel = mode === 'light' ? (this.currentLanguage === 'it' ? "Chiaro" : "Light")
-        : mode === 'dark' ? (this.currentLanguage === 'it' ? "Scuro" : "Dark")
-        : (this.currentLanguage === 'it' ? "Sistema" : "System");
+      const title = this.t('js.set_theme.theme_updated');
+      const modeLabel = mode === 'light' ? (this.t('header.theme_light'))
+        : mode === 'dark' ? (this.t('header.theme_dark'))
+        : (this.t('header.theme_system'));
       this.showToast(title, `${title}: ${modeLabel}`, "info");
     },
 
@@ -903,7 +972,7 @@ document.addEventListener('alpine:init', () => {
     formatBackhaul(eero) {
       if (!eero) return '';
       if (eero.is_gateway) {
-        return this.t('dashboard.backhaul_gateway') || 'Gateway (WAN)';
+        return this.t('dashboard.backhaul_gateway');
       }
       const bh = String(eero.backhaul_type || '').trim();
       const isWired = Boolean(eero.is_wired || eero.wired || bh.toLowerCase().includes('cablato') || bh.toLowerCase().includes('ethernet') || bh.toLowerCase().includes('wired'));
@@ -914,32 +983,38 @@ document.addEventListener('alpine:init', () => {
         if (/\b1(?:\.0)?\s*Gbps\b/i.test(bh) || bh.includes('1000') || bh.includes('1Gbps')) return 'Ethernet (1.0 Gbps)';
         if (/\b100\s*Mbps\b/i.test(bh) || bh.includes('100M')) return 'Ethernet (100 Mbps)';
         if (bh.includes('(') && bh.includes(')')) return bh;
-        return this.t('dashboard.backhaul_wired') || (this.currentLanguage === 'it' ? 'Ethernet (Cablato)' : 'Ethernet (Wired)');
+        return this.t('dashboard.backhaul_wired');
       }
       if (bh) {
-        return bh;
+        const cleanBh = bh.replace(/\s*\((?:stimata|estimated)\)/gi, '').trim();
+        const isEstimated = Boolean(eero.backhaul_estimated || /\((?:stimata|estimated)\)/i.test(bh));
+        if (isEstimated) {
+          const estLabel = this.t('dashboard.backhaul_estimated');
+          return `${cleanBh} ${estLabel}`;
+        }
+        return cleanBh;
       }
       const modelStr = String(eero.model || '').toLowerCase();
       const is6Eor7 = modelStr.includes('pro 6e') || modelStr.includes('max 7') || modelStr.includes('outdoor 7') || modelStr.includes('k010001') || modelStr.includes('s010001') || modelStr.includes('t010001');
       if (is6Eor7) {
-        return this.t('dashboard.backhaul_wireless_6ghz') || 'Wireless Mesh (6 GHz)';
+        return this.t('dashboard.backhaul_wireless_6ghz');
       }
-      return this.t('dashboard.backhaul_wireless') || 'Wireless Mesh (5 GHz)';
+      return this.t('dashboard.backhaul_wireless');
     },
 
     formatNodeStatus(eero) {
       if (!eero) return '';
       const isRebooting = ['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING';
       if (isRebooting) {
-        const rebootLabel = this.currentLanguage === 'it' ? 'In Riavvio' : 'Rebooting';
-        const reconnLabel = this.currentLanguage === 'it' ? 'Riconnessione...' : 'Reconnecting...';
+        const rebootLabel = this.t('js.format_node_status.rebooting');
+        const reconnLabel = this.t('js.format_node_status.reconnecting');
         return `${rebootLabel} • ${reconnLabel}`;
       }
       const isOnline = ['online', 'green'].includes(eero.status);
       const statusLabel = isOnline ? this.t('devices.status_online') : this.t('devices.status_offline');
       const healthLabel = isOnline 
-        ? (this.t('dashboard.status_normal') || (this.currentLanguage === 'it' ? 'Normale' : 'Normal'))
-        : (this.currentLanguage === 'it' ? 'Disconnesso' : 'Disconnected');
+        ? this.t('dashboard.status_normal')
+        : (this.t('controls.mqtt_status_disconnected'));
       return `${statusLabel} • ${healthLabel}`;
     },
 
@@ -976,19 +1051,51 @@ document.addEventListener('alpine:init', () => {
       return unique.length > 0 ? unique.join(', ') : fallbackIp;
     },
 
-    t(path, params = {}) {
-      if (!path) return '';
-      const keys = path.split('.');
-      let val = this.translations;
+    lookupTranslation(dict, keys) {
+      let val = dict;
       for (const k of keys) {
         if (val && typeof val === 'object' && k in val) {
           val = val[k];
         } else {
-          val = null;
-          break;
+          return null;
         }
       }
-      if (typeof val !== 'string') {
+      return typeof val === 'string' ? val : null;
+    },
+
+    // Picks the viewer-language variant of a server payload field. Prefers a
+    // `<field>_i18n` map ({en, it, ...}), then legacy `<field>_<lang>` keys,
+    // then English, then the bare field.
+    localized(obj, field) {
+      if (!obj) return '';
+      const lang = this.currentLanguage;
+      const map = obj[`${field}_i18n`];
+      if (map && typeof map === 'object') {
+        if (map[lang]) return map[lang];
+        if (map.en) return map.en;
+      }
+      return obj[`${field}_${lang}`] ?? obj[`${field}_en`] ?? obj[field] ?? '';
+    },
+
+    languageFlags: { en: '🇬🇧', it: '🇮🇹' },
+    // Default BCP 47 region per dashboard language, used by dateLocale().
+    dateLocales: { en: 'en-US', it: 'it-IT' },
+    languageFlag(lang) {
+      return this.languageFlags[lang] || (lang || '').toUpperCase();
+    },
+
+    // Header toggle: steps through supportedLanguages in order.
+    cycleLanguage() {
+      const list = this.supportedLanguages;
+      const next = list[(list.indexOf(this.currentLanguage) + 1) % list.length];
+      return this.setLanguage(next);
+    },
+
+    t(path, params = {}) {
+      if (!path) return '';
+      const keys = path.split('.');
+      const val = this.lookupTranslation(this.translations, keys) ?? this.lookupTranslation(this.fallbackTranslations, keys);
+      if (val === null) {
         return '';
       }
       let res = val;
@@ -1011,12 +1118,12 @@ document.addEventListener('alpine:init', () => {
     loadDeviceFiltersFromUrl() {
       if (typeof window === 'undefined' || !window.location) return;
       const params = new URLSearchParams(window.location.search);
-      this.deviceSearchQuery = params.get('search') || '';
-      this.selectedBandFilter = params.get('band') || 'all';
-      this.selectedNodeFilter = params.get('node') || 'all';
-      this.selectedCategoryFilter = params.get('category') || 'all';
-      this.selectedProfileFilter = params.get('profile') || 'all';
-      this.selectedIpTypeFilter = params.get('assignment') || 'all';
+      this.deviceSearchQuery = params.get('search');
+      this.selectedBandFilter = params.get('band');
+      this.selectedNodeFilter = params.get('node');
+      this.selectedCategoryFilter = params.get('category');
+      this.selectedProfileFilter = params.get('profile');
+      this.selectedIpTypeFilter = params.get('assignment');
       this.showConnectedOnly = params.get('connected') === 'true';
     },
 
@@ -1049,8 +1156,8 @@ document.addEventListener('alpine:init', () => {
       // Se non autenticato, sono permesse solo la visualizzazione Wi-Fi ospiti (QR code) e note di rilascio
       if (!this.currentUser && tab !== 'guests' && tab !== 'news') {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Accesso Richiesto' : 'Login Required',
-          this.currentLanguage === 'it' ? 'Effettua l\'accesso per consultare questa sezione.' : 'Please sign in to access this section.',
+          this.t('js.set_tab.login_required'),
+          this.t('js.set_tab.please_sign_in_to'),
           'info'
         );
         this.openLocalLoginModal();
@@ -1064,8 +1171,8 @@ document.addEventListener('alpine:init', () => {
       // Protezione accessi per tab amministrative riservate
       if (tab === 'settings-users' && !this.can('action_manage_users')) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
-          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere alla gestione utenti.' : 'Please sign in as Admin to access user management.',
+          this.t('js.set_tab.access_restricted'),
+          this.t('js.set_tab.please_sign_in_as'),
           'warning'
         );
         this.openLocalLoginModal();
@@ -1073,8 +1180,8 @@ document.addEventListener('alpine:init', () => {
       }
       if (tab === 'settings-backup' && !this.can('action_system_backup')) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Accesso Riservato' : 'Access Restricted',
-          this.currentLanguage === 'it' ? 'Effettua prima l\'accesso come Admin per accedere a backup e ripristino.' : 'Please sign in as Admin to access backup & restore.',
+          this.t('js.set_tab.access_restricted'),
+          this.t('js.set_tab.please_sign_in_as_2'),
           'warning'
         );
         this.openLocalLoginModal();
@@ -1122,7 +1229,7 @@ document.addEventListener('alpine:init', () => {
       } else if (tab === 'settings-backup') {
         await this.fetchDbStats();
       } else if (tab === 'settings-updates') {
-        await this.checkForUpdates(false);
+        await Promise.all([this.checkForUpdates(false), this.fetchRuntimeInfo()]);
       } else if (tab === 'news') {
         await this.fetchEeroNews();
       }
@@ -1166,10 +1273,10 @@ document.addEventListener('alpine:init', () => {
           if (this.isAuthenticated) {
             this.startPolling();
           }
-          const title = this.currentLanguage === 'it' ? "Modalità Aggiornata" : "Mode Switched";
+          const title = this.t('js.toggle_demo_mode.mode_switched');
           const msg = this.isDemoMode
-            ? (this.currentLanguage === 'it' ? "Modalità Demo attiva. Il tuo token live reale rimane salvato." : "Demo Mode active. Your live session token is preserved.")
-            : (this.currentLanguage === 'it' ? "Rete Live attiva. Dati eero in tempo reale caricati." : "Live Network active. Real-time eero data loaded.");
+            ? (this.t('js.toggle_demo_mode.demo_mode_active_your'))
+            : (this.t('js.toggle_demo_mode.live_network_active_real'));
           this.showToast(title, msg, "info");
         }
       } catch (err) {
@@ -1194,17 +1301,17 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ login: this.loginIdentifier })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Richiesta OTP fallita');
+        if (!res.ok) throw new Error(data.detail || this.t('toasts.otp_request_failed'));
         if (data.user_token) {
           this.tempUserToken = data.user_token;
         }
         this.otpSent = true;
-        const title = this.currentLanguage === 'it' ? "Codice Inviato" : "Code Sent";
-        const msg = this.currentLanguage === 'it' ? "Inserisci il codice a 6 cifre ricevuto via SMS/Email." : "Enter the 6-digit verification code received via SMS/Email.";
+        const title = this.t('js.request_otp.code_sent');
+        const msg = this.t('js.request_otp.enter_the_6_digit');
         this.showToast(title, msg, "info");
       } catch (err) {
         this.authError = err.message;
-        const title = this.currentLanguage === 'it' ? "Errore Login" : "Login Error";
+        const title = this.t('js.request_otp.login_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.authLoading = false;
@@ -1222,7 +1329,7 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ code: this.otpCode, user_token: this.tempUserToken })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || (this.currentLanguage === 'it' ? 'Verifica OTP fallita' : 'OTP verification failed'));
+        if (!res.ok) throw new Error(data.detail || (this.t('js.verify_otp.otp_verification_failed')));
         
         this.isAuthenticated = true;
         this.isDemoMode = false;
@@ -1231,14 +1338,14 @@ document.addEventListener('alpine:init', () => {
         this.otpCode = '';
         this.tempUserToken = null;
         await this.checkAuthStatus();
-        const title = this.currentLanguage === 'it' ? "Accesso Riuscito" : "Login Successful";
-        const msg = this.currentLanguage === 'it' ? "Connessione con eero stabilita." : "Connected to eero mesh network.";
+        const title = this.t('js.verify_otp.login_successful');
+        const msg = this.t('js.verify_otp.connected_to_eero_mesh');
         this.showToast(title, msg, "success");
         await this.refreshAllData();
         this.startPolling();
       } catch (err) {
         this.authError = err.message;
-        const title = this.currentLanguage === 'it' ? "Errore OTP" : "OTP Error";
+        const title = this.t('js.verify_otp.otp_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.authLoading = false;
@@ -1252,8 +1359,8 @@ document.addEventListener('alpine:init', () => {
         this.isDemoMode = false;
         this.userAccount = null;
         if (this.pollingTimer) clearInterval(this.pollingTimer);
-        const title = this.currentLanguage === 'it' ? "Disconnesso" : "Logged Out";
-        const msg = this.currentLanguage === 'it' ? "Sessione terminata con successo." : "Session closed successfully.";
+        const title = this.t('js.logout.logged_out');
+        const msg = this.t('js.logout.session_closed_successfully');
         this.showToast(title, msg, "info");
       } catch (err) {
         console.error("Logout error:", err);
@@ -1292,13 +1399,11 @@ document.addEventListener('alpine:init', () => {
         if (this.currentTab === 'speedtest') {
           await this.loadSpeedtestData();
         }
-        const title = this.currentLanguage === 'it' ? "Dati Aggiornati" : "Data Refreshed";
-        const msg = this.currentLanguage === 'it' 
-          ? "Dashboard sincronizzata in tempo reale con la rete eero." 
-          : "Dashboard synchronized in real-time with eero network.";
+        const title = this.t('js.manual_refresh.data_refreshed');
+        const msg = this.t('js.manual_refresh.dashboard_synchronized_in_real');
         this.showToast(title, msg, "success");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Aggiornamento" : "Refresh Error";
+        const title = this.t('js.manual_refresh.refresh_error');
         this.showToast(title, err.message, "error");
       } finally {
         setTimeout(() => { this.isRefreshing = false; }, 400);
@@ -1426,36 +1531,32 @@ document.addEventListener('alpine:init', () => {
     // NETWORK & NODES ACTIONS
     // =========================================================================
     async rebootNetwork() {
-      const confirmMsg = this.currentLanguage === 'it'
-        ? "Sei sicuro di voler riavviare l'intera rete mesh eero? La connessione cadrà per 2-3 minuti."
-        : "Are you sure you want to reboot the entire eero mesh network? Internet connectivity will drop for 2-3 minutes.";
+      const confirmMsg = this.t('js.reboot_network.are_you_sure_you');
       if (!confirm(confirmMsg)) return;
 
       try {
         const res = await fetch('/api/network/reboot', { method: 'POST' });
         const data = await res.json();
-        const title = this.currentLanguage === 'it' ? "Riavvio Rete" : "Network Reboot";
-        this.showToast(title, data.message || (this.currentLanguage === 'it' ? "Comando inviato." : "Reboot command sent."), "info");
+        const title = this.t('js.reboot_network.network_reboot');
+        this.showToast(title, data.message || (this.t('js.reboot_network.reboot_command_sent')), "info");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Riavvio" : "Reboot Error";
+        const title = this.t('js.reboot_network.reboot_error');
         this.showToast(title, err.message, "error");
       }
     },
 
     async rebootEero(eero) {
       const eid = eero.id || eero.serial;
-      const confirmMsg = this.currentLanguage === 'it'
-        ? `Riavviare il nodo '${eero.name || eid}'?`
-        : `Reboot node '${eero.name || eid}'?`;
+      const confirmMsg = this.t('js.reboot_eero.reboot_node', { name: eero.name || eid });
       if (!confirm(confirmMsg)) return;
 
       try {
         const res = await fetch(`/api/network/eeros/${eid}/reboot`, { method: 'POST' });
         const data = await res.json();
-        const title = this.currentLanguage === 'it' ? "Riavvio Nodo" : "Node Reboot";
-        this.showToast(title, data.message || (this.currentLanguage === 'it' ? `Riavvio nodo ${eero.name} avviato.` : `Rebooting node ${eero.name}.`), "info");
+        const title = this.t('js.reboot_eero.node_reboot');
+        this.showToast(title, data.message || (this.t('js.reboot_eero.rebooting_node', { name: eero.name })), "info");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Riavvio" : "Reboot Error";
+        const title = this.t('js.reboot_network.reboot_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -1471,16 +1572,14 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.message || data.detail || (this.currentLanguage === 'it' ? 'Impossibile modificare il LED via API eero' : 'Failed to update LED via eero API'));
+          throw new Error(data.message || data.detail || (this.t('js.toggle_eero_led.failed_to_update_led')));
         }
         eero.led_on = targetState;
-        const title = this.currentLanguage === 'it' ? "LED Aggiornato" : "LED Updated";
-        const msg = this.currentLanguage === 'it' 
-          ? `LED ${eero.name}: ${targetState ? 'Acceso' : 'Spento'}` 
-          : `LED ${eero.name}: ${targetState ? 'ON' : 'OFF'}`;
+        const title = this.t('js.toggle_eero_led.led_updated');
+        const msg = this.t('js.toggle_eero_led.led_state', { name: eero.name, state: targetState ? this.t('common.on') : this.t('common.off') });
         this.showToast(title, msg, "success");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore LED" : "LED Error";
+        const title = this.t('js.toggle_eero_led.led_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -1494,16 +1593,14 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.message || data.detail || (this.currentLanguage === 'it' ? 'Impossibile modificare tutti i LED' : 'Failed to update all LEDs'));
+          throw new Error(data.message || data.detail || (this.t('js.toggle_all_leds.failed_to_update_all')));
         }
         this.eeros.forEach(e => e.led_on = ledOn);
-        const title = this.currentLanguage === 'it' ? "Tutti i LED" : "All LEDs";
-        const msg = this.currentLanguage === 'it' 
-          ? `Tutti i LED impostati a: ${ledOn ? 'Accesi' : 'Spenti'}` 
-          : `All LEDs set to: ${ledOn ? 'ON' : 'OFF'}`;
+        const title = this.t('js.toggle_all_leds.all_leds');
+        const msg = this.t('js.toggle_all_leds.all_leds_set_to', { state: ledOn ? this.t('common.on_plural') : this.t('common.off_plural') });
         this.showToast(title, msg, "success");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore LED" : "LED Error";
+        const title = this.t('js.toggle_eero_led.led_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -1533,7 +1630,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: dlData,
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(0, 103, 192, 0.12)',
@@ -1544,7 +1641,7 @@ document.addEventListener('alpine:init', () => {
               pointHoverRadius: 5
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: ulData,
               borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
               backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.10)' : 'rgba(15, 123, 15, 0.10)',
@@ -1591,20 +1688,19 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    // BCP 47 locale for dates and numbers: the browser's own regional variant
+    // when it matches the dashboard language (e.g. en-US vs en-GB), otherwise
+    // the dashboard language's default region.
+    dateLocale() {
+      const nav = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : '';
+      if (nav.toLowerCase().startsWith(this.currentLanguage)) return nav;
+      return this.dateLocales[this.currentLanguage] || 'en-US';
+    },
+
     formatLocalTime(ts) {
       if (!ts) return '';
       const d = new Date(ts.replace(' ', 'T'));
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    },
-
-    formatLocalDateTime(ts) {
-      if (!ts) return '';
-      let str = String(ts).trim();
-      if (!str.endsWith('Z') && !str.includes('+')) {
-        str = str.replace(' ', 'T') + 'Z';
-      }
-      const dt = new Date(str);
-      return dt.toLocaleDateString('it-IT', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+      return d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
     },
 
     formatFirstSeenRelative(ts) {
@@ -1617,21 +1713,20 @@ document.addEventListener('alpine:init', () => {
       if (isNaN(d.getTime())) return String(ts);
       const now = new Date();
       const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
-      const isIt = this.currentLanguage === 'it';
-      if (diffSec < 0) return isIt ? 'Adesso' : 'Just now';
-      if (diffSec < 60) return isIt ? 'Adesso' : 'Just now';
+      if (diffSec < 0) return this.t('js.format_first_seen_relative.just_now');
+      if (diffSec < 60) return this.t('js.format_first_seen_relative.just_now');
       const diffMin = Math.floor(diffSec / 60);
-      if (diffMin < 60) return isIt ? `${diffMin}m fa` : `${diffMin}m ago`;
+      if (diffMin < 60) return this.t('js.format_first_seen_relative.m_ago', { diffMin: diffMin });
       const diffHours = Math.floor(diffMin / 60);
-      if (diffHours < 24) return isIt ? `${diffHours}h fa` : `${diffHours}h ago`;
+      if (diffHours < 24) return this.t('js.format_first_seen_relative.h_ago', { diffHours: diffHours });
       const diffDays = Math.floor(diffHours / 24);
-      if (diffDays === 1) return isIt ? 'Ieri' : 'Yesterday';
-      if (diffDays < 7) return isIt ? `${diffDays} gg fa` : `${diffDays}d ago`;
+      if (diffDays === 1) return this.t('js.format_first_seen_relative.yesterday');
+      if (diffDays < 7) return this.t('js.format_first_seen_relative.d_ago', { diffDays: diffDays });
       if (diffDays < 30) {
         const diffWeeks = Math.floor(diffDays / 7);
-        return isIt ? `${diffWeeks} sett. fa` : `${diffWeeks}w ago`;
+        return this.t('js.format_first_seen_relative.w_ago', { diffWeeks: diffWeeks });
       }
-      return d.toLocaleDateString(isIt ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' });
+      return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' });
     },
 
     formatFirstSeenFull(ts) {
@@ -1642,8 +1737,7 @@ document.addEventListener('alpine:init', () => {
       }
       const d = new Date(str);
       if (isNaN(d.getTime())) return String(ts);
-      const isIt = this.currentLanguage === 'it';
-      return d.toLocaleString(isIt ? 'it-IT' : 'en-US', {
+      return d.toLocaleString(this.dateLocale(), {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -1991,7 +2085,6 @@ document.addEventListener('alpine:init', () => {
       if (!this.deviceStaticIpInput || !this.selectedDevice) return null;
       const targetIp = this.deviceStaticIpInput.trim();
       const currentMac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
-      const isIt = this.currentLanguage === 'it';
       
       // Controllo formato IPv4 base
       const ipParts = targetIp.split('.');
@@ -1999,7 +2092,7 @@ document.addEventListener('alpine:init', () => {
         return { 
           hasConflict: true, 
           isReassign: false, 
-          message: isIt ? "Formato indirizzo IPv4 non valido (es. 192.168.4.50)." : "Invalid IPv4 address format (e.g. 192.168.4.50)." 
+          message: this.t('js.toggle_device_sort.invalid_ipv4_address_format') 
         };
       }
 
@@ -2008,7 +2101,7 @@ document.addEventListener('alpine:init', () => {
         return { 
           hasConflict: true, 
           isReassign: false, 
-          message: isIt ? `L'IP ${targetIp} è l'indirizzo del Gateway eero.` : `IP ${targetIp} is the eero Gateway address.` 
+          message: this.t('js.toggle_device_sort.ip_is_the_eero', { targetIp: targetIp }) 
         };
       }
       for (const node of (this.eeros || [])) {
@@ -2016,7 +2109,7 @@ document.addEventListener('alpine:init', () => {
           return { 
             hasConflict: true, 
             isReassign: false, 
-            message: isIt ? `L'IP ${targetIp} appartiene al nodo mesh '${node.name}'.` : `IP ${targetIp} is assigned to mesh node '${node.name}'.` 
+            message: this.t('js.toggle_device_sort.ip_is_assigned_to', { targetIp: targetIp, name: node.name }) 
           };
         }
       }
@@ -2026,9 +2119,7 @@ document.addEventListener('alpine:init', () => {
         return { 
           hasConflict: false, 
           isReassign: false, 
-          message: isIt 
-            ? `Questo dispositivo sta già usando l'IP ${targetIp}. Clicca 'Riserva' per confermarlo fisso e permanente su eero.` 
-            : `This device is already using IP ${targetIp}. Click 'Reserve' to fix it permanently on eero.`
+          message: this.t('js.toggle_device_sort.this_device_is_already', { targetIp: targetIp })
         };
       }
 
@@ -2040,9 +2131,7 @@ document.addEventListener('alpine:init', () => {
           return { 
             hasConflict: false, 
             isReassign: true, 
-            message: isIt 
-              ? `L'IP ${targetIp} è attualmente prenotato per '${res.description || res.name || resMac}'. Cliccando 'Riserva', la prenotazione verrà riassegnata a questo dispositivo.` 
-              : `IP ${targetIp} is currently reserved for '${res.description || res.name || resMac}'. Clicking 'Reserve' will reassign the reservation to this device.`
+            message: this.t('js.toggle_device_sort.ip_is_currently_reserved', { targetIp: targetIp, description: res.description || res.name || resMac })
           };
         }
       }
@@ -2054,9 +2143,7 @@ document.addEventListener('alpine:init', () => {
           return { 
             hasConflict: false, 
             isReassign: true, 
-            message: isIt 
-              ? `L'IP ${targetIp} è attualmente assegnato a '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Cliccando 'Riserva', verrà riservato per questo dispositivo.` 
-              : `IP ${targetIp} is currently assigned to '${dev.custom_name || dev.nickname || dev.hostname || dMac}'. Clicking 'Reserve' will reserve it for this device.`
+            message: this.t('js.toggle_device_sort.ip_is_currently_assigned', { targetIp: targetIp, custom_name: dev.custom_name || dev.nickname || dev.hostname || dMac })
           };
         }
       }
@@ -2064,7 +2151,7 @@ document.addEventListener('alpine:init', () => {
       return { 
         hasConflict: false, 
         isReassign: false, 
-        message: isIt ? "Indirizzo IP disponibile e pronto per la prenotazione." : "IP address is available and ready for reservation." 
+        message: this.t('js.toggle_device_sort.ip_address_is_available') 
       };
     },
 
@@ -2128,6 +2215,46 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    async clearDeviceDiscoveredUla(device) {
+      if (!device || this.isClearingUla) return;
+      const mac = (device.mac || device.mac_address || '').toLowerCase();
+      if (!mac) return;
+      
+      const count = (device.ipv6_details ? device.ipv6_details.filter(d => d.origin === 'ndp_discovered').length : 0) || (device.discovered_ips ? device.discovered_ips.length : 1);
+      if (!confirm(this.t('device_modal.clear_ula_confirm', { count }))) {
+        return;
+      }
+
+      this.isClearingUla = true;
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch(`/api/devices/${encodeURIComponent(mac)}/clear-ula`, {
+          method: 'POST',
+          headers
+        });
+        if (res.ok) {
+          if (this.selectedDevice) {
+            this.selectedDevice.ipv6_details = (this.selectedDevice.ipv6_details || []).filter(d => d.origin !== 'ndp_discovered');
+            const discSet = new Set((this.selectedDevice.discovered_ips || []).map(i => i.ip_address));
+            this.selectedDevice.ipv6_ula = (this.selectedDevice.ipv6_ula || []).filter(ip => !discSet.has(ip));
+            this.selectedDevice.ipv6_addresses = (this.selectedDevice.ipv6_addresses || []).filter(ip => !discSet.has(ip));
+            this.selectedDevice.ipv6_all = this.selectedDevice.ipv6_addresses;
+            this.selectedDevice.has_discovered_ips = false;
+            this.selectedDevice.discovered_ips = [];
+          }
+          this.showToast(this.t('toasts.success_title'), this.t('device_modal.clear_ula_success'), 'success');
+        } else {
+          this.showToast(this.t('toasts.error'), this.t('device_modal.clear_ula_error'), 'error');
+        }
+      } catch (err) {
+        console.error("Clear device ULA error:", err);
+        this.showToast(this.t('toasts.error'), this.t('device_modal.clear_ula_error'), 'error');
+      } finally {
+        this.isClearingUla = false;
+      }
+    },
+
     async saveDeviceReservation() {
       if (!this.selectedDevice || !this.deviceStaticIpInput) return;
       const mac = (this.selectedDevice.mac || this.selectedDevice.mac_address || '').toLowerCase();
@@ -2146,15 +2273,13 @@ document.addEventListener('alpine:init', () => {
           throw new Error(data.detail || data.message || this.t('device_modal.reservation_error'));
         }
 
-        const title = this.currentLanguage === 'it' ? "IP Statico Riservato" : "Static IP Reserved";
-        const msg = this.currentLanguage === 'it' 
-          ? `Indirizzo ${this.deviceStaticIpInput} prenotato con successo su eero.`
-          : `IP address ${this.deviceStaticIpInput} successfully reserved on eero.`;
+        const title = this.t('toasts.static_reserved');
+        const msg = this.t('js.save_device_reservation.ip_address_successfully_reserved', { ip: this.deviceStaticIpInput });
         this.showToast(title, msg, "success");
         await this.loadDeviceRules(mac);
         await this.fetchDevices();
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Prenotazione IP" : "IP Reservation Error";
+        const title = this.t('js.save_device_reservation.ip_reservation_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2168,18 +2293,16 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la rimozione della prenotazione' : 'Error removing IP reservation'));
+          throw new Error(data.detail || data.message || (this.t('js.remove_device_reservation.error_removing_ip_reservation')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Prenotazione Rimossa" : "Reservation Removed";
-        const msg = this.currentLanguage === 'it' 
-          ? "IP Statico rimosso. Il dispositivo utilizzerà DHCP dinamico." 
-          : "Static IP reservation removed. Device will use dynamic DHCP.";
+        const title = this.t('toasts.static_removed');
+        const msg = this.t('js.remove_device_reservation.static_ip_reservation_removed');
         this.showToast(title, msg, "info");
         await this.loadDeviceRules(mac);
         await this.fetchDevices();
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Rimozione" : "Removal Error";
+        const title = this.t('js.remove_device_reservation.removal_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2188,16 +2311,16 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedDevice) return;
       const targetIp = (this.deviceReservation ? (this.deviceReservation.ip || this.deviceReservation.ip_address || '') : (this.selectedDevice.ip || '')).trim();
       if (!targetIp) {
-        const title = this.currentLanguage === 'it' ? "IP Mancante" : "Missing IP";
-        const msg = this.currentLanguage === 'it' ? "Il dispositivo deve avere un indirizzo IP valido per aprire porte." : "Device must have a valid IP address for port forwarding.";
+        const title = this.t('js.add_device_port_forward.missing_ip');
+        const msg = this.t('js.add_device_port_forward.device_must_have_a');
         this.showToast(title, msg, "warning");
         return;
       }
       const pFrom = parseInt(this.newPortForward.port_from);
       const pTo = parseInt(this.newPortForward.port_to);
       if (isNaN(pFrom) || isNaN(pTo) || pFrom < 1 || pFrom > 65535 || pTo < 1 || pTo > 65535) {
-        const title = this.currentLanguage === 'it' ? "Porta non valida" : "Invalid Port";
-        const msg = this.currentLanguage === 'it' ? "Inserisci numeri di porta validi compresi tra 1 e 65535." : "Please enter valid port numbers between 1 and 65535.";
+        const title = this.t('js.add_device_port_forward.invalid_port');
+        const msg = this.t('js.add_device_port_forward.please_enter_valid_port');
         this.showToast(title, msg, "warning");
         return;
       }
@@ -2217,16 +2340,16 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la creazione del port forward' : 'Error creating port forward'));
+          throw new Error(data.detail || data.message || (this.t('js.add_device_port_forward.error_creating_port_forward')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Porta Inoltrata" : "Port Forwarded";
-        const msg = this.currentLanguage === 'it' ? `Regola per porta ${pFrom} creata con successo su eero.` : `Rule for port ${pFrom} created on eero.`;
+        const title = this.t('toasts.forward_added');
+        const msg = this.t('js.add_device_port_forward.rule_for_port_created', { pFrom: pFrom });
         this.showToast(title, msg, "success");
         this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
         await this.loadDeviceRules(mac);
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Port Forwarding" : "Port Forward Error";
+        const title = this.t('js.add_device_port_forward.port_forward_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2240,15 +2363,15 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore durante la cancellazione della regola' : 'Error deleting forwarding rule'));
+          throw new Error(data.detail || data.message || (this.t('js.delete_device_port_forward.error_deleting_forwarding_rule')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Regola Eliminata" : "Rule Deleted";
-        const msg = this.currentLanguage === 'it' ? "Port forwarding rimosso da eero." : "Port forwarding rule deleted from eero.";
+        const title = this.t('toasts.forward_deleted');
+        const msg = this.t('js.delete_device_port_forward.port_forwarding_rule_deleted');
         this.showToast(title, msg, "info");
         await this.loadDeviceRules(mac);
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Cancellazione" : "Deletion Error";
+        const title = this.t('js.delete_device_port_forward.deletion_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2257,7 +2380,7 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedDevice) return;
       const targetId = (this.selectedDevice.mac || this.selectedDevice.id || this.selectedDevice.mac_address || '').toLowerCase();
       if (!targetId) {
-        this.showToast(this.currentLanguage === 'it' ? "Errore" : "Error", this.t('devices.device_id_not_found'), "error");
+        this.showToast(this.t('toasts.error'), this.t('devices.device_id_not_found'), "error");
         return;
       }
       try {
@@ -2296,13 +2419,13 @@ document.addEventListener('alpine:init', () => {
           dns_sync_excluded: Boolean(this.deviceMetadataForm.dns_sync_excluded)
         });
 
-        const title = this.currentLanguage === 'it' ? "Salvato" : "Saved";
-        const msg = this.currentLanguage === 'it' ? "Metadati e categoria dispositivo salvati con successo." : "Device metadata and category saved successfully.";
+        const title = this.t('toasts.saved');
+        const msg = this.t('js.save_device_metadata.device_metadata_and_category');
         this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Salvataggio" : "Save Error";
+        const title = this.t('js.save_device_metadata.save_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2334,8 +2457,8 @@ document.addEventListener('alpine:init', () => {
 
     async createProfile() {
       if (!this.newProfileForm.name || !this.newProfileForm.name.trim()) {
-        const title = this.currentLanguage === 'it' ? "Nome Richiesto" : "Name Required";
-        const msg = this.currentLanguage === 'it' ? "Inserisci il nome del profilo o dell'utente." : "Please enter a profile or user name.";
+        const title = this.t('js.create_profile.name_required');
+        const msg = this.t('js.create_profile.please_enter_a_profile');
         this.showToast(title, msg, "warning");
         return;
       }
@@ -2352,18 +2475,16 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile creare il profilo' : 'Unable to create profile'));
+          throw new Error(data.detail || data.message || (this.t('js.create_profile.unable_to_create_profile')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Profilo Creato" : "Profile Created";
-        const msg = this.currentLanguage === 'it' 
-          ? `Profilo '${this.newProfileForm.name}' creato con successo su eero.`
-          : `Profile '${this.newProfileForm.name}' created successfully on eero.`;
+        const title = this.t('js.create_profile.profile_created');
+        const msg = this.t('js.create_profile.profile_created_successfully_on', { name: this.newProfileForm.name });
         this.showToast(title, msg, "success");
         this.showCreateProfileModal = false;
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Creazione Profilo" : "Profile Creation Error";
+        const title = this.t('js.create_profile.profile_creation_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.profileAssigningLoading = false;
@@ -2371,10 +2492,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteProfile(profile) {
-      const pName = profile.name || (this.currentLanguage === 'it' ? 'questo profilo' : 'this profile');
+      const pName = profile.name || (this.t('js.delete_profile.this_profile'));
       const promptMsg = (this.translations.profiles && this.translations.profiles.delete_profile_confirm)
         ? this.translations.profiles.delete_profile_confirm.replace('{name}', pName)
-        : (this.currentLanguage === 'it' ? `Sei sicuro di voler eliminare il profilo '${pName}'?` : `Are you sure you want to delete profile '${pName}'?`);
+        : (this.t('js.delete_profile.are_you_sure_you', { pName: pName }));
 
       if (!confirm(promptMsg)) return;
 
@@ -2384,15 +2505,15 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Impossibile eliminare il profilo' : 'Unable to delete profile'));
+          throw new Error(data.detail || data.message || (this.t('js.delete_profile.unable_to_delete_profile')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Profilo Eliminato" : "Profile Deleted";
-        const msg = this.currentLanguage === 'it' ? `Profilo '${pName}' rimosso da eero.` : `Profile '${pName}' removed from eero.`;
+        const title = this.t('js.delete_profile.profile_deleted');
+        const msg = this.t('js.delete_profile.profile_removed_from_eero', { pName: pName });
         this.showToast(title, msg, "info");
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Eliminazione" : "Deletion Error";
+        const title = this.t('js.delete_profile.deletion_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2408,17 +2529,17 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (!res.ok || data.status === 'error') {
-          throw new Error(data.detail || data.message || (this.currentLanguage === 'it' ? 'Errore assegnazione profilo' : 'Profile assignment error'));
+          throw new Error(data.detail || data.message || (this.t('js.assign_device_to_profile.profile_assignment_error')));
         }
 
-        const title = this.currentLanguage === 'it' ? "Profilo Aggiornato" : "Profile Updated";
+        const title = this.t('js.assign_device_to_profile.profile_updated');
         const msg = isRemoving
-          ? (this.currentLanguage === 'it' ? "Dispositivo rimosso dal profilo con successo." : "Device removed from profile successfully.")
-          : (this.currentLanguage === 'it' ? "Dispositivo assegnato al profilo con successo." : "Device assigned to profile successfully.");
+          ? (this.t('js.assign_device_to_profile.device_removed_from_profile'))
+          : (this.t('js.assign_device_to_profile.device_assigned_to_profile'));
         this.showToast(title, msg, "success");
         await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Assegnazione" : "Assignment Error";
+        const title = this.t('js.assign_device_to_profile.assignment_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2452,7 +2573,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: dl,
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(0, 103, 192, 0.1)',
@@ -2460,7 +2581,7 @@ document.addEventListener('alpine:init', () => {
               tension: 0.3
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: ul,
               borderColor: colors.isDark ? '#10b981' : '#0f7b0f',
               backgroundColor: colors.isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 123, 15, 0.1)',
@@ -2535,6 +2656,13 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.updateInfo = data;
+          if (data && data.update_available) {
+            const versionId = data.latest_full_version || data.latest_version || 'new';
+            const dismissed = sessionStorage.getItem('dismissed_update_' + versionId);
+            this.showUpdatePrompt = !dismissed;
+          } else {
+            this.showUpdatePrompt = false;
+          }
         }
       } catch (err) {
         console.warn("Update check failed:", err);
@@ -2543,9 +2671,47 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    openUpdateModal(force = false) {
+    dismissUpdatePrompt(temporary = true) {
+      this.showUpdatePrompt = false;
+      if (temporary && this.updateInfo) {
+        const versionId = this.updateInfo.latest_full_version || this.updateInfo.latest_version || 'new';
+        try {
+          sessionStorage.setItem('dismissed_update_' + versionId, 'true');
+        } catch (e) {}
+      }
+    },
+
+    proceedUpdateFromPrompt() {
+      this.openUpdateModal(false, false);
+    },
+
+    toggleFullReleaseNotes() {
+      this.showFullReleaseNotes = !this.showFullReleaseNotes;
+    },
+
+    async fetchRuntimeInfo() {
+      try {
+        const headers = {};
+        if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+        const res = await fetch('/api/system/runtime', { headers });
+        this.runtimeInfo = res.ok ? await res.json() : null;
+      } catch (err) {
+        console.warn("Runtime info fetch failed:", err);
+        this.runtimeInfo = null;
+      }
+    },
+
+    runtimeEnvironmentLabel() {
+      const env = this.runtimeInfo && this.runtimeInfo.environment;
+      return env ? this.t(`settings_updates.env_${env}`) : '';
+    },
+
+    openUpdateModal(force = false, showFull = false) {
       this.showUpdateModal = true;
       this.copiedCliCommand = false;
+      if (showFull !== undefined) {
+        this.showFullReleaseNotes = !!showFull;
+      }
       if (force || !this.updateInfo.latest_version) {
         this.checkForUpdates(true);
       }
@@ -2553,9 +2719,7 @@ document.addEventListener('alpine:init', () => {
 
     async triggerAutoUpdate() {
       this.isTriggeringUpdate = true;
-      this.updateProgressMsg = this.currentLanguage === 'it' 
-        ? 'Download nuova immagine Docker in corso...' 
-        : 'Pulling new Docker image...';
+      this.updateProgressMsg = this.t('js.trigger_auto_update.pulling_new_docker_image');
       try {
         const res = await fetch('/api/system/update/trigger', { method: 'POST' });
         const data = await res.json();
@@ -2564,9 +2728,7 @@ document.addEventListener('alpine:init', () => {
           return;
         }
         
-        this.updateProgressMsg = this.currentLanguage === 'it'
-          ? 'Riavvio del container in corso... Riconnessione automatica...'
-          : 'Restarting container... Auto-reconnecting...';
+        this.updateProgressMsg = this.t('js.trigger_auto_update.restarting_container_auto_reconnecting');
         
         this.pollForHealthAndReload();
       } catch (err) {
@@ -2586,9 +2748,7 @@ document.addEventListener('alpine:init', () => {
             const data = await res.json();
             if (data.status === 'healthy') {
               clearInterval(interval);
-              this.updateProgressMsg = this.currentLanguage === 'it'
-                ? 'Aggiornamento completato! Ricaricamento interfaccia...'
-                : 'Update completed! Reloading dashboard...';
+              this.updateProgressMsg = this.t('js.poll_for_health_and_reload.update_completed_reloading_dashboard');
               setTimeout(() => {
                 window.location.reload(true);
               }, 1200);
@@ -2616,8 +2776,8 @@ document.addEventListener('alpine:init', () => {
 
     copyToClipboard(text, successMsg = '') {
       if (!text) return;
-      const title = this.currentLanguage === 'it' ? 'Appunti' : 'Clipboard';
-      const msg = successMsg || (this.currentLanguage === 'it' ? 'Copiato negli appunti!' : 'Copied to clipboard!');
+      const title = this.t('js.copy_to_clipboard.clipboard');
+      const msg = successMsg || (this.t('js.copy_to_clipboard.copied_to_clipboard'));
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
           this.showToast(title, msg, 'success');
@@ -2641,7 +2801,7 @@ document.addEventListener('alpine:init', () => {
         document.body.removeChild(ta);
         this.showToast(title, msg, 'success');
       } catch (e) {
-        this.showToast(title, this.currentLanguage === 'it' ? 'Errore durante la copia' : 'Copy failed', 'error');
+        this.showToast(title, this.t('js.fallback_copy_text.copy_failed'), 'error');
       }
     },
 
@@ -2694,9 +2854,9 @@ document.addEventListener('alpine:init', () => {
         const d = new Date(clean);
         if (isNaN(d.getTime())) return isoStr;
         if (includeDate) {
-          return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
         }
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         return isoStr;
       }
@@ -2727,7 +2887,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels.length > 0 ? labels : ['--'],
           datasets: [
             {
-              label: 'Segnale RSSI (dBm)',
+              label: this.t('charts.rssi_dbm'),
               data: rssiValues.length > 0 ? rssiValues : [null],
               borderColor: colors.isDark ? '#38bdf8' : '#0067c0',
               backgroundColor: colors.isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(0, 103, 192, 0.10)',
@@ -2800,12 +2960,12 @@ document.addEventListener('alpine:init', () => {
         
         if (json.status === 'success') {
           this.lastSpeedtestResult = json.result;
-          this.showToast("Speed Test Completato", `↓ ${json.result.download_mbps} Mbps | ↑ ${json.result.upload_mbps} Mbps`, "success");
+          this.showToast(this.t('toasts.speedtest_completed'), `↓ ${json.result.download_mbps} Mbps | ↑ ${json.result.upload_mbps} Mbps`, "success");
           await this.loadSpeedtestData();
         }
       } catch (err) {
         clearInterval(interval);
-        this.showToast("Errore Speed Test", err.message, "error");
+        this.showToast(this.t('toasts.speedtest_error'), err.message, "error");
       } finally {
         setTimeout(() => {
           this.speedtestRunning = false;
@@ -2849,9 +3009,9 @@ document.addEventListener('alpine:init', () => {
         this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
         this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
         this.updateActiveQrCode();
-        this.showToast("Rete Ospiti", `Rete Ospiti ${targetState ? 'Attivata' : 'Disattivata'}.`, "info");
+        this.showToast(this.t('toasts.guest_network'), this.t(targetState ? 'toasts.guest_enabled' : 'toasts.guest_disabled'), "info");
       } catch (err) {
-        this.showToast("Errore Rete Ospiti", err.message, "error");
+        this.showToast(this.t('toasts.guest_error'), err.message, "error");
       }
     },
 
@@ -2860,7 +3020,7 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/network/guest/generate-password', { method: 'POST' });
         const json = await res.json();
         this.guestNetwork.password = json.password;
-        this.showToast("Nuova Password", "Password sicura generata.", "info");
+        this.showToast(this.t('toasts.new_password'), this.t('toasts.password_generated'), "info");
       } catch (err) {
         console.error(err);
       }
@@ -2877,9 +3037,9 @@ document.addEventListener('alpine:init', () => {
         this.guestQrCodeUrlLight = json.qr_code_data_url_light || json.qr_code_data_url || '';
         this.guestQrCodeUrlDark = json.qr_code_data_url_dark || '';
         this.updateActiveQrCode();
-        this.showToast("Rete Ospiti Aggiornata", "Credenziali e QR Code salvati.", "success");
+        this.showToast(this.t('toasts.guest_updated'), this.t('toasts.guest_saved_desc'), "success");
       } catch (err) {
-        this.showToast("Errore", err.message, "error");
+        this.showToast(this.t('toasts.error'), err.message, "error");
       }
     },
 
@@ -2888,8 +3048,8 @@ document.addEventListener('alpine:init', () => {
       const password = this.guestNetwork?.password || '';
       const text = password 
         ? `Wi-Fi: ${name}\nPassword: ${password}` 
-        : (this.currentLanguage === 'it' ? `Wi-Fi: ${name}\n(Rete aperta senza password)` : `Wi-Fi: ${name}\n(Open network, no password)`);
-      const msg = this.currentLanguage === 'it' ? 'Credenziali Wi-Fi ospiti copiate negli appunti!' : 'Guest Wi-Fi credentials copied to clipboard!';
+        : (this.t('js.copy_guest_credentials.wi_fi_open_network', { name: name }));
+      const msg = this.t('js.copy_guest_credentials.guest_wi_fi_credentials');
       this.copyToClipboard(text, msg);
     },
 
@@ -2897,13 +3057,13 @@ document.addEventListener('alpine:init', () => {
       const password = this.guestNetwork?.password || '';
       if (!password) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Rete aperta' : 'Open network', 
-          this.currentLanguage === 'it' ? 'La rete ospiti è aperta: non è richiesta alcuna password.' : 'Guest network is open: no password required.', 
+          this.t('js.copy_guest_password.open_network'), 
+          this.t('js.copy_guest_password.guest_network_is_open'), 
           'info'
         );
         return;
       }
-      const msg = this.currentLanguage === 'it' ? 'Password ospiti copiata negli appunti!' : 'Guest password copied to clipboard!';
+      const msg = this.t('js.copy_guest_password.guest_password_copied_to');
       this.copyToClipboard(password, msg);
     },
 
@@ -2930,10 +3090,9 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         this.focusModeActive = json.active;
-        const isIt = this.currentLanguage === 'it';
         const title = targetState 
-          ? (isIt ? "Gaming Mode Attiva" : "Gaming Mode Activated")
-          : (isIt ? "Gaming Mode Disattivata" : "Gaming Mode Deactivated");
+          ? (this.t('js.toggle_focus_mode.gaming_mode_activated'))
+          : (this.t('js.toggle_focus_mode.gaming_mode_deactivated'));
         this.showToast(
           title,
           json.message,
@@ -2941,7 +3100,7 @@ document.addEventListener('alpine:init', () => {
         );
         await this.fetchDevices();
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Focus Mode" : "Focus Mode Error";
+        const title = this.t('js.toggle_focus_mode.focus_mode_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2965,11 +3124,11 @@ document.addEventListener('alpine:init', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.nightMode)
         });
-        const title = this.currentLanguage === 'it' ? "Modalità Notte" : "Night Mode";
-        const msg = this.currentLanguage === 'it' ? "Orari LED salvati correttamente." : "LED schedule saved successfully.";
+        const title = this.t('js.save_night_mode.night_mode');
+        const msg = this.t('js.save_night_mode.led_schedule_saved_successfully');
         this.showToast(title, msg, "success");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        const title = this.t('toasts.error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -2996,11 +3155,11 @@ document.addEventListener('alpine:init', () => {
             language: this.currentLanguage
           })
         });
-        const title = this.currentLanguage === 'it' ? "Notifiche Salvate" : "Notifications Saved";
-        const msg = this.currentLanguage === 'it' ? "Impostazioni canali di allarme aggiornate." : "Alert channel settings updated.";
+        const title = this.t('js.save_notification_settings.notifications_saved');
+        const msg = this.t('js.save_notification_settings.alert_channel_settings_updated');
         this.showToast(title, msg, "success");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        const title = this.t('toasts.error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3013,10 +3172,10 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ language: this.currentLanguage })
         });
         const json = await res.json();
-        const title = this.currentLanguage === 'it' ? "Test Inviato" : "Test Sent";
+        const title = this.t('js.test_notifications.test_sent');
         this.showToast(title, `Telegram: ${json.telegram_sent ? 'OK' : 'No'} | Webhook: ${json.webhook_sent ? 'OK' : 'No'}`, "info");
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        const title = this.t('js.test_notifications.test_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3104,7 +3263,7 @@ document.addEventListener('alpine:init', () => {
         last_sync_count: 0
       };
       this.dnsSettings.instances.push(newInst);
-      const title = this.currentLanguage === 'it' ? "Nuova Istanza Aggiunta" : "New Instance Added";
+      const title = this.t('js.add_dns_instance.new_instance_added');
       this.showToast(title, newInst.name, "info");
     },
 
@@ -3112,12 +3271,10 @@ document.addEventListener('alpine:init', () => {
       const idx = this.dnsSettings.instances.findIndex(x => x.id === instId);
       if (idx >= 0) {
         const inst = this.dnsSettings.instances[idx];
-        const confirmMsg = this.currentLanguage === 'it' 
-          ? `Sei sicuro di voler rimuovere l'istanza '${inst.name}'?` 
-          : `Are you sure you want to remove instance '${inst.name}'?`;
+        const confirmMsg = this.t('js.remove_dns_instance.are_you_sure_you', { name: inst.name });
         if (confirm(confirmMsg)) {
           this.dnsSettings.instances.splice(idx, 1);
-          const title = this.currentLanguage === 'it' ? "Istanza Rimossa" : "Instance Removed";
+          const title = this.t('js.remove_dns_instance.instance_removed');
           this.showToast(title, inst.name, "info");
         }
       }
@@ -3150,14 +3307,14 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok) {
           const title = "Multi-DNS";
-          const msg = this.currentLanguage === 'it' ? "Configurazioni Multi-DNS salvate con successo." : "Multi-DNS settings saved successfully.";
+          const msg = this.t('js.save_dns_settings.multi_dns_settings_saved');
           this.showToast(title, msg, "success");
           await this.fetchDnsSettings();
         } else {
-          throw new Error(json.detail || json.message || "Errore salvataggio DNS");
+          throw new Error(json.detail || json.message || this.t('toasts.dns_save_error'));
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Salvataggio" : "Save Error";
+        const title = this.t('js.save_device_metadata.save_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3188,15 +3345,15 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
           if (json.normalized_url) inst.url = json.normalized_url;
-          const title = this.currentLanguage === 'it' ? "Test Connessione Riuscito" : "Connection Test Succeeded";
+          const title = this.t('js.test_dns_instance.connection_test_succeeded');
           this.showToast(title, `${inst.name}: ${json.message}`, "success");
         } else {
-          const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          const failMsg = (json.tls_error && this.t('controls.dns_tls_error')) || json.message || 'Connessione non riuscita';
+          const title = this.t('js.test_dns_instance.test_failed');
+          const failMsg = (json.tls_error && this.t('controls.dns_tls_error')) || json.message || this.t('toasts.connection_failed');
           this.showToast(title, `${inst.name}: ${failMsg}`, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        const title = this.t('js.test_notifications.test_error');
         this.showToast(title, `${inst.name}: ${err.message}`, "error");
       } finally {
         this.dnsTesting = false;
@@ -3215,17 +3372,15 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.success) {
-          const title = this.currentLanguage === 'it' ? "Test Globale Riuscito" : "All Tests Succeeded";
-          const msg = this.currentLanguage === 'it' 
-            ? `Tutte le ${json.total_tested} istanze DNS sono operative!` 
-            : `All ${json.total_tested} DNS instances are operational!`;
+          const title = this.t('js.test_all_dns.all_tests_succeeded');
+          const msg = this.t('js.test_all_dns.all_dns_instances_are', { total_tested: json.total_tested });
           this.showToast(title, msg, "success");
         } else {
-          const title = this.currentLanguage === 'it' ? "Verifica Parziale o Fallita" : "Some Tests Failed";
+          const title = this.t('js.test_all_dns.some_tests_failed');
           this.showToast(title, json.message || "Una o più istanze DNS non rispondono.", "warning");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Test Globale" : "Global Test Error";
+        const title = this.t('js.test_all_dns.global_test_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.dnsTesting = false;
@@ -3244,18 +3399,16 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Sincronizzazione Riuscita" : "Sync Succeeded";
-          const msg = this.currentLanguage === 'it' 
-            ? (json.message || "Sincronizzazione completata con successo.") 
-            : "Synchronization completed successfully.";
+          const title = this.t('js.sync_dns_instance.sync_succeeded');
+          const msg = json.message || this.t('js.sync_dns_instance.completed');
           this.showToast(title, `${inst.name}: ${msg}`, "success");
           await this.fetchDnsSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          this.showToast(title, `${inst.name}: ${json.detail || json.message || 'Sincronizzazione fallita'}`, "error");
+          const title = this.t('js.sync_dns_instance.sync_error');
+          this.showToast(title, `${inst.name}: ${json.detail || json.message || this.t('toasts.sync_failed')}`, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        const title = this.t('js.sync_dns_instance.sync_error');
         this.showToast(title, `${inst.name}: ${err.message}`, "error");
       } finally {
         this.dnsSyncing = false;
@@ -3274,18 +3427,16 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Sincronizzazione Globale Completata" : "Global Sync Completed";
-          const msg = this.currentLanguage === 'it' 
-            ? (json.message || "Tutte le istanze DNS sono state sincronizzate.") 
-            : "All DNS instances synchronized successfully.";
+          const title = this.t('js.sync_all_dns.global_sync_completed');
+          const msg = json.message || this.t('js.sync_all_dns.completed');
           this.showToast(title, msg, "success");
           await this.fetchDnsSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          this.showToast(title, json.detail || json.message || "Sincronizzazione fallita.", "error");
+          const title = this.t('js.sync_dns_instance.sync_error');
+          this.showToast(title, json.detail || json.message || this.t('toasts.sync_failed'), "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        const title = this.t('js.sync_dns_instance.sync_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.dnsSyncing = false;
@@ -3340,16 +3491,16 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok) {
-          const msg = json.message || (this.currentLanguage === 'it' ? "Impostazioni salvate con successo." : "Settings saved successfully.");
+          const msg = json.message || (this.t('js.save_ad_guard_settings.settings_saved_successfully'));
           this.showToast("AdGuard Home", msg, "success");
           await this.fetchAdGuardSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile salvare le impostazioni." : "Could not save settings.");
+          const title = this.t('js.save_ad_guard_settings.adguard_error');
+          const msg = json.detail || json.message || (this.t('js.save_ad_guard_settings.could_not_save_settings'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore AdGuard" : "AdGuard Error";
+        const title = this.t('js.save_ad_guard_settings.adguard_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3380,15 +3531,15 @@ document.addEventListener('alpine:init', () => {
           if (json.normalized_url) {
             this.adguardSettings.url = json.normalized_url;
           }
-          const title = this.currentLanguage === 'it' ? "Test Connessione Riuscito" : "Connection Test Succeeded";
+          const title = this.t('js.test_dns_instance.connection_test_succeeded');
           this.showToast(title, json.message, "success");
         } else {
-          const title = this.currentLanguage === 'it' ? "Test Fallito" : "Test Failed";
-          const msg = json.message || json.detail || (this.currentLanguage === 'it' ? "Impossibile connettersi ad AdGuard Home" : "Could not connect to AdGuard Home");
+          const title = this.t('js.test_dns_instance.test_failed');
+          const msg = json.message || json.detail || (this.t('js.test_ad_guard_connection.could_not_connect_to'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Test" : "Test Error";
+        const title = this.t('js.test_notifications.test_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.adguardTesting = false;
@@ -3410,19 +3561,17 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Sincronizzazione Completata" : "Sync Completed";
-          const msg = this.currentLanguage === 'it' 
-            ? (json.message || "Sincronizzazione AdGuard completata con successo.") 
-            : "AdGuard synchronization completed successfully.";
+          const title = this.t('js.sync_ad_guard_now.sync_completed');
+          const msg = json.message || this.t('js.sync_ad_guard_now.completed');
           this.showToast(title, msg, "success");
           await this.fetchAdGuardSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Sincronizzazione non riuscita." : "Synchronization failed.");
+          const title = this.t('js.sync_dns_instance.sync_error');
+          const msg = json.detail || json.message || (this.t('js.sync_ad_guard_now.synchronization_failed'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Sincronizzazione" : "Sync Error";
+        const title = this.t('js.sync_dns_instance.sync_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.adguardSyncing = false;
@@ -3436,13 +3585,14 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/mqtt/config');
         const json = await res.json();
-        if (json.status === 'success' && json.config) {
+        const cfg = (json && typeof json === 'object') ? (json.config || json) : null;
+        if (cfg && typeof cfg === 'object') {
           this.mqttSettings = {
             ...this.mqttSettings,
-            ...json.config,
-            connected: Boolean(json.config.connected),
-            available: Boolean(json.config.available),
-            stats: json.config.stats || {
+            ...cfg,
+            connected: Boolean(cfg.connected),
+            available: Boolean(cfg.available),
+            stats: cfg.stats || {
               messages_published: 0,
               last_published: null,
               last_error: null
@@ -3501,18 +3651,18 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
 
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Configurazione MQTT" : "MQTT Configuration";
-          const msg = this.currentLanguage === 'it' ? "Impostazioni MQTT salvate con successo!" : "MQTT settings saved successfully!";
+          const title = this.t('js.save_mqtt_settings.mqtt_configuration');
+          const msg = this.t('js.save_mqtt_settings.mqtt_settings_saved_successfully');
           this.showToast(title, msg, "success");
           this.closeMqttModal();
           await this.fetchMqttSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Errore salvataggio MQTT." : "Failed to save MQTT settings.");
+          const title = this.t('js.save_mqtt_settings.mqtt_error');
+          const msg = json.detail || json.message || (this.t('js.save_mqtt_settings.failed_to_save_mqtt'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
+        const title = this.t('js.save_mqtt_settings.mqtt_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.mqttSaving = false;
@@ -3540,17 +3690,17 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Test Connessione MQTT" : "MQTT Connection Test";
-          const msg = json.message || (this.currentLanguage === 'it' ? "Connessione al broker riuscita!" : "Connection to broker succeeded!");
+          const title = this.t('js.test_mqtt_connection.mqtt_connection_test');
+          const msg = json.message || (this.t('js.test_mqtt_connection.connection_to_broker_succeeded'));
           this.showToast(title, msg, "success");
           await this.fetchMqttSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Test MQTT Fallito" : "MQTT Test Failed";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile connettersi al broker MQTT." : "Could not connect to MQTT broker.");
+          const title = this.t('js.test_mqtt_connection.mqtt_test_failed');
+          const msg = json.detail || json.message || (this.t('js.test_mqtt_connection.could_not_connect_to'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Test MQTT" : "MQTT Test Error";
+        const title = this.t('js.test_mqtt_connection.mqtt_test_error');
         this.showToast(title, err.message, "error");
       } finally {
         this.mqttTesting = false;
@@ -3568,18 +3718,18 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json().catch(() => ({}));
         if (res.ok && json.status === 'success') {
           this.mqttSettings.enabled = nextState;
-          const title = this.currentLanguage === 'it' ? "Integrazione MQTT" : "MQTT Integration";
+          const title = this.t('js.toggle_mqtt_enabled.mqtt_integration');
           const msg = nextState
-            ? (this.currentLanguage === 'it' ? "MQTT abilitato e avviato." : "MQTT enabled and started.")
-            : (this.currentLanguage === 'it' ? "MQTT disattivato." : "MQTT disabled.");
+            ? (this.t('js.toggle_mqtt_enabled.mqtt_enabled_and_started'))
+            : (this.t('js.toggle_mqtt_enabled.mqtt_disabled'));
           this.showToast(title, msg, "info");
           await this.fetchMqttSettings();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error";
-          this.showToast(title, json.detail || "Errore switch stato", "error");
+          const title = this.t('js.save_mqtt_settings.mqtt_error');
+          this.showToast(title, json.detail || this.t('toasts.mqtt_toggle_error'), "error");
         }
       } catch (err) {
-        this.showToast(this.currentLanguage === 'it' ? "Errore MQTT" : "MQTT Error", err.message, "error");
+        this.showToast(this.t('js.save_mqtt_settings.mqtt_error'), err.message, "error");
       }
     },
 
@@ -3616,7 +3766,7 @@ document.addEventListener('alpine:init', () => {
         ? this.digestSettings.hour 
         : 21;
       const formatted = String(h).padStart(2, '0') + ':00';
-      return this.currentLanguage === 'it' ? `Ore ${formatted}` : `${formatted}`;
+      return this.t('js.digest_hour_badge_text.text', { formatted: formatted });
     },
 
     async saveDigestSettings() {
@@ -3634,22 +3784,21 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (res.ok) {
-          const isIt = this.currentLanguage === 'it';
           const hStr = String(targetHour).padStart(2, '0') + ':00';
           const title = this.digestSettings.enabled 
-            ? (isIt ? "Digest Programmato Attivo" : "Scheduled Digest Enabled") 
-            : (isIt ? "Digest Programmato Disattivato" : "Scheduled Digest Disabled");
+            ? (this.t('js.save_digest_settings.scheduled_digest_enabled')) 
+            : (this.t('js.save_digest_settings.scheduled_digest_disabled'));
           const msg = this.digestSettings.enabled 
-            ? (isIt ? `Il report automatico delle ${hStr} è abilitato.` : `Automatic daily report at ${hStr} is enabled.`) 
-            : (isIt ? "L'invio automatico del report è stato sospeso." : "Automatic daily report dispatch has been paused.");
+            ? (this.t('js.save_digest_settings.automatic_daily_report_at', { hStr: hStr })) 
+            : (this.t('js.save_digest_settings.automatic_daily_report_dispatch'));
           this.showToast(title, msg, "info");
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore" : "Error";
-          const msg = json.detail || (this.currentLanguage === 'it' ? "Impossibile salvare l'impostazione." : "Could not save setting.");
+          const title = this.t('toasts.error');
+          const msg = json.detail || (this.t('js.save_digest_settings.could_not_save_setting'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore" : "Error";
+        const title = this.t('toasts.error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3663,17 +3812,17 @@ document.addEventListener('alpine:init', () => {
         });
         const json = await res.json();
         if (res.ok && json.status === 'success') {
-          const title = this.currentLanguage === 'it' ? "Digest Inviato" : "Digest Sent";
-          const msg = json.message || (this.currentLanguage === 'it' ? "Riepilogo generato e inoltrato sui canali attivi." : "Digest generated and sent to active channels.");
+          const title = this.t('js.trigger_digest.digest_sent');
+          const msg = json.message || (this.t('js.trigger_digest.digest_generated_and_sent'));
           this.showToast(title, msg, "success");
           await this.fetchAlerts();
         } else {
-          const title = this.currentLanguage === 'it' ? "Errore Invio Digest" : "Digest Sending Error";
-          const msg = json.detail || json.message || (this.currentLanguage === 'it' ? "Impossibile inviare il digest." : "Could not send digest.");
+          const title = this.t('js.trigger_digest.digest_sending_error');
+          const msg = json.detail || json.message || (this.t('js.trigger_digest.could_not_send_digest'));
           this.showToast(title, msg, "error");
         }
       } catch (err) {
-        const title = this.currentLanguage === 'it' ? "Errore Digest" : "Digest Error";
+        const title = this.t('js.trigger_digest.digest_error');
         this.showToast(title, err.message, "error");
       }
     },
@@ -3783,11 +3932,11 @@ document.addEventListener('alpine:init', () => {
             this.eeroNewsExpandedVersions[data.releases[0].version] = true;
           }
         } else {
-          this.eeroNewsError = "Impossibile caricare le novità eeroOS";
+          this.eeroNewsError = this.t('eero_news.load_error');
         }
       } catch (err) {
         console.error("fetchEeroNews error:", err);
-        this.eeroNewsError = err.message || "Errore di connessione";
+        this.eeroNewsError = err.message || this.t('eero_news.connection_error');
       } finally {
         this.eeroNewsLoading = false;
       }
@@ -3873,7 +4022,7 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Open changelog error:", err);
-        const errMsg = this.t('changelog_modal.error_loading') || (this.currentLanguage === 'it' ? 'Impossibile caricare il changelog.' : 'Unable to load changelog.');
+        const errMsg = this.t('changelog_modal.error_loading');
         this.changelogContent = `<p class="text-rose-400 font-medium py-4">${errMsg}</p>`;
       } finally {
         this.changelogLoading = false;
@@ -3895,88 +4044,19 @@ document.addEventListener('alpine:init', () => {
       const pillar = this.healthDetails?.pillars?.[pillarKey];
       if (!pillar) return '';
       const lang = this.currentLanguage || 'en';
-      if (pillar.summary_i18n && pillar.summary_i18n[lang]) {
-        return pillar.summary_i18n[lang];
-      }
-      if (lang === 'en') {
-        return this.translatePillarSummaryEn(pillarKey, pillar);
-      }
-      return pillar.summary || '';
-    },
-
-    translatePillarSummaryEn(pillarKey, pillar) {
-      if (!pillar) return '';
-      const s = pillar.summary || '';
-      if (pillarKey === 'mesh_topology') {
-        const match = s.match(/(\d+)\/(\d+)\s+nodi operativi con backhaul eccellente/i);
-        if (match) return `${match[1]}/${match[2]} operational nodes with excellent backhaul.`;
-        return s
-          .replace(/(\d+)\s+nodi offline/gi, '$1 offline nodes')
-          .replace(/Backhaul degradato su (\d+) nodi/gi, 'Degraded backhaul on $1 node(s)');
-      }
-      if (pillarKey === 'wan_gateway') {
-        if (s.includes('Gateway online') && s.includes('latenza ottimale')) {
-          const ipMatch = s.match(/\(([^)]+)\)/);
-          const ip = ipMatch ? ipMatch[1] : 'Active';
-          return `Gateway online, active public IP (${ip}), optimal latency.`;
-        }
-        return s
-          .replace(/Connessione Internet non attiva o gateway offline/gi, 'Internet connection inactive or gateway offline')
-          .replace(/Latenza elevata verso gateway\/ISP/gi, 'High latency to gateway/ISP')
-          .replace(/Latenza moderata/gi, 'Moderate latency');
-      }
-      if (pillarKey === 'client_signal') {
-        const match = s.match(/Tutti i (\d+) dispositivi wireless hanno segnale RSSI eccellente/i);
-        if (match) return `All ${match[1]} wireless devices have excellent RSSI signal (>= -75 dBm).`;
-        return s.replace(/(\d+)\s+dispositivi con segnale debole/gi, '$1 device(s) with weak signal');
-      }
-      if (pillarKey === 'channel_density') {
-        const match = s.match(/Distribuzione frequenze bilanciata:\s*6\s*GHz\s*\(([^)]+)\),\s*5\s*GHz\s*\(([^)]+)\),\s*2\.4\s*GHz\s*\(([^)]+)\)/i);
-        if (match) return `Balanced frequency distribution: 6 GHz (${match[1]}), 5 GHz (${match[2]}), 2.4 GHz (${match[3]}).`;
-        return s
-          .replace(/Sovraccarico frequenza 2\.4 GHz \(> 70% dei client\)/gi, '2.4 GHz band overload (> 70% of clients)')
-          .replace(/Carico client sbilanciato su (.*?) \((\d+) client\)/gi, 'Unbalanced client load on $1 ($2 clients)');
-      }
-      return s;
+      return pillar.summary_i18n?.[lang] || pillar.summary || '';
     },
 
     getHealthPenaltyTitle(p) {
       if (!p) return '';
       const lang = this.currentLanguage || 'en';
-      if (p.title_i18n && p.title_i18n[lang]) return p.title_i18n[lang];
-      if (lang === 'en') {
-        const map = {
-          'offline_nodes': 'Disconnected Mesh Nodes',
-          'degraded_backhaul': 'Degraded Backhaul Link',
-          'wan_offline': 'WAN Internet Unreachable',
-          'high_wan_latency': 'High Internet Latency',
-          'moderate_wan_latency': 'Moderate Internet Latency',
-          'weak_client_signal': 'Clients with Degraded Wi-Fi Signal',
-          'band_24_crowding': '2.4 GHz Band Crowding',
-          'node_overload': 'Mesh Node Load Imbalance'
-        };
-        if (map[p.id]) return map[p.id];
-      }
-      return p.title || '';
+      return p.title_i18n?.[lang] || p.title || '';
     },
 
     getHealthPenaltyDesc(p) {
       if (!p) return '';
       const lang = this.currentLanguage || 'en';
-      if (p.description_i18n && p.description_i18n[lang]) return p.description_i18n[lang];
-      if (lang === 'en') {
-        let d = p.description || '';
-        return d
-          .replace(/(\d+)\s+nodo\/i eero risultano offline o non raggiungibili\./gi, '$1 eero node(s) are offline or unreachable.')
-          .replace(/Alcuni nodi estensori presentano un collegamento backhaul debole o limitato a 100 Mbps\./gi, 'Some mesh extender nodes have weak wireless backhaul or 100 Mbps Ethernet link.')
-          .replace(/La rete eero segnala interruzione dell'accesso Internet dal provider o gateway offline\./gi, 'eero network reports loss of Internet connection or gateway offline.')
-          .replace(/Il ping medio registrato dal Gateway verso la rete esterna è elevato/gi, 'Average ping recorded from Gateway to external network is high')
-          .replace(/Latenza WAN registrata di (.*?) \(sopra la soglia ideale di 45 ms\)\./gi, 'Recorded WAN latency of $1 (above ideal 45 ms threshold).')
-          .replace(/(\d+)\s+dispositivi wireless presentano un segnale RSSI degradato \(< -75 dBm\), che può causare perdita pacchetti o throughput ridotto\./gi, '$1 wireless devices have degraded RSSI signal (< -75 dBm), which may cause packet drops or reduced throughput.')
-          .replace(/(\d+)\s+su\s+(\d+)\s+client wireless sono connessi sui canali 2\.4 GHz, con potenziale saturazione dello spettro\./gi, '$1 of $2 wireless clients are connected on 2.4 GHz channels, causing potential spectrum saturation.')
-          .replace(/Il nodo '(.*?)' gestisce oltre l'80% di tutti i dispositivi connessi della casa\./gi, "Node '$1' manages over 80% of all connected household devices.");
-      }
-      return p.description || '';
+      return p.description_i18n?.[lang] || p.description || '';
     },
 
     getHealthRecommendationText(rec, idx) {
@@ -3987,31 +4067,6 @@ document.addEventListener('alpine:init', () => {
       }
       if (typeof rec === 'object' && rec !== null && rec[lang]) {
         return rec[lang];
-      }
-      if (lang === 'en' && typeof rec === 'string') {
-        if (rec.includes('Tutti i parametri di stabilità della rete eero mesh sono ottimali')) {
-          return 'All eero mesh stability parameters are optimal. No corrective action needed.';
-        }
-        if (rec.startsWith("Verifica l'alimentazione e la connettività dei nodi disconnessi")) {
-          return rec.replace("Verifica l'alimentazione e la connettività dei nodi disconnessi", "Check power and connectivity for disconnected nodes");
-        }
-        if (rec.includes("Per i nodi con segnale mesh debole")) {
-          return "Move wireless nodes closer to the Gateway. For 100 Mbps links, verify Ethernet Cat 5e/6 cable integrity.";
-        }
-        if (rec.includes("Controlla il cavo tra il modem del provider")) {
-          return "Check the cable between your provider modem (ONT/FTTH/DSL) and eero gateway WAN port.";
-        }
-        if (rec.includes("Se la latenza rimane costantemente sopra 80 ms")) {
-          return "If latency remains consistently above 80 ms, run a direct speed test or check modem congestion.";
-        }
-        if (rec.startsWith("Avvicina i dispositivi")) {
-          return rec
-            .replace("Avvicina i dispositivi", "Move devices")
-            .replace("al nodo mesh più vicino o valuta un riposizionamento per eliminare zone d'ombra.", "closer to the nearest mesh node or reposition beacons to eliminate blind spots.");
-        }
-        if (rec.includes("Attiva la funzione 'Band Steering'")) {
-          return "Enable 'Band Steering' in settings to automatically route compatible devices to 5 GHz or 6 GHz.";
-        }
       }
       return rec || '';
     },
@@ -4027,7 +4082,13 @@ document.addEventListener('alpine:init', () => {
 
       // Inline styles first: links, bold, italic, code, horizontal rules
       text = text
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline font-medium">$1</a>')
+        .replace(/\[(.*?)\]\((.*?)\)/g, (match, label, href) => {
+          const cleanHref = (href || '').trim();
+          if (/^(?:https?:\/\/|mailto:|\/|#)/i.test(cleanHref)) {
+            return `<a href="${cleanHref}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline font-medium">${label}</a>`;
+          }
+          return `<span class="text-sky-400 font-medium">${label}</span>`;
+        })
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-sky-300 font-semibold">$1</strong>')
         .replace(/\*(.*?)\*/g, '<em class="text-slate-300">$1</em>')
         .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[11px]">$1</code>')
@@ -4145,6 +4206,10 @@ document.addEventListener('alpine:init', () => {
       return num.toFixed(1) + 'M';
     },
 
+    formatSpeed(mbps) {
+      return this.formatTrafficRate(mbps);
+    },
+
     async fetchAvailableNetworks() {
       try {
         const res = await fetch('/api/network/list');
@@ -4181,13 +4246,13 @@ document.addEventListener('alpine:init', () => {
           }
           await this.fetchAvailableNetworks();
           await this.fetchTopHogs(this.topHogsPeriod);
-          this.showToast('Rete Attiva Cambiata', `Connesso con successo alla rete: ${networkId}`, 'success');
+          this.showToast(this.t('toasts.network_switched'), this.t('toasts.network_switched_desc', { network: networkId }), 'success');
         } else {
-          this.showToast('Errore Cambio Rete', data.detail || data.message || 'Operazione non riuscita', 'error');
+          this.showToast(this.t('toasts.network_switch_error'), data.detail || data.message || this.t('toasts.operation_failed'), 'error');
         }
       } catch (err) {
         console.error('Switch network error:', err);
-        this.showToast('Errore', String(err), 'error');
+        this.showToast(this.t('toasts.error'), String(err), 'error');
       } finally {
         this.isSwitchingNetwork = false;
       }
@@ -4203,7 +4268,7 @@ document.addEventListener('alpine:init', () => {
       const activePeriod = this.topHogsPeriod || 'daily';
       this.topHogsLoading = true;
       try {
-        const res = await fetch(`/api/network/top-hogs?period=${activePeriod}&limit=5`);
+        const res = await fetch(`/api/network/top-hogs?period=${activePeriod}&limit=30`);
         const data = await res.json();
         if (data.status === 'success') {
           this.topHogsList = data.top_hogs || [];
@@ -4269,8 +4334,8 @@ document.addEventListener('alpine:init', () => {
       const labels = usageData.data_points.map(p => {
         const d = new Date(p.timestamp);
         return usageData.period === 'daily' 
-          ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : d.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+          ? d.toLocaleTimeString(this.dateLocale(), { hour: '2-digit', minute: '2-digit' })
+          : d.toLocaleDateString(this.dateLocale(), { day: '2-digit', month: '2-digit' });
       });
 
       const downRates = usageData.data_points.map(p => Number(p.download_mbps !== undefined ? p.download_mbps : (p.download_rate_mbps || 0)));
@@ -4282,7 +4347,7 @@ document.addEventListener('alpine:init', () => {
           labels: labels,
           datasets: [
             {
-              label: 'Download (Mbps)',
+              label: this.t('charts.download_mbps'),
               data: downRates,
               borderColor: '#0067c0',
               backgroundColor: isDark ? 'rgba(0, 103, 192, 0.25)' : 'rgba(0, 103, 192, 0.15)',
@@ -4293,7 +4358,7 @@ document.addEventListener('alpine:init', () => {
               borderWidth: 2
             },
             {
-              label: 'Upload (Mbps)',
+              label: this.t('charts.upload_mbps'),
               data: upRates,
               borderColor: '#10b981',
               backgroundColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)',
@@ -4418,52 +4483,49 @@ document.addEventListener('alpine:init', () => {
 
     formatDevicesTooltipAfterBody(devicesList) {
       if (!devicesList || devicesList.length === 0) return [];
-      const isIt = this.currentLanguage === 'it';
-      const header = (isIt ? 'Dispositivi (' : 'Devices (') + devicesList.length + '):';
+      const header = (this.t('js.format_devices_tooltip_after_body.devices')) + devicesList.length + '):';
       const lines = ['', header];
       const maxShow = 15;
       devicesList.slice(0, maxShow).forEach(d => lines.push(`  • ${d}`));
       if (devicesList.length > maxShow) {
-        lines.push(isIt ? `  ... e altri ${devicesList.length - maxShow}` : `  ... and ${devicesList.length - maxShow} more`);
+        lines.push(this.t('js.format_devices_tooltip_after_body.and_more', { length: devicesList.length - maxShow }));
       }
       return lines;
     },
 
     formatCategoryName(category) {
-      if (!category) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      if (!category) return this.t('devices.cat_other');
       const cat = String(category).trim();
-      const isIt = this.currentLanguage === 'it';
       
       if (cat === 'Altro' || cat.toLowerCase() === 'other') {
-        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+        return this.t('devices.cat_other');
       }
       if (cat === 'Computer') {
-        return this.t('devices.cat_computer') || (isIt ? 'Computer & Laptop' : 'Computers & Laptops');
+        return this.t('devices.cat_computer');
       }
       if (cat === 'Mobile') {
-        return this.t('devices.cat_mobile') || (isIt ? 'Smartphone & Tablet' : 'Smartphones & Tablets');
+        return this.t('devices.cat_mobile');
       }
       if (cat === 'Smart Home') {
-        return this.t('devices.cat_smarthome') || (isIt ? 'Smart Home & Domotica' : 'Smart Home & IoT');
+        return this.t('devices.cat_smarthome');
       }
       if (cat === 'Intrattenimento' || cat.toLowerCase() === 'entertainment') {
-        return this.t('devices.cat_entertainment') || (isIt ? 'TV & Streaming' : 'Entertainment & TV');
+        return this.t('devices.cat_entertainment');
       }
       if (cat === 'Gaming') {
-        return this.t('devices.cat_gaming') || (isIt ? 'Console Gaming' : 'Gaming Consoles');
+        return this.t('devices.cat_gaming');
       }
       if (cat === 'Server/Rete' || cat === 'Server/NAS' || cat.toLowerCase() === 'server') {
-        return this.t('devices.cat_server') || (isIt ? 'Server & NAS' : 'Servers & Network');
+        return this.t('devices.cat_server');
       }
       return cat;
     },
 
     formatVendorName(vendor) {
-      if (!vendor) return this.t('devices.cat_other') || (this.currentLanguage === 'it' ? 'Altro' : 'Other');
+      if (!vendor) return this.t('devices.cat_other');
       const v = String(vendor).trim();
-      const isIt = this.currentLanguage === 'it';
       if (v === 'Altro' || v.toLowerCase() === 'other') {
-        return this.t('devices.cat_other') || (isIt ? 'Altro' : 'Other');
+        return this.t('devices.cat_other');
       }
       return v;
     },
@@ -4486,7 +4548,6 @@ document.addEventListener('alpine:init', () => {
         const labels = freqs.map(f => f.band);
         const data = freqs.map(f => f.count);
         const colors = this.getChartThemeColors();
-        const isIt = this.currentLanguage === 'it';
 
         this.analyticsChartInstances['frequencies'] = new Chart(canvas, {
           type: 'doughnut',
@@ -4534,7 +4595,7 @@ document.addEventListener('alpine:init', () => {
                   label: (ctx) => {
                     const count = ctx.raw || 0;
                     const pct = freqs[ctx.dataIndex]?.percentage || 0;
-                    return (isIt ? ' Client Connessi: ' : ' Connected Clients: ') + `${count} (${pct}%)`;
+                    return (this.t('js.render_frequencies_chart.connected_clients')) + `${count} (${pct}%)`;
                   },
                   afterBody: (items) => {
                     if (!items || items.length === 0) return [];
@@ -4570,14 +4631,13 @@ document.addEventListener('alpine:init', () => {
         const labels = nodes.map(n => n.name);
         const data = nodes.map(n => n.client_count);
         const colors = this.getChartThemeColors();
-        const isIt = this.currentLanguage === 'it';
 
         this.analyticsChartInstances['nodeLoad'] = new Chart(canvas, {
           type: 'bar',
           data: {
             labels: labels,
             datasets: [{
-              label: isIt ? 'Client Connessi' : 'Connected Clients',
+              label: this.t('dashboard.connected_devices'),
               data: data,
               backgroundColor: 'rgba(0, 103, 192, 0.8)',
               borderColor: '#0067c0',
@@ -4607,7 +4667,7 @@ document.addEventListener('alpine:init', () => {
                 callbacks: {
                   label: (ctx) => {
                     const val = ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.raw;
-                    return (isIt ? 'Client Connessi: ' : 'Connected Clients: ') + val;
+                    return (this.t('js.render_node_load_chart.connected_clients')) + val;
                   },
                   afterBody: (items) => {
                     if (!items || items.length === 0) return [];
@@ -4653,7 +4713,6 @@ document.addEventListener('alpine:init', () => {
         const labels = cats.map(c => this.formatCategoryName(c.category));
         const data = cats.map(c => c.count);
         const colors = this.getChartThemeColors();
-        const isIt = this.currentLanguage === 'it';
 
         this.analyticsChartInstances['categories'] = new Chart(canvas, {
           type: 'doughnut',
@@ -4735,14 +4794,13 @@ document.addEventListener('alpine:init', () => {
         const labels = vends.map(v => this.formatVendorName(v.vendor));
         const data = vends.map(v => v.count);
         const colors = this.getChartThemeColors();
-        const isIt = this.currentLanguage === 'it';
 
         this.analyticsChartInstances['vendors'] = new Chart(canvas, {
           type: 'bar',
           data: {
             labels: labels,
             datasets: [{
-              label: isIt ? 'Dispositivi' : 'Devices',
+              label: this.t('nav.devices'),
               data: data,
               backgroundColor: 'rgba(99, 102, 241, 0.8)',
               borderColor: '#6366f1',
@@ -4818,7 +4876,7 @@ document.addEventListener('alpine:init', () => {
 
         const labels = points.map(p => {
           const d = new Date(p.timestamp);
-          return isNaN(d.getTime()) ? p.timestamp : d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          return isNaN(d.getTime()) ? p.timestamp : d.toLocaleDateString(this.dateLocale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         });
         const dlData = points.map(p => p.download_mbps);
         const ulData = points.map(p => p.upload_mbps);
@@ -4831,7 +4889,7 @@ document.addEventListener('alpine:init', () => {
             labels: labels,
             datasets: [
               {
-                label: 'Download (Mbps)',
+                label: this.t('charts.download_mbps'),
                 data: dlData,
                 borderColor: '#0067c0',
                 backgroundColor: 'rgba(0, 103, 192, 0.1)',
@@ -4842,7 +4900,7 @@ document.addEventListener('alpine:init', () => {
                 yAxisID: 'y'
               },
               {
-                label: 'Upload (Mbps)',
+                label: this.t('charts.upload_mbps'),
                 data: ulData,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16, 185, 129, 0.05)',
@@ -4853,7 +4911,7 @@ document.addEventListener('alpine:init', () => {
                 yAxisID: 'y'
               },
               {
-                label: 'Ping (ms)',
+                label: this.t('charts.ping_ms'),
                 data: pingData,
                 borderColor: '#f59e0b',
                 borderWidth: 1.5,
@@ -4888,7 +4946,7 @@ document.addEventListener('alpine:init', () => {
                 beginAtZero: true,
                 ticks: { color: colors.ticksColor, font: { size: 10 } },
                 grid: { color: colors.gridColor },
-                title: { display: true, text: 'Throughput (Mbps)', color: colors.ticksColor, font: { size: 10 } }
+                title: { display: true, text: this.t('charts.axis_throughput_mbps'), color: colors.ticksColor, font: { size: 10 } }
               },
               y1: {
                 type: 'linear',
@@ -4897,7 +4955,7 @@ document.addEventListener('alpine:init', () => {
                 beginAtZero: true,
                 ticks: { color: '#f59e0b', font: { size: 10 } },
                 grid: { drawOnChartArea: false },
-                title: { display: true, text: 'Latenza (ms)', color: '#f59e0b', font: { size: 10 } }
+                title: { display: true, text: this.t('charts.axis_latency_ms'), color: '#f59e0b', font: { size: 10 } }
               }
             }
           }
@@ -4916,7 +4974,7 @@ document.addEventListener('alpine:init', () => {
           throw new Error(`Export failed: ${res.statusText}`);
         }
         const blob = await res.blob();
-        const disposition = res.headers.get('Content-Disposition') || '';
+        const disposition = res.headers.get('Content-Disposition');
         let filename = `eero_${dataType}_export.${format}`;
         const match = disposition.match(/filename="?([^";]+)"?/);
         if (match && match[1]) {
@@ -4930,12 +4988,12 @@ document.addEventListener('alpine:init', () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(downloadUrl);
-        const succTitle = this.currentLanguage === 'it' ? 'Esportazione Dati' : 'Data Export';
-        const succMsg = this.currentLanguage === 'it' ? `File ${filename} scaricato con successo.` : `File ${filename} downloaded successfully.`;
+        const succTitle = this.t('js.export_data.data_export');
+        const succMsg = this.t('js.export_data.file_downloaded_successfully', { filename: filename });
         this.showToast(succTitle, succMsg, 'success');
       } catch (err) {
         console.error("Export error:", err);
-        const errTitle = this.currentLanguage === 'it' ? 'Errore Esportazione' : 'Export Error';
+        const errTitle = this.t('js.export_data.export_error');
         this.showToast(errTitle, err.message, 'error');
       } finally {
         this.exportLoading = false;
@@ -5040,21 +5098,15 @@ document.addEventListener('alpine:init', () => {
       const pc = this.localSetupData.passwordConfirm || '';
 
       if (u.length < 3) {
-        this.localSetupData.error = this.currentLanguage === 'it' 
-          ? 'Lo username deve contenere almeno 3 caratteri.' 
-          : 'Username must be at least 3 characters.';
+        this.localSetupData.error = this.t('js.perform_admin_setup.username_must_be_at');
         return;
       }
       if (p.length < 6) {
-        this.localSetupData.error = this.currentLanguage === 'it' 
-          ? 'La password deve contenere almeno 6 caratteri.' 
-          : 'Password must be at least 6 characters.';
+        this.localSetupData.error = this.t('js.perform_admin_setup.password_must_be_at');
         return;
       }
       if (p !== pc) {
-        this.localSetupData.error = this.currentLanguage === 'it' 
-          ? 'Le password inserite non coincidono.' 
-          : 'Passwords do not match.';
+        this.localSetupData.error = this.t('js.perform_admin_setup.passwords_do_not_match');
         return;
       }
 
@@ -5084,12 +5136,12 @@ document.addEventListener('alpine:init', () => {
           this.adminSetupRequired = false;
           this.showAdminSetupModal = false;
           this.showToast(
-            this.currentLanguage === 'it' ? 'Setup Amministratore Completato' : 'Administrator Setup Complete',
-            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            this.t('js.perform_admin_setup.administrator_setup_complete'),
+            (this.t('js.perform_admin_setup.welcome')) + (this.currentUser.display_name || this.currentUser.username),
             'success'
           );
         } else {
-          this.localSetupData.error = data.detail || (this.currentLanguage === 'it' ? 'Errore durante la configurazione' : 'Setup failed');
+          this.localSetupData.error = data.detail || (this.t('js.perform_admin_setup.setup_failed'));
         }
       } catch (err) {
         this.localSetupData.error = String(err);
@@ -5101,7 +5153,7 @@ document.addEventListener('alpine:init', () => {
     async performLocalLogin() {
       this.localLoginData.error = '';
       if (!this.localLoginData.username || !this.localLoginData.password) {
-        this.localLoginData.error = this.currentLanguage === 'it' ? 'Inserisci username e password' : 'Username and password required';
+        this.localLoginData.error = this.t('js.perform_local_login.username_and_password_required');
         return;
       }
       this.isLocalAuthChecking = true;
@@ -5130,8 +5182,8 @@ document.addEventListener('alpine:init', () => {
           this.showLocalLoginModal = false;
           this.localLoginData = { username: '', password: '', remember_me: false, error: '' };
           this.showToast(
-            this.currentLanguage === 'it' ? 'Accesso Eseguito' : 'Login Successful',
-            (this.currentLanguage === 'it' ? 'Benvenuto ' : 'Welcome ') + (this.currentUser.display_name || this.currentUser.username),
+            this.t('js.perform_local_login.login_successful'),
+            (this.t('js.perform_admin_setup.welcome')) + (this.currentUser.display_name || this.currentUser.username),
             'success'
           );
           if (this.currentTab === 'guests') {
@@ -5141,7 +5193,7 @@ document.addEventListener('alpine:init', () => {
             await this.loadLocalUsers();
           }
         } else {
-          this.localLoginData.error = data.detail || (this.currentLanguage === 'it' ? 'Credenziali non valide' : 'Invalid credentials');
+          this.localLoginData.error = data.detail || (this.t('js.perform_local_login.invalid_credentials'));
         }
       } catch (err) {
         this.localLoginData.error = String(err);
@@ -5165,8 +5217,8 @@ document.addEventListener('alpine:init', () => {
       this.currentUser = null;
       await this.setTab('guests');
       this.showToast(
-        this.currentLanguage === 'it' ? 'Disconnesso' : 'Logged Out',
-        this.currentLanguage === 'it' ? 'Sessione locale terminata' : 'Local session terminated',
+        this.t('js.logout.logged_out'),
+        this.t('js.perform_local_logout.local_session_terminated'),
         'info'
       );
     },
@@ -5202,10 +5254,8 @@ document.addEventListener('alpine:init', () => {
           console.warn(`Auto-logout: user inactive for ${elapsedMinutes.toFixed(1)}m (timeout: ${timeout}m)`);
           this.performLocalLogout();
           this.showToast(
-            this.currentLanguage === 'it' ? 'Sessione Scaduta' : 'Session Expired',
-            this.currentLanguage === 'it' 
-              ? `Disconnessione automatica eseguita dopo ${timeout} minuti di inattività.` 
-              : `Automatically logged out after ${timeout} minutes of inactivity.`,
+            this.t('js.init_inactivity_watchdog.session_expired'),
+            this.t('js.init_inactivity_watchdog.automatically_logged_out_after', { timeout: timeout }),
             'warning'
           );
         }
@@ -5246,10 +5296,8 @@ document.addEventListener('alpine:init', () => {
           body: JSON.stringify({ minutes: val })
         });
         this.showToast(
-          this.currentLanguage === 'it' ? 'Impostazione Salvata' : 'Setting Saved',
-          this.currentLanguage === 'it' 
-            ? (val > 0 ? `Timeout inattività impostato a ${val} minuti.` : 'Disconnessione automatica disattivata.')
-            : (val > 0 ? `Inactivity timeout set to ${val} minutes.` : 'Automatic logout disabled.'),
+          this.t('js.save_session_timeout.setting_saved'),
+          val > 0 ? this.t('js.save_session_timeout.timeout_set', { val }) : this.t('js.save_session_timeout.auto_logout_disabled'),
           'success'
         );
       } catch (e) {
@@ -5299,8 +5347,8 @@ document.addEventListener('alpine:init', () => {
     startCreateUser() {
       if (!this.localAuthToken) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
-          this.currentLanguage === 'it' ? 'Accedi come amministratore per creare nuovi utenti.' : 'Log in as administrator to create new users.',
+          this.t('js.start_create_user.authentication_required'),
+          this.t('js.start_create_user.log_in_as_administrator'),
           'warning'
         );
         this.openLocalLoginModal();
@@ -5362,24 +5410,42 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Permission catalog for the RBAC grids: the backend catalog when loaded,
+    // otherwise the known keys so the grid still renders.
+    permissionsForDisplay() {
+      if (this.permissionsCatalog && this.permissionsCatalog.length) return this.permissionsCatalog;
+      return Object.keys(this.lookupTranslationNode('permissions') || {}).map(key => ({ key }));
+    },
+
+    permissionLabel(perm) {
+      if (!perm) return '';
+      return this.t(`permissions.${perm.key}`)
+        || this.localized(perm, 'label')
+        || perm.key;
+    },
+
+    lookupTranslationNode(key) {
+      const node = (this.translations && this.translations[key]) || (this.fallbackTranslations && this.fallbackTranslations[key]);
+      return (node && typeof node === 'object') ? node : null;
+    },
+
     formatUserPermissionsCount(u) {
       if (!u) return '';
       const total = (this.permissionsCatalog && this.permissionsCatalog.length) ? this.permissionsCatalog.length : 10;
-      const isIt = this.currentLanguage === 'it';
       if (u.is_admin || u.role === 'admin') {
-        return isIt ? `Tutti (${total} attivi)` : `All (${total} active)`;
+        return this.t('js.format_user_permissions_count.all_active', { total: total });
       }
       const activeCount = (this.permissionsCatalog && this.permissionsCatalog.length)
         ? this.permissionsCatalog.filter(p => (u.permissions || []).includes(p.key)).length
         : (u.permissions ? u.permissions.length : 0);
-      return `${activeCount} / ${total} ` + (isIt ? 'attivi' : 'active');
+      return `${activeCount} / ${total} ` + (this.t('js.format_user_permissions_count.active'));
     },
 
     async saveLocalUser() {
       if (!this.localAuthToken) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Autenticazione Richiesta' : 'Authentication Required',
-          this.currentLanguage === 'it' ? 'Accedi con l\'account amministratore per salvare gli utenti.' : 'Log in as administrator to save users.',
+          this.t('js.start_create_user.authentication_required'),
+          this.t('js.save_local_user.log_in_as_administrator'),
           'warning'
         );
         this.openLocalLoginModal();
@@ -5387,8 +5453,8 @@ document.addEventListener('alpine:init', () => {
       }
       if (!this.userForm.username) {
         this.showToast(
-          this.currentLanguage === 'it' ? 'Errore' : 'Error',
-          this.currentLanguage === 'it' ? 'Username obbligatorio' : 'Username is required',
+          this.t('toasts.error'),
+          this.t('js.save_local_user.username_is_required'),
           'warning'
         );
         return;
@@ -5429,8 +5495,8 @@ document.addEventListener('alpine:init', () => {
         }
         if (res.ok) {
           this.showToast(
-            this.currentLanguage === 'it' ? 'Successo' : 'Success',
-            this.currentLanguage === 'it' ? 'Utente salvato correttamente' : 'User saved successfully',
+            this.t('toasts.success_title'),
+            this.t('js.save_local_user.user_saved_successfully'),
             'success'
           );
           this.userModalMode = 'list';
@@ -5445,13 +5511,13 @@ document.addEventListener('alpine:init', () => {
             this.openLocalLoginModal();
           }
           this.showToast(
-            this.currentLanguage === 'it' ? 'Errore' : 'Error',
-            err.detail || (this.currentLanguage === 'it' ? 'Operazione fallita' : 'Operation failed'),
+            this.t('toasts.error'),
+            err.detail || (this.t('js.save_local_user.operation_failed')),
             'error'
           );
         }
       } catch (e) {
-        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5460,9 +5526,7 @@ document.addEventListener('alpine:init', () => {
         this.openLocalLoginModal();
         return;
       }
-      const confirmMsg = this.currentLanguage === 'it'
-        ? `Sei sicuro di voler eliminare l'utente "${username}"?`
-        : `Are you sure you want to delete user "${username}"?`;
+      const confirmMsg = this.t('js.delete_local_user.are_you_sure_you', { username: username });
       if (!confirm(confirmMsg)) return;
       const headers = {};
       if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
@@ -5473,21 +5537,21 @@ document.addEventListener('alpine:init', () => {
         });
         if (res.ok) {
           this.showToast(
-            this.currentLanguage === 'it' ? 'Successo' : 'Success',
-            this.currentLanguage === 'it' ? `Utente ${username} eliminato` : `User ${username} deleted`,
+            this.t('toasts.success_title'),
+            this.t('js.delete_local_user.user_deleted', { username: username }),
             'success'
           );
           await this.loadLocalUsers();
         } else {
           const err = await res.json();
           this.showToast(
-            this.currentLanguage === 'it' ? 'Errore' : 'Error',
-            err.detail || (this.currentLanguage === 'it' ? 'Impossibile eliminare utente' : 'Failed to delete user'),
+            this.t('toasts.error'),
+            err.detail || (this.t('js.delete_local_user.failed_to_delete_user')),
             'error'
           );
         }
       } catch (e) {
-        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5497,6 +5561,7 @@ document.addEventListener('alpine:init', () => {
     openBackupModal() {
       this.showBackupModal = true;
       this.backupRestoreStatus = '';
+      this.backupRestoreIsError = false;
     },
 
     async downloadBackup() {
@@ -5504,7 +5569,7 @@ document.addEventListener('alpine:init', () => {
         const headers = {};
         if (this.localAuthToken) headers['Authorization'] = `Bearer ${this.localAuthToken}`;
         const res = await fetch('/api/system/backup/export', { headers });
-        if (!res.ok) throw new Error(this.currentLanguage === 'it' ? 'Errore durante esportazione backup' : 'Error during backup export');
+        if (!res.ok) throw new Error(this.t('js.download_backup.error_during_backup_export'));
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -5515,12 +5580,12 @@ document.addEventListener('alpine:init', () => {
         a.remove();
         window.URL.revokeObjectURL(url);
         this.showToast(
-          this.currentLanguage === 'it' ? 'Backup Esportato' : 'Backup Exported',
-          this.currentLanguage === 'it' ? 'Download del file JSON completato' : 'JSON file download completed',
+          this.t('js.download_backup.backup_exported'),
+          this.t('js.download_backup.json_file_download_completed'),
           'success'
         );
       } catch (e) {
-        this.showToast(this.currentLanguage === 'it' ? 'Errore Backup' : 'Backup Error', String(e), 'error');
+        this.showToast(this.t('js.download_backup.backup_error'), String(e), 'error');
       }
     },
 
@@ -5528,7 +5593,8 @@ document.addEventListener('alpine:init', () => {
       const file = event.target.files?.[0];
       if (!file) return;
       this.backupLoading = true;
-      this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Ripristino in corso...' : 'Restoring in progress...';
+      this.backupRestoreIsError = false;
+      this.backupRestoreStatus = this.t('backup_modal.restore_in_progress');
       try {
         const text = await file.text();
         const json = JSON.parse(text);
@@ -5541,28 +5607,30 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (res.ok) {
-          this.backupRestoreStatus = this.currentLanguage === 'it' ? 'Configurazione ripristinata con successo!' : 'Configuration restored successfully!';
+          this.backupRestoreStatus = this.t('js.upload_backup.configuration_restored_successfully');
           this.showToast(
-            this.currentLanguage === 'it' ? 'Ripristino Completato' : 'Restore Completed',
-            this.currentLanguage === 'it' ? 'I dati sono stati ripristinati correttamente' : 'Data restored successfully',
+            this.t('js.upload_backup.restore_completed'),
+            this.t('js.upload_backup.data_restored_successfully'),
             'success'
           );
           setTimeout(() => {
             window.location.reload();
           }, 1200);
         } else {
-          this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore' : 'Error'}: ${data.detail || (this.currentLanguage === 'it' ? 'Impossibile ripristinare il file' : 'Unable to restore file')}`;
+          this.backupRestoreIsError = true;
+          this.backupRestoreStatus = `${this.t('toasts.error')}: ${data.detail || (this.t('js.upload_backup.unable_to_restore_file'))}`;
           this.showToast(
-            this.currentLanguage === 'it' ? 'Errore Ripristino' : 'Restore Error',
-            data.detail || (this.currentLanguage === 'it' ? 'Errore ripristino' : 'Restore error'),
+            this.t('js.upload_backup.restore_error'),
+            data.detail || (this.t('js.upload_backup.restore_error_2')),
             'error'
           );
         }
       } catch (e) {
-        this.backupRestoreStatus = `${this.currentLanguage === 'it' ? 'Errore di parsing' : 'Parsing error'}: ${e.message}`;
+        this.backupRestoreIsError = true;
+        this.backupRestoreStatus = `${this.t('js.upload_backup.parsing_error')}: ${e.message}`;
         this.showToast(
-          this.currentLanguage === 'it' ? 'Errore File' : 'File Error',
-          this.currentLanguage === 'it' ? 'Il file selezionato non è un JSON valido' : 'Selected file is not valid JSON',
+          this.t('js.upload_backup.file_error'),
+          this.t('js.upload_backup.selected_file_is_not'),
           'error'
         );
       } finally {
@@ -5598,13 +5666,13 @@ document.addEventListener('alpine:init', () => {
         });
         const data = await res.json();
         if (res.ok) {
-          this.showToast(this.currentLanguage === 'it' ? 'Database Compattato' : 'Database Compacted', this.currentLanguage === 'it' ? 'Compattazione e ottimizzazione completate con successo.' : 'Compaction and optimization completed successfully.', 'success');
+          this.showToast(this.t('js.trigger_db_compaction.database_compacted'), this.t('js.trigger_db_compaction.compaction_and_optimization_completed'), 'success');
           await this.fetchDbStats();
         } else {
-          this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', data.detail || 'Errore durante la compattazione', 'error');
+          this.showToast(this.t('toasts.error'), data.detail || 'Errore durante la compattazione', 'error');
         }
       } catch (err) {
-        this.showToast(this.currentLanguage === 'it' ? 'Errore' : 'Error', String(err), 'error');
+        this.showToast(this.t('toasts.error'), String(err), 'error');
       } finally {
         this.dbCompacting = false;
       }
@@ -5716,21 +5784,20 @@ document.addEventListener('alpine:init', () => {
 
     getScheduleActionOptions() {
       const tt = this.scheduleForm.target_type;
-      const isIt = this.currentLanguage === 'it';
       if (tt === 'node_led' || tt === 'all_nodes_led') {
         return [
-          { value: 'turn_off', label: isIt ? 'Spegni Luce LED (durante l\'intervallo)' : 'Turn Off Status Light (during window)' },
-          { value: 'turn_on', label: isIt ? 'Accendi Luce LED (durante l\'intervallo)' : 'Turn On Status Light (during window)' }
+          { value: 'turn_off', label: this.t('schedules.action_turn_off') },
+          { value: 'turn_on', label: this.t('schedules.action_turn_on') }
         ];
       }
       if (tt === 'node_reboot' || tt === 'all_nodes_reboot') {
         return [
-          { value: 'reboot', label: isIt ? 'Riavvia all\'orario di inizio' : 'Reboot at start time' }
+          { value: 'reboot', label: this.t('schedules.action_reboot') }
         ];
       }
       return [
-        { value: 'pause', label: isIt ? 'Sospendi Connessione (Pausa)' : 'Pause Connection' },
-        { value: 'unpause', label: isIt ? 'Ripristina Connessione' : 'Resume Connection' }
+        { value: 'pause', label: this.t('schedules.action_pause') },
+        { value: 'unpause', label: this.t('schedules.action_unpause') }
       ];
     },
 
@@ -5738,47 +5805,45 @@ document.addEventListener('alpine:init', () => {
       if (!s) return '';
       const tt = s.target_type;
       const tid = s.target_id || (Array.isArray(s.target_ids) && s.target_ids[0]) || '';
-      const isIt = this.currentLanguage === 'it';
       if (tt === 'profile') {
         const prof = (this.profiles || []).find(p => String(p.id) === String(tid) || String(p.url || '').endsWith(String(tid)) || p.name === tid);
-        return (isIt ? 'Utente: ' : 'User: ') + (prof ? prof.name : tid);
+        return (this.t('js.format_schedule_target.user')) + (prof ? prof.name : tid);
       }
       if (tt === 'all_profiles') {
-        return isIt ? 'Tutti gli Utenti' : 'All Users';
+        return this.t('schedules.target_all_users');
       }
       if (tt === 'node_led') {
         const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
-        return (isIt ? 'Luce LED: ' : 'LED: ') + (node ? (node.name || node.location || 'eero') : tid);
+        return (this.t('js.format_schedule_target.led')) + (node ? (node.name || node.location || 'eero') : tid);
       }
       if (tt === 'all_nodes_led') {
-        return isIt ? 'Luce LED: Tutti i Nodi' : 'LED: All Nodes';
+        return this.t('js.format_schedule_target.led_all_nodes');
       }
       if (tt === 'node_reboot') {
         const node = (this.eeros || []).find(e => String(e.id) === String(tid) || String(e.serial) === String(tid));
-        return (isIt ? 'Riavvio: ' : 'Reboot: ') + (node ? (node.name || node.location || 'eero') : tid);
+        return (this.t('js.format_schedule_target.reboot')) + (node ? (node.name || node.location || 'eero') : tid);
       }
       if (tt === 'all_nodes_reboot') {
-        return isIt ? 'Riavvio: Tutta la Rete' : 'Reboot: Entire Mesh';
+        return this.t('js.format_schedule_target.reboot_entire_mesh');
       }
       if (tt === 'category') {
-        return (isIt ? 'Categoria: ' : 'Category: ') + tid;
+        return (this.t('js.format_schedule_target.category')) + tid;
       }
       if (tt === 'device') {
         const dev = (this.devices || []).find(d => String(d.id) === String(tid) || String(d.mac).toLowerCase() === String(tid).toLowerCase());
-        return (isIt ? 'Dispositivo: ' : 'Device: ') + (dev ? (dev.custom_name || dev.nickname || dev.hostname || tid) : tid);
+        return (this.t('js.format_schedule_target.device')) + (dev ? (dev.custom_name || dev.nickname || dev.hostname || tid) : tid);
       }
-      return isIt ? 'Tutta la Rete' : 'Entire Network';
+      return this.t('js.format_schedule_target.entire_network');
     },
 
     formatScheduleAction(s) {
       if (!s) return '';
-      const isIt = this.currentLanguage === 'it';
       switch (s.action) {
-        case 'pause': return isIt ? 'Pausa Connessione' : 'Pause Connection';
-        case 'unpause': return isIt ? 'Ripristino Connessione' : 'Resume Connection';
-        case 'turn_off': return isIt ? 'Spegnimento LED' : 'LED Off';
-        case 'turn_on': return isIt ? 'Accensione LED' : 'LED On';
-        case 'reboot': return isIt ? 'Riavvio Programmato' : 'Scheduled Reboot';
+        case 'pause': return this.t('js.format_schedule_action.pause_connection');
+        case 'unpause': return this.t('js.format_schedule_action.resume_connection');
+        case 'turn_off': return this.t('js.format_schedule_action.led_off');
+        case 'turn_on': return this.t('js.format_schedule_action.led_on');
+        case 'reboot': return this.t('js.format_schedule_action.scheduled_reboot');
         default: return s.action;
       }
     },
@@ -5796,13 +5861,13 @@ document.addEventListener('alpine:init', () => {
 
     async saveSchedule() {
       if (!this.scheduleForm.name) {
-        this.showToast('Errore', 'Inserisci un nome per la regola', 'warning');
+        this.showToast(this.t('toasts.error'), this.t('schedules.name_required'), 'warning');
         return;
       }
       const isSpecialAll = ['all_profiles', 'all_nodes_led', 'all_nodes_reboot'].includes(this.scheduleForm.target_type);
       const tid = this.scheduleForm.target_id || (isSpecialAll ? 'all' : '');
       if (!tid && !isSpecialAll) {
-        this.showToast('Errore', 'Seleziona un destinatario valido per la regola', 'warning');
+        this.showToast(this.t('toasts.error'), this.t('schedules.target_required'), 'warning');
         return;
       }
       if (this.isRebootSchedule()) {
@@ -5835,15 +5900,15 @@ document.addEventListener('alpine:init', () => {
           });
         }
         if (res.ok) {
-          this.showToast('Successo', 'Regola oraria salvata', 'success');
+          this.showToast(this.t('toasts.success_title'), this.t('schedules.saved'), 'success');
           this.showScheduleModal = false;
           await this.fetchSchedules();
         } else {
           const err = await res.json();
-          this.showToast('Errore', err.detail || 'Impossibile salvare la regola', 'error');
+          this.showToast(this.t('toasts.error'), err.detail || this.t('schedules.save_error'), 'error');
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5861,17 +5926,17 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteSchedule(id) {
-      if (!confirm('Vuoi eliminare questa regola di pianificazione?')) return;
+      if (!confirmthis.t('schedules.delete_confirm')) return;
       try {
         const res = await fetch(`/api/schedules/${encodeURIComponent(id)}`, {
           method: 'DELETE'
         });
         if (res.ok) {
-          this.showToast('Successo', 'Regola eliminata', 'info');
+          this.showToast(this.t('toasts.success_title'), this.t('schedules.deleted'), 'info');
           await this.fetchSchedules();
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5881,13 +5946,13 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.showToast(
-            'Valutazione Completata',
-            `Regole attive: ${data.evaluated || 0}, azioni eseguite: ${data.actions_taken || 0}`,
+            this.t('schedules.evaluated_title'),
+            this.t('schedules.evaluated_desc', { evaluated: data.evaluated || 0, actions: data.actions_taken || 0 }),
             'success'
           );
         }
       } catch (e) {
-        this.showToast('Errore', String(e), 'error');
+        this.showToast(this.t('toasts.error'), String(e), 'error');
       }
     },
 
@@ -5912,7 +5977,8 @@ document.addEventListener('alpine:init', () => {
     getFilteredTopHogs() {
       if (!this.topHogsList || !Array.isArray(this.topHogsList)) return [];
       return this.topHogsList.filter(hog => {
-        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === (hog.mac || '').toLowerCase()) || d.id === hog.device_id);
+        const hogMac = (hog.mac || '').toLowerCase();
+        const dev = this.devices.find(d => (d.mac && d.mac.toLowerCase() === hogMac) || d.id === hog.device_id);
         
         // Category filter
         if (this.hogsCategoryFilter !== 'all') {
@@ -5921,23 +5987,36 @@ document.addEventListener('alpine:init', () => {
         }
 
         // Frequency band filter
-        if (this.hogsBandFilter !== 'all' && dev) {
+        if (this.hogsBandFilter !== 'all') {
+          if (!dev) return false;
+          const isWiredDev = Boolean(
+            dev.connection_type === 'wired' ||
+            dev.connection_type === 'ethernet' ||
+            dev.wired === true ||
+            dev.wireless === false ||
+            dev.frequency_band === 'Cablato' ||
+            dev.frequency_band === 'Wired'
+          );
           if (this.hogsBandFilter === 'wired') {
-            if (dev.connection_type !== 'wired' && dev.wireless) return false;
-          } else if (this.hogsBandFilter === '6ghz') {
-            const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
-            if (!is6) return false;
-          } else if (this.hogsBandFilter === '5ghz') {
-            const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
-            if (!is5) return false;
-          } else if (this.hogsBandFilter === '2.4ghz') {
-            const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
-            if (!is24) return false;
+            if (!isWiredDev) return false;
+          } else {
+            if (isWiredDev) return false;
+            if (this.hogsBandFilter === '6ghz') {
+              const is6 = dev.wireless_band === '6GHz' || (dev.frequency_band && dev.frequency_band.includes('6'));
+              if (!is6) return false;
+            } else if (this.hogsBandFilter === '5ghz') {
+              const is5 = dev.wireless_band === '5GHz' || (dev.frequency_band && dev.frequency_band.includes('5'));
+              if (!is5) return false;
+            } else if (this.hogsBandFilter === '2.4ghz') {
+              const is24 = dev.wireless_band === '2.4GHz' || (dev.frequency_band && dev.frequency_band.includes('2.4'));
+              if (!is24) return false;
+            }
           }
         }
 
         // Mesh Node filter
-        if (this.hogsNodeFilter !== 'all' && dev) {
+        if (this.hogsNodeFilter !== 'all') {
+          if (!dev) return false;
           if (dev.connected_eero_id !== this.hogsNodeFilter && dev.connected_eero_name !== this.hogsNodeFilter) {
             return false;
           }
@@ -5952,37 +6031,36 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     getBufferbloatGrade(speedtestObj) {
       const st = speedtestObj || this.latestSpeedtest || {};
-      const isIt = (this.currentLanguage === 'it');
 
       const gradeStyles = {
         'A+': {
           grade: 'A+',
-          label: this.t('bufferbloat.label_a_plus') || (isIt ? 'Ottimale' : 'Optimal'),
+          label: this.t('bufferbloat.label_a_plus'),
           class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
         },
         'A': {
           grade: 'A',
-          label: this.t('bufferbloat.label_a') || (isIt ? 'Molto Buono' : 'Very Good'),
+          label: this.t('bufferbloat.label_a'),
           class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
         },
         'B': {
           grade: 'B',
-          label: this.t('bufferbloat.label_b') || (isIt ? 'Buono' : 'Good'),
+          label: this.t('bufferbloat.label_b'),
           class: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30'
         },
         'C': {
           grade: 'C',
-          label: this.t('bufferbloat.label_c') || (isIt ? 'Sufficiente' : 'Fair'),
+          label: this.t('bufferbloat.label_c'),
           class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
         },
         'D': {
           grade: 'D',
-          label: this.t('bufferbloat.label_d') || (isIt ? 'Latenza Elevata' : 'High Latency'),
+          label: this.t('bufferbloat.label_d'),
           class: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
         },
         'F': {
           grade: 'F',
-          label: this.t('bufferbloat.label_f') || (isIt ? 'Critico' : 'Critical'),
+          label: this.t('bufferbloat.label_f'),
           class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
         }
       };
@@ -6020,7 +6098,7 @@ document.addEventListener('alpine:init', () => {
 
       return {
         grade: 'n/a',
-        label: this.t('bufferbloat.not_available') || (isIt ? 'Non Disponibile' : 'Not Available'),
+        label: this.t('bufferbloat.not_available'),
         class: 'bg-slate-500/15 text-slate-500 dark:text-slate-400 border-slate-500/30'
       };
     },
@@ -6053,6 +6131,7 @@ document.addEventListener('alpine:init', () => {
     showClearLogsModal: false,
     isClearingLogs: false,
     expandedLogDetails: {},
+    logTimezoneMode: localStorage.getItem('eero_log_tz') || 'local',
 
     async fetchLogConfig() {
       try {
@@ -6115,10 +6194,10 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.enabled = data.enabled;
-          this.showToast(this.t('logs.saved_success') || 'Configurazione log aggiornata.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         } else {
           this.logConfig.enabled = !this.logConfig.enabled;
-          this.showToast("Errore aggiornamento stato log.", 'error');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_toggle_error'), 'error');
         }
       } catch (e) {
         this.logConfig.enabled = !this.logConfig.enabled;
@@ -6139,7 +6218,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.level = data.level;
-          this.showToast(this.t('logs.saved_success') || 'Livello log aggiornato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
           await this.fetchSystemLogs();
         }
       } catch (e) {
@@ -6166,7 +6245,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.retention_days = data.retention_days;
-          this.showToast(this.t('logs.saved_success') || 'Periodo di retention aggiornato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         }
       } catch (e) {
         console.error("Failed to set log retention:", e);
@@ -6187,7 +6266,7 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.logConfig.retention_days = data.retention_days;
-          this.showToast(this.t('logs.saved_success') || 'Periodo di retention personalizzato applicato.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('logs.saved_success'), 'success');
         }
       } catch (e) {
         console.error("Failed to apply custom retention:", e);
@@ -6215,11 +6294,11 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.showClearLogsModal = false;
-          this.showToast(data.message || 'Log di sistema cancellati con successo.', 'success');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_cleared', { count: data.deleted_records || 0 }), 'success');
           await this.fetchLogConfig();
           await this.fetchSystemLogs();
         } else {
-          this.showToast("Errore durante la cancellazione dei log.", 'error');
+          this.showToast(this.t('toasts.logs_title'), this.t('toasts.logs_clear_error'), 'error');
         }
       } catch (e) {
         console.error("Failed to clear system logs:", e);
@@ -6262,6 +6341,37 @@ document.addEventListener('alpine:init', () => {
 
     toggleLogDetail(id) {
       this.expandedLogDetails[id] = !this.expandedLogDetails[id];
+    },
+
+    toggleLogTimezone() {
+      this.logTimezoneMode = this.logTimezoneMode === 'local' ? 'utc' : 'local';
+      try {
+        localStorage.setItem('eero_log_tz', this.logTimezoneMode);
+      } catch (e) {}
+    },
+
+    formatLogTimestamp(ts) {
+      if (!ts) return '';
+      if (this.logTimezoneMode === 'utc') {
+        return ts.replace('T', ' ').replace('Z', '') + ' UTC';
+      }
+      try {
+        const utcIso = ts.includes('T') ? (ts.endsWith('Z') ? ts : ts + 'Z') : ts.replace(' ', 'T') + 'Z';
+        const d = new Date(utcIso);
+        if (isNaN(d.getTime())) return ts;
+        const localeCode = this.dateLocales[this.currentLanguage] || 'en-US';
+        return d.toLocaleString(localeCode, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      } catch (e) {
+        return ts;
+      }
     },
 
     // =========================================================================

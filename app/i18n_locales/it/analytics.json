@@ -1,0 +1,5 @@
+{
+  "unknown_device": "Dispositivo",
+  "unknown_node": "Nodo eero",
+  "invalid_data_type": "Tipo di dato non valido. Scegli tra: {types}"
+}

@@ -1,0 +1,6 @@
+{
+  "created": "Profilo '{name}' creato con successo.",
+  "updated": "Profilo aggiornato con successo.",
+  "deleted": "Profilo eliminato con successo.",
+  "devices_assigned": "{count} dispositivi assegnati al profilo."
+}

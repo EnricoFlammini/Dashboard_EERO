@@ -4,6 +4,128 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.6.2] - 2026-10-23
+
+### 🚀 Proposta Intelligente Aggiornamenti con Changelog Ridotto & Decisione Utente
+* **✨ Changelog Ridotto Dinamico (`extract_condensed_changelog`):**
+  * Analisi e sintesi automatica delle note di rilascio locali (`changelog.md`) o remote (GitHub Releases / Docker Hub) per estrarre 4–8 punti salienti immediati, privi di marcature rumorose o tag Issue/PR.
+  * Esposto sia come funzione standalone di modulo che come metodo statico su `UpdaterService`.
+* **🌐 Nuovo Endpoint REST (`GET /api/system/update/changelog`):**
+  * Restituisce versione bersaglio, changelog ridotto sintetico e note di rilascio integrali per qualsiasi release o per l'aggiornamento pendente.
+* **⚡ Banner Reattivo di Proposta Aggiornamento & Decisione Utente:**
+  * Banner Fluent in rilievo con badge di transizione versione (`v1.6.2 → vX.Y.Z`) e visualizzazione sintetica delle novità rilevanti.
+  * Tre opzioni operative istantanee:
+    1. **⚡ Procedi con l'aggiornamento:** trigger diretto 1-click se il socket Docker è presente o apertura facilitata del modale con comando CLI pronto alla copia.
+    2. **Note Complete & Dettagli:** consultazione approfondita delle note di rilascio dettagliate.
+    3. **Ricordamelo più tardi:** posticipo della notifica per la sessione utente corrente tramite `sessionStorage`.
+* **📑 Modale Aggiornamenti & Scheda Impostazioni Potenziati:**
+  * Visualizzazione prioritaria dei punti salienti del changelog ridotto con toggle fluido ("Mostra tutte le note complete" / "Nascondi note complete") sia nel modale `#updateModal` che nella scheda Aggiornamenti.
+* **🛡️ Suite di Test Pre-Rilascio Estesa (Modulo 37):**
+  * 41 nuove asserzioni per la validazione di regex, estrazione dei punti salienti, endpoint REST, parità al 100% delle chiavi i18n (`it.json`/`en.json`) e integrità dei binding Alpine.js (1536 test totali superati al 100%).
+
+### 🛡️ Vulnerability Assessment & Security Hardening
+* **🔒 Chiusura & Protezione Granulare Access Control (RBAC):**
+  * Protetta la route sensibile di riavvio container `/api/system/update/trigger` con controllo di autorizzazione RBAC (`action_manage_rules`).
+  * Aggiunte protezioni di autorizzazione e sessione su `/api/automations/digest`, `/api/automations/notifications/test`, `/api/automations/alerts/read`, `/api/network/leds` e `/api/system/eero-news/refresh`.
+* **🚫 Protezione Anti Brute-Force & Sliding Window Rate Limiting:**
+  * Introdotto un modulo leggero `InMemoryRateLimiter` a zero dipendenze per mitigare attacchi a dizionario e abusi su login locale (`/api/auth/local/login`) e login cloud eero (`/api/auth/login`, `/api/auth/verify`), applicando una soglia di 5 tentativi/minuto con blocco temporaneo (HTTP 429 Too Many Requests con header `Retry-After`).
+* **🌐 Mitigazione SSRF su DNS Manager:**
+  * Implementata la funzione `is_safe_dns_url()` in `dns_manager.py` che blocca in modo proattivo richieste verso indirizzi di link-local metadata cloud (`169.254.0.0/16`, `fe80::/10`) e hostname di metadata riservati.
+* **🛡️ Prevenzione Client-Side XSS:**
+  * Sanitizzazione rigorosa dello schema degli URL in `renderSimpleMarkdown()` (`app.js`), accettando esclusivamente protocolli sicuri (`http://`, `https://`, `mailto:`, `#`, `/`) e neutralizzando protocolli pericolosi come `javascript:`, `data:` o `vbscript:` in tag `<span>` inerti.
+  * Isolamento ed escape HTML dei testi dell'AI Diagnostic Summary (`narrative_it` / `narrative_en`) prima del rendering nel DOM.
+* **🔒 Header di Sicurezza HTTP & Flag Cookie Dinamico:**
+  * Aggiunto middleware in `main.py` per l'iniezione automatica dei security headers raccomandati da OWASP: `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy`.
+  * Rilevamento dinamico dell'ambiente HTTPS (anche dietro reverse proxy TLS) per abilitare automaticamente il flag `Secure` sui cookie di sessione.
+
+### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
+* **💯 100% Parità Cataloghi Linguistici:**
+  * Allineati completamente tutti i cataloghi di traduzione: 457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`.
+  * Risolte tutte le discrepanze residue e aggiunti controlli continui di parità e conformità stringhe.
+
+### 🛡️ Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (Issue #83 - @richlilly2004)
+* **🏷️ Sanificazione Rigorosa Hostname DNS (`_sanitize_dns_hostname`):**
+  * Introdotta sanificazione conforme a RFC 1123 in `dns_manager.py`: rimozione di caratteri speciali, conversione di parentesi e simboli in trattini `-`, trim dei trattini e fallback ad alias o MAC address.
+  * Prevenzione del fallimento a cascata del payload atomico `PATCH /api/config` su Pi-hole v6 causato da apparati con nomi contenenti parentesi (es. `Amazon Echo (G4)`).
+* **🧹 Eliminazione 404 Endpoint Probe (`eero_client.py`):**
+  * Rimossa la richiesta ridondante a `/2.2/networks/{id}/port_forwards` nel ciclo di polling, eliminando definitivamente lo spam di log di errore 404.
+
+### ⚙️ Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC)
+* **🔄 Compatibilità Payload e Modello Dati REST:**
+  * Allineato l'endpoint `/api/automations/mqtt/config` esponendo sia l'oggetto annidato `config` che le chiavi root per massima retrocompatibilità.
+  * Aggiunto supporto bi-direzionale in `mqtt_client.py` per i parametri `discovery_prefix` e `homeassistant_prefix`.
+  * Destrutturazione difensiva in `app.js` (`res.data.config || res.data`) che assicura il caricamento e il salvataggio affidabile di credenziali e parametri broker.
+
+### 🦊 Risoluzione Glitch Layout Tabella Dispositivi su Firefox (Issue #80 - @jpatchMC)
+* **🖥️ Correzione Rendering Gecko Non-Chromium:**
+  * Rimosso il blocco `<colgroup>` contenente direttive dinamiche `<col x-show="...">` in `index.html`.
+  * Affidamento del reflow e dei vincoli di larghezza direttamente alle celle `th`/`td`, eliminando collassi di colonne, mancati render e sfarfallii allo scroll su Firefox.
+
+### 🔔 Serializzazione Payload Webhook & Isolamento Canali Notifiche (Issue #85 - @Hatton920)
+* **📦 Serializzazione Difensiva (`_json_safe`):**
+  * Aggiunta serializzazione ricorsiva in `notifications.py` per convertire oggetti complessi (`datetime`, `set`, generatori) in tipi JSON nativi prima della trasmissione.
+  * Risolto il blocco silente (`TypeError`) delle notifiche istantanee di nodo offline e nuovo dispositivo verso Home Assistant e webhook generici.
+* **🔒 Isolamento Canali & Pre-popolamento MAC:**
+  * Isolato l'invio su ciascun canale (Webhook, Discord, Telegram, Pushover) in blocchi `try/except` indipendenti.
+  * Corretto il check di abilitazione (`"true" if webhook_url else "false"`) per supportare configurazioni impostate da web UI senza variabile `.env`.
+  * Inizializzazione di `_known_macs` su SQLite all'avvio in `poller.py` per azzerare i falsi allarmi "Nuovo Dispositivo" al riavvio del container.
+
+### 🎨 Rifiniture UI/UX, Localizzazione & Nomi Dispositivi Troncati (Issue #84 - @XprofQ)
+* **✨ 11 Perfezionamenti Mirati:**
+  1. Localizzati tutti gli header e sottotitoli della modale di configurazione iniziale amministratore.
+  2. Icone categoria apparati dinamiche in tabella tramite Fluent icons basate su `dev.custom_icon || dev.category || dev.device_type`.
+  3. Spinner Live Log Viewer localizzato con `t('logs.loading')`.
+  4. Prevenzione dell'a-capo del testo "Mbps" nella card Throughput WAN con `whitespace-nowrap`.
+  5. Preservate le note di rilascio GitHub originali in lingua inglese in `updater.py`.
+  6. Badge topologia `(Estimated)` / `(Stimata)` localizzato reattivamente tramite `dashboard.backhaul_estimated`.
+  7. Dropdown Top Bandwidth Hogs provvisti di etichette fallback corrette ("All" / "Tutti"), estensione a 30 elementi e correzione della logica cablati (`raw_wired !== false`).
+  8. Formattazione range qualità segnale Wi-Fi localizzata in entrambe le lingue (`-51 to -65 dBm` / `-51 a -65 dBm`).
+  9. Verificata la piena localizzazione della checkbox "Ricordami" nel sign-in amministratore.
+  10. Colonna nome apparato `.device-col-name` allargata a `16.5rem`, clamp a 2 righe e tooltip `:title` al passaggio del mouse.
+  11. Mesh Device Density localizzato in `clients/node` / `client/nodo` via `analytics.clients_per_node`.
+
+### 🧹 Refactoring Architetturale i18n & Isolamento Test Suite (Issue #82 - @todddube)
+* **🗑️ Rimozione Dead Code & Traduttori Legacy:**
+  * Eliminata `translatePillarSummaryEn` (~35 righe) e semplificati i getter di salute in `app.js` rimuovendo espressioni regolari e mapping manuali obsoleti.
+  * Standardizzate le stringhe d'errore e i log in inglese in `retention_worker.py`.
+* **🌐 Elementi Coinvolti Salute Rete Localizzati:**
+  * Aggiunto `affected_items_i18n` a tutti gli 8 generatori di penalità in `poller.py` e `suggested_eero_name_i18n` in `diagnostics_service.py`, visualizzati dinamicamente nella lingua del visualizzatore.
+* **🛡️ Isolamento Suite di Test Pre-Rilascio:**
+  * Inserito fallback automatico a cartella temporanea (`tempfile.mkdtemp()`) in `scripts/run_pre_release_tests.py` se `DATA_DIR` non è definita, proteggendo il database e la sessione reale da cancellazioni durante i test.
+
+### 🔒 Logging Dettagliato Errori Certificato TLS nel DNS Manager (Issue #89 - @todddube)
+* **🔍 Diagnostica Immediata `SSLCertVerificationError`:**
+  * Intercettazione esplicita degli errori di convalida SSL/TLS (`CERTIFICATE_VERIFY_FAILED`, mismatch di hostname, certificati autofirmati privi di CA di root di sistema) nelle chiamate HTTP client verso AdGuard Home, Pi-hole e Technitium DNS.
+  * Registrazione di log di avviso chiari ed esplicativi che indirizzano l'amministratore alla causa specifica (es. import certificato CA o toggle verifica SSL).
+
+### 🕒 Fuso Orario Locale del Browser nei Log di Sistema (Issue #91 - @Hatton920)
+* **🌐 Visualizzazione Timestamp nel Fuso Orario del Client:**
+  * I timestamp ISO degli eventi nel visualizzatore log di sistema vengono convertiti e renderizzati nell'orario locale del browser client in base alla lingua dell'utente (`it-IT` / `en-US`).
+* **🔄 Toggle Rapido Locale / UTC con Persistenza:**
+  * Aggiunto pulsante toggle Fluent compatto nell'header del log viewer (`app.js`, `index.html`) per alternare istantaneamente tra fuso orario locale del browser e tempo UTC, memorizzando la scelta in `localStorage`.
+
+### 🧹 Gestione Retention & Pulizia Manuale Indirizzi IPv6 ULA (Issue #88 - @EnricoFlammini)
+* **⏱️ Retention Periodica Ridotta a 7 Giorni:**
+  * Ridotto il periodo di conservazione degli indirizzi IP scoperti via NDP / AdGuard in `cleanup_stale_discovered_ips()` da 30 a 7 giorni, prevenendo la saturazione della tabella da indirizzi temporanei SLAAC/privacy.
+* **🏷️ Limitazione a 5 Indirizzi ULA per Dispositivo:**
+  * Capping a un massimo di 5 indirizzi ULA più recenti per apparato nel caricamento in memoria (`poller.py`) e nell'arricchimento visuale (`enrichment_service.py`), con contenitore scrollabile e contatore badge.
+* **🧼 Endpoint & Pulsante Reset ULA Manuale:**
+  * Introdotto l'endpoint protetto `POST /api/devices/{mac}/clear-ula` (`action_edit_devices`) e il pulsante *"Pulisci ULA"* con conferma e toast di notifica nella modale di dettaglio apparato (`#deviceModal`).
+
+### 🏠 Home Assistant MQTT Device Tracker: Stato Presenza & Scalabilità (Issue #92 - @jpatchMC)
+* **📍 Tracciamento Presenza Dispositivi Sconnessi (`not_home`):**
+  * Pubblicazione immediata dello stato `not_home` sul topic di stato quando un dispositivo si disconnette dalla rete eero o passa offline, risolvendo il blocco delle automazioni Home Assistant basate su presenza.
+* **🚀 Rimozione Hard Limit 50 Dispositivi & Pacing Asincrono:**
+  * Esteso il limite massimo di client tracciati contemporaneamente a 250 con pacing non bloccante (`asyncio.sleep(0.005)` ogni 10 dispositivi) per preservare le performance del broker MQTT.
+* **🎯 Deduplicazione Config Topic Retained:**
+  * Il payload di discovery per ciascun `device_tracker` viene ora pubblicato con flag `retain=True` unicamente al primo rilevamento dell'apparato o al riavvio, eliminando overhead e spam di discovery ad ogni intervallo di telemetria.
+
+### 🌐 Parità Completa Traduzioni & Layout Banda/Canale (PR #94 & PR #95 - @todddube)
+* **📐 Disposizione Compatta Frequenza e Canale:**
+  * Incolonnamento verticale della frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) direttamente sopra il numero di canale per una migliore leggibilità su schermi a media risoluzione.
+* **💯 Parità Totale Cataloghi i18n:**
+  * Allineate le ultime chiavi nei cataloghi di localizzazione frontend e backend.
+
 ## [1.6.1] - 2026-10-17
 
 ### 🌐 Bilinguismo Completo Impostazioni & Rimozione FOUT Caricamento (PR #78 - @todddube)

@@ -1,0 +1,18 @@
+{
+  "name_required": "The rule name cannot be empty.",
+  "target_required": "Specify at least one target user or node.",
+  "not_found": "Schedule not found.",
+  "update_failed": "Error while updating the rule.",
+  "delete_failed": "Error while deleting the rule.",
+  "deleted": "Rule #{id} deleted.",
+  "state_started": "Started",
+  "state_ended": "Ended",
+  "transition_alert_title": "🕒 Scheduled Rule '{name}'",
+  "transition_alert_message": "The scheduled rule '{name}' was applied: status {state} on {count} target(s) ({target_type}).",
+  "maintenance_reason_beacons": "Critical health score ({score}/{threshold}) and {count} degraded beacon nodes.",
+  "maintenance_reason_network": "Critical overall health score ({score}/{threshold}). Preventive network reboot.",
+  "maintenance_whole_network": "Entire eero Mesh Network",
+  "maintenance_alert_title": "🔄 Nightly Maintenance: Mesh Reboot",
+  "maintenance_alert_message": "{reason} Rebooted nodes: {items}.",
+  "maintenance_telegram": "<b>🔄 eero Nightly Maintenance</b>\n\n{reason}\nDevices: <code>{items}</code>"
+}

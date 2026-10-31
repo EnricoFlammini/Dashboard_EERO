@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eero Dashboard — Mockup Fluent UI v1.7 Concept</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Segoe UI', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            fluent: {
+              bg: '#181b20',
+              sidebar: '#121418',
+              card: 'rgba(30, 34, 42, 0.65)',
+              cardBorder: 'rgba(255, 255, 255, 0.08)',
+              accent: '#0078d4',
+              accentHover: '#1084d8',
+              teal: '#00b7c3',
+              green: '#107c41',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at 10% 20%, rgba(0, 120, 212, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(16, 124, 65, 0.06) 0%, transparent 40%),
+                  #111317;
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: rgba(26, 30, 38, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+    }
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+    .node-connector {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.6), rgba(0, 120, 212, 0.6));
+      height: 2px;
+    }
+  </style>
+</head>
+<body class="text-slate-200 font-sans antialiased selection:bg-sky-500 selection:text-white" x-data="mockupApp()">
+
+  <!-- ROOT CONTAINER -->
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-64 bg-[#121418]/90 border-r border-white/5 flex flex-col shrink-0 backdrop-blur-md select-none">
+      <!-- App Brand -->
+      <div class="h-16 flex items-center px-6 gap-3 border-b border-white/5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-teal-400 flex items-center justify-center shadow-lg shadow-sky-500/20 font-extrabold text-white text-base">
+          e
+        </div>
+        <div>
+          <div class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+            eero Dashboard
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30">PRO</span>
+          </div>
+          <div class="text-[11px] text-slate-400 font-mono">Mesh 6E • v1.7</div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-3 py-4 space-y-1">
+        <template x-for="item in navItems" :key="item.id">
+          <button @click="currentTab = item.id" 
+                  :class="currentTab === item.id ? 'bg-sky-500/15 text-sky-400 font-semibold border-l-2 border-sky-400 shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'"
+                  class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs transition duration-150">
+            <div class="flex items-center gap-3">
+              <span class="text-base" x-text="item.icon"></span>
+              <span x-text="item.label"></span>
+            </div>
+            <span x-show="item.badge" class="px-1.5 py-0.5 text-[10px] rounded-full bg-white/10 text-slate-300 font-mono font-bold" x-text="item.badge"></span>
+          </button>
+        </template>
+      </nav>
+
+      <!-- Network Switcher Card -->
+      <div class="p-3 border-t border-white/5">
+        <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-between">
+          <div class="min-w-0">
+            <div class="text-[11px] font-bold text-slate-200 truncate">Casa Rossi Mesh 6E</div>
+            <div class="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Online • Fastweb FTTH
+            </div>
+          </div>
+          <button class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition" title="Cambia Rete">
+            ⇄
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+      <!-- TOP HEADER -->
+      <header class="h-16 px-8 flex items-center justify-between border-b border-white/5 bg-[#121418]/50 backdrop-blur-md sticky top-0 z-30">
+        <!-- Quick Global Search (Ctrl + K) -->
+        <div class="relative w-80">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+            🔍
+          </div>
+          <input type="text" 
+                 x-model="searchQuery"
+                 placeholder="Cerca dispositivo, IP, MAC... (Ctrl + K)" 
+                 class="w-full pl-8 pr-12 py-1.5 text-xs rounded-lg bg-white/[0.05] border border-white/10 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/40 transition">
+          <span class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-[10px] font-mono text-slate-500">⌘K</span>
+        </div>
+
+        <!-- Top Right Actions -->
+        <div class="flex items-center gap-3">
+          <div class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Stato: Ottimale
+          </div>
+          <button @click="showSlideOver = true" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/30 transition flex items-center gap-1.5">
+            ⚡ Esegui Speedtest
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY -->
+      <main class="p-8 space-y-6 max-w-7xl w-full mx-auto">
+
+        <!-- 1. HERO STATUS CARD -->
+        <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+          <div class="absolute -right-16 -top-16 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <!-- Left Info -->
+            <div class="lg:col-span-7 space-y-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                  Rete Operativa
+                </span>
+                <span class="text-xs text-slate-400">Uptime: 14 giorni, 6 ore</span>
+              </div>
+              <h1 class="text-2xl font-bold tracking-tight text-white">Tutti i nodi sono sincronizzati al 100%</h1>
+              <p class="text-xs text-slate-400 leading-relaxed max-w-xl">
+                La rete mesh Wi-Fi 6E sta gestendo <span class="text-white font-semibold">24 dispositivi</span> attivi. Il roaming tra i 3 nodi eero è privo di interferenze e il backhaul è stabile.
+              </p>
+
+              <!-- Real-time Bandwidth Counters -->
+              <div class="flex items-center gap-6 pt-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm font-bold">↓</div>
+                  <div>
+                    <div class="text-[10px] text-slate-400 uppercase font-semibold">Download WAN</div>
+                    <div class="text-base font-extrabold text-white font-mono">942.5 <span class="text-xs text-slate-400 font-sans">Mbps</span></div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">↑</div>
+                  <div>
+                    <div class="text-[10px] text-slate-400 uppercase font-semibold">Upload WAN</div>
+                    <div class="text-base font-extrabold text-white font-mono">194.8 <span class="text-xs text-slate-400 font-sans">Mbps</span></div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">📶</div>
+                  <div>
+                    <div class="text-[10px] text-slate-400 uppercase font-semibold">Latenza ISP</div>
+                    <div class="text-base font-extrabold text-white font-mono">8.4 <span class="text-xs text-slate-400 font-sans">ms (A+)</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Health Score Gauge -->
+            <div class="lg:col-span-5 flex items-center justify-end">
+              <div class="p-4 rounded-xl bg-white/[0.03] border border-white/5 flex items-center gap-4 w-full max-w-xs">
+                <div class="w-16 h-16 rounded-full border-4 border-emerald-500/40 border-t-emerald-400 flex items-center justify-center text-lg font-black text-white font-mono shrink-0">
+                  98
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white">Salute Rete Eccellente</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">Nessun pacchetto perso, bufferbloat WAN eccellente.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. INTERACTIVE MESH TOPOLOGY MAP -->
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                <span>🌐</span> Topologia Rete Mesh Interattiva
+              </h2>
+              <p class="text-xs text-slate-400">Clicca su un nodo per filtrare istantaneamente i client collegati</p>
+            </div>
+            <span class="text-[11px] font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
+              3 Nodi Online • Backhaul 2.5 GbE
+            </span>
+          </div>
+
+          <!-- Nodes Visual Chain -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            
+            <!-- Gateway Node -->
+            <div @click="selectedNodeFilter = (selectedNodeFilter === 'Gateway' ? '' : 'Gateway')"
+                 :class="selectedNodeFilter === 'Gateway' ? 'ring-2 ring-sky-500 bg-sky-500/10' : 'bg-white/[0.02] hover:bg-white/[0.05]'"
+                 class="p-4 rounded-xl border border-white/10 cursor-pointer transition relative group">
+              <div class="flex items-start justify-between">
+                <div class="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-lg">
+                  📡
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">Gateway</span>
+              </div>
+              <div class="mt-3">
+                <div class="text-xs font-bold text-white group-hover:text-sky-400 transition">Gateway Soggiorno</div>
+                <div class="text-[11px] text-slate-400 font-mono">eero Max 7 • 192.168.4.1</div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Client connessi:</span>
+                <span class="font-bold text-white font-mono">14 dispositivi</span>
+              </div>
+            </div>
+
+            <!-- Node 2 -->
+            <div @click="selectedNodeFilter = (selectedNodeFilter === 'Studio' ? '' : 'Studio')"
+                 :class="selectedNodeFilter === 'Studio' ? 'ring-2 ring-sky-500 bg-sky-500/10' : 'bg-white/[0.02] hover:bg-white/[0.05]'"
+                 class="p-4 rounded-xl border border-white/10 cursor-pointer transition relative group">
+              <div class="flex items-start justify-between">
+                <div class="w-10 h-10 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-lg">
+                  🔌
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400">Cablato GbE</span>
+              </div>
+              <div class="mt-3">
+                <div class="text-xs font-bold text-white group-hover:text-sky-400 transition">Studio & Rack</div>
+                <div class="text-[11px] text-slate-400 font-mono">eero Pro 6E • 192.168.4.2</div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Client connessi:</span>
+                <span class="font-bold text-white font-mono">6 dispositivi</span>
+              </div>
+            </div>
+
+            <!-- Node 3 -->
+            <div @click="selectedNodeFilter = (selectedNodeFilter === 'Camera' ? '' : 'Camera')"
+                 :class="selectedNodeFilter === 'Camera' ? 'ring-2 ring-sky-500 bg-sky-500/10' : 'bg-white/[0.02] hover:bg-white/[0.05]'"
+                 class="p-4 rounded-xl border border-white/10 cursor-pointer transition relative group">
+              <div class="flex items-start justify-between">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg">
+                  📶
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400">Mesh 6GHz</span>
+              </div>
+              <div class="mt-3">
+                <div class="text-xs font-bold text-white group-hover:text-sky-400 transition">Camera da Letto</div>
+                <div class="text-[11px] text-slate-400 font-mono">eero 6+ • 192.168.4.3</div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Client connessi:</span>
+                <span class="font-bold text-white font-mono">4 dispositivi</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 3. DEVICES SECTION WITH QUICK FILTER PILLS -->
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          
+          <!-- Header & Quick Filter Pills -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-base font-bold text-white">Dispositivi Connessi</h2>
+              <p class="text-xs text-slate-400">Clicca su qualsiasi riga per aprire il pannello di dettaglio laterale</p>
+            </div>
+
+            <!-- Filter Pills -->
+            <div class="flex flex-wrap items-center gap-1.5 bg-black/20 p-1 rounded-xl border border-white/5">
+              <button @click="currentFilter = 'all'" 
+                      :class="currentFilter === 'all' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                      class="px-2.5 py-1 rounded-lg text-xs transition">
+                Tutti (24)
+              </button>
+              <button @click="currentFilter = 'wired'" 
+                      :class="currentFilter === 'wired' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                      class="px-2.5 py-1 rounded-lg text-xs transition">
+                🔌 Cablati (6)
+              </button>
+              <button @click="currentFilter = 'wifi'" 
+                      :class="currentFilter === 'wifi' ? 'bg-sky-500 text-white font-bold' : 'text-slate-400 hover:text-white'"
+                      class="px-2.5 py-1 rounded-lg text-xs transition">
+                📶 Wi-Fi (18)
+              </button>
+              <button @click="currentFilter = 'sticky'" 
+                      :class="currentFilter === 'sticky' ? 'bg-amber-500 text-slate-900 font-bold' : 'text-amber-400 hover:text-white'"
+                      class="px-2.5 py-1 rounded-lg text-xs transition">
+                ⚠️ Roaming (1)
+              </button>
+            </div>
+          </div>
+
+          <!-- Clean Fluent Devices Table -->
+          <div class="overflow-x-auto rounded-xl border border-white/5 bg-black/10">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-white/[0.03] text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-white/5">
+                <tr>
+                  <th class="py-3 px-4">Dispositivo</th>
+                  <th class="py-3 px-4">Indirizzo IP / MAC</th>
+                  <th class="py-3 px-4">Nodo eero</th>
+                  <th class="py-3 px-4">Banda / Canale</th>
+                  <th class="py-3 px-4">Segnale RSSI</th>
+                  <th class="py-3 px-4 text-right">Traffico Realtime</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <template x-for="dev in filteredDevices" :key="dev.mac">
+                  <tr @click="openDeviceDetails(dev)" 
+                      class="hover:bg-white/[0.04] cursor-pointer transition group">
+                    <td class="py-3 px-4 font-medium text-white flex items-center gap-3">
+                      <span class="text-base" x-text="dev.icon"></span>
+                      <div>
+                        <div class="font-bold group-hover:text-sky-400 transition" x-text="dev.name"></div>
+                        <div class="text-[10px] text-slate-400" x-text="dev.profile"></div>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4 font-mono text-slate-300">
+                      <div class="flex items-center gap-1.5">
+                        <span x-text="dev.ip"></span>
+                        <span x-show="dev.isStatic" class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">STATIC</span>
+                      </div>
+                      <div class="text-[10px] text-slate-500" x-text="dev.mac"></div>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300" x-text="dev.node"></td>
+                    <td class="py-3 px-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
+                            :class="dev.band === '6GHz' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : (dev.band === 'Ethernet' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30')"
+                            x-text="dev.band"></span>
+                    </td>
+                    <td class="py-3 px-4 font-mono">
+                      <div class="text-slate-200" x-text="dev.rssi ? dev.rssi + ' dBm' : '—'"></div>
+                      <div class="text-[10px] text-slate-500" x-text="dev.phy ? 'PHY ' + dev.phy : '1 Gbps Full'"></div>
+                    </td>
+                    <td class="py-3 px-4 text-right font-mono">
+                      <div class="text-sky-400 font-bold" x-text="'↓ ' + dev.rxRate"></div>
+                      <div class="text-emerald-400 text-[10px]" x-text="'↑ ' + dev.txRate"></div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+    <!-- 4. SLIDE-OVER DRAWER (MASTER-DETAIL INSPECT PANEL) -->
+    <div x-show="showSlideOver" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full"
+         class="fixed inset-y-0 right-0 w-96 bg-[#16191f] border-l border-white/10 shadow-2xl z-50 flex flex-col p-6 backdrop-blur-xl"
+         style="display: none;">
+      
+      <!-- Drawer Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl" x-text="selectedDevice ? selectedDevice.icon : '📱'"></span>
+          <div>
+            <div class="text-sm font-bold text-white truncate max-w-[200px]" x-text="selectedDevice ? selectedDevice.name : 'Dettagli'"></div>
+            <div class="text-[10px] text-emerald-400">● Connesso • Attivo ora</div>
+          </div>
+        </div>
+        <button @click="showSlideOver = false" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Drawer Content -->
+      <div class="flex-1 overflow-y-auto py-6 space-y-6" x-show="selectedDevice">
+        
+        <!-- Live Speed Banner -->
+        <div class="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Throughput Istantaneo</div>
+          <div class="flex items-center justify-between font-mono">
+            <span class="text-sm font-bold text-sky-400" x-text="'↓ ' + selectedDevice?.rxRate"></span>
+            <span class="text-sm font-bold text-emerald-400" x-text="'↑ ' + selectedDevice?.txRate"></span>
+          </div>
+          <!-- Mini simulated bar graph -->
+          <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden flex">
+            <div class="bg-sky-500 h-full w-2/3"></div>
+            <div class="bg-emerald-500 h-full w-1/4"></div>
+          </div>
+        </div>
+
+        <!-- Technical Attributes -->
+        <div class="space-y-3 text-xs">
+          <div class="flex items-center justify-between py-1.5 border-b border-white/5">
+            <span class="text-slate-400">Indirizzo IP:</span>
+            <span class="font-mono font-bold text-white" x-text="selectedDevice?.ip"></span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-white/5">
+            <span class="text-slate-400">Indirizzo MAC:</span>
+            <span class="font-mono text-slate-300" x-text="selectedDevice?.mac"></span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-white/5">
+            <span class="text-slate-400">Collegato a:</span>
+            <span class="font-semibold text-white" x-text="selectedDevice?.node"></span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-white/5">
+            <span class="text-slate-400">Frequenza RF:</span>
+            <span class="font-mono text-cyan-400 font-bold" x-text="selectedDevice?.band"></span>
+          </div>
+          <div class="flex items-center justify-between py-1.5 border-b border-white/5">
+            <span class="text-slate-400">Intensità Segnale:</span>
+            <span class="font-mono text-emerald-400 font-bold" x-text="selectedDevice?.rssi ? selectedDevice.rssi + ' dBm' : 'Ethernet'"></span>
+          </div>
+        </div>
+
+        <!-- Quick Action Toggles -->
+        <div class="space-y-2 pt-2">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Controlli Rapidi</div>
+          
+          <button class="w-full py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 flex items-center justify-between text-xs transition">
+            <span class="flex items-center gap-2"><span>📌</span> Assegna IP Statico</span>
+            <span class="text-[10px] font-mono text-slate-400">192.168.4.50</span>
+          </button>
+
+          <button class="w-full py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 flex items-center justify-between text-xs transition">
+            <span class="flex items-center gap-2"><span>⏸️</span> Sospendi Internet Client</span>
+            <span class="text-[10px] uppercase font-bold">Attivo</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    function mockupApp() {
+      return {
+        currentTab: 'overview',
+        currentFilter: 'all',
+        selectedNodeFilter: '',
+        searchQuery: '',
+        showSlideOver: false,
+        selectedDevice: null,
+        navItems: [
+          { id: 'overview', label: 'Panoramica', icon: '🏠', badge: '' },
+          { id: 'topology', label: 'Topologia Mesh', icon: '🌐', badge: '3 nodi' },
+          { id: 'devices', label: 'Dispositivi', icon: '💻', badge: '24' },
+          { id: 'profiles', label: 'Profili Famiglia', icon: '👤', badge: '' },
+          { id: 'analytics', label: 'Analisi & SLA', icon: '📈', badge: '' },
+          { id: 'dns', label: 'Automazioni DNS', icon: '⚙️', badge: '' },
+          { id: 'settings', label: 'Impostazioni', icon: '🔧', badge: '' }
+        ],
+        devices: [
+          { name: 'MacBook Pro 16" M3 Max', icon: '💻', ip: '192.168.4.15', mac: 'BC:D0:74:11:22:33', node: 'Studio & Rack', band: '6GHz', rssi: -48, phy: '2400M', rxRate: '18.4M', txRate: '2.1M', profile: 'Marco (Lavoro)', isStatic: true, isWired: false, isSticky: false },
+          { name: 'iPhone 15 Pro Max', icon: '📱', ip: '192.168.4.22', mac: 'F0:18:98:AA:BB:CC', node: 'Gateway Soggiorno', band: '5GHz', rssi: -52, phy: '1200M', rxRate: '4.2M', txRate: '0.8M', profile: 'Marco (Personale)', isStatic: false, isWired: false, isSticky: false },
+          { name: 'Hypervisor Proxmox VE', icon: '🖥️', ip: '192.168.4.2', mac: '00:1E:67:88:99:AA', node: 'Studio & Rack', band: 'Ethernet', rssi: null, phy: null, rxRate: '45.1M', txRate: '12.0M', profile: 'Infrastruttura', isStatic: true, isWired: true, isSticky: false },
+          { name: 'Samsung Neo QLED 65"', icon: '📺', ip: '192.168.4.55', mac: '54:B7:E5:DD:EE:FF', node: 'Gateway Soggiorno', band: '5GHz', rssi: -59, phy: '866M', rxRate: '24.0M', txRate: '0.2M', profile: 'Salotto TV', isStatic: true, isWired: false, isSticky: false },
+          { name: 'iPad Studio Disegno', icon: '📋', ip: '192.168.4.78', mac: 'A4:83:E7:33:44:55', node: 'Camera da Letto', band: '5GHz', rssi: -74, phy: '400M', rxRate: '0.5M', txRate: '0.1M', profile: 'Giulia', isStatic: false, isWired: false, isSticky: true },
+          { name: 'NAS Synology DS920+', icon: '🗄️', ip: '192.168.4.10', mac: '00:11:32:9F:88:44', node: 'Studio & Rack', band: 'Ethernet', rssi: null, phy: null, rxRate: '2.4M', txRate: '35.8M', profile: 'Storage ZFS', isStatic: true, isWired: true, isSticky: false }
+        ],
+        get filteredDevices() {
+          return this.devices.filter(d => {
+            if (this.selectedNodeFilter && !d.node.includes(this.selectedNodeFilter)) return false;
+            if (this.currentFilter === 'wired' && !d.isWired) return false;
+            if (this.currentFilter === 'wifi' && d.isWired) return false;
+            if (this.currentFilter === 'sticky' && !d.isSticky) return false;
+            if (this.searchQuery) {
+              const q = this.searchQuery.toLowerCase();
+              return d.name.toLowerCase().includes(q) || d.ip.includes(q) || d.mac.toLowerCase().includes(q);
+            }
+            return true;
+          });
+        },
+        openDeviceDetails(dev) {
+          this.selectedDevice = dev;
+          this.showSlideOver = true;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

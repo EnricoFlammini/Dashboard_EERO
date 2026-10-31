@@ -105,7 +105,9 @@
     "theme_dark": "Dark",
     "theme_system": "System",
     "switch_network_title": "Switch Active eero Network",
-    "available_networks": "Available Networks"
+    "available_networks": "Available Networks",
+    "logout_title": "Logout",
+    "switch_language_title": "Change language"
   },
   "dashboard": {
     "health_score": "Network Health Score",
@@ -134,6 +136,7 @@
     "backhaul_wireless": "Wireless Mesh (5 GHz)",
     "backhaul_wireless_6ghz": "Wireless Mesh (6 GHz)",
     "backhaul_wireless_5ghz": "Wireless Mesh (5 GHz)",
+    "backhaul_estimated": "(Estimated)",
     "connected_clients": "Connected Clients:",
     "status": "Status:",
     "status_optimal": "Online • Normal",
@@ -232,7 +235,9 @@
     "mark_seen_error": "Could not update devices",
     "joined_relative": "First seen",
     "badge_ula_enriched": "ULA Enriched",
-    "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard"
+    "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard",
+    "clear_search": "Clear search",
+    "generic_device": "Device"
   },
   "device_modal": {
     "reservation_error": "Error while creating the DHCP reservation",
@@ -318,9 +323,18 @@
     "ipv6_badge_ula_ndp": "ULA Enriched",
     "ipv6_badge_link_local": "Link-Local",
     "ipv6_tooltip_ndp": "IPv6 ULA address discovered via Reverse NDP / AdGuard Home",
+    "clear_ula_btn": "Clear ULAs",
+    "clearing_ula": "Clearing...",
+    "clear_ula_tooltip": "Clear discovered IPv6 ULA addresses for this device",
+    "clear_ula_confirm": "Clear all {count} discovered ULA addresses for this device?",
+    "clear_ula_success": "Discovered ULA addresses cleared successfully",
+    "clear_ula_error": "Failed to clear discovered ULA addresses",
     "copy_ipv6": "Copy IPv6 address",
     "ipv6_copied": "IPv6 address copied to clipboard!",
-    "close_btn": "Close"
+    "close_btn": "Close",
+    "protocol_both": "Both (TCP/UDP)",
+    "resolution_minutes": "{n} min",
+    "eero_cloud_synced_title": "Synced from eero mobile app"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",
@@ -385,7 +399,12 @@
     "col_rssi_signal": "RSSI Signal Level",
     "col_recommendation": "Optimization Tip",
     "rec_move_closer": "Move device closer or reposition an intermediate eero beacon",
-    "no_weak_devices": "All wireless devices currently enjoy optimal or good signal!"
+    "no_weak_devices": "All wireless devices currently enjoy optimal or good signal!",
+    "signal_range_excellent": "≥ -50 dBm",
+    "signal_range_good": "-51 to -65 dBm",
+    "signal_range_fair": "-66 to -75 dBm",
+    "signal_range_weak": "< -75 dBm",
+    "readonly_notice": "Read-only mode: sign in as Admin to run speed test."
   },
   "controls": {
     "guest_title": "Smart Guest Wi-Fi & QR Code",
@@ -534,7 +553,8 @@
     "mqtt_user_label": "User:",
     "mqtt_anonymous": "(anonymous)",
     "mqtt_interval_label": "Interval:",
-    "mqtt_never": "Never"
+    "mqtt_never": "Never",
+    "mqtt_username_placeholder": "e.g. mqtt-user"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -544,7 +564,9 @@
     "close_guide": "Close Guide",
     "prev_chapter": "Previous",
     "next_chapter": "Next",
-    "no_results": "No chapters found."
+    "no_results": "No chapters found.",
+    "chapters_word": "Chapters",
+    "chapter_position": "Chapter {n} / {total}"
   },
   "auth": {
     "title": "eero Mesh Suite Login",
@@ -610,7 +632,14 @@
     "contrib_jonmacdonald": "SQLite lock contention & concurrency resolution with 60s busy timeout (Issue #62) & switch gateway reconciliation (Issue #26)",
     "contrib_todddube": "Official Synology DSM 7.2+ Container Manager deployment guide & compose template (PR #66) and Bandwidth Hogs filter bar / admin setup localization & category getter fix (PR #67)",
     "contrib_bug_hunters_desc": "Shoutout to @BaRaD5 (DNS query caching), @phutmacher (primary gateway election), @txrangersxx (network ID resolver), @nextlevel2023 (Amazon login UX), and u/djbills (Docker tag isolation).",
-    "close": "Close"
+    "close": "Close",
+    "crafted_prefix": "Crafted with ❤️ by",
+    "crafted_middle": "for the",
+    "crafted_suffix": " community.",
+    "support_title": "Support Enrico Flammini on Buy Me a Coffee",
+    "crafted_community": "homelab & self-hosted",
+    "badge_contributor": "Contributor",
+    "badge_security_contributor": "Security & Contributor"
   },
   "update_modal": {
     "title": "Update Available",
@@ -638,7 +667,19 @@
     "banner_up_to_date_title": "Dashboard Up to Date",
     "banner_up_to_date_desc": "Installed version (v{version}) matches the latest public release on Docker Hub and GitHub.",
     "banner_update_title": "New Version Available: v{version}",
-    "banner_update_desc": "A new Docker image is ready. Install it with 1-click if the Docker socket is mounted, or with the manual command below."
+    "banner_update_desc": "A new Docker image is ready. Install it with 1-click if the Docker socket is mounted, or with the manual command below.",
+    "updating_short": "Updating...",
+    "update_now_short": "Update Now (1-Click)",
+    "condensed_changelog_title": "Key Highlights & Condensed Changelog:",
+    "condensed_changelog_subtitle": "Summary of what's new in this release at a glance",
+    "prompt_title": "New Update Available: v{version}",
+    "prompt_desc": "A new version of the dashboard is available with key improvements and new features. Review the highlights below to decide whether to update now.",
+    "prompt_proceed": "⚡ Proceed with Update",
+    "prompt_view_details": "Full Release Notes & Details",
+    "prompt_later": "Remind me later",
+    "show_full_notes": "Show full release notes",
+    "hide_full_notes": "Hide full release notes",
+    "no_highlights": "No key highlights specified for this release."
   },
   "toasts": {
     "saved": "Saved",
@@ -652,7 +693,29 @@
     "guest_updated": "Guest Network Updated",
     "gaming_enabled": "Gaming Mode Enabled",
     "gaming_disabled": "Gaming Mode Disabled",
-    "reboot_triggered": "Restart Triggered"
+    "reboot_triggered": "Restart Triggered",
+    "success_title": "Success",
+    "speedtest_error": "Speed Test Error",
+    "guest_network": "Guest Network",
+    "guest_enabled": "Guest network enabled.",
+    "guest_disabled": "Guest network disabled.",
+    "guest_error": "Guest Network Error",
+    "guest_saved_desc": "Credentials and QR code saved.",
+    "new_password": "New Password",
+    "password_generated": "Secure password generated.",
+    "network_switched": "Active Network Changed",
+    "network_switched_desc": "Successfully connected to network: {network}",
+    "network_switch_error": "Network Switch Error",
+    "operation_failed": "Operation failed",
+    "otp_request_failed": "OTP request failed",
+    "dns_save_error": "Error saving DNS settings",
+    "connection_failed": "Connection failed",
+    "sync_failed": "Synchronization failed.",
+    "mqtt_toggle_error": "Could not change MQTT state",
+    "logs_title": "System Logs",
+    "logs_toggle_error": "Could not update the logging state.",
+    "logs_cleared": "System logs cleared successfully ({count} records removed).",
+    "logs_clear_error": "Error while clearing the logs."
   },
   "health_modal": {
     "title": "Network Health Score & Diagnostics",
@@ -694,7 +757,9 @@
     "priority_high": "High",
     "priority_medium": "Medium",
     "priority_low": "Low",
-    "force_roaming_tip": "Tip: To encourage roaming to a closer mesh node, turn Wi-Fi off and back on on the client device."
+    "force_roaming_tip": "Tip: To encourage roaming to a closer mesh node, turn Wi-Fi off and back on on the client device.",
+    "rssi_on_node": " on ",
+    "suggested_label": "Suggested:"
   },
   "footer": {
     "text": "eero Custom Dashboard & Management Suite • Self-Hosted & Containerized on Docker • Zero Data Telemetry",
@@ -727,6 +792,7 @@
     "kpi_latency_jitter_sub": "Mean ping / Line variance",
     "kpi_mesh_density": "Mesh Device Density",
     "kpi_mesh_density_sub": "Active clients per beacon",
+    "clients_per_node": "clients/node",
     "chart_frequencies_title": "Wi-Fi Bands & Wired Distribution",
     "chart_frequencies_desc": "Breakdown of connected devices across radio spectrum and physical links",
     "chart_nodes_title": "Mesh Node Load",
@@ -758,7 +824,8 @@
     "export_btn_csv": "Download CSV",
     "export_btn_json": "Download JSON",
     "exporting": "Exporting...",
-    "export_success": "File exported successfully"
+    "export_success": "File exported successfully",
+    "clients_online": "clients online"
   },
   "eero_news": {
     "title": "eeroOS Release Notes & Community Updates",
@@ -797,7 +864,11 @@
     "show_older_releases": "Show older versions ({count} releases)",
     "show_recent_only": "Show recent releases only",
     "installed_on_network": "Installed on your network",
-    "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead."
+    "source_disclaimer": "Official source: eero Customer Support (Zendesk Help Center API). Data is cached periodically in the background with zero performance overhead.",
+    "load_error": "Unable to load eeroOS release notes",
+    "connection_error": "Connection error",
+    "reset_filters": "Reset Filters",
+    "read_more": "Read →"
   },
   "auth_local": {
     "login_title": "Administration Sign In",
@@ -864,7 +935,11 @@
     "back_to_list": "← Back to List",
     "loading_users": "Loading users...",
     "status_active": "Active",
-    "status_inactive": "Disabled"
+    "status_inactive": "Disabled",
+    "delete_user_title": "Delete User",
+    "role_admin_option": "Administrator (Admin)",
+    "role_operator_option": "Network Operator (Operator)",
+    "role_viewer_option": "Read Only (Viewer)"
   },
   "backup_modal": {
     "title": "Configuration Backup & Restore",
@@ -879,7 +954,8 @@
     "select_file": "Select backup file (.json)",
     "restore_warning": "Warning: Restoring will overwrite existing configurations with the data from the backup file.",
     "upload_btn": "Start Restore",
-    "close": "Close"
+    "close": "Close",
+    "restore_in_progress": "Restoring in progress..."
   },
   "schedules": {
     "title": "Parental Scheduling & Time Windows",
@@ -923,7 +999,16 @@
     "edit": "Edit",
     "modal_subtitle": "Configure the schedule's times and target",
     "rule_name_placeholder": "e.g. Evening Gaming Shutdown",
-    "all_nodes_reboot_desc": "Entire eero mesh network"
+    "all_nodes_reboot_desc": "Entire eero mesh network",
+    "name_required": "Enter a name for the rule",
+    "target_required": "Select a valid target for the rule",
+    "saved": "Time rule saved",
+    "save_error": "Unable to save the rule",
+    "delete_confirm": "Delete this schedule rule?",
+    "deleted": "Rule deleted",
+    "evaluated_title": "Evaluation Completed",
+    "evaluated_desc": "Active rules: {evaluated}, actions taken: {actions}",
+    "profile_devices_count": "{count} dev."
   },
   "resilience": {
     "stale_data_title": "Telemetry Data is Stale",
@@ -973,7 +1058,24 @@
     "title": "Check for Updates & Docker Container",
     "subtitle": "Docker Hub container status, installed version, socket status and 1-click update trigger",
     "checking": "Checking...",
-    "recheck_btn": "Recheck Releases"
+    "recheck_btn": "Recheck Releases",
+    "runtime_title": "Running On",
+    "runtime_environment": "Environment",
+    "runtime_branch": "Source Branch",
+    "runtime_host": "Host",
+    "runtime_platform": "Platform",
+    "runtime_unknown": "Not recorded",
+    "env_local": "Local (from source)",
+    "env_docker": "Docker Container",
+    "env_kubernetes": "Kubernetes Pod",
+    "runtime_source_checkout": "Branch and commit are read live from the local git checkout this server runs from.",
+    "runtime_source_build": "Branch and commit were recorded when this image was built.",
+    "runtime_source_missing": "This image was built without branch information. Rebuild with the GIT_BRANCH and GIT_COMMIT build arguments to show it here.",
+    "recheck_title": "Check Docker Hub and GitHub releases now",
+    "recheck_short": "Recheck",
+    "up_to_date_title": "Dashboard Up to Date",
+    "up_to_date_desc": "Installed version (v{installed}) matches or is ahead of public releases on Docker Hub / GitHub (v{latest}).",
+    "repull_btn": "⚡ Re-pull & Update Container"
   },
   "settings_export": {
     "title": "Data Export & Download Center",
@@ -1026,6 +1128,7 @@
     "file_size": "File Size",
     "oldest_event": "Oldest Event",
     "newest_event": "Newest Event",
+    "loading": "Loading system logs...",
     "no_logs": "No log records found matching current criteria.",
     "show_details": "Error Details",
     "hide_details": "Hide Details",
@@ -1039,7 +1142,382 @@
     "retention_short_30d": "1mo",
     "retention_days_placeholder": "Days",
     "clear_warning": "Warning: historical data in the log file and SQLite table cannot be recovered.",
-    "management": "Log Management & Diagnostics"
+    "management": "Log Management & Diagnostics",
+    "tz_local": "Local",
+    "tz_utc": "UTC",
+    "tz_toggle_tooltip": "Toggle between browser local time and UTC"
+  },
+  "permissions": {
+    "view_topology": "Mesh Topology & WAN View",
+    "view_clients": "Device Fleet View",
+    "view_analytics": "Analytics & SLA View",
+    "view_logs": "Logs & Audit View",
+    "action_reboot_nodes": "Reboot Mesh Nodes",
+    "action_pause_devices": "Pause Devices Wi-Fi",
+    "action_manage_rules": "Manage DHCP Rules & Port Forwarding",
+    "action_sync_dns": "Sync External DNS Hosts",
+    "action_manage_users": "Administer Users & RBAC",
+    "action_system_backup": "Backup & Disaster Recovery"
+  },
+  "charts": {
+    "download_mbps": "Download (Mbps)",
+    "upload_mbps": "Upload (Mbps)",
+    "ping_ms": "Ping (ms)",
+    "rssi_dbm": "RSSI Signal (dBm)",
+    "axis_throughput_mbps": "Throughput (Mbps)",
+    "axis_latency_ms": "Latency (ms)"
+  },
+  "common": {
+    "devices": "devices",
+    "anomalies": "anomalies",
+    "on": "ON",
+    "off": "OFF",
+    "on_plural": "ON",
+    "off_plural": "OFF"
+  },
+  "js": {
+    "set_theme": {
+      "theme_updated": "Theme Updated"
+    },
+    "format_node_status": {
+      "rebooting": "Rebooting",
+      "reconnecting": "Reconnecting..."
+    },
+    "set_tab": {
+      "login_required": "Login Required",
+      "please_sign_in_to": "Please sign in to access this section.",
+      "access_restricted": "Access Restricted",
+      "please_sign_in_as": "Please sign in as Admin to access user management.",
+      "please_sign_in_as_2": "Please sign in as Admin to access backup & restore."
+    },
+    "toggle_demo_mode": {
+      "mode_switched": "Mode Switched",
+      "demo_mode_active_your": "Demo Mode active. Your live session token is preserved.",
+      "live_network_active_real": "Live Network active. Real-time eero data loaded."
+    },
+    "request_otp": {
+      "code_sent": "Code Sent",
+      "enter_the_6_digit": "Enter the 6-digit verification code received via SMS/Email.",
+      "login_error": "Login Error"
+    },
+    "verify_otp": {
+      "otp_verification_failed": "OTP verification failed",
+      "login_successful": "Login Successful",
+      "connected_to_eero_mesh": "Connected to eero mesh network.",
+      "otp_error": "OTP Error"
+    },
+    "logout": {
+      "logged_out": "Logged Out",
+      "session_closed_successfully": "Session closed successfully."
+    },
+    "manual_refresh": {
+      "data_refreshed": "Data Refreshed",
+      "dashboard_synchronized_in_real": "Dashboard synchronized in real-time with eero network.",
+      "refresh_error": "Refresh Error"
+    },
+    "reboot_network": {
+      "are_you_sure_you": "Are you sure you want to reboot the entire eero mesh network? Internet connectivity will drop for 2-3 minutes.",
+      "network_reboot": "Network Reboot",
+      "reboot_command_sent": "Reboot command sent.",
+      "reboot_error": "Reboot Error"
+    },
+    "reboot_eero": {
+      "reboot_node": "Reboot node '{name}'?",
+      "node_reboot": "Node Reboot",
+      "rebooting_node": "Rebooting node {name}."
+    },
+    "toggle_eero_led": {
+      "failed_to_update_led": "Failed to update LED via eero API",
+      "led_updated": "LED Updated",
+      "led_error": "LED Error",
+      "led_state": "LED {name}: {state}"
+    },
+    "toggle_all_leds": {
+      "failed_to_update_all": "Failed to update all LEDs",
+      "all_leds": "All LEDs",
+      "all_leds_set_to": "All LEDs set to: {state}"
+    },
+    "format_first_seen_relative": {
+      "just_now": "Just now",
+      "m_ago": "{diffMin}m ago",
+      "h_ago": "{diffHours}h ago",
+      "yesterday": "Yesterday",
+      "d_ago": "{diffDays}d ago",
+      "w_ago": "{diffWeeks}w ago"
+    },
+    "toggle_device_sort": {
+      "invalid_ipv4_address_format": "Invalid IPv4 address format (e.g. 192.168.4.50).",
+      "ip_is_the_eero": "IP {targetIp} is the eero Gateway address.",
+      "ip_is_assigned_to": "IP {targetIp} is assigned to mesh node '{name}'.",
+      "this_device_is_already": "This device is already using IP {targetIp}. Click 'Reserve' to fix it permanently on eero.",
+      "ip_is_currently_reserved": "IP {targetIp} is currently reserved for '{description}'. Clicking 'Reserve' will reassign the reservation to this device.",
+      "ip_is_currently_assigned": "IP {targetIp} is currently assigned to '{custom_name}'. Clicking 'Reserve' will reserve it for this device.",
+      "ip_address_is_available": "IP address is available and ready for reservation."
+    },
+    "save_device_reservation": {
+      "ip_address_successfully_reserved": "IP address {ip} successfully reserved on eero.",
+      "ip_reservation_error": "IP Reservation Error"
+    },
+    "remove_device_reservation": {
+      "error_removing_ip_reservation": "Error removing IP reservation",
+      "static_ip_reservation_removed": "Static IP reservation removed. Device will use dynamic DHCP.",
+      "removal_error": "Removal Error"
+    },
+    "add_device_port_forward": {
+      "missing_ip": "Missing IP",
+      "device_must_have_a": "Device must have a valid IP address for port forwarding.",
+      "invalid_port": "Invalid Port",
+      "please_enter_valid_port": "Please enter valid port numbers between 1 and 65535.",
+      "error_creating_port_forward": "Error creating port forward",
+      "rule_for_port_created": "Rule for port {pFrom} created on eero.",
+      "port_forward_error": "Port Forward Error"
+    },
+    "delete_device_port_forward": {
+      "error_deleting_forwarding_rule": "Error deleting forwarding rule",
+      "port_forwarding_rule_deleted": "Port forwarding rule deleted from eero.",
+      "deletion_error": "Deletion Error"
+    },
+    "save_device_metadata": {
+      "device_metadata_and_category": "Device metadata and category saved successfully.",
+      "save_error": "Save Error"
+    },
+    "create_profile": {
+      "name_required": "Name Required",
+      "please_enter_a_profile": "Please enter a profile or user name.",
+      "unable_to_create_profile": "Unable to create profile",
+      "profile_created": "Profile Created",
+      "profile_created_successfully_on": "Profile '{name}' created successfully on eero.",
+      "profile_creation_error": "Profile Creation Error"
+    },
+    "delete_profile": {
+      "this_profile": "this profile",
+      "are_you_sure_you": "Are you sure you want to delete profile '{pName}'?",
+      "unable_to_delete_profile": "Unable to delete profile",
+      "profile_deleted": "Profile Deleted",
+      "profile_removed_from_eero": "Profile '{pName}' removed from eero.",
+      "deletion_error": "Deletion Error"
+    },
+    "assign_device_to_profile": {
+      "profile_assignment_error": "Profile assignment error",
+      "profile_updated": "Profile Updated",
+      "device_removed_from_profile": "Device removed from profile successfully.",
+      "device_assigned_to_profile": "Device assigned to profile successfully.",
+      "assignment_error": "Assignment Error"
+    },
+    "trigger_auto_update": {
+      "pulling_new_docker_image": "Pulling new Docker image...",
+      "restarting_container_auto_reconnecting": "Restarting container... Auto-reconnecting..."
+    },
+    "poll_for_health_and_reload": {
+      "update_completed_reloading_dashboard": "Update completed! Reloading dashboard..."
+    },
+    "copy_to_clipboard": {
+      "clipboard": "Clipboard",
+      "copied_to_clipboard": "Copied to clipboard!"
+    },
+    "fallback_copy_text": {
+      "copy_failed": "Copy failed"
+    },
+    "copy_guest_credentials": {
+      "wi_fi_open_network": "Wi-Fi: {name}\n(Open network, no password)",
+      "guest_wi_fi_credentials": "Guest Wi-Fi credentials copied to clipboard!"
+    },
+    "copy_guest_password": {
+      "open_network": "Open network",
+      "guest_network_is_open": "Guest network is open: no password required.",
+      "guest_password_copied_to": "Guest password copied to clipboard!"
+    },
+    "toggle_focus_mode": {
+      "gaming_mode_activated": "Gaming Mode Activated",
+      "gaming_mode_deactivated": "Gaming Mode Deactivated",
+      "focus_mode_error": "Focus Mode Error"
+    },
+    "save_night_mode": {
+      "night_mode": "Night Mode",
+      "led_schedule_saved_successfully": "LED schedule saved successfully."
+    },
+    "save_notification_settings": {
+      "notifications_saved": "Notifications Saved",
+      "alert_channel_settings_updated": "Alert channel settings updated."
+    },
+    "test_notifications": {
+      "test_sent": "Test Sent",
+      "test_error": "Test Error"
+    },
+    "add_dns_instance": {
+      "new_instance_added": "New Instance Added"
+    },
+    "remove_dns_instance": {
+      "are_you_sure_you": "Are you sure you want to remove instance '{name}'?",
+      "instance_removed": "Instance Removed"
+    },
+    "save_dns_settings": {
+      "multi_dns_settings_saved": "Multi-DNS settings saved successfully."
+    },
+    "test_dns_instance": {
+      "connection_test_succeeded": "Connection Test Succeeded",
+      "test_failed": "Test Failed"
+    },
+    "test_all_dns": {
+      "all_tests_succeeded": "All Tests Succeeded",
+      "all_dns_instances_are": "All {total_tested} DNS instances are operational!",
+      "some_tests_failed": "Some Tests Failed",
+      "global_test_error": "Global Test Error"
+    },
+    "sync_dns_instance": {
+      "sync_succeeded": "Sync Succeeded",
+      "sync_error": "Sync Error",
+      "completed": "Synchronization completed successfully."
+    },
+    "sync_all_dns": {
+      "global_sync_completed": "Global Sync Completed",
+      "completed": "All DNS instances synchronized successfully."
+    },
+    "save_ad_guard_settings": {
+      "settings_saved_successfully": "Settings saved successfully.",
+      "adguard_error": "AdGuard Error",
+      "could_not_save_settings": "Could not save settings."
+    },
+    "test_ad_guard_connection": {
+      "could_not_connect_to": "Could not connect to AdGuard Home"
+    },
+    "sync_ad_guard_now": {
+      "sync_completed": "Sync Completed",
+      "synchronization_failed": "Synchronization failed.",
+      "completed": "AdGuard synchronization completed successfully."
+    },
+    "save_mqtt_settings": {
+      "mqtt_configuration": "MQTT Configuration",
+      "mqtt_settings_saved_successfully": "MQTT settings saved successfully!",
+      "mqtt_error": "MQTT Error",
+      "failed_to_save_mqtt": "Failed to save MQTT settings."
+    },
+    "test_mqtt_connection": {
+      "mqtt_connection_test": "MQTT Connection Test",
+      "connection_to_broker_succeeded": "Connection to broker succeeded!",
+      "mqtt_test_failed": "MQTT Test Failed",
+      "could_not_connect_to": "Could not connect to MQTT broker.",
+      "mqtt_test_error": "MQTT Test Error"
+    },
+    "toggle_mqtt_enabled": {
+      "mqtt_integration": "MQTT Integration",
+      "mqtt_enabled_and_started": "MQTT enabled and started.",
+      "mqtt_disabled": "MQTT disabled."
+    },
+    "digest_hour_badge_text": {
+      "text": "{formatted}"
+    },
+    "save_digest_settings": {
+      "scheduled_digest_enabled": "Scheduled Digest Enabled",
+      "scheduled_digest_disabled": "Scheduled Digest Disabled",
+      "automatic_daily_report_at": "Automatic daily report at {hStr} is enabled.",
+      "automatic_daily_report_dispatch": "Automatic daily report dispatch has been paused.",
+      "could_not_save_setting": "Could not save setting."
+    },
+    "trigger_digest": {
+      "digest_sent": "Digest Sent",
+      "digest_generated_and_sent": "Digest generated and sent to active channels.",
+      "digest_sending_error": "Digest Sending Error",
+      "could_not_send_digest": "Could not send digest.",
+      "digest_error": "Digest Error"
+    },
+    "format_devices_tooltip_after_body": {
+      "devices": "Devices (",
+      "and_more": "  ... and {length} more"
+    },
+    "render_frequencies_chart": {
+      "connected_clients": " Connected Clients: "
+    },
+    "render_node_load_chart": {
+      "connected_clients": "Connected Clients: "
+    },
+    "export_data": {
+      "data_export": "Data Export",
+      "file_downloaded_successfully": "File {filename} downloaded successfully.",
+      "export_error": "Export Error"
+    },
+    "perform_admin_setup": {
+      "username_must_be_at": "Username must be at least 3 characters.",
+      "password_must_be_at": "Password must be at least 6 characters.",
+      "passwords_do_not_match": "Passwords do not match.",
+      "administrator_setup_complete": "Administrator Setup Complete",
+      "welcome": "Welcome ",
+      "setup_failed": "Setup failed"
+    },
+    "perform_local_login": {
+      "username_and_password_required": "Username and password required",
+      "login_successful": "Login Successful",
+      "invalid_credentials": "Invalid credentials"
+    },
+    "perform_local_logout": {
+      "local_session_terminated": "Local session terminated"
+    },
+    "init_inactivity_watchdog": {
+      "session_expired": "Session Expired",
+      "automatically_logged_out_after": "Automatically logged out after {timeout} minutes of inactivity."
+    },
+    "save_session_timeout": {
+      "setting_saved": "Setting Saved",
+      "timeout_set": "Inactivity timeout set to {val} minutes.",
+      "auto_logout_disabled": "Automatic logout disabled."
+    },
+    "start_create_user": {
+      "authentication_required": "Authentication Required",
+      "log_in_as_administrator": "Log in as administrator to create new users."
+    },
+    "format_user_permissions_count": {
+      "all_active": "All ({total} active)",
+      "active": "active"
+    },
+    "save_local_user": {
+      "log_in_as_administrator": "Log in as administrator to save users.",
+      "username_is_required": "Username is required",
+      "user_saved_successfully": "User saved successfully",
+      "operation_failed": "Operation failed"
+    },
+    "delete_local_user": {
+      "are_you_sure_you": "Are you sure you want to delete user \"{username}\"?",
+      "user_deleted": "User {username} deleted",
+      "failed_to_delete_user": "Failed to delete user"
+    },
+    "download_backup": {
+      "error_during_backup_export": "Error during backup export",
+      "backup_exported": "Backup Exported",
+      "json_file_download_completed": "JSON file download completed",
+      "backup_error": "Backup Error"
+    },
+    "upload_backup": {
+      "configuration_restored_successfully": "Configuration restored successfully!",
+      "restore_completed": "Restore Completed",
+      "data_restored_successfully": "Data restored successfully",
+      "unable_to_restore_file": "Unable to restore file",
+      "restore_error": "Restore Error",
+      "restore_error_2": "Restore error",
+      "parsing_error": "Parsing error",
+      "file_error": "File Error",
+      "selected_file_is_not": "Selected file is not valid JSON"
+    },
+    "trigger_db_compaction": {
+      "database_compacted": "Database Compacted",
+      "compaction_and_optimization_completed": "Compaction and optimization completed successfully."
+    },
+    "format_schedule_target": {
+      "user": "User: ",
+      "led": "LED: ",
+      "led_all_nodes": "LED: All Nodes",
+      "reboot": "Reboot: ",
+      "reboot_entire_mesh": "Reboot: Entire Mesh",
+      "category": "Category: ",
+      "device": "Device: ",
+      "entire_network": "Entire Network"
+    },
+    "format_schedule_action": {
+      "pause_connection": "Pause Connection",
+      "resume_connection": "Resume Connection",
+      "led_off": "LED Off",
+      "led_on": "LED On",
+      "scheduled_reboot": "Scheduled Reboot"
+    }
   }
 }
 

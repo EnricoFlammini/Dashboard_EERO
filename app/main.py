@@ -1,3 +1,4 @@
+import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -10,7 +11,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app import i18n
+from app.i18n import log_event
 from app.config import settings
+from app.services.demo_i18n import localize_demo_payload
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
     metrics, network, profiles, schedules, speedtest, system, users
@@ -32,7 +36,7 @@ logger = logging.getLogger("eero_dashboard")
 async def lifespan(app: FastAPI):
     """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
     logger.info("=" * 60)
-    logger.info(f"Avvio {settings.app_name} v{settings.app_version}")
+    logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     logger.info(f"Data directory: {settings.data_path.resolve()}")
     logger.info("=" * 60)
 
@@ -41,6 +45,16 @@ async def lifespan(app: FastAPI):
 
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
+
+    # 1.0 System/alert language for messages produced outside of HTTP requests.
+    # DASHBOARD_LANG is the default; a language saved from the UI takes precedence.
+    from app.services.notifications import notification_service
+    saved_lang = await db_service.get_setting("system_language", None)
+    i18n.set_system_language(await notification_service.get_language())
+    logger.info(
+        f"Language: {i18n.get_system_language()} "
+        f"(DASHBOARD_LANG={settings.dashboard_lang}, saved setting={saved_lang or 'none'})"
+    )
 
     # 1.1 Inizializzazione Log Service & SQLite Logger (v1.6.0 Module 4)
     from app.services.log_service import log_service
@@ -63,14 +77,14 @@ async def lifespan(app: FastAPI):
     yield
 
     # Chiusura pulita dei processi in background
-    logger.info("Chiusura in corso dei servizi in background...")
+    log_event(logger, logging.INFO, "log_system.shutdown_started")
     await mqtt_service.stop()
     await retention_worker.stop()
     await background_poller.stop()
     await eero_client.close()
     disable_dns_cache()
     await log_service.stop()
-    logger.info("Applicazione terminata correttamente.")
+    log_event(logger, logging.INFO, "log_system.shutdown_completed")
 
 
 # Inizializzazione FastAPI
@@ -122,11 +136,59 @@ def _is_cross_origin_write(request: Request) -> bool:
 
 
 @app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Aggiunge header HTTP di sicurezza difensivi raccomandati da OWASP."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    return response
+
+
+@app.middleware("http")
 async def block_cross_origin_writes(request: Request, call_next):
     """Rifiuta POST/PUT/PATCH/DELETE inviati da pagine di altri siti: le POST senza body non passano dal preflight CORS."""
     if request.method in ("POST", "PUT", "PATCH", "DELETE") and _is_cross_origin_write(request):
-        return JSONResponse(status_code=403, content={"detail": "Cross-origin request blocked"})
+        return JSONResponse(status_code=403, content={"detail": i18n.tr("common.cross_origin_blocked")})
     return await call_next(request)
+
+
+# The Demo Mode simulator ships its sample names in Italian; readers of that language get the payload untouched.
+DEMO_SOURCE_LANGUAGE = "it"
+
+
+@app.middleware("http")
+async def localize_demo_payloads(request: Request, call_next):
+    """
+    Demo Mode only: translates the simulator's Italian sample names (nodes, devices, profiles) in
+    JSON API responses for non-Italian readers. Live-network responses are passed through untouched.
+    """
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/") or not eero_client.is_demo_mode:
+        return response
+    lang = i18n.normalize_language(request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")) or i18n.get_system_language()
+    if lang == DEMO_SOURCE_LANGUAGE or not response.headers.get("content-type", "").startswith("application/json"):
+        return response
+    body = b"".join([chunk async for chunk in response.body_iterator])
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return Response(content=body, status_code=response.status_code, headers=dict(response.headers), media_type=response.media_type)
+    localized = json.dumps(localize_demo_payload(payload, lang), ensure_ascii=False).encode("utf-8")
+    headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}
+    return Response(content=localized, status_code=response.status_code, headers=headers, media_type="application/json")
+
+
+@app.middleware("http")
+async def bind_request_language(request: Request, call_next):
+    """Binds the caller's UI language so API messages come back in that language."""
+    lang = request.headers.get("x-dashboard-lang") or request.headers.get("accept-language")
+    token = i18n.set_request_language(lang)
+    try:
+        return await call_next(request)
+    finally:
+        i18n.reset_request_language(token)
 
 
 # Definizione Percorsi Static e Template
@@ -214,6 +276,8 @@ async def index_page(request: Request):
             "app_version": settings.app_version,
             "build_number": settings.build_number,
             "full_version": settings.full_version,
+            "default_language": i18n.get_system_language(),
+            "supported_languages": list(i18n.SUPPORTED_LANGUAGES),
             # Stato iniziale locale (nessuna chiamata cloud): evita il flash del modale di login al refresh
             "initial_authenticated": eero_client.is_authenticated,
         }
