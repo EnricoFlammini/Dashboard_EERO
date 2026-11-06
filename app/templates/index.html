@@ -1291,7 +1291,7 @@
             </button>
 
             <!-- Column Customizer Dropdown (Desktop Only >= md - Issue #60) -->
-            <div class="hidden md:block md:flex-1 relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
+            <div x-show="deviceViewMode === 'list'" class="hidden md:block md:flex-1 relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
               <button 
                 type="button"
                 @click.stop="toggleDeviceDropdown('columns')"
@@ -2239,10 +2239,12 @@
                             :title="can('action_edit_devices') ? t('devices.new_badge_click_hint') : ''" x-text="t('devices.new_badge')"></span>
                     </template>
                   </div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-500 truncate" x-text="formatCategoryName(dev.category)"></div>
+                  <div class="flex items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-500 min-w-0">
+                    <span class="truncate" x-text="formatCategoryName(dev.category)"></span>
+                    <span class="font-mono text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="dev.mac || dev.mac_address"></span>
+                  </div>
                 </div>
                 <div class="shrink-0 flex items-center gap-1.5">
-                  <span x-show="!dev.connected" class="px-2 py-0.5 rounded-full text-[9px] font-extrabold border bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-400 dark:border-slate-700" x-text="t('devices.status_offline')"></span>
                   <button type="button" @click.stop="openDeviceModal(dev)" :title="t('devices.edit_rules')" :aria-label="t('devices.edit_rules')"
                           class="inline-flex items-center justify-center p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -2251,14 +2253,16 @@
               </div>
 
               <!-- Address: IP + Static/DHCP on the left, MAC on the right -->
-              <div class="flex items-center gap-2 font-mono min-w-0" :title="dev.mac || dev.mac_address">
+              <div class="flex items-center gap-2 font-mono min-w-0" >
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="text-xs font-bold text-slate-900 dark:text-slate-200 shrink-0" x-text="dev.ip || '---'"></span>
                   <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider border shrink-0"
                         :class="dev.is_static ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border-slate-400 dark:border-slate-600'"
                         x-text="dev.is_static ? t('devices.badge_static') : t('devices.badge_dhcp')"></span>
                 </div>
-                <span class="text-[9px] text-slate-500 dark:text-slate-500 truncate ml-auto" x-text="(dev.mac || dev.mac_address || '').slice(-8)"></span>
+                <span class="ml-auto shrink-0 px-2 py-0.5 rounded-full text-[9px] font-extrabold border"
+                      :class="dev.connected ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-400 dark:border-slate-700'"
+                      x-text="dev.connected ? t('devices.status_online') : t('devices.status_offline')"></span>
               </div>
 
               <!-- Connection + flag badges on one wrapping row -->
@@ -2272,6 +2276,9 @@
                     <span class="rssi-bar" aria-hidden="true"><template x-for="n in 5" :key="n"><span :style="'height:' + (n * 20) + '%;' + (n <= deviceSignalBars(dev) ? 'background-color:#10b981' : '')"></span></template></span>
                     <span x-text="dev.signal_rssi + ' dBm'"></span>
                   </span>
+                </template>
+                <template x-if="dev.wireless && (dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate))">
+                  <span class="font-mono text-slate-600 dark:text-slate-400" x-text="(dev.phy_rate || dev.connectivity.rx_bitrate).replace(' MBit/s', ' Mb').replace(' Mbit/s', ' Mb')"></span>
                 </template>
                 <template x-if="!dev.wireless">
                   <span class="font-mono font-bold text-emerald-700 dark:text-emerald-400" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired')"></span>
@@ -2303,6 +2310,7 @@
                 <div class="min-w-0" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0)">
                   <div class="flex items-baseline justify-between gap-1 text-[11px]">
                     <span class="font-bold text-sky-600 dark:text-sky-400 truncate"><span class="device-arrow-down">↓</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.download_rate_mbps) : '0 Mbps'" x-effect="dev.download_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.download_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.rx_bytes || 0)"></span>
                     
                   </div>
                   <div class="device-activity-track mt-1"><div class="device-activity-fill is-down" :style="'width:' + (dev.connected ? deviceRatePercent(dev.download_rate_mbps) : 0) + '%'"></div></div>
@@ -2310,6 +2318,7 @@
                 <div class="min-w-0" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0)">
                   <div class="flex items-baseline justify-between gap-1 text-[11px]">
                     <span class="font-bold text-emerald-600 dark:text-emerald-400 truncate"><span class="device-arrow-up">↑</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.upload_rate_mbps) : '0 Mbps'" x-effect="dev.upload_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.upload_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.tx_bytes || 0)"></span>
                     
                   </div>
                   <div class="device-activity-track mt-1"><div class="device-activity-fill is-up" :style="'width:' + (dev.connected ? deviceRatePercent(dev.upload_rate_mbps) : 0) + '%'"></div></div>
