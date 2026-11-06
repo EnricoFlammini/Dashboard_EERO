@@ -38,6 +38,10 @@ class NotificationService:
             "pushover_enabled": True,
             "pushover_user_key": "uFakeDemoPushoverUserKey",
             "pushover_api_token": "aFakeDemoPushoverToken",
+            "ntfy_enabled": True,
+            "ntfy_url": "https://ntfy.sh",
+            "ntfy_topic": "eero-demo-mesh-alerts",
+            "ntfy_token": "",
             "system_language": settings.dashboard_lang,
         }
 
@@ -75,6 +79,7 @@ class NotificationService:
         tg_tok = all_s.get("telegram_bot_token", settings.telegram_bot_token)
         dc_url = all_s.get("discord_webhook_url", settings.discord_webhook_url)
         po_key = all_s.get("pushover_user_key", settings.pushover_user_key)
+        ntfy_top = all_s.get("ntfy_topic", settings.ntfy_topic)
         return {
             "telegram_enabled": all_s.get("telegram_alerts_enabled", "true" if tg_tok else "false").lower() in ("true", "1", "yes"),
             "telegram_bot_token": tg_tok,
@@ -86,6 +91,10 @@ class NotificationService:
             "pushover_enabled": all_s.get("pushover_alerts_enabled", "true" if po_key else "false").lower() in ("true", "1", "yes"),
             "pushover_user_key": po_key,
             "pushover_api_token": all_s.get("pushover_api_token", settings.pushover_api_token),
+            "ntfy_enabled": all_s.get("ntfy_alerts_enabled", "true" if ntfy_top else "false").lower() in ("true", "1", "yes"),
+            "ntfy_url": all_s.get("ntfy_url", settings.ntfy_url) or "https://ntfy.sh",
+            "ntfy_topic": ntfy_top,
+            "ntfy_token": all_s.get("ntfy_token", settings.ntfy_token),
             "system_language": all_s.get("system_language", settings.dashboard_lang),
         }
 
@@ -101,6 +110,10 @@ class NotificationService:
         pushover_enabled: bool = False,
         pushover_user_key: Optional[str] = None,
         pushover_api_token: Optional[str] = None,
+        ntfy_enabled: bool = False,
+        ntfy_url: Optional[str] = None,
+        ntfy_topic: Optional[str] = None,
+        ntfy_token: Optional[str] = None,
         language: Optional[str] = None
     ) -> None:
         """Salva le impostazioni di notifica per tutti i canali."""
@@ -122,6 +135,13 @@ class NotificationService:
                 self._demo_settings["pushover_user_key"] = pushover_user_key.strip()
             if pushover_api_token is not None:
                 self._demo_settings["pushover_api_token"] = pushover_api_token.strip()
+            self._demo_settings["ntfy_enabled"] = ntfy_enabled
+            if ntfy_url is not None:
+                self._demo_settings["ntfy_url"] = ntfy_url.strip() or "https://ntfy.sh"
+            if ntfy_topic is not None:
+                self._demo_settings["ntfy_topic"] = ntfy_topic.strip()
+            if ntfy_token is not None:
+                self._demo_settings["ntfy_token"] = ntfy_token.strip()
             if language is not None and language.lower().strip() in i18n.SUPPORTED_LANGUAGES:
                 self._demo_settings["system_language"] = language.lower().strip()
                 i18n.set_system_language(language)
@@ -143,6 +163,13 @@ class NotificationService:
             await db_service.set_setting("pushover_user_key", pushover_user_key.strip())
         if pushover_api_token is not None:
             await db_service.set_setting("pushover_api_token", pushover_api_token.strip())
+        await db_service.set_setting("ntfy_alerts_enabled", "true" if ntfy_enabled else "false")
+        if ntfy_url is not None:
+            await db_service.set_setting("ntfy_url", ntfy_url.strip() or "https://ntfy.sh")
+        if ntfy_topic is not None:
+            await db_service.set_setting("ntfy_topic", ntfy_topic.strip())
+        if ntfy_token is not None:
+            await db_service.set_setting("ntfy_token", ntfy_token.strip())
         if language is not None and language.lower().strip() in i18n.SUPPORTED_LANGUAGES:
             await db_service.set_setting("system_language", language.lower().strip())
             i18n.set_system_language(language)
@@ -313,8 +340,53 @@ class NotificationService:
             log_event(logger, logging.ERROR, "log_ops.pushover_error", error=str(e))
             return False
 
+    async def send_ntfy_message(
+        self,
+        title: str,
+        message: str,
+        priority: int = 3,
+        ignore_enabled: bool = False
+    ) -> bool:
+        """Invia una notifica push tramite server Ntfy (ntfy.sh o istanza self-hosted)."""
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            if not ignore_enabled and not self._demo_settings.get("ntfy_enabled", True):
+                return False
+            log_event(logger, logging.INFO, "log_ops.ntfy_demo_sent", title=title)
+            return True
+
+        ntfy_url = (await db_service.get_setting("ntfy_url", settings.ntfy_url) or "https://ntfy.sh").strip().rstrip("/")
+        ntfy_topic = (await db_service.get_setting("ntfy_topic", settings.ntfy_topic) or "").strip().lstrip("/")
+        ntfy_token = (await db_service.get_setting("ntfy_token", settings.ntfy_token) or "").strip()
+        if not ntfy_url or not ntfy_topic:
+            return False
+
+        if not ignore_enabled:
+            default_enabled = "true" if ntfy_topic else "false"
+            enabled = await db_service.get_setting("ntfy_alerts_enabled", default_enabled)
+            if enabled.lower() not in ("true", "1", "yes"):
+                return False
+
+        clean_msg = message.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "").replace("<i>", "").replace("</i>", "")
+        headers: Dict[str, str] = {}
+        if ntfy_token:
+            headers["Authorization"] = f"Bearer {ntfy_token}"
+        payload = {
+            "topic": ntfy_topic,
+            "title": title,
+            "message": clean_msg,
+            "priority": priority,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(ntfy_url, json=payload, headers=headers)
+                return resp.status_code in (200, 201, 202, 204)
+        except Exception as e:
+            log_event(logger, logging.ERROR, "log_ops.ntfy_error", error=str(e))
+            return False
+
     async def _dispatch_all_channels(self, event_type: str, title: str, text: str, db_msg: str, data: Dict[str, Any], color: int = 0x38bdf8):
-        """Helper to dispatch across SQLite alerts, Telegram, Webhook, Discord and Pushover."""
+        """Helper to dispatch across SQLite alerts, Telegram, Webhook, Discord, Pushover and Ntfy."""
         try:
             await db_service.save_alert(
                 alert_type=event_type,
@@ -343,6 +415,11 @@ class NotificationService:
             await self.send_pushover_message(title=title, message=db_msg)
         except Exception as e:
             log_event(logger, logging.ERROR, "log_ops.pushover_alert_error", error=str(e))
+
+        try:
+            await self.send_ntfy_message(title=title, message=db_msg)
+        except Exception as e:
+            log_event(logger, logging.ERROR, "log_ops.ntfy_alert_error", error=str(e))
 
     async def notify_new_device(self, device: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)

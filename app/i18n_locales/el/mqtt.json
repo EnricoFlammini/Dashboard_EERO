@@ -1,0 +1,5 @@
+{
+  "test_ok_simulated": "Connected to MQTT broker ({broker}).",
+  "aiomqtt_missing": "The aiomqtt module is not available in the container. Install aiomqtt to connect to the broker.",
+  "test_ok": "Connected to MQTT broker ({broker}) successfully."
+}

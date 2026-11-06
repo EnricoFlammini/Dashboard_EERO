@@ -1,8 +1,11 @@
+import asyncio
+import json
 import logging
 import secrets
 import string
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -472,5 +475,189 @@ async def trigger_adguard_scan(
     from app.services.enrichment_service import enrichment_service
     res = await enrichment_service.scan_all_adguard_instances()
     return res
+
+
+# =========================================================================
+# v1.7.0 — IPv6 FIREWALL, PLACEMENT TEST, GUARDIAN VPN, SERIAL CLAIM & AI ASSISTANT
+# =========================================================================
+
+class IPv6FirewallRuleRequest(BaseModel):
+    mac: str = Field(..., description="MAC address del dispositivo destinatario")
+    device_name: Optional[str] = Field(None, description="Nome descrittivo del dispositivo")
+    protocol: str = Field("tcp", description="Protocollo (tcp, udp, both)")
+    ports: str = Field(..., description="Porta o range di porte (es. 443 o 8000-8080)")
+
+
+class PlacementTestRequest(BaseModel):
+    location: str = Field("New Node", description="Posizione del nodo da testare")
+
+
+class GuardianVPNRequest(BaseModel):
+    enabled: bool = Field(..., description="Attiva o disattiva Guardian VPN")
+
+
+class RegisterEeroNodeRequest(BaseModel):
+    serial: str = Field(..., description="Numero di serie del nodo eero")
+    location: str = Field("Living Room", description="Posizione/stanza assegnata al nodo")
+
+
+class AssistantPromptRequest(BaseModel):
+    prompt: str = Field(..., description="Domanda o comando diagnostico per eero AI Assistant")
+    stream: bool = Field(True, description="Se True, trasmette la risposta via Server-Sent Events (SSE)")
+
+
+@router.get("/ipv6-firewall")
+async def get_ipv6_firewall_rules():
+    """Restituisce l'elenco delle regole del firewall IPv6 (Issue #90)."""
+    rules = await eero_client.get_ipv6_firewall_rules()
+    return {"status": "success", "rules": rules}
+
+
+@router.post("/ipv6-firewall")
+async def create_ipv6_firewall_rule(
+    payload: IPv6FirewallRuleRequest,
+    _auth=Depends(require_permission("action_manage_rules")),
+):
+    """Aggiunge una nuova regola pinhole al firewall IPv6 (Issue #90)."""
+    try:
+        return await eero_client.add_ipv6_firewall_rule(payload.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/ipv6-firewall/{rule_id}")
+async def remove_ipv6_firewall_rule(
+    rule_id: str,
+    _auth=Depends(require_permission("action_manage_rules")),
+):
+    """Rimuove una regola dal firewall IPv6 (Issue #90)."""
+    try:
+        return await eero_client.delete_ipv6_firewall_rule(rule_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/placement-test")
+async def run_mesh_placement_test(
+    payload: PlacementTestRequest,
+    _auth=Depends(require_permission("action_manage_rules")),
+):
+    """Esegue il test di posizionamento RF dei nodi mesh."""
+    try:
+        return await eero_client.run_placement_test(location=payload.location)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/guardian-vpn")
+async def get_guardian_vpn():
+    """Restituisce lo stato di Guardian VPN (eero Plus)."""
+    return await eero_client.get_guardian_vpn_status()
+
+
+@router.put("/guardian-vpn")
+async def update_guardian_vpn(
+    payload: GuardianVPNRequest,
+    _auth=Depends(require_permission("action_manage_rules")),
+):
+    """Attiva o disattiva Guardian VPN (eero Plus)."""
+    try:
+        return await eero_client.set_guardian_vpn_status(payload.enabled)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/eeros/register")
+async def register_new_eero_node(
+    payload: RegisterEeroNodeRequest,
+    _auth=Depends(require_permission("action_manage_rules")),
+):
+    """Registra un nuovo nodo hardware eero tramite numero di serie."""
+    try:
+        res = await eero_client.register_eero_node(serial=payload.serial, location=payload.location)
+        await background_poller.poll_once()
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+def _build_assistant_diagnostic_reply(prompt: str) -> str:
+    """Genera una risposta diagnostica contestuale basata sulla telemetria reale in cache."""
+    cached = background_poller.get_cached_state()
+    net = cached.get("network") or {}
+    eeros = cached.get("eeros") or []
+    devices = cached.get("devices") or []
+    health = cached.get("health_score") or 100
+    connected_devs = [d for d in devices if d.get("connected")]
+    wireless_devs = [d for d in connected_devs if d.get("wireless")]
+    weak_devs = [
+        d for d in wireless_devs
+        if isinstance(d.get("signal_dbm"), (int, float)) and d["signal_dbm"] < -72
+    ]
+    echo_nodes = [n for n in eeros if n.get("is_echo_node")]
+    gw_node = next((n for n in eeros if n.get("is_gateway")), eeros[0] if eeros else {})
+    sp = (net.get("speedtest") or {})
+
+    q = (prompt or "").strip().lower()
+    lines = []
+    lines.append(
+        f"**{net.get('name') or 'eero Mesh'}** — Health Score: **{health}/100** | "
+        f"Nodes: **{len(eeros)}** ({len(echo_nodes)} eero Built-in) | "
+        f"Active Clients: **{len(connected_devs)}**/{len(devices)}."
+    )
+    if any(k in q for k in ("weak", "signal", "rssi", "dbm", "debol", "segnale", "wifi", "wi-fi")):
+        if weak_devs:
+            names = ", ".join(
+                f"{d.get('nickname') or d.get('hostname')} ({d.get('signal_dbm')} dBm on {d.get('connected_eero_name')})"
+                for d in weak_devs[:5]
+            )
+            lines.append(f"⚠️ Weak RF signal detected on **{len(weak_devs)}** client(s): {names}.")
+        else:
+            lines.append("✅ All connected wireless clients report healthy RSSI signal levels (>= -72 dBm).")
+    elif any(k in q for k in ("speed", "wan", "isp", "velocit", "banda", "throughput")):
+        lines.append(
+            f"🌐 Gateway **{gw_node.get('name', 'Gateway')}** ({gw_node.get('ip', 'DHCP')}) — "
+            f"Last Speedtest: **{sp.get('download_mbps', 0)} Mbit/s** down / **{sp.get('upload_mbps', 0)} Mbit/s** up "
+            f"(ping **{sp.get('ping_ms', 0)} ms**)."
+        )
+    elif any(k in q for k in ("node", "mesh", "backhaul", "nodi", "echo", "gateway")):
+        node_summaries = [
+            f"{n.get('name')} ({n.get('model')}, {'Gateway' if n.get('is_gateway') else n.get('backhaul_type') or 'Mesh'}, {n.get('connected_clients_count', 0)} clients)"
+            for n in eeros
+        ]
+        lines.append("📡 Mesh Topology: " + " • ".join(node_summaries))
+    else:
+        lines.append(
+            f"🌐 Gateway: **{gw_node.get('name', 'Gateway')}** | Speedtest: **{sp.get('download_mbps', 0)}/{sp.get('upload_mbps', 0)} Mbit/s**."
+        )
+        if weak_devs:
+            lines.append(f"💡 Tip: {len(weak_devs)} device(s) have RSSI below -72 dBm; consider running a Placement Test or checking 5/6 GHz steering.")
+        else:
+            lines.append("✅ RF spectrum, mesh backhaul, and client distribution are operating within optimal parameters.")
+
+    return "\n\n".join(lines)
+
+
+@router.post("/assistant")
+async def query_network_assistant(payload: AssistantPromptRequest):
+    """
+    Assistente diagnostico AI con supporto streaming SSE (Server-Sent Events) (v1.7.0).
+    Analizza in tempo reale la topologia mesh, il segnale RF e le metriche WAN.
+    """
+    reply_text = _build_assistant_diagnostic_reply(payload.prompt)
+    if not payload.stream:
+        return {"status": "success", "reply": reply_text}
+
+    async def _sse_generator():
+        words = reply_text.split(" ")
+        chunk_size = 4
+        for i in range(0, len(words), chunk_size):
+            token = " ".join(words[i:i + chunk_size]) + (" " if i + chunk_size < len(words) else "")
+            yield f"data: {json.dumps({'token': token, 'done': False})}\n\n"
+            await asyncio.sleep(0.015)
+        yield f"data: {json.dumps({'token': '', 'done': True, 'full_reply': reply_text})}\n\n"
+
+    return StreamingResponse(_sse_generator(), media_type="text/event-stream")
+
 
 

@@ -42,8 +42,11 @@ def _cached_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
             else:
                 del _dns_cache[cache_key]
 
-    # Cache miss: perform genuine socket resolution
+    # Cache miss: perform genuine socket resolution (prefer IPv4 over IPv6 when family=AF_UNSPEC
+    # so Docker containers on IPv4-only bridge networks do not stall on unreachable AAAA records - Issue #98)
     result = _orig_getaddrinfo(host, port, family, type, proto, flags)
+    if isinstance(result, list) and len(result) > 1 and family == 0:
+        result = sorted(result, key=lambda item: 0 if item[0] == socket.AF_INET else 1)
 
     with _dns_lock:
         _stats["misses"] += 1

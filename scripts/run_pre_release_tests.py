@@ -2209,7 +2209,7 @@ async def run_all_tests():
         # 7. Test Manuale In-App & Package Versioning (v1.6.0)
         import importlib
         app_pkg = importlib.import_module("app")
-        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.6.2", f"app.__version__ è '1.6.2' (trovato: {getattr(app_pkg, '__version__', None)})")
+        runner.assert_true(getattr(app_pkg, "__version__", None) == "1.7.0", f"app.__version__ è '1.7.0' (trovato: {getattr(app_pkg, '__version__', None)})")
         res_man_it = await client.get("/api/manual/sections?lang=it")
         runner.assert_true(res_man_it.status_code == 200, "GET /api/manual/sections?lang=it risponde HTTP 200")
         runner.assert_true(res_man_it.json().get("count") >= 10, f"Manuale IT contiene almeno 10 sezioni complete (trovate: {res_man_it.json().get('count')})")
@@ -5369,7 +5369,7 @@ async def run_all_tests():
 
             sw_js_path = Path("app/static/sw.js")
             sw_js_content = sw_js_path.read_text(encoding="utf-8")
-            runner.assert_true("eero-dashboard-v1.6.2" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.6.2 per invalidazione cache obsoleta")
+            runner.assert_true("eero-dashboard-v1.7.0" in sw_js_content, "Service Worker CACHE_NAME aggiornato a v1.7.0 per invalidazione cache obsoleta")
 
         finally:
             # Ripristina stato originale eero_client
@@ -5766,6 +5766,172 @@ async def run_all_tests():
         _py_unknown = sorted(k for k in _py_used if k not in _be_ref)
         runner.assert_true(not _py_unknown, f"Ogni chiave tr()/tr_all()/log_event() statica nel backend esiste nei cataloghi en (sconosciute: {_py_unknown[:8]})")
         runner.assert_true(len(_be_ref) > 400 and len(_ref_keys) > 1000, f"Cataloghi popolati (backend {len(_be_ref)} chiavi, frontend {len(_ref_keys)} chiavi)")
+
+        # =====================================================================
+        # 40. TEST NOVITÀ v1.7.0 (Issues #86, #90, #93, #96, #98, #99, #100, #101, #102, #103, #104, #105 & 9 Lingue)
+        # =====================================================================
+        print("\n🚀 Test 40: Verifica Funzionalità e Fix v1.7.0 (Issues #86, #90, #93, #96, #98-#105, AI Assistant & 9 Lingue Europee)...")
+
+        # 40.1: 9 Lingue Europee in SUPPORTED_LANGUAGES
+        runner.assert_true(
+            tuple(_SUPPORTED) == ("en", "it", "fr", "es", "de", "nl", "pt", "pl", "el"),
+            "SUPPORTED_LANGUAGES include tutte le 9 lingue europee (en, it, fr, es, de, nl, pt, pl, el)"
+        )
+
+        # 40.2: Issue #104 (Mbit/s), Issue #101 (last_seen_connected), Issue #103 (rename discovery re-publish)
+        _mqtt_src = Path("app/services/mqtt_client.py").read_text(encoding="utf-8")
+        runner.assert_true('"unit_of_measurement": "Mbit/s"' in _mqtt_src and '"unit_of_measurement": "Mbps"' not in _mqtt_src, "Issue #104: Unità WAN discovery impostata su 'Mbit/s'")
+        runner.assert_true('"last_seen_connected": dev.get("last_active")' in _mqtt_src, "Issue #101: Attributo 'last_seen_connected' presente nei device tracker MQTT")
+        runner.assert_true("_published_tracker_configs: Dict[str, str] = {}" in _mqtt_src and "_published_tracker_configs.get(mac) != hostname" in _mqtt_src, "Issue #103: Ri-pubblicazione discovery al cambio nome dispositivo in mqtt_client.py")
+
+        # 40.3: Issue #105 (Bridge Mode primary gateway election via is_primary_node & has_upstream_wan_lldp)
+        runner.assert_true(
+            eero_client._is_gateway_node({"gateway": False, "is_primary_node": True}),
+            "Issue #105: _is_gateway_node riconosce is_primary_node=True anche con gateway=False (Bridge Mode)"
+        )
+        _norm_upstream = eero_client._normalize_eero_node({
+            "url": "/2.2/eeros/101",
+            "location": "Main Gateway",
+            "gateway": False,
+            "ethernet_status": {
+                "statuses": [{
+                    "interfaceNumber": 1,
+                    "speed": "1000Mbps",
+                    "isWanPort": True,
+                    "hasCarrier": True,
+                    "lldpInfo": [{"systemName": "EdgeRouter-X", "portDescription": "eth1"}]
+                }]
+            }
+        })
+        runner.assert_true(_norm_upstream.get("has_upstream_wan_lldp") is True, "Issue #105: _normalize_eero_node rileva neighbor LLDP non-eero (has_upstream_wan_lldp=True)")
+        _norm_peer_eero = eero_client._normalize_eero_node({
+            "url": "/2.2/eeros/102",
+            "location": "Leaf Node",
+            "gateway": False,
+            "ethernet_status": {
+                "statuses": [{
+                    "interfaceNumber": 1,
+                    "speed": "1000Mbps",
+                    "isWanPort": True,
+                    "hasCarrier": True,
+                    "lldpInfo": [{"systemName": "eero", "portDescription": "eth0"}]
+                }]
+            }
+        })
+        runner.assert_true(not _norm_peer_eero.get("has_upstream_wan_lldp"), "Issue #105: _normalize_eero_node ignora neighbor LLDP che sono altri nodi eero")
+
+        # 40.4: Issue #96 (Amazon Echo "eero Built-in" extender nodes synthesis)
+        from app.services.poller import BackgroundPoller as _PollerTest
+        _echo_eeros = [
+            {"id": "node_gw", "name": "Living Room", "model": "eero Pro 6E", "is_gateway": True, "status": "green", "connected_clients_count": 1}
+        ]
+        _echo_devs = [
+            {
+                "mac": "AA:BB:CC:DD:EE:01",
+                "hostname": "Bedroom Echo Dot",
+                "nickname": "Bedroom Echo Dot",
+                "manufacturer": "Amazon Technologies Inc.",
+                "ip": "192.168.4.55",
+                "connected": True,
+                "wireless": True,
+                "frequency": "5GHz",
+                "connected_eero_id": "node_gw",
+                "connected_eero_name": "Living Room",
+                "connected_to_proxied_node": False,
+            },
+            {
+                "mac": "AA:BB:CC:DD:EE:02",
+                "hostname": "Smart Plug Bedroom",
+                "nickname": "Smart Plug Bedroom",
+                "manufacturer": "TP-Link",
+                "ip": "192.168.4.88",
+                "connected": True,
+                "wireless": True,
+                "frequency": "2.4GHz",
+                "connected_eero_id": "",
+                "connected_eero_name": "Bedroom Echo Dot",
+                "connected_to_proxied_node": True,
+            }
+        ]
+        _reconciled_eeros = _PollerTest.reconcile_echo_extender_nodes(_echo_eeros, _echo_devs, {})
+        runner.assert_true(len(_reconciled_eeros) == 2, "Issue #96: reconcile_echo_extender_nodes sintetizza il nodo virtuale Amazon Echo")
+        _synth_node = [n for n in _reconciled_eeros if n.get("is_echo_node")][0]
+        runner.assert_true(_synth_node.get("name") == "Bedroom Echo Dot", "Issue #96: Nome nodo Echo sintetizzato correttamente")
+        runner.assert_true(_synth_node.get("ip") == "192.168.4.55", "Issue #96: IP nodo Echo arricchito dal client Echo presente in LAN")
+        runner.assert_true("eero.is_echo_node" in _html_src and "!eero.is_echo_node" in _html_src, "Issue #96: Badge eero Built-in e filtro pulsante Restart Node presenti in index.html")
+
+        # 40.5: Issue #99 (IP ownership deduplication & stale IP pruning)
+        from app.services.dns_manager import dns_manager as _dns_mgr
+        _dup_ip_devs = [
+            {"mac": "11:22:33:44:55:01", "hostname": "old-offline-laptop", "ip": "192.168.4.120", "connected": False, "last_active": "2026-11-01T10:00:00Z"},
+            {"mac": "11:22:33:44:55:02", "hostname": "new-active-phone", "ip": "192.168.4.120", "connected": True, "last_active": "2026-11-06T18:00:00Z"},
+        ]
+        _prepared_clients = _dns_mgr._prepare_clients_payload(_dup_ip_devs)
+        _by_host = {c["hostname"]: c for c in _prepared_clients}
+        runner.assert_true(_by_host["new-active-phone"]["ip"] == "192.168.4.120", "Issue #99: Il client connesso mantiene la proprietà dell'IP condiviso")
+        runner.assert_true(_by_host["old-offline-laptop"]["ip"] is None, "Issue #99: Il client offline perde l'IP riassegnato via DHCP ad altro apparato")
+        _merged_ag = _dns_mgr._merge_adguard_client_data(
+            {"name": "old-offline-laptop", "ids": ["11:22:33:44:55:01", "192.168.4.120"], "use_global_settings": True},
+            _by_host["old-offline-laptop"]
+        )
+        runner.assert_true("192.168.4.120" not in _merged_ag["ids"] and "11:22:33:44:55:01" in _merged_ag["ids"], "Issue #99: _merge_adguard_client_data rimuove gli IPv4 stantii quando ip=None")
+
+        # 40.6: Issue #98 (_describe_dns_exception & IPv4-first sorting in dns_cache.py)
+        from app.services.dns_manager import _describe_dns_exception
+        runner.assert_true(_describe_dns_exception(RuntimeError("")) == "RuntimeError", "Issue #98: _describe_dns_exception restituisce il nome della classe quando str(exc) è vuoto")
+        _dns_cache_src = Path("app/services/dns_cache.py").read_text(encoding="utf-8")
+        runner.assert_true("socket.AF_INET" in _dns_cache_src and "sorted(result" in _dns_cache_src, "Issue #98: Ordinamento IPv4-first (AF_INET) presente in dns_cache.py")
+
+        # 40.7: Issue #102 (AI Diagnostics verifica band_steering_active)
+        from app.services.diagnostics_service import diagnostics_service as _diag_svc
+        _diag_res_active = _diag_svc.generate_health_summary(
+            health_details={"score": 88, "penalties": [{"id": "band_24_crowding"}]},
+            network_details={"band_steering": True},
+            eeros=[{"id": "n1", "name": "Gateway", "status": "green", "is_gateway": True}],
+            devices=[
+                {"mac": f"AA:BB:CC:00:00:{i:02d}", "hostname": f"dev-{i}", "connected": True, "wireless": True, "frequency": "2.4GHz", "signal_bars": 4}
+                for i in range(6)
+            ]
+        )
+        _chk_ids = [c.get("id") for c in _diag_res_active.get("checklist", [])]
+        runner.assert_true("enable_band_steering" not in _chk_ids and "check_band_24_bs_active" in _chk_ids, "Issue #102: Non consiglia di attivare Band Steering se band_steering è già True")
+
+        # 40.8 & 40.9: Issue #93, Issue #90 & Phase 3/4 Endpoints (Demo Mode)
+        eero_client.set_demo_mode(True)
+        try:
+            res_amz_url = await client.get("/api/auth/amazon/login-url")
+            runner.assert_true(res_amz_url.status_code == 200, "Issue #93: GET /api/auth/amazon/login-url risponde HTTP 200")
+            _amz_data = res_amz_url.json()
+            runner.assert_true("amazon.com/ap/oa" in _amz_data.get("login_url", "") and "code_challenge=" in _amz_data.get("login_url", ""), "Issue #93: URL OAuth2 Amazon contiene code_challenge S256")
+            res_amz_ex = await client.post("/api/auth/amazon/exchange", json={"code_or_url": "demo_auth_code_12345"})
+            runner.assert_true(res_amz_ex.status_code == 200, "Issue #93: POST /api/auth/amazon/exchange funziona in Demo Mode")
+
+            res_fw_get = await client.get("/api/network/ipv6-firewall")
+            runner.assert_true(res_fw_get.status_code == 200, "Issue #90: GET /api/network/ipv6-firewall risponde HTTP 200")
+            res_fw_post = await client.post("/api/network/ipv6-firewall", json={"mac": "AA:BB:CC:11:22:33", "protocol": "tcp", "ports": "443", "device_name": "HTTPS Server"}, headers=adm_hdr)
+            runner.assert_true(res_fw_post.status_code == 200, "Issue #90: POST /api/network/ipv6-firewall crea regola in Demo Mode")
+
+            res_place = await client.post("/api/network/placement-test", json={"location": "Studio"}, headers=adm_hdr)
+            runner.assert_true(res_place.status_code == 200, "Phase 3: POST /api/network/placement-test risponde HTTP 200")
+            runner.assert_true(len(res_place.json().get("nodes", [])) > 0, "Phase 3: Placement test restituisce risultati per i nodi mesh")
+
+            res_gvpn = await client.get("/api/network/guardian-vpn")
+            runner.assert_true(res_gvpn.status_code == 200, "Phase 3: GET /api/network/guardian-vpn risponde HTTP 200")
+            res_gvpn_put = await client.put("/api/network/guardian-vpn", json={"enabled": True}, headers=adm_hdr)
+            runner.assert_true(res_gvpn_put.status_code == 200, "Phase 3: PUT /api/network/guardian-vpn aggiorna stato in Demo Mode")
+
+            res_reg_node = await client.post("/api/network/eeros/register", json={"serial": "SN-TEST-998877", "location": "Garage"}, headers=adm_hdr)
+            runner.assert_true(res_reg_node.status_code == 200, "Phase 4: POST /api/network/eeros/register registra seriale in Demo Mode")
+
+            res_ai_chat = await client.post("/api/network/assistant", json={"prompt": "How is my Wi-Fi signal and mesh health?", "stream": False})
+            runner.assert_true(res_ai_chat.status_code == 200, "Phase 4: POST /api/network/assistant risponde HTTP 200")
+            runner.assert_true(len(res_ai_chat.json().get("reply", "")) > 20, "Phase 4: Assistente AI restituisce risposta diagnostica contestuale")
+        finally:
+            eero_client.set_demo_mode(False)
+
+        # 40.10: Issue #86 (3-state theme selector) & Ctrl+K quick filter in index.html
+        runner.assert_true("setTheme('system')" in _html_src and "setTheme('light')" in _html_src and "setTheme('dark')" in _html_src, "Issue #86: Selettore tema a 3 stati (Light/Dark/System) presente in index.html")
+        runner.assert_true("id=\"device-quick-search-input\"" in _html_src and "Ctrl+K" in _html_src, "Phase 5: Scorciatoia globale Ctrl+K presente sulla ricerca dispositivi in index.html")
 
         runner.print_summary()
 

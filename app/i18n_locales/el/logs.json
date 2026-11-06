@@ -1,0 +1,17 @@
+{
+  "invalid_level": "Invalid log level '{level}'. Allowed values: {allowed}",
+  "invalid_level_short": "Invalid log level: {level}. Allowed: {allowed}",
+  "change_level": "level: {level}",
+  "change_state_on": "status: ENABLED",
+  "change_state_off": "status: DISABLED",
+  "change_retention": "retention: {days} days",
+  "no_valid_params": "No valid parameters provided to update the configuration.",
+  "config_updated_alert_title": "⚙️ Log Configuration Updated",
+  "config_updated_alert_message": "Diagnostic settings changed by '{actor}': {changes}.",
+  "config_updated": "Log configuration updated successfully ({changes}).",
+  "cleared_alert_title": "🗑️ System Log Cleared",
+  "cleared_alert_message": "System logs were cleared by user '{actor}' ({count} events removed).",
+  "cleared": "Event log cleared successfully ({count} records removed).",
+  "no_logs_recorded": "No logs recorded.",
+  "cleared_audit_entry": "System logs cleared successfully ({count} previous records removed)."
+}

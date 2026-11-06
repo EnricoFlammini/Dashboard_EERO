@@ -35,7 +35,7 @@ try:
     class Settings(BaseSettings):
         """Application settings with environment variable fallbacks."""
         app_name: str = "eero Custom Dashboard & Management Suite"
-        app_version: str = os.getenv("APP_VERSION", "1.6.2")
+        app_version: str = os.getenv("APP_VERSION", "1.7.0")
         build_number: str = _get_default_build_number()
         debug: bool = False
         
@@ -95,12 +95,16 @@ try:
         mqtt_discovery_enabled: bool = os.getenv("MQTT_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
         mqtt_publish_interval: int = int(os.getenv("MQTT_PUBLISH_INTERVAL", "30"))
 
-        # Multi-Channel Alerts: Discord & Pushover (v1.6.0 Module 4)
+        # Multi-Channel Alerts: Discord, Pushover & Ntfy (v1.6.0 / v1.7.0)
         discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
         discord_alerts_enabled: bool = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
         pushover_user_key: str = os.getenv("PUSHOVER_USER_KEY", "")
         pushover_api_token: str = os.getenv("PUSHOVER_API_TOKEN", "")
         pushover_alerts_enabled: bool = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+        ntfy_url: str = os.getenv("NTFY_URL", "https://ntfy.sh")
+        ntfy_topic: str = os.getenv("NTFY_TOPIC", "")
+        ntfy_token: str = os.getenv("NTFY_TOKEN", "")
+        ntfy_alerts_enabled: bool = os.getenv("NTFY_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
         @field_validator("dashboard_lang", mode="before")
         @classmethod
@@ -144,7 +148,7 @@ except ImportError:
     class Settings:
         def __init__(self):
             self.app_name = "eero Custom Dashboard & Management Suite"
-            self.app_version = os.getenv("APP_VERSION", "1.6.2")
+            self.app_version = os.getenv("APP_VERSION", "1.7.0")
             self.build_number = _get_default_build_number()
             self.debug = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
             self.data_dir = os.getenv("DATA_DIR", "./data")
@@ -184,6 +188,10 @@ except ImportError:
             self.pushover_user_key = os.getenv("PUSHOVER_USER_KEY", "")
             self.pushover_api_token = os.getenv("PUSHOVER_API_TOKEN", "")
             self.pushover_alerts_enabled = os.getenv("PUSHOVER_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+            self.ntfy_url = os.getenv("NTFY_URL", "https://ntfy.sh")
+            self.ntfy_topic = os.getenv("NTFY_TOPIC", "")
+            self.ntfy_token = os.getenv("NTFY_TOKEN", "")
+            self.ntfy_alerts_enabled = os.getenv("NTFY_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
         @property
         def full_version(self) -> str:

@@ -1,0 +1,8 @@
+{
+  "auth_required": "Authentication required",
+  "session_invalid": "Invalid or expired session",
+  "admin_only": "This operation is restricted to administrators.",
+  "permission_denied": "Insufficient permission: '{permission}' authorization required.",
+  "auth_required_operation": "Authentication required for this operation",
+  "cross_origin_blocked": "Cross-origin request blocked"
+}

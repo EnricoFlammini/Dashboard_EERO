@@ -27,6 +27,11 @@ class ModeSwitchRequest(BaseModel):
     demo: bool = Field(..., description="True per attivare Demo Mode, False per tornare a Live Network")
 
 
+class AmazonExchangeRequest(BaseModel):
+    code_or_url: str = Field(..., description="URL di callback Amazon, authorization code o user_token")
+    code_verifier: Optional[str] = Field(None, description="Code verifier PKCE opzionale")
+
+
 _account_refresh_task: Optional[asyncio.Task] = None
 
 
@@ -146,3 +151,42 @@ async def logout():
     """Rimuove il token di sessione e disconnette l'app."""
     eero_client.clear_session()
     return {"status": "success", "message": tr("auth.eero_logged_out")}
+
+
+@router.get("/amazon/login-url")
+async def get_amazon_login_url(request: Request):
+    """Genera l'URL di autenticazione Amazon OAuth2 + PKCE (Issue #93)."""
+    ip = get_client_ip(request)
+    is_limited, retry_after = cloud_auth_limiter.record_hit(ip)
+    if is_limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=tr("auth.too_many_requests", retry_after=retry_after),
+            headers={"Retry-After": str(retry_after)},
+        )
+    return eero_client.generate_amazon_oauth_url()
+
+
+@router.post("/amazon/exchange")
+async def exchange_amazon_login(payload: AmazonExchangeRequest, request: Request):
+    """Scambia il codice di autorizzazione / URL callback Amazon con una sessione eero autenticata (Issue #93)."""
+    ip = get_client_ip(request)
+    is_limited, retry_after = cloud_auth_limiter.record_hit(ip)
+    if is_limited:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=tr("auth.too_many_requests", retry_after=retry_after),
+            headers={"Retry-After": str(retry_after)},
+        )
+    try:
+        res = await eero_client.exchange_amazon_oauth_code(payload.code_or_url, payload.code_verifier)
+        try:
+            from app.services.poller import background_poller
+            background_poller.invalidate_cache()
+            await background_poller.poll_once()
+        except Exception as ep:
+            log_event(logger, logging.WARNING, "log_system.poller_refresh_otp_failed", error=str(ep))
+        return res
+    except Exception as e:
+        log_event(logger, logging.ERROR, "log_system.eero_login_failed", error=e)
+        raise HTTPException(status_code=400, detail=str(e))

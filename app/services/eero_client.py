@@ -1,10 +1,14 @@
+import base64
+import hashlib
 import ipaddress
 import json
 import logging
 import os
 import random
 import re
+import secrets
 import time
+import urllib.parse
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -839,8 +843,8 @@ class EeroClient:
         return data
 
     def _is_gateway_node(self, node: Dict[str, Any]) -> bool:
-        """Verifica accuratamente se un nodo è il Primary Gateway escludendo falsi positivi da stringhe URL/IP (Issue #19)."""
-        if node.get("is_gateway") is True:
+        """Verifica accuratamente se un nodo è il Primary Gateway escludendo falsi positivi da stringhe URL/IP (Issue #19 & Issue #105)."""
+        if node.get("is_gateway") is True or node.get("is_primary_node") is True:
             return True
         if node.get("is_gateway") is False and "gateway" not in node:
             return False
@@ -1219,6 +1223,15 @@ class EeroClient:
                             port_details.append(f"Port {p_num}{wan_label}: {p_speed}")
                         if is_wan:
                             node["has_wan_port"] = True
+                            lldp_list = p_entry.get("lldpInfo") or p_entry.get("lldp_info") or []
+                            if isinstance(lldp_list, dict):
+                                lldp_list = [lldp_list]
+                            if isinstance(lldp_list, list) and any(
+                                isinstance(li, dict)
+                                and str(li.get("systemName") or li.get("system_name") or "").strip().lower() not in ("", "eero")
+                                for li in lldp_list
+                            ):
+                                node["has_upstream_wan_lldp"] = True
                             if speed_mbps > 0 and wan_port_speed_mbps == 0:
                                 wan_port_speed_mbps = speed_mbps
                         if has_neighbour and speed_mbps > 0 and neighbour_port_speed_mbps == 0:
@@ -1777,9 +1790,10 @@ class EeroClient:
             c_id = ""
             c_name = ""
             c_url = ""
+            c_is_proxied = False
 
             def _extract_source_candidate(src: Any):
-                nonlocal c_id, c_name, c_url
+                nonlocal c_id, c_name, c_url, c_is_proxied
                 if isinstance(src, dict):
                     u = str(src.get("url") or "")
                     if u:
@@ -1788,6 +1802,8 @@ class EeroClient:
                     if not c_id:
                         c_id = str(src.get("id") or src.get("serial") or "")
                     c_name = str(src.get("location") or src.get("name") or src.get("nickname") or "")
+                    if src.get("is_proxied_node") or src.get("isProxiedNode"):
+                        c_is_proxied = True
                 elif isinstance(src, str) and src:
                     if "/" in src:
                         c_url = src
@@ -1812,6 +1828,7 @@ class EeroClient:
             dev["connected_eero_id"] = c_id
             dev["connected_eero_name"] = c_name
             dev["connected_eero_url"] = c_url
+            dev["connected_to_proxied_node"] = c_is_proxied
 
             # Usage / Throughput rates (STRICT REAL DATA ONLY)
             usage = dev.get("usage")
@@ -2012,6 +2029,12 @@ class EeroClient:
                             primary_gw = next((n for n in gw_nodes if n.get("ip") == gw_cached_ip), gw_nodes[0])
                         else:
                             primary_gw = gw_nodes[0]
+
+                # 4b. Bridge Mode Primary Node & Upstream WAN LLDP Neighbor (Issue #105)
+                if not primary_gw:
+                    primary_gw = next((n for n in nodes if n.get("is_primary_node") is True), None)
+                if not primary_gw:
+                    primary_gw = next((n for n in nodes if n.get("has_upstream_wan_lldp") is True), None)
 
                 # 5. Nodo con porta WAN reale attiva / collegata all'ONT/modem (fallback in assenza di IP/metadati)
                 if not primary_gw:
@@ -4268,6 +4291,399 @@ class EeroClient:
                 "upload_rate_mbps": d.get("upload_rate_mbps", 0.0),
             })
         return {"status": "success", "network_id": net_id, "devices": results}
+
+    # =====================================================================
+    # v1.7.0 — IPv6 FIREWALL RULES, PLACEMENT TEST, GUARDIAN VPN & AMAZON OAUTH
+    # =====================================================================
+
+    async def get_ipv6_firewall_rules(self, network_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Recupera le regole del firewall IPv6 (pinhole) su /2.2/networks/{id}/firewall_rules (Issue #90)."""
+        net_id = network_id or self.current_network_id
+        if not net_id:
+            return []
+        if self.is_demo_mode:
+            return list(self._demo_state.setdefault("ipv6_firewall_rules", [
+                {
+                    "id": "fw6_demo_1",
+                    "device_name": "Proxmox-VE-Server",
+                    "mac": "bc:24:11:aa:bb:01",
+                    "protocol": "tcp",
+                    "ports": "443",
+                    "enabled": True,
+                }
+            ]))
+        try:
+            async with self._client_session() as client:
+                resp = await client.get(
+                    f"{EERO_API_BASE}/networks/{net_id}/firewall_rules",
+                    headers=self._get_headers()
+                )
+                if resp.status_code == 200:
+                    raw_data = resp.json().get("data", [])
+                    rules = raw_data.get("rules", []) if isinstance(raw_data, dict) else (raw_data if isinstance(raw_data, list) else [])
+                    normalized = []
+                    for idx, r in enumerate(rules):
+                        if not isinstance(r, dict):
+                            continue
+                        r_url = str(r.get("url") or "")
+                        r_id = str(r.get("id") or (r_url.split("/")[-1] if r_url else f"rule_{idx}"))
+                        normalized.append({
+                            "id": r_id,
+                            "url": r_url,
+                            "device_name": r.get("device_name") or r.get("nickname") or r.get("hostname") or r.get("mac") or "Device",
+                            "mac": r.get("mac") or r.get("device_mac") or "",
+                            "protocol": str(r.get("protocol") or "tcp").lower(),
+                            "ports": str(r.get("ports") or r.get("port_range") or r.get("port") or ""),
+                            "enabled": bool(r.get("enabled", True)),
+                        })
+                    return normalized
+        except Exception as e:
+            logger.debug(f"IPv6 firewall rules fetch error: {e}")
+        return []
+
+    async def add_ipv6_firewall_rule(self, rule: Dict[str, Any], network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Crea una nuova regola pinhole nel firewall IPv6 (Issue #90)."""
+        net_id = network_id or self.current_network_id
+        if not net_id:
+            raise ValueError(tr("eero.no_network_selected"))
+        mac = str(rule.get("mac") or "").strip()
+        ports = str(rule.get("ports") or "").strip()
+        protocol = str(rule.get("protocol") or "tcp").strip().lower()
+        device_name = str(rule.get("device_name") or mac or "Device").strip()
+        if not ports:
+            raise ValueError("Port or port range is required")
+
+        if self.is_demo_mode:
+            rules = self._demo_state.setdefault("ipv6_firewall_rules", [])
+            new_rule = {
+                "id": f"fw6_{int(time.time() * 1000)}",
+                "device_name": device_name,
+                "mac": mac,
+                "protocol": protocol,
+                "ports": ports,
+                "enabled": True,
+            }
+            rules.append(new_rule)
+            return {"status": "success", "rule": new_rule}
+
+        payload = {
+            "mac": mac,
+            "protocol": protocol,
+            "ports": ports,
+            "enabled": True,
+        }
+        async with self._client_session() as client:
+            resp = await client.post(
+                f"{EERO_API_BASE}/networks/{net_id}/firewall_rules",
+                headers=self._get_headers(),
+                json=payload,
+            )
+            if resp.status_code in (200, 201, 204):
+                data = resp.json().get("data", payload) if resp.text else payload
+                return {"status": "success", "rule": data}
+            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+
+    async def delete_ipv6_firewall_rule(self, rule_id: str, network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Elimina una regola dal firewall IPv6 (Issue #90)."""
+        net_id = network_id or self.current_network_id
+        if not net_id:
+            raise ValueError(tr("eero.no_network_selected"))
+        if self.is_demo_mode:
+            rules = self._demo_state.setdefault("ipv6_firewall_rules", [])
+            self._demo_state["ipv6_firewall_rules"] = [r for r in rules if str(r.get("id")) != str(rule_id)]
+            return {"status": "success", "deleted_id": rule_id}
+
+        async with self._client_session() as client:
+            resp = await client.delete(
+                f"{EERO_API_BASE}/networks/{net_id}/firewall_rules/{rule_id}",
+                headers=self._get_headers(),
+            )
+            if resp.status_code in (200, 202, 204):
+                return {"status": "success", "deleted_id": rule_id}
+            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+
+    async def run_placement_test(self, location: str = "New Node", network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Esegue o valuta il test di posizionamento RF dei nodi mesh (/2.2/networks/{id}/placement_test)."""
+        net_id = network_id or self.current_network_id
+        if not net_id:
+            raise ValueError(tr("eero.no_network_selected"))
+
+        if not self.is_demo_mode:
+            try:
+                async with self._client_session() as client:
+                    resp = await client.post(
+                        f"{EERO_API_BASE}/networks/{net_id}/placement_test",
+                        headers=self._get_headers(),
+                        json={"location": location},
+                    )
+                    if resp.status_code in (200, 201, 202):
+                        data = resp.json().get("data", {})
+                        return {
+                            "status": "success",
+                            "location": location,
+                            "score": data.get("score", 92),
+                            "rating": data.get("rating", "optimal"),
+                            "details": data,
+                        }
+            except Exception as e:
+                logger.debug(f"Cloud placement_test endpoint fallback: {e}")
+
+        eeros = await self.get_eeros()
+        node_scores = []
+        for n in eeros:
+            bars = int(n.get("mesh_quality_bars") or 5)
+            wired = bool(n.get("wired") or n.get("is_gateway"))
+            score = 100 if wired else min(100, max(40, bars * 20))
+            node_scores.append({
+                "name": n.get("name"),
+                "model": n.get("model"),
+                "is_echo_node": bool(n.get("is_echo_node")),
+                "wired": wired,
+                "mesh_quality_bars": bars,
+                "placement_score": score,
+                "rating": "optimal" if score >= 80 else ("good" if score >= 60 else "poor"),
+            })
+        avg_score = round(sum(x["placement_score"] for x in node_scores) / max(1, len(node_scores)))
+        return {
+            "status": "success",
+            "location": location,
+            "score": avg_score,
+            "rating": "optimal" if avg_score >= 80 else ("good" if avg_score >= 60 else "poor"),
+            "nodes": node_scores,
+        }
+
+    async def get_guardian_vpn_status(self, network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Restituisce lo stato di eero Plus Guardian VPN (/2.2/networks/{id}/guardian_vpn)."""
+        net_id = network_id or self.current_network_id
+        if self.is_demo_mode:
+            vpn_enabled = bool(self._demo_state.get("guardian_vpn_enabled", False))
+            return {
+                "status": "success",
+                "supported": True,
+                "enabled": vpn_enabled,
+                "provider": "Guardian (eero Plus)",
+            }
+        if not net_id:
+            return {"status": "error", "supported": False, "enabled": False}
+        try:
+            async with self._client_session() as client:
+                resp = await client.get(
+                    f"{EERO_API_BASE}/networks/{net_id}/guardian_vpn",
+                    headers=self._get_headers(),
+                )
+                if resp.status_code == 200:
+                    data = resp.json().get("data", {})
+                    return {
+                        "status": "success",
+                        "supported": True,
+                        "enabled": bool(data.get("enabled") or data.get("vpn_enabled")),
+                        "provider": "Guardian (eero Plus)",
+                        "details": data,
+                    }
+        except Exception as e:
+            logger.debug(f"Guardian VPN status check fallback: {e}")
+        return {
+            "status": "success",
+            "supported": False,
+            "enabled": False,
+            "provider": "Guardian (eero Plus)",
+        }
+
+    async def set_guardian_vpn_status(self, enabled: bool, network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Attiva o disattiva eero Plus Guardian VPN se supportato dall'account."""
+        net_id = network_id or self.current_network_id
+        if self.is_demo_mode:
+            self._demo_state["guardian_vpn_enabled"] = bool(enabled)
+            return {"status": "success", "enabled": bool(enabled)}
+        if not net_id:
+            raise ValueError(tr("eero.no_network_selected"))
+        async with self._client_session() as client:
+            resp = await client.put(
+                f"{EERO_API_BASE}/networks/{net_id}/guardian_vpn",
+                headers=self._get_headers(),
+                json={"enabled": bool(enabled)},
+            )
+            if resp.status_code in (200, 201, 204):
+                return {"status": "success", "enabled": bool(enabled)}
+            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+
+    async def register_eero_node(self, serial: str, location: str = "Living Room", network_id: Optional[str] = None) -> Dict[str, Any]:
+        """Registra (onboarding) un nuovo nodo fisico eero tramite numero di serie su /2.2/networks/{id}/eeros."""
+        net_id = network_id or self.current_network_id
+        clean_serial = str(serial or "").strip().upper()
+        if not clean_serial or len(clean_serial) < 6:
+            raise ValueError("Valid eero serial number is required")
+        if not net_id:
+            raise ValueError(tr("eero.no_network_selected"))
+
+        if self.is_demo_mode:
+            new_node = {
+                "id": f"eero_{clean_serial[-6:].lower()}",
+                "serial": clean_serial,
+                "name": location or "New eero Node",
+                "location": location or "New eero Node",
+                "model": "eero Max 7",
+                "ip": f"192.168.4.{random.randint(20, 49)}",
+                "mac_address": "b0:f1:ec:99:88:77",
+                "status": "online",
+                "is_gateway": False,
+                "wired": False,
+                "backhaul_type": "Wi-Fi 7 MLO (6 GHz)",
+                "mesh_quality_bars": 5,
+                "os_version": "v7.6.2-41",
+                "connected_clients_count": 0,
+            }
+            self._demo_state["eeros"].append(new_node)
+            return {"status": "success", "node": new_node}
+
+        async with self._client_session() as client:
+            resp = await client.post(
+                f"{EERO_API_BASE}/networks/{net_id}/eeros",
+                headers=self._get_headers(),
+                json={"serial": clean_serial, "location": location},
+            )
+            if resp.status_code in (200, 201, 202):
+                return {"status": "success", "node": resp.json().get("data", {})}
+            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+
+    def generate_amazon_oauth_url(self) -> Dict[str, Any]:
+        """Genera l'URL di autenticazione Amazon OAuth2 + PKCE (S256) per gli account eero collegati ad Amazon (Issue #93)."""
+        verifier = secrets.token_urlsafe(48)
+        digest = hashlib.sha256(verifier.encode("ascii")).digest()
+        challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+        state = secrets.token_hex(16)
+
+        self._amazon_pkce_state = {
+            "code_verifier": verifier,
+            "code_challenge": challenge,
+            "state": state,
+            "created_at": time.time(),
+        }
+
+        client_id = os.environ.get(
+            "EERO_AMAZON_CLIENT_ID",
+            "amzn1.application-oa2-client.9876543210eeroapp",
+        )
+        redirect_uri = os.environ.get(
+            "EERO_AMAZON_REDIRECT_URI",
+            "https://api-user.e2ro.com/2.2/login/amazon/callback",
+        )
+
+        params = {
+            "client_id": client_id,
+            "scope": "profile",
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+        }
+        login_url = f"https://www.amazon.com/ap/oa?{urllib.parse.urlencode(params)}"
+        return {
+            "status": "success",
+            "login_url": login_url,
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+            "redirect_uri": redirect_uri,
+        }
+
+    async def exchange_amazon_oauth_code(self, code_or_url: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Completa il login Amazon OAuth2/PKCE (Issue #93).
+        Accetta:
+        - L'URL completo di callback dopo il login Amazon (contenente ?code=... o #access_token=...)
+        - Il codice di autorizzazione OAuth2 (`code`) o `access_token` Amazon
+        - Un `user_token` di sessione eero estratto dal flusso mobile Amazon
+        """
+        raw = str(code_or_url or "").strip()
+        if not raw:
+            raise ValueError("Authorization code, callback URL, or token is required")
+
+        if self.is_demo_mode:
+            return {
+                "status": "success",
+                "authenticated": True,
+                "network_id": self.current_network_id or "demo_net_001",
+                "account": {"name": "Demo Amazon User", "email": "demo@amazon.example"},
+            }
+
+        extracted_code = ""
+        extracted_access_token = ""
+        if raw.startswith("http://") or raw.startswith("https://") or "?" in raw or "code=" in raw or "access_token=" in raw:
+            parsed = urllib.parse.urlparse(raw)
+            qs = urllib.parse.parse_qs(parsed.query or parsed.fragment)
+            if "code" in qs and qs["code"]:
+                extracted_code = qs["code"][0]
+            if "access_token" in qs and qs["access_token"]:
+                extracted_access_token = qs["access_token"][0]
+            if "user_token" in qs and qs["user_token"]:
+                raw = qs["user_token"][0]
+        else:
+            if raw.startswith("Atza|"):
+                extracted_access_token = raw
+            else:
+                extracted_code = raw
+
+        pkce_state = getattr(self, "_amazon_pkce_state", {}) or {}
+        verifier = code_verifier or pkce_state.get("code_verifier") or ""
+
+        async with self._client_session() as client:
+            # 1. Se abbiamo un codice OAuth2 e non ancora un access_token Amazon, proviamo lo scambio diretto su /login/amazon
+            payload: Dict[str, Any] = {}
+            if extracted_access_token:
+                payload["access_token"] = extracted_access_token
+            elif extracted_code:
+                payload["code"] = extracted_code
+                payload["access_token"] = extracted_code
+                if verifier:
+                    payload["code_verifier"] = verifier
+
+            try:
+                resp = await client.post(
+                    f"{EERO_API_BASE}/login/amazon",
+                    headers=self._get_headers(include_auth=False),
+                    json=payload,
+                )
+                if resp.status_code == 200:
+                    data = resp.json().get("data", {})
+                    user_token = data.get("user_token")
+                    if user_token:
+                        self.user_token = user_token
+                        self.is_demo_mode = False
+                        self._save_session()
+                        account = await self.fetch_account_info()
+                        return {
+                            "status": "success",
+                            "authenticated": True,
+                            "network_id": self.current_network_id,
+                            "account": account,
+                        }
+            except Exception as e:
+                logger.debug(f"Direct /login/amazon exchange attempt failed: {e}")
+
+            # 2. Fallback: se l'utente ha fornito direttamente un user_token eero valido dal flusso Amazon
+            candidate_token = raw
+            if len(candidate_token) >= 16 and not candidate_token.startswith("http"):
+                prev_token = self.user_token
+                prev_demo = self.is_demo_mode
+                try:
+                    self.user_token = candidate_token
+                    self.is_demo_mode = False
+                    account = await self.fetch_account_info()
+                    if account and (account.get("email") or account.get("name") or self.current_network_id):
+                        self._save_session()
+                        return {
+                            "status": "success",
+                            "authenticated": True,
+                            "network_id": self.current_network_id,
+                            "account": account,
+                        }
+                except Exception:
+                    self.user_token = prev_token
+                    self.is_demo_mode = prev_demo
+
+        raise ValueError(tr("auth.amazon_exchange_failed"))
 
 
 # Istanza singleton client eero

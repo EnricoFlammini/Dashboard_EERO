@@ -21,19 +21,19 @@
 document.addEventListener('alpine:init', () => {
   Alpine.data('eeroApp', () => ({
     // App Version & Build Metadata
-    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.6.2',
+    appVersion: (window.APP_CONFIG && window.APP_CONFIG.version && !window.APP_CONFIG.version.startsWith('{')) ? window.APP_CONFIG.version : '1.7.0',
     buildNumber: (window.APP_CONFIG && window.APP_CONFIG.buildNumber && !window.APP_CONFIG.buildNumber.startsWith('{')) ? window.APP_CONFIG.buildNumber : '1',
-    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.6.2 build 1',
+    fullVersion: (window.APP_CONFIG && window.APP_CONFIG.fullVersion && !window.APP_CONFIG.fullVersion.startsWith('{')) ? window.APP_CONFIG.fullVersion : '1.7.0 build 1',
 
     // Windows 11 Dual Theme Engine State
     currentTheme: localStorage.getItem('eero_theme') || 'system',
 
     // i18n Multi-Language State
-    supportedLanguages: (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'],
+    supportedLanguages: (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it', 'fr', 'es', 'de', 'nl', 'pt', 'pl', 'el'],
     currentLanguage: (() => {
       // A choice saved in this browser wins; otherwise the server default
       // (saved system language, else DASHBOARD_LANG, else English).
-      const supported = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it'];
+      const supported = (window.APP_CONFIG && Array.isArray(window.APP_CONFIG.supportedLanguages) && window.APP_CONFIG.supportedLanguages.length) ? window.APP_CONFIG.supportedLanguages : ['en', 'it', 'fr', 'es', 'de', 'nl', 'pt', 'pl', 'el'];
       const saved = localStorage.getItem('eero_lang');
       if (supported.includes(saved)) return saved;
       const serverDefault = (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.defaultLanguage) || '';
@@ -541,7 +541,16 @@ document.addEventListener('alpine:init', () => {
       telegram_bot_token: '',
       telegram_chat_id: '',
       webhook_enabled: false,
-      webhook_url: ''
+      webhook_url: '',
+      discord_enabled: false,
+      discord_webhook_url: '',
+      pushover_enabled: false,
+      pushover_user_key: '',
+      pushover_api_token: '',
+      ntfy_enabled: false,
+      ntfy_url: 'https://ntfy.sh',
+      ntfy_topic: '',
+      ntfy_token: ''
     },
 
     digestSettings: {
@@ -623,7 +632,7 @@ document.addEventListener('alpine:init', () => {
     // Changelog Modal State
     showChangelogModal: false,
     changelogContent: '',
-    changelogVersion: '1.6.0',
+    changelogVersion: '1.7.0',
     changelogLoading: false,
 
     // About Modal State
@@ -635,13 +644,13 @@ document.addEventListener('alpine:init', () => {
     // Where this instance runs (local / Docker / Kubernetes) and its source branch
     runtimeInfo: null,
 
-    // Auto-Update State (v1.6.2)
+    // Auto-Update State (v1.7.0)
     updateInfo: {
       update_available: false,
-      current_version: '1.6.2',
-      latest_version: '1.6.2',
+      current_version: '1.7.0',
+      latest_version: '1.7.0',
       latest_build_number: '1',
-      latest_full_version: '1.6.2 build 1',
+      latest_full_version: '1.7.0 build 1',
       release_title: '',
       release_notes: '',
       condensed_changelog: [],
@@ -739,6 +748,32 @@ document.addEventListener('alpine:init', () => {
     schedulesList: [],
     schedulesLoading: false,
     showScheduleModal: false,
+
+    // =========================================================================
+    // v1.7.0: AMAZON OAUTH2, IPV6 FIREWALL, PLACEMENT TEST, GUARDIAN VPN & AI ASSISTANT
+    // =========================================================================
+    showAmazonCallbackInput: false,
+    amazonCallbackCode: '',
+    ipv6FirewallRules: [],
+    ipv6RuleForm: {
+      device_name: '',
+      mac: '',
+      protocol: 'tcp',
+      ports: ''
+    },
+    placementTestLoading: false,
+    placementTestResult: null,
+    guardianVpn: {
+      supported: false,
+      enabled: false
+    },
+    serialClaimForm: {
+      serial: '',
+      location: ''
+    },
+    assistantPrompt: '',
+    assistantReply: '',
+    assistantLoading: false,
     scheduleModalMode: 'create', // 'create' | 'edit'
     scheduleForm: {
       id: '',
@@ -868,6 +903,8 @@ document.addEventListener('alpine:init', () => {
           this.fetchAlerts();
           this.fetchSchedules();
           this.fetchGuestNetwork();
+          this.fetchIpv6FirewallRules();
+          this.fetchGuardianVpn();
           this.fetchLogConfig();
           this.fetchSystemLogs();
         } else if (tab === 'settings-users') {
@@ -1186,9 +1223,29 @@ document.addEventListener('alpine:init', () => {
       return obj[`${field}_${lang}`] ?? obj[`${field}_en`] ?? obj[field] ?? '';
     },
 
-    languageFlags: { en: '🇬🇧', it: '🇮🇹' },
+    languageFlags: {
+      en: '🇬🇧',
+      it: '🇮🇹',
+      fr: '🇫🇷',
+      es: '🇪🇸',
+      de: '🇩🇪',
+      nl: '🇳🇱',
+      pt: '🇵🇹',
+      pl: '🇵🇱',
+      el: '🇬🇷'
+    },
     // Default BCP 47 region per dashboard language, used by dateLocale().
-    dateLocales: { en: 'en-US', it: 'it-IT' },
+    dateLocales: {
+      en: 'en-US',
+      it: 'it-IT',
+      fr: 'fr-FR',
+      es: 'es-ES',
+      de: 'de-DE',
+      nl: 'nl-NL',
+      pt: 'pt-PT',
+      pl: 'pl-PL',
+      el: 'el-GR'
+    },
     languageFlag(lang) {
       return this.languageFlags[lang] || (lang || '').toUpperCase();
     },
@@ -1368,6 +1425,8 @@ document.addEventListener('alpine:init', () => {
         await this.fetchAlerts();
         await this.fetchSchedules();
         await this.fetchGuestNetwork();
+        await this.fetchIpv6FirewallRules();
+        await this.fetchGuardianVpn();
       } else if (tab === 'settings-users') {
         await this.loadPermissionsCatalog();
         await this.loadLocalUsers();
@@ -1509,6 +1568,184 @@ document.addEventListener('alpine:init', () => {
         this.showToast(title, msg, "info");
       } catch (err) {
         console.error("Logout error:", err);
+      }
+    },
+
+    async startAmazonOAuth() {
+      this.authLoading = true;
+      try {
+        const res = await fetch('/api/auth/amazon/login-url');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Amazon OAuth initialization failed');
+        this.showAmazonCallbackInput = true;
+        if (data.login_url && typeof window !== 'undefined') {
+          window.open(data.login_url, '_blank', 'noopener,noreferrer');
+        }
+        this.showToast(this.t('auth.amazon_login_btn'), this.t('auth.amazon_callback_label'), 'info');
+      } catch (err) {
+        this.showToast(this.t('js.request_otp.login_error'), err.message, 'error');
+      } finally {
+        this.authLoading = false;
+      }
+    },
+
+    async submitAmazonOAuthExchange() {
+      if (!this.amazonCallbackCode) return;
+      this.authLoading = true;
+      try {
+        const res = await fetch('/api/auth/amazon/exchange', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code_or_url: this.amazonCallbackCode })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Amazon OAuth exchange failed');
+        this.isAuthenticated = true;
+        this.isDemoMode = false;
+        this.hasSavedLiveToken = true;
+        this.showAmazonCallbackInput = false;
+        this.amazonCallbackCode = '';
+        await this.checkAuthStatus();
+        this.showToast(this.t('js.verify_otp.login_successful'), this.t('js.verify_otp.connected_to_eero_mesh'), 'success');
+        await this.refreshAllData();
+        this.startPolling();
+      } catch (err) {
+        this.showToast(this.t('js.request_otp.login_error'), err.message, 'error');
+      } finally {
+        this.authLoading = false;
+      }
+    },
+
+    async fetchIpv6FirewallRules() {
+      try {
+        const res = await fetch('/api/network/ipv6-firewall');
+        if (res.ok) {
+          const data = await res.json();
+          this.ipv6FirewallRules = data.rules || [];
+        }
+      } catch (e) {
+        console.warn('Could not load IPv6 firewall rules:', e);
+      }
+    },
+
+    async addIpv6FirewallRule() {
+      if (!this.ipv6RuleForm.ports) return;
+      try {
+        const res = await fetch('/api/network/ipv6-firewall', {
+          method: 'POST',
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(this.ipv6RuleForm)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error');
+        this.ipv6RuleForm = { device_name: '', mac: '', protocol: 'tcp', ports: '' };
+        await this.fetchIpv6FirewallRules();
+        this.showToast(this.t('controls.ipv6_fw_title'), this.t('controls.ipv6_fw_saved'), 'success');
+      } catch (err) {
+        this.showToast(this.t('controls.ipv6_fw_title'), err.message, 'error');
+      }
+    },
+
+    async deleteIpv6FirewallRule(ruleId) {
+      try {
+        const res = await fetch(`/api/network/ipv6-firewall/${encodeURIComponent(ruleId)}`, {
+          method: 'DELETE',
+          headers: this.getAuthHeaders()
+        });
+        if (res.ok) {
+          await this.fetchIpv6FirewallRules();
+        }
+      } catch (e) {
+        console.warn('Delete IPv6 firewall rule failed:', e);
+      }
+    },
+
+    async runPlacementTest() {
+      this.placementTestLoading = true;
+      try {
+        const res = await fetch('/api/network/placement-test', {
+          method: 'POST',
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ location: 'Mesh Assessment' })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.placementTestResult = data;
+        }
+      } catch (e) {
+        console.warn('Placement test error:', e);
+      } finally {
+        this.placementTestLoading = false;
+      }
+    },
+
+    async fetchGuardianVpn() {
+      try {
+        const res = await fetch('/api/network/guardian-vpn');
+        if (res.ok) {
+          const data = await res.json();
+          this.guardianVpn = {
+            supported: Boolean(data.supported),
+            enabled: Boolean(data.enabled)
+          };
+        }
+      } catch (e) {
+        console.warn('Guardian VPN status error:', e);
+      }
+    },
+
+    async toggleGuardianVpn() {
+      try {
+        const res = await fetch('/api/network/guardian-vpn', {
+          method: 'PUT',
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ enabled: Boolean(this.guardianVpn.enabled) })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch (e) {
+        this.guardianVpn.enabled = !this.guardianVpn.enabled;
+      }
+    },
+
+    async registerEeroNodeBySerial() {
+      if (!this.serialClaimForm.serial) return;
+      try {
+        const res = await fetch('/api/network/eeros/register', {
+          method: 'POST',
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            serial: this.serialClaimForm.serial,
+            location: this.serialClaimForm.location || 'Living Room'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Error');
+        this.serialClaimForm = { serial: '', location: '' };
+        await this.fetchOverview();
+        this.showToast(this.t('controls.serial_claim_title'), this.t('controls.serial_claim_success'), 'success');
+      } catch (err) {
+        this.showToast(this.t('controls.serial_claim_title'), err.message, 'error');
+      }
+    },
+
+    async askNetworkAssistant() {
+      if (!this.assistantPrompt) return;
+      this.assistantLoading = true;
+      this.assistantReply = '';
+      try {
+        const res = await fetch('/api/network/assistant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: this.assistantPrompt, stream: false })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          this.assistantReply = data.reply || '';
+        }
+      } catch (e) {
+        console.warn('Assistant error:', e);
+      } finally {
+        this.assistantLoading = false;
       }
     },
 
@@ -3283,7 +3520,10 @@ document.addEventListener('alpine:init', () => {
         const res = await fetch('/api/automations/notifications');
         const json = await res.json();
         if (json.status === 'success') {
-          this.notificationSettings = json;
+          this.notificationSettings = {
+            ...this.notificationSettings,
+            ...json
+          };
         }
       } catch (err) {
         console.error("Fetch notifications settings error:", err);
@@ -3320,7 +3560,14 @@ document.addEventListener('alpine:init', () => {
         const title = this.t('js.test_notifications.test_sent');
         const okLabel = this.t('js.test_notifications.status_ok');
         const noLabel = this.t('js.test_notifications.status_no');
-        this.showToast(title, `Telegram: ${json.telegram_sent ? okLabel : noLabel} | Webhook: ${json.webhook_sent ? okLabel : noLabel}`, 'info');
+        const parts = [
+          `Telegram: ${json.telegram_sent ? okLabel : noLabel}`,
+          `Webhook: ${json.webhook_sent ? okLabel : noLabel}`,
+          `Discord: ${json.discord_sent ? okLabel : noLabel}`,
+          `Pushover: ${json.pushover_sent ? okLabel : noLabel}`,
+          `Ntfy: ${json.ntfy_sent ? okLabel : noLabel}`
+        ];
+        this.showToast(title, parts.join(' | '), 'info');
       } catch (err) {
         const title = this.t('js.test_notifications.test_error');
         this.showToast(title, err.message, "error");
@@ -3363,6 +3610,7 @@ document.addEventListener('alpine:init', () => {
               drop_ipv6: Boolean(i.drop_ipv6),
               insecure_tls: i.insecure_tls === true,
               tls_url: i.insecure_tls === true ? this.normalizeDnsUrl(i.url) : '',
+              saved_url: this.normalizeDnsUrl(i.url),
               last_sync_time: i.last_sync_time || '',
               last_sync_status: i.last_sync_status || '',
               last_sync_count: i.last_sync_count || 0

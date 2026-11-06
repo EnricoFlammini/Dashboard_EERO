@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "The backup payload is not a valid JSON object.",
+  "restore_unrecognized": "Unrecognized backup file structure or no valid sections.",
+  "restore_alert_title": "💾 System Backup Restored",
+  "restore_alert_message": "Restore completed successfully: {devices} device metadata entries, {settings} settings, {schedules} schedule rules and {users} users.",
+  "restore_completed": "Backup restore completed successfully."
+}
