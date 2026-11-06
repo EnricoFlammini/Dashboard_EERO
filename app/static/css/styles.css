@@ -1413,3 +1413,44 @@ html.dark .log-console-terminal .log-badge-error {
   border-color: rgba(248, 113, 113, 0.7) !important;
 }
 
+
+/* Devices card view: live activity animation (quiet when idle, louder with throughput) */
+.device-card { position: relative; overflow: hidden; }
+.device-card[data-activity="1"] { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.25); }
+.device-card[data-activity="2"] { animation: device-glow-2 2.4s ease-in-out infinite; }
+.device-card[data-activity="3"] { animation: device-glow-3 1.2s ease-in-out infinite; }
+@keyframes device-glow-2 {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.35), 0 0 6px rgba(14, 165, 233, 0.15); }
+  50% { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.7), 0 0 16px rgba(14, 165, 233, 0.35); }
+}
+@keyframes device-glow-3 {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.5), 0 0 10px rgba(16, 185, 129, 0.25); }
+  50% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.85), 0 0 24px rgba(14, 165, 233, 0.55); }
+}
+.device-activity-track { height: 4px; border-radius: 9999px; background: rgba(148, 163, 184, 0.2); overflow: hidden; }
+.device-activity-fill { position: relative; height: 100%; border-radius: 9999px; overflow: hidden; transition: width 0.6s ease; }
+.device-activity-fill.is-down { background: #0ea5e9; }
+.device-activity-fill.is-up { background: #10b981; }
+.device-activity-fill::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: translateX(-100%);
+  animation: device-shimmer 1.6s linear infinite;
+}
+[data-activity="3"] .device-activity-fill::after { animation-duration: 0.8s; }
+@keyframes device-shimmer { to { transform: translateX(100%); } }
+.device-arrow-down, .device-arrow-up { display: inline-block; }
+[data-activity="1"] .device-arrow-down, [data-activity="2"] .device-arrow-down, [data-activity="3"] .device-arrow-down { animation: device-bob-down 1s ease-in-out infinite; }
+[data-activity="1"] .device-arrow-up, [data-activity="2"] .device-arrow-up, [data-activity="3"] .device-arrow-up { animation: device-bob-up 1s ease-in-out infinite; }
+@keyframes device-bob-down { 0%, 100% { transform: translateY(-1px); opacity: 0.7; } 50% { transform: translateY(2px); opacity: 1; } }
+@keyframes device-bob-up { 0%, 100% { transform: translateY(1px); opacity: 0.7; } 50% { transform: translateY(-2px); opacity: 1; } }
+.device-live-dot { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+.rate-tick { animation: device-rate-tick 0.7s ease-out; }
+@keyframes device-rate-tick { 0% { background-color: rgba(14, 165, 233, 0.35); } 100% { background-color: transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .device-card, .device-activity-fill::after, .device-arrow-down, .device-arrow-up, .device-live-dot, .rate-tick { animation: none !important; }
+}
+
+/* Compact device cards: 3 per row, 4 on wide screens */
+.device-cards-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 1280px) { .device-cards-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

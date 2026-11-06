@@ -81,7 +81,7 @@
   </script>
   
   <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
-  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.b{{ build_number }}.sidebarv3">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.b{{ build_number }}.sidebarv3.cards1">
 
   <!-- Chart.js & Alpine.js Local Bundles (Offline - Issue #58) -->
   <script src="/static/vendor/chart.umd.min.js"></script>
@@ -1218,7 +1218,7 @@
         <div class="device-filter-primary flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           
           <!-- Search Input with Integrated Clear Button -->
-          <div class="device-search relative flex-1 min-w-0">
+          <div class="device-search relative flex-1 min-w-0 md:flex-[1_1_0%]">
             <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
@@ -1240,12 +1240,28 @@
           </div>
 
           <!-- Toolbar Quick Controls -->
-          <div class="device-filter-controls flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+          <div class="device-filter-controls flex items-center gap-2 md:flex-[2_1_0%] md:min-w-0 flex-wrap sm:flex-nowrap">
             
             <!-- Result Counter Badge -->
             <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 shadow-xs">
               <span class="font-bold text-slate-900 dark:text-white" x-text="filteredDevices.length"></span>
               <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + t('common.devices')"></span>
+            </div>
+
+            <!-- List / Cards view toggle (desktop; mobile always uses its compact card list) -->
+            <div class="hidden md:inline-flex items-center rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.04] p-0.5 shadow-xs" role="group" :aria-label="t('devices.view_mode')">
+              <button type="button" @click="setDeviceViewMode('list')"
+                :class="deviceViewMode === 'list' ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                :aria-pressed="deviceViewMode === 'list'" :title="t('devices.view_list')"
+                class="inline-flex items-center justify-center p-2 rounded-lg transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              </button>
+              <button type="button" @click="setDeviceViewMode('cards')"
+                :class="deviceViewMode === 'cards' ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                :aria-pressed="deviceViewMode === 'cards'" :title="t('devices.view_cards')"
+                class="inline-flex items-center justify-center p-2 rounded-lg transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg>
+              </button>
             </div>
 
             <!-- Connected Only Toggle Pill -->
@@ -1255,7 +1271,7 @@
               :class="showConnectedOnly 
                 ? 'bg-sky-500/15 dark:bg-sky-500/20 border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold shadow-xs' 
                 : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              class="device-toggle-pill inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none">
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none">
               <span class="w-2 h-2 rounded-full transition-all" :class="showConnectedOnly ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50 scale-110' : 'bg-slate-400 dark:bg-slate-500'"></span>
               <span x-text="t('devices.filter_connected_only')"></span>
             </button>
@@ -1267,7 +1283,7 @@
               :class="selectedCategoryFilter === 'new' 
                 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs' 
                 : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              class="device-toggle-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none"
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none"
               :title="t('devices.filter_new_tooltip')">
               <span class="text-xs">✨</span>
               <span x-text="t('devices.filter_new_tag')"></span>
@@ -1275,12 +1291,12 @@
             </button>
 
             <!-- Column Customizer Dropdown (Desktop Only >= md - Issue #60) -->
-            <div class="hidden md:block relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
+            <div class="hidden md:block md:flex-1 relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
               <button 
                 type="button"
                 @click.stop="toggleDeviceDropdown('columns')"
                 :class="openDeviceDropdown === 'columns' ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-                class="device-toggle-pill inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs"
+                class="device-toggle-pill w-full justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs"
                 :title="t('devices.columns_button_tooltip')"
                 :aria-label="t('devices.columns_button')"
                 :aria-expanded="openDeviceDropdown === 'columns'">
@@ -1840,7 +1856,7 @@
       </div>
 
       <!-- Devices Table (Desktop Only >= md) -->
-      <div class="hidden md:block device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
+      <div x-show="deviceViewMode === 'list'" class="hidden md:block device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
         <div class="device-table-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
           <table class="device-table w-full text-left border-collapse text-xs"
                  x-effect="filteredDevices; JSON.stringify(deviceTableColumns); currentLanguage; $nextTick(() => fitDeviceNameColumn())">
@@ -2193,6 +2209,133 @@
               </template>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Devices Cards (Desktop >= md, when view mode is "cards") -->
+      <div x-show="deviceViewMode === 'cards'" x-cloak class="device-cards hidden md:block">
+        <div class="device-cards-grid grid grid-cols-3 xl:grid-cols-4 gap-3">
+          <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
+            <div @click="openDeviceModal(dev)" @keydown.enter="openDeviceModal(dev)" tabindex="0" role="button"
+                 class="device-card glass-panel rounded-xl p-2.5 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-sky-500/40 hover:shadow-md transition cursor-pointer flex flex-col gap-2 min-w-0"
+                 :data-activity="deviceActivityLevel(dev)"
+                 :class="dev.connected ? '' : 'opacity-70'">
+
+              <!-- Header: icon + live dot, name, category, status + edit -->
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="relative shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(dev.custom_icon || dev.category || dev.device_type)"></path></svg>
+                  <span class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900"
+                        :class="[dev.connected ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50' : 'bg-slate-400', deviceActivityLevel(dev) > 0 ? 'device-live-dot' : '']"
+                        :title="dev.connected ? t('devices.status_online') : t('devices.status_offline')"></span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white truncate" :title="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></span>
+                    <template x-if="dev.is_favorite"><span class="text-amber-500 text-xs shrink-0" :title="t('devices.filter_favorites')">⭐</span></template>
+                    <template x-if="dev.is_new">
+                      <span @click.stop="if (can('action_edit_devices')) setDevicesSeen([dev.mac || dev.mac_address])"
+                            class="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40"
+                            :title="can('action_edit_devices') ? t('devices.new_badge_click_hint') : ''" x-text="t('devices.new_badge')"></span>
+                    </template>
+                  </div>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-500 truncate" x-text="formatCategoryName(dev.category)"></div>
+                </div>
+                <div class="shrink-0 flex items-center gap-1.5">
+                  <span x-show="!dev.connected" class="px-2 py-0.5 rounded-full text-[9px] font-extrabold border bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-400 dark:border-slate-700" x-text="t('devices.status_offline')"></span>
+                  <button type="button" @click.stop="openDeviceModal(dev)" :title="t('devices.edit_rules')" :aria-label="t('devices.edit_rules')"
+                          class="inline-flex items-center justify-center p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Address: IP + Static/DHCP on the left, MAC on the right -->
+              <div class="flex items-center gap-2 font-mono min-w-0" :title="dev.mac || dev.mac_address">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-xs font-bold text-slate-900 dark:text-slate-200 shrink-0" x-text="dev.ip || '---'"></span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider border shrink-0"
+                        :class="dev.is_static ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border-slate-400 dark:border-slate-600'"
+                        x-text="dev.is_static ? t('devices.badge_static') : t('devices.badge_dhcp')"></span>
+                </div>
+                <span class="text-[9px] text-slate-500 dark:text-slate-500 truncate ml-auto" x-text="(dev.mac || dev.mac_address || '').slice(-8)"></span>
+              </div>
+
+              <!-- Connection + flag badges on one wrapping row -->
+              <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]" :title="dev.wireless && (dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)) ? 'PHY ' + (dev.phy_rate || dev.connectivity.rx_bitrate) : ''">
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold border"
+                      :class="dev.wireless ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-300 border-indigo-400 dark:border-indigo-500/40' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40'"
+                      x-text="deviceBandLabel(dev)"></span>
+                <template x-if="dev.channel"><span class="font-mono font-bold text-slate-700 dark:text-slate-300">CH <span x-text="dev.channel"></span></span></template>
+                <template x-if="dev.wireless && dev.signal_rssi">
+                  <span class="inline-flex items-center gap-1 font-mono font-semibold text-slate-900 dark:text-slate-200">
+                    <span class="rssi-bar" aria-hidden="true"><template x-for="n in 5" :key="n"><span :style="'height:' + (n * 20) + '%;' + (n <= deviceSignalBars(dev) ? 'background-color:#10b981' : '')"></span></template></span>
+                    <span x-text="dev.signal_rssi + ' dBm'"></span>
+                  </span>
+                </template>
+                <template x-if="!dev.wireless">
+                  <span class="font-mono font-bold text-emerald-700 dark:text-emerald-400" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired')"></span>
+                </template>
+                <template x-if="dev.is_paused || dev.paused || dev.is_local_paused">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30" x-text="'⏸'" :title="t('devices.badge_paused')"></span>
+                </template>
+                <template x-if="dev.is_low_latency_target">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" x-text="'🎮'" :title="t('devices.badge_gaming_target')"></span>
+                </template>
+                <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 cursor-help" :title="t('devices.sticky_roaming_badge') + ' — ' + localized(dev.roaming_advisor, 'advice')">🔄</span>
+                </template>
+                <template x-if="dev.ipv6 || (dev.ipv6_all && dev.ipv6_all.length)">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30" :title="(dev.ipv6_all || [dev.ipv6]).join('\n')">IPv6</span>
+                </template>
+                <template x-if="dev.has_discovered_ips || (dev.ipv6_details && dev.ipv6_details.some(d => d.origin === 'ndp_discovered'))">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-fuchsia-100 dark:bg-fuchsia-950/60 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-400 dark:border-fuchsia-500/40" :title="t('devices.badge_ula_enriched') + ' — ' + t('devices.badge_ula_enriched_tooltip')">ULA</span>
+                </template>
+              </div>
+
+              <!-- Notes (only when set) -->
+              <template x-if="dev.custom_notes">
+                <div class="text-[11px] italic text-slate-500 dark:text-slate-400 truncate" :title="dev.custom_notes" x-text="dev.custom_notes"></div>
+              </template>
+
+              <!-- Live throughput, download and upload side by side: arrows bob, bars shimmer, card glows when moving data -->
+              <div class="grid grid-cols-2 gap-2.5 font-mono">
+                <div class="min-w-0" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0)">
+                  <div class="flex items-baseline justify-between gap-1 text-[11px]">
+                    <span class="font-bold text-sky-600 dark:text-sky-400 truncate"><span class="device-arrow-down">↓</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.download_rate_mbps) : '0 Mbps'" x-effect="dev.download_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.download_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    
+                  </div>
+                  <div class="device-activity-track mt-1"><div class="device-activity-fill is-down" :style="'width:' + (dev.connected ? deviceRatePercent(dev.download_rate_mbps) : 0) + '%'"></div></div>
+                </div>
+                <div class="min-w-0" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0)">
+                  <div class="flex items-baseline justify-between gap-1 text-[11px]">
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400 truncate"><span class="device-arrow-up">↑</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.upload_rate_mbps) : '0 Mbps'" x-effect="dev.upload_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.upload_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    
+                  </div>
+                  <div class="device-activity-track mt-1"><div class="device-activity-fill is-up" :style="'width:' + (dev.connected ? deviceRatePercent(dev.upload_rate_mbps) : 0) + '%'"></div></div>
+                </div>
+              </div>
+
+              <!-- Footer: profile, node, first seen on a single line -->
+              <div class="mt-auto pt-2 border-t border-slate-200 dark:border-slate-800/60 flex items-center justify-between gap-2 min-w-0 text-[11px] text-slate-600 dark:text-slate-400">
+                <div class="min-w-0 flex items-center gap-1.5 truncate">
+                  <span class="truncate" :title="dev.profile_name || t('profiles.total_unassigned')">
+                    <span>👤</span> <span :class="dev.profile_name ? 'font-semibold text-slate-700 dark:text-slate-300' : 'italic'" x-text="dev.profile_name || t('profiles.total_unassigned')"></span>
+                  </span>
+                  <span class="text-slate-400 dark:text-slate-600">•</span>
+                  <span class="truncate" :title="t('devices.col_node')" x-text="dev.connected_eero_name || t('common.gateway')"></span>
+                </div>
+                <template x-if="dev.first_seen">
+                  <div class="shrink-0 inline-flex items-center gap-1 text-[10px]" :title="t('devices.first_seen_badge_tooltip') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                    <span class="font-mono" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div x-show="filteredDevices.length === 0" class="py-12 text-center text-slate-500">
+          <p class="text-sm font-semibold" x-text="t('devices.no_devices_found')"></p>
         </div>
       </div>
 

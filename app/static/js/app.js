@@ -341,6 +341,60 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {}
     },
 
+    // Devices view mode: 'list' (table, default) or 'cards'. Per-browser preference, not part of the URL filters.
+    deviceViewMode: (() => {
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('eero_device_view') === 'cards') return 'cards';
+      } catch (e) {}
+      return 'list';
+    })(),
+
+    setDeviceViewMode(mode) {
+      this.deviceViewMode = mode === 'cards' ? 'cards' : 'list';
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('eero_device_view', this.deviceViewMode);
+      } catch (e) {}
+    },
+
+    // 0 = idle/offline, 1 = trickle (<1 Mbps), 2 = active (<25 Mbps), 3 = heavy. Drives the card glow and flow animations.
+    deviceActivityLevel(dev) {
+      if (!dev || !dev.connected || dev.paused || dev.is_paused) return 0;
+      const rate = Math.max(Number(dev.download_rate_mbps) || 0, Number(dev.upload_rate_mbps) || 0);
+      if (rate <= 0.05) return 0;
+      if (rate < 1) return 1;
+      return rate < 25 ? 2 : 3;
+    },
+
+    // Log-scaled 0-100 so a 2 Mbps stream and a 500 Mbps transfer both register on the activity bar.
+    deviceRatePercent(mbps) {
+      const n = Number(mbps) || 0;
+      if (n <= 0.05) return 0;
+      return Math.max(4, Math.min(100, Math.round(Math.log10(1 + n) / Math.log10(1001) * 100)));
+    },
+
+    deviceRateLabel(mbps) {
+      const n = Number(mbps) || 0;
+      if (n <= 0.05) return '0 Mbps';
+      return (n >= 100 ? Math.round(n) : n.toFixed(1)) + ' Mbps';
+    },
+
+    deviceSignalBars(dev) {
+      if (dev.signal_bars) return dev.signal_bars;
+      const rssi = Number(dev.signal_rssi);
+      if (!rssi) return 0;
+      return rssi >= -50 ? 5 : rssi >= -60 ? 4 : rssi >= -67 ? 3 : rssi >= -75 ? 2 : 1;
+    },
+
+    deviceBandLabel(dev) {
+      if (dev.wireless === false || dev.connection_type === 'wired' || ['Ethernet', 'Cablato', 'Wired'].includes(dev.frequency_band)) {
+        return this.t('common.ethernet');
+      }
+      if (dev.frequency_band) return dev.frequency_band;
+      if (dev.wireless_band) return dev.wireless_band;
+      if (dev.channel && dev.channel <= 14) return '2.4 GHz';
+      return dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz';
+    },
+
     /**
      * Sizes the Devices table "Device / Host" and "Profile / User" columns to the widest
      * device name (+ badges) and profile name on screen, so neither wraps or clips. Profile
