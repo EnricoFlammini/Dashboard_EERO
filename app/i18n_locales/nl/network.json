@@ -1,8 +1,8 @@
 {
-  "refreshed": "Network data refreshed.",
-  "not_authenticated": "Not signed in to eero",
-  "advanced_updated": "Advanced settings updated.",
-  "switched": "Switched to network '{network_id}'.",
-  "mapping_removed": "Mapping {ip} <-> {mac} removed.",
-  "mapping_not_found": "No matching mapping found to delete."
+  "refreshed": "Netwerkgegevens vernieuwd.",
+  "not_authenticated": "Niet aangemeld bij eero",
+  "advanced_updated": "Geavanceerde instellingen bijgewerkt.",
+  "switched": "Overgeschakeld naar netwerk '{network_id}'.",
+  "mapping_removed": "Toewijzing {ip} <-> {mac} verwijderd.",
+  "mapping_not_found": "Er zijn geen overeenkomende toewijzingen gevonden om te verwijderen."
 }

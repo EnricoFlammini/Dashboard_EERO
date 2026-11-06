@@ -1,13 +1,13 @@
 {
-  "username_in_use": "The username '{username}' is already in use.",
-  "create_failed": "Error while creating the user.",
-  "created": "User '{username}' created successfully.",
-  "not_found": "User not found.",
-  "username_taken": "Username '{username}' is already used by another user.",
-  "last_admin_demote": "Cannot revoke administrator rights: at least one active administrator must remain in the system.",
-  "update_failed": "Error while updating the user.",
-  "updated": "User updated successfully.",
-  "last_admin_delete": "Cannot delete the user: at least one active administrator must remain in the system.",
-  "delete_failed": "Error while deleting the user.",
-  "deleted": "User '{username}' deleted successfully."
+  "username_in_use": "O nome de usuário '{username}' já está em uso.",
+  "create_failed": "Erro ao criar o usuário.",
+  "created": "Usuário '{username}' criado com sucesso.",
+  "not_found": "Usuário não encontrado.",
+  "username_taken": "O nome de usuário '{username}' já está sendo usado por outro usuário.",
+  "last_admin_demote": "Não é possível revogar direitos de administrador: pelo menos um administrador ativo deve permanecer no sistema.",
+  "update_failed": "Erro ao atualizar o usuário.",
+  "updated": "Usuário atualizado com sucesso.",
+  "last_admin_delete": "Não é possível excluir o usuário: pelo menos um administrador ativo deve permanecer no sistema.",
+  "delete_failed": "Erro ao excluir o usuário.",
+  "deleted": "Usuário '{username}' excluído com sucesso."
 }

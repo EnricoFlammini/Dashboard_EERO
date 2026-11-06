@@ -1,8 +1,8 @@
 {
-  "refreshed": "Network data refreshed.",
-  "not_authenticated": "Not signed in to eero",
-  "advanced_updated": "Advanced settings updated.",
-  "switched": "Switched to network '{network_id}'.",
-  "mapping_removed": "Mapping {ip} <-> {mac} removed.",
-  "mapping_not_found": "No matching mapping found to delete."
+  "refreshed": "Données réseau actualisées.",
+  "not_authenticated": "Non connecté à eero",
+  "advanced_updated": "Paramètres avancés mis à jour.",
+  "switched": "Basculé vers le réseau « {network_id} ».",
+  "mapping_removed": "Mappage {ip} <-> {mac} supprimé.",
+  "mapping_not_found": "Aucun mappage correspondant à supprimer n'a été trouvé."
 }

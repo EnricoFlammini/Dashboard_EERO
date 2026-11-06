@@ -1,9 +1,9 @@
 {
-  "already_in_progress": "An update is already in progress...",
-  "watchtower_sent": "Update signal sent to Watchtower. The container will restart shortly.",
-  "watchtower_bad_status": "Watchtower responded with status {code}: {body}",
-  "watchtower_error": "Watchtower trigger error: {error}",
-  "docker_started": "Update started: downloading the new Docker image. The application will restart automatically.",
-  "manual_required": "No Docker socket or Watchtower configured. Run '{command}' on the server.",
-  "generic_release_available": "Release v{version} is available with performance, stability and security improvements."
+  "already_in_progress": "Μια ενημέρωση είναι ήδη σε εξέλιξη...",
+  "watchtower_sent": "Το σήμα ενημέρωσης εστάλη στη Σκοπιά. Το κοντέινερ θα επανεκκινήσει σύντομα.",
+  "watchtower_bad_status": "Η Σκοπιά απάντησε με κατάσταση {code}: {body}",
+  "watchtower_error": "Σφάλμα ενεργοποίησης της Σκοπιάς: {error}",
+  "docker_started": "Η ενημέρωση ξεκίνησε: λήψη της νέας εικόνας Docker. Η εφαρμογή θα επανεκκινήσει αυτόματα.",
+  "manual_required": "Δεν έχει διαμορφωθεί υποδοχή Docker ή Watchtower. Εκτελέστε το '{command}' στον διακομιστή.",
+  "generic_release_available": "Η έκδοση v{version} είναι διαθέσιμη με βελτιώσεις απόδοσης, σταθερότητας και ασφάλειας."
 }

@@ -1,13 +1,13 @@
 {
-  "username_in_use": "The username '{username}' is already in use.",
-  "create_failed": "Error while creating the user.",
-  "created": "User '{username}' created successfully.",
-  "not_found": "User not found.",
-  "username_taken": "Username '{username}' is already used by another user.",
-  "last_admin_demote": "Cannot revoke administrator rights: at least one active administrator must remain in the system.",
-  "update_failed": "Error while updating the user.",
-  "updated": "User updated successfully.",
-  "last_admin_delete": "Cannot delete the user: at least one active administrator must remain in the system.",
-  "delete_failed": "Error while deleting the user.",
-  "deleted": "User '{username}' deleted successfully."
+  "username_in_use": "Le nom d'utilisateur '{username}' est déjà utilisé.",
+  "create_failed": "Erreur lors de la création de l'utilisateur.",
+  "created": "L'utilisateur '{username}' a été créé avec succès.",
+  "not_found": "Utilisateur introuvable.",
+  "username_taken": "Le nom d'utilisateur '{username}' est déjà utilisé par un autre utilisateur.",
+  "last_admin_demote": "Impossible de révoquer les droits d'administrateur : au moins un administrateur actif doit rester dans le système.",
+  "update_failed": "Erreur lors de la mise à jour de l'utilisateur.",
+  "updated": "L'utilisateur a mis à jour avec succès.",
+  "last_admin_delete": "Impossible de supprimer l'utilisateur : au moins un administrateur actif doit rester dans le système.",
+  "delete_failed": "Erreur lors de la suppression de l'utilisateur.",
+  "deleted": "L'utilisateur '{username}' a été supprimé avec succès."
 }

@@ -1,13 +1,13 @@
 {
-  "username_in_use": "The username '{username}' is already in use.",
-  "create_failed": "Error while creating the user.",
-  "created": "User '{username}' created successfully.",
-  "not_found": "User not found.",
-  "username_taken": "Username '{username}' is already used by another user.",
-  "last_admin_demote": "Cannot revoke administrator rights: at least one active administrator must remain in the system.",
-  "update_failed": "Error while updating the user.",
-  "updated": "User updated successfully.",
-  "last_admin_delete": "Cannot delete the user: at least one active administrator must remain in the system.",
-  "delete_failed": "Error while deleting the user.",
-  "deleted": "User '{username}' deleted successfully."
+  "username_in_use": "De gebruikersnaam '{username}' is al in gebruik.",
+  "create_failed": "Fout bij het aanmaken van de gebruiker.",
+  "created": "Gebruiker '{username}' is succesvol aangemaakt.",
+  "not_found": "Gebruiker niet gevonden.",
+  "username_taken": "Gebruikersnaam '{username}' wordt al gebruikt door een andere gebruiker.",
+  "last_admin_demote": "Kan beheerdersrechten niet intrekken: er moet minimaal één actieve beheerder in het systeem blijven.",
+  "update_failed": "Fout bij het updaten van de gebruiker.",
+  "updated": "Gebruiker is succesvol bijgewerkt.",
+  "last_admin_delete": "Kan de gebruiker niet verwijderen: er moet minimaal één actieve beheerder in het systeem blijven.",
+  "delete_failed": "Fout bij het verwijderen van de gebruiker.",
+  "deleted": "Gebruiker '{username}' is succesvol verwijderd."
 }

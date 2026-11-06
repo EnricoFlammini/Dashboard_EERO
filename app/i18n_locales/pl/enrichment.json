@@ -1,10 +1,10 @@
 {
-  "invalid_mac": "Item #{index}: MAC address '{mac}' is not valid.",
-  "invalid_ip": "Item #{index}: IP address '{ip}' is not valid.",
-  "no_valid_mappings": "No valid IP-MAC mappings provided.",
-  "adguard_url_missing": "AdGuard URL not configured.",
-  "adguard_connection_error": "AdGuard connection error ({url}): {error}",
-  "no_orphan_clients": "No auto/orphan clients found on AdGuard Home.",
-  "scan_result": "Found {candidates} ULA candidates, {resolved} resolved successfully via NDP.",
-  "no_adguard_instances": "No active AdGuard Home instances configured."
+  "invalid_mac": "Pozycja #{index}: Adres MAC „{mac}” jest nieprawidłowy.",
+  "invalid_ip": "Pozycja #{index}: Adres IP „{ip}” jest nieprawidłowy.",
+  "no_valid_mappings": "Nie podano prawidłowych mapowań IP-MAC.",
+  "adguard_url_missing": "Adres URL AdGuard nie jest skonfigurowany.",
+  "adguard_connection_error": "Błąd połączenia AdGuard ({url}): {error}",
+  "no_orphan_clients": "W AdGuard Home nie znaleziono żadnych klientów automatycznych/sierot.",
+  "scan_result": "Znaleziono {candidates} kandydatów ULA, {resolved} pomyślnie rozwiązano sprawę za pośrednictwem NDP.",
+  "no_adguard_instances": "Nie skonfigurowano aktywnych instancji AdGuard Home."
 }

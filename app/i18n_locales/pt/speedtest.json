@@ -1,6 +1,6 @@
 {
-  "already_running_wait": "A speed test is already running. Wait for it to finish.",
-  "completed": "Speed test completed successfully.",
-  "already_running": "A speed test is already running.",
-  "invalid_metrics": "The eero gateway speed test did not return valid throughput metrics."
+  "already_running_wait": "Um teste de velocidade já está em execução. Espere terminar.",
+  "completed": "Teste de velocidade concluído com sucesso.",
+  "already_running": "Um teste de velocidade já está em execução.",
+  "invalid_metrics": "O teste de velocidade do gateway eero não retornou métricas de rendimento válidas."
 }

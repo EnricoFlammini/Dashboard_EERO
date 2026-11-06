@@ -1,13 +1,13 @@
 {
-  "username_in_use": "The username '{username}' is already in use.",
-  "create_failed": "Error while creating the user.",
-  "created": "User '{username}' created successfully.",
-  "not_found": "User not found.",
-  "username_taken": "Username '{username}' is already used by another user.",
-  "last_admin_demote": "Cannot revoke administrator rights: at least one active administrator must remain in the system.",
-  "update_failed": "Error while updating the user.",
-  "updated": "User updated successfully.",
-  "last_admin_delete": "Cannot delete the user: at least one active administrator must remain in the system.",
-  "delete_failed": "Error while deleting the user.",
-  "deleted": "User '{username}' deleted successfully."
+  "username_in_use": "Το όνομα χρήστη '{username}' χρησιμοποιείται ήδη.",
+  "create_failed": "Σφάλμα κατά τη δημιουργία του χρήστη.",
+  "created": "Ο χρήστης '{username}' δημιουργήθηκε με επιτυχία.",
+  "not_found": "Ο χρήστης δεν βρέθηκε.",
+  "username_taken": "Το όνομα χρήστη '{username}' χρησιμοποιείται ήδη από άλλον χρήστη.",
+  "last_admin_demote": "Δεν είναι δυνατή η ανάκληση των δικαιωμάτων διαχειριστή: τουλάχιστον ένας ενεργός διαχειριστής πρέπει να παραμείνει στο σύστημα.",
+  "update_failed": "Σφάλμα κατά την ενημέρωση του χρήστη.",
+  "updated": "Ο χρήστης ενημερώθηκε με επιτυχία.",
+  "last_admin_delete": "Δεν είναι δυνατή η διαγραφή του χρήστη: τουλάχιστον ένας ενεργός διαχειριστής πρέπει να παραμείνει στο σύστημα.",
+  "delete_failed": "Σφάλμα κατά τη διαγραφή του χρήστη.",
+  "deleted": "Ο χρήστης '{username}' διαγράφηκε με επιτυχία."
 }

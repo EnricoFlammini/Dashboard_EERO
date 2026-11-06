@@ -1,7 +1,7 @@
 {
-  "restore_invalid_json": "The backup payload is not a valid JSON object.",
-  "restore_unrecognized": "Unrecognized backup file structure or no valid sections.",
-  "restore_alert_title": "💾 System Backup Restored",
-  "restore_alert_message": "Restore completed successfully: {devices} device metadata entries, {settings} settings, {schedules} schedule rules and {users} users.",
-  "restore_completed": "Backup restore completed successfully."
+  "restore_invalid_json": "A carga de backup não é um objeto JSON válido.",
+  "restore_unrecognized": "Estrutura de arquivo de backup não reconhecida ou nenhuma seção válida.",
+  "restore_alert_title": "💾 Backup do sistema restaurado",
+  "restore_alert_message": "Restauração concluída com êxito: {devices} entradas de metadados do dispositivo, {settings} configurações, {schedules} regras de agendamento e {users} usuários.",
+  "restore_completed": "A restauração do backup foi concluída com sucesso."
 }

@@ -1,8 +1,8 @@
 {
-  "auth_required": "Authentication required",
-  "session_invalid": "Invalid or expired session",
-  "admin_only": "This operation is restricted to administrators.",
-  "permission_denied": "Insufficient permission: '{permission}' authorization required.",
-  "auth_required_operation": "Authentication required for this operation",
-  "cross_origin_blocked": "Cross-origin request blocked"
+  "auth_required": "Authentifizierung erforderlich",
+  "session_invalid": "Ungültige oder abgelaufene Sitzung",
+  "admin_only": "Dieser Vorgang ist auf Administratoren beschränkt.",
+  "permission_denied": "Unzureichende Berechtigung: „{permission}“-Autorisierung erforderlich.",
+  "auth_required_operation": "Für diesen Vorgang ist eine Authentifizierung erforderlich",
+  "cross_origin_blocked": "Cross-Origin-Anfrage blockiert"
 }

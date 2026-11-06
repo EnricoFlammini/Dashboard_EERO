@@ -1,15 +1,15 @@
 {
-  "language_unsupported": "Unsupported language. Valid values: 'en', 'it'",
-  "news_fetch_failed": "Error fetching eero news: {error}",
-  "news_refresh_failed": "Error refreshing eero news: {error}",
-  "backup_export_failed": "Error exporting the backup: {error}",
-  "backup_restore_failed": "Error restoring the backup: {error}",
-  "db_stats_failed": "Error retrieving database statistics: {error}",
-  "db_compact_failed": "Error compacting the database: {error}",
-  "db_integrity_failed": "Database integrity check error: {error}",
-  "db_backup_failed": "Error creating database backup: {error}",
-  "update_check_failed": "Error checking for updates: {error}",
-  "release_notes_failed": "Error retrieving release notes: {error}",
-  "update_trigger_failed": "Error starting the update: {error}",
-  "manual_section_not_found": "Section not found."
+  "language_unsupported": "Idioma no admitido. Valores válidos: 'en', 'it'",
+  "news_fetch_failed": "Error al obtener noticias de eero: {error}",
+  "news_refresh_failed": "Error al actualizar noticias de eero: {error}",
+  "backup_export_failed": "Error al exportar la copia de seguridad: {error}",
+  "backup_restore_failed": "Error al restaurar la copia de seguridad: {error}",
+  "db_stats_failed": "Error al recuperar estadísticas de la base de datos: {error}",
+  "db_compact_failed": "Error al compactar la base de datos: {error}",
+  "db_integrity_failed": "Error de verificación de integridad de la base de datos: {error}",
+  "db_backup_failed": "Error al crear la copia de seguridad de la base de datos: {error}",
+  "update_check_failed": "Error al buscar actualizaciones: {error}",
+  "release_notes_failed": "Error al recuperar las notas de la versión: {error}",
+  "update_trigger_failed": "Error al iniciar la actualización: {error}",
+  "manual_section_not_found": "Sección no encontrada."
 }
