@@ -607,7 +607,24 @@
     "ai_assistant_title": "eero AI Network Diagnostic Assistant",
     "ai_assistant_subtitle": "Real-time interactive diagnostics for mesh topology, RF signal, and WAN performance",
     "ai_assistant_placeholder": "Ask about weak Wi-Fi signals, mesh backhaul, or WAN speed...",
-    "ai_assistant_send": "Ask AI"
+    "ai_assistant_send": "Ask AI",
+    "placement_test_running": "RF assessment in progress...",
+    "placement_test_success": "RF placement test completed",
+    "placement_test_error": "Error during RF placement test",
+    "placement_nodes_title": "Detailed Mesh Node Assessment",
+    "placement_close": "Close Results",
+    "placement_advice_optimal": "Optimal placement. Ideal coverage and throughput.",
+    "placement_advice_good": "Good placement. Move the node slightly closer for maximum speed.",
+    "placement_advice_poor": "Critical placement. Weak signal or dense obstacles between nodes.",
+    "placement_wired_backhaul": "Wired Backhaul (Ethernet)",
+    "placement_mesh_backhaul": "Wi-Fi Mesh Backhaul",
+    "guardian_vpn_supported": "eero Plus Supported",
+    "guardian_vpn_unsupported": "Requires eero Plus",
+    "guardian_vpn_req_plus": "Network-level VPN protection requires an active eero Plus subscription associated with the account.",
+    "guardian_vpn_enabled_msg": "Guardian VPN enabled successfully on the network.",
+    "guardian_vpn_disabled_msg": "Guardian VPN disabled.",
+    "vpn_active": "Protection Active",
+    "vpn_inactive": "Protection Inactive"
   },
   "manual": {
     "title": "User Manual & Interactive Guide",
@@ -1620,4 +1637,3 @@
     }
   }
 }
-

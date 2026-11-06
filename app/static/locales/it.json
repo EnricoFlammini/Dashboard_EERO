@@ -607,7 +607,24 @@
     "ai_assistant_title": "Assistente Diagnostico AI di Rete eero",
     "ai_assistant_subtitle": "Diagnostica interattiva in tempo reale su topologia mesh, segnale RF e prestazioni WAN",
     "ai_assistant_placeholder": "Chiedi informazioni su segnale Wi-Fi debole, backhaul mesh o velocità WAN...",
-    "ai_assistant_send": "Chiedi all'AI"
+    "ai_assistant_send": "Chiedi all'AI",
+    "placement_test_running": "Valutazione RF in corso...",
+    "placement_test_success": "Test posizionamento RF completato",
+    "placement_test_error": "Errore durante il test di posizionamento RF",
+    "placement_nodes_title": "Valutazione Dettagliata per Nodo Mesh",
+    "placement_close": "Chiudi Risultati",
+    "placement_advice_optimal": "Posizionamento ottimale. Copertura e throughput ideali.",
+    "placement_advice_good": "Posizionamento buono. Avvicina leggermente il nodo per la massima velocità.",
+    "placement_advice_poor": "Posizionamento critico. Segnale debole o ostacoli densi tra i nodi.",
+    "placement_wired_backhaul": "Backhaul Cablato (Ethernet)",
+    "placement_mesh_backhaul": "Backhaul Wi-Fi Mesh",
+    "guardian_vpn_supported": "eero Plus Supportato",
+    "guardian_vpn_unsupported": "Richiede eero Plus",
+    "guardian_vpn_req_plus": "La protezione VPN a livello di rete richiede una sottoscrizione attiva ad eero Plus associata all'account.",
+    "guardian_vpn_enabled_msg": "Guardian VPN abilitata con successo sulla rete.",
+    "guardian_vpn_disabled_msg": "Guardian VPN disabilitata.",
+    "vpn_active": "Protezione Attiva",
+    "vpn_inactive": "Protezione Disattivata"
   },
   "manual": {
     "title": "Manuale Utente & Guida Interattiva",
@@ -1620,4 +1637,3 @@
     }
   }
 }
-

@@ -763,9 +763,12 @@ document.addEventListener('alpine:init', () => {
     },
     placementTestLoading: false,
     placementTestResult: null,
+    guardianVpnLoading: false,
     guardianVpn: {
       supported: false,
-      enabled: false
+      enabled: false,
+      provider: 'Guardian (eero Plus)',
+      details: null
     },
     serialClaimForm: {
       serial: '',
@@ -1616,9 +1619,19 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    getAuthHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      if (this.localAuthToken) {
+        headers['Authorization'] = `Bearer ${this.localAuthToken}`;
+      }
+      return headers;
+    },
+
     async fetchIpv6FirewallRules() {
       try {
-        const res = await fetch('/api/network/ipv6-firewall');
+        const res = await fetch('/api/network/ipv6-firewall', {
+          headers: this.getAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           this.ipv6FirewallRules = data.rules || [];
@@ -1671,9 +1684,15 @@ document.addEventListener('alpine:init', () => {
         const data = await res.json();
         if (res.ok) {
           this.placementTestResult = data;
+          const score = data.score ?? 0;
+          const rating = (data.rating || 'optimal').toUpperCase();
+          this.showToast(this.t('controls.placement_test_title'), `${this.t('controls.placement_test_success')} (${score}/100 - ${rating})`, 'success');
+        } else {
+          throw new Error(data.detail || this.t('controls.placement_test_error'));
         }
       } catch (e) {
         console.warn('Placement test error:', e);
+        this.showToast(this.t('controls.placement_test_title'), e.message || this.t('controls.placement_test_error'), 'error');
       } finally {
         this.placementTestLoading = false;
       }
@@ -1681,12 +1700,16 @@ document.addEventListener('alpine:init', () => {
 
     async fetchGuardianVpn() {
       try {
-        const res = await fetch('/api/network/guardian-vpn');
+        const res = await fetch('/api/network/guardian-vpn', {
+          headers: this.getAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           this.guardianVpn = {
             supported: Boolean(data.supported),
-            enabled: Boolean(data.enabled)
+            enabled: Boolean(data.enabled),
+            provider: data.provider || 'Guardian (eero Plus)',
+            details: data.details || null
           };
         }
       } catch (e) {
@@ -1695,15 +1718,30 @@ document.addEventListener('alpine:init', () => {
     },
 
     async toggleGuardianVpn() {
+      if (this.guardianVpnLoading) return;
+      this.guardianVpnLoading = true;
+      const targetState = Boolean(this.guardianVpn.enabled);
       try {
         const res = await fetch('/api/network/guardian-vpn', {
           method: 'PUT',
           headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ enabled: Boolean(this.guardianVpn.enabled) })
+          body: JSON.stringify({ enabled: targetState })
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        const msg = targetState 
+          ? this.t('controls.guardian_vpn_enabled_msg')
+          : this.t('controls.guardian_vpn_disabled_msg');
+        this.showToast(this.t('controls.guardian_vpn_title'), msg, 'success');
       } catch (e) {
-        this.guardianVpn.enabled = !this.guardianVpn.enabled;
+        // Ripristina lo stato del toggle in caso di errore
+        this.guardianVpn.enabled = !targetState;
+        console.warn('Toggle Guardian VPN failed:', e);
+        this.showToast(this.t('controls.guardian_vpn_title'), e.message || this.t('toasts.operation_failed'), 'error');
+      } finally {
+        this.guardianVpnLoading = false;
       }
     },
 
@@ -1808,6 +1846,7 @@ document.addEventListener('alpine:init', () => {
         this.fetchAdGuardSettings(),
         this.fetchMqttSettings(),
         this.fetchAlerts(),
+        this.fetchGuardianVpn(),
         this.loadSpeedtestData(),
       ]);
       if (this.currentTab === 'devices') {

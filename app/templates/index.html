@@ -4157,26 +4157,138 @@
               </div>
 
               <!-- Placement Test Row -->
-              <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-slate-800 dark:text-slate-200" x-text="t('controls.placement_test_title')"></span>
-                  <button type="button" @click="runPlacementTest()" :disabled="placementTestLoading" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition cursor-pointer disabled:opacity-50" x-text="placementTestLoading ? t('header.refreshing') : t('controls.placement_test_btn')"></button>
+              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <span class="font-bold text-slate-800 dark:text-slate-200" x-text="t('controls.placement_test_title')"></span>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" x-text="t('controls.mesh_tools_desc')"></p>
+                  </div>
+                  <button type="button" 
+                          @click="runPlacementTest()" 
+                          :disabled="placementTestLoading" 
+                          class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-2 shadow-sm shrink-0">
+                    <svg x-show="placementTestLoading" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-text="placementTestLoading ? t('controls.placement_test_running') : t('controls.placement_test_btn')"></span>
+                  </button>
                 </div>
-                <template x-if="placementTestResult">
-                  <div class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold" x-text="t('controls.placement_score_label') + ': ' + placementTestResult.score + '/100 (' + placementTestResult.rating.toUpperCase() + ')'"></div>
-                </template>
+
+                <!-- Placement Test Detailed Results Panel -->
+                <div x-show="placementTestResult" class="pt-2 border-t border-slate-200/80 dark:border-slate-800/80 space-y-3">
+                  <!-- Overall Score Banner -->
+                  <div class="p-3 rounded-xl flex items-center justify-between gap-3"
+                       :class="{
+                         'bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300': (placementTestResult?.score || 0) >= 80,
+                         'bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300': (placementTestResult?.score || 0) >= 60 && (placementTestResult?.score || 0) < 80,
+                         'bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300': (placementTestResult?.score || 0) < 60
+                       }">
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs uppercase tracking-wider font-bold opacity-80" x-text="t('controls.placement_score_label')"></span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-bold uppercase"
+                              :class="{
+                                'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300': (placementTestResult?.score || 0) >= 80,
+                                'bg-amber-500/20 text-amber-700 dark:text-amber-300': (placementTestResult?.score || 0) >= 60 && (placementTestResult?.score || 0) < 80,
+                                'bg-rose-500/20 text-rose-700 dark:text-rose-300': (placementTestResult?.score || 0) < 60
+                              }"
+                              x-text="(placementTestResult?.rating || 'optimal').toUpperCase()"></span>
+                      </div>
+                      <div class="text-[11px] leading-relaxed opacity-90"
+                           x-text="(placementTestResult?.score || 0) >= 80 ? t('controls.placement_advice_optimal') : ((placementTestResult?.score || 0) >= 60 ? t('controls.placement_advice_good') : t('controls.placement_advice_poor'))"></div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                      <div class="text-right">
+                        <div class="text-2xl font-black tracking-tight" x-text="placementTestResult ? (placementTestResult.score + '/100') : ''"></div>
+                      </div>
+                      <button type="button" @click="placementTestResult = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-700 cursor-pointer" :title="t('controls.placement_close')">✕</button>
+                    </div>
+                  </div>
+
+                  <!-- Nodes Breakdown List -->
+                  <div class="space-y-2">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400" x-text="t('controls.placement_nodes_title')"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <template x-for="n in (placementTestResult?.nodes || [])" :key="n.name">
+                        <div class="p-2.5 rounded-lg bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-xs">
+                          <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                              <span class="text-sm shrink-0" x-text="n.is_echo_node ? '🔊' : (n.wired ? '🔌' : '📡')"></span>
+                              <span class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate" x-text="n.name || 'eero Node'"></span>
+                              <span x-show="n.is_echo_node" class="text-[9px] px-1 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold shrink-0">Echo</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5" x-text="n.model || 'eero'"></div>
+                            <div class="mt-1">
+                              <span x-show="n.wired" class="text-[9px] px-1.5 py-0.5 rounded font-medium bg-sky-500/10 text-sky-600 dark:text-sky-400" x-text="t('controls.placement_wired_backhaul')"></span>
+                              <span x-show="!n.wired" class="text-[9px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" x-text="t('controls.placement_mesh_backhaul') + ' (' + (n.mesh_quality_bars || 5) + '/5)'"></span>
+                            </div>
+                          </div>
+                          <div class="text-right shrink-0">
+                            <div class="font-bold text-xs"
+                                 :class="{
+                                   'text-emerald-600 dark:text-emerald-400': n.placement_score >= 80,
+                                   'text-amber-600 dark:text-amber-400': n.placement_score >= 60 && n.placement_score < 80,
+                                   'text-rose-600 dark:text-rose-400': n.placement_score < 60
+                                 }"
+                                 x-text="n.placement_score + '/100'"></div>
+                            <div class="text-[9px] uppercase font-bold text-slate-400" x-text="n.rating"></div>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Guardian VPN Row -->
-              <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                  <div class="font-bold text-slate-800 dark:text-slate-200" x-text="t('controls.guardian_vpn_title')"></div>
-                  <div class="text-[11px] text-slate-500" x-text="t('controls.guardian_vpn_desc')"></div>
+              <!-- Guardian VPN Row (eero Plus) -->
+              <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-slate-800 dark:text-slate-200" x-text="t('controls.guardian_vpn_title')"></span>
+                      <!-- Subscription Badge -->
+                      <span x-show="guardianVpn.supported" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                        <span x-text="t('controls.guardian_vpn_supported')"></span>
+                      </span>
+                      <span x-show="!guardianVpn.supported" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                        <span x-text="t('controls.guardian_vpn_unsupported')"></span>
+                      </span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed" x-text="t('controls.guardian_vpn_desc')"></div>
+                  </div>
+
+                  <!-- Toggle Switch + Status Label -->
+                  <div class="flex items-center gap-3 shrink-0">
+                    <span class="text-xs font-bold flex items-center gap-1.5"
+                          :class="guardianVpn.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'">
+                      <span x-show="guardianVpn.enabled" class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span x-show="!guardianVpn.enabled" class="inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
+                      <span x-text="guardianVpn.enabled ? t('controls.vpn_active') : t('controls.vpn_inactive')"></span>
+                    </span>
+
+                    <label class="relative inline-flex items-center cursor-pointer select-none"
+                           :class="(!guardianVpn.supported || guardianVpnLoading) ? 'opacity-50 cursor-not-allowed' : ''">
+                      <input type="checkbox"
+                             x-model="guardianVpn.enabled" 
+                             :disabled="!guardianVpn.supported || guardianVpnLoading" 
+                             @change="toggleGuardianVpn()" 
+                             class="sr-only peer">
+                      <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
                 </div>
-                <label class="flex items-center space-x-2 cursor-pointer select-none">
-                  <input type="checkbox" x-model="guardianVpn.enabled" @change="toggleGuardianVpn()" class="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 w-4 h-4">
-                  <span class="font-bold" x-text="guardianVpn.enabled ? t('controls.enabled') : t('controls.disabled')"></span>
-                </label>
+
+                <!-- Info message when not supported -->
+                <div x-show="!guardianVpn.supported" class="text-[11px] p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <span>ℹ️</span>
+                  <span x-text="t('controls.guardian_vpn_req_plus')"></span>
+                </div>
               </div>
 
               <!-- Hardware Serial Claim / Onboarding -->
