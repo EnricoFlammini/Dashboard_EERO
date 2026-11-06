@@ -121,6 +121,9 @@ document.addEventListener('alpine:init', () => {
       if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay') || c.includes('light') || c.includes('lamp') || c.includes('sensor') || c.includes('camera') || c.includes('thermostat')) {
         return 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z';
       }
+      if (c === 'other' || c === 'altro') {
+        return 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z';
+      }
       return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
     
@@ -385,6 +388,34 @@ document.addEventListener('alpine:init', () => {
       return rssi >= -50 ? 5 : rssi >= -60 ? 4 : rssi >= -67 ? 3 : rssi >= -75 ? 2 : 1;
     },
 
+    // Device types offered in the details modal. Category and icon are one choice: picking a type sets both,
+    // so the icon shown on cards and rows always matches the category (the icon value is resolved by getDeviceIconPath()).
+    deviceTypeOptions: [
+      { category: 'Computer', icon: 'laptop', labelKey: 'devices.cat_computer' },
+      { category: 'Mobile', icon: 'smartphone', labelKey: 'devices.cat_mobile' },
+      { category: 'Smart Home', icon: 'iot', labelKey: 'devices.cat_smarthome' },
+      { category: 'Intrattenimento', icon: 'tv', labelKey: 'devices.cat_entertainment' },
+      { category: 'Gaming', icon: 'gamepad', labelKey: 'devices.cat_gaming' },
+      { category: 'Server/Rete', icon: 'server', labelKey: 'devices.cat_server' },
+      // 'Altro' means "no override" in the poller: eero's detected category and icon are used, so this is the reset option
+      { category: 'Altro', icon: 'other', pickIcon: 'device', labelKey: 'device_modal.type_auto' }
+    ],
+
+    // The standard types, plus the device's current category when it is not one of them (e.g. a category from eero).
+    deviceTypeOptionsForForm() {
+      const opts = this.deviceTypeOptions.map(o => ({ category: o.category, icon: o.icon, pickIcon: o.pickIcon, label: this.t(o.labelKey) }));
+      const current = this.deviceMetadataForm.category;
+      if (current && !opts.some(o => o.category === current)) {
+        opts.push({ category: current, icon: this.deviceMetadataForm.custom_icon || current, label: this.formatCategoryName(current) });
+      }
+      return opts;
+    },
+
+    selectDeviceType(opt) {
+      this.deviceMetadataForm.category = opt.category;
+      this.deviceMetadataForm.custom_icon = opt.pickIcon || opt.icon;
+    },
+
     deviceBandLabel(dev) {
       if (dev.wireless === false || dev.connection_type === 'wired' || ['Ethernet', 'Cablato', 'Wired'].includes(dev.frequency_band)) {
         return this.t('common.ethernet');
@@ -523,6 +554,7 @@ document.addEventListener('alpine:init', () => {
       selectedDeviceIds: []
     },
     deviceSelectedProfileId: '',
+    profileChangeStatus: { state: '', message: '' },
     profileAssigningLoading: false,
     
     selectedDevice: null,
@@ -2383,6 +2415,7 @@ document.addEventListener('alpine:init', () => {
       };
 
       this.deviceSelectedProfileId = device.profile_id || '';
+      this.profileChangeStatus = { state: '', message: '' };
       this.deviceStaticIpInput = device.static_ip || device.ip || '';
       this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
       this.showDeviceModal = true;
@@ -2608,11 +2641,6 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
-        // Profile is an eero cloud assignment, not local metadata: only call the API when it actually changed
-        if (this.can('action_edit_devices') && (this.deviceSelectedProfileId || '') !== (this.selectedDevice.profile_id || '')) {
-          await this.assignDeviceToProfile(targetId, this.deviceSelectedProfileId);
-        }
-
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
           custom_icon: this.deviceMetadataForm.custom_icon,
@@ -2746,6 +2774,42 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         const title = this.t('js.assign_device_to_profile.assignment_error');
         this.showToast(title, err.message, "error");
+      }
+    },
+
+    // Profile is an eero cloud assignment, so it applies as soon as it is picked (like the static IP actions)
+    // and reports the outcome inline in the details modal instead of waiting for "Save Changes".
+    async changeDeviceProfile() {
+      const dev = this.selectedDevice;
+      if (!dev) return;
+      const newId = this.deviceSelectedProfileId || '';
+      const oldId = dev.profile_id || '';
+      if (newId === oldId) return;
+      const target = (this.profiles || []).find(p => p.id === newId);
+      this.profileChangeStatus = { state: 'saving', message: this.t('device_modal.profile_saving') };
+      try {
+        const key = encodeURIComponent((dev.mac || dev.mac_address || dev.id || '').toLowerCase());
+        const res = await fetch(`/api/devices/${key}/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_id: newId || null })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || `HTTP ${res.status}`);
+        }
+        dev.profile_id = newId || null;
+        dev.profile_name = target ? target.name : null;
+        this.profileChangeStatus = {
+          state: 'success',
+          message: target
+            ? this.t('device_modal.profile_changed', { name: target.name })
+            : this.t('device_modal.profile_removed')
+        };
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.deviceSelectedProfileId = oldId;
+        this.profileChangeStatus = { state: 'error', message: this.t('device_modal.profile_error', { error: err.message }) };
       }
     },
 
