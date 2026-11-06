@@ -2013,11 +2013,27 @@ class EeroClient:
                         else:
                             primary_gw = gw_nodes[0]
 
-                # 5. Nodo con porta WAN reale attiva / collegata all'ONT/modem (fallback in assenza di IP/metadati)
+                # 5. eero's own root flag (correct in bridge mode, where gateway=false on all nodes)
+                if not primary_gw:
+                    primary_gw = next((n for n in nodes if n.get("is_primary_node") is True), None)
+
+                # 6. WAN port whose LLDP neighbor is not another eero (i.e. the upstream router)
+                if not primary_gw:
+                    for n in nodes:
+                        for p in ((n.get("ethernet_status") or {}).get("statuses") or []):
+                            if p.get("isWanPort") and p.get("hasCarrier") and any(
+                                str(l.get("systemName") or "").lower() != "eero" for l in (p.get("lldpInfo") or [])
+                            ):
+                                primary_gw = n
+                                break
+                        if primary_gw:
+                            break
+
+                # 7. Nodo con porta WAN reale attiva / collegata all'ONT/modem (fallback in assenza di IP/metadati)
                 if not primary_gw:
                     primary_gw = next((n for n in nodes if n.get("has_wan_port") or any("wan" in str(p).lower() for p in n.get("ethernet_ports_details", []))), None)
 
-                # 6. Fallback finale al primo nodo
+                # 8. Fallback finale al primo nodo
                 if not primary_gw:
                     primary_gw = nodes[0]
 
