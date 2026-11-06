@@ -2608,8 +2608,14 @@ document.addEventListener('alpine:init', () => {
           }
         }
 
+        // Profile is an eero cloud assignment, not local metadata: only call the API when it actually changed
+        if (this.can('action_edit_devices') && (this.deviceSelectedProfileId || '') !== (this.selectedDevice.profile_id || '')) {
+          await this.assignDeviceToProfile(targetId, this.deviceSelectedProfileId);
+        }
+
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
+          custom_icon: this.deviceMetadataForm.custom_icon,
           custom_name: this.deviceMetadataForm.custom_name,
           category: this.deviceMetadataForm.category,
           custom_notes: this.deviceMetadataForm.custom_notes,

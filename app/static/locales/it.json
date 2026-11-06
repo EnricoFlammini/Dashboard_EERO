@@ -146,7 +146,6 @@
     "firmware": "Firmware OS:",
     "uptime": "Uptime:",
     "temperature": "Temperatura:",
-    "channel": "Canale:",
     "mesh_active": "Mesh Attiva"
   },
   "devices": {
@@ -246,6 +245,19 @@
     "sticky_badge": "Sticky"
   },
   "device_modal": {
+    "icon": "Icona:",
+    "icon_generic": "Generica",
+    "icon_computer": "Computer",
+    "icon_phone": "Telefono",
+    "icon_tablet": "Tablet",
+    "icon_tv": "TV",
+    "icon_gaming": "Console di gioco",
+    "icon_server": "Server / NAS",
+    "icon_speaker": "Altoparlante",
+    "icon_iot": "Smart home / IoT",
+    "mac": "Indirizzo MAC",
+    "hostname": "Hostname (segnalato dal dispositivo)",
+    "channel": "Canale",
     "reservation_error": "Errore durante la creazione della riserva DHCP",
     "title": "Dettaglio Dispositivo",
     "first_seen": "Primo rilevamento sulla rete:",

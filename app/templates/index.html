@@ -5350,7 +5350,7 @@
         
         <!-- ==================== TAB 1: GENERALE ==================== -->
         <div x-show="deviceDetailTab === 'general'" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
             <div class="flex flex-col">
               <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold text-xs whitespace-nowrap truncate h-5 flex items-center" :title="t('device_modal.custom_name')" x-text="t('device_modal.custom_name')"></label>
               <input type="text" x-model="deviceMetadataForm.custom_name" class="glass-input w-full px-3 py-2 rounded-xl text-xs h-10">
@@ -5369,10 +5369,29 @@
             </div>
             <div class="flex flex-col">
               <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold text-xs whitespace-nowrap truncate h-5 flex items-center" :title="t('device_modal.cloud_profile')" x-text="t('device_modal.cloud_profile')"></label>
-              <div class="glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between text-slate-900 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/40 border border-slate-300 dark:border-slate-800 h-10">
-                <span class="font-bold text-sky-950 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-500/30 px-2 py-0.5 rounded-md truncate max-w-[110px]" x-text="selectedDevice && selectedDevice.profile_name ? ('👤 ' + selectedDevice.profile_name) : t('profiles.total_unassigned')"></span>
-                <span class="text-[10px] text-slate-500 font-mono shrink-0 ml-1" :title="t('device_modal.eero_cloud_synced_title')">eero Cloud</span>
-              </div>
+              <select x-model="deviceSelectedProfileId" :disabled="!can('action_edit_devices')" :title="t('device_modal.eero_cloud_synced_title')" class="glass-input w-full px-3 py-2 rounded-xl text-xs h-10 disabled:opacity-60">
+                <option value="" x-text="t('profiles.total_unassigned')"></option>
+                <template x-for="prof in (profiles || [])" :key="prof.id">
+                  <option :value="prof.id" :selected="prof.id === deviceSelectedProfileId" x-text="'👤 ' + prof.name"></option>
+                </template>
+              </select>
+            </div>
+            <div class="flex flex-col">
+              <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold text-xs whitespace-nowrap truncate h-5 flex items-center" :title="t('device_modal.icon')" x-text="t('device_modal.icon')"></label>
+              <select x-model="deviceMetadataForm.custom_icon" class="glass-input w-full px-3 py-2 rounded-xl text-xs h-10">
+                <option value="device" x-text="t('device_modal.icon_generic')"></option>
+                <option value="laptop" x-text="t('device_modal.icon_computer')"></option>
+                <option value="smartphone" x-text="t('device_modal.icon_phone')"></option>
+                <option value="tablet" x-text="t('device_modal.icon_tablet')"></option>
+                <option value="tv" x-text="t('device_modal.icon_tv')"></option>
+                <option value="gamepad" x-text="t('device_modal.icon_gaming')"></option>
+                <option value="server" x-text="t('device_modal.icon_server')"></option>
+                <option value="speaker" x-text="t('device_modal.icon_speaker')"></option>
+                <option value="iot" x-text="t('device_modal.icon_iot')"></option>
+                <template x-if="!['device','laptop','smartphone','tablet','tv','gamepad','server','speaker','iot'].includes(deviceMetadataForm.custom_icon)">
+                  <option :value="deviceMetadataForm.custom_icon" x-text="deviceMetadataForm.custom_icon"></option>
+                </template>
+              </select>
             </div>
           </div>
 
@@ -5395,6 +5414,32 @@
               <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="selectedDevice ? (selectedDevice.wireless ? ((selectedDevice.signal_rssi ? selectedDevice.signal_rssi + ' dBm' : '') + (selectedDevice.phy_rate ? ' • ' + t('device_modal.phy_label') + ' ' + selectedDevice.phy_rate : (selectedDevice.connectivity && selectedDevice.connectivity.rx_bitrate ? ' • ' + selectedDevice.connectivity.rx_bitrate : ''))) : (selectedDevice.ethernet_speed ? selectedDevice.ethernet_speed + ' • Ethernet' : 'Ethernet')) : '---'"></span>
             </div>
           </div>
+
+          <!-- Read-only device details -->
+          <template x-if="selectedDevice">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-xs">
+              <div>
+                <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_status')"></span>
+                <span class="font-semibold" :class="selectedDevice.connected ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500'" x-text="selectedDevice.connected ? t('devices.status_online') : t('devices.status_offline')"></span>
+              </div>
+              <div class="col-span-1">
+                <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.mac')"></span>
+                <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold select-all" x-text="selectedDevice.mac || selectedDevice.mac_address || '---'"></span>
+              </div>
+              <div class="col-span-2">
+                <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.hostname')"></span>
+                <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold break-all" x-text="selectedDevice.hostname || selectedDevice.nickname || '---'"></span>
+              </div>
+              <div class="col-span-2">
+                <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_download')"></span>
+                <span class="font-mono font-semibold text-sky-600 dark:text-sky-400"><span x-text="deviceRateLabel(selectedDevice.download_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.rx_bytes || 0)"></span></span>
+              </div>
+              <div class="col-span-2">
+                <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_upload')"></span>
+                <span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400"><span x-text="deviceRateLabel(selectedDevice.upload_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.tx_bytes || 0)"></span></span>
+              </div>
+            </div>
+          </template>
 
           <!-- First Seen Information (Issue #60) -->
           <template x-if="selectedDevice && selectedDevice.first_seen">
