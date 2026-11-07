@@ -38,6 +38,12 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiunto middleware in `main.py` per l'iniezione automatica dei security headers raccomandati da OWASP: `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy`.
   * Rilevamento dinamico dell'ambiente HTTPS (anche dietro reverse proxy TLS) per abilitare automaticamente il flag `Secure` sui cookie di sessione.
 
+### 🗂️ Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube)
+* **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.
+* **Modale dettagli:** cambio profilo sul posto con conferma, categoria scelta tramite icone con ripristino automatico, hostname segnalato dal dispositivo, produttore/modello, ultima attività, standard e larghezza Wi-Fi, flag rete ospiti.
+* **Sicurezza e MQTT:** `POST /api/devices/{mac}/profile` richiede `action_edit_devices`; limite tracker MQTT portato a 1000 con avviso nel log se superato.
+* **Documentazione:** capitoli 4, 5 e 12 del manuale (EN/IT), README e backlog in `docs/DEVICE_DETAILS_ENHANCEMENTS.md`.
+
 ### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
 * **💯 100% Parità Cataloghi Linguistici:**
   * Allineati completamente tutti i cataloghi di traduzione: 457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`.

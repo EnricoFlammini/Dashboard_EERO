@@ -3,6 +3,7 @@
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
 ## v1.6.2
+* **Devices Card View & Editable Device Details (PR #107 - @todddube):** List/Cards toggle with compact live-animated cards, clickable name/IP, in-modal profile change and icon-based category picker, plus manufacturer, last active, Wi-Fi standard/width and guest flag. Profile assignment now requires the edit-devices permission and MQTT trackers cap at 1000.
 * **Complete Frontend & Backend Translation Parity (PR #79 - @todddube):** 100% key parity across all linguistic catalogs (457 backend keys and 1051 frontend keys in `en.json` and `it.json`), automated parity audit and CI/CD validation.
 * **RFC 1123 Hostname Sanitization for Pi-hole v6 & Silenced 404 Endpoint Probe (Issue #83 - @richlilly2004):** Strict RFC 1123 hostname sanitization for Pi-hole v6 sync (converting parentheses and special characters to hyphens) and removal of redundant `/port_forwards` API probes.
 * **Resilient MQTT Configuration Save & Load (Issue #81 - @jpatchMC):** Aligned REST API responses, added bidirectional support for `discovery_prefix` / `homeassistant_prefix`, and resilient frontend destructuring.

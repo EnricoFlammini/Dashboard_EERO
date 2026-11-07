@@ -3,6 +3,7 @@
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
 ## v1.6.2
+* **Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube):** Interruttore Elenco/Schede con schede compatte animate in tempo reale, nome/IP cliccabili, cambio profilo nel modale e selettore categoria con icone, più produttore, ultima attività, standard/larghezza Wi-Fi e flag ospite. L'assegnazione del profilo richiede ora il permesso di modifica dispositivi e i tracker MQTT salgono a 1000.
 * **Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube):** Parità al 100% dei cataloghi linguistici (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`), audit automatizzato e validazione continua in CI/CD.
 * **Sanificazione Hostname RFC 1123 per Pi-hole v6 & Rimozione 404 Endpoint (Issue #83 - @richlilly2004):** Sanificazione rigorosa degli hostname per sincronizzazione Pi-hole v6 (conversione caratteri speciali e parentesi in trattini) e rimozione delle chiamate ridondanti a `/port_forwards`.
 * **Persistenza & Caricamento Resiliente Configurazione MQTT (Issue #81 - @jpatchMC):** Allineamento payload API, supporto bi-direzionale per `discovery_prefix` / `homeassistant_prefix` e destrutturazione difensiva nel frontend.
