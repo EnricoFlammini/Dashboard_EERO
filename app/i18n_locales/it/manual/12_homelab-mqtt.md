@@ -22,6 +22,7 @@ La dashboard si integra nativamente nel tuo ambiente HomeLab tramite il protocol
   - **Device Tracker dei Client di Rete:**
     - Generazione automatica di entità `device_tracker` per ciascun dispositivo della rete.
     - Riporta lo stato `home` / `not_home`, IP locale, indirizzo MAC, nodo eero di collegamento e interfaccia radio (2.4 GHz / 5 GHz / 6 GHz / Ethernet).
+    - Vengono pubblicati fino a 1000 dispositivi per ciclo; oltre tale soglia i restanti vengono ignorati e viene registrato un avviso una sola volta.
 * **Configurazione Broker & Affidabilità:**
   - Supporta broker locali e remoti (Mosquitto, EMQX, HiveMQ) con autenticazione via username e password.
   - Riconnessione asincrona automatica con backoff esponenziale e gestione trasparente in modalità Demo.
