@@ -242,7 +242,9 @@
     "badge_ula_enriched_tooltip": "This device includes IPv6 ULA addresses enriched via NDP / AdGuard",
     "clear_search": "Clear search",
     "generic_device": "Device",
-    "sticky_badge": "Sticky"
+    "sticky_badge": "Sticky",
+    "badge_guest": "Guest",
+    "last_seen_short": "Last seen"
   },
   "device_modal": {
     "mac": "MAC address",
@@ -349,7 +351,13 @@
     "resolution_minutes": "{n} min",
     "eero_cloud_synced_title": "Synced from eero mobile app",
     "phy_label": "PHY",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "last_active": "Last active",
+    "guest_network": "Guest network",
+    "wifi_standard": "Wi-Fi standard",
+    "channel_width": "Channel width"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",
@@ -1589,4 +1597,3 @@
     }
   }
 }
-

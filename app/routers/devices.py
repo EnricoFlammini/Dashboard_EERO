@@ -483,7 +483,7 @@ async def delete_device_port_forward(mac_address: str, forward_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{mac_address}/profile")
+@router.post("/{mac_address}/profile", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRequest):
     """Assegna, sposta o rimuove un dispositivo da un profilo utente Cloud eero."""
     try:

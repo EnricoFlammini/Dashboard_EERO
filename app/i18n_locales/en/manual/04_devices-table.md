@@ -12,3 +12,7 @@ summary: Live device table, multi-column sorting, sticky headers, Wi-Fi band bad
 * **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
 * **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
 * **IPv6 Badge & Instant Search (v1.5.0 - Issue #43):** Compact `IPv6` badge next to the MAC address with a tooltip displaying all associated addresses (SLAAC & Link-Local); the search bar filters instantly by prefixes, octets, or full IPv6 addresses.
+* **List or Cards View:** Use the **List / Cards** toggle in the toolbar. Cards show 3–4 devices per row with every table field: icon, name, category and manufacturer, MAC, IP with Static/DHCP, online status, band, channel, signal bars, PHY rate and Wi-Fi standard/width, flag chips (Paused, Gaming target, Sticky roaming, IPv6, ULA, Guest), live download/upload rates with totals, profile, node and first seen (or last seen for offline devices). The Columns menu applies to List view only.
+* **Live Activity Animation:** A card glows and its rate bars shimmer while the device is moving data, with the glow strengthening as throughput rises. Reduced-motion settings are respected.
+* **Open Details from the Name or IP:** In List view, click the device name or IP address (not only the pencil icon) to open its details.
+* **Search Includes Vendor Data:** The search box also matches manufacturer, model and the hostname the device reports.

@@ -1960,6 +1960,12 @@ document.addEventListener('alpine:init', () => {
       return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' });
     },
 
+    deviceVendorLabel(dev) {
+      if (!dev) return '';
+      const parts = [dev.manufacturer, dev.model_name].filter(Boolean);
+      return parts.filter((p, i) => parts.findIndex(x => String(x).toLowerCase() === String(p).toLowerCase()) === i).join(' ');
+    },
+
     formatFirstSeenFull(ts) {
       if (!ts) return '';
       let str = String(ts).trim();
@@ -2193,7 +2199,8 @@ document.addEventListener('alpine:init', () => {
           const prof = (d.profile_name || '').toLowerCase();
           const ipv6 = (d.ipv6 || '').toLowerCase();
           const ipv6List = (d.ipv6_all || d.ipv6_addresses || []).join(' ').toLowerCase();
-          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q) || ipv6.includes(q) || ipv6List.includes(q);
+          const vendor = [d.manufacturer, d.model_name, d.reported_hostname].filter(Boolean).join(' ').toLowerCase();
+          return vendor.includes(q) || name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q) || ipv6.includes(q) || ipv6List.includes(q);
         }
 
         return true;

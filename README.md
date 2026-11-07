@@ -74,6 +74,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
   - Automatic conversion and rendering of system log timestamps in the client browser's local timezone and active locale formatting (`it-IT` / `en-US`), with a one-click toggle in the log header to switch to UTC.
 * **🧹 IPv6 ULA 7-Day Retention & Manual Pruning (v1.6.2 - Issue #88):**
   - Automated 7-day retention cleanup for discovered NDP / AdGuard ULA addresses, memory and UI capping to 5 most recent entries, and dedicated in-app *"Clear ULA"* button with confirmation toast in the device modal.
+* **🗂️ Devices Card View & Editable Device Details (v1.6.2):** List/Cards toggle with compact live-animated cards (3–4 per row), clickable name/IP in the list, and a device modal where profile, category/icon can be changed in place with inline confirmation; shows manufacturer, model, last active, Wi-Fi standard/width and guest flag. MQTT device trackers now cap at 1000 (logged when truncated), and profile assignment requires the edit-devices permission.
 * **🏠 Home Assistant MQTT Device Tracker Offline State & Scalability (v1.6.2 - Issue #92):**
   - Automatic `not_home` presence state dispatched for disconnected or departed devices, tracking ceiling raised to 250 devices with non-blocking async pacing, and retained discovery config deduplication.
 * **🛡️ Subnet-Aware IPv4 Prioritization & Pi-hole v6 Stale Record Pruning (v1.6.1 - Issue #72):**
@@ -508,6 +509,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
   - Conversione e visualizzazione automatica dei timestamp del log viewer nell'orario locale del browser del client nel formato della lingua attiva (`it-IT` / `en-US`), con toggle a clic singolo per alternare con UTC.
 * **🧹 Retention IPv6 ULA a 7 Giorni & Reset Manuale (v1.6.2 - Issue #88):**
   - Pulizia automatica periodica a 7 giorni per gli indirizzi scoperti via NDP / AdGuard, limite in memoria e a schermo a 5 indirizzi più recenti per singolo apparato e pulsante dedicato *"Pulisci ULA"* con conferma e toast nella modale dispositivo.
+* **🗂️ Vista a Schede dei Dispositivi & Dettagli Modificabili (v1.6.2):** Interruttore Elenco/Schede con schede compatte animate in tempo reale (3–4 per riga), nome/IP cliccabili nell'elenco e modale in cui profilo, categoria e icona si cambiano sul posto con conferma in linea; mostra produttore, modello, ultima attività, standard/larghezza Wi-Fi e flag ospite. I tracker MQTT salgono a 1000 dispositivi (con log se troncati) e l'assegnazione del profilo richiede il permesso di modifica dispositivi.
 * **🏠 Home Assistant MQTT Device Tracker: Stato Presenza Sconnessi & Scalabilità (v1.6.2 - Issue #92):**
   - Pubblicazione automatica dello stato di presenza `not_home` per dispositivi offline o disconnessi dalla mesh, estensione del limite a 250 apparati tracciati con pacing asincrono non bloccante e deduplicazione delle configurazioni di discovery `retain=True`.
 * **🛡️ Prioritizzazione IPv4 Subnet LAN, Pruning Intelligente Pi-hole v6 ed Esclusione Dispositivi (v1.6.1 - Issue #72):**

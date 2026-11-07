@@ -81,7 +81,7 @@
   </script>
   
   <!-- Custom Stylesheet (Windows 11 Fluent Design) -->
-  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.b{{ build_number }}.sidebarv3.cards1">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ app_version }}.b{{ build_number }}.sidebarv3.cards2">
 
   <!-- Chart.js & Alpine.js Local Bundles (Offline - Issue #58) -->
   <script src="/static/vendor/chart.umd.min.js"></script>
@@ -2240,7 +2240,7 @@
                     </template>
                   </div>
                   <div class="flex items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-500 min-w-0">
-                    <span class="truncate" x-text="formatCategoryName(dev.category)"></span>
+                    <span class="truncate" :title="deviceVendorLabel(dev)" x-text="formatCategoryName(dev.category) + (deviceVendorLabel(dev) ? ' · ' + deviceVendorLabel(dev) : '')"></span>
                     <span class="font-mono text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="dev.mac || dev.mac_address"></span>
                   </div>
                 </div>
@@ -2282,6 +2282,12 @@
                 </template>
                 <template x-if="!dev.wireless">
                   <span class="font-mono font-bold text-emerald-700 dark:text-emerald-400" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired')"></span>
+                </template>
+                <template x-if="dev.wireless && (dev.phy_type || dev.channel_width)">
+                  <span class="font-mono text-slate-600 dark:text-slate-400" :title="t('device_modal.wifi_standard') + ' / ' + t('device_modal.channel_width')" x-text="[dev.phy_type, dev.channel_width].filter(Boolean).join(' ')"></span>
+                </template>
+                <template x-if="dev.is_guest">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-300 dark:border-violet-500/30" x-text="t('devices.badge_guest')" :title="t('device_modal.guest_network')"></span>
                 </template>
                 <template x-if="dev.is_paused || dev.paused || dev.is_local_paused">
                   <span class="px-1.5 py-0.5 rounded font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30" x-text="'⏸'" :title="t('devices.badge_paused')"></span>
@@ -2334,7 +2340,13 @@
                   <span class="text-slate-400 dark:text-slate-600">•</span>
                   <span class="truncate" :title="t('devices.col_node')" x-text="dev.connected_eero_name || t('common.gateway')"></span>
                 </div>
-                <template x-if="dev.first_seen">
+                <template x-if="!dev.connected && dev.last_active">
+                  <div class="shrink-0 inline-flex items-center gap-1 text-[10px]" :title="t('device_modal.last_active') + ' ' + formatFirstSeenFull(dev.last_active)">
+                    <span x-text="t('devices.last_seen_short')"></span>
+                    <span class="font-mono" x-text="formatFirstSeenRelative(dev.last_active)"></span>
+                  </div>
+                </template>
+                <template x-if="(dev.connected || !dev.last_active) && dev.first_seen">
                   <div class="shrink-0 inline-flex items-center gap-1 text-[10px]" :title="t('devices.first_seen_badge_tooltip') + ' ' + formatFirstSeenFull(dev.first_seen)">
                     <span class="font-mono" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
                   </div>
@@ -5424,8 +5436,32 @@
               </div>
               <div class="col-span-2">
                 <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.hostname')"></span>
-                <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold break-all" x-text="selectedDevice.hostname || selectedDevice.nickname || '---'"></span>
+                <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold break-all" x-text="selectedDevice.reported_hostname || '---'"></span>
               </div>
+              <template x-if="deviceVendorLabel(selectedDevice)">
+                <div class="col-span-2">
+                  <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.manufacturer') + ' / ' + t('device_modal.model')"></span>
+                  <span class="text-slate-900 dark:text-slate-200 font-semibold" x-text="deviceVendorLabel(selectedDevice)"></span>
+                </div>
+              </template>
+              <template x-if="selectedDevice.last_active">
+                <div class="col-span-2">
+                  <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.last_active')"></span>
+                  <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold"><span x-text="formatFirstSeenFull(selectedDevice.last_active)"></span> <span class="text-[10px] text-slate-500 dark:text-slate-400 font-sans" x-text="'(' + formatFirstSeenRelative(selectedDevice.last_active) + ')'"></span></span>
+                </div>
+              </template>
+              <template x-if="selectedDevice.wireless && (selectedDevice.phy_type || selectedDevice.channel_width)">
+                <div class="col-span-2">
+                  <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.wifi_standard') + ' / ' + t('device_modal.channel_width')"></span>
+                  <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="[selectedDevice.phy_type, selectedDevice.channel_width].filter(Boolean).join(' · ')"></span>
+                </div>
+              </template>
+              <template x-if="selectedDevice.is_guest">
+                <div class="col-span-2">
+                  <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('device_modal.guest_network')"></span>
+                  <span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-300 dark:border-violet-500/30" x-text="t('devices.badge_guest')"></span>
+                </div>
+              </template>
               <div class="col-span-2">
                 <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_download')"></span>
                 <span class="font-mono font-semibold text-sky-600 dark:text-sky-400"><span x-text="deviceRateLabel(selectedDevice.download_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.rx_bytes || 0)"></span></span>

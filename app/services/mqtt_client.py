@@ -11,6 +11,9 @@ from app.services.eero_client import eero_client
 
 logger = logging.getLogger(__name__)
 
+# Home Assistant device_tracker entities published per cycle (Issue #92)
+MAX_TRACKED_DEVICES = 1000
+
 # Check if aiomqtt is available
 try:
     import aiomqtt
@@ -43,6 +46,7 @@ class MQTTService:
         self._stop_event = asyncio.Event()
         self._discovery_published: bool = False
         self._published_tracker_configs: Set[str] = set()
+        self._tracker_cap_logged = False
         self._tracker_last_state: Dict[str, str] = {}
         self._stats: Dict[str, Any] = {
             "messages_published": 0,
@@ -398,7 +402,10 @@ class MQTTService:
 
         # Device Trackers for Home Assistant (Issue #92)
         if self._discovery_enabled:
-            target_devices = devices[:250] if len(devices) > 250 else devices
+            target_devices = devices[:MAX_TRACKED_DEVICES] if len(devices) > MAX_TRACKED_DEVICES else devices
+            if len(devices) > MAX_TRACKED_DEVICES and not self._tracker_cap_logged:
+                self._tracker_cap_logged = True
+                logger.warning("MQTT device trackers limited to %d of %d devices", MAX_TRACKED_DEVICES, len(devices))
             current_cycle_macs = set()
 
             for idx, dev in enumerate(target_devices):
