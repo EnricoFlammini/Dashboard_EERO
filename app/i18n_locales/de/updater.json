@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Ein Update ist bereits in Bearbeitung...",
+  "watchtower_sent": "Aktualisierungssignal an Watchtower gesendet. Der Container wird in Kürze neu gestartet.",
+  "watchtower_bad_status": "Der Wachtturm antwortete mit dem Status {code}: {body}",
+  "watchtower_error": "Watchtower-Triggerfehler: {error}",
+  "docker_started": "Update gestartet: Herunterladen des neuen Docker-Images. Die Anwendung wird automatisch neu gestartet.",
+  "manual_required": "Kein Docker-Socket oder Watchtower konfiguriert. Führen Sie „{command}“ auf dem Server aus.",
+  "generic_release_available": "Version v{version} ist mit Leistungs-, Stabilitäts- und Sicherheitsverbesserungen verfügbar."
+}

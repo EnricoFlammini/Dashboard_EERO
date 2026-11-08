@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "A carga de backup não é um objeto JSON válido.",
+  "restore_unrecognized": "Estrutura de arquivo de backup não reconhecida ou nenhuma seção válida.",
+  "restore_alert_title": "💾 Backup do sistema restaurado",
+  "restore_alert_message": "Restauração concluída com êxito: {devices} entradas de metadados do dispositivo, {settings} configurações, {schedules} regras de agendamento e {users} usuários.",
+  "restore_completed": "A restauração do backup foi concluída com sucesso."
+}

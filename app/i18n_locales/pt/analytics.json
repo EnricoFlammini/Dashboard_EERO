@@ -1,0 +1,19 @@
+{
+  "unknown_device": "Dispositivo",
+  "unknown_node": "nó eero",
+  "invalid_data_type": "Tipo de dados inválido. Escolha um dos seguintes: {types}",
+  "export_status_online": "On-line",
+  "export_status_offline": "Off-line",
+  "export_wireless": "Sem fio",
+  "export_wired": "Com fio",
+  "export_yes": "Sim",
+  "export_no": "Não",
+  "export_no_data": "nenhum_dado_disponível",
+  "export_cat_computer": "Computadores e Portáteis",
+  "export_cat_mobile": "Smartphones e tablets",
+  "export_cat_smart_home": "Casa inteligente e IoT",
+  "export_cat_entertainment": "TV e streaming",
+  "export_cat_gaming": "Consolas de jogos",
+  "export_cat_server": "Servidores e NAS",
+  "export_cat_other": "Outro"
+}

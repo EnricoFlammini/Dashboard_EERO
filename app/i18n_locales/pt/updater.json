@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Uma atualização já está em andamento...",
+  "watchtower_sent": "Sinal de atualização enviado para a Torre de Vigia. O contêiner será reiniciado em breve.",
+  "watchtower_bad_status": "A Torre de Vigia respondeu com status {code}: {body}",
+  "watchtower_error": "Erro de disparo da Torre de Vigia: {error}",
+  "docker_started": "Atualização iniciada: baixando a nova imagem do Docker. O aplicativo será reiniciado automaticamente.",
+  "manual_required": "Nenhum soquete Docker ou Watchtower configurado. Execute '{command}' no servidor.",
+  "generic_release_available": "A versão v{version} está disponível com melhorias de desempenho, estabilidade e segurança."
+}

@@ -1,0 +1,17 @@
+{
+  "invalid_level": "Ongeldig logniveau '{level}'. Toegestane waarden: {allowed}",
+  "invalid_level_short": "Ongeldig logniveau: {level}. Toegestaan: {allowed}",
+  "change_level": "niveau: {level}",
+  "change_state_on": "status: INGESCHAKELD",
+  "change_state_off": "status: UITGESCHAKELD",
+  "change_retention": "bewaartermijn: {days} dagen",
+  "no_valid_params": "Er zijn geen geldige parameters opgegeven om de configuratie bij te werken.",
+  "config_updated_alert_title": "⚙️ Logconfiguratie bijgewerkt",
+  "config_updated_alert_message": "Diagnostische instellingen gewijzigd door '{actor}': {changes}.",
+  "config_updated": "Logboekconfiguratie succesvol bijgewerkt ({changes}).",
+  "cleared_alert_title": "🗑️ Systeemlogboek gewist",
+  "cleared_alert_message": "Systeemlogboeken zijn gewist door gebruiker '{actor}' ({count} gebeurtenissen verwijderd).",
+  "cleared": "Gebeurtenislogboek is succesvol gewist ({count} records verwijderd).",
+  "no_logs_recorded": "Geen logboeken geregistreerd.",
+  "cleared_audit_entry": "Systeemlogboeken zijn succesvol gewist ({count} eerdere records verwijderd)."
+}

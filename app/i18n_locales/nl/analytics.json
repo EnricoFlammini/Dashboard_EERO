@@ -1,0 +1,19 @@
+{
+  "unknown_device": "Apparaat",
+  "unknown_node": "griezelig knooppunt",
+  "invalid_data_type": "Ongeldig gegevenstype. Kies een van: {types}",
+  "export_status_online": "Online",
+  "export_status_offline": "Offline",
+  "export_wireless": "Draadloos",
+  "export_wired": "Bedraad",
+  "export_yes": "Ja",
+  "export_no": "Nee",
+  "export_no_data": "geen_data_beschikbaar",
+  "export_cat_computer": "Computers en laptops",
+  "export_cat_mobile": "Smartphones en tablets",
+  "export_cat_smart_home": "Smart Home & IoT",
+  "export_cat_entertainment": "TV en streaming",
+  "export_cat_gaming": "Spelconsoles",
+  "export_cat_server": "Servers en NAS",
+  "export_cat_other": "Ander"
+}

@@ -1,0 +1,6 @@
+{
+  "already_running_wait": "Un test de vitesse est déjà en cours. Attendez que ça se termine.",
+  "completed": "Test de vitesse terminé avec succès.",
+  "already_running": "Un test de vitesse est déjà en cours.",
+  "invalid_metrics": "Le test de vitesse de la passerelle eero n'a pas renvoyé de mesures de débit valides."
+}

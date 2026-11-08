@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "La charge utile de sauvegarde n'est pas un objet JSON valide.",
+  "restore_unrecognized": "Structure de fichier de sauvegarde non reconnue ou aucune section valide.",
+  "restore_alert_title": "💾 Sauvegarde du système restaurée",
+  "restore_alert_message": "Restauration terminée avec succès : {devices} entrées de métadonnées de l'appareil, {settings} paramètres, {schedules} règles de planification et {users} utilisateurs.",
+  "restore_completed": "La restauration de la sauvegarde s'est terminée avec succès."
+}

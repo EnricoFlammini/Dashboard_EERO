@@ -1,0 +1,17 @@
+{
+  "invalid_level": "Ungültige Protokollebene „{level}“. Zulässige Werte: {allowed}",
+  "invalid_level_short": "Ungültige Protokollebene: {level}. Zulässig: {allowed}",
+  "change_level": "Ebene: {level}",
+  "change_state_on": "Status: AKTIVIERT",
+  "change_state_off": "Status: DEAKTIVIERT",
+  "change_retention": "Aufbewahrung: {days} Tage",
+  "no_valid_params": "Es wurden keine gültigen Parameter zum Aktualisieren der Konfiguration bereitgestellt.",
+  "config_updated_alert_title": "⚙️ Protokollkonfiguration aktualisiert",
+  "config_updated_alert_message": "Diagnoseeinstellungen geändert durch „{actor}“: {changes}.",
+  "config_updated": "Protokollkonfiguration erfolgreich aktualisiert ({changes}).",
+  "cleared_alert_title": "🗑️ Systemprotokoll gelöscht",
+  "cleared_alert_message": "Systemprotokolle wurden vom Benutzer „{actor}“ gelöscht ({count} Ereignisse entfernt).",
+  "cleared": "Ereignisprotokoll erfolgreich gelöscht ({count} Datensätze entfernt).",
+  "no_logs_recorded": "Keine Protokolle aufgezeichnet.",
+  "cleared_audit_entry": "Systemprotokolle erfolgreich gelöscht ({count} vorherige Datensätze entfernt)."
+}

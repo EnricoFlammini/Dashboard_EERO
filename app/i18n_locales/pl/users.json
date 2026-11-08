@@ -1,0 +1,13 @@
+{
+  "username_in_use": "Nazwa użytkownika „{username}” jest już używana.",
+  "create_failed": "Błąd podczas tworzenia użytkownika.",
+  "created": "Użytkownik „{username}” został pomyślnie utworzony.",
+  "not_found": "Nie znaleziono użytkownika.",
+  "username_taken": "Nazwa użytkownika „{username}” jest już używana przez innego użytkownika.",
+  "last_admin_demote": "Nie można odebrać uprawnień administratora: w systemie musi pozostać co najmniej jeden aktywny administrator.",
+  "update_failed": "Błąd podczas aktualizacji użytkownika.",
+  "updated": "Użytkownik został pomyślnie zaktualizowany.",
+  "last_admin_delete": "Nie można usunąć użytkownika: w systemie musi pozostać co najmniej jeden aktywny administrator.",
+  "delete_failed": "Błąd podczas usuwania użytkownika.",
+  "deleted": "Użytkownik „{username}” został pomyślnie usunięty."
+}

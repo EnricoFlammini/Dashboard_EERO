@@ -40,6 +40,7 @@
   "penalty_band_24_desc": "{count} out of {total} wireless clients are connected on 2.4 GHz channels, potentially saturating the spectrum.",
   "item_band_clients": "{band} clients: {count}",
   "rec_band_24": "Enable 'Band Steering' in settings to automatically route compatible devices to 5 GHz or 6 GHz.",
+  "rec_band_24_bs_active": "Band Steering is already enabled: 2.4 GHz usage is likely driven by single-band IoT devices or distant dual-band clients.",
   "issue_node_overload": "Unbalanced client load on {node} ({count} clients)",
   "penalty_node_overload_title": "Mesh Node Load Imbalance",
   "penalty_node_overload_desc": "Node '{node}' handles more than 80% of all connected household devices.",

@@ -1,0 +1,10 @@
+{
+  "invalid_mac": "Element #{index}: MAC-Adresse „{mac}“ ist ungültig.",
+  "invalid_ip": "Element #{index}: IP-Adresse „{ip}“ ist ungültig.",
+  "no_valid_mappings": "Keine gültigen IP-MAC-Zuordnungen bereitgestellt.",
+  "adguard_url_missing": "AdGuard-URL nicht konfiguriert.",
+  "adguard_connection_error": "AdGuard-Verbindungsfehler ({url}): {error}",
+  "no_orphan_clients": "Auf AdGuard Home wurden keine automatischen/verwaisten Clients gefunden.",
+  "scan_result": "{candidates} ULA-Kandidaten gefunden, {resolved} erfolgreich über NDP gelöst.",
+  "no_adguard_instances": "Keine aktiven AdGuard Home-Instanzen konfiguriert."
+}

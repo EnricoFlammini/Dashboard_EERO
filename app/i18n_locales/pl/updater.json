@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Aktualizacja już trwa...",
+  "watchtower_sent": "Sygnał aktualizacji wysłany do Strażnicy. Kontener wkrótce uruchomi się ponownie.",
+  "watchtower_bad_status": "Strażnica odpowiedziała statusem {code}: {body}",
+  "watchtower_error": "Błąd wyzwalacza Strażnicy: {error}",
+  "docker_started": "Rozpoczęto aktualizację: pobieranie nowego obrazu Dockera. Aplikacja uruchomi się ponownie automatycznie.",
+  "manual_required": "Nie skonfigurowano gniazda Docker ani Watchtower. Uruchom „{command}” na serwerze.",
+  "generic_release_available": "Dostępna jest wersja v{version} z ulepszeniami wydajności, stabilności i bezpieczeństwa."
+}

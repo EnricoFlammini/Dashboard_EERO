@@ -40,6 +40,7 @@
   "penalty_band_24_desc": "{count} su {total} client wireless sono connessi sui canali 2.4 GHz, con potenziale saturazione dello spettro.",
   "item_band_clients": "Client {band}: {count}",
   "rec_band_24": "Attiva la funzione 'Band Steering' nelle impostazioni per instradare automaticamente i dispositivi compatibili sui 5 GHz o 6 GHz.",
+  "rec_band_24_bs_active": "Il Band Steering è già attivo: l'uso prevalente dei 2.4 GHz è probabilmente dovuto a dispositivi IoT monobanda o client dual-band distanti.",
   "issue_node_overload": "Carico client sbilanciato su {node} ({count} client)",
   "penalty_node_overload_title": "Sbilanciamento Carico Nodi Mesh",
   "penalty_node_overload_desc": "Il nodo '{node}' gestisce oltre l'80% di tutti i dispositivi connessi della casa.",

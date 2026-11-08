@@ -1,0 +1,19 @@
+{
+  "unknown_device": "Urządzenie",
+  "unknown_node": "węzeł eero",
+  "invalid_data_type": "Nieprawidłowy typ danych. Wybierz jedno z: {types}",
+  "export_status_online": "W Internecie",
+  "export_status_offline": "Nieaktywny",
+  "export_wireless": "Bezprzewodowe",
+  "export_wired": "Przewodowy",
+  "export_yes": "Tak",
+  "export_no": "Nie",
+  "export_no_data": "brak_danych_dostępnych",
+  "export_cat_computer": "Komputery i laptopy",
+  "export_cat_mobile": "Smartfony i tablety",
+  "export_cat_smart_home": "Inteligentny dom i IoT",
+  "export_cat_entertainment": "Telewizja i transmisje strumieniowe",
+  "export_cat_gaming": "Konsole do gier",
+  "export_cat_server": "Serwery i NAS",
+  "export_cat_other": "Inny"
+}

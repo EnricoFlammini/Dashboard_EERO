@@ -1,0 +1,18 @@
+{
+  "name_required": "De regelnaam mag niet leeg zijn.",
+  "target_required": "Geef ten minste één doelgebruiker of knooppunt op.",
+  "not_found": "Schema niet gevonden.",
+  "update_failed": "Fout bij het updaten van de regel.",
+  "delete_failed": "Fout bij het verwijderen van de regel.",
+  "deleted": "Regel #{id} verwijderd.",
+  "state_started": "Gestart",
+  "state_ended": "Beëindigd",
+  "transition_alert_title": "🕒 Geplande regel '{name}'",
+  "transition_alert_message": "De geplande regel '{name}' is toegepast: status {state}, doelen: {count} ({target_type}).",
+  "maintenance_reason_beacons": "Kritieke gezondheidsscore ({score}/{threshold}) en {count} verslechterde bakenknooppunten.",
+  "maintenance_reason_network": "Kritieke algehele gezondheidsscore ({score}/{threshold}). Preventief opnieuw opstarten van het netwerk.",
+  "maintenance_whole_network": "Volledig griezelig Mesh-netwerk",
+  "maintenance_alert_title": "🔄 Nachtelijk onderhoud: Mesh opnieuw opstarten",
+  "maintenance_alert_message": "{reason} Opnieuw opgestarte knooppunten: {items}.",
+  "maintenance_telegram": "<b>🔄 griezelig nachtelijk onderhoud</b>\n\n{reason}\nApparaten: <code>{items}</code>"
+}

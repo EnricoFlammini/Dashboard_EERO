@@ -1,0 +1,8 @@
+{
+  "summary_fallback": "Mise à jour du micrologiciel eeroOS",
+  "demo_summary_1": "Amélioration de la gestion TrueChannel des interférences AWGN sur 6 GHz et optimisations de stabilité.",
+  "demo_summary_2": "Améliorations générales des performances et de la stabilité du maillage.",
+  "demo_summary_3": "Conseiller en itinérance client amélioré et gestion des canaux DFS.",
+  "demo_summary_4": "Améliorations de la stabilité pour la synchronisation du signal eero et du maillage.",
+  "demo_summary_5": "Correctif de sécurité cumulatif et prise en charge étendue des nœuds eero Pro 6E."
+}

@@ -2,6 +2,14 @@
 
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
+## v1.7.0
+* **Amazon OAuth2/PKCE Authentication (Issue #93):** Integrated S256 PKCE flow for Amazon/eero login with secure token exchange callback and backward compatibility with email OTP.
+* **Echo Built-in Extender Support (Issue #96):** Detection and synthesis of Amazon Echo virtual extender nodes with dedicated "eero Built-in" badge, LAN client unification, and reboot protection.
+* **Bridge Mode Primary Gateway Election (Issue #105):** Heuristic fallback using `is_primary_node` and non-eero upstream WAN LLDP detection for topologies behind third-party routers.
+* **IP Deduplication & DHCP Conflict Resolution (Issues #98, #99):** Strict separation between connected and offline clients, automatic pruning of reassigned IP addresses, and IPv4-first DNS cache resolver ordering.
+* **MQTT Telemetry Enhancements (Issues #101, #103, #104):** Standardized WAN units to `Mbit/s`, `last_seen_connected` tracker attribute, and instant MQTT discovery republishing on device renaming.
+* **Multi-Notifier System & Advanced Mesh Diagnostics (Issues #86, #90, #100, #102):** Full support for Pushover, Discord, Webhook and Ntfy, IPv6 pinhole firewall, RF mesh node placement assessment, Guardian VPN support, 3-state theme selector, and 100% key parity across 9 European languages.
+
 ## v1.6.2
 * **Devices Card View & Editable Device Details (PR #107 - @todddube):** List/Cards toggle with compact live-animated cards, clickable name/IP, in-modal profile change and icon-based category picker, plus manufacturer, last active, Wi-Fi standard/width and guest flag. Profile assignment now requires the edit-devices permission and MQTT trackers cap at 1000. Richer dashboard cards (WAN health, gateway details, client band split, speed test trend) that click through to Devices, Speed Test and Network Health, and the device list now refreshes as soon as device details are saved.
 * **Complete Frontend & Backend Translation Parity (PR #79 - @todddube):** 100% key parity across all linguistic catalogs (457 backend keys and 1051 frontend keys in `en.json` and `it.json`), automated parity audit and CI/CD validation.

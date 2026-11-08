@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Ya hay una actualización en progreso...",
+  "watchtower_sent": "Señal de actualización enviada a Watchtower. El contenedor se reiniciará en breve.",
+  "watchtower_bad_status": "Watchtower respondió con el estado {code}: {body}",
+  "watchtower_error": "Error de activación de Watchtower: {error}",
+  "docker_started": "Actualización iniciada: descargando la nueva imagen de Docker. La aplicación se reiniciará automáticamente.",
+  "manual_required": "No hay ningún socket Docker ni Watchtower configurado. Ejecute '{command}' en el servidor.",
+  "generic_release_available": "La versión v{version} está disponible con mejoras de rendimiento, estabilidad y seguridad."
+}

@@ -1,0 +1,18 @@
+{
+  "name_required": "Le nom de la règle ne peut pas être vide.",
+  "target_required": "Spécifiez au moins un utilisateur ou un nœud cible.",
+  "not_found": "Horaire introuvable.",
+  "update_failed": "Erreur lors de la mise à jour de la règle.",
+  "delete_failed": "Erreur lors de la suppression de la règle.",
+  "deleted": "Règle n°{id} supprimée.",
+  "state_started": "Commencé",
+  "state_ended": "Terminé",
+  "transition_alert_title": "🕒 Règle programmée '{name}'",
+  "transition_alert_message": "La règle planifiée « {name} » a été appliquée : statut {state}, cibles : {count} ({target_type}).",
+  "maintenance_reason_beacons": "Score de santé critique ({score}/{threshold}) et {count} nœuds de balise dégradés.",
+  "maintenance_reason_network": "Score de santé global critique ({score}/{threshold}). Redémarrage préventif du réseau.",
+  "maintenance_whole_network": "Réseau maillé eero complet",
+  "maintenance_alert_title": "🔄 Maintenance nocturne : redémarrage du maillage",
+  "maintenance_alert_message": "{reason} Nœuds redémarrés : {items}.",
+  "maintenance_telegram": "<b>🔄 Entretien nocturne eero</b>\n\n{reason}\nAppareils : <code>{items}</code>"
+}

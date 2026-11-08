@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "Die Sicherungsnutzlast ist kein gültiges JSON-Objekt.",
+  "restore_unrecognized": "Unbekannte Struktur der Sicherungsdatei oder keine gültigen Abschnitte.",
+  "restore_alert_title": "💾 Systemsicherung wiederhergestellt",
+  "restore_alert_message": "Wiederherstellung erfolgreich abgeschlossen: {devices} Gerätemetadateneinträge, {settings} Einstellungen, {schedules} Zeitplanregeln und {users} Benutzer.",
+  "restore_completed": "Backup-Wiederherstellung erfolgreich abgeschlossen."
+}

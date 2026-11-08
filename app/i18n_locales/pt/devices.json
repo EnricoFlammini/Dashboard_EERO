@@ -1,0 +1,6 @@
+{
+  "invalid_mac": "Endereço MAC inválido: {macs}",
+  "profile_removed": "Dispositivo removido do perfil.",
+  "profile_updated": "Perfil do dispositivo atualizado.",
+  "ula_cleared": "Endereços ULA IPv6 descobertos foram limpos com êxito."
+}

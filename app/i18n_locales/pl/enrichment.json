@@ -1,0 +1,10 @@
+{
+  "invalid_mac": "Pozycja #{index}: Adres MAC „{mac}” jest nieprawidłowy.",
+  "invalid_ip": "Pozycja #{index}: Adres IP „{ip}” jest nieprawidłowy.",
+  "no_valid_mappings": "Nie podano prawidłowych mapowań IP-MAC.",
+  "adguard_url_missing": "Adres URL AdGuard nie jest skonfigurowany.",
+  "adguard_connection_error": "Błąd połączenia AdGuard ({url}): {error}",
+  "no_orphan_clients": "W AdGuard Home nie znaleziono żadnych klientów automatycznych/sierot.",
+  "scan_result": "Znaleziono {candidates} kandydatów ULA, {resolved} pomyślnie rozwiązano sprawę za pośrednictwem NDP.",
+  "no_adguard_instances": "Nie skonfigurowano aktywnych instancji AdGuard Home."
+}

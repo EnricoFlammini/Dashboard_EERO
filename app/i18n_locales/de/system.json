@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Nicht unterstützte Sprache. Gültige Werte: 'en', 'it'",
+  "news_fetch_failed": "Fehler beim Abrufen der Eero-Nachrichten: {error}",
+  "news_refresh_failed": "Fehler beim Aktualisieren der Eero-Nachrichten: {error}",
+  "backup_export_failed": "Fehler beim Exportieren des Backups: {error}",
+  "backup_restore_failed": "Fehler beim Wiederherstellen der Sicherung: {error}",
+  "db_stats_failed": "Fehler beim Abrufen der Datenbankstatistiken: {error}",
+  "db_compact_failed": "Fehler beim Komprimieren der Datenbank: {error}",
+  "db_integrity_failed": "Fehler bei der Datenbankintegritätsprüfung: {error}",
+  "db_backup_failed": "Fehler beim Erstellen der Datenbanksicherung: {error}",
+  "update_check_failed": "Fehler bei der Suche nach Updates: {error}",
+  "release_notes_failed": "Fehler beim Abrufen der Versionshinweise: {error}",
+  "update_trigger_failed": "Fehler beim Starten des Updates: {error}",
+  "manual_section_not_found": "Abschnitt nicht gefunden."
+}

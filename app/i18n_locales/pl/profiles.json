@@ -1,0 +1,7 @@
+{
+  "created": "Utworzono profil „{name}”.",
+  "updated": "Profil zaktualizowany.",
+  "deleted": "Profil usunięty.",
+  "devices_assigned": "Urządzenia przypisane do profilu: {count}.",
+  "default_name": "Profil użytkownika"
+}

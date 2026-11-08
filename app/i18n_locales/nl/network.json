@@ -1,0 +1,8 @@
+{
+  "refreshed": "Netwerkgegevens vernieuwd.",
+  "not_authenticated": "Niet aangemeld bij eero",
+  "advanced_updated": "Geavanceerde instellingen bijgewerkt.",
+  "switched": "Overgeschakeld naar netwerk '{network_id}'.",
+  "mapping_removed": "Toewijzing {ip} <-> {mac} verwijderd.",
+  "mapping_not_found": "Er zijn geen overeenkomende toewijzingen gevonden om te verwijderen."
+}

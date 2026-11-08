@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Une mise à jour est déjà en cours...",
+  "watchtower_sent": "Signal de mise à jour envoyé à la Watchtower. Le conteneur redémarrera sous peu.",
+  "watchtower_bad_status": "La Watchtower a répondu avec le statut {code} : {body}",
+  "watchtower_error": "Erreur de déclenchement de la tour de guet : {error}",
+  "docker_started": "Mise à jour démarrée : téléchargement de la nouvelle image Docker. L'application redémarrera automatiquement.",
+  "manual_required": "Aucun socket Docker ou Watchtower configuré. Exécutez '{command}' sur le serveur.",
+  "generic_release_available": "La version v{version} est disponible avec des améliorations en termes de performances, de stabilité et de sécurité."
+}

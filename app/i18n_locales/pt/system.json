@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Idioma não suportado. Valores válidos: 'en', 'it'",
+  "news_fetch_failed": "Erro ao buscar notícias do eero: {error}",
+  "news_refresh_failed": "Erro ao atualizar notícias do eero: {error}",
+  "backup_export_failed": "Erro ao exportar o backup: {error}",
+  "backup_restore_failed": "Erro ao restaurar o backup: {error}",
+  "db_stats_failed": "Erro ao recuperar estatísticas do banco de dados: {error}",
+  "db_compact_failed": "Erro ao compactar o banco de dados: {error}",
+  "db_integrity_failed": "Erro na verificação de integridade do banco de dados: {error}",
+  "db_backup_failed": "Erro ao criar backup do banco de dados: {error}",
+  "update_check_failed": "Erro ao verificar atualizações: {error}",
+  "release_notes_failed": "Erro ao recuperar notas de versão: {error}",
+  "update_trigger_failed": "Erro ao iniciar a atualização: {error}",
+  "manual_section_not_found": "Seção não encontrada."
+}

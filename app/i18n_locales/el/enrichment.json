@@ -1,0 +1,10 @@
+{
+  "invalid_mac": "Στοιχείο #{index}: Η διεύθυνση MAC '{mac}' δεν είναι έγκυρη.",
+  "invalid_ip": "Στοιχείο #{index}: Η διεύθυνση IP '{ip}' δεν είναι έγκυρη.",
+  "no_valid_mappings": "Δεν παρέχονται έγκυρες αντιστοιχίσεις IP-MAC.",
+  "adguard_url_missing": "Η διεύθυνση URL του AdGuard δεν έχει διαμορφωθεί.",
+  "adguard_connection_error": "Σφάλμα σύνδεσης AdGuard ({url}): {error}",
+  "no_orphan_clients": "Δεν βρέθηκαν αυτόματα/ορφανά προγράμματα-πελάτες στο AdGuard Home.",
+  "scan_result": "Βρέθηκαν {candidates} υποψήφιοι ULA, ο {resolved} επιλύθηκε επιτυχώς μέσω NDP.",
+  "no_adguard_instances": "Δεν έχουν διαμορφωθεί ενεργές παρουσίες AdGuard Home."
+}

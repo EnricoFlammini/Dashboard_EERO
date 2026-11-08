@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Nieobsługiwany język. Poprawne wartości: „en”, „it”",
+  "news_fetch_failed": "Błąd podczas pobierania wiadomości eero: {error}",
+  "news_refresh_failed": "Błąd podczas odświeżania wiadomości eero: {error}",
+  "backup_export_failed": "Błąd eksportowania kopii zapasowej: {error}",
+  "backup_restore_failed": "Błąd przywracania kopii zapasowej: {error}",
+  "db_stats_failed": "Błąd podczas pobierania statystyk bazy danych: {error}",
+  "db_compact_failed": "Błąd podczas kompaktowania bazy danych: {error}",
+  "db_integrity_failed": "Błąd sprawdzania integralności bazy danych: {error}",
+  "db_backup_failed": "Błąd podczas tworzenia kopii zapasowej bazy danych: {error}",
+  "update_check_failed": "Błąd podczas sprawdzania aktualizacji: {error}",
+  "release_notes_failed": "Błąd podczas pobierania informacji o wersji: {error}",
+  "update_trigger_failed": "Błąd podczas uruchamiania aktualizacji: {error}",
+  "manual_section_not_found": "Nie znaleziono sekcji."
+}

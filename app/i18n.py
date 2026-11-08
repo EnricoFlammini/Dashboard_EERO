@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_LANGUAGES = ("en", "it")
+SUPPORTED_LANGUAGES = ("en", "it", "fr", "es", "de", "nl", "pt", "pl", "el")
 DEFAULT_LANGUAGE = "en"
 # The two original dashboard languages. Payloads and SQLite rows still carry the
 # legacy ``<field>_it`` / ``<field>_en`` pair (derived from the ``<field>_i18n``

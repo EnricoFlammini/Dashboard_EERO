@@ -1,0 +1,6 @@
+{
+  "already_running_wait": "Um teste de velocidade já está em execução. Espere terminar.",
+  "completed": "Teste de velocidade concluído com sucesso.",
+  "already_running": "Um teste de velocidade já está em execução.",
+  "invalid_metrics": "O teste de velocidade do gateway eero não retornou métricas de rendimento válidas."
+}

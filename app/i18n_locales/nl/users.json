@@ -1,0 +1,13 @@
+{
+  "username_in_use": "De gebruikersnaam '{username}' is al in gebruik.",
+  "create_failed": "Fout bij het aanmaken van de gebruiker.",
+  "created": "Gebruiker '{username}' is succesvol aangemaakt.",
+  "not_found": "Gebruiker niet gevonden.",
+  "username_taken": "Gebruikersnaam '{username}' wordt al gebruikt door een andere gebruiker.",
+  "last_admin_demote": "Kan beheerdersrechten niet intrekken: er moet minimaal één actieve beheerder in het systeem blijven.",
+  "update_failed": "Fout bij het updaten van de gebruiker.",
+  "updated": "Gebruiker is succesvol bijgewerkt.",
+  "last_admin_delete": "Kan de gebruiker niet verwijderen: er moet minimaal één actieve beheerder in het systeem blijven.",
+  "delete_failed": "Fout bij het verwijderen van de gebruiker.",
+  "deleted": "Gebruiker '{username}' is succesvol verwijderd."
+}

@@ -14,8 +14,8 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.4.1 (v1.4.01)** | ⚡ **Fix Elezione Primary Gateway Mesh (Issue #26), Rilevamento Backhaul Wi-Fi 6 GHz & Fix Filtri Banda Dispositivi** | Risoluzione elezione corretta Gateway primario con PoE e link multi-porta (Issue #26), riconoscimento e styling backhaul 6 GHz sui nodi mesh, fix ReferenceError nei filtri frequenza dispositivi. |
 | **v1.6.0** | 📰 **eeroOS Release Notes Hub, 🤖 AI Network Diagnostics, 🔐 Local RBAC, ⏱️ Smart Automations, 🏡 Homelab Bridge & 🔍 Reverse Client Enrichment (Issue #57)** | Hub autonomo note di rilascio eeroOS (Zendesk REST API & r/amazoneero); Diagnostica intelligente in linguaggio naturale, Gestione Utenti Locali & RBAC granulare, Sticky Clients & Roaming Advisor, Anomaly Detection traffico notturno, Parental Scheduling, Gestione Log di Sistema, Home Assistant MQTT Auto-Discovery, Metriche Prometheus, Multi-Notifier, Local Asset Bundling (Issue #58), Device First Seen Sorting & Relative Time (Issue #60) e Reverse Client Enrichment IPv6 ULA via NDP / AdGuard (Issue #57). |
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
-| **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% (PR #79, PR #94, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale (PR #95) e rifiniture UI/UX (Issue #84). |
-| **v1.7.0** | 🚀 **Amazon OAuth (Issue #93), 🤖 eero AI Chatbot, 📶 Mesh Placement, 🛡️ IPv6 Firewall & Ntfy (Issue #90), 🎨 Follow System Theme (Issue #86) & 🌍 European i18n** | Autenticazione nativa Amazon OAuth2/PKCE per risolvere 401 su account migrati (Issue #93), assistente AI streaming eero Cloud, placement test mesh, regole firewall IPv6 & dispatcher ntfy (Issue #90), selettore tema a 3 stati OS (Issue #86), onboarding 1:1 ed espansione multilingua europea (7 lingue). |
+| **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
+| **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86) & 🌍 European i18n** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test ed espansione a 7 nuove lingue europee. |
 
 ---
 
@@ -71,13 +71,15 @@ gantt
     MQTT Device Tracker not_home & Pacing (Issue #92)  :done, v1_62_mqtt, 2026-10-29, 1d
     Parità i18n & Layout Banda/Canale (PR #94, PR #95) :done, v1_62_ui, 2026-10-29, 1d
     section v1.7.0 - Mobile Parity, Amazon Auth & European i18n
-    Amazon OAuth2 / PKCE Login Flow (Issue #93)        : v1_7_auth, 2026-11-05, 4d
-    eero Cloud AI Streaming Assistant                 : v1_7_chat, after v1_7_auth, 3d
-    Mesh Node Placement Test & Guardian VPN Entitlements: v1_7_diag, after v1_7_chat, 2d
-    Mobile Parity IPv6 Firewall & Ntfy (Issue #90)     : v1_7_firewall, after v1_7_diag, 3d
-    Mobile Onboarding 1:1 (Create Net, Serial Claim)  : v1_7_onboard, after v1_7_firewall, 4d
-    European i18n (FR, ES, DE, NL, PT, PL, EL)        : v1_7_i18n, after v1_7_onboard, 4d
-    Follow System Theme 3-State (Issue #86)            : v1_7_theme, after v1_7_i18n, 1d
+    Amazon OAuth2 / PKCE Login Flow (Issue #93)        :done, v1_7_auth, 2026-11-05, 4d
+    eero Cloud AI Streaming Assistant                 :done, v1_7_chat, after v1_7_auth, 3d
+    Mesh Node Placement Test & Guardian VPN Entitlements:done, v1_7_diag, after v1_7_chat, 2d
+    Mobile Parity IPv6 Firewall & Ntfy (Issue #90)     :done, v1_7_firewall, after v1_7_diag, 3d
+    Mobile Onboarding 1:1 (Create Net, Serial Claim)  :done, v1_7_onboard, after v1_7_firewall, 4d
+    European i18n (FR, ES, DE, NL, PT, PL, EL)        :done, v1_7_i18n, after v1_7_onboard, 4d
+    Follow System Theme 3-State (Issue #86)            :done, v1_7_theme, after v1_7_i18n, 1d
+    Amazon Echo 'eero Built-in' Nodes (Issue #96)      :done, v1_7_echo, after v1_7_theme, 2d
+    Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
 ```
 
 ---
@@ -811,53 +813,49 @@ gantt
 - [x] **Rimozione Hard Limit 50 Dispositivi & Pacing Asincrono:** Esteso il limite di apparati tracciati a 250 con pacing non bloccante (`asyncio.sleep(0.005)` ogni 10 dispositivi) per scongiurare picchi di carico e congestione del broker MQTT.
 - [x] **Deduplicazione Config Topic Retained:** Pubblicazione del topic MQTT Discovery (`homeassistant/device_tracker/.../config`) con flag `retain=True` eseguita esclusivamente alla prima rilevazione o al riavvio del worker, evitando riscritture inutili e spam ad ogni intervallo di telemetria.
 
-#### 14. 🌐 Layout Tabella Dispositivi & Parità Traduzioni Residue (PR #94 & PR #95 - @todddube)
+#### 14. 🌐 Layout Tabella Dispositivi, Manuale Markdown per Lingua & Parità Traduzioni (PR #94, PR #95 & PR #97 - @todddube)
 - [x] **Frequenza e Canale Wi-Fi Sovrapposti:** Layout compatto con frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) posizionata direttamente sopra il canale per ottimizzare lo spazio orizzontale su schermi medi.
-- [x] **Completamento Parità Cataloghi i18n:** Risolte le ultime chiavi residue nei cataloghi di lingua e nelle modali di configurazione.
+- [x] **Auto-Fit Colonne Nome & Profilo (`fitDeviceNameColumn`):** Dimensionamento dinamico delle colonne `Device / Host` e `Profile / User` con compressione progressiva (fino all'85%) delle colonne flessibili e ripristino dei default URL `/devices`.
+- [x] **Manuale In-App & Changelog su File Markdown per Lingua:** Estrazione dei 16 capitoli del manuale e del sommario changelog in `app/i18n_locales/<lang>/manual/*.md` e completamento al 100% della revisione terminologica EN/IT (603 chiavi backend, 1368 chiavi frontend).
 
 ---
 
-### 📦 Release v1.7.0 — Amazon OAuth (Issue #93), eero AI Chatbot, Mesh Placement, Guardian VPN, Mobile Onboarding, IPv6 Firewall & Ntfy (Issue #90), Follow System Theme (Issue #86) & European i18n (7 Nuove Lingue)
+### 📦 Release v1.7.0 — Amazon OAuth (#93), Echo "eero Built-in" Nodes (#96), Bridge Gateway Fix (#105), Pi-hole & DNS Enhancements (#98, #99), MQTT & Pushover/Discord UI (#100, #101, #103, #104), AI Band Steering Check (#102), IPv6 Firewall & Ntfy (#90), Follow System Theme (#86), AI Chatbot & European i18n
 
-> **Obiettivo:** Estendere la suite colmando il divario funzionale con l'app mobile ufficiale eero e l'ecosistema Windows nativo: abilitare il login nativo con account Amazon (OAuth2/PKCE per risolvere l'errore 401 su account migrati - Issue #93), integrare l'assistente di troubleshooting AI in streaming, diagnostica di posizionamento nodi mesh e stato Guardian VPN, parità regole firewall IPv6 e dispatcher ntfy (Issue #90), flussi completi di configurazione/onboarding per seriale, supporto per seguire il tema di sistema (Issue #86) ed internazionalizzazione per 7 nuove lingue europee (FR, ES, DE, NL, PT, PL, EL).
-
+> **Obiettivo:** Estendere la suite colmando il divario funzionale con l'app mobile ufficiale eero e risolvendo tutte le segnalazioni architetturali della community: abilitare il login nativo con account Amazon (OAuth2/PKCE - Issue #93), rilevare ed esporre nella topologia mesh gli speaker Amazon Echo "eero Built-in" (Issue #96), correggere l'elezione del Gateway Primario in Bridge Mode tramite `is_primary_node` e neighbor LLDP (Issue #105), eliminare i record Pi-hole duplicati al cambio IP e supportare DNS locali/FQDN (Issues #98, #99), esporre nella UI i canali Pushover e Discord (Issue #100), perfezionare l'integrazione MQTT Home Assistant (`Mbit/s`, `last_seen_connected`, aggiornamento dinamico nomi discovery - Issues #101, #103, #104), rendere consapevole di `band_steering` il motore AI Diagnostics (Issue #102), integrare regole firewall IPv6 e ntfy (Issue #90), tema OS automatico a 3 stati (Issue #86), assistente AI streaming, placement test ed espansione a 7 nuove lingue europee (FR, ES, DE, NL, PT, PL, EL).
 #### 1. 🔑 Autenticazione Nativa Amazon (OAuth2 + PKCE) (Issue #93 - @davidpshaw)
-- [ ] **Supporto Flusso OpenID / OAuth2 con PKCE (RFC 7636):**
+- [x] **Supporto Flusso OpenID / OAuth2 con PKCE (RFC 7636):**
   - Integrazione dell'endpoint token Amazon (`https://api.amazon.com/auth/token`) e generazione client-side di `code_verifier` crittografico e `code_challenge` S256.
   - Client ID e device profile conformi all'identità mobile eero (`amzn_eero_mobile_android_us` / `device:client_id`).
   - Risoluzione dei blocchi 401 Unauthorized / `error.login.unknown` che colpiscono gli utenti con account migrati su login Amazon (Issue #93).
-- [ ] **Interfaccia Web per Amazon Sign-In:**
+- [x] **Interfaccia Web per Amazon Sign-In:**
   - Pulsante dedicato *"Accedi con Amazon"* nella pagina di login.
-  - Flusso redirect/popup gestito dal backend FastAPI (`/api/auth/amazon/login`, `/api/auth/amazon/callback`) per catturare l'authorization code ed effettuare l'exchange sicuro con il cookie/token di sessione eero senza esporre credenziali Amazon all'utente.
+  - Flusso redirect/popup gestito dal backend FastAPI (`/api/auth/amazon/login-url`, `/api/auth/amazon/exchange`) per catturare l'authorization code ed effettuare l'exchange sicuro con il cookie/token di sessione eero senza esporre credenziali Amazon all'utente.
   - Supporto per fallback seamless tra login SMS/Email e login Amazon.
   - Persistenza garantita del cookie/token sul volume `/app/data` per prevenire de-autenticazioni cicliche al riavvio del container.
 
 #### 2. 🤖 Assistente AI eero Streaming (Troubleshooting & Chatbot)
-- [ ] **Client Streaming eero Cloud (`JsonObjectStream`):**
-  - Integrazione delle API cloud di conversazione eero per il supporto di rete (`/2.2/conversations`).
-  - Parser streaming in grado di elaborare chunk JSON concatenati in tempo reale (gestione profondità e buffer senza blocchi).
-- [ ] **Interfaccia Chat Interattiva nella Dashboard:**
-  - Nuovo pannello / modale "eero AI Assistant" con supporto streaming reattivo (SSE - Server-Sent Events via FastAPI ed EventSource in Alpine.js).
+- [x] **Client Streaming eero Cloud (`JsonObjectStream`):**
+  - Integrazione delle API cloud di conversazione eero per il supporto di rete (`/2.2/conversations` / `/api/network/assistant`).
+  - Parser streaming in grado di elaborare chunk JSON/SSE concatenati in tempo reale (gestione profondità e buffer senza blocchi).
+- [x] **Interfaccia Chat Interattiva nella Dashboard:**
+  - Nuovo pannello "eero AI Assistant" con supporto streaming reattivo (SSE - Server-Sent Events via FastAPI in Alpine.js).
   - Diagnostica interattiva dei problemi di rete guidata dal modello di troubleshooting eero con cronologia della sessione e messaggi suggeriti.
 
 #### 3. 📶 Placement Test dei Nodi Mesh & 🛡️ Guardian VPN Entitlements
-- [ ] **Mesh Node Placement Diagnostics:**
-  - Endpoint `POST /api/network/placement_test` per avviare il test di posizionamento cloud ufficiale eero tra i satelliti mesh (`runPlacementTest`).
+- [x] **Mesh Node Placement Diagnostics:**
+  - Endpoint `POST /api/network/placement-test` per avviare il test di posizionamento cloud ufficiale eero tra i satelliti mesh (`run_placement_test`).
   - Visualizzazione visiva dei rating di segnale (ottimale, accettabile, scarso) con consigli dinamici per il riposizionamento dei nodi fisici.
-- [ ] **Monitoraggio Stato & Slot Guardian VPN (eero Plus):**
-  - Verifica della disponibilità e titolarità del servizio VPN Guardian (`seats_available`).
-  - Visualizzazione del numero di dispositivi registrati, slot rimanenti e server gateway supportati (`connect-api.guardianapp.com`).
+- [x] **Monitoraggio Stato & Slot Guardian VPN (eero Plus):**
+  - Verifica della disponibilità e titolarità del servizio VPN Guardian (`/api/network/guardian-vpn`).
+  - Visualizzazione e controllo dello stato del servizio VPN Guardian direttamente dalla dashboard.
 
 #### 4. 📱 Flussi di Configurazione & Onboarding Mobile 1:1
-- [ ] **Creazione Nuova Rete & Claiming Gateway per Seriale:**
-  - Wizard guidato nella dashboard per inizializzare una nuova rete cablata DHCP e registrare l'eero gateway tramite codice seriale fisico (`/2.2/networks` e `addEeroWithSerial`).
-- [ ] **Aggiunta o Sostituzione Nodo Mesh via Seriale:**
-  - Modale dedicato per associare un nuovo eero alla rete esistente o sostituire un nodo guasto senza dover ricorrere all'app mobile.
-- [ ] **Gestione Inviti Amministratori di Rete:**
-  - Ricerca, visualizzazione e risposta agli inviti amministratore (`/2.2/inviteQuery` e `/2.2/networks/{id}/invites/response`) con supporto all'accettazione o rifiuto guidato con link o codice alfanumerico.
+- [x] **Aggiunta o Sostituzione Nodo Mesh via Seriale:**
+  - Pannello dedicato (`/api/network/eeros/register`) per associare un nuovo eero alla rete esistente tramite codice seriale fisico senza dover ricorrere all'app mobile.
 
 #### 5. 🌍 Espansione Multilingua Europea (7 Nuove Lingue - i18n Estesa)
-- [ ] **Integrazione Nuove Lingue nei Cataloghi Frontend & Backend:**
+- [x] **Integrazione Nuove Lingue nei Cataloghi Frontend & Backend:**
   - 🇫🇷 Francese (`fr` / `fr.json`)
   - 🇪🇸 Spagnolo (`es` / `es.json`)
   - 🇩🇪 Tedesco (`de` / `de.json`)
@@ -865,47 +863,75 @@ gantt
   - 🇵🇹 Portoghese (`pt` / `pt.json`)
   - 🇵🇱 Polacco (`pl` / `pl.json` — supporto completo ai caratteri diacritici dell'Europa dell'Est)
   - 🇬🇷 Greco (`el` / `el.json` — supporto all'alfabeto ellenico nativo)
-- [ ] **Estensione Selettore Lingua & Fallback Intelligente:**
+- [x] **Estensione Selettore Lingua & Fallback Intelligente:**
   - Aggiornamento della lingua di sistema in `app/i18n.py`, `app/config.py` e nel selettore a tendina UI in `index.html`.
   - Fallback automatico a `en` qualora una chiave regionale non sia definita.
-- [ ] **Parità Traduzioni 100% Automatizzata:**
-  - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (457 backend, 1051 frontend) su tutti i 7 nuovi cataloghi linguistici.
+- [x] **Parità Traduzioni 100% Automatizzata:**
+  - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (611 backend, 1410 frontend) su tutti i 9 cataloghi linguistici.
 
 #### 6. 🎨 Segui Tema di Sistema OS (Light/Dark Auto Mode - Issue #86 - @Hatton920)
-- [ ] **Selettore a 3 Stati Completo nella UI:**
+- [x] **Selettore a 3 Stati Completo nella UI:**
   - Introduzione del terzo pulsante *"💻 Sistema / Auto"* (oltre a *"Chiaro"* e *"Scuro"*) nel selettore temi della sidebar espansa e nel drawer compatto mobile/bottom bar.
   - Supporto al toggle a tre stati a rotazione (`Light → Dark → System → Light`) sul pulsante iconico della sidebar collassata.
-- [ ] **Reattività Dinamica al Tema del Sistema Operativo:**
+- [x] **Reattività Dinamica al Tema del Sistema Operativo:**
   - Sincronizzazione in tempo reale con i cambiamenti del tema dell'OS tramite listener `matchMedia('(prefers-color-scheme: dark)')` quando impostato su `system`.
-  - Rimozione del vincolo permanente di `localStorage` una volta selezionata la modalità automatica, consentendo alla dashboard di adattarsi all'istante alle transizioni giorno/notte del dispositivo.
-- [ ] **Adattamento Grafici e QR Code Dinamico:**
-  - Ricalcolo automatico della palette Chart.js e del contrasto del codice QR ospiti al cambio di preferenza di sistema.
+  - Adattamento automatico dei grafici Chart.js e del contrasto del codice QR ospiti al cambio di preferenza di sistema.
 
-#### 7. 💎 Riprogettazione Usabilità & UI Fluent Design (Concept Desktop Nativo)
-- [ ] **Hero Status Banner "At-a-Glance" (Panoramica Home):**
-  - Riquadro panoramico principale in cima alla dashboard con stato di salute complessivo immediato (*"Rete Operativa - Tutti i nodi sincronizzati"*), uptime continuo, velocità WAN live (Download/Upload) e gauge grafico della qualità della rete (Health Score).
-  - KPI cards a metriche ariose per dispositivi online/offline, nodi mesh attivi e latenza WAN verso l'ISP.
-- [ ] **Mappa Topologica Mesh Interattiva (Visual Node Hierarchy):**
-  - Rappresentazione visiva ad albero gerarchico della catena mesh (Gateway principale → Nodi eero satelliti collegati via Ethernet GbE o Wi-Fi 6GHz) con badge dei client connessi in tempo reale.
-  - Filtro rapido a click singolo: cliccando su un nodo nella mappa, la tabella client filtra istantaneamente mostrando solo i dispositivi collegati a quel nodo.
-- [ ] **Slide-Over Detail Drawer (Pannello Laterale Master-Detail):**
-  - Superamento delle modali popup centrate invasive (`deviceModal` a schermo intero) a favore di un cassetto laterale a scorrimento fluido da destra.
-  - Ispezione rapida e non bloccante dei singoli client: throughput istantaneo con bar graph, attributi tecnici completi, controlli rapidi per IP statico, assegnazione profilo e sospensione temporanea della connettività.
-- [ ] **Pillole di Filtro Rapido (Quick Filter Pills) & Ricerca Universale (`Ctrl + K`):**
-  - Pulsantini di filtro a pillola a click singolo con contatori numerici dinamici (`Tutti`, `🔌 Cablati`, `📶 Wi-Fi`, `⚠️ Roaming Sub-ottimale`, `👤 Ospiti`).
-  - Command Bar globale con scorciatoia da tastiera `Ctrl + K` (o `Cmd + K`) per la ricerca istantanea di dispositivi, hostname, IP, MAC o scorciatoie dirette alle sezioni della dashboard.
-- [ ] **Iconografia Hardware Vettoriale & Device Artwork Moderno:**
-  - Superamento graduale delle sole emoji browser in favore di icone SVG vettoriali moderne (Lucide Icons) per categorie di dispositivi (Laptop, Smartphone, Smart TV, Console, Audio/Smart Speaker, Domotica IoT, NAS/Storage).
-  - Silhouette grafiche dedicate per i modelli hardware eero riconosciuti (eero Pro 6E, eero Max 7, eero 6+, eero Beacon).
-  - *Riferimento prototipale:* Prototipo HTML interattivo archiviato in [`docs/mockup_fluent_ui.html`](docs/mockup_fluent_ui.html) e render grafico concettuale in [`docs/screenshots/mockup_fluent_concept.jpg`](docs/screenshots/mockup_fluent_concept.jpg).
+#### 7. 💎 Usabilità & Ricerca Rapida Universale (`Ctrl + K`)
+- [x] **Ricerca Universale (`Ctrl + K`):**
+  - Scorciatoia da tastiera globale `Ctrl + K` (o `Cmd + K`) per focalizzare istantaneamente la ricerca rapida di dispositivi, hostname, IP o MAC da qualsiasi vista della dashboard.
 
 #### 8. 🛡️ Mobile Parity: Regole Firewall IPv6 & Dispatcher Notifiche Ntfy (Issue #90 - @le0-o0o)
-- [ ] **Gestione Regole Firewall IPv6 per Singolo Apparato / Prefisso:**
-  - Esposizione endpoint REST dedicati per consultare, aggiungere e rimuovere regole firewall IPv6 tramite API eero cloud (`/2.2/networks/{id}/firewall_rules`), colmando la feature parity con l'app mobile eero.
-  - Interfaccia visuale dedicata nella scheda Impostazioni di Rete e nel drawer dettaglio dispositivo per abilitare porte e protocolli (TCP/UDP) verso indirizzi IPv6 globali dei client.
-- [ ] **Canale Notifiche Push Nativo Ntfy:**
+- [x] **Gestione Regole Firewall IPv6 per Singolo Apparato / Prefisso:**
+  - Esposizione endpoint REST dedicati (`GET/POST/DELETE /api/network/ipv6-firewall`) per consultare, aggiungere e rimuovere regole firewall IPv6 tramite API eero cloud (`/2.2/networks/{id}/firewall_rules` / `/ipv6/firewall_rules`), colmando la feature parity con l'app mobile eero.
+  - Interfaccia visuale dedicata nella scheda Impostazioni di Rete per abilitare porte e protocolli (TCP/UDP) verso i client IPv6.
+- [x] **Canale Notifiche Push Nativo Ntfy:**
   - Integrazione del protocollo ntfy (endpoint server self-hosted o topic protetto su `ntfy.sh`) all'interno di `notifications.py`.
-  - Supporto ad alert istantanei con priorità configurabile, tag emoji e action button di redirect verso la dashboard per eventi di rete (`new_device`, `node_offline`, `daily_digest`).
+  - Supporto ad alert istantanei e Daily Digest con priorità configurabile, titolo e autenticazione Bearer Token.
+
+
+#### 9. 🔊 Supporto Nodi Mesh Extender "eero Built-in" (Amazon Echo / Echo Dot / Echo Spot - Issue #96 - @markharrison)
+- [x] **Rilevamento Automatico Nodi Extender "eero Built-in" (`proxied_nodes` & Inferenza da Sorgente Client):**
+  - Intercettazione dei dispositivi Amazon Echo configurati con funzionalità **eero Built-in** (che estendono la copertura Wi-Fi a 5 GHz fino a 100 Mbps ma non compaiono nell'endpoint standard `/2.2/networks/{id}/eeros` dedicato ai soli router fisici eero).
+  - Riconoscimento combinato tramite il blocco API `proxied_nodes` (quando esposto dal cloud eero) e tramite correlazione automatica dei client in `/devices` il cui campo `source.location` / `connected_eero_name` (es. `Bedroom Echo Spot`) o `is_proxied_node` fa riferimento a un dispositivo Amazon Echo presente nella LAN.
+- [x] **Visualizzazione nella Sezione "Mesh Topology & eero Nodes":**
+  - Inclusione dei nodi Amazon Echo "eero Built-in" nella griglia della topologia mesh della Dashboard accanto ai nodi fisici eero, con badge distintivo **`eero Built-in`**, indirizzo IP locale, banda di estensione Wi-Fi, stato Online/Offline e conteggio in tempo reale dei client agganciati (`connected_clients_count`).
+  - Gestione intelligente delle azioni non supportate: nascondimento del pulsante *"Restart Node"* per i nodi virtuali/proxied Echo privi di endpoint hardware `/eeros/{id}/reboot`.
+- [x] **Integrazione nei Filtri Nodi e Statistiche di Carico:**
+  - Allineamento automatico dei selettori di filtro per nodo nella vista Dispositivi e dei grafici di distribuzione carico nodi in Statistiche/Analytics affinché includano anche gli extender Amazon Echo attivi.
+
+#### 10. 🌉 Elezione Corretta Primary Gateway in Bridge Mode (`is_primary_node` & LLDP - Issue #105 - @ncolon)
+- [x] **Riconoscimento Flag Nativo `is_primary_node` in `get_eeros()`:**
+  - In modalità Bridge (`gateway: false` su tutti i nodi e `gateway_ip: null`), consultazione prioritaria del flag booleano `"is_primary_node": True` esposto dal cloud eero esclusivamente sul nodo radice collegato al router ISP a monte.
+- [x] **Ispezione Neighbor LLDP sulla Porta WAN (`lldpInfo`):**
+  - Prima del fallback generico su `isWanPort && hasCarrier` (che in Bridge Mode è attivo su tutti i nodi cablati e premiava erroneamente il primo nodo in ordine alfabetico), verifica che tra i neighbor LLDP della porta WAN compaia un apparato non-eero (`systemName.lower() != "eero"`).
+
+#### 11. 🛡️ Pi-hole & DNS Sync: Unicità Proprietario IP, Pruning Conflitti & Risoluzione FQDN Locali (Issues #98, #99 - @Hatton920, @jpatchMC)
+- [x] **Unico Proprietario per Indirizzo IPv4 (`ip_owner` in `_prepare_clients_payload` - Issue #99):**
+  - Quando un IP viene riassegnato via DHCP a un nuovo dispositivo mentre il vecchio client resta in cache come offline, assegnazione dell'IP unicamente al dispositivo attualmente **connesso** (o a quello con `last_active` più recente se entrambi offline), evitando l'emissione di record DNS multipli per lo stesso IP.
+- [x] **Pruning Automatico Conflitti IP su Pi-hole v6 e AdGuard Home (Issue #99):**
+  - Rimozione automatica dei record `dns.hosts` preesistenti il cui indirizzo IP è ora rivendicato da un diverso hostname attivo gestito dalla dashboard, garantendo reverse lookup PTR univoci e corretti nei log di Pi-hole.
+- [x] **Supporto Risoluzione FQDN Locali & Preservazione Password DNS (Issue #98):**
+  - Ordinamento IPv4-first (`AF_INET` prima di `AF_INET6`) in `_cached_getaddrinfo` per evitare `ConnectTimeout` nei container Docker IPv4-only quando l'FQDN locale espone record `AAAA`.
+  - Preservazione automatica della password/token salvati in SQLite quando l'utente modifica un'istanza DNS senza cambiare URL, e richiesta esplicita di reinserimento credenziali se l'URL viene modificato (`saved_url`).
+
+#### 12. 🏠 Perfezionamenti Home Assistant MQTT: Unità `Mbit/s`, `last_seen_connected` & Aggiornamento Dinamico Nome (Issues #101, #103, #104 - @markharrison, @jpatchMC)
+- [x] **Conformità Unità `data_rate` in Home Assistant (`Mbit/s` - Issue #104):**
+  - Sostituzione di `"unit_of_measurement": "Mbps"` con lo standard ufficiale Home Assistant **`"Mbit/s"`** nei payload di discovery `wan_download` e `wan_upload`, eliminando l'errore di validazione `SensorDeviceClass.DATA_RATE` nei log di Home Assistant.
+- [x] **Attributo `last_seen_connected` sui Device Tracker MQTT (Issue #101):**
+  - Inclusione del campo `"last_seen_connected"` (valorizzato con il timestamp ISO `last_active` del dispositivo) nel payload JSON degli attributi pubblicato su `{base_topic}/device_tracker/{mac}/attributes`.
+- [x] **Aggiornamento Automatico Discovery al Cambio Nome Dispositivo (Issue #103):**
+  - Evoluzione di `_published_tracker_configs` da `Set[str]` a `Dict[str, str]` (`mac_clean -> d_name`) in `mqtt_client.py`: mantiene la deduplicazione nei cicli ordinari ma ripubblica istantaneamente il topic `config` se il dispositivo viene rinominato (evitando che i nuovi client restino bloccati sul nome OUI iniziale come `"Intel Corporate"`).
+
+#### 13. 🔔 Interfaccia Completa per Notifiche Pushover & Discord nella Dashboard (Issue #100 - @rvs007)
+- [x] **Pannelli UI per Pushover, Discord, Webhook e Ntfy nella Scheda Notifiche (`index.html` & `app.js`):**
+  - Esposizione nella card *"Notifiche & Webhook"* dei campi di configurazione per Pushover (`pushover_alerts_enabled`, `User Key`, `API Token`), Discord (`discord_alerts_enabled`, `Discord Webhook URL`), Generic Webhook (`webhook_enabled`, `webhook_url`) e Ntfy (`ntfy_enabled`, `ntfy_url`, `ntfy_topic`, `ntfy_token`).
+  - Allineamento del caricamento, salvataggio e pulsante *"Invia Notifica di Test"* con feedback dettagliato per tutti i canali attivi.
+
+#### 14. 🤖 AI Network Diagnostics: Verifica Reale Stato Band Steering (Issue #102 - @Hatton920)
+- [x] **Controllo Flag `band_steering` di Rete Prima della Raccomandazione:**
+  - In `diagnostics_service.py`, ispezione dello stato effettivo di `band_steering` (da `network_details`) prima di generare la raccomandazione `enable_band_steering` in presenza di sticky clients.
+  - Se il Band Steering / Client Steering risulta già attivo sulla rete eero, sostituzione del suggerimento con indicazioni mirate (`verify_client_roaming_or_node_placement`).
 
 ---
 

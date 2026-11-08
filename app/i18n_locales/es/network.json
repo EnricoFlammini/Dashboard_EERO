@@ -1,0 +1,8 @@
+{
+  "refreshed": "Datos de red actualizados.",
+  "not_authenticated": "No iniciado sesión en eero",
+  "advanced_updated": "Configuración avanzada actualizada.",
+  "switched": "Se cambió a la red '{network_id}'.",
+  "mapping_removed": "Se eliminó la asignación {ip} <-> {mac}.",
+  "mapping_not_found": "No se encontró ninguna asignación coincidente para eliminar."
+}

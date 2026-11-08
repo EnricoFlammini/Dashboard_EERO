@@ -1,0 +1,8 @@
+{
+  "summary_fallback": "Atualização de firmware eeroOS",
+  "demo_summary_1": "Tratamento aprimorado do TrueChannel de interferência AWGN em 6 GHz e otimizações de estabilidade.",
+  "demo_summary_2": "Melhorias gerais de desempenho e estabilidade da malha.",
+  "demo_summary_3": "Consultor de roaming de cliente aprimorado e manipulação de canal DFS.",
+  "demo_summary_4": "Melhorias de estabilidade para sincronização de sinal eero e malha.",
+  "demo_summary_5": "Patch de segurança cumulativo e suporte estendido para nós eero Pro 6E."
+}

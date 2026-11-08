@@ -1,0 +1,9 @@
+{
+  "already_in_progress": "Er wordt al een update uitgevoerd...",
+  "watchtower_sent": "Updatesignaal verzonden naar Watchtower. De container zal binnenkort opnieuw opstarten.",
+  "watchtower_bad_status": "Wachttoren reageerde met status {code}: {body}",
+  "watchtower_error": "Wachttoren-triggerfout: {error}",
+  "docker_started": "Update gestart: het downloaden van de nieuwe Docker-image. De applicatie wordt automatisch opnieuw opgestart.",
+  "manual_required": "Geen Docker-socket of Watchtower geconfigureerd. Voer '{command}' uit op de server.",
+  "generic_release_available": "Release v{version} is beschikbaar met verbeteringen op het gebied van prestaties, stabiliteit en beveiliging."
+}

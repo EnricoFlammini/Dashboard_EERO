@@ -1,0 +1,17 @@
+{
+  "invalid_level": "Nível de log inválido '{level}'. Valores permitidos: {allowed}",
+  "invalid_level_short": "Nível de log inválido: {level}. Permitido: {allowed}",
+  "change_level": "nível: {level}",
+  "change_state_on": "status: ATIVADO",
+  "change_state_off": "status: DESATIVADO",
+  "change_retention": "retenção: {days} dias",
+  "no_valid_params": "Nenhum parâmetro válido fornecido para atualizar a configuração.",
+  "config_updated_alert_title": "⚙️ Configuração de log atualizada",
+  "config_updated_alert_message": "Configurações de diagnóstico alteradas por '{actor}': {changes}.",
+  "config_updated": "Configuração de log atualizada com sucesso ({changes}).",
+  "cleared_alert_title": "🗑️ Log do sistema limpo",
+  "cleared_alert_message": "Os logs do sistema foram apagados pelo usuário '{actor}' (eventos {count} removidos).",
+  "cleared": "Log de eventos limpo com sucesso (registros {count} removidos).",
+  "no_logs_recorded": "Nenhum registro registrado.",
+  "cleared_audit_entry": "Logs do sistema limpos com sucesso ({count} registros anteriores removidos)."
+}

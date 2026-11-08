@@ -1,0 +1,19 @@
+{
+  "unknown_device": "Gerät",
+  "unknown_node": "Eero-Knoten",
+  "invalid_data_type": "Ungültiger Datentyp. Wählen Sie eine von: {types}",
+  "export_status_online": "Online",
+  "export_status_offline": "Offline",
+  "export_wireless": "Kabellos",
+  "export_wired": "Verkabelt",
+  "export_yes": "Ja",
+  "export_no": "Nein",
+  "export_no_data": "keine_Daten_verfügbar",
+  "export_cat_computer": "Computer und Laptops",
+  "export_cat_mobile": "Smartphones und Tablets",
+  "export_cat_smart_home": "Smart Home und IoT",
+  "export_cat_entertainment": "TV & Streaming",
+  "export_cat_gaming": "Spielekonsolen",
+  "export_cat_server": "Server und NAS",
+  "export_cat_other": "Andere"
+}

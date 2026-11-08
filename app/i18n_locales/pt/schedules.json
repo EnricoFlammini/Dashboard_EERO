@@ -1,0 +1,18 @@
+{
+  "name_required": "O nome da regra não pode ficar vazio.",
+  "target_required": "Especifique pelo menos um usuário ou nó de destino.",
+  "not_found": "Agenda não encontrada.",
+  "update_failed": "Erro ao atualizar a regra.",
+  "delete_failed": "Erro ao excluir a regra.",
+  "deleted": "Regra #{id} excluída.",
+  "state_started": "Começou",
+  "state_ended": "Terminou",
+  "transition_alert_title": "🕒 Regra agendada '{name}'",
+  "transition_alert_message": "A regra agendada '{name}' foi aplicada: status {state}, alvos: {count} ({target_type}).",
+  "maintenance_reason_beacons": "Pontuação de integridade crítica ({score}/{threshold}) e {count} nós de beacon degradados.",
+  "maintenance_reason_network": "Pontuação geral crítica de integridade ({score}/{threshold}). Reinicialização preventiva da rede.",
+  "maintenance_whole_network": "Toda a rede Mesh eero",
+  "maintenance_alert_title": "🔄 Manutenção Noturna: Reinicialização do Mesh",
+  "maintenance_alert_message": "{reason} Nós reinicializados: {items}.",
+  "maintenance_telegram": "<b>🔄 Manutenção Noturna eero</b>\n\n{reason}\nDispositivos: <code>{items}</code>"
+}

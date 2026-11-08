@@ -1,0 +1,13 @@
+{
+  "username_in_use": "O nome de usuário '{username}' já está em uso.",
+  "create_failed": "Erro ao criar o usuário.",
+  "created": "Usuário '{username}' criado com sucesso.",
+  "not_found": "Usuário não encontrado.",
+  "username_taken": "O nome de usuário '{username}' já está sendo usado por outro usuário.",
+  "last_admin_demote": "Não é possível revogar direitos de administrador: pelo menos um administrador ativo deve permanecer no sistema.",
+  "update_failed": "Erro ao atualizar o usuário.",
+  "updated": "Usuário atualizado com sucesso.",
+  "last_admin_delete": "Não é possível excluir o usuário: pelo menos um administrador ativo deve permanecer no sistema.",
+  "delete_failed": "Erro ao excluir o usuário.",
+  "deleted": "Usuário '{username}' excluído com sucesso."
+}

@@ -1,0 +1,6 @@
+{
+  "already_running_wait": "Test prędkości już trwa. Poczekaj, aż to się skończy.",
+  "completed": "Test prędkości zakończył się pomyślnie.",
+  "already_running": "Test prędkości już trwa.",
+  "invalid_metrics": "Test szybkości bramy eero nie zwrócił prawidłowych wskaźników przepustowości."
+}

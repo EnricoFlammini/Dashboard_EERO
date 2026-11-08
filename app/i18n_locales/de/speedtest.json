@@ -1,0 +1,6 @@
+{
+  "already_running_wait": "Ein Geschwindigkeitstest läuft bereits. Warten Sie, bis es fertig ist.",
+  "completed": "Geschwindigkeitstest erfolgreich abgeschlossen.",
+  "already_running": "Ein Geschwindigkeitstest läuft bereits.",
+  "invalid_metrics": "Der Eero-Gateway-Geschwindigkeitstest hat keine gültigen Durchsatzmetriken zurückgegeben."
+}

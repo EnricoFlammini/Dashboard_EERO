@@ -1,0 +1,18 @@
+{
+  "name_required": "Nazwa reguły nie może być pusta.",
+  "target_required": "Określ co najmniej jednego docelowego użytkownika lub węzeł.",
+  "not_found": "Nie znaleziono harmonogramu.",
+  "update_failed": "Błąd podczas aktualizowania reguły.",
+  "delete_failed": "Błąd podczas usuwania reguły.",
+  "deleted": "Zasada #{id} została usunięta.",
+  "state_started": "Zaczął",
+  "state_ended": "Zakończone",
+  "transition_alert_title": "🕒 Zaplanowana reguła „{name}”",
+  "transition_alert_message": "Zastosowano zaplanowaną regułę „{name}”: stan {state}, cele: {count} ({target_type}).",
+  "maintenance_reason_beacons": "Krytyczny wynik kondycji ({score}/{threshold}) i {count} zdegradowane węzły sygnalizacyjne.",
+  "maintenance_reason_network": "Krytyczny ogólny wynik stanu zdrowia ({score}/{threshold}). Zapobiegawcze ponowne uruchomienie sieci.",
+  "maintenance_whole_network": "Cała sieć eero Mesh",
+  "maintenance_alert_title": "🔄 Codzienna konserwacja: ponowne uruchomienie siatki",
+  "maintenance_alert_message": "{reason} Zrestartowano węzły: {items}.",
+  "maintenance_telegram": "<b>🔄 eero Nocna konserwacja</b>\n\n{reason}\nUrządzenia: <code>{items}</code>"
+}

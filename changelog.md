@@ -4,6 +4,51 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0] - 2026-11-06
+
+### 🔑 Autenticazione Nativa Amazon OAuth2 / PKCE (Issue #93 - @davidpshaw)
+* **🔐 Flusso OpenID / OAuth2 con PKCE S256 (RFC 7636):**
+  * Generazione crittografica di `code_verifier` e `code_challenge` S256 (`generate_amazon_oauth_url`) ed exchange sicuro dell'authorization code (`exchange_amazon_oauth_code`) con l'endpoint token Amazon ed eero Cloud (`/2.2/login/amazon`).
+  * Nuovi endpoint REST `GET /api/auth/amazon/login-url` e `POST /api/auth/amazon/exchange` protetti da rate limiter per consentire l'accesso nativo agli account eero collegati ad Amazon senza errori `401 Unauthorized` / `error.login.unknown`.
+  * Sezione dedicata **"Accedi con Amazon (OAuth2 / PKCE)"** integrata nella modale di autenticazione Cloud (`index.html`).
+
+### 🔊 Nodi Mesh Extender Amazon Echo "eero Built-in" (Issue #96 - @markharrison)
+* **📡 Riconoscimento Automatico & Sintesi Nodi `eero Built-in` (`reconcile_echo_extender_nodes`):**
+  * Intercettazione automatica degli speaker Amazon Echo (Echo Dot, Echo Spot, Echo 4th Gen) che estendono la rete Wi-Fi tramite **eero Built-in**, correlando i campi `proxied_nodes`, `source.is_proxied_node` e `source.location` con i dispositivi Echo rilevati nella LAN.
+  * Visualizzazione dei nodi Echo nella griglia **Mesh Topology & eero Nodes** con badge distintivo **`eero Built-in`**, stato real-time, conteggio dei client agganciati (`connected_clients_count`) e nascondimento automatico del pulsante *"Restart Node"* per i nodi virtuali.
+
+### 🌉 Elezione Corretta Primary Gateway in Bridge Mode (Issue #105 - @ncolon)
+* **🏆 Priorità a `is_primary_node` & Neighbor LLDP Upstream (`_is_gateway_node`):**
+  * In modalità Bridge (dove `gateway: false` su tutti gli eero e `gateway_ip` è assente), l'elezione del Gateway Primario verifica in ordine prioritario il flag booleano nativo `is_primary_node: True` e la presenza di un apparato non-eero (`EdgeRouter`, switch/router ISP) tra i neighbor LLDP della porta WAN (`has_upstream_wan_lldp`), evitando che venga eletto il primo nodo cablato in ordine alfabetico.
+
+### 🛡️ Pi-hole v6, AdGuard Home & DNS Sync Resiliente (Issues #98, #99 - @Hatton920, @jpatchMC)
+* **🎯 Unico Proprietario per Indirizzo IPv4 (`ip_owner` - Issue #99):**
+  * Quando un indirizzo IP viene riassegnato dal DHCP a un nuovo apparato mentre il vecchio client resta in cache come offline, `_prepare_clients_payload()` assegna l'IP esclusivamente al client attivo (o con `last_active` più recente), rimuove gli IP stantii in `_merge_adguard_client_data()` ed esegue il pruning automatico dei record `dns.hosts` in conflitto su Pi-hole v6 (`_sync_single_pihole`) e AdGuard Home (`_sync_single_adguard`).
+* **🌐 Preferenza IPv4 nel Resolver DNS & Preservazione Credenziali (Issue #98):**
+  * Ordinamento prioritario dei record `AF_INET` (IPv4) rispetto ad `AF_INET6` (IPv6) in `_cached_getaddrinfo()` per prevenire `ConnectTimeout` nei container Docker IPv4-only quando un FQDN locale espone anche record `AAAA`.
+  * Formattazione diagnostica esplicita (`_describe_dns_exception`) per le eccezioni `httpx` prive di messaggio testuale e caricamento delle password salvate in `scan_all_adguard_instances()`.
+  * Richiesta esplicita di reinserimento password nella UI (`saved_url`) solo quando viene modificato l'URL di un'istanza DNS esistente per prevenire invii involontari di credenziali verso un host differente.
+
+### 🏠 Home Assistant MQTT: Unità `Mbit/s`, `last_seen_connected` & Rename Dinamico (Issues #101, #103, #104 - @markharrison, @jpatchMC)
+* **📏 Unità Standard `Mbit/s` (Issue #104):** Aggiornato `unit_of_measurement` da `"Mbps"` a `"Mbit/s"` sui sensori `wan_download` e `wan_upload` per piena conformità con `SensorDeviceClass.DATA_RATE` di Home Assistant.
+* **🕒 Attributo `last_seen_connected` (Issue #101):** Aggiunto l'attributo `"last_seen_connected"` (valorizzato con `last_active`) sul topic JSON degli attributi di ogni `device_tracker`.
+* **🔄 Ri-pubblicazione Automatica Discovery al Cambio Nome (Issue #103):** Evoluto `_published_tracker_configs` in dizionario `mac -> hostname` così che il topic `config` venga immediatamente aggiornato quando un dispositivo acquisisce il proprio hostname reale dopo il primo rilevamento OUI.
+
+### 🔔 Pannelli UI Completi per Pushover, Discord, Webhook & Ntfy (Issues #90, #100 - @rvs007, @le0-o0o)
+* **📬 Dispatcher Nativo Ntfy (`send_ntfy_message` - Issue #90):** Supporto completo a server `ntfy.sh` o istanze self-hosted con autenticazione Bearer token, priorità e tag negli alert real-time e nel Daily Digest.
+* **🎛️ Controlli Grafici Completi in Impostazioni → Controlli (Issue #100):** Esposti nella card **Notifiche & Webhook** i toggle di attivazione e i campi credenziali per **Telegram**, **Generic Webhook**, **Discord**, **Pushover** e **Ntfy (sh)**.
+
+### 🤖 AI Network Diagnostics, Assistente AI Streaming, IPv6 Firewall, Placement Test & Guardian VPN (Issues #90, #102 - @Hatton920, @le0-o0o)
+* **🧠 Verifica Reale Stato Band Steering (Issue #102):** `diagnostics_service.py` controlla se `band_steering` è già attivo sulla rete prima di suggerirne l'attivazione per i client su 2.4 GHz, proponendo invece consigli mirati di ri-associazione del client o ottimizzazione del posizionamento dei nodi.
+* **🛡️ Gestione Regole Firewall IPv6 (Issue #90):** Nuovi endpoint `GET/POST/DELETE /api/network/ipv6-firewall` e interfaccia visuale in Impostazioni Rete per aprire o revocare porte TCP/UDP sui client IPv6.
+* **📡 Placement Test RF, Guardian VPN & Registrazione Nodo via Seriale:** Nuovi endpoint e controlli UI per il test di posizionamento RF dei nodi (`/api/network/placement-test`), stato/toggle Guardian VPN (`/api/network/guardian-vpn`) e aggiunta nodi eero tramite codice seriale (`/api/network/eeros/register`).
+* **💬 eero AI Diagnostic Assistant (SSE Streaming):** Assistente interattivo in Impostazioni Rete (`/api/network/assistant`) con analisi contestuale in tempo reale della topologia mesh, salute Wi-Fi e client connessi.
+
+### 🌍 Espansione a 9 Lingue Europee, Tema OS a 3 Stati & Ricerca Rapida `Ctrl+K` (Issue #86 - @Hatton920)
+* **🇪🇺 7 Nuove Lingue Europee Complete (`fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`):** Cataloghi frontend (1410 chiavi) e backend (611 chiavi) tradotti al 100% per Francese, Spagnolo, Tedesco, Olandese, Portoghese, Polacco e Greco, oltre a Inglese e Italiano.
+* **🎨 Selettore Tema a 3 Stati (`Chiaro` / `Scuro` / `Sistema` - Issue #86):** Terzo pulsante esplicito *"Sistema (Auto OS)"* nella sidebar espansa, ciclo a 3 stati nella sidebar compatta e nel drawer mobile con sincronizzazione live `prefers-color-scheme`.
+* **⌨️ Scorciatoia Globale `Ctrl+K` / `Cmd+K`:** Attivazione istantanea della barra di ricerca rapida dispositivi da qualsiasi scheda della dashboard.
+
 ## [1.6.2] - 2026-10-23
 
 ### 🚀 Proposta Intelligente Aggiornamenti con Changelog Ridotto & Decisione Utente

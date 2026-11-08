@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Niet-ondersteunde taal. Geldige waarden: 'en', 'it'",
+  "news_fetch_failed": "Fout bij ophalen van griezelig nieuws: {error}",
+  "news_refresh_failed": "Fout bij het vernieuwen van griezelig nieuws: {error}",
+  "backup_export_failed": "Fout bij het exporteren van de back-up: {error}",
+  "backup_restore_failed": "Fout bij het herstellen van de back-up: {error}",
+  "db_stats_failed": "Fout bij het ophalen van databasestatistieken: {error}",
+  "db_compact_failed": "Fout bij het comprimeren van de database: {error}",
+  "db_integrity_failed": "Fout bij database-integriteitscontrole: {error}",
+  "db_backup_failed": "Fout bij maken databaseback-up: {error}",
+  "update_check_failed": "Fout bij het zoeken naar updates: {error}",
+  "release_notes_failed": "Fout bij ophalen van releaseopmerkingen: {error}",
+  "update_trigger_failed": "Fout bij het starten van de update: {error}",
+  "manual_section_not_found": "Sectie niet gevonden."
+}

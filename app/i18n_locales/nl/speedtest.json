@@ -1,0 +1,6 @@
+{
+  "already_running_wait": "Er loopt al een snelheidstest. Wacht tot het klaar is.",
+  "completed": "Snelheidstest succesvol afgerond.",
+  "already_running": "Er loopt al een snelheidstest.",
+  "invalid_metrics": "De eero gateway-snelheidstest heeft geen geldige doorvoerstatistieken geretourneerd."
+}

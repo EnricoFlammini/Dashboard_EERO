@@ -1,0 +1,18 @@
+{
+  "name_required": "El nombre de la regla no puede estar vacío.",
+  "target_required": "Especifique al menos un usuario o nodo de destino.",
+  "not_found": "Horario no encontrado.",
+  "update_failed": "Error al actualizar la regla.",
+  "delete_failed": "Error al eliminar la regla.",
+  "deleted": "Regla #{id} eliminada.",
+  "state_started": "Iniciado",
+  "state_ended": "Finalizado",
+  "transition_alert_title": "🕒 Regla programada '{name}'",
+  "transition_alert_message": "Se aplicó la regla programada '{name}': estado {state}, objetivos: {count} ({target_type}).",
+  "maintenance_reason_beacons": "Puntuación de salud crítica ({score}/{threshold}) y {count} nodos de baliza degradados.",
+  "maintenance_reason_network": "Puntuación crítica de salud general ({score}/{threshold}). Reinicio preventivo de la red.",
+  "maintenance_whole_network": "Toda la red de malla de eero",
+  "maintenance_alert_title": "🔄 Mantenimiento nocturno: reinicio en malla",
+  "maintenance_alert_message": "{reason} Nodos reiniciados: {items}.",
+  "maintenance_telegram": "<b>🔄 Mantenimiento nocturno de eero</b>\n\n{reason}\nDispositivos: <código>{items}</código>"
+}

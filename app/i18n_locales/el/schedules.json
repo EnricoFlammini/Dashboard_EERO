@@ -1,0 +1,18 @@
+{
+  "name_required": "Το όνομα του κανόνα δεν μπορεί να είναι κενό.",
+  "target_required": "Καθορίστε τουλάχιστον έναν χρήστη ή κόμβο-στόχο.",
+  "not_found": "Το χρονοδιάγραμμα δεν βρέθηκε.",
+  "update_failed": "Σφάλμα κατά την ενημέρωση του κανόνα.",
+  "delete_failed": "Σφάλμα κατά τη διαγραφή του κανόνα.",
+  "deleted": "Ο κανόνας #{id} διαγράφηκε.",
+  "state_started": "Ξεκίνησε",
+  "state_ended": "Τελείωσε",
+  "transition_alert_title": "🕒 Προγραμματισμένος κανόνας '{name}'",
+  "transition_alert_message": "Εφαρμόστηκε ο προγραμματισμένος κανόνας '{name}': κατάσταση {state}, στόχοι: {count} ({target_type}).",
+  "maintenance_reason_beacons": "Κρίσιμη βαθμολογία υγείας ({score}/{threshold}) και {count} υποβαθμισμένοι κόμβοι φάρων.",
+  "maintenance_reason_network": "Κρίσιμη συνολική βαθμολογία υγείας ({score}/{threshold}). Προληπτική επανεκκίνηση δικτύου.",
+  "maintenance_whole_network": "Ολόκληρο το δίκτυο eero Mesh",
+  "maintenance_alert_title": "🔄 Νυχτερινή συντήρηση: Mesh Reboot",
+  "maintenance_alert_message": "{reason} Κόμβοι επανεκκίνησης: {items}.",
+  "maintenance_telegram": "<b>🔄 eero Nightly Maintenance</b>\n\n{reason}\nΣυσκευές: <code>{items}</code>"
+}

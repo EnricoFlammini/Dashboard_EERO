@@ -1,0 +1,8 @@
+{
+  "auth_required": "Authentifizierung erforderlich",
+  "session_invalid": "Ungültige oder abgelaufene Sitzung",
+  "admin_only": "Dieser Vorgang ist auf Administratoren beschränkt.",
+  "permission_denied": "Unzureichende Berechtigung: „{permission}“-Autorisierung erforderlich.",
+  "auth_required_operation": "Für diesen Vorgang ist eine Authentifizierung erforderlich",
+  "cross_origin_blocked": "Cross-Origin-Anfrage blockiert"
+}

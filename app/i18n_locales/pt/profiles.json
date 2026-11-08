@@ -1,0 +1,7 @@
+{
+  "created": "Perfil '{name}' criado.",
+  "updated": "Perfil atualizado.",
+  "deleted": "Perfil excluído.",
+  "devices_assigned": "Dispositivos atribuídos ao perfil: {count}.",
+  "default_name": "Perfil de usuário"
+}

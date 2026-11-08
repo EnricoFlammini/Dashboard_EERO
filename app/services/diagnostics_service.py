@@ -361,15 +361,28 @@ class DiagnosticsService:
                 tr_all("diagnostics.check_weak_clients_desc"),
             ))
 
-        # Analisi Affollamento 2.4 GHz
+        # Analisi Affollamento 2.4 GHz (Issue #102: verifica se Band Steering è già attivo)
         band_pen = next((p for p in penalties if p.get("id") == "band_24_crowding"), None)
         if band_pen:
-            add_narrative(tr_all("diagnostics.narrative_band_24"))
-            checklist.append(checklist_item(
-                "enable_band_steering", "low", "spectrum", "radio",
-                tr_all("diagnostics.check_band_steering_title"),
-                tr_all("diagnostics.check_band_steering_desc"),
-            ))
+            net_det = network_details or {}
+            band_steering_active = bool(
+                net_det.get("band_steering")
+                or (net_det.get("features") or {}).get("band_steering")
+            )
+            if band_steering_active:
+                add_narrative(tr_all("diagnostics.narrative_band_24_bs_active"))
+                checklist.append(checklist_item(
+                    "check_band_24_bs_active", "low", "spectrum", "radio",
+                    tr_all("diagnostics.check_band_24_bs_active_title"),
+                    tr_all("diagnostics.check_band_24_bs_active_desc"),
+                ))
+            else:
+                add_narrative(tr_all("diagnostics.narrative_band_24"))
+                checklist.append(checklist_item(
+                    "enable_band_steering", "low", "spectrum", "radio",
+                    tr_all("diagnostics.check_band_steering_title"),
+                    tr_all("diagnostics.check_band_steering_desc"),
+                ))
 
         # Analisi Roaming Advisor
         if roaming_info and roaming_info.get("sticky_count", 0) > 0:

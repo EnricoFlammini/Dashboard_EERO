@@ -1,0 +1,17 @@
+{
+  "invalid_level": "Nieprawidłowy poziom dziennika „{level}”. Dozwolone wartości: {allowed}",
+  "invalid_level_short": "Nieprawidłowy poziom dziennika: {level}. Dozwolone: ​​{allowed}",
+  "change_level": "poziom: {level}",
+  "change_state_on": "stan: WŁĄCZONY",
+  "change_state_off": "status: WYŁĄCZONY",
+  "change_retention": "przechowywanie: {days} dni",
+  "no_valid_params": "Nie podano prawidłowych parametrów umożliwiających aktualizację konfiguracji.",
+  "config_updated_alert_title": "⚙️ Zaktualizowano konfigurację dziennika",
+  "config_updated_alert_message": "Ustawienia diagnostyczne zmienione przez „{actor}”: {changes}.",
+  "config_updated": "Konfiguracja dziennika została pomyślnie zaktualizowana ({changes}).",
+  "cleared_alert_title": "🗑️ Dziennik systemowy został wyczyszczony",
+  "cleared_alert_message": "Dzienniki systemowe zostały wyczyszczone przez użytkownika „{actor}” (usunięto zdarzenia {count}).",
+  "cleared": "Dziennik zdarzeń został pomyślnie wyczyszczony (usunięto rekordy {count}).",
+  "no_logs_recorded": "Nie zapisano żadnych logów.",
+  "cleared_audit_entry": "Dzienniki systemowe zostały pomyślnie wyczyszczone (poprzednie rekordy usunięto {count})."
+}

@@ -1,0 +1,5 @@
+{
+  "test_ok_simulated": "Verbonden met MQTT-makelaar ({broker}).",
+  "aiomqtt_missing": "De aiomqtt-module is niet beschikbaar in de container. Installeer aiomqtt om verbinding te maken met de makelaar.",
+  "test_ok": "Succesvol verbonden met MQTT-makelaar ({broker})."
+}

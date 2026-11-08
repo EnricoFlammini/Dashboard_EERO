@@ -1,0 +1,10 @@
+{
+  "invalid_mac": "Artikel #{index}: MAC-adres '{mac}' is niet geldig.",
+  "invalid_ip": "Artikel #{index}: IP-adres '{ip}' is niet geldig.",
+  "no_valid_mappings": "Er zijn geen geldige IP-MAC-toewijzingen opgegeven.",
+  "adguard_url_missing": "AdGuard-URL niet geconfigureerd.",
+  "adguard_connection_error": "AdGuard-verbindingsfout ({url}): {error}",
+  "no_orphan_clients": "Geen auto/weesklanten gevonden op AdGuard Home.",
+  "scan_result": "{candidates} ULA-kandidaten gevonden, {resolved} succesvol opgelost via NDP.",
+  "no_adguard_instances": "Geen actieve AdGuard Home-instanties geconfigureerd."
+}

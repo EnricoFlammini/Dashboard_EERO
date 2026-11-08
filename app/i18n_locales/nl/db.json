@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "De back-uppayload is geen geldig JSON-object.",
+  "restore_unrecognized": "Niet-herkende back-upbestandsstructuur of geen geldige secties.",
+  "restore_alert_title": "💾 Systeemback-up hersteld",
+  "restore_alert_message": "Herstel succesvol voltooid: {devices} metagegevens van het apparaat, {settings} instellingen, {schedules} planningsregels en {users} gebruikers.",
+  "restore_completed": "Back-upherstel is succesvol voltooid."
+}

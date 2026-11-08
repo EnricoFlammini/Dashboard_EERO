@@ -45,7 +45,7 @@ class MQTTService:
         self._task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
         self._discovery_published: bool = False
-        self._published_tracker_configs: Set[str] = set()
+        self._published_tracker_configs: Dict[str, str] = {}
         self._tracker_cap_logged = False
         self._tracker_last_state: Dict[str, str] = {}
         self._stats: Dict[str, Any] = {
@@ -234,7 +234,7 @@ class MQTTService:
                     "name": "eero WAN Download",
                     "unique_id": "eero_wan_download_speed",
                     "state_topic": f"{base}/sensor/wan_download/state",
-                    "unit_of_measurement": "Mbps",
+                    "unit_of_measurement": "Mbit/s",
                     "device_class": "data_rate",
                     "state_class": "measurement",
                     "icon": "mdi:download-network",
@@ -248,7 +248,7 @@ class MQTTService:
                     "name": "eero WAN Upload",
                     "unique_id": "eero_wan_upload_speed",
                     "state_topic": f"{base}/sensor/wan_upload/state",
-                    "unit_of_measurement": "Mbps",
+                    "unit_of_measurement": "Mbit/s",
                     "device_class": "data_rate",
                     "state_class": "measurement",
                     "icon": "mdi:upload-network",
@@ -421,8 +421,8 @@ class MQTTService:
                 tracker_state_topic = f"{base}/device/{mac}/state"
                 tracker_attr_topic = f"{base}/device/{mac}/attributes"
 
-                # 1. Pubblica configurazione discovery (retain=True) solo al primo rilevamento per questo MAC
-                if mac not in self._published_tracker_configs:
+                # 1. Pubblica configurazione discovery (retain=True) al primo rilevamento o se il nome del dispositivo è cambiato (Issue #92 & Issue #103)
+                if self._published_tracker_configs.get(mac) != hostname:
                     cfg = {
                         "name": hostname,
                         "unique_id": f"eero_tracker_{mac}",
@@ -435,21 +435,22 @@ class MQTTService:
                         "device": self._get_device_dict()
                     }
                     await self._publish_message(client, tracker_config_topic, cfg, retain=True)
-                    self._published_tracker_configs.add(mac)
+                    self._published_tracker_configs[mac] = hostname
 
                 # 2. Stato presenza: 'home' se connesso, 'not_home' se disconnesso/offline
                 state_val = "home" if is_connected else "not_home"
                 await self._publish_message(client, tracker_state_topic, state_val, retain=False)
                 self._tracker_last_state[mac] = state_val
 
-                # 3. Attributi dettagliati dispositivo
+                # 3. Attributi dettagliati dispositivo (Issue #101: last_seen_connected)
                 await self._publish_message(client, tracker_attr_topic, {
                     "ip": dev.get("ip"),
                     "mac": dev.get("mac"),
                     "connected": is_connected,
                     "connected_eero": dev.get("connected_eero_name", "Gateway") if is_connected else "None",
                     "wireless": dev.get("wireless", True),
-                    "band": dev.get("wireless_band", "5 GHz") if is_connected else "None"
+                    "band": dev.get("wireless_band", "5 GHz") if is_connected else "None",
+                    "last_seen_connected": dev.get("last_active"),
                 }, retain=False)
 
                 # Pacing delicato ogni 10 dispositivi per proteggere broker con risorse limitate

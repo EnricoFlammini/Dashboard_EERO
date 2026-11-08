@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "Ładunek zapasowy nie jest prawidłowym obiektem JSON.",
+  "restore_unrecognized": "Nierozpoznana struktura pliku kopii zapasowej lub brak prawidłowych sekcji.",
+  "restore_alert_title": "💾 Przywrócono kopię zapasową systemu",
+  "restore_alert_message": "Przywracanie zakończone pomyślnie: {devices} wpisy metadanych urządzenia, {settings} ustawienia, {schedules} reguły harmonogramu i {users} użytkowników.",
+  "restore_completed": "Przywracanie kopii zapasowej zostało zakończone pomyślnie."
+}

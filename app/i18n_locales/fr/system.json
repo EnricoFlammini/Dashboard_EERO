@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Langue non prise en charge. Valeurs valides : 'en', 'it'",
+  "news_fetch_failed": "Erreur lors de la récupération des actualités eero : {error}",
+  "news_refresh_failed": "Erreur lors de l'actualisation des actualités eero : {error}",
+  "backup_export_failed": "Erreur lors de l'exportation de la sauvegarde : {error}",
+  "backup_restore_failed": "Erreur lors de la restauration de la sauvegarde : {error}",
+  "db_stats_failed": "Erreur lors de la récupération des statistiques de la base de données : {error}",
+  "db_compact_failed": "Erreur lors du compactage de la base de données : {error}",
+  "db_integrity_failed": "Erreur de vérification de l'intégrité de la base de données : {error}",
+  "db_backup_failed": "Erreur lors de la création de la sauvegarde de la base de données : {error}",
+  "update_check_failed": "Erreur lors de la vérification des mises à jour : {error}",
+  "release_notes_failed": "Erreur lors de la récupération des notes de version : {error}",
+  "update_trigger_failed": "Erreur lors du démarrage de la mise à jour : {error}",
+  "manual_section_not_found": "Section introuvable."
+}

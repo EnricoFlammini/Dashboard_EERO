@@ -1,0 +1,7 @@
+{
+  "restore_invalid_json": "La carga útil de la copia de seguridad no es un objeto JSON válido.",
+  "restore_unrecognized": "Estructura de archivos de respaldo no reconocida o secciones no válidas.",
+  "restore_alert_title": "💾 Copia de seguridad del sistema restaurada",
+  "restore_alert_message": "La restauración se completó correctamente: {devices} entradas de metadatos del dispositivo, {settings} configuraciones, {schedules} reglas de programación y {users} usuarios.",
+  "restore_completed": "La restauración de la copia de seguridad se completó con éxito."
+}

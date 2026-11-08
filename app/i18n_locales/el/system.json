@@ -1,0 +1,15 @@
+{
+  "language_unsupported": "Μη υποστηριζόμενη γλώσσα. Έγκυρες τιμές: 'en', 'it'",
+  "news_fetch_failed": "Σφάλμα κατά την ανάκτηση ειδήσεων eero: {error}",
+  "news_refresh_failed": "Σφάλμα ανανέωσης eero news: {error}",
+  "backup_export_failed": "Σφάλμα κατά την εξαγωγή του αντιγράφου ασφαλείας: {error}",
+  "backup_restore_failed": "Σφάλμα κατά την επαναφορά του αντιγράφου ασφαλείας: {error}",
+  "db_stats_failed": "Σφάλμα κατά την ανάκτηση στατιστικών στοιχείων βάσης δεδομένων: {error}",
+  "db_compact_failed": "Σφάλμα συμπίεσης της βάσης δεδομένων: {error}",
+  "db_integrity_failed": "Σφάλμα ελέγχου ακεραιότητας βάσης δεδομένων: {error}",
+  "db_backup_failed": "Σφάλμα δημιουργίας αντιγράφου ασφαλείας βάσης δεδομένων: {error}",
+  "update_check_failed": "Σφάλμα κατά τον έλεγχο για ενημερώσεις: {error}",
+  "release_notes_failed": "Σφάλμα κατά την ανάκτηση σημειώσεων έκδοσης: {error}",
+  "update_trigger_failed": "Σφάλμα κατά την έναρξη της ενημέρωσης: {error}",
+  "manual_section_not_found": "Η ενότητα δεν βρέθηκε."
+}

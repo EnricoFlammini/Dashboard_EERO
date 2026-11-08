@@ -1,0 +1,6 @@
+{
+  "invalid_mac": "Ongeldig MAC-adres: {macs}",
+  "profile_removed": "Apparaat verwijderd uit profiel.",
+  "profile_updated": "Apparaatprofiel bijgewerkt.",
+  "ula_cleared": "Ontdekte IPv6 ULA-adressen zijn succesvol gewist."
+}

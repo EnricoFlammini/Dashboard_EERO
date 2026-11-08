@@ -1,0 +1,8 @@
+{
+  "auth_required": "Authenticatie vereist",
+  "session_invalid": "Ongeldige of verlopen sessie",
+  "admin_only": "Deze bewerking is beperkt tot beheerders.",
+  "permission_denied": "Onvoldoende toestemming: autorisatie '{permission}' vereist.",
+  "auth_required_operation": "Authenticatie vereist voor deze bewerking",
+  "cross_origin_blocked": "Cross-origin verzoek geblokkeerd"
+}

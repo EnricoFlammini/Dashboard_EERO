@@ -1,0 +1,8 @@
+{
+  "refreshed": "Netzwerkdaten aktualisiert.",
+  "not_authenticated": "Nicht bei eero angemeldet",
+  "advanced_updated": "Erweiterte Einstellungen aktualisiert.",
+  "switched": "Zum Netzwerk „{network_id}“ gewechselt.",
+  "mapping_removed": "Zuordnung {ip} <-> {mac} entfernt.",
+  "mapping_not_found": "Keine passende Zuordnung zum Löschen gefunden."
+}

@@ -1,0 +1,5 @@
+{
+  "test_ok_simulated": "Connecté au courtier MQTT ({broker}).",
+  "aiomqtt_missing": "Le module aiomqtt n'est pas disponible dans le conteneur. Installez aiomqtt pour vous connecter au courtier.",
+  "test_ok": "Connecté avec succès au courtier MQTT ({broker})."
+}

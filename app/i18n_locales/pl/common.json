@@ -1,0 +1,8 @@
+{
+  "auth_required": "Wymagane uwierzytelnienie",
+  "session_invalid": "Nieprawidłowa lub wygasła sesja",
+  "admin_only": "Ta operacja jest dostępna tylko dla administratorów.",
+  "permission_denied": "Niewystarczające uprawnienia: wymagana autoryzacja „{permission}”.",
+  "auth_required_operation": "Uwierzytelnienie wymagane dla tej operacji",
+  "cross_origin_blocked": "Zablokowano żądanie między źródłami"
+}

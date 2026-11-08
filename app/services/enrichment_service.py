@@ -331,10 +331,35 @@ class EnrichmentService:
         }
 
     async def scan_all_adguard_instances(self) -> Dict[str, Any]:
-        """Scansiona tutte le istanze AdGuard configurate in DNSManager."""
+        """Scansiona tutte le istanze AdGuard configurate in DNSManager (includendo le credenziali salvate in DB)."""
+        import json
         from app.services.dns_manager import dns_manager
-        settings = await dns_manager.get_settings()
-        instances = settings.get("instances", [])
+        from app.services.eero_client import eero_client
+
+        if eero_client.is_demo_mode:
+            instances = list(dns_manager._demo_settings.get("instances", []))
+        else:
+            all_settings = await db_service.get_all_settings()
+            raw_instances_str = all_settings.get("dns_instances")
+            instances = []
+            if raw_instances_str:
+                try:
+                    parsed = json.loads(raw_instances_str)
+                    if isinstance(parsed, list):
+                        instances = parsed
+                except Exception:
+                    instances = []
+            if not instances and all_settings.get("adguard_url"):
+                instances = [{
+                    "id": "inst-legacy-adguard",
+                    "name": "AdGuard Home",
+                    "engine": "adguard",
+                    "url": all_settings.get("adguard_url", ""),
+                    "username": all_settings.get("adguard_username", ""),
+                    "password": all_settings.get("adguard_password", ""),
+                    "enabled": True,
+                }]
+
         adguard_instances = [i for i in instances if i.get("engine") == "adguard" and i.get("enabled", True)]
 
         if not adguard_instances:

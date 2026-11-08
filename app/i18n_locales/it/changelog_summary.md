@@ -2,6 +2,14 @@
 
 Di seguito sono riassunti i titoli principali delle release. Il registro completo con tutti i dettagli tecnici è consultabile su GitHub.
 
+## v1.7.0
+* **Autenticazione Amazon OAuth2/PKCE (Issue #93):** Integrazione del flusso PKCE S256 per login Amazon/eero con callback di scambio token protetto e compatibilità retroattiva con OTP via email.
+* **Supporto Estensori Echo Built-in (Issue #96):** Riconoscimento dei nodi virtuali Amazon Echo con badge dedicato "eero Built-in", unificazione con i client LAN e protezione dai comandi di riavvio non applicabili.
+* **Elezione Gateway Primario in Bridge Mode (Issue #105):** Algoritmo di fallback basato su `is_primary_node` e rilevamento porta LLDP upstream non-eero per topologie con router a monte.
+* **Deduplicazione IP e Risoluzione Conflitti DHCP (Issues #98, #99):** Separazione rigorosa tra client connessi e offline, rimozione automatica degli indirizzi IP riassegnati e ordinamento DNS cache IPv4-first.
+* **Ottimizzazioni Telemetria MQTT (Issues #101, #103, #104):** Unità WAN standardizzata a `Mbit/s`, tracciamento `last_seen_connected` e rinomina istantanea dei discovery topic su Home Assistant.
+* **Canali di Notifica Multipli & Diagnostica Mesh Avanzata (Issues #86, #90, #100, #102):** Supporto completo a Pushover, Discord, Webhook e Ntfy, firewall IPv6, test posizionamento RF nodi mesh, supporto Guardian VPN, tema a 3 stati e copertura 100% per 9 lingue europee.
+
 ## v1.6.2
 * **Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube):** Interruttore Elenco/Schede con schede compatte animate in tempo reale, nome/IP cliccabili, cambio profilo nel modale e selettore categoria con icone, più produttore, ultima attività, standard/larghezza Wi-Fi e flag ospite. L'assegnazione del profilo richiede ora il permesso di modifica dispositivi e i tracker MQTT salgono a 1000. Schede dashboard più ricche (salute WAN, dettagli gateway, ripartizione client per banda, andamento speed test) cliccabili verso Dispositivi, Speed Test e Salute Rete, e l'elenco dispositivi si aggiorna subito dopo il salvataggio dei dettagli.
 * **Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube):** Parità al 100% dei cataloghi linguistici (457 chiavi backend e 1051 chiavi frontend in `en.json` e `it.json`), audit automatizzato e validazione continua in CI/CD.

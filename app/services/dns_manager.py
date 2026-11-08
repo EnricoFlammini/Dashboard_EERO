@@ -147,6 +147,19 @@ def _is_tls_verification_error(exc: Optional[BaseException]) -> bool:
     return False
 
 
+def _describe_dns_exception(exc: BaseException) -> str:
+    """Restituisce sempre una descrizione non vuota dell'eccezione di rete/HTTP."""
+    msg = str(exc).strip()
+    if msg:
+        return msg
+    cause = exc.__cause__ or exc.__context__
+    if cause:
+        cause_msg = str(cause).strip()
+        if cause_msg:
+            return f"{type(exc).__name__}: {cause_msg}"
+    return type(exc).__name__
+
+
 def _tls_error_result(url: str, exc: Optional[BaseException] = None, engine: Optional[str] = None) -> Dict[str, Any]:
     reason = None
     curr = exc
@@ -507,7 +520,7 @@ class DNSManager:
         except httpx.TimeoutException:
             return {"success": False, "message": tr("dns.adguard_timeout", url=url)}
         except Exception as e:
-            return {"success": False, "message": tr("dns.adguard_connection_error", error=str(e))}
+            return {"success": False, "message": tr("dns.adguard_connection_error", error=_describe_dns_exception(e))}
 
     async def _test_pihole(self, url: str, token: str, insecure_tls: bool = False) -> Dict[str, Any]:
         # Prova prima Pi-hole v6 (/api/) poi v5 (admin/api.php)
@@ -580,7 +593,7 @@ class DNSManager:
         except httpx.TimeoutException:
             return {"success": False, "message": tr("dns.pihole_timeout", url=url)}
         except Exception as e:
-            return {"success": False, "message": tr("dns.pihole_connection_error", error=str(e))}
+            return {"success": False, "message": tr("dns.pihole_connection_error", error=_describe_dns_exception(e))}
 
     async def _test_technitium(self, url: str, token_or_pass: str, username: str, insecure_tls: bool = False) -> Dict[str, Any]:
         try:
@@ -616,7 +629,7 @@ class DNSManager:
                 return _tls_error_result(url, exc=e, engine="Technitium")
             return {"success": False, "message": tr("dns.technitium_unreachable", url=url)}
         except Exception as e:
-            return {"success": False, "message": tr("dns.technitium_connection_error", error=str(e))}
+            return {"success": False, "message": tr("dns.technitium_connection_error", error=_describe_dns_exception(e))}
 
     async def test_all_instances(self) -> Dict[str, Any]:
         """Testa contemporaneamente tutte le istanze DNS configurate."""
@@ -652,11 +665,13 @@ class DNSManager:
     # =========================================================================
 
     def _prepare_clients_payload(self, devices: List[Dict[str, Any]], drop_ipv6: bool = False) -> List[Dict[str, Any]]:
-        """Estrae e normalizza IP, MAC, hostname e tag per ciascun apparato eero, con filtro IPv6 opzionale."""
-        ip_counts: Dict[str, int] = {}
+        """Estrae e normalizza IP, MAC, hostname e tag per ciascun apparato eero, con filtro IPv6 opzionale e risoluzione collisioni DHCP (Issue #99)."""
+        ip_owner: Dict[str, int] = {}
+        ip_owner_rank: Dict[str, Tuple[bool, str]] = {}
         for dev in devices:
             if dev.get("dns_sync_excluded"):
                 continue
+            rank = (bool(dev.get("connected")), str(dev.get("last_active") or ""))
             raw_ips = []
             if dev.get("ip"):
                 raw_ips.append(str(dev["ip"]).strip())
@@ -666,7 +681,10 @@ class DNSManager:
                         raw_ips.append(v6.strip())
             for single_ip in set(raw_ips):
                 if single_ip:
-                    ip_counts[single_ip.lower()] = ip_counts.get(single_ip.lower(), 0) + 1
+                    ip_key = single_ip.lower()
+                    if ip_key not in ip_owner or rank > ip_owner_rank[ip_key]:
+                        ip_owner[ip_key] = id(dev)
+                        ip_owner_rank[ip_key] = rank
 
         used_names: Dict[str, int] = {}
         prepared: List[Dict[str, Any]] = []
@@ -680,16 +698,18 @@ class DNSManager:
                 continue
 
             ids: List[str] = []
+            owns_ipv4 = False
             if ip and isinstance(ip, str) and "." in ip and not ip.startswith("169.254."):
                 ip_clean = ip.strip()
-                if ip_counts.get(ip_clean.lower(), 0) == 1:
+                if ip_owner.get(ip_clean.lower()) == id(dev):
                     ids.append(ip_clean)
+                    owns_ipv4 = True
 
             if not drop_ipv6:
                 for v6 in (dev.get("ipv6_addresses") or []):
                     if isinstance(v6, str) and ":" in v6 and not v6.lower().startswith("fe80:"):
                         v6_clean = v6.strip()
-                        if not v6_clean.endswith("::1") and ip_counts.get(v6_clean.lower(), 0) == 1:
+                        if not v6_clean.endswith("::1") and ip_owner.get(v6_clean.lower()) == id(dev):
                             if v6_clean not in ids:
                                 ids.append(v6_clean)
 
@@ -704,21 +724,21 @@ class DNSManager:
             base_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("device_name") or f"eero-{ip or mac}").strip()
             if base_name in used_names:
                 used_names[base_name] += 1
-                suffix = ip.split(".")[-1] if (ip and "." in ip) else (mac[-5:].replace(":", "") if mac else str(used_names[base_name]))
+                suffix = ip.split(".")[-1] if (owns_ipv4 and ip and "." in ip) else (mac[-5:].replace(":", "") if mac else str(used_names[base_name]))
                 unique_name = f"{base_name} ({suffix})"
             else:
                 used_names[base_name] = 1
                 unique_name = base_name
 
             mac_suffix = mac[-5:].replace(":", "").lower() if mac else "node"
-            ip_suffix = ip.split(".")[-1] if (ip and "." in ip) else mac_suffix
+            ip_suffix = ip.split(".")[-1] if (owns_ipv4 and ip and "." in ip) else mac_suffix
             fallback_host = f"eero-{ip_suffix}"
             clean_host = sanitize_dns_hostname(base_name, fallback=fallback_host)
 
             prepared.append({
                 "name": unique_name,
                 "hostname": clean_host,
-                "ip": ip if (ip and "." in ip and not ip.startswith("169.254.")) else None,
+                "ip": ip.strip() if (owns_ipv4 and ip) else None,
                 "mac": mac.upper() if mac else None,
                 "ids": ids,
                 "tags": get_adguard_tags(dev.get("category"), dev.get("custom_icon")),
@@ -790,9 +810,10 @@ class DNSManager:
 
             # 2. Gestione indirizzi IPv4:
             incoming_has_ipv4 = any(self._is_ipv4(x) for x in incoming_ids)
+            explicitly_no_ipv4 = ("ip" in incoming and incoming.get("ip") is None)
             preserved_ipv4 = []
             for cid in valid_existing_ipv4:
-                if cid in incoming_ids or not incoming_has_ipv4:
+                if cid in incoming_ids or (not incoming_has_ipv4 and not explicitly_no_ipv4):
                     if cid not in preserved_ipv4:
                         preserved_ipv4.append(cid)
 
@@ -867,15 +888,24 @@ class DNSManager:
                 added = 0
                 updated = 0
                 failed = 0
-                for payload in prepared_clients:
+                ordered_clients = sorted(prepared_clients, key=lambda c: 0 if not c.get("ip") else 1)
+                for payload in ordered_clients:
                     name = payload["name"]
                     ids = payload["ids"]
 
                     existing_client = existing_by_name.get(name.lower())
                     if not existing_client:
+                        payload_mac = (payload.get("mac") or "").strip().lower()
                         for cid in ids:
                             found = existing_by_id.get(cid.lower())
                             if found:
+                                found_macs = {
+                                    str(x).strip().lower()
+                                    for x in (found.get("ids") or [])
+                                    if (":" in str(x) and len(str(x).strip()) == 17) or ("-" in str(x) and len(str(x).strip()) == 17)
+                                }
+                                if payload_mac and found_macs and payload_mac not in found_macs:
+                                    continue
                                 existing_client = found
                                 break
 
@@ -904,7 +934,7 @@ class DNSManager:
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url, exc=e, engine="AdGuard")
-            return {"success": False, "message": tr("dns.adguard_sync_error", error=str(e))}
+            return {"success": False, "message": tr("dns.adguard_sync_error", error=_describe_dns_exception(e))}
 
     async def _sync_single_pihole(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
@@ -915,6 +945,7 @@ class DNSManager:
 
         # Mappatura dei target attivi che la dashboard sta sincronizzando: hostname.lower() -> active IP
         managed_active_targets: Dict[str, str] = {}
+        active_ip_to_host: Dict[str, str] = {}
         for client_item in prepared_clients:
             ip = client_item.get("ip")
             hostname = client_item.get("hostname")
@@ -922,6 +953,7 @@ class DNSManager:
                 continue
             target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
             managed_active_targets[target_name.lower().strip()] = ip.strip()
+            active_ip_to_host[ip.strip().lower()] = target_name.lower().strip()
 
         try:
             async with httpx.AsyncClient(timeout=10.0, verify=not insecure_tls, follow_redirects=True) as client:
@@ -993,11 +1025,14 @@ class DNSManager:
                                         seen_pairs.add(pair_key)
                                         retained_entries.append((e_ip, e_host))
                         else:
-                            # Record personalizzato non gestito: preserva integralmente
-                            pair_key = (e_ip.lower(), e_host_lower)
-                            if pair_key not in seen_pairs:
-                                seen_pairs.add(pair_key)
-                                retained_entries.append((e_ip, e_host))
+                            if prune_stale and e_ip.lower() in active_ip_to_host:
+                                stale_records.append(f"{e_ip} {e_host}")
+                            else:
+                                # Record personalizzato non gestito: preserva integralmente
+                                pair_key = (e_ip.lower(), e_host_lower)
+                                if pair_key not in seen_pairs:
+                                    seen_pairs.add(pair_key)
+                                    retained_entries.append((e_ip, e_host))
 
                     # Aggiunta/aggiornamento dei target attivi
                     synced = 0
@@ -1102,8 +1137,11 @@ class DNSManager:
                                         if e_ip.lower() != active_ip.lower():
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
+                                    elif e_ip.lower() in active_ip_to_host and active_ip_to_host[e_ip.lower()] != e_domain.lower():
+                                        v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
+                                        await client.get(v5_del_url)
                     except Exception as e:
-                        log_event(logger, logging.WARNING, "log_ops.pihole_v5_prune_check_failed", error=str(e))
+                        log_event(logger, logging.WARNING, "log_ops.pihole_v5_prune_check_failed", error=_describe_dns_exception(e))
 
                 synced = 0
                 failed = 0
@@ -1132,7 +1170,7 @@ class DNSManager:
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url, exc=e, engine="Pi-hole")
-            return {"success": False, "message": tr("dns.pihole_sync_error", error=str(e))}
+            return {"success": False, "message": tr("dns.pihole_sync_error", error=_describe_dns_exception(e))}
 
     async def _sync_single_technitium(self, inst: Dict[str, Any], prepared_clients: List[Dict[str, Any]]) -> Dict[str, Any]:
         url = normalize_dns_url(inst.get("url", ""))
@@ -1176,7 +1214,7 @@ class DNSManager:
         except Exception as e:
             if _is_tls_verification_error(e):
                 return _tls_error_result(url, exc=e, engine="Technitium")
-            return {"success": False, "message": tr("dns.technitium_sync_error", error=str(e))}
+            return {"success": False, "message": tr("dns.technitium_sync_error", error=_describe_dns_exception(e))}
 
     async def sync_devices(
         self,
