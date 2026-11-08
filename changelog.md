@@ -6,6 +6,15 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.7.0] - 2026-11-06
 
+### 🗂️ Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube)
+* **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.
+* **Modale dettagli:** cambio profilo sul posto con conferma, categoria scelta tramite icone con ripristino automatico, hostname segnalato dal dispositivo, produttore/modello, ultima attività, standard e larghezza Wi-Fi, flag rete ospiti.
+* **Sicurezza e MQTT:** `POST /api/devices/{mac}/profile` richiede `action_edit_devices`; limite tracker MQTT portato a 1000 con avviso nel log se superato.
+* **Schede Dashboard:** WAN (punteggio salute, badge IPv6, ultimo aggiornamento; clic apre il modale Salute), Gateway (modello, subnet, firmware, nodi mesh online), Client Connessi (ripartizione 6/5/2.4 GHz e cablati, noti/ospiti/nuovi) e Ultimo Speed Test (ping, voto bufferbloat, andamento download, medie e numero di test; clic apre la pagina Speed Test).
+* **Scorciatoie verso Dispositivi:** il clic su Client Connessi o sulla riga "Client connessi" di un nodo mesh apre Dispositivi con il filtro "Solo connessi" (e il nodo) già impostato.
+* **Correzione aggiornamento elenco:** dopo il salvataggio di categoria/icona/note nel modale, l'elenco si aggiorna subito: `POST /api/devices/{mac}/metadata` aggiorna anche la cache RAM del poller, con le stesse regole di unione dei metadati del ciclo di polling.
+* **Documentazione e traduzioni:** capitoli 3, 4, 5 e 12 del manuale (EN/IT), README, backlog in `docs/DEVICE_DETAILS_ENHANCEMENTS.md`; nuove chiavi UI tradotte anche in de, el, es, fr, nl, pl e pt.
+
 ### 🔑 Autenticazione Nativa Amazon OAuth2 / PKCE (Issue #93 - @davidpshaw)
 * **🔐 Flusso OpenID / OAuth2 con PKCE S256 (RFC 7636):**
   * Generazione crittografica di `code_verifier` e `code_challenge` S256 (`generate_amazon_oauth_url`) ed exchange sicuro dell'authorization code (`exchange_amazon_oauth_code`) con l'endpoint token Amazon ed eero Cloud (`/2.2/login/amazon`).
@@ -82,15 +91,6 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **🔒 Header di Sicurezza HTTP & Flag Cookie Dinamico:**
   * Aggiunto middleware in `main.py` per l'iniezione automatica dei security headers raccomandati da OWASP: `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` e `Permissions-Policy`.
   * Rilevamento dinamico dell'ambiente HTTPS (anche dietro reverse proxy TLS) per abilitare automaticamente il flag `Secure` sui cookie di sessione.
-
-### 🗂️ Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube)
-* **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.
-* **Modale dettagli:** cambio profilo sul posto con conferma, categoria scelta tramite icone con ripristino automatico, hostname segnalato dal dispositivo, produttore/modello, ultima attività, standard e larghezza Wi-Fi, flag rete ospiti.
-* **Sicurezza e MQTT:** `POST /api/devices/{mac}/profile` richiede `action_edit_devices`; limite tracker MQTT portato a 1000 con avviso nel log se superato.
-* **Schede Dashboard:** WAN (punteggio salute, badge IPv6, ultimo aggiornamento; clic apre il modale Salute), Gateway (modello, subnet, firmware, nodi mesh online), Client Connessi (ripartizione 6/5/2.4 GHz e cablati, noti/ospiti/nuovi) e Ultimo Speed Test (ping, voto bufferbloat, andamento download, medie e numero di test; clic apre la pagina Speed Test).
-* **Scorciatoie verso Dispositivi:** il clic su Client Connessi o sulla riga "Client connessi" di un nodo mesh apre Dispositivi con il filtro "Solo connessi" (e il nodo) già impostato.
-* **Correzione aggiornamento elenco:** dopo il salvataggio di categoria/icona/note nel modale, l'elenco si aggiorna subito: `POST /api/devices/{mac}/metadata` aggiorna anche la cache RAM del poller, con le stesse regole di unione dei metadati del ciclo di polling.
-* **Documentazione:** capitoli 4, 5 e 12 del manuale (EN/IT), README e backlog in `docs/DEVICE_DETAILS_ENHANCEMENTS.md`.
 
 ### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
 * **💯 100% Parità Cataloghi Linguistici:**
