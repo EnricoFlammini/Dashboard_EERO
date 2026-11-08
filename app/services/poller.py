@@ -117,6 +117,37 @@ class BackgroundPoller:
             elif not seen and d.get("new_dismissed"):
                 d.update(is_new=True, new_dismissed=False)
 
+    @staticmethod
+    def _apply_device_metadata(dev_copy: Dict[str, Any], dev: Dict[str, Any], meta: Dict[str, Any]):
+        """Applica i metadati locali (nome, categoria, icona, note, flag) a una copia del dispositivo."""
+        dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
+
+        # Categoria & Icona (Issue #13): priorità personalizzazione utente > categoria nativa eero > fallback
+        meta_cat = meta.get("category")
+        if meta_cat and str(meta_cat).strip() and str(meta_cat).strip() != "Altro":
+            dev_copy["category"] = str(meta_cat).strip()
+        else:
+            dev_copy["category"] = dev.get("default_category") or dev.get("category") or "Altro"
+
+        meta_icon = meta.get("custom_icon")
+        if meta_icon and str(meta_icon).strip() and str(meta_icon).strip() != "device":
+            dev_copy["custom_icon"] = str(meta_icon).strip()
+        else:
+            dev_copy["custom_icon"] = dev.get("default_icon") or dev.get("custom_icon") or "device"
+
+        dev_copy["custom_notes"] = meta.get("custom_notes", "")
+        dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
+        dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
+        dev_copy["dns_sync_excluded"] = bool(meta.get("dns_sync_excluded", False))
+
+    def update_cached_device_metadata(self, mac: str, meta: Dict[str, Any]):
+        """Aggiorna subito i metadati del dispositivo nella cache RAM, senza attendere il prossimo ciclo di polling."""
+        mac = (mac or "").lower()
+        for d in self.cached_devices:
+            if (d.get("mac") or d.get("mac_address") or "").lower() == mac:
+                # Il dict in cache contiene già default_category/default_icon di eero, quindi fa da sorgente
+                self._apply_device_metadata(d, dict(d), meta)
+
     def invalidate_cache(self):
         """Invalida completamente la cache in RAM per consentire l'hot-swap immediato tra reti."""
         self.cached_network = {}
@@ -707,27 +738,9 @@ class BackgroundPoller:
                 dev_copy["mac"] = mac
                 dev_copy["profile_id"] = final_prof_id
                 dev_copy["profile_name"] = final_prof_name
-                dev_copy["custom_name"] = meta.get("custom_name") or dev.get("nickname") or dev.get("hostname")
-                
-                # Categoria & Icona (Issue #13): priorità personalizzazione utente > categoria nativa eero > fallback
-                meta_cat = meta.get("category")
-                if meta_cat and str(meta_cat).strip() and str(meta_cat).strip() != "Altro":
-                    dev_copy["category"] = str(meta_cat).strip()
-                else:
-                    dev_copy["category"] = dev.get("default_category") or dev.get("category") or "Altro"
-
-                meta_icon = meta.get("custom_icon")
-                if meta_icon and str(meta_icon).strip() and str(meta_icon).strip() != "device":
-                    dev_copy["custom_icon"] = str(meta_icon).strip()
-                else:
-                    dev_copy["custom_icon"] = dev.get("default_icon") or dev.get("custom_icon") or "device"
-
-                dev_copy["custom_notes"] = meta.get("custom_notes", "")
+                self._apply_device_metadata(dev_copy, dev, meta)
                 dev_copy["static_ip"] = static_ip_val
                 dev_copy["is_static"] = is_static
-                dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
-                dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
-                dev_copy["dns_sync_excluded"] = bool(meta.get("dns_sync_excluded", False))
                 is_prof_paused = False
                 if final_prof_id:
                     target_p = next((p for p in profiles if str(p.get("id")) == str(final_prof_id) or p.get("url", "").endswith(str(final_prof_id))), None)

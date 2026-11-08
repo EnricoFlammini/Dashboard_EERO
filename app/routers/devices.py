@@ -268,6 +268,7 @@ async def save_device_metadata(device_id_or_mac: str, payload: DeviceMetadataReq
         mac_address=target_mac.lower(),
         **payload.model_dump(exclude_unset=True)
     )
+    background_poller.update_cached_device_metadata(target_mac, updated)
     return {"status": "success", "metadata": updated}
 
 
