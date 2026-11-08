@@ -1375,6 +1375,20 @@ document.addEventListener('alpine:init', () => {
       return `${this.routes.devices}${query ? `?${query}` : ''}`;
     },
 
+    // Dashboard shortcut: open Devices showing only connected clients,
+    // optionally narrowed to one mesh node. Other filters are cleared so
+    // the list matches the count the user clicked on.
+    async openConnectedDevices(nodeId = 'all') {
+      this.deviceSearchQuery = '';
+      this.selectedBandFilter = 'all';
+      this.selectedNodeFilter = nodeId || 'all';
+      this.selectedCategoryFilter = 'all';
+      this.selectedProfileFilter = 'all';
+      this.selectedIpTypeFilter = 'all';
+      this.showConnectedOnly = true;
+      await this.setTab('devices');
+    },
+
     syncDeviceFiltersToUrl() {
       if (this.currentTab !== 'devices' || typeof window === 'undefined' || !window.location) return;
       const url = this.deviceFiltersUrl();
@@ -2404,6 +2418,52 @@ document.addEventListener('alpine:init', () => {
         return this.network.speedtest;
       }
       return { download_mbps: 0, upload_mbps: 0, ping_ms: 0 };
+    },
+
+    get gatewayNode() {
+      return (this.eeros || []).find(e => e.is_gateway) || (this.eeros || [])[0] || {};
+    },
+
+    get onlineNodeCount() {
+      return (this.eeros || []).filter(e => ['online', 'green'].includes(e.status)).length;
+    },
+
+    // Dashboard card: connected clients split by Wi-Fi band / wired, plus guest and new counts.
+    get connectedClientSummary() {
+      const connected = (this.devices || []).filter(d => d.connected);
+      const bands = [
+        { key: '6', label: '6 GHz', color: 'bg-violet-500', match: d => String(d.wireless_band || '').startsWith('6') },
+        { key: '5', label: '5 GHz', color: 'bg-sky-500', match: d => String(d.wireless_band || '').startsWith('5') },
+        { key: '2.4', label: '2.4 GHz', color: 'bg-amber-500', match: d => String(d.wireless_band || '').startsWith('2') },
+        { key: 'wired', label: this.t('devices.wired_tag'), color: 'bg-emerald-500', match: d => d.connection_type === 'wired' || d.wireless === false }
+      ];
+      const counted = new Set();
+      const segments = bands.map(b => {
+        const hits = connected.filter(d => !counted.has(d) && b.match(d));
+        hits.forEach(d => counted.add(d));
+        return { key: b.key, label: b.label, color: b.color, count: hits.length };
+      }).filter(s => s.count > 0);
+      return {
+        total: connected.length,
+        known: (this.devices || []).length,
+        guests: connected.filter(d => d.is_guest).length,
+        fresh: (this.devices || []).filter(d => d.is_new).length,
+        segments
+      };
+    },
+
+    // Polyline points (viewBox 100x28) for the dashboard card's download trend, oldest test first.
+    get speedtestSparkline() {
+      const values = (this.speedtestHistory || []).slice(0, 20).reverse().map(t => Number(t.download_mbps) || 0);
+      if (values.length < 2) return '';
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      const range = max - min || 1;
+      return values.map((v, i) => {
+        const x = (i / (values.length - 1)) * 100;
+        const y = 26 - ((v - min) / range) * 24;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
     },
 
     async openDeviceModal(device) {
