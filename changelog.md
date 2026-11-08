@@ -42,6 +42,9 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.
 * **Modale dettagli:** cambio profilo sul posto con conferma, categoria scelta tramite icone con ripristino automatico, hostname segnalato dal dispositivo, produttore/modello, ultima attività, standard e larghezza Wi-Fi, flag rete ospiti.
 * **Sicurezza e MQTT:** `POST /api/devices/{mac}/profile` richiede `action_edit_devices`; limite tracker MQTT portato a 1000 con avviso nel log se superato.
+* **Schede Dashboard:** WAN (punteggio salute, badge IPv6, ultimo aggiornamento; clic apre il modale Salute), Gateway (modello, subnet, firmware, nodi mesh online), Client Connessi (ripartizione 6/5/2.4 GHz e cablati, noti/ospiti/nuovi) e Ultimo Speed Test (ping, voto bufferbloat, andamento download, medie e numero di test; clic apre la pagina Speed Test).
+* **Scorciatoie verso Dispositivi:** il clic su Client Connessi o sulla riga "Client connessi" di un nodo mesh apre Dispositivi con il filtro "Solo connessi" (e il nodo) già impostato.
+* **Correzione aggiornamento elenco:** dopo il salvataggio di categoria/icona/note nel modale, l'elenco si aggiorna subito: `POST /api/devices/{mac}/metadata` aggiorna anche la cache RAM del poller, con le stesse regole di unione dei metadati del ciclo di polling.
 * **Documentazione:** capitoli 4, 5 e 12 del manuale (EN/IT), README e backlog in `docs/DEVICE_DETAILS_ENHANCEMENTS.md`.
 
 ### 🌐 Parità Completa Traduzioni Frontend & Backend (PR #79 - @todddube)
