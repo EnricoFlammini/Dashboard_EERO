@@ -149,9 +149,9 @@ async def run_all_tests():
         res = await client.get("/api/automations/notifications")
         runner.assert_true(res.status_code == 200, "Endpoint GET /api/automations/notifications risponde HTTP 200")
         notif_data = res.json()
-        runner.assert_true("AAFakeDemoTelegramBotToken_Example" in notif_data.get("telegram_bot_token", ""), "Token Telegram in Demo è fittizio (AAFakeDemo...)")
+        runner.assert_true(notif_data.get("telegram_bot_token") == "••••••••" and notif_data.get("has_telegram_bot_token") is True, "Token Telegram in Demo è mascherato (has_telegram_bot_token=True)")
         runner.assert_true(notif_data.get("telegram_chat_id") == "-1001234567890", "Chat ID Telegram in Demo è fittizio (-1001234567890)")
-        runner.assert_true("demo-webhook.lan" in notif_data.get("webhook_url", ""), "Webhook URL in Demo è fittizio (demo-webhook.lan)")
+        runner.assert_true(notif_data.get("webhook_url") == "••••••••" and notif_data.get("has_webhook_url") is True, "Webhook URL in Demo è mascherato (has_webhook_url=True)")
 
         # Test invio notifiche in Demo (nessuna chiamata HTTP a Telegram / Webhook)
         res = await client.post("/api/automations/notifications/test")
@@ -3334,7 +3334,7 @@ async def run_all_tests():
 
         # Test 5b: Endpoints API Manutenzione Notturna
         # GET /api/automations/nightly-maintenance
-        res_nm_get = await client.get("/api/automations/nightly-maintenance")
+        res_nm_get = await client.get("/api/automations/nightly-maintenance", headers=adm_hdr)
         runner.assert_true(res_nm_get.status_code == 200, "GET /api/automations/nightly-maintenance risponde HTTP 200")
         runner.assert_true("settings" in res_nm_get.json(), "Risposta include impostazioni correnti")
 
@@ -3351,7 +3351,7 @@ async def run_all_tests():
             headers=adm_hdr
         )
         runner.assert_true(res_nm_save.status_code == 200, "POST /api/automations/nightly-maintenance risponde HTTP 200")
-        saved_nm = (await client.get("/api/automations/nightly-maintenance")).json().get("settings", {})
+        saved_nm = (await client.get("/api/automations/nightly-maintenance", headers=adm_hdr)).json().get("settings", {})
         runner.assert_true(saved_nm.get("enabled") is True, "enabled salvato")
         runner.assert_true(saved_nm.get("time") == "03:30", "orario 03:30 salvato")
         runner.assert_true(saved_nm.get("auto_reboot") is True, "auto_reboot salvato")
@@ -3763,8 +3763,8 @@ async def run_all_tests():
         runner.assert_true(retention_worker.last_run is not None, "retention_worker._last_run aggiornato")
 
         # 9. Test Endpoints REST API
-        # GET /api/system/database/stats (Accessibile)
-        res_db_stats = await client.get("/api/system/database/stats")
+        # GET /api/system/database/stats (Accessibile ad admin)
+        res_db_stats = await client.get("/api/system/database/stats", headers=adm_hdr)
         runner.assert_true(res_db_stats.status_code == 200, "GET /api/system/database/stats risponde HTTP 200")
         stats_payload = res_db_stats.json()
         runner.assert_true("size_mb" in stats_payload, "Risposta stats include 'size_mb'")
@@ -4283,7 +4283,7 @@ async def run_all_tests():
         runner.assert_true(len(config_msgs_second) == 0, "Discovery config deduplicata e non ripubblicata inutilmente (Issue #92)")
 
         # 2. Test Prometheus / OpenMetrics (/metrics & /api/metrics/prometheus)
-        res_prom_root = await client.get("/metrics")
+        res_prom_root = await client.get("/metrics", headers=adm_hdr)
         runner.assert_true(res_prom_root.status_code == 200, "GET /metrics root risponde HTTP 200")
         runner.assert_true("text/plain" in res_prom_root.headers.get("content-type", ""), "GET /metrics restituisce Content-Type text/plain")
         prom_text = res_prom_root.text
@@ -4297,7 +4297,7 @@ async def run_all_tests():
         runner.assert_true("eero_bufferbloat_grade_numeric" in prom_text, "Metriche Prometheus includono eero_bufferbloat_grade_numeric")
         runner.assert_true("eero_bandwidth_rx_bytes_total" in prom_text, "Metriche Prometheus includono eero_bandwidth_rx_bytes_total")
 
-        res_prom_api = await client.get("/api/metrics/prometheus")
+        res_prom_api = await client.get("/api/metrics/prometheus", headers=adm_hdr)
         runner.assert_true(res_prom_api.status_code == 200, "GET /api/metrics/prometheus risponde HTTP 200")
         runner.assert_true("eero_wan_download_mbps" in res_prom_api.text, "GET /api/metrics/prometheus contiene metriche corrette")
 
@@ -4443,6 +4443,7 @@ async def run_all_tests():
         known_map = await db_service.get_all_known_devices_map()
         runner.assert_true(isinstance(known_map, dict), "db_service.get_all_known_devices_map() ritorna un dizionario")
 
+        client.cookies.clear()
         res_devs = await client.get("/api/devices")
         runner.assert_true(res_devs.status_code == 200, "GET /api/devices risponde HTTP 200")
         dev_payload = res_devs.json()
@@ -5524,7 +5525,7 @@ async def run_all_tests():
         # 4. Anti-XSS Link Sanitization in Markdown Parser
         app_js_text = Path("app/static/js/app.js").read_text(encoding="utf-8")
         runner.assert_true("cleanHref = (href || '').trim()" in app_js_text, "app.js sanitizza href dei link markdown")
-        runner.assert_true("/^(?:https?:\\/\\/|mailto:|\\/|#)/i.test(cleanHref)" in app_js_text, "app.js consente solo protocolli web sicuri (http, https, mailto, /, #)")
+        runner.assert_true("/^(?:https?:\\/\\/|mailto:|\\/(?!\\/)|#)/i.test(cleanHref)" in app_js_text, "app.js consente solo protocolli web sicuri (http, https, mailto, /, #)")
         runner.assert_true("<span class=\"text-sky-400 font-medium\">${label}</span>" in app_js_text, "app.js neutralizza protocolli pericolosi (es. javascript:) in span non cliccabili")
 
         # 5. Anti-Stored XSS in AI Diagnostic Summary
@@ -5951,6 +5952,89 @@ async def run_all_tests():
         # 40.10: Issue #86 (3-state theme selector) & Ctrl+K quick filter in index.html
         runner.assert_true("setTheme('system')" in _html_src and "setTheme('light')" in _html_src and "setTheme('dark')" in _html_src, "Issue #86: Selettore tema a 3 stati (Light/Dark/System) presente in index.html")
         runner.assert_true("id=\"device-quick-search-input\"" in _html_src and "Ctrl+K" in _html_src, "Phase 5: Scorciatoia globale Ctrl+K presente sulla ricerca dispositivi in index.html")
+
+        # 41: Security Hardening (Advisory GHSA-r5vj-jfjp-m88q)
+        print("\n🔒 Test 41: Verifica Security Hardening (Advisory GHSA-r5vj-jfjp-m88q)...")
+        _prev_req_auth = getattr(settings, "require_local_auth", False)
+        try:
+            settings.require_local_auth = True
+            # Public allowlist still responds 200 and exposes require_local_auth
+            r_pub_health = await client.get("/api/health")
+            runner.assert_true(r_pub_health.status_code == 200, "GHSA-r5vj: /api/health accessibile nella allowlist pubblica")
+            r_pub_status = await client.get("/api/auth/local/status")
+            runner.assert_true(r_pub_status.status_code == 200 and r_pub_status.json().get("require_local_auth") is True, "GHSA-r5vj: /api/auth/local/status espone require_local_auth=True")
+
+            # Unauthenticated requests must be rejected with 401 across all protected routes
+            for _m, _p in [
+                ("GET", "/api/network/guest"),
+                ("POST", "/api/auth/mode"),
+                ("GET", "/api/automations/notifications"),
+                ("POST", "/api/automations/notifications"),
+                ("POST", "/api/profiles"),
+                ("GET", "/api/devices"),
+                ("GET", "/api/network/debug-raw"),
+                ("GET", "/metrics"),
+                ("POST", "/api/auth/local/session-timeout"),
+            ]:
+                _resp_unauth = await client.request(_m, _p, json={} if _m == "POST" else None)
+                runner.assert_true(_resp_unauth.status_code == 401, f"GHSA-r5vj: {_m} {_p} rifiutato senza auth (HTTP 401)")
+
+            # Viewer user (no admin/write perms) must get 403 on privileged routes
+            import aiosqlite as _aiosqlite
+            from app.services.auth_service import auth_service as _auth_svc
+            _v_hash, _v_salt = _auth_svc.hash_password("ViewerPass123!")
+            async with _aiosqlite.connect(db_service.db_path) as _vdb:
+                _vcur = await _vdb.execute(
+                    "INSERT INTO local_users (username, display_name, role, password_hash, salt, is_admin, is_active, permissions_json) VALUES (?, ?, 'viewer', ?, ?, 0, 1, ?)",
+                    ("sec_viewer", "Sec Viewer", _v_hash, _v_salt, json.dumps(["view_topology", "view_devices", "view_rules"])),
+                )
+                await _vdb.commit()
+                _v_uid = _vcur.lastrowid
+            _v_tok = await db_service.create_user_session(user_id=_v_uid, duration_days=1)
+            _v_hdr = {"Authorization": f"Bearer {_v_tok}"}
+            for _m, _p, _body in [
+                ("POST", "/api/auth/mode", {"demo": True}),
+                ("POST", "/api/automations/notifications", {"telegram_enabled": False}),
+                ("POST", "/api/auth/local/session-timeout", {"minutes": 0}),
+                ("GET", "/api/network/debug-raw", None),
+            ]:
+                _resp_viewer = await client.request(_m, _p, json=_body, headers=_v_hdr)
+                runner.assert_true(_resp_viewer.status_code == 403, f"GHSA-r5vj: Viewer su {_m} {_p} riceve HTTP 403")
+
+            # Admin: notification secrets are masked on GET and preserved on POST with placeholder
+            from app.services.notifications import notification_service as _notif_svc
+            await _notif_svc.save_settings(
+                telegram_enabled=True, telegram_bot_token="123456:SECRET_BOT_TOKEN", telegram_chat_id="999",
+                webhook_enabled=True, webhook_url="https://hooks.example/secret-path",
+                discord_enabled=False, discord_webhook_url="https://discord.com/api/webhooks/secret",
+                pushover_enabled=False, pushover_user_key="u-secret", pushover_api_token="a-secret",
+                ntfy_enabled=False, ntfy_url="https://ntfy.sh", ntfy_topic="t", ntfy_token="tk-secret",
+                language="en",
+            )
+            _r_notif_get = await client.get("/api/automations/notifications", headers=adm_hdr)
+            runner.assert_true(_r_notif_get.status_code == 200, "GHSA-r5vj: Admin legge /api/automations/notifications (200)")
+            _ng = _r_notif_get.json()
+            runner.assert_true(_ng.get("telegram_bot_token") == "••••••••" and _ng.get("has_telegram_bot_token") is True, "GHSA-r5vj: Token Telegram mascherato nella GET")
+            runner.assert_true(_ng.get("webhook_url") == "••••••••" and _ng.get("ntfy_token") == "••••••••", "GHSA-r5vj: Webhook URL e Ntfy token mascherati nella GET")
+            _r_notif_post = await client.post("/api/automations/notifications", json={
+                "telegram_enabled": True, "telegram_bot_token": "••••••••", "telegram_chat_id": "999",
+                "webhook_enabled": True, "webhook_url": "••••••••",
+            }, headers=adm_hdr)
+            runner.assert_true(_r_notif_post.status_code == 200, "GHSA-r5vj: POST /api/automations/notifications accetta placeholder mascherato")
+            _saved_after = await _notif_svc.get_settings()
+            runner.assert_true(_saved_after.get("telegram_bot_token") == "123456:SECRET_BOT_TOKEN" and _saved_after.get("webhook_url") == "https://hooks.example/secret-path", "GHSA-r5vj: Segreti notifiche preservati al salvataggio con placeholder")
+
+            # Lower-severity fixes: protocol-relative link guard in app.js and trusted-proxy XFF check in rate_limiter.py
+            _app_js_sec = Path("app/static/js/app.js").read_text(encoding="utf-8")
+            runner.assert_true("/^(?:https?:\\/\\/|mailto:|\\/(?!\\/)|#)/i" in _app_js_sec, "GHSA-r5vj: renderSimpleMarkdown blocca link protocol-relative //host")
+            from types import SimpleNamespace as _SNS
+            from app.services.rate_limiter import get_client_ip as _get_ip
+            _fake_pub_req = _SNS(client=_SNS(host="198.51.100.10"), headers={"x-forwarded-for": "1.2.3.4"})
+            _fake_proxy_req = _SNS(client=_SNS(host="127.0.0.1"), headers={"x-forwarded-for": "203.0.113.5, 127.0.0.1"})
+            runner.assert_true(_get_ip(_fake_pub_req) == "198.51.100.10", "GHSA-r5vj: get_client_ip ignora X-Forwarded-For da peer non-proxy")
+            runner.assert_true(_get_ip(_fake_proxy_req) == "203.0.113.5", "GHSA-r5vj: get_client_ip accetta X-Forwarded-For valido da proxy fidato")
+        finally:
+            settings.require_local_auth = _prev_req_auth
 
         runner.print_summary()
 

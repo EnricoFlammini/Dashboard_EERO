@@ -5,6 +5,7 @@ Implementa una finestra temporale a scorrimento (sliding window) con blocco temp
 completamente thread-safe e a zero dipendenze esterne.
 """
 
+import ipaddress
 import threading
 import time
 from typing import Dict, List, Optional, Tuple
@@ -116,15 +117,43 @@ class InMemoryRateLimiter:
             self._blocked_until.pop(key, None)
 
 
+_TRUSTED_PROXY_NETWORKS = (
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+)
+
+
 def get_client_ip(request) -> str:
-    """Estrae l'indirizzo IP del client rispettando gli header del reverse proxy se presenti."""
-    x_forwarded_for = request.headers.get("x-forwarded-for")
-    if x_forwarded_for:
-        return x_forwarded_for.split(",")[0].strip()
-    x_real_ip = request.headers.get("x-real-ip")
-    if x_real_ip:
-        return x_real_ip.strip()
-    return request.client.host if request.client else "unknown"
+    """
+    Estrae l'indirizzo IP del client.
+    Usa X-Forwarded-For / X-Real-IP solo se la connessione diretta proviene da un proxy fidato
+    (loopback o rete privata RFC1918/ULA) e l'header contiene un indirizzo IP sintatticamente valido.
+    """
+    peer_ip = request.client.host if request.client else "unknown"
+    is_trusted_proxy = False
+    try:
+        addr = ipaddress.ip_address(peer_ip)
+        is_trusted_proxy = any(addr in net for net in _TRUSTED_PROXY_NETWORKS)
+    except ValueError:
+        is_trusted_proxy = False
+
+    if is_trusted_proxy:
+        for header_name in ("x-real-ip", "x-forwarded-for"):
+            raw_val = request.headers.get(header_name)
+            if raw_val:
+                candidate = raw_val.split(",")[0].strip() if header_name == "x-forwarded-for" else raw_val.strip()
+                try:
+                    ipaddress.ip_address(candidate)
+                    return candidate
+                except ValueError:
+                    continue
+    return peer_ip
 
 
 # Istanze preconfigurate per l'applicazione

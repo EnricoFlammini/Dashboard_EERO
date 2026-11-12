@@ -1,9 +1,10 @@
 import logging
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.i18n import log_event, tr
+from app.routers.dependencies import require_permission
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 
@@ -30,7 +31,7 @@ class AssignSingleDeviceRequest(BaseModel):
     profile_id: Optional[str] = Field(None, description="ID del profilo a cui assegnare il dispositivo (null per disassociare)")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission("view_rules"))])
 async def list_profiles():
     """Restituisce l'elenco dei profili utente configurati e i relativi dispositivi."""
     cached = background_poller.get_cached_state()
@@ -51,7 +52,7 @@ async def list_profiles():
     }
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def create_profile(req: CreateProfileRequest):
     """Crea un nuovo profilo utente su eero Cloud."""
     try:
@@ -69,7 +70,7 @@ async def create_profile(req: CreateProfileRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{profile_id}")
+@router.put("/{profile_id}", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def update_profile(profile_id: str, req: UpdateProfileRequest):
     """Aggiorna il nome o i dispositivi di un profilo."""
     try:
@@ -90,7 +91,7 @@ async def update_profile(profile_id: str, req: UpdateProfileRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/{profile_id}")
+@router.delete("/{profile_id}", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def delete_profile(profile_id: str):
     """Elimina un profilo utente da eero Cloud."""
     try:
@@ -107,7 +108,7 @@ async def delete_profile(profile_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/{profile_id}/assign")
+@router.post("/{profile_id}/assign", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def assign_devices_to_profile(profile_id: str, req: AssignDevicesRequest):
     """Assegna una lista di dispositivi al profilo specificato."""
     try:

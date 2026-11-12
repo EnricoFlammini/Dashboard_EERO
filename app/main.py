@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +15,7 @@ from app import i18n
 from app.i18n import log_event
 from app.config import settings
 from app.services.demo_i18n import is_demo_source_language, localize_demo_payload
+from app.routers.dependencies import get_current_user_optional, require_permission
 from app.routers import (
     analytics, auth, automations, devices, local_auth, logs, manual,
     metrics, network, profiles, schedules, speedtest, system, users
@@ -188,6 +189,35 @@ async def bind_request_language(request: Request, call_next):
         i18n.reset_request_language(token)
 
 
+_LOCAL_AUTH_PUBLIC_ROUTES = {
+    ("GET", "/api/health"),
+    ("GET", "/api/auth/local/status"),
+    ("POST", "/api/auth/local/setup"),
+    ("POST", "/api/auth/local/login"),
+    ("POST", "/api/auth/local/logout"),
+    ("GET", "/api/system/language"),
+}
+
+
+@app.middleware("http")
+async def enforce_local_auth(request: Request, call_next):
+    """
+    When REQUIRE_LOCAL_AUTH=true, enforces a valid authenticated user session
+    for every /api/* route and /metrics except the explicit public allowlist.
+    """
+    if getattr(settings, "require_local_auth", False):
+        path = request.url.path
+        if (path.startswith("/api/") or path == "/metrics") and (request.method, path) not in _LOCAL_AUTH_PUBLIC_ROUTES:
+            user = await get_current_user_optional(request)
+            if not user:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": i18n.tr("common.auth_required_operation")},
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+    return await call_next(request)
+
+
 # Definizione Percorsi Static e Template
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -230,14 +260,14 @@ async def healthcheck():
     }
 
 
-@app.get("/api/diagnostics/iot-anomalies")
+@app.get("/api/diagnostics/iot-anomalies", dependencies=[Depends(require_permission("view_topology"))])
 async def get_iot_night_anomalies_root_alias(limit: int = 50, days: int = 7):
     """Alias diretto per l'interrogazione delle anomalie IoT notturne."""
     from app.routers.network import get_iot_night_anomalies
     return await get_iot_night_anomalies(limit=limit, days=days)
 
 
-@app.get("/metrics")
+@app.get("/metrics", dependencies=[Depends(require_permission("view_topology"))])
 async def prometheus_metrics_root():
     """Endpoint standard Prometheus / OpenMetrics per lo scraping dei dati di telemetria."""
     from app.routers.metrics import generate_prometheus_metrics

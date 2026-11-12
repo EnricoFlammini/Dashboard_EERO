@@ -4792,7 +4792,7 @@ document.addEventListener('alpine:init', () => {
       text = text
         .replace(/\[(.*?)\]\((.*?)\)/g, (match, label, href) => {
           const cleanHref = (href || '').trim();
-          if (/^(?:https?:\/\/|mailto:|\/|#)/i.test(cleanHref)) {
+          if (/^(?:https?:\/\/|mailto:|\/(?!\/)|#)/i.test(cleanHref)) {
             return `<a href="${cleanHref}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline font-medium">${label}</a>`;
           }
           return `<span class="text-sky-400 font-medium">${label}</span>`;

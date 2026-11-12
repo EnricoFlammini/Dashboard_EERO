@@ -5,17 +5,22 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
 from app.i18n import log_event, tr
+from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+router = APIRouter(
+    prefix="/api/analytics",
+    tags=["analytics"],
+    dependencies=[Depends(require_permission("view_analytics"))],
+)
 
 
 def _resolve_vendor_from_mac_and_name(mac: str, hostname: str) -> str:

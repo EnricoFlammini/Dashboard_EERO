@@ -29,7 +29,7 @@ async def get_system_language():
     return {"status": "success", "language": lang}
 
 
-@router.post("/language")
+@router.post("/language", dependencies=[Depends(require_permission("__admin__"))])
 async def set_system_language(payload: LanguageRequest):
     """Aggiorna e persiste la lingua preferita per la dashboard e le notifiche."""
     lang = payload.language.lower().strip()
@@ -39,7 +39,7 @@ async def set_system_language(payload: LanguageRequest):
     return {"status": "success", "language": lang}
 
 
-@router.get("/update/check")
+@router.get("/update/check", dependencies=[Depends(require_permission("view_topology"))])
 async def check_for_updates(force: bool = Query(False, description="Forza il controllo remoto senza usare la cache")):
     """Controlla se è disponibile una nuova versione su Docker Hub e GitHub Releases."""
     try:
@@ -49,7 +49,7 @@ async def check_for_updates(force: bool = Query(False, description="Forza il con
         raise HTTPException(status_code=500, detail=tr("system.update_check_failed", error=str(e)))
 
 
-@router.get("/update/changelog")
+@router.get("/update/changelog", dependencies=[Depends(require_permission("view_topology"))])
 async def get_update_changelog(version: Optional[str] = Query(None, description="Versione specifica o ultima")):
     """Restituisce le note di rilascio e il changelog ridotto per una versione o per l'aggiornamento disponibile."""
     try:
@@ -87,7 +87,7 @@ async def trigger_update():
         raise HTTPException(status_code=500, detail=tr("system.update_trigger_failed", error=str(e)))
 
 
-@router.get("/eero-news")
+@router.get("/eero-news", dependencies=[Depends(require_permission("view_topology"))])
 async def get_eero_news(force: bool = Query(False, description="Forza il ricalcolo e recupero da Zendesk")):
     """Restituisce l'elenco cronologico delle note di rilascio eeroOS, la versione del firmware
 
@@ -159,7 +159,7 @@ async def import_system_restore_endpoint(payload: Dict[str, Any]):
 # DATABASE METRICS & DATA RETENTION ENGINE (v1.6.0 Modulo 2)
 # =========================================================================
 
-@router.get("/database/stats")
+@router.get("/database/stats", dependencies=[Depends(require_permission("__admin__"))])
 async def get_database_statistics():
     """
     Restituisce le statistiche su dimensioni fisiche (MB), conteggio righe per tier e stato compattazione.

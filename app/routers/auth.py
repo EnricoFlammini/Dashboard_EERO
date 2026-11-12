@@ -1,10 +1,11 @@
 import asyncio
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.routers.dependencies import require_admin, require_permission
 from app.services.eero_client import eero_client
 from app.services.rate_limiter import cloud_auth_limiter, get_client_ip
 from app.i18n import log_event, tr
@@ -42,7 +43,7 @@ async def _refresh_account_info():
         log_event(logger, logging.WARNING, "log_system.account_refresh_failed", error=str(e))
 
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_permission("view_topology"))])
 async def get_auth_status():
     """Restituisce lo stato corrente di autenticazione e le informazioni dell'account.
 
@@ -77,7 +78,7 @@ async def get_auth_status():
     }
 
 
-@router.post("/mode")
+@router.post("/mode", dependencies=[Depends(require_permission("__admin__"))])
 async def switch_mode(payload: ModeSwitchRequest):
     """Passa istantaneamente tra Demo Mode e Live Network preservando il token reale."""
     eero_client.set_demo_mode(payload.demo)
@@ -100,7 +101,7 @@ async def switch_mode(payload: ModeSwitchRequest):
     }
 
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(require_permission("__admin__"))])
 async def request_login(payload: LoginRequest, request: Request):
     """Invia la richiesta di accesso per ricevere il codice OTP a 6 cifre con protezione anti-abuse."""
     ip = get_client_ip(request)
@@ -120,7 +121,7 @@ async def request_login(payload: LoginRequest, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/verify")
+@router.post("/verify", dependencies=[Depends(require_permission("__admin__"))])
 async def verify_otp(payload: VerifyOTPRequest, request: Request):
     """Verifica il codice OTP e salva il session token persistente con protezione anti-abuse."""
     ip = get_client_ip(request)
@@ -146,14 +147,14 @@ async def verify_otp(payload: VerifyOTPRequest, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/logout")
+@router.post("/logout", dependencies=[Depends(require_permission("__admin__"))])
 async def logout():
     """Rimuove il token di sessione e disconnette l'app."""
     eero_client.clear_session()
     return {"status": "success", "message": tr("auth.eero_logged_out")}
 
 
-@router.get("/amazon/login-url")
+@router.get("/amazon/login-url", dependencies=[Depends(require_permission("__admin__"))])
 async def get_amazon_login_url(request: Request):
     """Genera l'URL di autenticazione Amazon OAuth2 + PKCE (Issue #93)."""
     ip = get_client_ip(request)
@@ -167,7 +168,7 @@ async def get_amazon_login_url(request: Request):
     return eero_client.generate_amazon_oauth_url()
 
 
-@router.post("/amazon/exchange")
+@router.post("/amazon/exchange", dependencies=[Depends(require_permission("__admin__"))])
 async def exchange_amazon_login(payload: AmazonExchangeRequest, request: Request):
     """Scambia il codice di autorizzazione / URL callback Amazon con una sessione eero autenticata (Issue #93)."""
     ip = get_client_ip(request)

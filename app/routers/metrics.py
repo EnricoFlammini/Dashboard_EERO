@@ -2,17 +2,22 @@ import logging
 import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 
 from app.config import settings
 from app.i18n import log_event
+from app.routers.dependencies import require_permission
 from app.services.db import db_service
 from app.services.poller import background_poller
 from app.services.eero_client import eero_client
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/metrics", tags=["Metrics & Bandwidth Historian"])
+router = APIRouter(
+    prefix="/api/metrics",
+    tags=["Metrics & Bandwidth Historian"],
+    dependencies=[Depends(require_permission("view_topology"))],
+)
 
 
 @router.get("/realtime")

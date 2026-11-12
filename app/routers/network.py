@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.i18n import log_event, tr
-from app.routers.dependencies import require_permission
+from app.routers.dependencies import require_admin, require_permission
 
 from app.services.db import db_service
 from app.services.eero_client import eero_client, EERO_API_BASE
@@ -38,7 +38,7 @@ class AdvancedSettingsRequest(BaseModel):
     band_steering_enabled: Optional[bool] = None
 
 
-@router.get("/overview")
+@router.get("/overview", dependencies=[Depends(require_permission("view_topology"))])
 async def get_network_overview():
     """Restituisce lo stato generale WAN, Health Score e nodi mesh dalla cache RAM (0ms)."""
     cached = background_poller.get_cached_state()
@@ -48,7 +48,7 @@ async def get_network_overview():
     }
 
 
-@router.get("/health-breakdown")
+@router.get("/health-breakdown", dependencies=[Depends(require_permission("view_topology"))])
 async def get_health_breakdown():
     """Restituisce il dettaglio diagnostico completo e i 4 pilastri dello Health Score (Issue #15)."""
     cached = background_poller.get_cached_state()
@@ -61,7 +61,7 @@ async def get_health_breakdown():
     }
 
 
-@router.get("/diagnostics/iot-anomalies")
+@router.get("/diagnostics/iot-anomalies", dependencies=[Depends(require_permission("view_topology"))])
 async def get_iot_night_anomalies(limit: int = 50, days: int = 7):
     """Restituisce le anomalie di traffico notturno registrate per apparati IoT (v1.6.0 Modulo 1)."""
     try:
@@ -86,7 +86,7 @@ async def get_iot_night_anomalies(limit: int = 50, days: int = 7):
         return {"status": "error", "message": str(e), "data": []}
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def force_network_refresh():
     """Forza il poller a effettuare una lettura immediata e aggiornare la cache RAM."""
     try:
@@ -102,7 +102,7 @@ async def force_network_refresh():
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/debug-raw")
+@router.get("/debug-raw", dependencies=[Depends(require_permission("__admin__"))])
 async def get_debug_raw():
     """Diagnostica: recupera i campi raw completi restituiti da eero per capire come vengono forniti i dati."""
     import httpx
@@ -160,7 +160,7 @@ async def get_debug_raw():
         return {"status": "error", "error": str(e)}
 
 
-@router.get("/eeros")
+@router.get("/eeros", dependencies=[Depends(require_permission("view_topology"))])
 async def get_mesh_nodes():
     """Restituisce l'elenco e lo stato dei singoli nodi eero mesh."""
     try:
@@ -215,7 +215,7 @@ async def toggle_all_leds(payload: ToggleLEDRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/guest")
+@router.get("/guest", dependencies=[Depends(require_permission("view_guest_wifi"))])
 async def get_guest_network():
     """Restituisce le impostazioni della rete ospiti e il QR Code Wi-Fi generato."""
     try:
@@ -276,7 +276,7 @@ async def update_guest_network(payload: GuestNetworkRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/guest/generate-password")
+@router.post("/guest/generate-password", dependencies=[Depends(require_permission("action_toggle_guest"))])
 async def generate_random_guest_password():
     """Genera una password sicura e memorabile per gli ospiti."""
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
@@ -285,7 +285,7 @@ async def generate_random_guest_password():
     return {"status": "success", "password": password}
 
 
-@router.get("/advanced")
+@router.get("/advanced", dependencies=[Depends(require_permission("view_rules"))])
 async def get_advanced_settings():
     """Restituisce lo stato delle impostazioni avanzate di rete (IPv6, UPnP, Band Steering)."""
     try:
@@ -301,7 +301,7 @@ async def get_advanced_settings():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/advanced")
+@router.post("/advanced", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def update_advanced_settings(payload: AdvancedSettingsRequest):
     """Aggiorna le impostazioni avanzate di rete."""
     try:
@@ -320,7 +320,7 @@ class SwitchNetworkRequest(BaseModel):
     network_id: str = Field(..., description="ID della rete eero verso cui effettuare lo switch")
 
 
-@router.get("/list")
+@router.get("/list", dependencies=[Depends(require_permission("view_topology"))])
 async def list_available_networks():
     """Restituisce l'elenco di tutte le reti mesh eero associate all'account (Issue #22)."""
     try:
@@ -342,7 +342,7 @@ async def list_available_networks():
         }
 
 
-@router.post("/switch")
+@router.post("/switch", dependencies=[Depends(require_permission("__admin__"))])
 async def switch_network(payload: SwitchNetworkRequest):
     """Hot-swap immediato della rete eero attiva con refresh istantaneo della cache RAM."""
     try:
@@ -362,7 +362,7 @@ async def switch_network(payload: SwitchNetworkRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/top-hogs")
+@router.get("/top-hogs", dependencies=[Depends(require_permission("view_topology"))])
 async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
     """Classifica dei dispositivi che hanno consumato più banda (Top Hogs) - v1.5.0 Insights Suite."""
     try:
@@ -424,7 +424,7 @@ class DeleteNeighborMappingRequest(BaseModel):
     ip: str = Field(..., description="Indirizzo IP da rimuovere")
 
 
-@router.post("/enrichment/neighbors")
+@router.post("/enrichment/neighbors", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def ingest_neighbor_mappings(
     payload: NeighborIngestRequest,
     _auth=Depends(require_permission("network_control"))
@@ -439,7 +439,7 @@ async def ingest_neighbor_mappings(
     return result
 
 
-@router.get("/enrichment/mappings")
+@router.get("/enrichment/mappings", dependencies=[Depends(require_permission("view_devices"))])
 async def get_discovered_mappings(limit: int = 500):
     """Restituisce l'elenco di tutti gli indirizzi IP scoperti e arricchiti via NDP / AdGuard."""
     rows = await db_service.get_all_discovered_ips_list(limit=limit)
@@ -450,7 +450,7 @@ async def get_discovered_mappings(limit: int = 500):
     }
 
 
-@router.delete("/enrichment/mappings")
+@router.delete("/enrichment/mappings", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def delete_discovered_mapping(
     payload: DeleteNeighborMappingRequest,
     _auth=Depends(require_permission("network_control"))
@@ -464,7 +464,7 @@ async def delete_discovered_mapping(
     return {"status": "not_found", "message": tr("network.mapping_not_found")}
 
 
-@router.post("/enrichment/scan-adguard")
+@router.post("/enrichment/scan-adguard", dependencies=[Depends(require_permission("action_edit_devices"))])
 async def trigger_adguard_scan(
     _auth=Depends(require_permission("network_control"))
 ):
@@ -506,14 +506,14 @@ class AssistantPromptRequest(BaseModel):
     stream: bool = Field(True, description="Se True, trasmette la risposta via Server-Sent Events (SSE)")
 
 
-@router.get("/ipv6-firewall")
+@router.get("/ipv6-firewall", dependencies=[Depends(require_permission("view_rules"))])
 async def get_ipv6_firewall_rules():
     """Restituisce l'elenco delle regole del firewall IPv6 (Issue #90)."""
     rules = await eero_client.get_ipv6_firewall_rules()
     return {"status": "success", "rules": rules}
 
 
-@router.post("/ipv6-firewall")
+@router.post("/ipv6-firewall", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def create_ipv6_firewall_rule(
     payload: IPv6FirewallRuleRequest,
     _auth=Depends(require_permission("action_manage_rules")),
@@ -525,7 +525,7 @@ async def create_ipv6_firewall_rule(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.delete("/ipv6-firewall/{rule_id}")
+@router.delete("/ipv6-firewall/{rule_id}", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def remove_ipv6_firewall_rule(
     rule_id: str,
     _auth=Depends(require_permission("action_manage_rules")),
@@ -537,7 +537,7 @@ async def remove_ipv6_firewall_rule(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/placement-test")
+@router.post("/placement-test", dependencies=[Depends(require_permission("view_topology"))])
 async def run_mesh_placement_test(
     payload: PlacementTestRequest,
     _auth=Depends(require_permission("action_manage_rules")),
@@ -549,13 +549,13 @@ async def run_mesh_placement_test(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/guardian-vpn")
+@router.get("/guardian-vpn", dependencies=[Depends(require_permission("view_topology"))])
 async def get_guardian_vpn():
     """Restituisce lo stato di Guardian VPN (eero Plus)."""
     return await eero_client.get_guardian_vpn_status()
 
 
-@router.put("/guardian-vpn")
+@router.put("/guardian-vpn", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def update_guardian_vpn(
     payload: GuardianVPNRequest,
     _auth=Depends(require_permission("action_manage_rules")),
@@ -567,7 +567,7 @@ async def update_guardian_vpn(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/eeros/register")
+@router.post("/eeros/register", dependencies=[Depends(require_permission("__admin__"))])
 async def register_new_eero_node(
     payload: RegisterEeroNodeRequest,
     _auth=Depends(require_permission("action_manage_rules")),
@@ -638,7 +638,7 @@ def _build_assistant_diagnostic_reply(prompt: str) -> str:
     return "\n\n".join(lines)
 
 
-@router.post("/assistant")
+@router.post("/assistant", dependencies=[Depends(require_permission("view_topology"))])
 async def query_network_assistant(payload: AssistantPromptRequest):
     """
     Assistente diagnostico AI con supporto streaming SSE (Server-Sent Events) (v1.7.0).

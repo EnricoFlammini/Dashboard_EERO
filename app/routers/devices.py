@@ -57,7 +57,7 @@ class DeviceProfileAssignRequest(BaseModel):
     profile_id: Optional[str] = Field(None, description="ID del profilo utente Cloud a cui associare il dispositivo (null per disassociare)")
 
 
-@router.get("")
+@router.get("", dependencies=[Depends(require_permission("view_devices"))])
 async def list_devices(
     search: Optional[str] = None,
     band: Optional[str] = None,
@@ -136,7 +136,7 @@ async def list_devices(
     }
 
 
-@router.get("/export/hosts", response_class=PlainTextResponse)
+@router.get("/export/hosts", response_class=PlainTextResponse, dependencies=[Depends(require_permission("view_devices"))])
 async def export_hosts(
     connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi"),
     domain_suffix: Optional[str] = Query(None, description="Suffisso dominio opzionale (es. .lan o .home)")
@@ -175,7 +175,7 @@ async def export_hosts(
     return "\n".join(lines) + "\n"
 
 
-@router.get("/export/adguard")
+@router.get("/export/adguard", dependencies=[Depends(require_permission("view_devices"))])
 async def export_adguard(
     connected_only: bool = Query(True, description="Esporta solo dispositivi attualmente connessi"),
     include_ipv6: bool = Query(True, description="Includi indirizzi IPv6 negli identificatori del client")
@@ -283,7 +283,7 @@ async def rename_device(device_id: str, payload: DeviceRenameRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{mac_address}/rules")
+@router.get("/{mac_address}/rules", dependencies=[Depends(require_permission("view_devices"))])
 async def get_device_rules(mac_address: str):
     """Restituisce la prenotazione DHCP attiva e tutte le regole di port forwarding per questo dispositivo con associazione multi-chiave."""
     try:
@@ -445,7 +445,7 @@ async def delete_device_reservation(mac_address: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/rules/forwards")
+@router.get("/rules/forwards", dependencies=[Depends(require_permission("view_devices"))])
 async def get_port_forwards_and_reservations():
     """Restituisce tutte le regole di port forwarding e prenotazioni IP configurate."""
     try:
@@ -507,7 +507,7 @@ async def assign_device_profile(mac_address: str, payload: DeviceProfileAssignRe
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/{mac_address}/usage")
+@router.get("/{mac_address}/usage", dependencies=[Depends(require_permission("view_devices"))])
 async def get_device_usage(
     mac_address: str, 
     period: str = "daily", 
@@ -543,7 +543,7 @@ async def clear_device_discovered_ula(mac: str):
     }
 
 
-@router.get("/{device_id_or_mac:path}")
+@router.get("/{device_id_or_mac:path}", dependencies=[Depends(require_permission("view_devices"))])
 async def get_device_detail(device_id_or_mac: str):
     """Restituisce la scheda completa del dispositivo: stato live e metadati locali (catch-all)."""
     clean_target = device_id_or_mac.strip().lower()

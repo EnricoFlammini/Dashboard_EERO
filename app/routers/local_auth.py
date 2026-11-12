@@ -10,7 +10,8 @@ import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
-from app.routers.dependencies import get_current_user, _extract_token_from_request
+from app.config import settings
+from app.routers.dependencies import get_current_user, require_permission, _extract_token_from_request
 from app.services.auth_service import auth_service
 from app.services.db import db_service
 from app.services.rate_limiter import auth_rate_limiter, get_client_ip
@@ -43,7 +44,8 @@ async def get_local_auth_status():
     setup_required = await db_service.is_admin_setup_required()
     return {
         "status": "success",
-        "setup_required": setup_required
+        "setup_required": setup_required,
+        "require_local_auth": bool(getattr(settings, "require_local_auth", False)),
     }
 
 
@@ -267,7 +269,7 @@ async def get_session_timeout():
     }
 
 
-@router.post("/session-timeout")
+@router.post("/session-timeout", dependencies=[Depends(require_permission("__admin__"))])
 async def set_session_timeout(payload: SessionTimeoutRequest):
     """Aggiorna il timeout di inattività per il logout automatico in minuti."""
     await db_service.set_setting("session_timeout_minutes", str(payload.minutes))

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/speedtest", tags=["Speed Test & Diagnostics"])
 
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_permission("view_speedtest"))])
 async def get_speedtest_status():
     """Restituisce se uno speedtest è attualmente in esecuzione e l'ultimo risultato noto."""
     return {
@@ -38,7 +38,7 @@ async def trigger_manual_speedtest():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/history")
+@router.get("/history", dependencies=[Depends(require_permission("view_speedtest"))])
 async def get_speedtest_history(limit: int = Query(50, ge=1, le=200)):
     """Restituisce lo storico di tutti i test di velocità eseguiti."""
     tests = await db_service.get_speedtests(limit=limit)
@@ -49,7 +49,7 @@ async def get_speedtest_history(limit: int = Query(50, ge=1, le=200)):
     }
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_permission("view_speedtest"))])
 async def get_speedtest_statistics():
     """Restituisce le statistiche aggregate di prestazione (medie, picchi e latenza)."""
     stats = await db_service.get_speedtest_stats()

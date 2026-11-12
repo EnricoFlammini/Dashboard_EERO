@@ -150,7 +150,7 @@ class AdGuardSyncRequest(BaseModel):
     instances: Optional[List[AdGuardInstanceModel]] = None
 
 
-@router.get("/focus-mode")
+@router.get("/focus-mode", dependencies=[Depends(require_permission("view_rules"))])
 async def get_focus_mode_status():
     """Restituisce lo stato corrente della modalità Gaming / Focus Mode."""
     active_str = await db_service.get_setting("focus_mode_active", "false")
@@ -173,7 +173,7 @@ async def get_focus_mode_status():
     }
 
 
-@router.post("/focus-mode")
+@router.post("/focus-mode", dependencies=[Depends(require_permission("action_pause_devices"))])
 async def toggle_focus_mode(payload: FocusModeRequest):
     """
     Attiva o disattiva con 1 clic la Gaming / Focus Mode.
@@ -253,7 +253,7 @@ async def toggle_focus_mode(payload: FocusModeRequest):
         }
 
 
-@router.get("/night-mode")
+@router.get("/night-mode", dependencies=[Depends(require_permission("view_rules"))])
 async def get_night_mode_settings():
     """Restituisce le impostazioni della Modalità Notte automatica per i LED."""
     enabled = (await db_service.get_setting("night_mode_enabled", "false")).lower() == "true"
@@ -268,7 +268,7 @@ async def get_night_mode_settings():
     }
 
 
-@router.post("/night-mode")
+@router.post("/night-mode", dependencies=[Depends(require_permission("action_pause_devices"))])
 async def update_night_mode_settings(payload: NightModeSettingsRequest):
     """Aggiorna gli orari dello scheduler per spegnere i LED durante la notte."""
     await db_service.set_setting("night_mode_enabled", "true" if payload.enabled else "false")
@@ -282,34 +282,57 @@ async def update_night_mode_settings(payload: NightModeSettingsRequest):
     }
 
 
-@router.get("/notifications")
+_NOTIFICATION_SECRET_FIELDS = (
+    "telegram_bot_token",
+    "webhook_url",
+    "discord_webhook_url",
+    "pushover_user_key",
+    "pushover_api_token",
+    "ntfy_token",
+)
+_MASKED_SECRET_PLACEHOLDER = "••••••••"
+
+
+@router.get("/notifications", dependencies=[Depends(require_permission("view_rules"))])
 async def get_notification_settings():
-    """Restituisce la configurazione dei canali di allarme (Telegram & Webhook)."""
-    settings_dict = await notification_service.get_settings()
+    """Restituisce la configurazione dei canali di allarme (Telegram & Webhook) con segreti mascherati."""
+    settings_dict = dict(await notification_service.get_settings())
+    for field in _NOTIFICATION_SECRET_FIELDS:
+        val = settings_dict.get(field) or ""
+        settings_dict[f"has_{field}"] = bool(val)
+        if val:
+            settings_dict[field] = _MASKED_SECRET_PLACEHOLDER
     return {
         "status": "success",
         **settings_dict
     }
 
 
-@router.post("/notifications")
+@router.post("/notifications", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def update_notification_settings(payload: NotificationSettingsRequest):
-    """Salva le credenziali e i toggle per tutti i canali di notifica."""
+    """Salva le credenziali e i toggle per tutti i canali di notifica, preservando i segreti mascherati."""
+    existing = await notification_service.get_settings()
+
+    def _keep_or_set(new_val: Optional[str], field: str) -> str:
+        if new_val == _MASKED_SECRET_PLACEHOLDER:
+            return existing.get(field) or ""
+        return new_val or ""
+
     await notification_service.save_settings(
         telegram_enabled=payload.telegram_enabled,
-        telegram_bot_token=payload.telegram_bot_token,
+        telegram_bot_token=_keep_or_set(payload.telegram_bot_token, "telegram_bot_token"),
         telegram_chat_id=payload.telegram_chat_id,
         webhook_enabled=payload.webhook_enabled,
-        webhook_url=payload.webhook_url,
+        webhook_url=_keep_or_set(payload.webhook_url, "webhook_url"),
         discord_enabled=bool(payload.discord_enabled),
-        discord_webhook_url=payload.discord_webhook_url,
+        discord_webhook_url=_keep_or_set(payload.discord_webhook_url, "discord_webhook_url"),
         pushover_enabled=bool(payload.pushover_enabled),
-        pushover_user_key=payload.pushover_user_key,
-        pushover_api_token=payload.pushover_api_token,
+        pushover_user_key=_keep_or_set(payload.pushover_user_key, "pushover_user_key"),
+        pushover_api_token=_keep_or_set(payload.pushover_api_token, "pushover_api_token"),
         ntfy_enabled=bool(payload.ntfy_enabled),
         ntfy_url=payload.ntfy_url,
         ntfy_topic=payload.ntfy_topic,
-        ntfy_token=payload.ntfy_token,
+        ntfy_token=_keep_or_set(payload.ntfy_token, "ntfy_token"),
         language=payload.language
     )
     return {"status": "success", "message": tr("automations.notifications_saved")}
@@ -340,7 +363,7 @@ async def test_notification_channels(payload: Optional[NotificationTestRequest] 
     }
 
 
-@router.get("/mqtt/config")
+@router.get("/mqtt/config", dependencies=[Depends(require_permission("view_rules"))])
 async def get_mqtt_configuration():
     """Restituisce la configurazione MQTT e lo stato di connessione."""
     cfg = await mqtt_service.get_config()
@@ -574,7 +597,7 @@ class NightlyMaintenanceSettingsRequest(BaseModel):
     vacuum: bool = Field(False, description="Esegui compattazione profonda VACUUM oltre a PRAGMA optimize")
 
 
-@router.get("/nightly-maintenance")
+@router.get("/nightly-maintenance", dependencies=[Depends(require_permission("view_rules"))])
 async def get_nightly_maintenance_settings():
     """Recupera le impostazioni correnti di manutenzione notturna e ultimo timestamp di esecuzione."""
     from app.services.scheduler import maintenance_engine

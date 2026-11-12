@@ -106,6 +106,15 @@ def require_permission(perm_key: str) -> Callable:
             # Superadmin bypass
             if user.get("is_admin"):
                 return user
+            if perm_key == "__admin__":
+                log_event(
+                    logger, logging.WARNING, "log_system.permission_denied",
+                    username=user.get('username'), permission=perm_key,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=tr("common.admin_only")
+                )
             
             perms = set(user.get("permissions") or [])
             alias_map = {

@@ -46,7 +46,7 @@ class ScheduleUpdateRequest(BaseModel):
     is_active: Optional[bool] = None
 
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]], dependencies=[Depends(require_permission("view_rules"))])
 async def list_schedules():
     """Restituisce l'elenco di tutte le pianificazioni salvate."""
     schedules = await db_service.get_device_schedules()
@@ -102,7 +102,7 @@ async def create_schedule(
     return {"status": "success", "schedule": created}
 
 
-@router.get("/{schedule_id}")
+@router.get("/{schedule_id}", dependencies=[Depends(require_permission("view_rules"))])
 async def get_schedule(schedule_id: int):
     """Recupera i dettagli di una specifica pianificazione."""
     schedule = await db_service.get_device_schedule_by_id(schedule_id)
@@ -188,7 +188,7 @@ async def toggle_schedule(
     return {"status": "success", "schedule": updated}
 
 
-@router.post("/evaluate")
+@router.post("/evaluate", dependencies=[Depends(require_permission("action_manage_schedules"))])
 async def evaluate_schedules_now():
     """Forza la valutazione istantanea delle regole di pianificazione."""
     result = await schedule_engine.evaluate_schedules()
