@@ -1116,6 +1116,89 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    getEeroProductImage(node) {
+      if (!node || node.is_echo_node) return null;
+      const codes = {
+        A01: 'eero-gen1',
+        B01: 'eero-pro',
+        D01: 'eero-beacon',
+        J01: 'eero-gen2',
+        K01: 'eero-pro-6',
+        N01: 'eero-6',
+        Q01: 'eero-6-extender',
+        R01: 'eero-6-plus',
+        S01: 'eero-pro-6e',
+        T01: 'eero-poe-6',
+        U01: 'eero-poe-gateway',
+        V01: 'eero-max-7',
+        PA1: 'eero-7',
+        ME1: 'eero-pro-7',
+        SN1: 'eero-outdoor-7',
+        NV01: 'eero-poe-7',
+        RG4: 'eero-signal-4g',
+        RG5: 'eero-signal-5g',
+        FH01: 'eero-telephone-adapter'
+      };
+      const names = {
+        eeromax7: 'eero-max-7',
+        eeropro7: 'eero-pro-7',
+        eero7: 'eero-7',
+        eerooutdoor7: 'eero-outdoor-7',
+        eeropoe7: 'eero-poe-7',
+        eeropoe6: 'eero-poe-6',
+        eeropoegateway: 'eero-poe-gateway',
+        eeropro6e: 'eero-pro-6e',
+        eeropro6: 'eero-pro-6',
+        'eero6+': 'eero-6-plus',
+        eero6plus: 'eero-6-plus',
+        'eero6+extender': 'eero-6-plus-extender',
+        eero6plusextender: 'eero-6-plus-extender',
+        eero6extender: 'eero-6-extender',
+        eero6: 'eero-6',
+        eerobeacon: 'eero-beacon',
+        eeropro: 'eero-pro',
+        eeropro2ndgen: 'eero-pro',
+        eero1stgen: 'eero-gen1',
+        eero1stgeneration: 'eero-gen1',
+        eero2ndgen: 'eero-gen2',
+        eero2ndgeneration: 'eero-gen2',
+        eerosignal4glte: 'eero-signal-4g',
+        eerosignal4g: 'eero-signal-4g',
+        eerosignal5g: 'eero-signal-5g',
+        eerotelephoneadapter: 'eero-telephone-adapter',
+        eerofh01: 'eero-telephone-adapter'
+      };
+
+      const rawCode = String(node.model_number || node.model_code || node.hardware_model || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (rawCode) {
+        for (const [prefix, img] of Object.entries(codes)) {
+          if (rawCode.startsWith(prefix) && rawCode.length >= prefix.length + (prefix.length === 4 ? 0 : 1)) {
+            return `/static/img/products/${img}.png`;
+          }
+        }
+      }
+
+      const rawModel = String(node.model || node.model_name || node.product_name || '');
+      const baseModel = rawModel.replace(/\([^)]*\)/g, '').replace(/[\s_()\-]/g, '').toLowerCase();
+      if (names[baseModel]) {
+        return `/static/img/products/${names[baseModel]}.png`;
+      }
+      const fullModel = rawModel.replace(/[\s_()\-]/g, '').toLowerCase();
+      if (names[fullModel]) {
+        return `/static/img/products/${names[fullModel]}.png`;
+      }
+
+      const modelAsCode = rawModel.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      if (/^[A-Z]{1,2}[0-9][A-Z0-9]{1,6}$/.test(modelAsCode)) {
+        for (const [prefix, img] of Object.entries(codes)) {
+          if (modelAsCode.startsWith(prefix) && modelAsCode.length >= prefix.length + (prefix.length === 4 ? 0 : 1)) {
+            return `/static/img/products/${img}.png`;
+          }
+        }
+      }
+      return null;
+    },
+
     formatBackhaul(eero) {
       if (!eero) return '';
       if (eero.is_gateway) {

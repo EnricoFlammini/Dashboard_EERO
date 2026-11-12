@@ -1169,17 +1169,32 @@
               class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
               <div>
                 <!-- Node Header -->
-                <div class="flex items-start justify-between">
-                  <div>
-                    <div class="flex items-center space-x-2">
-                      <span class="w-2.5 h-2.5 rounded-full"
-                        :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"></span>
-                      <h3 class="font-bold text-slate-900 dark:text-white text-base" x-text="eero.name"></h3>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center space-x-3 min-w-0">
+                    <template x-if="getEeroProductImage(eero)">
+                      <div
+                        class="w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center p-1.5 shrink-0 shadow-xs">
+                        <img :src="getEeroProductImage(eero)" :alt="eero.model || 'eero'"
+                          class="w-full h-full object-contain drop-shadow-xs">
+                      </div>
+                    </template>
+                    <template x-if="!getEeroProductImage(eero) && eero.is_echo_node">
+                      <div
+                        class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shrink-0">
+                        🔊
+                      </div>
+                    </template>
+                    <div class="min-w-0">
+                      <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0"
+                          :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"></span>
+                        <h3 class="font-bold text-slate-900 dark:text-white text-base truncate" x-text="eero.name"></h3>
+                      </div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate" x-show="eero.model"
+                        x-text="eero.model"></p>
                     </div>
-                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5" x-show="eero.model"
-                      x-text="eero.model"></p>
                   </div>
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex items-center gap-1.5 shrink-0">
                     <template x-if="eero.is_gateway">
                       <span
                         class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider"
