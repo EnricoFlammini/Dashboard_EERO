@@ -14,12 +14,13 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **Scorciatoie verso Dispositivi:** il clic su Client Connessi o sulla riga "Client connessi" di un nodo mesh apre Dispositivi con il filtro "Solo connessi" (e il nodo) già impostato.
 * **Correzione aggiornamento elenco:** dopo il salvataggio di categoria/icona/note nel modale, l'elenco si aggiorna subito: `POST /api/devices/{mac}/metadata` aggiorna anche la cache RAM del poller, con le stesse regole di unione dei metadati del ciclo di polling.
 * **Documentazione e traduzioni:** capitoli 3, 4, 5 e 12 del manuale (EN/IT), README, backlog in `docs/DEVICE_DETAILS_ENHANCEMENTS.md`; nuove chiavi UI tradotte anche in de, el, es, fr, nl, pl e pt.
+* **Immagini Prodotti eero nella Home:** aggiunte le 20 immagini ufficiali dei dispositivi eero (`app/static/img/products/`, helper `getEeroProductImage`) visualizzate accanto a nome e modello di ogni nodo mesh (con icona dedicata per i nodi Echo Built-in).
 
 ### 🔑 Autenticazione Nativa Amazon OAuth2 / PKCE (Issue #93 - @davidpshaw)
 * **🔐 Flusso OpenID / OAuth2 con PKCE S256 (RFC 7636):**
-  * Generazione crittografica di `code_verifier` e `code_challenge` S256 (`generate_amazon_oauth_url`) ed exchange sicuro dell'authorization code (`exchange_amazon_oauth_code`) con l'endpoint token Amazon ed eero Cloud (`/2.2/login/amazon`).
+  * Generazione crittografica di `code_verifier` e `code_challenge` S256 (`generate_amazon_oauth_url`) ed exchange sicuro dell'authorization code (`exchange_amazon_oauth_code`) con l'endpoint token Amazon ed eero Cloud (`/2.2/login/amazon`) tramite flusso `device_auth_access`.
   * Nuovi endpoint REST `GET /api/auth/amazon/login-url` e `POST /api/auth/amazon/exchange` protetti da rate limiter per consentire l'accesso nativo agli account eero collegati ad Amazon senza errori `401 Unauthorized` / `error.login.unknown`.
-  * Sezione dedicata **"Accedi con Amazon (OAuth2 / PKCE)"** integrata nella modale di autenticazione Cloud (`index.html`).
+  * Sezione dedicata **"Accedi con Amazon (OAuth2 / PKCE)"** integrata nella modale di autenticazione Cloud (`index.html`) con **istruzioni guidate in 3 passaggi** visibili immediatamente in tutte e 9 le lingue per copiare l'URL `/ap/maplanding`.
 
 ### 🔊 Nodi Mesh Extender Amazon Echo "eero Built-in" (Issue #96 - @markharrison)
 * **📡 Riconoscimento Automatico & Sintesi Nodi `eero Built-in` (`reconcile_echo_extender_nodes`):**

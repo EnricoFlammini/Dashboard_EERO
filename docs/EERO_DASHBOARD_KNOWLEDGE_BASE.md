@@ -1,7 +1,7 @@
-# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.6.2)
+# eero Custom Dashboard & Management Suite — Knowledge Base Completa (v1.7.0)
 
 > **Documento di Riferimento per NotebookLM, Sviluppatori e Amministratori di Sistema**  
-> *Versione di riferimento del software:* **v1.6.2**  
+> *Versione di riferimento del software:* **v1.7.0**  
 > *Autore e Maintainer:* **Enrico Flammini**  
 > *Licenza:* **MIT (Open Source)**  
 > *Repository Ufficiale:* [GitHub - EnricoFlammini/Dashboard_EERO](https://github.com/EnricoFlammini/Dashboard_EERO)  
@@ -59,6 +59,7 @@
    * 4.42 [Template Ufficiale Synology DSM 7.2+ Container Manager (v1.6.1 - PR #66)](#442-template-ufficiale-synology-dsm-72-container-manager-v161---pr-66)
    * 4.43 [Parità Traduzioni, RFC 1123, MQTT, Firefox & Webhook Isolation (v1.6.2)](#443-parità-traduzioni-rfc-1123-mqtt-firefox--webhook-isolation-v162)
    * 4.45 [Logging TLS, Fuso Orario Locale, Retention ULA & MQTT Tracker (v1.6.2 - Issues #88, #89, #91, #92)](#445-logging-tls-fuso-orario-locale-retention-ula--mqtt-tracker-v162---issues-88-89-91-92)
+   * 4.46 [Release v1.7.0 — Devices Card View, Amazon OAuth2/PKCE, Echo Built-in, Bridge Mode, IPv6 Firewall, AI Assistant & 9 Lingue Europee](#446-release-v170--devices-card-view-amazon-oauth2pkce-echo-built-in-bridge-mode-ipv6-firewall-ai-assistant--9-lingue-europee)
 5. [Specifiche del Database SQLite (`metrics.db`)](#5-specifiche-del-database-sqlite-metricsdb)
 6. [Catalogo Completo API REST (Endpoint Reference)](#6-catalogo-completo-api-rest-endpoint-reference)
 7. [Variabili d'Ambiente & Configurazione (`.env`)](#7-variabili-dambiente--configurazione-env)
@@ -572,6 +573,21 @@ A seguito di un Vulnerability Assessment sistematico sul codice sorgente condott
 * **Layout Banda e Canale Wi-Fi Sovrapposti & Parità Totale Traduzioni (PR #94 & PR #95 - @todddube):**
   * Disposizione verticale compatta con frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) posizionata sopra il canale radio per massimizzare la visibilità orizzontale su display a risoluzione media.
   * 100% di parità garantita su 483 chiavi backend e 1312 chiavi frontend senza alcun testo inline, con validazione continua in `run_pre_release_tests.py` (1594 test superati).
+
+### 4.46 Release v1.7.0 — Devices Card View, Amazon OAuth2/PKCE, Echo Built-in, Bridge Mode, IPv6 Firewall, AI Assistant & 9 Lingue Europee
+* **Vista a Schede Dispositivi, Dettagli Modificabili & Card Dashboard Cliccabili (PR #107 - @todddube):**
+  * Interruttore Lista/Schede nella scheda Dispositivi con griglia compatta 3–4 colonne, animazione live durante il traffico e nome/IP cliccabili nell'elenco.
+  * Modale dettagli ampliato con cambio profilo cloud inline (`POST /api/devices/{mac}/profile`, protetto da `action_edit_devices`), selettore categoria basato su icone con Auto-detect reset, `reported_hostname`, produttore/modello, `last_active`, standard/larghezza Wi-Fi e aggiornamento immediato della cache RAM del poller (`BackgroundPoller._apply_device_metadata`) al salvataggio dei metadati.
+  * Card Home cliccabili (WAN Status con health bar e badge IPv6, Primary Gateway con nodi mesh online, Connected Clients per banda 6/5/2.4 GHz + cablati, Last Speed Test con sparkline) e **immagini ufficiali dei 20 modelli eero** (`app/static/img/products/`, helper `getEeroProductImage`) accanto a ciascun nodo mesh.
+* **Autenticazione Nativa Amazon OAuth2 / PKCE (Issue #93):**
+  * Flusso OpenID/PKCE (`S256`) basato su `device_auth_access` (`GET /api/auth/amazon/login-url`, `POST /api/auth/amazon/exchange`) con istruzioni guidate in 3 passaggi visibili subito nella modale di accesso in tutte le 9 lingue.
+* **Nodi Amazon Echo "eero Built-in" & Elezione Primary Gateway in Bridge Mode (Issues #96, #105):**
+  * `reconcile_echo_extender_nodes` sintetizza i nodi virtuali Amazon Echo estensori (`eero Built-in` badge, correlazione IP LAN, pulsante Restart nascosto).
+  * `_is_gateway_node` e `_normalize_eero_node` rilevano `is_primary_node=True` e neighbor LLDP upstream non-eero (`has_upstream_wan_lldp=True`) in Bridge Mode.
+* **Pi-hole v6, AdGuard Home & Resolver DNS IPv4-First (Issues #98, #99):**
+  * Unicità del proprietario IPv4 (`ip_owner`), pruning automatico dei lease riassegnati, ordinamento `AF_INET` IPv4-first in `dns_cache.py`, `_describe_dns_exception` con fallback al nome della classe e preservazione credenziali salvo cambio URL.
+* **Home Assistant MQTT, Multi-Notifier UI, AI Assistant, IPv6 Firewall, Tema 3-Stati & 9 Lingue (Issues #86, #90, #100-#104):**
+  * Unità WAN `Mbit/s`, attributo `last_seen_connected`, cap tracker MQTT a `1000`, ri-pubblicazione discovery alla rinomina, UI completa per Telegram/Webhook/Discord/Pushover/Ntfy, verifica `band_steering` in `diagnostics_service.py`, AI Diagnostic Assistant SSE (`/api/network/assistant`), Placement Test (`/api/network/placement-test`), Guardian VPN (`/api/network/guardian-vpn`), registrazione nodo via seriale (`/api/network/eeros/register`), Firewall IPv6 (`/api/network/ipv6-firewall`), tema a 3 stati (Light/Dark/System), scorciatoia `Ctrl+K` e parità al 100% su 9 lingue europee (611 chiavi backend, 1462 chiavi frontend).
 
 ---
 

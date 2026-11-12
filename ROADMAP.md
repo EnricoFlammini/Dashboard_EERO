@@ -80,6 +80,7 @@ gantt
     Follow System Theme 3-State (Issue #86)            :done, v1_7_theme, after v1_7_i18n, 1d
     Amazon Echo 'eero Built-in' Nodes (Issue #96)      :done, v1_7_echo, after v1_7_theme, 2d
     Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
+    Devices Card View, Richer Home Cards & Product Images (PR #107):done, v1_7_cards, after v1_7_fixes, 2d
 ```
 
 ---
@@ -867,7 +868,7 @@ gantt
   - Aggiornamento della lingua di sistema in `app/i18n.py`, `app/config.py` e nel selettore a tendina UI in `index.html`.
   - Fallback automatico a `en` qualora una chiave regionale non sia definita.
 - [x] **Parità Traduzioni 100% Automatizzata:**
-  - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (611 backend, 1410 frontend) su tutti i 9 cataloghi linguistici.
+  - Estensione dello script di pre-release test `scripts/run_pre_release_tests.py` per validare la presenza e corrispondenza del 100% delle chiavi (611 backend, 1462 frontend) su tutti i 9 cataloghi linguistici.
 
 #### 6. 🎨 Segui Tema di Sistema OS (Light/Dark Auto Mode - Issue #86 - @Hatton920)
 - [x] **Selettore a 3 Stati Completo nella UI:**
@@ -932,6 +933,12 @@ gantt
 - [x] **Controllo Flag `band_steering` di Rete Prima della Raccomandazione:**
   - In `diagnostics_service.py`, ispezione dello stato effettivo di `band_steering` (da `network_details`) prima di generare la raccomandazione `enable_band_steering` in presenza di sticky clients.
   - Se il Band Steering / Client Steering risulta già attivo sulla rete eero, sostituzione del suggerimento con indicazioni mirate (`verify_client_roaming_or_node_placement`).
+
+#### 15. 🗂️ Vista a Schede Dispositivi, Card Dashboard Cliccabili & Immagini Prodotti eero (PR #107 - @todddube)
+- [x] **Vista Lista / Schede Dispositivi & Dettagli Modificabili:**
+  - Toggle Elenco/Schede con animazioni live durante il traffico, cambio profilo inline (`action_edit_devices`), selettore categoria con icone e Auto-detect reset, aggiornamento immediato della cache RAM al salvataggio metadata e limite tracker MQTT alzato a 1000.
+- [x] **Card Dashboard Cliccabili & Immagini Ufficiali Hardware eero:**
+  - Card Home cliccabili (WAN, Gateway, Client Connessi per banda, Speed Test con sparkline) e immagini ufficiali dei 20 modelli eero (`app/static/img/products/`, `getEeroProductImage`) visualizzate accanto ai nodi mesh.
 
 ---
 
