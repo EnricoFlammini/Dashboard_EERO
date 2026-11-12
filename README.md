@@ -150,6 +150,8 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🚀 Quick Start
 
+> **📦 Planned for v1.8.0 (Beyond Docker):** Native **Linux** (`systemd` / Proxmox LXC / `.deb`), **Windows** (`.exe`) & **macOS** (`.dmg`) Desktop apps with system tray & WebView, **Home Assistant Add-on**, and **PyPI (`pipx`)** installation options are scheduled on the [Roadmap](ROADMAP.md).
+
 ### Option A: 1-Line `docker run` (Recommended)
 
 Run instantly from **Docker Hub** without needing to clone or compile locally:
@@ -593,6 +595,8 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 ---
 
 ## 🚀 Avvio Rapido
+
+> **📦 In programma per la v1.8.0 (Oltre Docker):** Sono pianificate nella [Roadmap](ROADMAP.md) le installazioni native **Linux** (`systemd` / Proxmox LXC / `.deb`), le app Desktop **Windows** (`.exe`) e **macOS** (`.dmg`) con tray icon e WebView, l'**Add-on Home Assistant** e il pacchetto **PyPI (`pipx`)**.
 
 ### Opzione A: Comando Diretto `docker run` (Consigliato)
 
