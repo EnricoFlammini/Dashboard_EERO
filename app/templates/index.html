@@ -7521,16 +7521,17 @@
             <span x-text="t('auth.amazon_login_btn')"></span>
           </button>
 
-          <div x-show="showAmazonCallbackInput" class="space-y-2.5 pt-1" style="display: none;">
-            <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-900 dark:text-sky-200 space-y-1 leading-relaxed">
-              <div class="font-bold flex items-center gap-1.5">
-                <span>ℹ️</span>
-                <span x-text="t('auth.amazon_guide_title')"></span>
-              </div>
-              <div x-text="t('auth.amazon_guide_step1')"></div>
-              <div x-text="t('auth.amazon_guide_step2')"></div>
-              <div x-text="t('auth.amazon_guide_step3')"></div>
+          <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-900 dark:text-sky-200 space-y-1 leading-relaxed">
+            <div class="font-bold flex items-center gap-1.5">
+              <span>ℹ️</span>
+              <span x-text="t('auth.amazon_guide_title')"></span>
             </div>
+            <div x-text="t('auth.amazon_guide_step1')"></div>
+            <div x-text="t('auth.amazon_guide_step2')"></div>
+            <div x-text="t('auth.amazon_guide_step3')"></div>
+          </div>
+
+          <div x-show="showAmazonCallbackInput" class="space-y-2 pt-1" style="display: none;">
             <label class="block text-[11px] font-medium text-slate-600 dark:text-slate-400"
               x-text="t('auth.amazon_callback_label')"></label>
             <div class="flex space-x-1.5">
