@@ -651,7 +651,7 @@
     "verifying_otp": "Verifica in corso...",
     "amazon_login_btn": "Accedi con Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Incolla l'URL di callback Amazon o il codice di autorizzazione:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
     "amazon_exchange_btn": "Collega"
   },
   "restart_modal": {

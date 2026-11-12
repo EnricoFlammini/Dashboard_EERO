@@ -5902,7 +5902,7 @@ async def run_all_tests():
             res_amz_url = await client.get("/api/auth/amazon/login-url")
             runner.assert_true(res_amz_url.status_code == 200, "Issue #93: GET /api/auth/amazon/login-url risponde HTTP 200")
             _amz_data = res_amz_url.json()
-            runner.assert_true("amazon.com/ap/oa" in _amz_data.get("login_url", "") and "code_challenge=" in _amz_data.get("login_url", ""), "Issue #93: URL OAuth2 Amazon contiene code_challenge S256")
+            runner.assert_true("amazon.com/ap/signin" in _amz_data.get("login_url", "") and "openid.oa2.code_challenge=" in _amz_data.get("login_url", ""), "Issue #93: URL OAuth2 Amazon contiene code_challenge S256")
             res_amz_ex = await client.post("/api/auth/amazon/exchange", json={"code_or_url": "demo_auth_code_12345"})
             runner.assert_true(res_amz_ex.status_code == 200, "Issue #93: POST /api/auth/amazon/exchange funziona in Demo Mode")
 

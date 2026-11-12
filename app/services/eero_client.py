@@ -4547,54 +4547,61 @@ class EeroClient:
             raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
 
     def generate_amazon_oauth_url(self) -> Dict[str, Any]:
-        """Genera l'URL di autenticazione Amazon OAuth2 + PKCE (S256) per gli account eero collegati ad Amazon (Issue #93)."""
-        verifier = secrets.token_urlsafe(48)
+        """Genera l'URL di autenticazione Amazon OpenID + OAuth2 PKCE (S256) nativo eero (Issue #93)."""
+        verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("ascii")
         digest = hashlib.sha256(verifier.encode("ascii")).digest()
         challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
-        state = secrets.token_hex(16)
+        state = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("ascii")
+
+        device_type = "A2W01JEFAJFTXI"
+        serial = secrets.token_hex(16).upper()
+        client_hex = f"{serial}#{device_type}".encode("utf-8").hex()
 
         self._amazon_pkce_state = {
             "code_verifier": verifier,
             "code_challenge": challenge,
             "state": state,
+            "client_id": client_hex,
             "created_at": time.time(),
         }
 
-        client_id = os.environ.get(
-            "EERO_AMAZON_CLIENT_ID",
-            "amzn1.application-oa2-client.9876543210eeroapp",
-        )
-        redirect_uri = os.environ.get(
-            "EERO_AMAZON_REDIRECT_URI",
-            "https://api-user.e2ro.com/2.2/login/amazon/callback",
-        )
-
+        return_to = f"https://www.amazon.com/ap/maplanding?state={state}"
         params = {
-            "client_id": client_id,
-            "scope": "profile",
-            "response_type": "code",
-            "redirect_uri": redirect_uri,
-            "state": state,
-            "code_challenge": challenge,
-            "code_challenge_method": "S256",
+            "openid.assoc_handle": "amzn_eero_mobile_android_us",
+            "pageId": "eero_mobile_accounts",
+            "language": "en_US",
+            "openid.ns": "http://specs.openid.net/auth/2.0",
+            "openid.mode": "checkid_setup",
+            "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
+            "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
+            "openid.ns.pape": "http://specs.openid.net/extensions/pape/1.0",
+            "openid.pape.max_auth_age": "0",
+            "openid.ns.oa2": "http://www.amazon.com/ap/ext/oauth/2",
+            "openid.oa2.response_type": "code",
+            "openid.oa2.scope": "device_auth_access",
+            "openid.oa2.client_id": f"device:{client_hex}",
+            "openid.oa2.code_challenge": challenge,
+            "openid.oa2.code_challenge_method": "S256",
+            "openid.return_to": return_to,
+            "accountStatusPolicy": "P1",
         }
-        login_url = f"https://www.amazon.com/ap/oa?{urllib.parse.urlencode(params)}"
+        login_url = f"https://www.amazon.com/ap/signin?{urllib.parse.urlencode(params)}"
         return {
             "status": "success",
             "login_url": login_url,
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",
-            "redirect_uri": redirect_uri,
+            "redirect_uri": "https://www.amazon.com/ap/maplanding",
         }
 
     async def exchange_amazon_oauth_code(self, code_or_url: str, code_verifier: Optional[str] = None) -> Dict[str, Any]:
         """
-        Completa il login Amazon OAuth2/PKCE (Issue #93).
+        Completa il login Amazon OAuth2/PKCE nativo (Issue #93).
         Accetta:
-        - L'URL completo di callback dopo il login Amazon (contenente ?code=... o #access_token=...)
-        - Il codice di autorizzazione OAuth2 (`code`) o `access_token` Amazon
-        - Un `user_token` di sessione eero estratto dal flusso mobile Amazon
+        - L'URL completo di callback Amazon (/ap/maplanding?state=...&openid.oa2.authorization_code=...)
+        - Il codice di autorizzazione (`openid.oa2.authorization_code` o `code`) o `access_token` Amazon (`Atna|...` / `Atza|...`)
+        - Un `user_token` di sessione eero estratto dal flusso Amazon
         """
         raw = str(code_or_url or "").strip()
         if not raw:
@@ -4610,69 +4617,116 @@ class EeroClient:
 
         extracted_code = ""
         extracted_access_token = ""
-        if raw.startswith("http://") or raw.startswith("https://") or "?" in raw or "code=" in raw or "access_token=" in raw:
+        returned_state = ""
+        if raw.startswith("http://") or raw.startswith("https://") or "?" in raw or "openid.oa2.authorization_code=" in raw or "code=" in raw or "access_token=" in raw:
             parsed = urllib.parse.urlparse(raw)
             qs = urllib.parse.parse_qs(parsed.query or parsed.fragment)
-            if "code" in qs and qs["code"]:
+            if qs.get("error") or qs.get("openid.error"):
+                raise ValueError(tr("auth.amazon_exchange_failed"))
+            if qs.get("state"):
+                returned_state = qs["state"][0]
+            if qs.get("openid.oa2.authorization_code"):
+                extracted_code = qs["openid.oa2.authorization_code"][0]
+            elif qs.get("code"):
                 extracted_code = qs["code"][0]
-            if "access_token" in qs and qs["access_token"]:
+            if qs.get("access_token"):
                 extracted_access_token = qs["access_token"][0]
-            if "user_token" in qs and qs["user_token"]:
+            if qs.get("user_token"):
                 raw = qs["user_token"][0]
         else:
-            if raw.startswith("Atza|"):
+            if raw.startswith("Atza|") or raw.startswith("Atna|"):
                 extracted_access_token = raw
             else:
                 extracted_code = raw
 
         pkce_state = getattr(self, "_amazon_pkce_state", {}) or {}
+        if returned_state and pkce_state.get("state") and returned_state != pkce_state.get("state"):
+            raise ValueError(tr("auth.amazon_exchange_failed"))
+
         verifier = code_verifier or pkce_state.get("code_verifier") or ""
+        client_hex = pkce_state.get("client_id") or ""
 
         async with self._client_session() as client:
-            # 1. Se abbiamo un codice OAuth2 e non ancora un access_token Amazon, proviamo lo scambio diretto su /login/amazon
-            payload: Dict[str, Any] = {}
+            # 1. Scambio authorization_code -> Amazon access_token su api.amazon.com/auth/token
+            if extracted_code and not extracted_access_token and verifier and client_hex:
+                try:
+                    token_resp = await client.post(
+                        "https://api.amazon.com/auth/token",
+                        headers={
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                            "x-amzn-identity-auth-domain": "api.amazon.com",
+                        },
+                        json={
+                            "app_name": "eero",
+                            "app_version": "1.1.0",
+                            "source_token_type": "authorization_code",
+                            "source_token": extracted_code,
+                            "requested_token_type": "access_token",
+                            "code_verifier": verifier,
+                            "code_algorithm": "SHA-256",
+                            "client_id": client_hex,
+                            "client_domain": "DeviceLegacy",
+                        },
+                    )
+                    if token_resp.status_code == 200:
+                        token_data = token_resp.json()
+                        if token_data.get("access_token"):
+                            extracted_access_token = token_data["access_token"]
+                except Exception as e:
+                    logger.debug(f"Amazon /auth/token exchange failed: {e}")
+
+            # 2. Scambio Amazon access_token -> eero user_token su /2.2/login/amazon
             if extracted_access_token:
-                payload["access_token"] = extracted_access_token
-            elif extracted_code:
-                payload["code"] = extracted_code
-                payload["access_token"] = extracted_code
-                if verifier:
-                    payload["code_verifier"] = verifier
+                try:
+                    resp = await client.post(
+                        f"{EERO_API_BASE}/login/amazon",
+                        headers={
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                            "User-Agent": "eero-ios/3.47.0",
+                        },
+                        json={
+                            "auth_token": extracted_access_token,
+                            "create_account": False,
+                        },
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json().get("data", {})
+                        user_token = resp.cookies.get("s") or data.get("user_token")
+                        if user_token:
+                            self.user_token = user_token
+                            self.saved_live_token = user_token
+                            self._is_demo_active = False
+                            account = await self.fetch_account_info()
+                            self.saved_live_network_id = self.current_network_id
+                            self.saved_live_account_info = account
+                            self.saved_live_networks = list(self.available_networks)
+                            self.save_session()
+                            return {
+                                "status": "success",
+                                "authenticated": True,
+                                "network_id": self.current_network_id,
+                                "account": account,
+                            }
+                except Exception as e:
+                    logger.debug(f"Direct /login/amazon exchange attempt failed: {e}")
 
-            try:
-                resp = await client.post(
-                    f"{EERO_API_BASE}/login/amazon",
-                    headers=self._get_headers(include_auth=False),
-                    json=payload,
-                )
-                if resp.status_code == 200:
-                    data = resp.json().get("data", {})
-                    user_token = data.get("user_token")
-                    if user_token:
-                        self.user_token = user_token
-                        self.is_demo_mode = False
-                        self._save_session()
-                        account = await self.fetch_account_info()
-                        return {
-                            "status": "success",
-                            "authenticated": True,
-                            "network_id": self.current_network_id,
-                            "account": account,
-                        }
-            except Exception as e:
-                logger.debug(f"Direct /login/amazon exchange attempt failed: {e}")
-
-            # 2. Fallback: se l'utente ha fornito direttamente un user_token eero valido dal flusso Amazon
+            # 3. Fallback: se l'utente ha fornito direttamente un user_token eero valido dal flusso Amazon
             candidate_token = raw
             if len(candidate_token) >= 16 and not candidate_token.startswith("http"):
                 prev_token = self.user_token
-                prev_demo = self.is_demo_mode
+                prev_demo = self._is_demo_active
                 try:
                     self.user_token = candidate_token
-                    self.is_demo_mode = False
+                    self._is_demo_active = False
                     account = await self.fetch_account_info()
                     if account and (account.get("email") or account.get("name") or self.current_network_id):
-                        self._save_session()
+                        self.saved_live_token = candidate_token
+                        self.saved_live_network_id = self.current_network_id
+                        self.saved_live_account_info = account
+                        self.saved_live_networks = list(self.available_networks)
+                        self.save_session()
                         return {
                             "status": "success",
                             "authenticated": True,
@@ -4681,7 +4735,7 @@ class EeroClient:
                         }
                 except Exception:
                     self.user_token = prev_token
-                    self.is_demo_mode = prev_demo
+                    self._is_demo_active = prev_demo
 
         raise ValueError(tr("auth.amazon_exchange_failed"))
 
