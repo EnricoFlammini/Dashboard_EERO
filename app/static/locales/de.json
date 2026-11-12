@@ -651,8 +651,12 @@
     "verifying_otp": "Überprüfen...",
     "amazon_login_btn": "Mit Amazon anmelden (OAuth2 / PKCE)",
     "amazon_callback_label": "Fügen Sie die Amazon-Rückruf-URL oder den Autorisierungscode ein:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
-    "amazon_exchange_btn": "Verbinden"
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
+    "amazon_exchange_btn": "Verbinden",
+    "amazon_guide_title": "So schließen Sie die Amazon-Anmeldung ab:",
+    "amazon_guide_step1": "1. Melden Sie sich im neu geöffneten Tab bei Ihrem Amazon-Konto an.",
+    "amazon_guide_step2": "2. Danach zeigt Amazon eine 404-Seite (/ap/maplanding) an: Das ist normal, schließen Sie den Tab nicht!",
+    "amazon_guide_step3": "3. Kopieren Sie die vollständige URL aus der Adressleiste, fügen Sie sie unten ein und klicken Sie auf Verknüpfen."
   },
   "restart_modal": {
     "title": "Bestätigen Sie den Neustart des Mesh-Netzwerks",

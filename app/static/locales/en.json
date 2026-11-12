@@ -652,7 +652,11 @@
     "amazon_login_btn": "Sign in with Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Paste the Amazon callback URL or authorization code:",
     "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
-    "amazon_exchange_btn": "Connect"
+    "amazon_exchange_btn": "Connect",
+    "amazon_guide_title": "How to complete Amazon sign-in:",
+    "amazon_guide_step1": "1. Sign in to your Amazon account in the newly opened tab.",
+    "amazon_guide_step2": "2. Afterwards, Amazon will show a 404 page (/ap/maplanding): this is expected, do not close the tab!",
+    "amazon_guide_step3": "3. Copy the full URL from the address bar, paste it below, and click Link."
   },
   "restart_modal": {
     "title": "Confirm Mesh Network Restart",

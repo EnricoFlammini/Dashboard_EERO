@@ -651,8 +651,12 @@
     "verifying_otp": "Επαλήθευση...",
     "amazon_login_btn": "Συνδεθείτε με το Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Επικολλήστε τη διεύθυνση URL επιστροφής κλήσης του Amazon ή τον κωδικό εξουσιοδότησης:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
-    "amazon_exchange_btn": "Σύνδεση"
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
+    "amazon_exchange_btn": "Σύνδεση",
+    "amazon_guide_title": "Πώς να ολοκληρώσετε τη σύνδεση με το Amazon:",
+    "amazon_guide_step1": "1. Συνδεθείτε στον λογαριασμό σας Amazon στην καρτέλα που άνοιξε.",
+    "amazon_guide_step2": "2. Στη συνέχεια, το Amazon θα εμφανίσει μια σελίδα 404 (/ap/maplanding): είναι φυσιολογικό, μην κλείσετε την καρτέλα!",
+    "amazon_guide_step3": "3. Αντιγράψτε ολόκληρο το URL από τη γραμμή διευθύνσεων, επικολλήστε το παρακάτω και κάντε κλικ στο Σύνδεση."
   },
   "restart_modal": {
     "title": "Επιβεβαιώστε την επανεκκίνηση του δικτύου Mesh",

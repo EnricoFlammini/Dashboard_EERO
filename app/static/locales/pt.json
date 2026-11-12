@@ -651,8 +651,12 @@
     "verifying_otp": "Verificando...",
     "amazon_login_btn": "Faça login com Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Cole o URL de retorno de chamada da Amazon ou o código de autorização:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
-    "amazon_exchange_btn": "Conectar"
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
+    "amazon_exchange_btn": "Conectar",
+    "amazon_guide_title": "Como concluir o início de sessão com a Amazon:",
+    "amazon_guide_step1": "1. Inicie sessão na sua conta Amazon no separador recém-aberto.",
+    "amazon_guide_step2": "2. Em seguida, a Amazon mostrará uma página 404 (/ap/maplanding): é normal, não feche o separador!",
+    "amazon_guide_step3": "3. Copie o URL completo da barra de endereço, cole-o abaixo e clique em Associar."
   },
   "restart_modal": {
     "title": "Confirme a reinicialização da rede mesh",

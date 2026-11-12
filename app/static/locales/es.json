@@ -651,8 +651,12 @@
     "verifying_otp": "Verificando...",
     "amazon_login_btn": "Iniciar sesión con Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Pegue la URL de devolución de llamada de Amazon o el código de autorización:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
-    "amazon_exchange_btn": "Conectar"
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
+    "amazon_exchange_btn": "Conectar",
+    "amazon_guide_title": "Cómo completar el inicio de sesión con Amazon:",
+    "amazon_guide_step1": "1. Inicia sesión en tu cuenta de Amazon en la pestaña recién abierta.",
+    "amazon_guide_step2": "2. Al finalizar, Amazon mostrará una página 404 (/ap/maplanding): es normal, ¡no cierres la pestaña!",
+    "amazon_guide_step3": "3. Copia la URL completa de la barra de direcciones, pégala abajo y haz clic en Vincular."
   },
   "restart_modal": {
     "title": "Confirmar el reinicio de la red en malla",

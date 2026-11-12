@@ -651,8 +651,12 @@
     "verifying_otp": "Weryfikacja...",
     "amazon_login_btn": "Zaloguj się przez Amazon (OAuth2 / PKCE)",
     "amazon_callback_label": "Wklej adres URL wywołania zwrotnego Amazon lub kod autoryzacyjny:",
-    "amazon_callback_placeholder": "https://api-user.e2ro.com/...?code=...",
-    "amazon_exchange_btn": "Połącz"
+    "amazon_callback_placeholder": "https://www.amazon.com/ap/maplanding?...&openid.oa2.authorization_code=...",
+    "amazon_exchange_btn": "Połącz",
+    "amazon_guide_title": "Jak dokończyć logowanie przez Amazon:",
+    "amazon_guide_step1": "1. Zaloguj się na swoje konto Amazon w nowo otwartej karcie.",
+    "amazon_guide_step2": "2. Następnie Amazon wyświetli stronę 404 (/ap/maplanding): to normalne, nie zamykaj karty!",
+    "amazon_guide_step3": "3. Skopiuj pełny adres URL z paska adresu, wklej go poniżej i kliknij Połącz."
   },
   "restart_modal": {
     "title": "Potwierdź ponowne uruchomienie sieci Mesh",
