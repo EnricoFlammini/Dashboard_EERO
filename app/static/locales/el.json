@@ -147,8 +147,19 @@
     "firmware": "ΛΣ υλικολογισμικού:",
     "uptime": "Χρόνος λειτουργίας:",
     "temperature": "Θερμοκρασία:",
-    "channel": "Κανάλι:",
-    "mesh_active": "Mesh Active"
+    "mesh_active": "Mesh Active",
+    "clients_guests": "{count} επισκέπτες",
+    "clients_known": "{count} γνωστές",
+    "clients_new": "{count} νέες",
+    "health_short": "Υγεία",
+    "nodes_online": "{online}/{total} κόμβοι online",
+    "speedtest_avg": "Μ.Ο.",
+    "speedtest_count": "{count} τεστ",
+    "speedtest_none": "Δεν υπάρχουν ακόμη τεστ ταχύτητας",
+    "speedtest_open": "Άνοιγμα τεστ ταχύτητας",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Τάση λήψης",
+    "subnet": "Υποδίκτυο:"
   },
   "devices": {
     "traffic_dl_total": "Σύνολο λήψης:",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "Αυτή η συσκευή περιλαμβάνει διευθύνσεις ULA IPv6 εμπλουτισμένες μέσω NDP / AdGuard",
     "clear_search": "Εκκαθάριση αναζήτησης",
     "generic_device": "Συσκευή",
-    "sticky_badge": "Κολλώδες"
+    "sticky_badge": "Κολλώδες",
+    "badge_guest": "Επισκέπτης",
+    "badge_paused": "Σε παύση",
+    "last_seen_short": "Τελευταία εμφάνιση",
+    "view_cards": "Προβολή καρτών",
+    "view_list": "Προβολή λίστας",
+    "view_mode": "Λειτουργία προβολής"
   },
   "device_modal": {
     "reservation_error": "Σφάλμα κατά τη δημιουργία της κράτησης DHCP",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} λεπτά",
     "eero_cloud_synced_title": "Συγχρονίστηκε από την εφαρμογή eero για κινητά",
     "phy_label": "ΦΥ",
-    "usage_resolution": "({n} λεπτά)"
+    "usage_resolution": "({n} λεπτά)",
+    "channel": "Κανάλι",
+    "channel_width": "Εύρος καναλιού",
+    "guest_network": "Δίκτυο επισκεπτών",
+    "hostname": "Όνομα κεντρικού υπολογιστή (από τη συσκευή)",
+    "last_active": "Τελευταία δραστηριότητα",
+    "mac": "Διεύθυνση MAC",
+    "manufacturer": "Κατασκευαστής",
+    "model": "Μοντέλο",
+    "profile_changed": "Το προφίλ άλλαξε σε {name}",
+    "profile_error": "Αδυναμία αλλαγής προφίλ: {error}",
+    "profile_removed": "Η συσκευή αφαιρέθηκε από το προφίλ της",
+    "profile_saving": "Ενημέρωση προφίλ…",
+    "type_auto": "Αυτόματη ανίχνευση",
+    "wifi_standard": "Πρότυπο Wi-Fi"
   },
   "profiles": {
     "title": "Οικογενειακά Προφίλ & Χρήστες Cloud",

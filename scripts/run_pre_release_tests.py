@@ -702,6 +702,25 @@ async def run_all_tests():
         runner.assert_true(meta_saved.get("custom_name") == "PlayStation 5 Pro", "Nome personalizzato salvato con successo")
         runner.assert_true(meta_saved.get("category") == "Gaming", "Categoria salvata con successo")
 
+        # Il salvataggio aggiorna subito la cache RAM: GET /api/devices riflette la modifica senza attendere il polling
+        saved_meta_cache = background_poller.cached_devices
+        background_poller.cached_devices = [{
+            "mac": "11:22:33:44:55:66", "hostname": "MacBook Test", "connected": True,
+            "category": "Computer", "custom_icon": "laptop",
+            "default_category": "Computer", "default_icon": "laptop"
+        }]
+        try:
+            await client.post("/api/devices/11:22:33:44:55:66/metadata", json={"category": "Gaming", "custom_icon": "gamepad", "custom_notes": "qa"})
+            cached_dev = next((d for d in (await client.get("/api/devices")).json().get("devices", []) if d.get("mac") == "11:22:33:44:55:66"), {})
+            runner.assert_true(cached_dev.get("category") == "Gaming" and cached_dev.get("custom_icon") == "gamepad" and cached_dev.get("custom_notes") == "qa",
+                               f"Elenco dispositivi aggiornato subito dopo il salvataggio metadati (ottenuto: {cached_dev.get('category')}/{cached_dev.get('custom_icon')})")
+            await client.post("/api/devices/11:22:33:44:55:66/metadata", json={"category": "Altro", "custom_icon": "device"})
+            cached_dev = next((d for d in (await client.get("/api/devices")).json().get("devices", []) if d.get("mac") == "11:22:33:44:55:66"), {})
+            runner.assert_true(cached_dev.get("category") == "Computer" and cached_dev.get("custom_icon") == "laptop",
+                               f"Ripristino automatico torna alla categoria/icona eero nella cache (ottenuto: {cached_dev.get('category')}/{cached_dev.get('custom_icon')})")
+        finally:
+            background_poller.cached_devices = saved_meta_cache
+
         # Switch back to Live
         res = await client.post("/api/auth/mode", json={"demo": False})
         runner.assert_true(res.status_code == 200, "Ritorno a Live Mode risponde HTTP 200")

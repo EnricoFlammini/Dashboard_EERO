@@ -147,8 +147,19 @@
     "firmware": "Firmware-besturingssysteem:",
     "uptime": "Uptime:",
     "temperature": "Temperatuur:",
-    "channel": "Kanaal:",
-    "mesh_active": "Mesh actief"
+    "mesh_active": "Mesh actief",
+    "clients_guests": "{count} gasten",
+    "clients_known": "{count} bekend",
+    "clients_new": "{count} nieuw",
+    "health_short": "Gezondheid",
+    "nodes_online": "{online}/{total} nodes online",
+    "speedtest_avg": "Gem.",
+    "speedtest_count": "{count} tests",
+    "speedtest_none": "Nog geen snelheidstests",
+    "speedtest_open": "Snelheidstest openen",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Downloadtrend",
+    "subnet": "Subnet:"
   },
   "devices": {
     "traffic_dl_total": "Totale download:",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "Dit apparaat bevat IPv6 ULA-adressen verrijkt via NDP / AdGuard",
     "clear_search": "Zoekopdracht wissen",
     "generic_device": "Apparaat",
-    "sticky_badge": "Kleverig"
+    "sticky_badge": "Kleverig",
+    "badge_guest": "Gast",
+    "badge_paused": "Gepauzeerd",
+    "last_seen_short": "Laatst gezien",
+    "view_cards": "Kaartweergave",
+    "view_list": "Lijstweergave",
+    "view_mode": "Weergave"
   },
   "device_modal": {
     "reservation_error": "Fout bij het maken van de DHCP-reservering",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} min",
     "eero_cloud_synced_title": "Gesynchroniseerd vanaf de griezelige mobiele app",
     "phy_label": "PHY",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "channel": "Kanaal",
+    "channel_width": "Kanaalbreedte",
+    "guest_network": "Gastnetwerk",
+    "hostname": "Hostnaam (gemeld door apparaat)",
+    "last_active": "Laatst actief",
+    "mac": "MAC-adres",
+    "manufacturer": "Fabrikant",
+    "model": "Model",
+    "profile_changed": "Profiel gewijzigd naar {name}",
+    "profile_error": "Profiel kon niet worden gewijzigd: {error}",
+    "profile_removed": "Apparaat uit zijn profiel verwijderd",
+    "profile_saving": "Profiel bijwerken…",
+    "type_auto": "Automatisch detecteren",
+    "wifi_standard": "Wifi-standaard"
   },
   "profiles": {
     "title": "Familieprofielen en cloudgebruikers",

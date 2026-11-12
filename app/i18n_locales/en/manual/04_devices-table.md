@@ -2,7 +2,7 @@
 id: devices-table
 title: 4. Connected Devices & Frequency Analysis
 icon: devices
-summary: Live device table, multi-column sorting, sticky headers, Wi-Fi band badges, and eero cloud profiles.
+summary: Live device list and card view, sorting, filtering, Wi-Fi band badges, and eero cloud profiles.
 ---
 ### Real-Time Device Inventory
 
@@ -12,3 +12,7 @@ summary: Live device table, multi-column sorting, sticky headers, Wi-Fi band bad
 * **eero Cloud User Profiles:** Displays the assigned family member profile for each client directly from the eero cloud.
 * **Advanced Multi-Criteria Filtering:** Filter by Band, Profile, Node, or IP Assignment type (Static vs DHCP).
 * **IPv6 Badge & Instant Search (v1.5.0 - Issue #43):** Compact `IPv6` badge next to the MAC address with a tooltip displaying all associated addresses (SLAAC & Link-Local); the search bar filters instantly by prefixes, octets, or full IPv6 addresses.
+* **List or Cards View:** Switch with the **List / Cards** toggle. Cards show 3–4 devices per row with all table fields plus manufacturer and last seen; the Columns menu applies to List view only.
+* **Live Activity Animation:** Cards glow and rate bars shimmer while a device moves data.
+* **Open Details from Name or IP:** In List view, click the name or IP (not only the pencil) to open the device.
+* **Search Includes Vendor Data:** Matches manufacturer, model and reported hostname too.

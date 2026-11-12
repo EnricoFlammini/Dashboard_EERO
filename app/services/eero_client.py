@@ -1412,6 +1412,9 @@ class EeroClient:
             dev["id"] = dev_id
             dev["url"] = dev.get("url") or (f"/2.2/devices/{dev_id}" if dev_id else "")
             
+            # Keep the name the device itself reports before the display name overwrites it
+            dev["reported_hostname"] = dev.get("hostname") or ""
+
             # Hostname & Display Name
             dev["hostname"] = dev.get("nickname") or dev.get("hostname") or dev.get("display_name") or dev.get("device_name") or dev.get("name") or dev.get("mac") or tr("eero.device_name_fallback")
 
@@ -1609,6 +1612,8 @@ class EeroClient:
             band_str = str(raw_band).lower().replace("ghz", "").replace(" ", "").strip()
             phy_type = str(conn_dict.get("phy_type") or dev.get("phy_type") or iface_dict.get("phy_type") or "").upper()
             chan_width = str(conn_dict.get("channel_width") or dev.get("channel_width") or "").upper()
+            dev["phy_type"] = phy_type or None
+            dev["channel_width"] = chan_width or None
 
             # Check for wired ethernet status in connectivity / interface (Issue #14)
             eth_status = conn_dict.get("ethernet_status") or dev.get("ethernet_status") or iface_dict.get("ethernet_status")
@@ -3637,6 +3642,12 @@ class EeroClient:
                     "id": "dev_01",
                     "mac": "B4:2E:99:A1:01:10",
                     "hostname": "MacBook-Pro-M3",
+                    "manufacturer": "Apple",
+                    "model_name": "MacBook Pro 14-inch",
+                    "last_active": "2026-11-07T09:12:00Z",
+                    "is_guest": False,
+                    "phy_type": "WIFI7",
+                    "channel_width": "160 MHZ",
                     "nickname": "MacBook Pro Lavoro",
                     "ip": "192.168.4.101",
                     "ipv6_addresses": ["2001:db8:1a:2b::101", "2001:db8:1a:2b:89ab:cdef:1234:5678"],
@@ -3687,6 +3698,12 @@ class EeroClient:
                     "id": "dev_03",
                     "mac": "F4:F5:DB:33:44:55",
                     "hostname": "iPhone-15-Pro",
+                    "manufacturer": "Apple",
+                    "model_name": "iPhone 15 Pro",
+                    "last_active": "2026-11-07T09:30:00Z",
+                    "is_guest": False,
+                    "phy_type": "WIFI6",
+                    "channel_width": "80 MHZ",
                     "nickname": "iPhone Personale",
                     "ip": "192.168.4.110",
                     "ipv6_addresses": ["2001:db8:1a:2b:f4f5:dbff:fe33:4455"],
@@ -3712,6 +3729,12 @@ class EeroClient:
                     "id": "dev_04",
                     "mac": "28:70:4E:88:99:AA",
                     "hostname": "Sony-Bravia-OLED-4K",
+                    "manufacturer": "Sony",
+                    "model_name": "BRAVIA XR A80L",
+                    "last_active": "2026-11-06T22:05:00Z",
+                    "is_guest": False,
+                    "phy_type": "WIFI5",
+                    "channel_width": "80 MHZ",
                     "nickname": "Smart TV OLED 65\"",
                     "ip": "192.168.4.120",
                     "connected": True,
@@ -3781,6 +3804,12 @@ class EeroClient:
                     "id": "dev_07",
                     "mac": "5C:02:72:11:22:33",
                     "hostname": "Shelly-Pro-4PM",
+                    "manufacturer": "Allterco Robotics",
+                    "model_name": "Shelly Pro 4PM",
+                    "last_active": "2026-11-07T09:31:00Z",
+                    "is_guest": False,
+                    "phy_type": "WIFI4",
+                    "channel_width": "20 MHZ",
                     "nickname": "Quadro Elettrico Domotica",
                     "ip": "192.168.4.55",
                     "connected": True,
@@ -3804,6 +3833,12 @@ class EeroClient:
                     "id": "dev_08",
                     "mac": "E0:4F:43:AA:BB:CC",
                     "hostname": "Apple-iPad-Air",
+                    "manufacturer": "Apple",
+                    "model_name": "iPad Air",
+                    "last_active": "2026-11-04T18:40:00Z",
+                    "is_guest": True,
+                    "phy_type": "WIFI6",
+                    "channel_width": "40 MHZ",
                     "nickname": "iPad Cucina / Ricette",
                     "ip": "192.168.4.135",
                     "connected": False,

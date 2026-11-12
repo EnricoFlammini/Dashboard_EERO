@@ -147,8 +147,19 @@
     "firmware": "SO de firmware:",
     "uptime": "Tiempo de actividad:",
     "temperature": "Temperatura:",
-    "channel": "Canal:",
-    "mesh_active": "Malla activa"
+    "mesh_active": "Malla activa",
+    "clients_guests": "{count} invitados",
+    "clients_known": "{count} conocidos",
+    "clients_new": "{count} nuevos",
+    "health_short": "Salud",
+    "nodes_online": "{online}/{total} nodos en línea",
+    "speedtest_avg": "Media",
+    "speedtest_count": "{count} pruebas",
+    "speedtest_none": "Aún no hay pruebas de velocidad",
+    "speedtest_open": "Abrir prueba de velocidad",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Tendencia de descarga",
+    "subnet": "Subred:"
   },
   "devices": {
     "traffic_dl_total": "Descarga total:",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "Este dispositivo incluye direcciones IPv6 ULA enriquecidas mediante NDP/AdGuard",
     "clear_search": "Borrar búsqueda",
     "generic_device": "Dispositivo",
-    "sticky_badge": "Pegajoso"
+    "sticky_badge": "Pegajoso",
+    "badge_guest": "Invitado",
+    "badge_paused": "En pausa",
+    "last_seen_short": "Visto por última vez",
+    "view_cards": "Vista de tarjetas",
+    "view_list": "Vista de lista",
+    "view_mode": "Modo de vista"
   },
   "device_modal": {
     "reservation_error": "Error al crear la reserva DHCP",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} min",
     "eero_cloud_synced_title": "Sincronizado desde la aplicación móvil eero",
     "phy_label": "FÍSICA",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "channel": "Canal",
+    "channel_width": "Ancho de canal",
+    "guest_network": "Red de invitados",
+    "hostname": "Nombre de host (informado por el dispositivo)",
+    "last_active": "Última actividad",
+    "mac": "Dirección MAC",
+    "manufacturer": "Fabricante",
+    "model": "Modelo",
+    "profile_changed": "Perfil cambiado a {name}",
+    "profile_error": "No se pudo cambiar el perfil: {error}",
+    "profile_removed": "Dispositivo quitado de su perfil",
+    "profile_saving": "Actualizando perfil…",
+    "type_auto": "Detección automática",
+    "wifi_standard": "Estándar Wi-Fi"
   },
   "profiles": {
     "title": "Perfiles familiares y usuarios de la nube",

@@ -121,6 +121,9 @@ document.addEventListener('alpine:init', () => {
       if (c.includes('iot') || c.includes('home') || c.includes('smart') || c.includes('plug') || c.includes('relay') || c.includes('light') || c.includes('lamp') || c.includes('sensor') || c.includes('camera') || c.includes('thermostat')) {
         return 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z';
       }
+      if (c === 'other' || c === 'altro') {
+        return 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z';
+      }
       return 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z';
     },
     
@@ -341,6 +344,88 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {}
     },
 
+    // Devices view mode: 'list' (table, default) or 'cards'. Per-browser preference, not part of the URL filters.
+    deviceViewMode: (() => {
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('eero_device_view') === 'cards') return 'cards';
+      } catch (e) {}
+      return 'list';
+    })(),
+
+    setDeviceViewMode(mode) {
+      this.deviceViewMode = mode === 'cards' ? 'cards' : 'list';
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('eero_device_view', this.deviceViewMode);
+      } catch (e) {}
+    },
+
+    // 0 = idle/offline, 1 = trickle (<1 Mbps), 2 = active (<25 Mbps), 3 = heavy. Drives the card glow and flow animations.
+    deviceActivityLevel(dev) {
+      if (!dev || !dev.connected || dev.paused || dev.is_paused) return 0;
+      const rate = Math.max(Number(dev.download_rate_mbps) || 0, Number(dev.upload_rate_mbps) || 0);
+      if (rate <= 0.05) return 0;
+      if (rate < 1) return 1;
+      return rate < 25 ? 2 : 3;
+    },
+
+    // Log-scaled 0-100 so a 2 Mbps stream and a 500 Mbps transfer both register on the activity bar.
+    deviceRatePercent(mbps) {
+      const n = Number(mbps) || 0;
+      if (n <= 0.05) return 0;
+      return Math.max(4, Math.min(100, Math.round(Math.log10(1 + n) / Math.log10(1001) * 100)));
+    },
+
+    deviceRateLabel(mbps) {
+      const n = Number(mbps) || 0;
+      if (n <= 0.05) return '0 Mbps';
+      return (n >= 100 ? Math.round(n) : n.toFixed(1)) + ' Mbps';
+    },
+
+    deviceSignalBars(dev) {
+      if (dev.signal_bars) return dev.signal_bars;
+      const rssi = Number(dev.signal_rssi);
+      if (!rssi) return 0;
+      return rssi >= -50 ? 5 : rssi >= -60 ? 4 : rssi >= -67 ? 3 : rssi >= -75 ? 2 : 1;
+    },
+
+    // Device types offered in the details modal. Category and icon are one choice: picking a type sets both,
+    // so the icon shown on cards and rows always matches the category (the icon value is resolved by getDeviceIconPath()).
+    deviceTypeOptions: [
+      { category: 'Computer', icon: 'laptop', labelKey: 'devices.cat_computer' },
+      { category: 'Mobile', icon: 'smartphone', labelKey: 'devices.cat_mobile' },
+      { category: 'Smart Home', icon: 'iot', labelKey: 'devices.cat_smarthome' },
+      { category: 'Intrattenimento', icon: 'tv', labelKey: 'devices.cat_entertainment' },
+      { category: 'Gaming', icon: 'gamepad', labelKey: 'devices.cat_gaming' },
+      { category: 'Server/Rete', icon: 'server', labelKey: 'devices.cat_server' },
+      // 'Altro' means "no override" in the poller: eero's detected category and icon are used, so this is the reset option
+      { category: 'Altro', icon: 'other', pickIcon: 'device', labelKey: 'device_modal.type_auto' }
+    ],
+
+    // The standard types, plus the device's current category when it is not one of them (e.g. a category from eero).
+    deviceTypeOptionsForForm() {
+      const opts = this.deviceTypeOptions.map(o => ({ category: o.category, icon: o.icon, pickIcon: o.pickIcon, label: this.t(o.labelKey) }));
+      const current = this.deviceMetadataForm.category;
+      if (current && !opts.some(o => o.category === current)) {
+        opts.push({ category: current, icon: this.deviceMetadataForm.custom_icon || current, label: this.formatCategoryName(current) });
+      }
+      return opts;
+    },
+
+    selectDeviceType(opt) {
+      this.deviceMetadataForm.category = opt.category;
+      this.deviceMetadataForm.custom_icon = opt.pickIcon || opt.icon;
+    },
+
+    deviceBandLabel(dev) {
+      if (dev.wireless === false || dev.connection_type === 'wired' || ['Ethernet', 'Cablato', 'Wired'].includes(dev.frequency_band)) {
+        return this.t('common.ethernet');
+      }
+      if (dev.frequency_band) return dev.frequency_band;
+      if (dev.wireless_band) return dev.wireless_band;
+      if (dev.channel && dev.channel <= 14) return '2.4 GHz';
+      return dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz';
+    },
+
     /**
      * Sizes the Devices table "Device / Host" and "Profile / User" columns to the widest
      * device name (+ badges) and profile name on screen, so neither wraps or clips. Profile
@@ -469,6 +554,7 @@ document.addEventListener('alpine:init', () => {
       selectedDeviceIds: []
     },
     deviceSelectedProfileId: '',
+    profileChangeStatus: { state: '', message: '' },
     profileAssigningLoading: false,
     
     selectedDevice: null,
@@ -1432,6 +1518,20 @@ document.addEventListener('alpine:init', () => {
       return `${this.routes.devices}${query ? `?${query}` : ''}`;
     },
 
+    // Dashboard shortcut: open Devices showing only connected clients,
+    // optionally narrowed to one mesh node. Other filters are cleared so
+    // the list matches the count the user clicked on.
+    async openConnectedDevices(nodeId = 'all') {
+      this.deviceSearchQuery = '';
+      this.selectedBandFilter = 'all';
+      this.selectedNodeFilter = nodeId || 'all';
+      this.selectedCategoryFilter = 'all';
+      this.selectedProfileFilter = 'all';
+      this.selectedIpTypeFilter = 'all';
+      this.showConnectedOnly = true;
+      await this.setTab('devices');
+    },
+
     syncDeviceFiltersToUrl() {
       if (this.currentTab !== 'devices' || typeof window === 'undefined' || !window.location) return;
       const url = this.deviceFiltersUrl();
@@ -2233,6 +2333,12 @@ document.addEventListener('alpine:init', () => {
       return d.toLocaleDateString(this.dateLocale(), { month: 'short', day: 'numeric' });
     },
 
+    deviceVendorLabel(dev) {
+      if (!dev) return '';
+      const parts = [dev.manufacturer, dev.model_name].filter(Boolean);
+      return parts.filter((p, i) => parts.findIndex(x => String(x).toLowerCase() === String(p).toLowerCase()) === i).join(' ');
+    },
+
     formatFirstSeenFull(ts) {
       if (!ts) return '';
       let str = String(ts).trim();
@@ -2466,7 +2572,8 @@ document.addEventListener('alpine:init', () => {
           const prof = (d.profile_name || '').toLowerCase();
           const ipv6 = (d.ipv6 || '').toLowerCase();
           const ipv6List = (d.ipv6_all || d.ipv6_addresses || []).join(' ').toLowerCase();
-          return name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q) || ipv6.includes(q) || ipv6List.includes(q);
+          const vendor = [d.manufacturer, d.model_name, d.reported_hostname].filter(Boolean).join(' ').toLowerCase();
+          return vendor.includes(q) || name.includes(q) || ip.includes(q) || mac.includes(q) || notes.includes(q) || cat.includes(q) || prof.includes(q) || ipv6.includes(q) || ipv6List.includes(q);
         }
 
         return true;
@@ -2672,6 +2779,52 @@ document.addEventListener('alpine:init', () => {
       return { download_mbps: 0, upload_mbps: 0, ping_ms: 0 };
     },
 
+    get gatewayNode() {
+      return (this.eeros || []).find(e => e.is_gateway) || (this.eeros || [])[0] || {};
+    },
+
+    get onlineNodeCount() {
+      return (this.eeros || []).filter(e => ['online', 'green'].includes(e.status)).length;
+    },
+
+    // Dashboard card: connected clients split by Wi-Fi band / wired, plus guest and new counts.
+    get connectedClientSummary() {
+      const connected = (this.devices || []).filter(d => d.connected);
+      const bands = [
+        { key: '6', label: '6 GHz', color: 'bg-violet-500', match: d => String(d.wireless_band || '').startsWith('6') },
+        { key: '5', label: '5 GHz', color: 'bg-sky-500', match: d => String(d.wireless_band || '').startsWith('5') },
+        { key: '2.4', label: '2.4 GHz', color: 'bg-amber-500', match: d => String(d.wireless_band || '').startsWith('2') },
+        { key: 'wired', label: this.t('devices.wired_tag'), color: 'bg-emerald-500', match: d => d.connection_type === 'wired' || d.wireless === false }
+      ];
+      const counted = new Set();
+      const segments = bands.map(b => {
+        const hits = connected.filter(d => !counted.has(d) && b.match(d));
+        hits.forEach(d => counted.add(d));
+        return { key: b.key, label: b.label, color: b.color, count: hits.length };
+      }).filter(s => s.count > 0);
+      return {
+        total: connected.length,
+        known: (this.devices || []).length,
+        guests: connected.filter(d => d.is_guest).length,
+        fresh: (this.devices || []).filter(d => d.is_new).length,
+        segments
+      };
+    },
+
+    // Polyline points (viewBox 100x28) for the dashboard card's download trend, oldest test first.
+    get speedtestSparkline() {
+      const values = (this.speedtestHistory || []).slice(0, 20).reverse().map(t => Number(t.download_mbps) || 0);
+      if (values.length < 2) return '';
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      const range = max - min || 1;
+      return values.map((v, i) => {
+        const x = (i / (values.length - 1)) * 100;
+        const y = 26 - ((v - min) / range) * 24;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+    },
+
     async openDeviceModal(device) {
       this.selectedDevice = device;
       this.deviceDetailTab = 'general';
@@ -2688,6 +2841,7 @@ document.addEventListener('alpine:init', () => {
       };
 
       this.deviceSelectedProfileId = device.profile_id || '';
+      this.profileChangeStatus = { state: '', message: '' };
       this.deviceStaticIpInput = device.static_ip || device.ip || '';
       this.newPortForward = { port_from: '', port_to: '', protocol: 'tcp', description: '' };
       this.showDeviceModal = true;
@@ -2915,6 +3069,7 @@ document.addEventListener('alpine:init', () => {
 
         // Aggiorna immediatamente lo stato reattivo in memoria
         Object.assign(this.selectedDevice, {
+          custom_icon: this.deviceMetadataForm.custom_icon,
           custom_name: this.deviceMetadataForm.custom_name,
           category: this.deviceMetadataForm.category,
           custom_notes: this.deviceMetadataForm.custom_notes,
@@ -3045,6 +3200,42 @@ document.addEventListener('alpine:init', () => {
       } catch (err) {
         const title = this.t('js.assign_device_to_profile.assignment_error');
         this.showToast(title, err.message, "error");
+      }
+    },
+
+    // Profile is an eero cloud assignment, so it applies as soon as it is picked (like the static IP actions)
+    // and reports the outcome inline in the details modal instead of waiting for "Save Changes".
+    async changeDeviceProfile() {
+      const dev = this.selectedDevice;
+      if (!dev) return;
+      const newId = this.deviceSelectedProfileId || '';
+      const oldId = dev.profile_id || '';
+      if (newId === oldId) return;
+      const target = (this.profiles || []).find(p => p.id === newId);
+      this.profileChangeStatus = { state: 'saving', message: this.t('device_modal.profile_saving') };
+      try {
+        const key = encodeURIComponent((dev.mac || dev.mac_address || dev.id || '').toLowerCase());
+        const res = await fetch(`/api/devices/${key}/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_id: newId || null })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.detail || data.message || `HTTP ${res.status}`);
+        }
+        dev.profile_id = newId || null;
+        dev.profile_name = target ? target.name : null;
+        this.profileChangeStatus = {
+          state: 'success',
+          message: target
+            ? this.t('device_modal.profile_changed', { name: target.name })
+            : this.t('device_modal.profile_removed')
+        };
+        await Promise.all([this.fetchProfiles(), this.fetchDevices()]);
+      } catch (err) {
+        this.deviceSelectedProfileId = oldId;
+        this.profileChangeStatus = { state: 'error', message: this.t('device_modal.profile_error', { error: err.message }) };
       }
     },
 

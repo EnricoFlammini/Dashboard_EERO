@@ -147,8 +147,19 @@
     "firmware": "Firmware-Betriebssystem:",
     "uptime": "Betriebszeit:",
     "temperature": "Temperatur:",
-    "channel": "Kanal:",
-    "mesh_active": "Mesh Aktiv"
+    "mesh_active": "Mesh Aktiv",
+    "clients_guests": "{count} Gäste",
+    "clients_known": "{count} bekannt",
+    "clients_new": "{count} neu",
+    "health_short": "Zustand",
+    "nodes_online": "{online}/{total} Knoten online",
+    "speedtest_avg": "Ø",
+    "speedtest_count": "{count} Tests",
+    "speedtest_none": "Noch keine Speedtests",
+    "speedtest_open": "Speedtest öffnen",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Download-Verlauf",
+    "subnet": "Subnetz:"
   },
   "devices": {
     "traffic_dl_total": "Gesamtdownload:",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "Dieses Gerät enthält über NDP / AdGuard",
     "clear_search": "angereicherte IPv6-ULA-Adressen Suche löschen",
     "generic_device": "Gerät",
-    "sticky_badge": "Klebrig"
+    "sticky_badge": "Klebrig",
+    "badge_guest": "Gast",
+    "badge_paused": "Pausiert",
+    "last_seen_short": "Zuletzt gesehen",
+    "view_cards": "Kartenansicht",
+    "view_list": "Listenansicht",
+    "view_mode": "Ansicht"
   },
   "device_modal": {
     "reservation_error": "Fehler beim Erstellen der DHCP-Reservierung",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} min",
     "eero_cloud_synced_title": "Synchronisiert von der mobilen Eero-App",
     "phy_label": "PHY",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "channel": "Kanal",
+    "channel_width": "Kanalbreite",
+    "guest_network": "Gastnetzwerk",
+    "hostname": "Hostname (vom Gerät gemeldet)",
+    "last_active": "Zuletzt aktiv",
+    "mac": "MAC-Adresse",
+    "manufacturer": "Hersteller",
+    "model": "Modell",
+    "profile_changed": "Profil geändert zu {name}",
+    "profile_error": "Profil konnte nicht geändert werden: {error}",
+    "profile_removed": "Gerät aus seinem Profil entfernt",
+    "profile_saving": "Profil wird aktualisiert…",
+    "type_auto": "Automatisch erkennen",
+    "wifi_standard": "WLAN-Standard"
   },
   "profiles": {
     "title": "Familienprofile und Cloud-Benutzer",

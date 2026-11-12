@@ -147,8 +147,19 @@
     "firmware": "Système d'exploitation du micrologiciel :",
     "uptime": "Temps de disponibilité :",
     "temperature": "Température :",
-    "channel": "Canal:",
-    "mesh_active": "Maille active"
+    "mesh_active": "Maille active",
+    "clients_guests": "{count} invités",
+    "clients_known": "{count} connus",
+    "clients_new": "{count} nouveaux",
+    "health_short": "Santé",
+    "nodes_online": "{online}/{total} nœuds en ligne",
+    "speedtest_avg": "Moy.",
+    "speedtest_count": "{count} tests",
+    "speedtest_none": "Aucun test de vitesse pour l'instant",
+    "speedtest_open": "Ouvrir le test de vitesse",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Tendance du téléchargement",
+    "subnet": "Sous-réseau :"
   },
   "devices": {
     "traffic_dl_total": "Téléchargement total :",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "Cet appareil comprend des adresses IPv6 ULA enrichies via NDP / AdGuard",
     "clear_search": "Effacer la recherche",
     "generic_device": "Appareil",
-    "sticky_badge": "Collant"
+    "sticky_badge": "Collant",
+    "badge_guest": "Invité",
+    "badge_paused": "En pause",
+    "last_seen_short": "Vu pour la dernière fois",
+    "view_cards": "Vue en cartes",
+    "view_list": "Vue en liste",
+    "view_mode": "Mode d'affichage"
   },
   "device_modal": {
     "reservation_error": "Erreur lors de la création de la réservation DHCP",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} minutes",
     "eero_cloud_synced_title": "Synchronisé depuis l'application mobile eero",
     "phy_label": "PHY",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "channel": "Canal",
+    "channel_width": "Largeur de canal",
+    "guest_network": "Réseau invité",
+    "hostname": "Nom d'hôte (signalé par l'appareil)",
+    "last_active": "Dernière activité",
+    "mac": "Adresse MAC",
+    "manufacturer": "Fabricant",
+    "model": "Modèle",
+    "profile_changed": "Profil changé en {name}",
+    "profile_error": "Impossible de changer le profil : {error}",
+    "profile_removed": "Appareil retiré de son profil",
+    "profile_saving": "Mise à jour du profil…",
+    "type_auto": "Détection automatique",
+    "wifi_standard": "Norme Wi-Fi"
   },
   "profiles": {
     "title": "Profils familiaux et utilisateurs du cloud",

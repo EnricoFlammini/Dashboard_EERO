@@ -3,6 +3,7 @@
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
 ## v1.7.0
+* **Devices Card View & Editable Device Details (PR #107 - @todddube):** List/Cards toggle with compact live-animated cards, clickable name/IP, in-modal profile change and icon-based category picker, plus manufacturer, last active, Wi-Fi standard/width and guest flag. Profile assignment now requires the edit-devices permission and MQTT trackers cap at 1000. Richer dashboard cards (WAN health, gateway details, client band split, speed test trend) that click through to Devices, Speed Test and Network Health, and the device list now refreshes as soon as device details are saved.
 * **Amazon OAuth2/PKCE Authentication (Issue #93):** Integrated S256 PKCE flow for Amazon/eero login with secure token exchange callback and backward compatibility with email OTP.
 * **Echo Built-in Extender Support (Issue #96):** Detection and synthesis of Amazon Echo virtual extender nodes with dedicated "eero Built-in" badge, LAN client unification, and reboot protection.
 * **Bridge Mode Primary Gateway Election (Issue #105):** Heuristic fallback using `is_primary_node` and non-eero upstream WAN LLDP detection for topologies behind third-party routers.

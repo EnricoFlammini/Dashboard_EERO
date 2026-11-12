@@ -147,8 +147,19 @@
     "firmware": "Oprogramowanie układowe systemu operacyjnego:",
     "uptime": "Czas pracy:",
     "temperature": "Temperatura:",
-    "channel": "Kanał:",
-    "mesh_active": "Siatka aktywna"
+    "mesh_active": "Siatka aktywna",
+    "clients_guests": "Goście: {count}",
+    "clients_known": "Znane: {count}",
+    "clients_new": "Nowe: {count}",
+    "health_short": "Kondycja",
+    "nodes_online": "Węzły online: {online}/{total}",
+    "speedtest_avg": "Śr.",
+    "speedtest_count": "Testy: {count}",
+    "speedtest_none": "Brak testów prędkości",
+    "speedtest_open": "Otwórz test prędkości",
+    "speedtest_ping": "Ping",
+    "speedtest_trend": "Trend pobierania",
+    "subnet": "Podsieć:"
   },
   "devices": {
     "traffic_dl_total": "Całkowite pobranie:",
@@ -240,7 +251,13 @@
     "badge_ula_enriched_tooltip": "To urządzenie zawiera adresy ULA IPv6 wzbogacone poprzez NDP / AdGuard",
     "clear_search": "Wyczyść wyszukiwanie",
     "generic_device": "Urządzenie",
-    "sticky_badge": "Przyklejony"
+    "sticky_badge": "Przyklejony",
+    "badge_guest": "Gość",
+    "badge_paused": "Wstrzymane",
+    "last_seen_short": "Ostatnio widziane",
+    "view_cards": "Widok kart",
+    "view_list": "Widok listy",
+    "view_mode": "Tryb widoku"
   },
   "device_modal": {
     "reservation_error": "Błąd podczas tworzenia rezerwacji DHCP",
@@ -339,7 +356,21 @@
     "resolution_minutes": "{n} min",
     "eero_cloud_synced_title": "Synchronizacja z aplikacją mobilną eero",
     "phy_label": "FIZ",
-    "usage_resolution": "({n} min)"
+    "usage_resolution": "({n} min)",
+    "channel": "Kanał",
+    "channel_width": "Szerokość kanału",
+    "guest_network": "Sieć gości",
+    "hostname": "Nazwa hosta (zgłoszona przez urządzenie)",
+    "last_active": "Ostatnia aktywność",
+    "mac": "Adres MAC",
+    "manufacturer": "Producent",
+    "model": "Model",
+    "profile_changed": "Profil zmieniony na {name}",
+    "profile_error": "Nie udało się zmienić profilu: {error}",
+    "profile_removed": "Urządzenie usunięte z profilu",
+    "profile_saving": "Aktualizowanie profilu…",
+    "type_auto": "Wykryj automatycznie",
+    "wifi_standard": "Standard Wi-Fi"
   },
   "profiles": {
     "title": "Profile rodzinne i użytkownicy chmury",
