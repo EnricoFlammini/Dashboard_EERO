@@ -60,6 +60,7 @@ class MQTTConfigRequest(BaseModel):
     discovery_prefix: Optional[str] = None
     discovery_enabled: Optional[bool] = None
     publish_interval: Optional[int] = None
+    live_interval: Optional[int] = None
 
 
 class DigestSettingsRequest(BaseModel):

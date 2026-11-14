@@ -572,6 +572,7 @@
     "mqtt_discovery_enable": "Ενεργοποίηση Home Assistant MQTT Auto-Discovery",
     "mqtt_ha_prefix": "Πρόθεμα εντοπισμού βοηθού σπιτιού:",
     "mqtt_publish_interval": "Διάστημα Δημοσίευσης Τηλεμετρίας (δευτερόλεπτα):",
+    "mqtt_live_interval": "Διάστημα Ζωντανής Τηλεμετρίας WAN (δευτερόλεπτα, 0 = ανενεργό):",
     "mqtt_save_btn": "Αποθήκευση & Εφαρμογή",
     "mqtt_save_success": "Η διαμόρφωση MQTT ενημερώθηκε με επιτυχία!",
     "mqtt_test_success": "Επιτυχής δοκιμή σύνδεσης MQTT!",

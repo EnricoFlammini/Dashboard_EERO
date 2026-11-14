@@ -94,6 +94,11 @@ try:
         mqtt_ha_discovery_prefix: str = os.getenv("MQTT_HA_DISCOVERY_PREFIX", "homeassistant")
         mqtt_discovery_enabled: bool = os.getenv("MQTT_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
         mqtt_publish_interval: int = int(os.getenv("MQTT_PUBLISH_INTERVAL", "30"))
+        mqtt_live_interval: int = int(os.getenv("MQTT_LIVE_INTERVAL", "0"))
+
+        # Custom / Split DNS Resolver (Issue #98)
+        custom_dns_servers: str = os.getenv("CUSTOM_DNS_SERVERS", "")
+        custom_dns_domains: str = os.getenv("CUSTOM_DNS_DOMAINS", "")
 
         # Multi-Channel Alerts: Discord, Pushover & Ntfy (v1.6.0 / v1.7.0)
         discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
@@ -183,6 +188,9 @@ except ImportError:
             self.mqtt_ha_discovery_prefix = os.getenv("MQTT_HA_DISCOVERY_PREFIX", "homeassistant")
             self.mqtt_discovery_enabled = os.getenv("MQTT_DISCOVERY_ENABLED", "true").lower() in ("true", "1", "yes")
             self.mqtt_publish_interval = int(os.getenv("MQTT_PUBLISH_INTERVAL", "30"))
+            self.mqtt_live_interval = int(os.getenv("MQTT_LIVE_INTERVAL", "0"))
+            self.custom_dns_servers = os.getenv("CUSTOM_DNS_SERVERS", "")
+            self.custom_dns_domains = os.getenv("CUSTOM_DNS_DOMAINS", "")
             self.discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "")
             self.discord_alerts_enabled = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
             self.pushover_user_key = os.getenv("PUSHOVER_USER_KEY", "")

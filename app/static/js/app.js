@@ -680,6 +680,7 @@ document.addEventListener('alpine:init', () => {
       discovery_enabled: true,
       discovery_prefix: 'homeassistant',
       publish_interval: 60,
+      live_interval: 0,
       connected: false,
       available: false,
       stats: {
@@ -698,7 +699,8 @@ document.addEventListener('alpine:init', () => {
       base_topic: 'eero',
       discovery_enabled: true,
       discovery_prefix: 'homeassistant',
-      publish_interval: 60
+      publish_interval: 60,
+      live_interval: 0
     },
     showMqttModal: false,
     mqttTesting: false,
@@ -4323,7 +4325,8 @@ document.addEventListener('alpine:init', () => {
         base_topic: this.mqttSettings.base_topic || 'eero',
         discovery_enabled: this.mqttSettings.discovery_enabled !== false,
         discovery_prefix: this.mqttSettings.ha_discovery_prefix || this.mqttSettings.discovery_prefix || 'homeassistant',
-        publish_interval: this.mqttSettings.publish_interval || 60
+        publish_interval: this.mqttSettings.publish_interval || 60,
+        live_interval: Number(this.mqttSettings.live_interval || 0)
       };
       this.showMqttPassword = false;
       this.showMqttModal = true;
@@ -4345,7 +4348,8 @@ document.addEventListener('alpine:init', () => {
           base_topic: (this.mqttModalForm.base_topic || 'eero').trim() || 'eero',
           discovery_enabled: Boolean(this.mqttModalForm.discovery_enabled),
           ha_discovery_prefix: (this.mqttModalForm.discovery_prefix || 'homeassistant').trim() || 'homeassistant',
-          publish_interval: parseInt(this.mqttModalForm.publish_interval, 10) || 60
+          publish_interval: parseInt(this.mqttModalForm.publish_interval, 10) || 60,
+          live_interval: Math.max(0, parseInt(this.mqttModalForm.live_interval, 10) || 0)
         };
         if (this.mqttModalForm.password) {
           payload.password = this.mqttModalForm.password;

@@ -8455,6 +8455,16 @@
               required
               class="glass-input w-full px-3 py-2 rounded-xl font-mono text-xs">
           </div>
+          <div class="col-span-2">
+            <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('controls.mqtt_live_interval')"></label>
+            <input 
+              type="number" 
+              min="0" 
+              max="300" 
+              x-model.number="mqttModalForm.live_interval" 
+              placeholder="0"
+              class="glass-input w-full px-3 py-2 rounded-xl font-mono text-xs">
+          </div>
         </div>
 
         <!-- 5. Home Assistant MQTT Auto-Discovery Group -->

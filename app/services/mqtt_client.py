@@ -40,6 +40,7 @@ class MQTTService:
         self._ha_prefix: str = settings.mqtt_ha_discovery_prefix
         self._discovery_enabled: bool = settings.mqtt_discovery_enabled
         self._publish_interval: int = settings.mqtt_publish_interval
+        self._live_interval: int = settings.mqtt_live_interval
 
         self._connected: bool = False
         self._task: Optional[asyncio.Task] = None
@@ -83,6 +84,7 @@ class MQTTService:
             self._ha_prefix = all_s.get("mqtt_ha_discovery_prefix", settings.mqtt_ha_discovery_prefix)
             self._discovery_enabled = all_s.get("mqtt_discovery_enabled", str(settings.mqtt_discovery_enabled)).lower() in ("true", "1", "yes")
             self._publish_interval = int(all_s.get("mqtt_publish_interval", settings.mqtt_publish_interval))
+            self._live_interval = int(all_s.get("mqtt_live_interval", settings.mqtt_live_interval))
         except Exception as e:
             logger.debug(f"Unable to load MQTT settings from db: {e}")
 
@@ -100,6 +102,7 @@ class MQTTService:
             "ha_discovery_prefix": self._ha_prefix,
             "discovery_enabled": self._discovery_enabled,
             "publish_interval": self._publish_interval,
+            "live_interval": self._live_interval,
             "stats": self._stats,
         }
 
@@ -202,6 +205,11 @@ class MQTTService:
         if "publish_interval" in config_data and config_data["publish_interval"]:
             self._publish_interval = max(5, int(config_data["publish_interval"]))
             await db_service.set_setting("mqtt_publish_interval", str(self._publish_interval))
+
+        if "live_interval" in config_data and config_data["live_interval"] is not None:
+            raw_live = int(config_data["live_interval"])
+            self._live_interval = 0 if raw_live <= 0 else max(2, raw_live)
+            await db_service.set_setting("mqtt_live_interval", str(self._live_interval))
 
         # Restart worker if running
         await self.stop()
@@ -357,18 +365,52 @@ class MQTTService:
         self._discovery_published = True
         log_event(logger, logging.INFO, "log_ops.mqtt_discovery_published", count=len(payloads))
 
+    @staticmethod
+    def _compute_live_metrics(state: Dict[str, Any]) -> Dict[str, Any]:
+        """Extracts live WAN throughput and connected client count from cached state."""
+        devices = state.get("devices", [])
+        connected_devs = [d for d in devices if d.get("connected")]
+        total_dl = round(sum(float(d.get("download_rate_mbps", 0)) for d in connected_devs), 2)
+        total_ul = round(sum(float(d.get("upload_rate_mbps", 0)) for d in connected_devs), 2)
+        return {
+            "devices": devices,
+            "connected_devs": connected_devs,
+            "connected_count": len(connected_devs),
+            "total_dl": total_dl,
+            "total_ul": total_ul,
+        }
+
+    async def publish_live_telemetry(self, client: Any, telemetry_data: Optional[Dict[str, Any]] = None):
+        """Publishes only fast-changing live WAN throughput & online client count (Issue #104)."""
+        from app.services.poller import background_poller
+
+        state = telemetry_data or background_poller.get_cached_state()
+        live = self._compute_live_metrics(state)
+        base = self._base_topic
+
+        await self._publish_message(client, f"{base}/sensor/wan_download/state", live["total_dl"])
+        await self._publish_message(client, f"{base}/sensor/wan_upload/state", live["total_ul"])
+        await self._publish_message(client, f"{base}/sensor/clients_count/state", live["connected_count"])
+        await self._publish_message(client, f"{base}/live", {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "download_mbps": live["total_dl"],
+            "upload_mbps": live["total_ul"],
+            "connected_clients": live["connected_count"],
+        }, retain=False)
+
     async def publish_telemetry(self, client: Any, telemetry_data: Optional[Dict[str, Any]] = None):
         """Publishes current network telemetry and device tracker states."""
         from app.services.poller import background_poller
         from app.services.eero_client import eero_client
 
         state = telemetry_data or background_poller.get_cached_state()
-        devices = state.get("devices", [])
-        connected_devs = [d for d in devices if d.get("connected")]
-        
+        live = self._compute_live_metrics(state)
+        devices = live["devices"]
+        connected_devs = live["connected_devs"]
+        total_dl = live["total_dl"]
+        total_ul = live["total_ul"]
+
         # Calculate speeds & health
-        total_dl = sum(float(d.get("download_rate_mbps", 0)) for d in connected_devs)
-        total_ul = sum(float(d.get("upload_rate_mbps", 0)) for d in connected_devs)
         health = state.get("health_score", 100)
         nodes = state.get("eeros", [])
         nodes_online = sum(1 for n in nodes if n.get("status") in ("online", "active")) if nodes else 1
@@ -379,8 +421,8 @@ class MQTTService:
         base = self._base_topic
 
         # Publish sensor states
-        await self._publish_message(client, f"{base}/sensor/wan_download/state", round(total_dl, 2))
-        await self._publish_message(client, f"{base}/sensor/wan_upload/state", round(total_ul, 2))
+        await self._publish_message(client, f"{base}/sensor/wan_download/state", total_dl)
+        await self._publish_message(client, f"{base}/sensor/wan_upload/state", total_ul)
         await self._publish_message(client, f"{base}/sensor/health_score/state", health)
         await self._publish_message(client, f"{base}/sensor/clients_count/state", len(connected_devs))
         await self._publish_message(client, f"{base}/sensor/nodes_online/state", max(1, nodes_online))
@@ -391,8 +433,8 @@ class MQTTService:
         # Full state payload
         full_payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "download_mbps": round(total_dl, 2),
-            "upload_mbps": round(total_ul, 2),
+            "download_mbps": total_dl,
+            "upload_mbps": total_ul,
             "health_score": health,
             "connected_clients": len(connected_devs),
             "mesh_nodes_online": nodes_online,
@@ -512,10 +554,18 @@ class MQTTService:
                     # Publish Home Assistant Discovery
                     await self.publish_discovery_configs(client)
 
-                    # Periodic Telemetry Publishing
+                    # Periodic Telemetry Publishing (with optional high-frequency live loop)
+                    last_full_publish = 0.0
+                    loop = asyncio.get_running_loop()
                     while not self._stop_event.is_set():
-                        await self.publish_telemetry(client)
-                        await asyncio.sleep(self._publish_interval)
+                        now = loop.time()
+                        use_live = 0 < self._live_interval < self._publish_interval
+                        if not use_live or (now - last_full_publish) >= self._publish_interval:
+                            await self.publish_telemetry(client)
+                            last_full_publish = now
+                        else:
+                            await self.publish_live_telemetry(client)
+                        await asyncio.sleep(self._live_interval if use_live else self._publish_interval)
 
             except asyncio.CancelledError:
                 break

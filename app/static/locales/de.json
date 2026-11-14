@@ -572,6 +572,7 @@
     "mqtt_discovery_enable": "Aktivieren Sie die automatische MQTT-Erkennung von Home Assistant",
     "mqtt_ha_prefix": "Home Assistant Discovery-Präfix:",
     "mqtt_publish_interval": "Telemetrie-Veröffentlichungsintervall (Sekunden):",
+    "mqtt_live_interval": "Live-WAN-Telemetrie-Intervall (Sekunden, 0 = deaktiviert):",
     "mqtt_save_btn": "Speichern und anwenden",
     "mqtt_save_success": "MQTT-Konfiguration erfolgreich aktualisiert!",
     "mqtt_test_success": "MQTT-Verbindungstest erfolgreich!",

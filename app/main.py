@@ -41,8 +41,12 @@ async def lifespan(app: FastAPI):
     log_event(logger, logging.INFO, "log_system.data_directory", path=settings.data_path.resolve())
     logger.info("=" * 60)
 
-    # 0. Attivazione In-Memory DNS Caching (Issue #24)
-    enable_dns_cache(ttl_seconds=300)
+    # 0. Attivazione In-Memory DNS Caching & Custom/Split DNS (Issue #24, Issue #98)
+    enable_dns_cache(
+        ttl_seconds=300,
+        custom_servers=settings.custom_dns_servers,
+        custom_domains=settings.custom_dns_domains,
+    )
 
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()

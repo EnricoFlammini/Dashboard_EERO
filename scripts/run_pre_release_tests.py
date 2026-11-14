@@ -6036,6 +6036,112 @@ async def run_all_tests():
         finally:
             settings.require_local_auth = _prev_req_auth
 
+        # ==============================================================================
+        # TEST 42: CUSTOM/SPLIT DNS (ISSUE #98) & MQTT LIVE TELEMETRY (ISSUE #104)
+        # ==============================================================================
+        print("\n🌐 Test 42: Custom/Split DNS (Issue #98) & MQTT Live Telemetry (Issue #104)...")
+        import socket as _sock
+        import struct as _struct
+        import threading as _thr
+        from app.services.dns_cache import configure_custom_dns, enable_dns_cache, get_dns_cache_stats
+        from app.services.mqtt_client import mqtt_service
+
+        # 1. Mock UDP DNS responder on loopback
+        _dns_srv = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+        _dns_srv.bind(("127.0.0.1", 0))
+        _dns_port = _dns_srv.getsockname()[1]
+        _dns_stop = _thr.Event()
+        _dns_queries_seen = []
+
+        def _dns_responder():
+            _dns_srv.settimeout(0.2)
+            while not _dns_stop.is_set():
+                try:
+                    pkt, addr = _dns_srv.recvfrom(1024)
+                except _sock.timeout:
+                    continue
+                except OSError:
+                    break
+                if len(pkt) < 12:
+                    continue
+                txid = pkt[:2]
+                # Find end of QNAME
+                idx = 12
+                while idx < len(pkt) and pkt[idx] != 0:
+                    idx += 1 + pkt[idx]
+                q_end = idx + 5  # null + qtype(2) + qclass(2)
+                question = pkt[12:q_end]
+                qtype = _struct.unpack("!H", pkt[idx + 1:idx + 3])[0]
+                _dns_queries_seen.append(qtype)
+                if qtype == 1:  # A -> 10.99.88.77
+                    hdr = txid + _struct.pack("!HHHHH", 0x8180, 1, 1, 0, 0)
+                    ans = _struct.pack("!HHHIH", 0xC00C, 1, 1, 60, 4) + _sock.inet_aton("10.99.88.77")
+                    _dns_srv.sendto(hdr + question + ans, addr)
+                else:  # NODATA
+                    hdr = txid + _struct.pack("!HHHHH", 0x8180, 1, 0, 0, 0)
+                    _dns_srv.sendto(hdr + question, addr)
+
+        _dns_thread = _thr.Thread(target=_dns_responder, daemon=True)
+        _dns_thread.start()
+        try:
+            enable_dns_cache(ttl_seconds=300, custom_servers="", custom_domains=f"*.casa.lan=127.0.0.1:{_dns_port}")
+            _resolved = _sock.getaddrinfo("adguard.casa.lan", 443, _sock.AF_UNSPEC, _sock.SOCK_STREAM)
+            runner.assert_true(
+                any(item[4][0] == "10.99.88.77" for item in _resolved),
+                "Issue #98: Split DNS risolve adguard.casa.lan tramite server DNS custom"
+            )
+            _dns_stats = get_dns_cache_stats()
+            runner.assert_true(_dns_stats.get("custom_domain_rules_count", 0) == 1, "Issue #98: Regola split-DNS registrata nelle statistiche")
+        finally:
+            _dns_stop.set()
+            _dns_srv.close()
+            _dns_thread.join(timeout=1.0)
+            configure_custom_dns("", "")
+
+        # 2. MQTT Live Telemetry Interval (Issue #104)
+        _prev_mqtt_cfg = await mqtt_service.get_config()
+        try:
+            _res_mqtt_live = await client.post(
+                "/api/automations/mqtt/config",
+                json={"live_interval": 5},
+                headers=adm_hdr,
+            )
+            runner.assert_true(_res_mqtt_live.status_code == 200, "Issue #104: POST /api/automations/mqtt/config accetta live_interval")
+            _res_mqtt_get = await client.get("/api/automations/mqtt/config", headers=adm_hdr)
+            runner.assert_true(_res_mqtt_get.json().get("live_interval") == 5, "Issue #104: GET /api/automations/mqtt/config restituisce live_interval=5")
+
+            class _LiveMockClient:
+                def __init__(self):
+                    self.msgs = []
+                async def publish(self, topic, payload=None, retain=False, qos=0):
+                    self.msgs.append({"topic": topic, "payload": payload})
+
+            _live_mock = _LiveMockClient()
+            await mqtt_service.publish_live_telemetry(
+                _live_mock,
+                telemetry_data={
+                    "devices": [
+                        {"mac": "AA:BB:CC:DD:EE:01", "hostname": "PC", "connected": True, "download_rate_mbps": 12.5, "upload_rate_mbps": 3.2},
+                    ]
+                },
+            )
+            _live_topics = [m["topic"] for m in _live_mock.msgs]
+            runner.assert_true(any(t.endswith("/sensor/wan_download/state") for t in _live_topics), "Issue #104: publish_live_telemetry pubblica wan_download")
+            runner.assert_true(any(t.endswith("/sensor/wan_upload/state") for t in _live_topics), "Issue #104: publish_live_telemetry pubblica wan_upload")
+            runner.assert_true(any(t.endswith("/live") for t in _live_topics), "Issue #104: publish_live_telemetry pubblica payload aggregato /live")
+            runner.assert_true(not any("/device/" in t for t in _live_topics), "Issue #104: publish_live_telemetry non ripubblica i device_tracker")
+            runner.assert_true(not any(t.endswith("/sensor/health_score/state") for t in _live_topics), "Issue #104: publish_live_telemetry non ripubblica sensori lenti")
+        finally:
+            await client.post(
+                "/api/automations/mqtt/config",
+                json={"live_interval": int(_prev_mqtt_cfg.get("live_interval", 0))},
+                headers=adm_hdr,
+            )
+
+        _idx_txt = Path("app/templates/index.html").read_text(encoding="utf-8")
+        _js_txt = Path("app/static/js/app.js").read_text(encoding="utf-8")
+        runner.assert_true("mqttModalForm.live_interval" in _idx_txt and "live_interval" in _js_txt, "Issue #104: Campo live_interval presente nella UI MQTT")
+
         runner.print_summary()
 
 

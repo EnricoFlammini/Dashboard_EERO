@@ -572,6 +572,7 @@
     "mqtt_discovery_enable": "Włącz automatyczne wykrywanie MQTT Home Assistant",
     "mqtt_ha_prefix": "Prefiks wykrywania Asystenta Domowego:",
     "mqtt_publish_interval": "Interwał publikowania telemetrii (sekundy):",
+    "mqtt_live_interval": "Interwał telemetrii WAN na żywo (sekundy, 0 = wyłączone):",
     "mqtt_save_btn": "Zapisz i zastosuj",
     "mqtt_save_success": "Konfiguracja MQTT została pomyślnie zaktualizowana!",
     "mqtt_test_success": "Test połączenia MQTT udany!",
