@@ -5632,7 +5632,7 @@ async def run_all_tests():
 
         en_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="en")
         it_condensed = extract_condensed_changelog("1.6.2", raw_notes=gh_body_en, lang="it")
-        runner.assert_true(en_condensed == ["🛡️ Security Hardening", "🏷️ Pi-hole RFC 1123 Fix"], f"Condensed changelog EN estratto dal corpo GitHub (ottenuto: {en_condensed})")
+        runner.assert_true(en_condensed == ["Security Hardening", "Pi-hole RFC 1123 Fix"], f"Condensed changelog EN estratto dal corpo GitHub (ottenuto: {en_condensed})")
         runner.assert_true(any("Parità Completa Traduzioni" in h for h in it_condensed), "Condensed changelog IT estratto da changelog.md")
 
         # localize_update_info: one language-neutral cache serves both languages

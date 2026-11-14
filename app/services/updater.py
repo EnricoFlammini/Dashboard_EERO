@@ -107,6 +107,22 @@ def select_release_notes(version: str, github_notes: str = "", lang: Optional[st
     return github_notes or local_notes
 
 
+_EMOJI_STRIP_RE = re.compile(
+    r'[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]+',
+    flags=re.UNICODE,
+)
+
+
+def _clean_highlight_text(raw: str) -> str:
+    clean = raw.strip()
+    clean = _EMOJI_STRIP_RE.sub('', clean)
+    clean = re.sub(r'\s*\((?:PR|Issues?|GHSA|Advisory)[^)]*\)', '', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean)
+    clean = clean.replace('`', '')
+    clean = re.sub(r'\s{2,}', ' ', clean).strip()
+    return clean
+
+
 def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optional[str] = None) -> List[str]:
     """
     Estrae un changelog ridotto (punti salienti sintetici) per la versione specificata.
@@ -124,11 +140,7 @@ def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optiona
     section_headers = re.findall(r'^[ \t]*###[ \t]+([^\r\n]+)', notes_text, flags=re.MULTILINE)
     if len(section_headers) >= 1:
         for header in section_headers:
-            clean = header.strip()
-            # Rimuove riferimenti Issue/PR/GHSA tra parentesi (es. '(PR #79 - @user)')
-            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
-            # Rimuove link markdown
-            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            clean = _clean_highlight_text(header)
             if clean and clean not in highlights:
                 highlights.append(clean)
                 if len(highlights) >= 8:
@@ -138,9 +150,7 @@ def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optiona
     if len(highlights) < 2:
         bullet_matches = re.findall(r'^[ \t]*[*+-][ \t]+(?:\*\*)?([^*\r\n]+)(?:\*\*)?', notes_text, flags=re.MULTILINE)
         for b in bullet_matches:
-            clean = b.strip().rstrip(":")
-            clean = re.sub(r'\s*\((?:PR|Issue|GHSA)[^)]*\)', '', clean, flags=re.IGNORECASE).strip()
-            clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean).strip()
+            clean = _clean_highlight_text(b.strip().rstrip(":"))
             if clean and clean not in highlights and not clean.startswith("http"):
                 highlights.append(clean)
                 if len(highlights) >= 8:
@@ -148,8 +158,8 @@ def extract_condensed_changelog(version: str, raw_notes: str = "", lang: Optiona
 
     # 3. Se ancora vuoto, prendi i primi paragrafi significativi
     if not highlights:
-        lines = [line.strip() for line in notes_text.splitlines() if line.strip() and not line.strip().startswith("#")]
-        highlights = lines[:4]
+        lines = [_clean_highlight_text(line) for line in notes_text.splitlines() if line.strip() and not line.strip().startswith("#")]
+        highlights = [l for l in lines if l][:4]
 
     return highlights
 
