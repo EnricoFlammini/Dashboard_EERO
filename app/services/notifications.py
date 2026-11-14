@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -385,6 +386,78 @@ class NotificationService:
             log_event(logger, logging.ERROR, "log_ops.ntfy_error", error=str(e))
             return False
 
+    async def send_apprise_message(
+        self,
+        title: str,
+        body_html: str,
+        color: int = 0x38bdf8,
+        ignore_enabled: bool = False,
+    ) -> bool:
+        """Spike: fan an alert out to every Apprise URL in APPRISE_URLS (Teams, Slack, Google Chat, Gotify, Matrix, ...).
+
+        Apprise is a library, not a service: it runs in-process and posts directly to each destination.
+        The body is sent as HTML so Apprise converts the existing <b>/<code> markup per target service.
+        """
+        from app.services.eero_client import eero_client
+        if eero_client.is_demo_mode:
+            log_event(logger, logging.INFO, "log_ops.apprise_demo_sent", title=title)
+            return True
+
+        urls = await db_service.get_setting("apprise_urls", settings.apprise_urls)
+        if not urls or not urls.strip():
+            return False
+
+        try:
+            import apprise  # optional dependency: imported lazily so a missing package never breaks the app
+        except ImportError:
+            log_event(logger, logging.WARNING, "log_ops.apprise_not_installed")
+            return False
+
+        # Map the existing severity colours onto Apprise notify types (drives icons/colours per service).
+        if color in (0xef4444,):
+            notify_type = apprise.NotifyType.FAILURE
+        elif color in (0x10b981,):
+            notify_type = apprise.NotifyType.SUCCESS
+        elif color in (0xf59e0b, 0xf97316, 0xd97706):
+            notify_type = apprise.NotifyType.WARNING
+        else:
+            notify_type = apprise.NotifyType.INFO
+
+        # The shared Telegram-style templates start with "<b>{title}</b>\n\n"; Apprise renders the title as its own
+        # heading, so drop that prefix to avoid showing it twice. Raw "\n" is plain whitespace in HTML (the converter
+        # would collapse every line into one paragraph), so turn line breaks into <br> before handing it to Apprise.
+        body = body_html.strip()
+        title_prefix = f"<b>{title}</b>"
+        if body.startswith(title_prefix):
+            body = body[len(title_prefix):].lstrip("\n")
+        body = body.replace("\n", "<br>")
+
+        apobj = apprise.Apprise()
+        apobj.add(urls)
+        count = len(apobj)
+        if count == 0:
+            log_event(logger, logging.ERROR, "log_ops.apprise_no_valid_urls")
+            return False
+
+        try:
+            # apprise.notify() is blocking network I/O: keep it off the FastAPI event loop.
+            ok = await asyncio.to_thread(
+                apobj.notify,
+                body=body,
+                title=title,
+                notify_type=notify_type,
+                body_format=apprise.NotifyFormat.HTML,
+            )
+        except Exception as e:
+            log_event(logger, logging.ERROR, "log_ops.apprise_error", error=str(e))
+            return False
+
+        if ok:
+            log_event(logger, logging.INFO, "log_ops.apprise_sent", count=count)
+        else:
+            log_event(logger, logging.WARNING, "log_ops.apprise_partial_failure", count=count)
+        return bool(ok)
+
     async def _dispatch_all_channels(self, event_type: str, title: str, text: str, db_msg: str, data: Dict[str, Any], color: int = 0x38bdf8):
         """Helper to dispatch across SQLite alerts, Telegram, Webhook, Discord, Pushover and Ntfy."""
         try:
@@ -420,6 +493,11 @@ class NotificationService:
             await self.send_ntfy_message(title=title, message=db_msg)
         except Exception as e:
             log_event(logger, logging.ERROR, "log_ops.ntfy_alert_error", error=str(e))
+
+        try:
+            await self.send_apprise_message(title=title, body_html=text, color=color)
+        except Exception as e:
+            log_event(logger, logging.ERROR, "log_ops.apprise_alert_error", error=str(e))
 
     async def notify_new_device(self, device: Dict[str, Any], lang: Optional[str] = None):
         active_lang = await self.get_language(lang)

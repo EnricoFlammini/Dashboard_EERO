@@ -35,6 +35,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
       - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - APPRISE_URLS=${APPRISE_URLS:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       - WATCHTOWER_URL=${WATCHTOWER_URL:-}
       # Opzionale: credenziali admin (se vuote, primo avvio richiede Setup Wizard web)

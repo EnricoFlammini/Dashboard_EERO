@@ -48,6 +48,7 @@ services:
       - DISCORD_WEBHOOK_URL=
       - PUSHOVER_USER_KEY=
       - PUSHOVER_API_TOKEN=
+      - APPRISE_URLS=
       # Optional: MQTT & Home Assistant Auto-Discovery
       - MQTT_ENABLED=false
       - MQTT_BROKER_HOST=
