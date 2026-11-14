@@ -2,7 +2,9 @@ import asyncio
 from collections import Counter
 import json
 import logging
+import os
 import random
+import shutil
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
@@ -35,6 +37,7 @@ class DBService:
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or str(settings.db_file_path)
         self._write_lock = asyncio.Lock()
+        self._repair_lock = asyncio.Lock()
 
     @asynccontextmanager
     async def get_connection(self) -> AsyncGenerator[aiosqlite.Connection, None]:
@@ -43,9 +46,193 @@ class DBService:
             await conn.execute("PRAGMA busy_timeout = 60000;")
             yield conn
 
+    @staticmethod
+    def _is_corruption_error(err: Exception) -> bool:
+        msg = str(err or "").lower()
+        return any(k in msg for k in ("malformed", "corrupt", "not a database", "file is encrypted"))
+
+    async def _recreate_signal_history_table(self, db: aiosqlite.Connection) -> None:
+        await db.execute("DROP INDEX IF EXISTS idx_signal_mac_time;")
+        await db.execute("DROP INDEX IF EXISTS idx_signal_time;")
+        await db.execute("DROP INDEX IF EXISTS idx_signal_clean_ts;")
+        await db.execute("DROP INDEX IF EXISTS idx_signal_mac_clean_ts;")
+        await db.execute("DROP TABLE IF EXISTS device_signal_history;")
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS device_signal_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                mac_address TEXT NOT NULL,
+                hostname TEXT,
+                signal_rssi INTEGER NOT NULL,
+                frequency_band TEXT,
+                channel INTEGER,
+                connected_eero_name TEXT,
+                rx_bitrate REAL,
+                tx_bitrate REAL,
+                is_demo INTEGER DEFAULT 0
+            );
+        """)
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_time ON device_signal_history(mac_address, timestamp);")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_time ON device_signal_history(timestamp);")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_clean_ts ON device_signal_history(replace(replace(timestamp, 'T', ' '), 'Z', ''));")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_signal_mac_clean_ts ON device_signal_history(mac_address, is_demo, replace(replace(timestamp, 'T', ' '), 'Z', ''));")
+        await db.commit()
+
+    async def _verify_signal_history_health(self, db: aiosqlite.Connection) -> bool:
+        async with db.execute("PRAGMA quick_check(1);") as cur_qc:
+            row_qc = await cur_qc.fetchone()
+            qc_res = str(row_qc[0] if row_qc else "ok").strip().lower()
+            if qc_res != "ok":
+                return False
+        async with db.execute(
+            """
+            SELECT h.mac_address
+            FROM device_signal_history h
+            INNER JOIN (
+                SELECT mac_address, MAX(timestamp) AS max_time
+                FROM device_signal_history
+                WHERE timestamp >= '2000-01-01' AND is_demo = 0
+                GROUP BY mac_address
+            ) latest ON h.mac_address = latest.mac_address AND h.timestamp = latest.max_time
+            LIMIT 5;
+            """
+        ) as cur_test:
+            await cur_test.fetchall()
+        return True
+
+    async def repair_if_malformed(self, error: Optional[Exception] = None) -> bool:
+        """
+        Auto-riparazione progressiva a 3 stadi per errori SQLite 'database disk image is malformed' (Issue #110):
+        1. REINDEX in-place (preserva il 100% dei dati se solo un indice B-tree è corrotto).
+        2. DROP & CREATE della tabella ad alta frequenza `device_signal_history`.
+        3. Salvage trasparente in memoria delle tabelle di configurazione/stato e ricostruzione pulita del file .db.
+        """
+        async with self._repair_lock:
+            logger.warning(f"SQLite auto-repair triggered on {self.db_path} (cause: {error})")
+            # Stadio 1: REINDEX in-place
+            try:
+                async with self.get_connection() as db:
+                    await db.execute("REINDEX device_signal_history;")
+                    await db.execute("REINDEX;")
+                    await db.commit()
+                    if await self._verify_signal_history_health(db):
+                        logger.info("SQLite auto-repair Stage 1 (REINDEX) succeeded with zero data loss.")
+                        return True
+            except Exception as e1:
+                logger.warning(f"SQLite auto-repair Stage 1 (REINDEX) did not resolve corruption: {e1}")
+
+            # Stadio 2: Ricreazione della sola tabella device_signal_history
+            try:
+                async with self.get_connection() as db:
+                    await self._recreate_signal_history_table(db)
+                    if await self._verify_signal_history_health(db):
+                        logger.info("SQLite auto-repair Stage 2 (recreate device_signal_history) succeeded.")
+                        return True
+            except Exception as e2:
+                logger.warning(f"SQLite auto-repair Stage 2 (recreate table) did not resolve corruption: {e2}")
+
+            # Stadio 3: Salvage completo delle tabelle critiche e rigenerazione file SQLite
+            salvage_tables = [
+                "app_settings",
+                "device_metadata",
+                "known_devices",
+                "local_users",
+                "user_sessions",
+                "device_schedules",
+                "speedtests",
+                "alert_history",
+                "eero_release_notes",
+                "device_discovered_ips",
+            ]
+            salvaged: Dict[str, List[Dict[str, Any]]] = {}
+            try:
+                if os.path.exists(self.db_path):
+                    async with aiosqlite.connect(self.db_path, timeout=30.0) as bad_db:
+                        bad_db.row_factory = aiosqlite.Row
+                        for tbl in salvage_tables:
+                            rows_acc: List[Dict[str, Any]] = []
+                            seen_repr: Set[str] = set()
+                            for order_clause in ("", " ORDER BY rowid DESC"):
+                                try:
+                                    async with bad_db.execute(f"SELECT * FROM {tbl}{order_clause};") as cur:
+                                        while True:
+                                            r = await cur.fetchone()
+                                            if r is None:
+                                                break
+                                            d = dict(r)
+                                            key_r = json.dumps(d, sort_keys=True, default=str)
+                                            if key_r not in seen_repr:
+                                                seen_repr.add(key_r)
+                                                rows_acc.append(d)
+                                except Exception:
+                                    continue
+                            if rows_acc:
+                                salvaged[tbl] = rows_acc
+            except Exception as sal_err:
+                logger.warning(f"SQLite salvage read warning: {sal_err}")
+
+            try:
+                ts_suffix = int(datetime.now(timezone.utc).timestamp())
+                bak_path = f"{self.db_path}.corrupt.{ts_suffix}.bak"
+                if os.path.exists(self.db_path):
+                    try:
+                        shutil.move(self.db_path, bak_path)
+                        logger.warning(f"Moved malformed SQLite database to {bak_path}")
+                    except Exception:
+                        try:
+                            os.remove(self.db_path)
+                        except Exception:
+                            pass
+                for ext in ("-wal", "-shm", "-journal"):
+                    sidecar = f"{self.db_path}{ext}"
+                    if os.path.exists(sidecar):
+                        try:
+                            os.remove(sidecar)
+                        except Exception:
+                            pass
+
+                await self._initialize_schema_core()
+
+                if salvaged:
+                    async with self.get_connection() as clean_db:
+                        for tbl, rows_list in salvaged.items():
+                            for row_d in rows_list:
+                                if not row_d:
+                                    continue
+                                cols = list(row_d.keys())
+                                placeholders = ", ".join(["?"] * len(cols))
+                                col_names = ", ".join(cols)
+                                vals = [row_d[c] for c in cols]
+                                try:
+                                    await clean_db.execute(
+                                        f"INSERT OR REPLACE INTO {tbl} ({col_names}) VALUES ({placeholders});",
+                                        vals,
+                                    )
+                                except Exception:
+                                    continue
+                        await clean_db.commit()
+                logger.warning("SQLite auto-repair Stage 3 (full database salvage & rebuild) succeeded.")
+                return True
+            except Exception as e3:
+                logger.error(f"SQLite auto-repair Stage 3 failed: {e3}")
+                return False
+
     async def init_db(self):
-        """Initialize database schema with tables and indexes."""
+        """Initialize database schema with tables and indexes, auto-repairing if malformed."""
         logger.info(f"Initializing database at: {self.db_path}")
+        try:
+            await self._initialize_schema_core()
+            async with self.get_connection() as db:
+                if not await self._verify_signal_history_health(db):
+                    raise aiosqlite.DatabaseError("database disk image is malformed (quick_check failed)")
+        except Exception as e:
+            if self._is_corruption_error(e):
+                logger.warning(f"Detected malformed SQLite database during init_db ({e}); running auto-repair...")
+                await self.repair_if_malformed(e)
+            else:
+                raise
+
+    async def _initialize_schema_core(self):
         async with self.get_connection() as db:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA synchronous = NORMAL;")
@@ -1196,6 +1383,10 @@ class DBService:
                     logger.warning(f"record_device_signal_samples SQLite locked: {e}")
                     return inserted
                 except Exception as e:
+                    if self._is_corruption_error(e) and attempt == 0:
+                        logger.warning(f"record_device_signal_samples hit SQLite corruption ({e}); auto-repairing and retrying...")
+                        await self.repair_if_malformed(e)
+                        continue
                     logger.warning(f"record_device_signal_samples failed: {e}")
                     return inserted
         return inserted
@@ -1205,18 +1396,24 @@ class DBService:
         mac = str(mac_address).lower().strip()
         cutoff_z = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
         cutoff_space = (datetime.now(timezone.utc) - timedelta(hours=range_hours)).strftime("%Y-%m-%d %H:%M:%S")
-        async with self.get_connection() as db:
-            cursor = await db.execute(
-                """
-                SELECT timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate
-                FROM device_signal_history
-                WHERE mac_address = ? AND (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
-                ORDER BY timestamp ASC
-                """,
-                (mac, cutoff_z, cutoff_space, is_demo)
-            )
-            rows = await cursor.fetchall()
-            return [dict(r) for r in rows]
+        try:
+            async with self.get_connection() as db:
+                cursor = await db.execute(
+                    """
+                    SELECT timestamp, mac_address, hostname, signal_rssi, frequency_band, channel, connected_eero_name, rx_bitrate, tx_bitrate
+                    FROM device_signal_history
+                    WHERE mac_address = ? AND (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
+                    ORDER BY timestamp ASC
+                    """,
+                    (mac, cutoff_z, cutoff_space, is_demo)
+                )
+                rows = await cursor.fetchall()
+                return [dict(r) for r in rows]
+        except Exception as e:
+            logger.warning(f"get_device_signal_history SQLite read error for {mac}: {e}")
+            if self._is_corruption_error(e):
+                await self.repair_if_malformed(e)
+            return []
 
     async def prune_device_exit_transient_samples(
         self, 
@@ -1261,6 +1458,8 @@ class DBService:
                     logger.debug(f"prune_device_exit_transient_samples SQLite locked: {e}")
                     return 0
                 except Exception as e:
+                    if self._is_corruption_error(e):
+                        await self.repair_if_malformed(e)
                     logger.debug(f"prune_device_exit_transient_samples failed: {e}")
                     return 0
         return 0
@@ -1272,33 +1471,38 @@ class DBService:
         live_devices: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """Calcola le statistiche aggregate di copertura mesh e qualità del segnale RSSI di tutti i dispositivi."""
-        async with self.get_connection() as db:
-            # Prendi l'ultimo campione per ciascun MAC nelle ultime 6 ore
-            cutoff_z = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
-            cutoff_space = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
-            cursor = await db.execute(
-                """
-                SELECT h.mac_address, h.hostname, h.signal_rssi, h.frequency_band, h.channel, h.connected_eero_name, h.timestamp
-                FROM device_signal_history h
-                INNER JOIN (
-                    SELECT mac_address, MAX(timestamp) AS max_time
-                    FROM device_signal_history
-                    WHERE (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
-                    GROUP BY mac_address
-                ) latest ON h.mac_address = latest.mac_address AND h.timestamp = latest.max_time
-                WHERE h.is_demo = ?
-                ORDER BY h.hostname COLLATE NOCASE ASC
-                """,
-                (cutoff_z, cutoff_space, is_demo, is_demo)
-            )
-            rows = await cursor.fetchall()
-            all_sampled_devices = []
-            for r in rows:
-                rd = dict(r)
-                parsed_r = self.parse_rssi_int(rd.get("signal_rssi"))
-                if parsed_r is not None:
-                    rd["signal_rssi"] = parsed_r
-                    all_sampled_devices.append(rd)
+        all_sampled_devices: List[Dict[str, Any]] = []
+        try:
+            async with self.get_connection() as db:
+                # Prendi l'ultimo campione per ciascun MAC nelle ultime 6 ore
+                cutoff_z = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                cutoff_space = (datetime.now(timezone.utc) - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S")
+                cursor = await db.execute(
+                    """
+                    SELECT h.mac_address, h.hostname, h.signal_rssi, h.frequency_band, h.channel, h.connected_eero_name, h.timestamp
+                    FROM device_signal_history h
+                    INNER JOIN (
+                        SELECT mac_address, MAX(timestamp) AS max_time
+                        FROM device_signal_history
+                        WHERE (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
+                        GROUP BY mac_address
+                    ) latest ON h.mac_address = latest.mac_address AND h.timestamp = latest.max_time
+                    WHERE h.is_demo = ?
+                    ORDER BY h.hostname COLLATE NOCASE ASC
+                    """,
+                    (cutoff_z, cutoff_space, is_demo, is_demo)
+                )
+                rows = await cursor.fetchall()
+                for r in rows:
+                    rd = dict(r)
+                    parsed_r = self.parse_rssi_int(rd.get("signal_rssi"))
+                    if parsed_r is not None:
+                        rd["signal_rssi"] = parsed_r
+                        all_sampled_devices.append(rd)
+        except Exception as db_err:
+            logger.warning(f"get_signal_overview SQLite read error (continuing with live_devices fallback): {db_err}")
+            if self._is_corruption_error(db_err):
+                await self.repair_if_malformed(db_err)
 
         # Integrazione live con i dispositivi wireless correnti dalla cache del poller (Issue #110)
         if live_devices:

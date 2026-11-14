@@ -88,6 +88,20 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(len(overview["weak_devices"]), 1)
                 self.assertEqual(overview["weak_devices"][0]["hostname"], "Garage Camera")
                 self.assertEqual(overview["weak_devices"][0]["signal_rssi"], -79)
+
+                # Simulate corrupted SQLite file ("database disk image is malformed")
+                Path(db_service.db_path).write_bytes(b"SQLite format 3\x00" + b"\xff" * 4096)
+                overview_after_corrupt = await db_service.get_signal_overview(
+                    is_demo=0,
+                    active_macs={"10:20:30:40:50:01", "10:20:30:40:50:02"},
+                    live_devices=live_devs,
+                )
+                self.assertEqual(overview_after_corrupt["total_wireless_devices"], 2)
+                self.assertEqual(overview_after_corrupt["weak_count"], 1)
+
+                # Verify that auto-repair restored a working SQLite database
+                inserted = await db_service.record_device_signal_samples(live_devs, is_demo=0)
+                self.assertEqual(inserted, 2)
             finally:
                 db_service.db_path = orig_db_path
 

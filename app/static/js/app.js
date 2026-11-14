@@ -3623,9 +3623,24 @@ document.addEventListener('alpine:init', () => {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.status === 'success' && data.history) {
+          if (data.status === 'success' && Array.isArray(data.history) && data.history.length > 0) {
             this.renderSignalChart(data.history);
+            return;
           }
+        }
+        const liveDev = (this.signalOverview && Array.isArray(this.signalOverview.devices))
+          ? this.signalOverview.devices.find(d => String(d.mac_address || '').toLowerCase() === String(this.selectedSignalDeviceMac || '').toLowerCase())
+          : null;
+        if (liveDev && typeof liveDev.signal_rssi === 'number') {
+          this.renderSignalChart([{
+            timestamp: new Date().toISOString(),
+            mac_address: liveDev.mac_address,
+            hostname: liveDev.hostname,
+            signal_rssi: liveDev.signal_rssi,
+            frequency_band: liveDev.frequency_band,
+            channel: liveDev.channel,
+            connected_eero_name: liveDev.connected_eero_name
+          }]);
         }
       } catch (err) {
         console.error("Load device signal history error:", err);
