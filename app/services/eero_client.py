@@ -1635,7 +1635,7 @@ class EeroClient:
                     eth_status.get("link_speed") or 
                     eth_status.get("negotiated_speed")
                 )
-                if sp:
+                if sp and carrier is not False and parse_speed_mbps(sp) > 0:
                     eth_speed_cand.append(sp)
             elif isinstance(eth_status, list):
                 for st in eth_status:
@@ -1649,7 +1649,7 @@ class EeroClient:
                         if carrier is True:
                             eth_carrier_detected = True
                         sp = st.get("speed") or st.get("rate") or st.get("link_speed")
-                        if sp:
+                        if sp and carrier is not False and parse_speed_mbps(sp) > 0:
                             eth_speed_cand.append(sp)
 
             is_wired = (
@@ -1720,15 +1720,16 @@ class EeroClient:
                     iv = int(round(float(val)))
                     return iv if -120 <= iv < 0 else None
                 if isinstance(val, dict):
-                    for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal"):
+                    for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal", "signal_strength", "dbm", "rx_rate_info", "tx_rate_info"):
                         parsed = _parse_rssi_dbm(val.get(k))
                         if parsed is not None:
                             return parsed
                     return None
-                m = re.search(r"-\d+(?:\.\d+)?", str(val))
+                s_val = str(val).replace("\u2212", "-").replace("\u2013", "-").replace("\u2014", "-")
+                m = re.search(r"-\s*(\d+(?:\.\d+)?)", s_val)
                 if m:
                     try:
-                        iv = int(round(float(m.group(0))))
+                        iv = -int(round(float(m.group(1))))
                         return iv if -120 <= iv < 0 else None
                     except Exception:
                         return None
@@ -1738,15 +1739,23 @@ class EeroClient:
             for rssi_cand in (
                 dev.get("signal_rssi"),
                 dev.get("rssi"),
+                dev.get("rx_rssi"),
+                dev.get("signal_dbm"),
                 dev.get("signal"),
                 dev.get("signal_avg"),
+                dev.get("signal_strength"),
                 conn_dict.get("signal"),
                 conn_dict.get("signal_avg"),
+                conn_dict.get("signal_strength"),
                 conn_dict.get("rx_rssi"),
                 conn_dict.get("rssi"),
                 conn_dict.get("signal_dbm"),
+                conn_dict.get("rx_rate_info"),
+                conn_dict.get("tx_rate_info"),
                 iface_dict.get("signal"),
                 iface_dict.get("rssi"),
+                iface_dict.get("rx_rssi"),
+                dev.get("wireless_details"),
             ):
                 rssi_parsed = _parse_rssi_dbm(rssi_cand)
                 if rssi_parsed is not None:

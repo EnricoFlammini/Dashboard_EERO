@@ -2042,6 +2042,10 @@ document.addEventListener('alpine:init', () => {
         this.fetchGuardianVpn(),
         this.loadSpeedtestData(),
       ]);
+      await this.loadSignalOverview();
+      if (this.currentTab === 'quality-analytics' || this.currentTab === 'analytics') {
+        this.loadAnalyticsData();
+      }
       if (this.currentTab === 'devices') {
         if (this.$nextTick) {
           await this.$nextTick();
@@ -3513,17 +3517,96 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     // SIGNAL QUALITY & MESH COVERAGE (v1.04.00)
     // =========================================================================
+    buildLiveSignalOverviewFromDevices() {
+      const parseRssi = (val) => {
+        if (val === null || val === undefined || typeof val === 'boolean') return null;
+        if (typeof val === 'number') {
+          const iv = Math.round(val);
+          return iv >= -120 && iv < 0 ? iv : null;
+        }
+        if (typeof val === 'object') {
+          for (const k of ['rx_rssi', 'rssi', 'signal_dbm', 'signal_avg', 'signal', 'signal_strength']) {
+            const p = parseRssi(val[k]);
+            if (p !== null) return p;
+          }
+          return null;
+        }
+        const s = String(val).replace(/[\u2212\u2013\u2014]/g, '-');
+        const m = s.match(/-\s*(\d+(?:\.\d+)?)/);
+        if (!m) return null;
+        const iv = -Math.round(parseFloat(m[1]));
+        return iv >= -120 && iv < 0 ? iv : null;
+      };
+
+      const rawDevs = Array.isArray(this.devices) ? this.devices : [];
+      const wirelessDevs = [];
+      for (const d of rawDevs) {
+        if (d.wireless === false || String(d.connection_type || '').toLowerCase() === 'wired') continue;
+        const rssi = parseRssi(d.signal_rssi ?? d.rssi ?? d.signal ?? d.signal_avg ?? (d.connectivity && (d.connectivity.signal ?? d.connectivity.signal_avg ?? d.connectivity.rx_rssi)));
+        const mac = String(d.mac || d.mac_address || '').toLowerCase().trim();
+        if (!mac || rssi === null) continue;
+        wirelessDevs.push({
+          mac_address: mac,
+          hostname: d.custom_name || d.nickname || d.hostname || mac,
+          signal_rssi: rssi,
+          frequency_band: d.frequency_band || d.wireless_band || 'Wi-Fi',
+          channel: d.channel || null,
+          connected_eero_name: d.connected_eero_name || d.eero_name || '',
+          connected: Boolean(d.connected),
+        });
+      }
+      if (wirelessDevs.length === 0) return null;
+      const active = wirelessDevs.filter(d => d.connected);
+      const target = active.length > 0 ? active : wirelessDevs;
+      const total = target.length;
+      const avg = Math.round((target.reduce((acc, d) => acc + d.signal_rssi, 0) / total) * 10) / 10;
+      const exc = target.filter(d => d.signal_rssi >= -50);
+      const good = target.filter(d => d.signal_rssi >= -65 && d.signal_rssi < -50);
+      const fair = target.filter(d => d.signal_rssi >= -75 && d.signal_rssi < -65);
+      const weak = target.filter(d => d.signal_rssi < -75);
+      return {
+        total_wireless_devices: total,
+        average_rssi: avg,
+        excellent_count: exc.length,
+        good_count: good.length,
+        fair_count: fair.length,
+        weak_count: weak.length,
+        excellent_pct: Math.round((exc.length / total) * 1000) / 10,
+        good_pct: Math.round((good.length / total) * 1000) / 10,
+        fair_pct: Math.round((fair.length / total) * 1000) / 10,
+        weak_pct: Math.round((weak.length / total) * 1000) / 10,
+        weak_devices: weak,
+        devices: wirelessDevs,
+      };
+    },
+
     async loadSignalOverview() {
       try {
-        const res = await fetch('/api/metrics/signal/overview');
+        const res = await fetch('/api/metrics/signal/overview', {
+          headers: this.getAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.status === 'success' && data.overview) {
-            this.signalOverview = data.overview;
+            let ov = data.overview;
+            if ((!ov.total_wireless_devices || ov.total_wireless_devices === 0) && Array.isArray(this.devices) && this.devices.length > 0) {
+              const fallbackOv = this.buildLiveSignalOverviewFromDevices();
+              if (fallbackOv) ov = fallbackOv;
+            }
+            this.signalOverview = ov;
             if (!this.selectedSignalDeviceMac && this.signalOverview.devices && this.signalOverview.devices.length > 0) {
               this.selectedSignalDeviceMac = this.signalOverview.devices[0].mac_address;
               await this.loadDeviceSignalHistory();
             }
+            return;
+          }
+        }
+        const fallbackOv = this.buildLiveSignalOverviewFromDevices();
+        if (fallbackOv) {
+          this.signalOverview = fallbackOv;
+          if (!this.selectedSignalDeviceMac && this.signalOverview.devices && this.signalOverview.devices.length > 0) {
+            this.selectedSignalDeviceMac = this.signalOverview.devices[0].mac_address;
+            await this.loadDeviceSignalHistory();
           }
         }
       } catch (err) {
@@ -3535,7 +3618,9 @@ document.addEventListener('alpine:init', () => {
       if (!this.selectedSignalDeviceMac) return;
       this.signalLoading = true;
       try {
-        const res = await fetch(`/api/metrics/signal/history?mac=${encodeURIComponent(this.selectedSignalDeviceMac)}&hours=${this.signalHistoryHours}`);
+        const res = await fetch(`/api/metrics/signal/history?mac=${encodeURIComponent(this.selectedSignalDeviceMac)}&hours=${this.signalHistoryHours}`, {
+          headers: this.getAuthHeaders()
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.status === 'success' && data.history) {

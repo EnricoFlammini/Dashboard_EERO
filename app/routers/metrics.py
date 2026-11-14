@@ -217,11 +217,18 @@ async def get_signal_overview():
             }
 
         # Rileva i MAC dei dispositivi wireless attualmente connessi dalla cache del poller
-        cached_devs = background_poller.cached_devices or []
+        cached_devs = list(background_poller.cached_devices or [])
+        if not cached_devs and getattr(eero_client, "is_authenticated", False):
+            try:
+                cached_devs = await eero_client.get_devices()
+            except Exception:
+                cached_devs = []
         active_wireless_macs = {
             str(d.get("mac") or d.get("mac_address") or "").lower().strip()
             for d in cached_devs
-            if d.get("connected") and d.get("wireless")
+            if d.get("connected")
+            and d.get("wireless") is not False
+            and str(d.get("connection_type") or "").lower() != "wired"
         }
         active_set = active_wireless_macs if active_wireless_macs else None
         overview = await db_service.get_signal_overview(

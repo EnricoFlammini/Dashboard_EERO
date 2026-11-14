@@ -36,6 +36,16 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
         })
         self.assertEqual(d3["signal_rssi"], -76)
 
+        d4 = eero_client._normalize_device({
+            "mac": "AA:BB:CC:00:11:04",
+            "connected": True,
+            "wireless": True,
+            "ethernet_status": {"speed": "NONE", "has_carrier": False},
+            "connectivity": {"signal": "−79 dBm"},
+        })
+        self.assertTrue(d4["wireless"])
+        self.assertEqual(d4["signal_rssi"], -79)
+
     async def test_issue_110_signal_overview_merges_live_cached_devices(self):
         """Issue #110: get_signal_overview must include live wireless devices (< -75 dBm) even if DB history is empty."""
         orig_db_path = db_service.db_path

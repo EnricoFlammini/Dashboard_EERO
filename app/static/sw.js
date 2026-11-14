@@ -3,7 +3,7 @@
  * Provides offline shell caching and fast background sync
  */
 
-const CACHE_NAME = 'eero-dashboard-v1.7.0-i18n-1';
+const CACHE_NAME = 'eero-dashboard-v1.7.0-b4';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
@@ -61,9 +61,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for locale files so a release never pairs new markup with
-  // stale translations; the cached copy is only used offline.
-  if (url.pathname.startsWith('/static/locales/')) {
+  // Network-first for locale files, JS, and CSS so a container update never serves stale scripts/styles;
+  // the cached copy is only used when offline.
+  if (
+    url.pathname.startsWith('/static/locales/') ||
+    url.pathname.startsWith('/static/js/') ||
+    url.pathname.startsWith('/static/css/')
+  ) {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
@@ -73,7 +77,7 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => caches.match(url.pathname))
+      }).catch(() => caches.match(url.pathname) || caches.match(event.request))
     );
     return;
   }

@@ -60,10 +60,15 @@ jobs:
               BUILD_NUM=$((DH_LATEST + 1))
             fi
             echo "Build number calcolato per MAIN: ${BUILD_NUM}"
-          # 3. Rilascio su TEST: verra' generato esclusivamente il tag flottante 'test'
+          # 3. Rilascio su TEST: verra' generato esclusivamente il tag flottante 'test' usando il BUILD_NUMBER del repo
           elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
-            BUILD_NUM="test"
-            echo "Build su branch TEST: sara' generato solo il tag 'test' (senza tag di versione dedicato)"
+            if [ -f BUILD_NUMBER ]; then
+              BUILD_NUM=$(tr -d '[:space:]' < BUILD_NUMBER)
+            fi
+            if [ -z "$BUILD_NUM" ]; then
+              BUILD_NUM="test"
+            fi
+            echo "Build su branch TEST (build ${BUILD_NUM}): sara' generato solo il tag 'test' (senza tag di versione dedicato)"
           else
             BUILD_NUM=1
           fi

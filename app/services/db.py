@@ -1133,16 +1133,17 @@ class DBService:
             except Exception:
                 return None
         if isinstance(val, dict):
-            for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal"):
+            for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal", "signal_strength", "dbm", "rx_rate_info", "tx_rate_info"):
                 parsed = DatabaseService.parse_rssi_int(val.get(k))
                 if parsed is not None:
                     return parsed
             return None
         import re
-        m = re.search(r"-\d+(?:\.\d+)?", str(val))
+        s_val = str(val).replace("\u2212", "-").replace("\u2013", "-").replace("\u2014", "-")
+        m = re.search(r"-\s*(\d+(?:\.\d+)?)", s_val)
         if m:
             try:
-                iv = int(round(float(m.group(0))))
+                iv = -int(round(float(m.group(1))))
                 return iv if -120 <= iv < 0 else None
             except Exception:
                 return None
@@ -1291,7 +1292,13 @@ class DBService:
                 (cutoff_z, cutoff_space, is_demo, is_demo)
             )
             rows = await cursor.fetchall()
-            all_sampled_devices = [dict(r) for r in rows]
+            all_sampled_devices = []
+            for r in rows:
+                rd = dict(r)
+                parsed_r = self.parse_rssi_int(rd.get("signal_rssi"))
+                if parsed_r is not None:
+                    rd["signal_rssi"] = parsed_r
+                    all_sampled_devices.append(rd)
 
         # Integrazione live con i dispositivi wireless correnti dalla cache del poller (Issue #110)
         if live_devices:
@@ -1302,10 +1309,27 @@ class DBService:
             }
             now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             for ld in live_devices:
-                if not ld.get("wireless"):
+                if ld.get("wireless") is False or str(ld.get("connection_type") or "").lower() == "wired":
                     continue
                 mac_l = str(ld.get("mac") or ld.get("mac_address") or "").lower().strip()
-                raw_rssi = ld.get("signal_rssi") if ld.get("signal_rssi") is not None else (ld.get("rssi") if ld.get("rssi") is not None else ld.get("signal"))
+                conn_sub = ld.get("connectivity") if isinstance(ld.get("connectivity"), dict) else {}
+                raw_rssi = (
+                    ld.get("signal_rssi")
+                    if ld.get("signal_rssi") is not None
+                    else (
+                        ld.get("rssi")
+                        if ld.get("rssi") is not None
+                        else (
+                            ld.get("signal")
+                            if ld.get("signal") is not None
+                            else (
+                                ld.get("signal_avg")
+                                if ld.get("signal_avg") is not None
+                                else conn_sub
+                            )
+                        )
+                    )
+                )
                 rssi_int = self.parse_rssi_int(raw_rssi)
                 if not mac_l or rssi_int is None:
                     continue

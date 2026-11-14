@@ -16,7 +16,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86) & 🌍 European i18n** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test ed espansione a 7 nuove lingue europee. |
-| **v1.8.0** | 📦 **Multi-Platform Native & Desktop Installers (Linux, Windows, macOS, HA Add-on & PyPI)** | Distribuzione oltre Docker: installer nativo Linux `systemd` (Debian/Ubuntu/Raspberry Pi/Proxmox LXC), app Desktop Windows (`.exe`) e macOS (`.dmg`) con tray/webview, Home Assistant Add-on ufficiale e pacchetto `pipx`/PyPI. |
+| **v1.8.0** | 📦 **Multi-Platform Native & Desktop Installers (Linux, Windows, macOS, HA Add-on, PyPI, Unraid CA, Synology NAS) & 🔔 Apprise Notifications (Discussion #109)** | Distribuzione oltre Docker e integrazione NAS/Enterprise: installer nativo Linux `systemd` (Debian/Ubuntu/Raspberry Pi/Proxmox LXC), app Desktop Windows (`.exe`) e macOS (`.dmg` - `@stevehoek`) con tray/webview, Home Assistant Add-on ufficiale, pacchetto `pipx`/PyPI, template ufficiale **Unraid Community Applications** (`@rvs007`), pacchetto/auto-update one-click per **Synology NAS** (`@jonmacdonald`) e canale notifiche universale **Apprise** per Microsoft Teams, Slack, Google Chat, Gotify e 100+ servizi (`@richlilly2004`). |
 
 ---
 
@@ -82,9 +82,11 @@ gantt
     Amazon Echo 'eero Built-in' Nodes (Issue #96)      :done, v1_7_echo, after v1_7_theme, 2d
     Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
     Devices Card View, Richer Home Cards & Product Images (PR #107):done, v1_7_cards, after v1_7_fixes, 2d
-    section v1.8.0 - Installazione Multi-Piattaforma & Desktop
+    section v1.8.0 - Installazione Multi-Piattaforma, NAS & Apprise
     Path & Runtime Detection (DATA_DIR / MEIPASS / Update UI) :active, v1_8_core, after v1_7_cards, 2d
-    Linux Native Installer (systemd / Proxmox LXC / .deb)      :v1_8_linux, after v1_8_core, 3d
+    Apprise Universal Notifications (Teams, Slack, GChat, Gotify) :v1_8_apprise, after v1_8_core, 2d
+    Unraid Community Apps XML & Synology NAS Package/Auto-Update  :v1_8_nas, after v1_8_apprise, 2d
+    Linux Native Installer (systemd / Proxmox LXC / .deb)      :v1_8_linux, after v1_8_nas, 3d
     Desktop App Windows (.exe) & macOS (.dmg) via CI/CD        :v1_8_desktop, after v1_8_linux, 5d
     Home Assistant Add-on & PyPI (pipx) Package                :v1_8_ha, after v1_8_desktop, 2d
 ```
@@ -966,27 +968,42 @@ gantt
 
 ---
 
-### 📦 Release v1.8.0 — Installazione Nativa Linux, App Desktop (Windows / macOS), Home Assistant Add-on & PyPI
+### 📦 Release v1.8.0 — Installazione Multi-Piattaforma (Linux, Desktop Windows/macOS, HA Add-on, PyPI, Unraid, Synology NAS) & Notifiche Universali Apprise (Discussion #109)
 
-> **Obiettivo:** Rendere la dashboard installabile e fruibile nativamente anche al di fuori di Docker, coprendo Linux bare-metal/LXC, Desktop Windows e macOS, Home Assistant OS e ambienti Python standard.
+> **Obiettivo:** Rendere la dashboard installabile e aggiornabile con 1 clic su qualsiasi ambiente (Linux bare-metal/LXC, Desktop Windows e macOS, Home Assistant OS, Unraid Community Applications, Synology NAS e PyPI) ed estendere il sistema di notifiche a Microsoft Teams, Slack, Google Chat, Gotify e oltre 100 destinazioni tramite Apprise.
 
 #### 1. ⚙️ Adeguamenti Core Multi-Piattaforma (`app/config.py`, `app/main.py`, Update UI)
 - [ ] **Risoluzione Dinamica Path & Bundle (`sys._MEIPASS`):** Supporto trasparente ai percorsi statici e template quando l'app viene eseguita da eseguibile PyInstaller.
 - [ ] **Directory Dati Standard per OS (`DATA_DIR` fallback):** Utilizzo automatico di `~/.local/share/eero-dashboard` / `/var/lib/eero-dashboard` (Linux), `%APPDATA%\eero-dashboard` (Windows) e `~/Library/Application Support/eero-dashboard` (macOS) quando `DATA_DIR` non è impostato.
-- [ ] **Rilevamento Ambiente nella Pagina Aggiornamenti:** Distinzione tra runtime `docker`, `systemd`, `desktop` e `pypi` nella scheda *Verifica aggiornamenti* per mostrare istruzioni e link di aggiornamento coerenti con l'installazione attiva.
+- [ ] **Rilevamento Ambiente nella Pagina Aggiornamenti:** Distinzione tra runtime `docker`, `systemd`, `desktop`, `synology`, `unraid` e `pypi` nella scheda *Verifica aggiornamenti* per mostrare istruzioni e azioni di aggiornamento coerenti con l'installazione attiva.
 
 #### 2. 🐧 Linux Nativo (`systemd` / Proxmox LXC / Raspberry Pi)
 - [ ] **Script Installer One-Liner (`install.sh`) & Pacchetto `.deb`:** Installazione automatizzata in `/opt/eero-dashboard` con `.venv` isolato, utente di servizio dedicato, `DATA_DIR=/var/lib/eero-dashboard` e unit `systemd` (`eero-dashboard.service`) con auto-start e log su `journalctl`.
 
-#### 3. 🖥️ App Desktop Windows (`.exe`) & macOS (`.dmg`)
+#### 3. 🖥️ App Desktop Windows (`.exe`) & macOS (`.dmg` — Feedback @stevehoek)
 - [ ] **Launcher Tray + Finestra Nativa (`PyInstaller` + `pystray` + `pywebview`):**
-  - Avvio automatico di Uvicorn in background su `127.0.0.1`, icona in System Tray / Menu Bar (*Apri Dashboard*, *Avvio all'accesso*, *Esci*) e apertura in finestra nativa (`WebView2` su Windows, `WebKit` su macOS) o browser.
+  - Avvio automatico di Uvicorn in background su `127.0.0.1`, icona in System Tray / Menu Bar macOS (*Apri Dashboard*, *Avvio all'accesso*, *Esci*) e apertura in finestra nativa (`WebView2` su Windows, `WebKit` su macOS) o browser.
   - Intercettazione automatica opzionale del callback Amazon OAuth2 `/ap/maplanding` nella finestra WebView integrata.
-- [ ] **Build Automatica via GitHub Actions:** Workflow dedicato su `windows-latest` (`.exe` / installer) e `macos-latest` (`.app` / `.dmg` Universal).
+- [ ] **Build Automatica via GitHub Actions:** Workflow dedicato su `windows-latest` (`.exe` / installer) e `macos-latest` (`.app` / `.dmg` Universal Binaries per Apple Silicon & Intel).
 
 #### 4. 🏠 Home Assistant Add-on & 📦 PyPI (`pipx`)
 - [ ] **Home Assistant Add-on Repository:** Aggiunta di `repository.yaml` e `config.yaml` per l'installazione con 1 clic da Home Assistant OS.
-- [ ] **Pacchetto Python (`pyproject.toml` / PyPI):** Pubblicazione su PyPI con comando CLI `eero-dashboard` installabile via `pipx install eero-dashboard`.
+- [ ] **Pacchetto Python (`pyproject.toml` / PyPI):** Pubblicazione su PyPI con comando CLI `eero-dashboard` installabile via `pipx install eero-dashboard` (con extra opzionale `eero-dashboard[apprise]`).
+
+#### 5. 🗄️ Unraid Community Applications & Synology NAS Native Integration (Discussion #109 — @rvs007, @jonmacdonald)
+- [ ] **Template Ufficiale Unraid Community Applications (`unraid/eero-dashboard.xml` — @rvs007):**
+  - Manifesto XML conforme allo schema Unraid CA per l'installazione e l'aggiornamento con 1 clic direttamente dall'app store *Apps* di Unraid (senza necessità del Docker Compose Manager).
+  - Pre-configurazione automatica di porta WebUI (`8085`), volume persistente `/mnt/user/appdata/eero-dashboard -> /app/data`, icona ufficiale e variabili opzionali (`TZ`, `DASHBOARD_LANG`, `REQUIRE_LOCAL_AUTH`).
+- [ ] **Pacchetto & Auto-Update Seamless per Synology NAS DSM 7.2+ (@jonmacdonald):**
+  - Pacchetto Synology `.spk` / progetto preconfigurato per Synology *Package Center* / *Container Manager* pensato per dispositivi NAS sempre accesi 24/7 sulla LAN.
+  - Configurazione predefinita per l'aggiornamento automatico o a 1 clic direttamente dalla UI della Dashboard (tramite socket `/var/run/docker.sock` o helper dedicato) senza dover riconfigurare o ricreare manualmente il container ad ogni nuova release.
+
+#### 6. 🔔 Gateway Notifiche Universale Apprise: Microsoft Teams, Slack, Google Chat, Gotify & 100+ Servizi (Discussion #109 — @richlilly2004)
+- [ ] **Canale `send_apprise_message()` Non-Bloccante in `notifications.py`:**
+  - Integrazione della libreria `apprise` (inclusa di default nell'immagine Docker e come extra `eero-dashboard[apprise]` nei pacchetti nativi) eseguita in thread separato (`asyncio.to_thread`) con pre-caricamento asincrono dei plugin all'avvio per latenza zero al primo alert.
+  - Supporto diretto agli URL **Microsoft Teams Workflows** (`powerplatform.com` / `logic.azure.com`), **Slack**, **Google Chat**, **Gotify**, **Matrix** ed **Email**, con mappatura automatica delle severità (`info`, `success`, `warning`, `failure`) e conversione del markup HTML localizzato in tutte e 9 le lingue.
+- [ ] **Pannello UI, Mascheramento Segreti & Pulsante di Test:**
+  - Aggiunta di `apprise_enabled` e `apprise_urls` (mascherato con `••••••••` in `GET /api/automations/notifications` come gli altri segreti) nella scheda *Notifiche & Webhook* con test di invio immediato e note di configurazione nel manuale.
 
 ---
 

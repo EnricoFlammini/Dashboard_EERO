@@ -67,6 +67,7 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copia il codice sorgente, documentazione e script di avvio entrypoint
 COPY app/ /app/app/
+COPY BUILD_NUMBER /app/BUILD_NUMBER
 COPY changelog.md /app/changelog.md
 COPY README.md /app/README.md
 COPY entrypoint.sh /app/entrypoint.sh
