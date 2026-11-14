@@ -34,15 +34,24 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 ### 🛡️ Pi-hole v6, AdGuard Home & DNS Sync Resiliente (Issues #98, #99 - @Hatton920, @jpatchMC)
 * **🎯 Unico Proprietario per Indirizzo IPv4 (`ip_owner` - Issue #99):**
   * Quando un indirizzo IP viene riassegnato dal DHCP a un nuovo apparato mentre il vecchio client resta in cache come offline, `_prepare_clients_payload()` assegna l'IP esclusivamente al client attivo (o con `last_active` più recente), rimuove gli IP stantii in `_merge_adguard_client_data()` ed esegue il pruning automatico dei record `dns.hosts` in conflitto su Pi-hole v6 (`_sync_single_pihole`) e AdGuard Home (`_sync_single_adguard`).
-* **🌐 Preferenza IPv4 nel Resolver DNS & Preservazione Credenziali (Issue #98):**
+* **🌐 Preferenza IPv4, Custom & Split DNS nel Resolver e Preservazione Credenziali (Issue #98):**
   * Ordinamento prioritario dei record `AF_INET` (IPv4) rispetto ad `AF_INET6` (IPv6) in `_cached_getaddrinfo()` per prevenire `ConnectTimeout` nei container Docker IPv4-only quando un FQDN locale espone anche record `AAAA`.
+  * Supporto nativo **Custom & Split DNS** in `dns_cache.py` tramite `CUSTOM_DNS_SERVERS` e `CUSTOM_DNS_DOMAINS` (es. `*.casa.lan=192.168.4.13`), consentendo al container di risolvere FQDN interni tramite server DNS locali (BIND / AdGuard / Pi-hole) con query UDP dirette e fallback automatico al DNS di sistema senza dover modificare `docker-compose.yml`.
   * Formattazione diagnostica esplicita (`_describe_dns_exception`) per le eccezioni `httpx` prive di messaggio testuale e caricamento delle password salvate in `scan_all_adguard_instances()`.
   * Richiesta esplicita di reinserimento password nella UI (`saved_url`) solo quando viene modificato l'URL di un'istanza DNS esistente per prevenire invii involontari di credenziali verso un host differente.
 
-### 🏠 Home Assistant MQTT: Unità `Mbit/s`, `last_seen_connected` & Rename Dinamico (Issues #101, #103, #104 - @markharrison, @jpatchMC)
-* **📏 Unità Standard `Mbit/s` (Issue #104):** Aggiornato `unit_of_measurement` da `"Mbps"` a `"Mbit/s"` sui sensori `wan_download` e `wan_upload` per piena conformità con `SensorDeviceClass.DATA_RATE` di Home Assistant.
+### 🏠 Home Assistant MQTT: Unità `Mbit/s`, Telemetria Live Rapida, `last_seen_connected` & Rename Dinamico (Issues #101, #103, #104 - @markharrison, @jpatchMC)
+* **📏 Unità Standard `Mbit/s` & Intervallo Telemetria Live Separato (Issue #104):**
+  * Aggiornato `unit_of_measurement` da `"Mbps"` a `"Mbit/s"` sui sensori `wan_download` e `wan_upload` per piena conformità con `SensorDeviceClass.DATA_RATE` di Home Assistant.
+  * Introdotto `MQTT_LIVE_INTERVAL` / `live_interval` (configurabile da `.env` e dalla modale UI MQTT; `0` = disabilitato) con metodo dedicato `publish_live_telemetry()` per pubblicare ad alta frequenza (es. ogni 5s) i soli sensori live (`wan_download`, `wan_upload`, `clients_count` e `{base_topic}/live`) lasciando `device_tracker` e sensori lenti sull'intervallo standard `publish_interval`.
 * **🕒 Attributo `last_seen_connected` (Issue #101):** Aggiunto l'attributo `"last_seen_connected"` (valorizzato con `last_active`) sul topic JSON degli attributi di ogni `device_tracker`.
 * **🔄 Ri-pubblicazione Automatica Discovery al Cambio Nome (Issue #103):** Evoluto `_published_tracker_configs` in dizionario `mac -> hostname` così che il topic `config` venga immediatamente aggiornato quando un dispositivo acquisisce il proprio hostname reale dopo il primo rilevamento OUI.
+
+### 🔒 Security Hardening & Enforcement Globale `REQUIRE_LOCAL_AUTH` (Advisory GHSA-r5vj-jfjp-m88q)
+* **🛡️ Middleware Globale `enforce_local_auth` (`app/main.py`):** Quando `REQUIRE_LOCAL_AUTH=true`, ogni richiesta verso `/api/*` e `/metrics` richiede una sessione valida, ad eccezione della allowlist pubblica esplicita (`GET /api/health`, `GET /api/auth/local/status`, `POST /api/auth/local/setup`, `POST /api/auth/local/login`, `POST /api/auth/local/logout`, `GET /api/system/language`). Esposto anche il flag `require_local_auth` in `GET /api/auth/local/status`.
+* **🔑 Copertura RBAC Completa & Ruolo `"__admin__"` (`app/routers/*`):** Esteso `require_permission(...)` (incluso il controllo `"__admin__"`) a tutte le rotte di lettura, scrittura ed esportazione precedentemente prive di dipendenza (`auth`, `local_auth`, `automations`, `devices`, `network`, `profiles`, `schedules`, `analytics`, `speedtest`, `system`, `metrics` e `/metrics`).
+* **🕵️ Mascheramento Segreti Notifiche (`app/routers/automations.py`):** `GET /api/automations/notifications` maschera ora token e webhook URL con `"••••••••"` (esponendo i booleani `has_<field>`), mentre `POST /api/automations/notifications` preserva i segreti già salvati quando riceve il placeholder mascherato.
+* **🔗 Hardening Link Markdown & Rate Limiter Proxy (`app.js`, `rate_limiter.py`):** Bloccati i link protocol-relative `//host` in `renderSimpleMarkdown()` e limitata la fiducia negli header `X-Real-IP` / `X-Forwarded-For` in `get_client_ip()` ai soli peer appartenenti a reti proxy private/loopback (`_TRUSTED_PROXY_NETWORKS`).
 
 ### 🔔 Pannelli UI Completi per Pushover, Discord, Webhook & Ntfy (Issues #90, #100 - @rvs007, @le0-o0o)
 * **📬 Dispatcher Nativo Ntfy (`send_ntfy_message` - Issue #90):** Supporto completo a server `ntfy.sh` o istanze self-hosted con autenticazione Bearer token, priorità e tag negli alert real-time e nel Daily Digest.
