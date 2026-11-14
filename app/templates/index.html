@@ -3607,6 +3607,22 @@
                 </div>
               </div>
             </div>
+
+            <!-- Apprise Multi-Service Channel (Microsoft Teams, Slack, Google Chat, Gotify, ...) - Discussion #109 -->
+            <div class="pt-2 border-t border-black/[0.06] dark:border-white/5 space-y-2">
+              <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                <input type="checkbox" x-model="notificationSettings.apprise_enabled" class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500/30 bg-white dark:bg-slate-800 w-4 h-4">
+                <span class="font-medium text-slate-800 dark:text-slate-200" x-text="t('controls.apprise_enable_toggle')"></span>
+              </label>
+              <div>
+                <label class="block text-slate-700 dark:text-slate-400 mb-1 font-semibold" x-text="t('controls.apprise_urls')"></label>
+                <textarea x-model="notificationSettings.apprise_urls" rows="2" spellcheck="false" autocomplete="off" :placeholder="t('controls.apprise_urls_placeholder')" class="glass-input w-full px-3 py-1.5 rounded-lg font-mono text-xs"></textarea>
+                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span x-text="t('controls.apprise_urls_help')"></span>
+                  <a href="https://github.com/caronc/apprise/wiki" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline" x-text="t('controls.apprise_docs_link')"></a>
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="pt-2 border-t border-black/[0.06] dark:border-white/5">
@@ -3694,7 +3710,12 @@
                     <span>✓ Ntfy</span>
                   </span>
                 </template>
-                <template x-if="!(notificationSettings.telegram_enabled && notificationSettings.telegram_bot_token && notificationSettings.telegram_chat_id) && !(notificationSettings.webhook_enabled && notificationSettings.webhook_url) && !(notificationSettings.discord_enabled && notificationSettings.discord_webhook_url) && !(notificationSettings.pushover_enabled && notificationSettings.pushover_user_key) && !(notificationSettings.ntfy_enabled && notificationSettings.ntfy_topic)">
+                <template x-if="notificationSettings.apprise_enabled && notificationSettings.apprise_urls">
+                  <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold">
+                    <span>✓ Apprise</span>
+                  </span>
+                </template>
+                <template x-if="!(notificationSettings.telegram_enabled && notificationSettings.telegram_bot_token && notificationSettings.telegram_chat_id) && !(notificationSettings.webhook_enabled && notificationSettings.webhook_url) && !(notificationSettings.discord_enabled && notificationSettings.discord_webhook_url) && !(notificationSettings.pushover_enabled && notificationSettings.pushover_user_key) && !(notificationSettings.ntfy_enabled && notificationSettings.ntfy_topic) && !(notificationSettings.apprise_enabled && notificationSettings.apprise_urls)">
                   <span class="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center space-x-1">
                     <span>⚠️</span>
                     <span x-text="t('controls.digest_no_channels')"></span>

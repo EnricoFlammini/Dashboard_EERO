@@ -46,6 +46,8 @@ class NotificationSettingsRequest(BaseModel):
     ntfy_url: Optional[str] = None
     ntfy_topic: Optional[str] = None
     ntfy_token: Optional[str] = None
+    apprise_enabled: Optional[bool] = False
+    apprise_urls: Optional[str] = None
     language: Optional[str] = None
 
 
@@ -290,6 +292,7 @@ _NOTIFICATION_SECRET_FIELDS = (
     "pushover_user_key",
     "pushover_api_token",
     "ntfy_token",
+    "apprise_urls",
 )
 _MASKED_SECRET_PLACEHOLDER = "••••••••"
 
@@ -334,6 +337,8 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
         ntfy_url=payload.ntfy_url,
         ntfy_topic=payload.ntfy_topic,
         ntfy_token=_keep_or_set(payload.ntfy_token, "ntfy_token"),
+        apprise_enabled=bool(payload.apprise_enabled),
+        apprise_urls=_keep_or_set(payload.apprise_urls, "apprise_urls"),
         language=payload.language
     )
     return {"status": "success", "message": tr("automations.notifications_saved")}
@@ -341,7 +346,7 @@ async def update_notification_settings(payload: NotificationSettingsRequest):
 
 @router.post("/notifications/test", dependencies=[Depends(require_permission("action_manage_rules"))])
 async def test_notification_channels(payload: Optional[NotificationTestRequest] = None):
-    """Invia un messaggio di prova per verificare che Telegram, Webhook, Discord, Pushover e Ntfy funzionino."""
+    """Invia un messaggio di prova per verificare che Telegram, Webhook, Discord, Pushover, Ntfy e Apprise funzionino."""
     lang = payload.language if payload else None
     active_lang = await notification_service.get_language(lang)
     msg = tr("automations.test_notification_body", lang=active_lang)
@@ -353,6 +358,7 @@ async def test_notification_channels(payload: Optional[NotificationTestRequest] 
     discord_res = await notification_service.send_discord_message(title=title, description=msg, ignore_enabled=True)
     pushover_res = await notification_service.send_pushover_message(title=title, message=msg, ignore_enabled=True)
     ntfy_res = await notification_service.send_ntfy_message(title=title, message=msg, ignore_enabled=True)
+    apprise_res = await notification_service.send_apprise_message(title=title, body_html=msg, ignore_enabled=True)
     
     return {
         "status": "success",
@@ -361,6 +367,7 @@ async def test_notification_channels(payload: Optional[NotificationTestRequest] 
         "discord_sent": discord_res,
         "pushover_sent": pushover_res,
         "ntfy_sent": ntfy_res,
+        "apprise_sent": apprise_res,
     }
 
 
