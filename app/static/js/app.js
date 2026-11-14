@@ -1121,11 +1121,14 @@ document.addEventListener('alpine:init', () => {
     },
 
     applyTheme(mode) {
-      const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const prefersDark = Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
       if (isDark) {
         document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
       } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
       }
       this.updateActiveQrCode();
       setTimeout(() => {
@@ -1987,6 +1990,8 @@ document.addEventListener('alpine:init', () => {
             await this.fetchOverview();
             if (this.currentTab === 'devices') {
               await this.fetchDevices();
+            } else if (this.currentTab === 'quality-analytics' || this.currentTab === 'analytics') {
+              await this.loadSignalOverview();
             }
           }
         }
@@ -2003,6 +2008,9 @@ document.addEventListener('alpine:init', () => {
         await this.refreshAllData();
         if (this.currentTab === 'speedtest') {
           await this.loadSpeedtestData();
+        } else if (this.currentTab === 'quality-analytics' || this.currentTab === 'analytics') {
+          await this.loadSignalOverview();
+          await this.loadAnalyticsData(true);
         }
         const title = this.t('js.manual_refresh.data_refreshed');
         const msg = this.t('js.manual_refresh.dashboard_synchronized_in_real');

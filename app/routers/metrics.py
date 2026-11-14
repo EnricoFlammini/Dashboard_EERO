@@ -224,7 +224,11 @@ async def get_signal_overview():
             if d.get("connected") and d.get("wireless")
         }
         active_set = active_wireless_macs if active_wireless_macs else None
-        overview = await db_service.get_signal_overview(is_demo=0, active_macs=active_set)
+        overview = await db_service.get_signal_overview(
+            is_demo=0,
+            active_macs=active_set,
+            live_devices=cached_devs,
+        )
         return {
             "status": "success",
             "overview": overview
@@ -286,6 +290,25 @@ async def get_device_signal_history(
             }
 
         history = await db_service.get_device_signal_history(mac_address=mac, range_hours=hours, is_demo=0)
+        if not history:
+            mac_target = str(mac or "").lower().strip()
+            for ld in (background_poller.cached_devices or []):
+                ld_mac = str(ld.get("mac") or ld.get("mac_address") or "").lower().strip()
+                if ld_mac == mac_target:
+                    rssi_int = db_service.parse_rssi_int(
+                        ld.get("signal_rssi") if ld.get("signal_rssi") is not None else (ld.get("rssi") if ld.get("rssi") is not None else ld.get("signal"))
+                    )
+                    if rssi_int is not None:
+                        history = [{
+                            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            "mac_address": mac.upper(),
+                            "hostname": ld.get("custom_name") or ld.get("nickname") or ld.get("hostname") or mac.upper(),
+                            "signal_rssi": rssi_int,
+                            "frequency_band": ld.get("frequency_band") or ld.get("wireless_band") or "Wi-Fi",
+                            "channel": ld.get("channel"),
+                            "connected_eero_name": ld.get("connected_eero_name") or "",
+                        }]
+                    break
         return {
             "status": "success",
             "mac_address": mac.upper(),

@@ -952,7 +952,17 @@ gantt
 - [x] **Middleware Globale `enforce_local_auth` & Copertura RBAC Completa:**
   - Richiesta obbligatoria di sessione valida su tutte le rotte `/api/*` e `/metrics` quando `REQUIRE_LOCAL_AUTH=true` (salvo allowlist pubblica `_LOCAL_AUTH_PUBLIC_ROUTES`), flag `require_local_auth` in `/api/auth/local/status` e protezione `require_permission(...)` / `"__admin__"` su tutte le rotte precedentemente scoperte.
 - [x] **Mascheramento Segreti Notifiche, Anti-Link Injection & Trusted Proxy Rate Limiter:**
-  - Mascheramento con `"••••••••"` (e preservazione al salvataggio) dei token/webhook in `/api/automations/notifications`, blocco link protocol-relative `//host` in `renderSimpleMarkdown()` e verifica reti proxy fidate (`_TRUSTED_PROXY_NETWORKS`) in `get_client_ip()`. Validato con **1747/1747 test** superati in `scripts/run_pre_release_tests.py`.
+  - Mascheramento con `"••••••••"` (e preservazione al salvataggio) dei token/webhook in `/api/automations/notifications`, blocco link protocol-relative `//host` in `renderSimpleMarkdown()` e verifica reti proxy fidate (`_TRUSTED_PROXY_NETWORKS`) in `get_client_ip()`. Validato con **1753/1753 test** superati in `scripts/run_pre_release_tests.py`.
+
+#### 17. 📶 Stabilizzazione Signal Quality & RSSI Historian, Discovery Iniziale e Selettori UI (Issues #86, #110, #112, #113 - @Hatton920, @todddube)
+- [x] **Normalizzazione RSSI dBm & Fallback Live in Signal Quality (Issue #110):**
+  - Parser dedicato `_parse_rssi_dbm` / `parse_rssi_int` per stringhe con unità (`"-78 dBm"`), float, dizionari annidati (`signal.rx_rssi`) e `signal_avg` nel range `[-120, -1] dBm`.
+  - Unione trasparente dei client wireless live della cache del poller in `/api/metrics/signal/overview` e `/api/metrics/signal/history`, popolando istantaneamente KPI, distribuzione, Weak Signal Watchlist (`< -75 dBm`) e grafico RSSI.
+- [x] **Isolamento Demo Mode & Lock Poller al Primo Login (Issue #112):**
+  - Serializzazione di `_poll_and_cache()` tramite `asyncio.Lock()` (`_poll_lock`), esclusione dei cicli Demo/non autenticati da `_known_macs` e `known_devices` e bonifica automatica in `init_db()` dei MAC demo, garantendo `is_initial_discovery = True` al primo poll reale senza falsi alert *"New Device"*.
+- [x] **Sincronizzazione `<select>` Alpine.js (`x-for` + `x-model`) & `color-scheme` Nativo OS (Issues #86, #113):**
+  - Binding esplicito `:selected="(h - 1) === Number(digestSettings.hour)"` sul selettore orario del Daily Digest e sul selettore dispositivo RSSI.
+  - Meta tag `<meta name="color-scheme" content="light dark">` e sincronizzazione `document.documentElement.style.colorScheme` in `applyTheme()`.
 
 ---
 

@@ -6142,6 +6142,25 @@ async def run_all_tests():
         _js_txt = Path("app/static/js/app.js").read_text(encoding="utf-8")
         runner.assert_true("mqttModalForm.live_interval" in _idx_txt and "live_interval" in _js_txt, "Issue #104: Campo live_interval presente nella UI MQTT")
 
+        # -----------------------------------------------------------------
+        # TEST 43: Fix Issue #86, #110, #112, #113
+        # -----------------------------------------------------------------
+        print("\n🛠️ Test 43: Verifica Fix Issue #86, #110, #112, #113...")
+        runner.assert_true('<meta name="color-scheme" content="light dark">' in _idx_txt, "Issue #86: Meta color-scheme light dark presente in index.html")
+        runner.assert_true(':selected="(h - 1) === Number(digestSettings.hour)"' in _idx_txt, "Issue #113: Binding :selected presente sulla select dell'ora Daily Digest")
+        runner.assert_true(':selected="d.mac_address === selectedSignalDeviceMac"' in _idx_txt, "Issue #110: Binding :selected presente sulla select dispositivi Signal Quality")
+
+        _norm_str_rssi = eero_client._normalize_device({"mac": "AA:BB:CC:11:22:33", "connected": True, "wireless": True, "rssi": "-78 dBm"})
+        runner.assert_true(_norm_str_rssi.get("signal_rssi") == -78, "Issue #110: _normalize_device converte rssi stringa '-78 dBm' in intero -78")
+
+        _sig_ov = await db_service.get_signal_overview(
+            is_demo=0,
+            active_macs={"aa:bb:cc:11:22:33"},
+            live_devices=[{"mac": "aa:bb:cc:11:22:33", "custom_name": "Sensore Giardino", "connected": True, "wireless": True, "signal_rssi": "-79 dBm", "frequency_band": "2.4 GHz", "channel": 6}],
+        )
+        runner.assert_true(_sig_ov.get("weak_count") == 1 and _sig_ov["weak_devices"][0]["signal_rssi"] == -79, "Issue #110: get_signal_overview rileva i dispositivi live < -75 dBm")
+        runner.assert_true(BackgroundPoller._is_demo_mac_or_device({"id": "dev_demo_1", "mac": "00:1a:2b:3c:4d:01"}) is True, "Issue #112: _is_demo_mac_or_device identifica i dispositivi Demo Mode")
+
         runner.print_summary()
 
 

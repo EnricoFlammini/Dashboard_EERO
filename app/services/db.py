@@ -165,6 +165,14 @@ class DBService:
                 """)
                 await db.execute("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('known_devices_baseline_v1', 'done');")
 
+            # Bonifica dispositivi Demo Mode (00:1a:2b:3c:4d:*, aa:bb:cc:dd:ee:*) eventualmente finiti in known_devices
+            # durante l'avvio prima del primo login (Issue #112)
+            await db.execute("""
+                DELETE FROM known_devices
+                WHERE LOWER(mac_address) LIKE '00:1a:2b:3c:4d:%'
+                   OR LOWER(mac_address) LIKE 'aa:bb:cc:dd:ee:%';
+            """)
+
             # 8. Device Signal History (RSSI, Band, Channel, Bitrate & Node Storicization - v1.04.00)
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS device_signal_history (
@@ -1113,6 +1121,33 @@ class DBService:
                     return None
         return None
 
+    @staticmethod
+    def parse_rssi_int(val: Any) -> Optional[int]:
+        """Estrae il valore intero RSSI (dBm) da int, float, dict o stringhe come '-78 dBm' (Issue #110)."""
+        if val is None or isinstance(val, bool):
+            return None
+        if isinstance(val, (int, float)):
+            try:
+                iv = int(round(float(val)))
+                return iv if -120 <= iv < 0 else None
+            except Exception:
+                return None
+        if isinstance(val, dict):
+            for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal"):
+                parsed = DatabaseService.parse_rssi_int(val.get(k))
+                if parsed is not None:
+                    return parsed
+            return None
+        import re
+        m = re.search(r"-\d+(?:\.\d+)?", str(val))
+        if m:
+            try:
+                iv = int(round(float(m.group(0))))
+                return iv if -120 <= iv < 0 else None
+            except Exception:
+                return None
+        return None
+
     # ----------------- DEVICE SIGNAL HISTORY (v1.04.00) -----------------
     async def record_device_signal_samples(self, samples: List[Dict[str, Any]], is_demo: int = 0) -> int:
         """Salva in batch i campioni di segnale RSSI dei dispositivi wireless connessi."""
@@ -1126,15 +1161,12 @@ class DBService:
                     async with self.get_connection() as db:
                         for s in samples:
                             mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
-                            rssi = s.get("signal_rssi") or s.get("signal")
-                            if not mac or rssi is None:
-                                continue
-                            try:
-                                rssi_val = int(rssi)
-                            except Exception:
+                            raw_rssi = s.get("signal_rssi") if s.get("signal_rssi") is not None else (s.get("rssi") if s.get("rssi") is not None else s.get("signal"))
+                            rssi_val = self.parse_rssi_int(raw_rssi)
+                            if not mac or rssi_val is None:
                                 continue
                             
-                            hostname = s.get("hostname") or s.get("custom_name") or s.get("nickname") or mac
+                            hostname = s.get("custom_name") or s.get("nickname") or s.get("hostname") or mac
                             freq_band = s.get("frequency_band") or s.get("wireless_band") or ""
                             channel = s.get("channel")
                             try:
@@ -1235,7 +1267,8 @@ class DBService:
     async def get_signal_overview(
         self, 
         is_demo: int = 0, 
-        active_macs: Optional[Set[str]] = None
+        active_macs: Optional[Set[str]] = None,
+        live_devices: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """Calcola le statistiche aggregate di copertura mesh e qualità del segnale RSSI di tutti i dispositivi."""
         async with self.get_connection() as db:
@@ -1260,11 +1293,59 @@ class DBService:
             rows = await cursor.fetchall()
             all_sampled_devices = [dict(r) for r in rows]
 
+        # Integrazione live con i dispositivi wireless correnti dalla cache del poller (Issue #110)
+        if live_devices:
+            by_mac: Dict[str, Dict[str, Any]] = {
+                str(d.get("mac_address") or "").lower().strip(): d
+                for d in all_sampled_devices
+                if d.get("mac_address")
+            }
+            now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            for ld in live_devices:
+                if not ld.get("wireless"):
+                    continue
+                mac_l = str(ld.get("mac") or ld.get("mac_address") or "").lower().strip()
+                raw_rssi = ld.get("signal_rssi") if ld.get("signal_rssi") is not None else (ld.get("rssi") if ld.get("rssi") is not None else ld.get("signal"))
+                rssi_int = self.parse_rssi_int(raw_rssi)
+                if not mac_l or rssi_int is None:
+                    continue
+                disp_name = ld.get("custom_name") or ld.get("nickname") or ld.get("hostname") or mac_l
+                f_band = ld.get("frequency_band") or ld.get("wireless_band") or ""
+                chan = ld.get("channel")
+                eero_n = ld.get("connected_eero_name") or ld.get("eero_name") or ""
+                if mac_l in by_mac:
+                    entry = by_mac[mac_l]
+                    entry["hostname"] = disp_name or entry.get("hostname") or mac_l
+                    if ld.get("connected"):
+                        entry["signal_rssi"] = rssi_int
+                        if f_band:
+                            entry["frequency_band"] = f_band
+                        if chan is not None:
+                            entry["channel"] = chan
+                        if eero_n:
+                            entry["connected_eero_name"] = eero_n
+                else:
+                    by_mac[mac_l] = {
+                        "mac_address": mac_l,
+                        "hostname": disp_name,
+                        "signal_rssi": rssi_int,
+                        "frequency_band": f_band,
+                        "channel": chan,
+                        "connected_eero_name": eero_n,
+                        "timestamp": now_iso,
+                    }
+            all_sampled_devices = sorted(
+                by_mac.values(),
+                key=lambda x: str(x.get("hostname") or x.get("mac_address") or "").lower()
+            )
+
         # Se active_macs è fornito, filtriamo i dispositivi per le statistiche attive (KPI & Watchlist)
         # preservando all_sampled_devices per il selettore del grafico storico
         if active_macs is not None:
             active_macs_lower = {str(m).lower().strip() for m in active_macs}
             active_devices = [d for d in all_sampled_devices if d["mac_address"].lower() in active_macs_lower]
+            if not active_devices and all_sampled_devices:
+                active_devices = all_sampled_devices
         else:
             active_devices = all_sampled_devices
 

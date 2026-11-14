@@ -69,6 +69,7 @@ class BackgroundPoller:
         self.cached_iot_anomalies: List[Dict[str, Any]] = []
         
         # Tracking states for alert detection
+        self._poll_lock: asyncio.Lock = asyncio.Lock()
         self._known_macs: Set[str] = set()
         self._initial_macs_loaded: bool = False
         self._known_eeros_status: Dict[str, str] = {}
@@ -581,14 +582,34 @@ class BackgroundPoller:
                 log_event(logger, logging.ERROR, "log_ops.poll_loop_failed", exc_info=True, error=str(e))
                 await asyncio.sleep(10)
 
+    @staticmethod
+    def _is_demo_mac_or_device(dev_or_mac: Any) -> bool:
+        """Restituisce True se il dispositivo o MAC appartiene al dataset simulato di Demo Mode (Issue #112)."""
+        if isinstance(dev_or_mac, dict):
+            mac = str(dev_or_mac.get("mac") or dev_or_mac.get("mac_address") or "").lower().strip()
+            dev_id = str(dev_or_mac.get("id") or "").lower().strip()
+            return mac.startswith(("00:1a:2b:3c:4d:", "aa:bb:cc:dd:ee:")) or dev_id.startswith(("dev_demo_", "dev_b2_"))
+        if isinstance(dev_or_mac, str):
+            m = dev_or_mac.lower().strip()
+            return m.startswith(("00:1a:2b:3c:4d:", "aa:bb:cc:dd:ee:"))
+        return False
+
     async def _poll_and_cache(self):
+        async with self._poll_lock:
+            await self._poll_and_cache_locked()
+
+    async def _poll_and_cache_locked(self):
         try:
-            # Caricamento iniziale MAC noti dal database SQLite
+            # Caricamento iniziale MAC noti dal database SQLite (escludendo eventuali MAC demo residui)
             if not self._initial_macs_loaded:
                 try:
-                    db_macs = await db_service.get_known_device_macs()
+                    db_macs = {
+                        m for m in await db_service.get_known_device_macs()
+                        if not self._is_demo_mac_or_device(m)
+                    }
                     self._known_macs.update(db_macs)
-                    self._initial_macs_loaded = True
+                    if db_macs:
+                        self._initial_macs_loaded = True
                 except Exception as e:
                     log_event(logger, logging.WARNING, "log_ops.known_macs_load_failed", error=str(e))
 
@@ -690,7 +711,24 @@ class BackgroundPoller:
             # 2. Arricchimento dispositivi con metadati locali, profilo utente cloud, Reverse NDP IPs (Issue #57) e First Seen (Issue #60)
             metadata_map = await db_service.get_all_device_metadata()
             discovered_ips_map = await db_service.get_all_discovered_ips_map()
-            known_devices_map = await db_service.get_all_known_devices_map()
+            raw_known_devices_map = await db_service.get_all_known_devices_map()
+            known_devices_map = {
+                m: v for m, v in raw_known_devices_map.items()
+                if not self._is_demo_mac_or_device(m)
+            }
+            self._known_macs = {m for m in self._known_macs if not self._is_demo_mac_or_device(m)}
+
+            # Rileva se il ciclo corrente sta leggendo il dataset simulato Demo Mode (es. prima del primo login - Issue #112)
+            has_non_demo_data = bool(
+                (network_details and network_details.get("id") and not str(network_details.get("id") or "").startswith("network_demo_"))
+                or (devices and any(not self._is_demo_mac_or_device(d) for d in devices if isinstance(d, dict)))
+            )
+            is_demo_poll = bool(
+                str((network_details or {}).get("id") or "").startswith("network_demo_")
+                or (devices and all(self._is_demo_mac_or_device(d) for d in devices if isinstance(d, dict)))
+                or (not has_non_demo_data and (getattr(eero_client, "is_demo_mode", False) or settings.demo_mode or not getattr(eero_client, "is_authenticated", True)))
+            )
+
             enriched_devices = []
             device_metrics_batch = []
             
@@ -703,7 +741,7 @@ class BackgroundPoller:
             dt_poll = (now_utc - self._prev_poll_time).total_seconds() if self._prev_poll_time else float(settings.poll_interval)
             dt_poll = max(1.0, min(120.0, dt_poll))
 
-            if not self._initial_macs_loaded and known_devices_map:
+            if not self._initial_macs_loaded and known_devices_map and not is_demo_poll:
                 self._known_macs.update(m.lower() for m in known_devices_map.keys())
                 self._initial_macs_loaded = True
 
@@ -837,8 +875,24 @@ class BackgroundPoller:
                 except Exception:
                     pass
 
+                # Normalizza signal_rssi a intero se presente come stringa con unità o in campi annidati (Issue #110)
+                if dev_copy.get("wireless"):
+                    raw_sig = dev_copy.get("signal_rssi")
+                    if raw_sig is None:
+                        raw_sig = dev_copy.get("rssi") if dev_copy.get("rssi") is not None else dev_copy.get("signal")
+                    if raw_sig is None and isinstance(dev_copy.get("connectivity"), dict):
+                        raw_sig = (
+                            dev_copy["connectivity"].get("signal")
+                            or dev_copy["connectivity"].get("signal_avg")
+                            or dev_copy["connectivity"].get("rx_rssi")
+                            or dev_copy["connectivity"].get("rssi")
+                        )
+                    parsed_sig = db_service.parse_rssi_int(raw_sig)
+                    if parsed_sig is not None:
+                        dev_copy["signal_rssi"] = parsed_sig
+
                 # Badge NUOVO soppresso per i dispositivi della prima scansione (già in rete) o segnati come visti
-                is_baseline = bool(known_dev_entry.get("baseline")) or (is_initial_discovery and not known_dev_entry)
+                is_baseline = bool(known_dev_entry.get("baseline")) or ((is_initial_discovery or is_demo_poll) and not known_dev_entry)
                 is_acknowledged = bool(known_dev_entry.get("acknowledged_at"))
                 dev_copy["is_new"] = is_new_7d and not (is_baseline or is_acknowledged)
                 dev_copy["is_new_24h"] = is_new_24h and not (is_baseline or is_acknowledged)
@@ -847,8 +901,8 @@ class BackgroundPoller:
 
                 enriched_devices.append(dev_copy)
 
-                # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB
-                if mac:
+                # Gestione Rilevamento Nuovo Dispositivo & Persistenza DB (solo in sessione reale, mai su Demo Mode - Issue #112)
+                if mac and not is_demo_poll and not self._is_demo_mac_or_device(dev_copy):
                     if not is_initial_discovery and mac not in self._known_macs:
                         # Nuovo dispositivo autentico rilevato durante l'operatività
                         self._known_macs.add(mac)
@@ -863,8 +917,8 @@ class BackgroundPoller:
                     else:
                         self._known_macs.add(mac)
 
-            # Se era la primissima discovery assoluta (db vuoto), registriamo tutto su SQLite senza inviare notifiche
-            if is_initial_discovery and enriched_devices:
+            # Se era la primissima discovery assoluta (db vuoto su rete reale), registriamo tutto su SQLite senza inviare notifiche
+            if is_initial_discovery and not is_demo_poll and enriched_devices:
                 await db_service.register_known_devices_batch(enriched_devices, notified=True, baseline=True)
                 self._initial_macs_loaded = True
 
@@ -982,7 +1036,7 @@ class BackgroundPoller:
             self._prev_poll_time = now_dt
 
             # 3.5 Campionamento continuo Segnale RSSI dispositivi wireless & Rilevamento Uscita/Departure
-            if not getattr(eero_client, "is_demo_mode", False):
+            if not is_demo_poll:
                 wireless_samples = [
                     d for d in enriched_devices
                     if d.get("connected") and d.get("wireless") and d.get("signal_rssi") is not None
@@ -1012,7 +1066,7 @@ class BackgroundPoller:
             # 3.6 Campionamento continuo Utilizzo Dati Dispositivi (v1.5.0 Insights Suite)
             try:
                 curr_net = str(eero_client.current_network_id or "default")
-                is_demo_flag = 1 if getattr(eero_client, "is_demo_mode", False) else 0
+                is_demo_flag = 1 if is_demo_poll else 0
                 usage_samples = [
                     d for d in enriched_devices
                     if d.get("mac") and (d.get("rx_bytes") is not None or d.get("download_rate_mbps") is not None)

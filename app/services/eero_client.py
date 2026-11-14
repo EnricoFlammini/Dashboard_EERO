@@ -1712,24 +1712,47 @@ class EeroClient:
 
             dev["channel"] = channel if channel > 0 else (raw_channel if raw_channel else None)
 
-            # Signal RSSI
-            if "signal_rssi" not in dev or dev["signal_rssi"] is None:
-                rssi = dev.get("rssi")
-                if rssi is None and isinstance(dev.get("connectivity"), dict):
-                    sig_val = dev["connectivity"].get("signal")
-                    if isinstance(sig_val, dict):
-                        rssi = sig_val.get("rx_rssi") or sig_val.get("rssi") or sig_val.get("signal_dbm") or sig_val.get("score")
-                    elif sig_val is not None:
-                        sig_str = str(sig_val)
-                        try:
-                            if sig_str:
-                                rssi = int(sig_str.split()[0].replace("dBm", "").replace("dbm", ""))
-                        except Exception:
-                            rssi = None
-                    if rssi is None:
-                        rssi = dev["connectivity"].get("rx_rssi") or dev["connectivity"].get("rssi") or dev["connectivity"].get("signal_dbm")
-                # Nessun valore inventato: senza segnale dal cloud resta None (nessun campione nello storico RSSI)
-                dev["signal_rssi"] = rssi
+            # Signal RSSI (Issue #110: normalizzazione robusta di stringhe "-78 dBm", float, dict e signal_avg)
+            def _parse_rssi_dbm(val: Any) -> Optional[int]:
+                if val is None or isinstance(val, bool):
+                    return None
+                if isinstance(val, (int, float)):
+                    iv = int(round(float(val)))
+                    return iv if -120 <= iv < 0 else None
+                if isinstance(val, dict):
+                    for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal"):
+                        parsed = _parse_rssi_dbm(val.get(k))
+                        if parsed is not None:
+                            return parsed
+                    return None
+                m = re.search(r"-\d+(?:\.\d+)?", str(val))
+                if m:
+                    try:
+                        iv = int(round(float(m.group(0))))
+                        return iv if -120 <= iv < 0 else None
+                    except Exception:
+                        return None
+                return None
+
+            rssi_parsed: Optional[int] = None
+            for rssi_cand in (
+                dev.get("signal_rssi"),
+                dev.get("rssi"),
+                dev.get("signal"),
+                dev.get("signal_avg"),
+                conn_dict.get("signal"),
+                conn_dict.get("signal_avg"),
+                conn_dict.get("rx_rssi"),
+                conn_dict.get("rssi"),
+                conn_dict.get("signal_dbm"),
+                iface_dict.get("signal"),
+                iface_dict.get("rssi"),
+            ):
+                rssi_parsed = _parse_rssi_dbm(rssi_cand)
+                if rssi_parsed is not None:
+                    break
+            # Nessun valore inventato: senza segnale dal cloud resta None (nessun campione nello storico RSSI)
+            dev["signal_rssi"] = rssi_parsed
 
             # Ethernet Speed extraction (Point 3 & Issue #14)
             eth_speed_str = ""

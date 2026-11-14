@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>eero Custom Dashboard & Management Suite</title>
   
   <!-- Headless Script Anti-FOUC (Zero Flashing al Caricamento del Tema) -->
@@ -13,8 +14,10 @@
         var d = t === 'dark' || (t === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (d) {
           document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
         } else {
           document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
         }
         var supported = {{ supported_languages | tojson }};
         var l = localStorage.getItem('eero_lang');
@@ -2941,7 +2944,7 @@
                 @change="loadDeviceSignalHistory()"
                 class="glass-input px-3 py-1.5 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-xs">
                 <template x-for="d in (signalOverview.devices || [])" :key="d.mac_address">
-                  <option :value="d.mac_address" x-text="(d.hostname || d.mac_address) + ' (' + (d.signal_rssi ? d.signal_rssi + ' dBm' : '') + ')'"></option>
+                  <option :value="d.mac_address" :selected="d.mac_address === selectedSignalDeviceMac" x-text="(d.hostname || d.mac_address) + ' (' + (d.signal_rssi ? d.signal_rssi + ' dBm' : '') + ')'"></option>
                 </template>
               </select>
 
@@ -3645,7 +3648,7 @@
                 <label class="text-[11px] font-medium text-slate-500 dark:text-slate-400" x-text="t('controls.digest_scheduled_hour')"></label>
                 <select x-model.number="digestSettings.hour" @change="saveDigestSettings()" class="text-xs py-1 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-indigo-500/30 focus:border-indigo-500">
                   <template x-for="h in 24" :key="h - 1">
-                    <option :value="h - 1" x-text="String(h - 1).padStart(2, '0') + ':00'"></option>
+                    <option :value="h - 1" :selected="(h - 1) === Number(digestSettings.hour)" x-text="String(h - 1).padStart(2, '0') + ':00'"></option>
                   </template>
                 </select>
               </div>
