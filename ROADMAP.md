@@ -918,13 +918,15 @@ gantt
   - Quando un IP viene riassegnato via DHCP a un nuovo dispositivo mentre il vecchio client resta in cache come offline, assegnazione dell'IP unicamente al dispositivo attualmente **connesso** (o a quello con `last_active` più recente se entrambi offline), evitando l'emissione di record DNS multipli per lo stesso IP.
 - [x] **Pruning Automatico Conflitti IP su Pi-hole v6 e AdGuard Home (Issue #99):**
   - Rimozione automatica dei record `dns.hosts` preesistenti il cui indirizzo IP è ora rivendicato da un diverso hostname attivo gestito dalla dashboard, garantendo reverse lookup PTR univoci e corretti nei log di Pi-hole.
-- [x] **Supporto Risoluzione FQDN Locali & Preservazione Password DNS (Issue #98):**
+- [x] **Supporto Risoluzione FQDN Locali, Custom/Split DNS & Preservazione Password DNS (Issue #98):**
   - Ordinamento IPv4-first (`AF_INET` prima di `AF_INET6`) in `_cached_getaddrinfo` per evitare `ConnectTimeout` nei container Docker IPv4-only quando l'FQDN locale espone record `AAAA`.
+  - Supporto nativo **Custom & Split DNS** (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`) in `dns_cache.py` con query UDP dirette verso server DNS locali (BIND / AdGuard / Pi-hole) per domini specifici e fallback automatico al DNS di sistema.
   - Preservazione automatica della password/token salvati in SQLite quando l'utente modifica un'istanza DNS senza cambiare URL, e richiesta esplicita di reinserimento credenziali se l'URL viene modificato (`saved_url`).
 
-#### 12. 🏠 Perfezionamenti Home Assistant MQTT: Unità `Mbit/s`, `last_seen_connected` & Aggiornamento Dinamico Nome (Issues #101, #103, #104 - @markharrison, @jpatchMC)
-- [x] **Conformità Unità `data_rate` in Home Assistant (`Mbit/s` - Issue #104):**
+#### 12. 🏠 Perfezionamenti Home Assistant MQTT: Unità `Mbit/s`, Telemetria Live Rapida, `last_seen_connected` & Aggiornamento Dinamico Nome (Issues #101, #103, #104 - @markharrison, @jpatchMC)
+- [x] **Conformità Unità `data_rate` (`Mbit/s`) & Intervallo Telemetria Live Separato (Issue #104):**
   - Sostituzione di `"unit_of_measurement": "Mbps"` con lo standard ufficiale Home Assistant **`"Mbit/s"`** nei payload di discovery `wan_download` e `wan_upload`, eliminando l'errore di validazione `SensorDeviceClass.DATA_RATE` nei log di Home Assistant.
+  - Introduzione di `MQTT_LIVE_INTERVAL` / `live_interval` (configurabile anche nella modale UI MQTT) e `publish_live_telemetry()` per pubblicare ad alta frequenza i soli sensori WAN live (`wan_download`, `wan_upload`, `clients_count`, `/live`) senza appesantire il broker con i `device_tracker`.
 - [x] **Attributo `last_seen_connected` sui Device Tracker MQTT (Issue #101):**
   - Inclusione del campo `"last_seen_connected"` (valorizzato con il timestamp ISO `last_active` del dispositivo) nel payload JSON degli attributi pubblicato su `{base_topic}/device_tracker/{mac}/attributes`.
 - [x] **Aggiornamento Automatico Discovery al Cambio Nome Dispositivo (Issue #103):**
@@ -945,6 +947,12 @@ gantt
   - Toggle Elenco/Schede con animazioni live durante il traffico, cambio profilo inline (`action_edit_devices`), selettore categoria con icone e Auto-detect reset, aggiornamento immediato della cache RAM al salvataggio metadata e limite tracker MQTT alzato a 1000.
 - [x] **Card Dashboard Cliccabili & Immagini Ufficiali Hardware eero:**
   - Card Home cliccabili (WAN, Gateway, Client Connessi per banda, Speed Test con sparkline) e immagini ufficiali dei 20 modelli eero (`app/static/img/products/`, `getEeroProductImage`) visualizzate accanto ai nodi mesh.
+
+#### 16. 🔒 Security Hardening & Enforcement Globale `REQUIRE_LOCAL_AUTH` (Advisory GHSA-r5vj-jfjp-m88q)
+- [x] **Middleware Globale `enforce_local_auth` & Copertura RBAC Completa:**
+  - Richiesta obbligatoria di sessione valida su tutte le rotte `/api/*` e `/metrics` quando `REQUIRE_LOCAL_AUTH=true` (salvo allowlist pubblica `_LOCAL_AUTH_PUBLIC_ROUTES`), flag `require_local_auth` in `/api/auth/local/status` e protezione `require_permission(...)` / `"__admin__"` su tutte le rotte precedentemente scoperte.
+- [x] **Mascheramento Segreti Notifiche, Anti-Link Injection & Trusted Proxy Rate Limiter:**
+  - Mascheramento con `"••••••••"` (e preservazione al salvataggio) dei token/webhook in `/api/automations/notifications`, blocco link protocol-relative `//host` in `renderSimpleMarkdown()` e verifica reti proxy fidate (`_TRUSTED_PROXY_NETWORKS`) in `get_client_ip()`. Validato con **1747/1747 test** superati in `scripts/run_pre_release_tests.py`.
 
 ---
 
