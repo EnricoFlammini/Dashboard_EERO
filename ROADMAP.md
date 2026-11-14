@@ -16,7 +16,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86) & 🌍 European i18n** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test ed espansione a 7 nuove lingue europee. |
-| **v1.8.0** | 📦 **Multi-Platform Native & Desktop Installers (Linux, Windows, macOS, HA Add-on, PyPI, Unraid CA, Synology NAS) & 🔔 Apprise Notifications (Discussion #109)** | Distribuzione oltre Docker e integrazione NAS/Enterprise: installer nativo Linux `systemd` (Debian/Ubuntu/Raspberry Pi/Proxmox LXC), app Desktop Windows (`.exe`) e macOS (`.dmg` - `@stevehoek`) con tray/webview, Home Assistant Add-on ufficiale, pacchetto `pipx`/PyPI, template ufficiale **Unraid Community Applications** (`@rvs007`), pacchetto/auto-update one-click per **Synology NAS** (`@jonmacdonald`) e canale notifiche universale **Apprise** per Microsoft Teams, Slack, Google Chat, Gotify e 100+ servizi (`@richlilly2004`). |
+| **v1.8.0** | 📦 **Multi-Platform Native & Desktop Installers (Linux, Windows, macOS, HA Add-on, PyPI, Unraid CA, Synology NAS), 🔔 Apprise Notifications & 🛠️ Maintenance Mode UI (Discussion #109, Issue #110)** | Distribuzione oltre Docker e integrazione NAS/Enterprise: installer nativo Linux `systemd` (Debian/Ubuntu/Raspberry Pi/Proxmox LXC), app Desktop Windows (`.exe`) e macOS (`.dmg` - `@stevehoek`) con tray/webview, Home Assistant Add-on ufficiale, pacchetto `pipx`/PyPI, template ufficiale **Unraid Community Applications** (`@rvs007`), pacchetto/auto-update one-click per **Synology NAS** (`@jonmacdonald`), canale notifiche universale **Apprise** per Microsoft Teams, Slack, Google Chat, Gotify e 100+ servizi (`@richlilly2004`) e schermata/banner Web UI informativa per operazioni di manutenzione, riparazione DB e housekeeping (`@stevehoek` - Issue #110). |
 
 ---
 
@@ -85,7 +85,8 @@ gantt
     section v1.8.0 - Installazione Multi-Piattaforma, NAS & Apprise
     Path & Runtime Detection (DATA_DIR / MEIPASS / Update UI) :active, v1_8_core, after v1_7_cards, 2d
     Apprise Universal Notifications (Teams, Slack, GChat, Gotify) :v1_8_apprise, after v1_8_core, 2d
-    Unraid Community Apps XML & Synology NAS Package/Auto-Update  :v1_8_nas, after v1_8_apprise, 2d
+    Maintenance & Housekeeping Mode UI Overlay (Issue #110)      :v1_8_maint, after v1_8_apprise, 1d
+    Unraid Community Apps XML & Synology NAS Package/Auto-Update  :v1_8_nas, after v1_8_maint, 2d
     Linux Native Installer (systemd / Proxmox LXC / .deb)      :v1_8_linux, after v1_8_nas, 3d
     Desktop App Windows (.exe) & macOS (.dmg) via CI/CD        :v1_8_desktop, after v1_8_linux, 5d
     Home Assistant Add-on & PyPI (pipx) Package                :v1_8_ha, after v1_8_desktop, 2d
@@ -1004,6 +1005,13 @@ gantt
   - Supporto diretto agli URL **Microsoft Teams Workflows** (`powerplatform.com` / `logic.azure.com`), **Slack**, **Google Chat**, **Gotify**, **Matrix** ed **Email**, con mappatura automatica delle severità (`info`, `success`, `warning`, `failure`) e conversione del markup HTML localizzato in tutte e 9 le lingue.
 - [ ] **Pannello UI, Mascheramento Segreti & Pulsante di Test:**
   - Aggiunta di `apprise_enabled` e `apprise_urls` (mascherato con `••••••••` in `GET /api/automations/notifications` come gli altri segreti) nella scheda *Notifiche & Webhook* con test di invio immediato e note di configurazione nel manuale.
+
+#### 7. 🛠️ Schermata & Banner di Manutenzione Web UI per Operazioni di Background (Issue #110 — Feedback @stevehoek)
+- [ ] **Maintenance / Housekeeping State Interceptor (`/api/health` & Middleware):**
+  - Esposizione di uno stato `status: "maintenance"` (con dettagli `stage`, `message` ed eventuale stima di avanzamento) durante operazioni di sistema pesanti: auto-riparazione o ricostruzione indici SQLite (`repair_if_malformed`), compattazione retention rollup, pulizia `VACUUM` programmata o sincronizzazione iniziale a freddo al boot.
+- [ ] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby Server / Plex):**
+  - Overlay visivo o banner Fluent animato con spinner e messaggio descrittivo localizzato in 9 lingue (es. *"Manutenzione database in corso... Ottimizzazione integrità e indici SQLite, attendere qualche secondo"*), evitando che l'utente veda la schermata apparire temporaneamente "offline" o bloccata al riavvio del container.
+  - Meccanismo di auto-reconnect polling ad alta frequenza (ogni 2 secondi) su `/api/health` che ripristina istantaneamente l'interfaccia interattiva non appena la manutenzione termina, senza costringere a ricaricare manualmente la pagina nel browser.
 
 ---
 
