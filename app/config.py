@@ -111,6 +111,9 @@ try:
         ntfy_token: str = os.getenv("NTFY_TOKEN", "")
         ntfy_alerts_enabled: bool = os.getenv("NTFY_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
+        # Apprise (spike): one or more Apprise URLs, comma/space separated (Teams, Slack, Google Chat, Gotify, Matrix, ...)
+        apprise_urls: str = os.getenv("APPRISE_URLS", "")
+
         @field_validator("dashboard_lang", mode="before")
         @classmethod
         def _validate_dashboard_lang(cls, value: object) -> str:
@@ -200,6 +203,7 @@ except ImportError:
             self.ntfy_topic = os.getenv("NTFY_TOPIC", "")
             self.ntfy_token = os.getenv("NTFY_TOKEN", "")
             self.ntfy_alerts_enabled = os.getenv("NTFY_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
+            self.apprise_urls = os.getenv("APPRISE_URLS", "")
 
         @property
         def full_version(self) -> str:

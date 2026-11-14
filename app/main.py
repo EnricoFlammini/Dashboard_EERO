@@ -79,6 +79,9 @@ async def lifespan(app: FastAPI):
     from app.services.mqtt_client import mqtt_service
     await mqtt_service.start()
 
+    # 6. Pre-import Apprise in background when the channel is configured (first alert without import latency)
+    notification_service.schedule_apprise_warm_up()
+
     yield
 
     # Chiusura pulita dei processi in background

@@ -636,7 +636,9 @@ document.addEventListener('alpine:init', () => {
       ntfy_enabled: false,
       ntfy_url: 'https://ntfy.sh',
       ntfy_topic: '',
-      ntfy_token: ''
+      ntfy_token: '',
+      apprise_enabled: false,
+      apprise_urls: ''
     },
 
     digestSettings: {
@@ -3880,7 +3882,8 @@ document.addEventListener('alpine:init', () => {
           `Webhook: ${json.webhook_sent ? okLabel : noLabel}`,
           `Discord: ${json.discord_sent ? okLabel : noLabel}`,
           `Pushover: ${json.pushover_sent ? okLabel : noLabel}`,
-          `Ntfy: ${json.ntfy_sent ? okLabel : noLabel}`
+          `Ntfy: ${json.ntfy_sent ? okLabel : noLabel}`,
+          `Apprise: ${json.apprise_sent ? okLabel : noLabel}`
         ];
         this.showToast(title, parts.join(' | '), 'info');
       } catch (err) {

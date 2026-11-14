@@ -152,6 +152,7 @@ async def run_all_tests():
         runner.assert_true(notif_data.get("telegram_bot_token") == "••••••••" and notif_data.get("has_telegram_bot_token") is True, "Token Telegram in Demo è mascherato (has_telegram_bot_token=True)")
         runner.assert_true(notif_data.get("telegram_chat_id") == "-1001234567890", "Chat ID Telegram in Demo è fittizio (-1001234567890)")
         runner.assert_true(notif_data.get("webhook_url") == "••••••••" and notif_data.get("has_webhook_url") is True, "Webhook URL in Demo è mascherato (has_webhook_url=True)")
+        runner.assert_true(notif_data.get("apprise_urls") == "••••••••" and notif_data.get("has_apprise_urls") is True, "URL Apprise in Demo mascherati (has_apprise_urls=True)")
 
         # Test invio notifiche in Demo (nessuna chiamata HTTP a Telegram / Webhook)
         res = await client.post("/api/automations/notifications/test")
@@ -159,6 +160,7 @@ async def run_all_tests():
         test_notif = res.json()
         runner.assert_true(test_notif.get("telegram_sent") is True, "Simulazione invio Telegram completata senza errori")
         runner.assert_true(test_notif.get("webhook_sent") is True, "Simulazione invio Webhook completata senza errori")
+        runner.assert_true(test_notif.get("apprise_sent") is True, "Simulazione invio Apprise completata senza errori")
 
         # Test Daily Digest immediato in Demo
         res = await client.post("/api/automations/digest/generate")
@@ -6009,6 +6011,7 @@ async def run_all_tests():
                 discord_enabled=False, discord_webhook_url="https://discord.com/api/webhooks/secret",
                 pushover_enabled=False, pushover_user_key="u-secret", pushover_api_token="a-secret",
                 ntfy_enabled=False, ntfy_url="https://ntfy.sh", ntfy_topic="t", ntfy_token="tk-secret",
+                apprise_enabled=False, apprise_urls="https://prod.powerplatform.example/workflows/x?sig=SECRET_SIG",
                 language="en",
             )
             _r_notif_get = await client.get("/api/automations/notifications", headers=adm_hdr)
@@ -6016,13 +6019,16 @@ async def run_all_tests():
             _ng = _r_notif_get.json()
             runner.assert_true(_ng.get("telegram_bot_token") == "••••••••" and _ng.get("has_telegram_bot_token") is True, "GHSA-r5vj: Token Telegram mascherato nella GET")
             runner.assert_true(_ng.get("webhook_url") == "••••••••" and _ng.get("ntfy_token") == "••••••••", "GHSA-r5vj: Webhook URL e Ntfy token mascherati nella GET")
+            runner.assert_true(_ng.get("apprise_urls") == "••••••••" and "SECRET_SIG" not in json.dumps(_ng), "GHSA-r5vj: URL Apprise (firma Teams) mascherati nella GET")
             _r_notif_post = await client.post("/api/automations/notifications", json={
                 "telegram_enabled": True, "telegram_bot_token": "••••••••", "telegram_chat_id": "999",
                 "webhook_enabled": True, "webhook_url": "••••••••",
+                "apprise_enabled": False, "apprise_urls": "••••••••",
             }, headers=adm_hdr)
             runner.assert_true(_r_notif_post.status_code == 200, "GHSA-r5vj: POST /api/automations/notifications accetta placeholder mascherato")
             _saved_after = await _notif_svc.get_settings()
             runner.assert_true(_saved_after.get("telegram_bot_token") == "123456:SECRET_BOT_TOKEN" and _saved_after.get("webhook_url") == "https://hooks.example/secret-path", "GHSA-r5vj: Segreti notifiche preservati al salvataggio con placeholder")
+            runner.assert_true(_saved_after.get("apprise_urls") == "https://prod.powerplatform.example/workflows/x?sig=SECRET_SIG", "GHSA-r5vj: URL Apprise preservati al salvataggio con placeholder")
 
             # Lower-severity fixes: protocol-relative link guard in app.js and trusted-proxy XFF check in rate_limiter.py
             _app_js_sec = Path("app/static/js/app.js").read_text(encoding="utf-8")
@@ -6141,6 +6147,37 @@ async def run_all_tests():
         _idx_txt = Path("app/templates/index.html").read_text(encoding="utf-8")
         _js_txt = Path("app/static/js/app.js").read_text(encoding="utf-8")
         runner.assert_true("mqttModalForm.live_interval" in _idx_txt and "live_interval" in _js_txt, "Issue #104: Campo live_interval presente nella UI MQTT")
+
+        # ==============================================================================
+        # TEST 43: APPRISE MULTI-SERVICE CHANNEL (DISCUSSION #109 - TEAMS, SLACK, GOOGLE CHAT, GOTIFY)
+        # ==============================================================================
+        print("\n📣 Test 43: Apprise channel (Discussion #109)...")
+        import inspect as _inspect
+        from app.services import notifications as _notif_mod
+
+        # 1. Body adaptation: duplicate title line removed, line breaks preserved for HTML->Markdown
+        _ap_body = _notif_mod._prepare_apprise_body(
+            "⚠️ Node Offline", "<b>⚠️ Node Offline</b>\n\n• <b>Host:</b> <code>pc</code>\n• <b>IP:</b> <code>10.0.0.2</code>"
+        )
+        runner.assert_true(_ap_body == "• <b>Host:</b> <code>pc</code><br>• <b>IP:</b> <code>10.0.0.2</code>", "Apprise: riga titolo <b>{title}</b> rimossa e \\n convertiti in <br>")
+        _ap_test_body = _notif_mod._prepare_apprise_body("🔔 eero Test", "🔔 <b>eero Test</b>\n\nServer OK")
+        runner.assert_true(_ap_test_body == "Server OK", "Apprise: riga titolo con emoji fuori dal tag (messaggio di test) rimossa")
+        _ap_plain = _notif_mod._prepare_apprise_body("Title", "First line\nSecond line")
+        runner.assert_true(_ap_plain == "First line<br>Second line", "Apprise: corpo senza riga titolo lasciato intatto (solo <br>)")
+
+        # 2. Wiring: dispatcher, test endpoint, masking and startup warm-up
+        runner.assert_true("send_apprise_message" in _inspect.getsource(_notif_mod.NotificationService._dispatch_all_channels), "Apprise: incluso in _dispatch_all_channels")
+        _auto_src = Path("app/routers/automations.py").read_text(encoding="utf-8")
+        runner.assert_true('"apprise_urls",' in _auto_src and '"apprise_sent": apprise_res' in _auto_src, "Apprise: apprise_urls tra i segreti mascherati e apprise_sent nel test canali")
+        runner.assert_true("notification_service.schedule_apprise_warm_up()" in Path("app/main.py").read_text(encoding="utf-8"), "Apprise: warm-up import pianificato all'avvio (lifespan)")
+        await _notif_mod.notification_service.warm_up_apprise()
+        runner.assert_true(True, "Apprise: warm_up_apprise() completa senza eccezioni")
+        _ap_mod = await asyncio.to_thread(_notif_mod._load_apprise)
+        runner.assert_true(_ap_mod is not None and hasattr(_ap_mod, "Apprise"), "Apprise: pacchetto installato e caricabile tramite _load_apprise()")
+
+        # 3. UI: settings field, status badge and test toast
+        runner.assert_true("notificationSettings.apprise_urls" in _idx_txt and "notificationSettings.apprise_enabled" in _idx_txt, "Apprise: campo URL e toggle presenti nella card Notifiche")
+        runner.assert_true("apprise_urls: ''" in _js_txt and "json.apprise_sent" in _js_txt, "Apprise: default e risultato test presenti in app.js")
 
         runner.print_summary()
 
