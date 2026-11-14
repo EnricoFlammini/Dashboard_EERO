@@ -111,6 +111,12 @@ try:
         ntfy_token: str = os.getenv("NTFY_TOKEN", "")
         ntfy_alerts_enabled: bool = os.getenv("NTFY_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
 
+        @field_validator("build_number", mode="before")
+        @classmethod
+        def _validate_build_number(cls, value: object) -> str:
+            s = str(value or "").strip()
+            return s if s else _get_default_build_number()
+
         @field_validator("dashboard_lang", mode="before")
         @classmethod
         def _validate_dashboard_lang(cls, value: object) -> str:
