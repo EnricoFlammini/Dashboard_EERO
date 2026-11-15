@@ -3,6 +3,7 @@
 Below is a summary of the main release highlights. The complete changelog with all technical details is available on GitHub.
 
 ## v1.7.0
+* **Simplified Basic Dashboard & Granular RBAC Permissions:** Streamlined alternative dashboard view with an instant Basic/Advanced switcher persisted in local storage, 4 visual high-impact summary cards, enlarged 80×80 px hardware images for mesh nodes, seamless navigation to Network Health and Devices, and granular RBAC permissions for `action_toggle_demo` and `action_change_language`.
 * **Devices Card View, Editable Details & Product Images (PR #107 - @todddube):** List/Cards toggle with compact live-animated cards, clickable name/IP, in-modal profile change and icon-based category picker, plus manufacturer, last active, Wi-Fi standard/width and guest flag. Profile assignment now requires the edit-devices permission and MQTT trackers cap at 1000. Richer clickable dashboard cards (WAN health, gateway details, client band split, speed test trend), official eero hardware images next to each Home mesh node, and immediate device list refresh on save.
 * **Amazon OAuth2/PKCE Authentication (Issue #93):** Integrated S256 PKCE flow (`device_auth_access`) for Amazon/eero login with immediate 3-step callback instructions in all 9 languages, secure token exchange, and backward compatibility with email OTP.
 * **Echo Built-in Extender Support (Issue #96):** Detection and synthesis of Amazon Echo virtual extender nodes with dedicated "eero Built-in" badge, LAN client unification, and reboot protection.

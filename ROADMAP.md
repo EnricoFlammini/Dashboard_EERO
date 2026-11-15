@@ -86,8 +86,9 @@ gantt
     Amazon Echo 'eero Built-in' Nodes (Issue #96)      :done, v1_7_echo, after v1_7_theme, 2d
     Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
     Devices Card View, Richer Home Cards & Product Images (PR #107):done, v1_7_cards, after v1_7_fixes, 2d
+    Simplified Basic Dashboard & RBAC (action_demo, action_lang):done, v1_7_simple, after v1_7_cards, 1d
     section v1.8.0 - Core Foundations, Apprise & Quick Wins
-    Path & Runtime Detection (DATA_DIR / MEIPASS) (#118) :active, v1_8_core, after v1_7_cards, 2d
+    Path & Runtime Detection (DATA_DIR / MEIPASS) (#118) :active, v1_8_core, after v1_7_simple, 2d
     Apprise Universal Notifications (#111)              :v1_8_apprise, after v1_8_core, 2d
     Public WAN IP & Double-NAT Detection (#115)         :v1_8_wan, after v1_8_apprise, 1d
     Homelab Embed iFrame & Kiosk Mode (#116)            :v1_8_kiosk, after v1_8_wan, 1d

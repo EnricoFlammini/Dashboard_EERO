@@ -6,7 +6,7 @@
 [![Multi-Arch](https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blue?logo=docker)](#)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
-[![i18n](https://img.shields.io/badge/i18n-IT%20%7C%20EN-purple.svg)](#)
+[![i18n](https://img.shields.io/badge/i18n-9%20Languages%20(IT%2C%20EN%2C%20FR%2C%20ES%2C%20DE%2C%20NL%2C%20PT%2C%20PL%2C%20EL)-purple.svg)](#)
 [![AI-Assisted](https://img.shields.io/badge/AI--Assisted-Open%20Source-8A2BE2.svg)](#-acknowledgements--ai-assistance)
 
 > **Language / Lingua:** [🇬🇧 English](#english) | [🇮🇹 Italiano](#italiano)
@@ -50,6 +50,12 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🌟 Simplified Basic Dashboard & Granular RBAC Permissions (v1.7.0):**
+  - **Instant View Switcher:** Reactive toggle in the Overview header between the comprehensive **Advanced View** and a clean **Basic View** tailored for non-technical users, persisted in `localStorage` (defaulting to Basic View for Viewer roles).
+  - **De-cluttered Essential Cards:** Streamlined WAN Status, Mesh Nodes count with visual health dots, Connected Clients, and Last Speed Test without technical distractions (hidden WAN/LAN IPs, subnets, DNS servers, and firmware OS).
+  - **Large High-Definition Mesh Node Cards:** Enlarged 80×80 px official hardware images (`w-20 h-20`), dedicated Gateway / Echo Built-in badges, and hidden reboot controls.
+  - **Interactive Quick Links:** Clickable WAN tile (opens Network Health modal) and Connected Clients tile / node client counters (opens Devices filtered by active status or node).
+  - **Granular RBAC Permissions:** Added `action_toggle_demo` and `action_change_language` to the local user authorization catalog.
 * **🗂️ Devices Card View, Editable Details & Clickable Home Cards (v1.7.0 - PR #107):**
   - **List / Cards Toggle:** Compact 3–4 column live-animated device cards alongside the default table, clickable name/IP, inline profile assignment (`action_edit_devices`), icon-based category picker with Auto-detect reset, manufacturer/model, Wi-Fi standard/width, and immediate RAM cache refresh on save.
   - **Richer Dashboard Cards & eero Product Images:** Clickable WAN Status (health bar + IPv6 badge), Primary Gateway (subnet, firmware, mesh node dots), Connected Clients (6/5/2.4 GHz + wired split), Last Speed Test (ping, bufferbloat grade, sparkline), and official eero product images next to each mesh node on Home.
@@ -498,6 +504,12 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🌟 Dashboard Semplificata per Utenti Base & Permessi RBAC Granulari (v1.7.0):**
+  - **Interruttore Vista Istantaneo:** Toggle reattivo nella testata della Panoramica per passare tra la vista **Avanzata** completa e la vista **Base** pensata per utenti non tecnici, con preferenza persistita in `localStorage` (e predefinita per il ruolo Viewer).
+  - **Top Card Essenziali:** Schede WAN, Nodi e Client prive di elementi tecnici (esclusi IP WAN/LAN, IPv6, subnet, DNS e firmware OS), con punteggio Salute Rete, ISP, conteggio nodi operativi e speed test completo di grafico sparkline.
+  - **Card Nodi Mesh con Immagini Ingrandite a 80×80 px:** Dispositivi eero con riquadri visivi in alta definizione (`w-20 h-20`), badge dedicati (Gateway / Echo Built-in) e rimozione dei pulsanti di riavvio non necessari agli utenti base.
+  - **Navigazione Rapida:** Click sul tile WAN per aprire i dettagli Salute Rete e click sul tile Client Connessi o sul conteggio di un singolo nodo per aprire la scheda Dispositivi già filtrata.
+  - **Permessi Granulari:** Nuovi controlli `action_toggle_demo` e `action_change_language` nel catalogo utenti locali e RBAC.
 * **🗂️ Vista a Schede Dispositivi, Dettagli Modificabili & Card Home Cliccabili (v1.7.0 - PR #107):**
   - **Interruttore Elenco / Schede:** Schede compatte a 3–4 colonne animate durante il traffico, nome/IP cliccabili, cambio profilo inline (`action_edit_devices`), selettore categoria con icone e ripristino automatico, produttore/modello, standard/larghezza Wi-Fi e aggiornamento immediato della cache RAM al salvataggio.
   - **Card Dashboard Arricchite & Immagini Prodotti eero:** Card cliccabili per Stato WAN (barra salute + badge IPv6), Gateway Primario (subnet, firmware, pallini nodi mesh), Client Connessi (ripartizione 6/5/2.4 GHz e cablati), Ultimo Speed Test (ping, voto bufferbloat, sparkline) e immagini ufficiali dei dispositivi eero accanto ai nodi mesh nella Home.

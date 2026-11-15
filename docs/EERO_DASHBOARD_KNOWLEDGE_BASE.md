@@ -594,6 +594,10 @@ A seguito di un Vulnerability Assessment sistematico sul codice sorgente condott
   * Normalizzazione RSSI dBm (`_parse_rssi_dbm` in `eero_client.py` e `parse_rssi_int` in `db.py`) per stringhe con unità (`"-78 dBm"`), float e dict annidati nel range `[-120, -1]`, più fallback live dai dispositivi wireless della cache del poller in `get_signal_overview(live_devices=...)` e `/api/metrics/signal/history`.
   * Lock asincrono `_poll_lock` (`asyncio.Lock()`) in `BackgroundPoller` ed esclusione dei cicli Demo Mode/non autenticati da `_known_macs` e `known_devices` (con pulizia automatica in `init_db()`), garantendo `is_initial_discovery = True` al primo poll reale dopo il login.
   * Sincronizzazione `<meta name="color-scheme" content="light dark">` + `document.documentElement.style.colorScheme` in `applyTheme()` e binding `:selected` esplicito sulle `<option>` `x-for` dei `<select>` Daily Digest (`digestSettings.hour`) e Signal Historian (`selectedSignalDeviceMac`).
+* **Dashboard Semplificata per Utenti Base & Estensione Permessi RBAC Granulari:**
+  * Modalità alternativa con toggle reattivo Base/Avanzata (memorizzato in `localStorage`), con impostazione automatica su Base per gli utenti con ruolo `viewer`.
+  * Schede top semplificate e private di dettagli tecnici (esclusi IP WAN/LAN, IPv6, subnet, DNS e firmware OS), con foto e riquadri hardware dei nodi eero ingranditi a 80×80 px (`w-20 h-20`), badge Gateway/Echo Built-in, interattività ripristinata su WAN Status (Health modal) e Client Connessi / conteggio nodi (apertura Dispositivi filtrati).
+  * Nuovi permessi granulari RBAC: `action_toggle_demo` (controllo/toggle modalità demo) e `action_change_language` (cambio lingua di sistema e interfaccia) con assegnazione predefinita all'amministratore e gestione nel catalogo utenti locali.
 
 ---
 

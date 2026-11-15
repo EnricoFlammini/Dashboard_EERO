@@ -6,6 +6,13 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 
 ## [1.7.0] - 2026-11-15
 
+### Dashboard Semplificata per Utenti Base & Controllo Accessi RBAC
+* **Vista Semplificata Reattiva:** Introduzione di una modalità alternativa ultra-pulita nella Panoramica (Overview) dedicata agli utenti non tecnici o con profilo Viewer, con persistenza della selezione in `localStorage`.
+* **Top Card Essenziali:** Schede WAN, Nodi e Client private di elementi tecnici di disturbo (esclusi IP WAN/LAN, IPv6, subnet, DNS e firmware OS), con punteggio e barra Salute Rete, ISP, conteggio nodi operativi e speed test con andamento sparkline.
+* **Immagini Nodi Mesh Ingrandite a 80×80 px:** Card dei dispositivi eero arricchite con riquadri visivi in alta definizione (`w-20 h-20`), badge dedicati (Gateway / Echo Built-in) e rimozione dei pulsanti di riavvio non necessari agli utenti base.
+* **Navigazione Rapida:** Riattivata l'interattività completa con click sulla card WAN (apertura modale Salute Rete) e sulla card Client Connessi / conteggio nodi (reindirizzamento immediato ai dispositivi attivi).
+* **Nuovi Permessi RBAC Granulari:** Aggiunti `action_toggle_demo` (possibilità di attivare/disattivare la modalità demo) e `action_change_language` (possibilità di modificare la lingua di sistema e interfaccia) nel catalogo delle autorizzazioni per ruoli e utenti locali.
+
 ### Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube)
 * **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.
 * **Modale dettagli:** cambio profilo sul posto con conferma, categoria scelta tramite icone con ripristino automatico, hostname segnalato dal dispositivo, produttore/modello, ultima attività, standard e larghezza Wi-Fi, flag rete ospiti.
