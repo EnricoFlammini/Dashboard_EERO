@@ -930,6 +930,334 @@
       <!-- =================================================================== -->
       <div x-show="currentTab === 'overview'" class="space-y-6 animate-fade-in">
       
+      <!-- Dashboard View Mode Switcher -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-black/[0.05] dark:border-white/[0.05]">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight" x-text="dashboardViewMode === 'simple' ? t('dashboard.view_simple_title') : t('dashboard.view_advanced_title')"></h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400" x-text="dashboardViewMode === 'simple' ? t('dashboard.simple_devices_sub') : t('dashboard.mesh_topology_sub')"></p>
+        </div>
+        <div class="inline-flex p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-xl border border-slate-300/50 dark:border-slate-700/60 shadow-xs text-xs self-start sm:self-auto">
+          <button 
+            type="button"
+            @click="setDashboardViewMode('simple')"
+            :class="dashboardViewMode === 'simple' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+            class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer"
+            :title="t('dashboard.view_simple_title')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span x-text="t('dashboard.view_simple')"></span>
+          </button>
+          <button 
+            type="button"
+            @click="setDashboardViewMode('advanced')"
+            :class="dashboardViewMode === 'advanced' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+            class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer"
+            :title="t('dashboard.view_advanced_title')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span x-text="t('dashboard.view_advanced')"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- VISTA SEMPLIFICATA (BASIC USERS) -->
+      <!-- =================================================================== -->
+      <div x-show="dashboardViewMode === 'simple'" class="space-y-6">
+
+        <!-- 4 Card Semplificate -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+          <!-- 1. Stato Internet WAN Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 relative overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.wan_status')"></span>
+              <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
+            </div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
+            <div class="mt-2 text-xs text-slate-600 dark:text-slate-400 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
+
+            <!-- Salute Rete -->
+            <div class="mt-auto pt-4">
+              <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                <span x-text="t('dashboard.health_short')"></span>
+                <span class="font-mono font-semibold"
+                      :class="healthScore >= 85 ? 'text-emerald-600 dark:text-emerald-400' : (healthScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')"
+                      x-text="healthScore + '/100'"></span>
+              </div>
+              <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700/70 overflow-hidden">
+                <div class="h-full rounded-full transition-all"
+                     :class="healthScore >= 85 ? 'bg-emerald-500' : (healthScore >= 60 ? 'bg-amber-500' : 'bg-rose-500')"
+                     :style="`width: ${Math.max(0, Math.min(100, healthScore))}%`"></div>
+              </div>
+              <div class="mt-2 flex items-center space-x-1 text-[10px] text-slate-500 dark:text-slate-400" x-show="lastPollTime">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span x-text="formatFirstSeenRelative(lastPollTime)"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Stato Rete & Nodi Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.mesh_nodes_status')"></span>
+              <svg class="w-4 h-4 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="onlineNodeCount + ' / ' + (eeros.length || 1)"></div>
+            <div class="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-snug" x-text="onlineNodeCount === eeros.length ? t('dashboard.all_nodes_online') : t('dashboard.nodes_count_label', { online: onlineNodeCount, total: eeros.length })"></div>
+
+            <!-- Nodi Mesh Indicatori -->
+            <div class="mt-auto pt-4 flex items-center justify-between text-[11px]" x-show="eeros.length">
+              <span class="text-slate-500 dark:text-slate-400" x-text="t('dashboard.nodes_online', { online: onlineNodeCount, total: eeros.length })"></span>
+              <span class="flex items-center space-x-1">
+                <template x-for="node in eeros" :key="node.id || node.serial">
+                  <span class="w-2.5 h-2.5 rounded-full" :title="node.name"
+                        :class="['online', 'green'].includes(node.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(node.status) ? 'bg-amber-400' : 'bg-rose-500')"></span>
+                </template>
+              </span>
+            </div>
+          </div>
+
+          <!-- 3. Client Connessi Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all"
+               role="button" tabindex="0"
+               @click="simpleDeviceFilter = 'online'">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.connected_devices')"></span>
+              <svg class="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
+            <div class="mt-1 text-xs text-slate-600 dark:text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
+
+            <!-- Info minimale Online vs Offline -->
+            <div class="mt-auto pt-4 flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span x-text="t('dashboard.devices_online_count', { count: devices.filter(d => d.connected).length })"></span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span x-text="t('dashboard.devices_offline_count', { count: devices.filter(d => !d.connected).length })"></span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 4. Ultimo Speedtest Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all"
+               role="button" tabindex="0" :title="t('dashboard.speedtest_open')"
+               @click="setTab('speedtest')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap" x-show="latestSpeedtest.timestamp" x-text="formatFirstSeenRelative(latestSpeedtest.timestamp)"></span>
+                <svg class="w-4 h-4 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+            </div>
+
+            <template x-if="Number(latestSpeedtest.download_mbps) > 0">
+              <div class="flex flex-col flex-1">
+                <div class="flex items-baseline space-x-2">
+                  <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(0)"></span>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">↓ Mbps</span>
+                  <span class="text-slate-400">/</span>
+                  <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(0)"></span>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">↑ Mbps</span>
+                </div>
+
+                <div class="mt-2 flex items-center justify-between text-xs">
+                  <span class="text-slate-600 dark:text-slate-400">
+                    <span x-text="t('dashboard.speedtest_ping')"></span>
+                    <span class="font-mono font-semibold text-violet-600 dark:text-violet-400" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></span>
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold"
+                        :class="getBufferbloatGrade(latestSpeedtest).class"
+                        :title="getBufferbloatGrade(latestSpeedtest).label"
+                        x-text="getBufferbloatGrade(latestSpeedtest).grade"></span>
+                </div>
+
+                <svg x-show="speedtestSparkline" class="mt-3 w-full h-7 text-sky-500 dark:text-sky-400" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" :aria-label="t('dashboard.speedtest_trend')">
+                  <polyline fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" :points="speedtestSparkline"></polyline>
+                </svg>
+
+                <div class="mt-auto pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400" x-show="Number(speedtestStats.total_tests) > 0">
+                  <span>
+                    <span x-text="t('dashboard.speedtest_avg')"></span>
+                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-300" x-text="'↓' + Number(speedtestStats.avg_download || 0).toFixed(0) + ' ↑' + Number(speedtestStats.avg_upload || 0).toFixed(0)"></span>
+                  </span>
+                  <span x-text="t('dashboard.speedtest_count', { count: speedtestStats.total_tests })"></span>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="!(Number(latestSpeedtest.download_mbps) > 0)">
+              <div class="flex-1 flex flex-col justify-center">
+                <div class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="t('dashboard.speedtest_none')"></div>
+                <div class="mt-1 text-xs text-sky-600 dark:text-sky-400" x-text="t('dashboard.speedtest_open') + ' →'"></div>
+              </div>
+            </template>
+          </div>
+
+        </div>
+
+        <!-- Topologia Nodi Mesh Semplificata -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-2 pt-2">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="eero in eeros" :key="eero.id || eero.serial">
+              <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
+                <div>
+                  <!-- Node Header -->
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center space-x-3 min-w-0">
+                      <template x-if="getEeroProductImage(eero)">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center p-1.5 shrink-0 shadow-xs">
+                          <img :src="getEeroProductImage(eero)" :alt="eero.model || 'eero'" class="w-full h-full object-contain drop-shadow-xs">
+                        </div>
+                      </template>
+                      <template x-if="!getEeroProductImage(eero) && eero.is_echo_node">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shrink-0">
+                          🔊
+                        </div>
+                      </template>
+                      <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"></span>
+                          <h3 class="font-bold text-slate-900 dark:text-white text-base truncate" x-text="eero.name"></h3>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate" x-show="eero.model" x-text="eero.model"></p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <template x-if="eero.is_gateway">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider" x-text="t('common.gateway')"></span>
+                      </template>
+                      <template x-if="eero.is_echo_node">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 tracking-wider" x-text="t('dashboard.echo_builtin_badge')"></span>
+                      </template>
+                    </div>
+                  </div>
+
+                  <!-- Node Specs Semplificate (Solo Client Connessi e Stato) -->
+                  <div class="mt-4 space-y-2 border-t border-slate-200 dark:border-slate-800/80 pt-3 text-xs">
+                    <!-- Connected Clients Count -->
+                    <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                      <span x-text="t('dashboard.connected_clients')"></span>
+                      <span class="font-bold text-slate-900 dark:text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
+                    </div>
+                    <!-- Operating Status -->
+                    <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.status">
+                      <span x-text="t('dashboard.status')"></span>
+                      <span :class="['online', 'green'].includes(eero.status) ? 'text-emerald-600 dark:text-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')" class="font-semibold" x-text="formatNodeStatus(eero)"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Sezione Minimale Dispositivi Online & Offline -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+          <!-- Header Sezione & Filtri -->
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-black/[0.05] dark:border-white/[0.05]">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('dashboard.simple_devices_title')"></h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('dashboard.simple_devices_sub')"></p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Filtri Pillola (Tutti / Connessi / Non Connessi) -->
+              <div class="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                <button
+                  type="button"
+                  @click="simpleDeviceFilter = 'all'"
+                  :class="simpleDeviceFilter === 'all' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer">
+                  <span x-text="t('dashboard.filter_all_devices')"></span>
+                  <span class="text-[10px] opacity-80" x-text="'(' + devices.length + ')'"></span>
+                </button>
+                <button
+                  type="button"
+                  @click="simpleDeviceFilter = 'online'"
+                  :class="simpleDeviceFilter === 'online' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer">
+                  <span x-text="t('dashboard.filter_online_devices')"></span>
+                  <span class="text-[10px] opacity-80" x-text="'(' + devices.filter(d => d.connected).length + ')'"></span>
+                </button>
+                <button
+                  type="button"
+                  @click="simpleDeviceFilter = 'offline'"
+                  :class="simpleDeviceFilter === 'offline' ? 'bg-slate-600 text-white font-bold shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer">
+                  <span x-text="t('dashboard.filter_offline_devices')"></span>
+                  <span class="text-[10px] opacity-80" x-text="'(' + devices.filter(d => !d.connected).length + ')'"></span>
+                </button>
+              </div>
+
+              <!-- Ricerca per nome -->
+              <div class="relative">
+                <input
+                  type="text"
+                  x-model="simpleDeviceSearch"
+                  :placeholder="t('dashboard.search_devices_simple')"
+                  class="glass-input pl-8 pr-3 py-1.5 text-xs rounded-xl w-44 sm:w-56 focus:w-64 transition-all">
+                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Griglia Dispositivi -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <template x-for="device in simpleFilteredDevices().slice(0, simpleDeviceLimit)" :key="device.id || device.mac">
+              <div class="glass-card-subtle p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-sky-500/40 transition flex items-center justify-between gap-2.5">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                       :class="device.connected ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400' : 'bg-slate-200/50 dark:bg-slate-800 text-slate-400'">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(device.category)"></path>
+                    </svg>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center space-x-1.5">
+                      <span class="w-2 h-2 rounded-full shrink-0" :class="device.connected ? 'bg-emerald-400' : 'bg-slate-400'"></span>
+                      <span class="font-bold text-xs text-slate-900 dark:text-white truncate" x-text="device.custom_name || device.nickname || device.hostname || device.ip || device.mac"></span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5"
+                         x-text="device.connected ? t('dashboard.connected_to_node', { node: (device.connected_eero_name || t('common.gateway')) }) : t('dashboard.not_connected')"></div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Nessun dispositivo trovato -->
+          <div x-show="simpleFilteredDevices().length === 0" class="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            <span x-text="t('dashboard.no_devices_found')"></span>
+          </div>
+
+          <!-- Pulsante Mostra Altri -->
+          <div x-show="simpleFilteredDevices().length > simpleDeviceLimit" class="pt-2 text-center">
+            <button
+              type="button"
+              @click="simpleDeviceLimit += 12"
+              class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition cursor-pointer">
+              <span x-text="t('dashboard.show_more_devices')"></span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- VISTA AVANZATA (DEFAULT / TECNICA) -->
+      <!-- =================================================================== -->
+      <div x-show="dashboardViewMode === 'advanced'" class="space-y-6">
       <!-- WAN Status & Summary Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         
@@ -1358,6 +1686,7 @@
         </div>
       </div>
 
+      </div>
     </div>
 
     <!-- =================================================================== -->

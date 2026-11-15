@@ -359,6 +359,56 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {}
     },
 
+    // Dashboard view mode: 'advanced' (default) or 'simple' (streamlined for basic users)
+    dashboardViewMode: (() => {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const m = localStorage.getItem('eero_dashboard_view_mode');
+          if (m === 'simple' || m === 'advanced') return m;
+        }
+      } catch (e) {}
+      return 'advanced';
+    })(),
+    simpleDeviceFilter: 'all',
+    simpleDeviceSearch: '',
+    simpleDeviceLimit: 12,
+
+    setDashboardViewMode(mode) {
+      this.dashboardViewMode = mode === 'simple' ? 'simple' : 'advanced';
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('eero_dashboard_view_mode', this.dashboardViewMode);
+        }
+      } catch (e) {}
+    },
+
+    simpleFilteredDevices() {
+      if (!this.devices || !Array.isArray(this.devices)) return [];
+      let list = [...this.devices];
+      if (this.simpleDeviceFilter === 'online') {
+        list = list.filter(d => Boolean(d.connected));
+      } else if (this.simpleDeviceFilter === 'offline') {
+        list = list.filter(d => !d.connected);
+      }
+      if (this.simpleDeviceSearch && this.simpleDeviceSearch.trim()) {
+        const q = this.simpleDeviceSearch.trim().toLowerCase();
+        list = list.filter(d => {
+          const name = (d.nickname || d.hostname || d.ip || d.mac || '').toLowerCase();
+          const cat = (d.category || '').toLowerCase();
+          return name.includes(q) || cat.includes(q);
+        });
+      }
+      list.sort((a, b) => {
+        if (Boolean(a.connected) !== Boolean(b.connected)) {
+          return a.connected ? -1 : 1;
+        }
+        const na = (a.nickname || a.hostname || a.ip || a.mac || '').toLowerCase();
+        const nb = (b.nickname || b.hostname || b.ip || b.mac || '').toLowerCase();
+        return na.localeCompare(nb);
+      });
+      return list;
+    },
+
     // 0 = idle/offline, 1 = trickle (<1 Mbps), 2 = active (<25 Mbps), 3 = heavy. Drives the card glow and flow animations.
     deviceActivityLevel(dev) {
       if (!dev || !dev.connected || dev.paused || dev.is_paused) return 0;
@@ -5903,6 +5953,9 @@ document.addEventListener('alpine:init', () => {
           if (res.ok) {
             const data = await res.json();
             this.currentUser = data.user;
+            if (this.currentUser && this.currentUser.role === 'viewer' && typeof localStorage !== 'undefined' && !localStorage.getItem('eero_dashboard_view_mode')) {
+              this.dashboardViewMode = 'simple';
+            }
           }
         } catch (e) {}
         return;
@@ -5914,6 +5967,9 @@ document.addEventListener('alpine:init', () => {
         if (res.ok) {
           const data = await res.json();
           this.currentUser = data.user;
+          if (this.currentUser && this.currentUser.role === 'viewer' && typeof localStorage !== 'undefined' && !localStorage.getItem('eero_dashboard_view_mode')) {
+            this.dashboardViewMode = 'simple';
+          }
         } else {
           this.localAuthToken = null;
           if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
@@ -6012,6 +6068,9 @@ document.addEventListener('alpine:init', () => {
             if (typeof localStorage !== 'undefined') localStorage.removeItem('eero_local_auth_token');
           }
           this.currentUser = data.user;
+          if (this.currentUser && this.currentUser.role === 'viewer' && typeof localStorage !== 'undefined' && !localStorage.getItem('eero_dashboard_view_mode')) {
+            this.dashboardViewMode = 'simple';
+          }
           this.lastUserActivity = Date.now();
           this.showLocalLoginModal = false;
           this.localLoginData = { username: '', password: '', remember_me: false, error: '' };

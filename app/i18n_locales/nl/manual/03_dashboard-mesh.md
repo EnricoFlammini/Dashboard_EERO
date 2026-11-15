@@ -24,3 +24,4 @@ summary: Netwerkgezondheidsscore, knooppuntkaarten en snelle acties.
   - **Gateway-detectie in Bridge-modus:** Identificeert betrouwbaar de echte gateway via de vlag `is_primary_node` en LLDP-buren op de WAN-poort.
   - **Officiële productafbeeldingen:** Elk knooppunt toont de officiële hardware-afbeelding van het betreffende model (eero Pro 6E, Max 7, 6+, Beacon, Outdoor 7, Echo Dot enz.).
   - **Streaming AI-assistent & Plaatsingstest:** Interactieve diagnose via SSE-streaming (`/api/network/assistant`), RF-plaatsingstest en beheer van Guardian VPN.
+* **Dashboardmodus (Basis vs Geavanceerd):** Met een schakelaar rechtsboven kunt u direct schakelen tussen de **Basisweergave** (ontworpen voor gewone gebruikers, met internetstatus, netwerkgezondheid, operationele knooppunten, speedtest en een compact overzicht van online/offline apparaten) en de **Geavanceerde weergave** (compleet met IP-adressen, DNS, subnets, radio-backhaul, firmwareversies en beheeracties).
