@@ -6,13 +6,13 @@ summary: Frequently asked questions regarding telemetry, in-app Docker auto-upda
 ---
 ### Troubleshooting, Docker Updates & FAQ
 
-* **How does In-App 1-Click Docker Auto-Update work (v1.4.0)?**
+* **How does In-App 1-Click Docker Auto-Update work?**
   - The dashboard automatically checks for new releases on Docker Hub and GitHub Releases.
   - If the Docker Socket is mounted (`/var/run/docker.sock`), clicking "Update Container Now" pulls the latest image, recreates the container preserving your `./data` volume, and reloads the browser once the new version is healthy.
   - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
 * **Which client metrics come directly from eero hardware?**
   - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
-* **Security Hardening & Data Protection (v1.5.0 - 4 GHSA Advisories):**
+* **Security Hardening & Data Protection:**
   - **CORS & Anti-CSRF Middleware:** Cross-origin access disabled by default (configured via `CORS_ORIGINS`) and cross-site mutating requests blocked via `Sec-Fetch-Site` inspection.
   - **Wi-Fi Credential Sanitization:** Sensitive Wi-Fi passwords and keys are recursively stripped prior to caching in `/api/network/overview`.
   - **Interactive OpenAPI/Swagger Disabled by Default:** `/docs`, `/redoc`, and `/openapi.json` are only mounted when `API_DOCS=true` to protect operational endpoints.
@@ -23,11 +23,11 @@ summary: Frequently asked questions regarding telemetry, in-app Docker auto-upda
   - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
 * **How do I back up local configurations and custom metadata?**
   - All custom device names, categories, notes, notification settings, signal history, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
-* **Why does email/SMS login return no networks or fail with 401 (Issue #93)?**
+* **Why does email/SMS login return no networks or fail with 401?**
   - If your eero account was linked or migrated to an Amazon profile, legacy email/SMS login is rejected by eero cloud. Use the **"Login with Amazon (OAuth2 / PKCE)"** section in the login modal to authenticate via the official federated flow.
-* **How do I resolve local LAN FQDNs using Custom & Split DNS (Issue #98)?**
+* **How do I resolve local LAN FQDNs using Custom & Split DNS?**
   - If your container cannot resolve internal LAN domains (e.g. `adguard.home.lan`), set the environment variables `CUSTOM_DNS_SERVERS` (e.g. `192.168.4.13`) and `CUSTOM_DNS_DOMAINS` (e.g. `*.home.lan=192.168.4.13`). The built-in resolver performs direct UDP lookups with IPv4-first ordering without altering container host files.
-* **What happens if the SQLite database corrupts during an unclean shutdown (Issue #110)?**
+* **What happens if the SQLite database corrupts during an unclean shutdown?**
   - The suite includes an automatic 3-stage self-healing engine (`repair_if_malformed`): it first attempts `REINDEX`, then rebuilds damaged tables, and if the file header itself is corrupt, transparently salvages all configuration/devices and reconstructs a clean database while preserving a `.corrupt.bak` backup.
 * **Rate Limiting Protection:**
   - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.

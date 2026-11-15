@@ -15,21 +15,21 @@ The **Controls & Guest QR** tab organizes your network tools into a clean 2x2 gr
 2. **Multi-Engine DNS Synchronizer (Top-Right):**
    - **Heterogeneous Multi-Engine Support:** Simultaneous management of multiple instances across AdGuard Home, Pi-hole (v5 & v6 REST API), and Technitium DNS (direct A and Reverse PTR records).
    - **Continuous Background Auto-Sync:** Automatically registers newly discovered devices into all active DNS servers.
-   - **Intelligent Address Pruning, Single IP Owner & Custom DNS (v1.6.1, v1.7.0):** Resolves reassigned DHCP lease conflicts (`ip_owner`), sanitizes hostnames for RFC 1123 compliance, and natively supports **Custom & Split DNS** (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`) for querying local DNS resolvers (BIND/AdGuard/Pi-hole) with IPv4-first (`AF_INET`) ordering. Includes per-device *"Exclude from DNS Sync"* toggle (`dns_sync_excluded`) in the device modal.
+   - **Intelligent Address Pruning, Single IP Owner & Custom DNS:** Resolves reassigned DHCP lease conflicts (`ip_owner`), sanitizes hostnames for RFC 1123 compliance, and natively supports **Custom & Split DNS** (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`) for querying local DNS resolvers (BIND/AdGuard/Pi-hole) with IPv4-first (`AF_INET`) ordering. Includes per-device *"Exclude from DNS Sync"* toggle (`dns_sync_excluded`) in the device modal.
    - **Individual & Global Test and Sync:** Quickly test individual or all instances, with instant 1-click manual synchronization.
    - **Standard Export Endpoints:** `/api/devices/export/hosts` (/etc/hosts text) and `/api/devices/export/adguard` (JSON provisioning).
 3. **Telegram Bot & Webhook Notifications (Bottom-Left):**
-   - **Persistent Registry & Initial Discovery Guard (Issue #112):** SQLite `known_devices` table and async `_poll_lock` that isolates demo MACs and ensures the first authenticated poll after login does not trigger duplicate alert storms for existing devices.
+   - **Persistent Registry & Initial Discovery Guard:** SQLite `known_devices` table and async `_poll_lock` that isolates demo MACs and ensures the first authenticated poll after login does not trigger duplicate alert storms for existing devices.
    - **Dedicated Activation Toggle:** Enable or disable Telegram notifications with one click while safely preserving your Bot Token and Chat ID.
    - **New Device Alert:** Receive an instant alert when an unknown MAC address connects to your mesh.
    - **Mesh Node Offline:** Immediate notification if any eero node loses connectivity.
    - **"Send Test" Button:** Instantly tests message delivery to your Telegram bot and Webhook URL.
 4. **Daily Digest Report (Bottom-Right):**
-   - **Scheduled Dispatch Toggle & Configurable Hour (v1.6.1, v1.7.0):** Enable or suspend the automatic summary and customize dispatch hour (00:00 - 23:00, default 21:00) with `DAILY_DIGEST_HOUR` and `TZ` support and reactive dropdown option binding (Issue #113).
+   - **Scheduled Dispatch Toggle & Configurable Hour:** Enable or suspend the automatic summary and customize dispatch hour (00:00 - 23:00, default 21:00) with `DAILY_DIGEST_HOUR` and `TZ` support and reactive dropdown option binding.
    - **Restart Idempotency Protection:** Persistent SQLite tracking of `last_daily_digest_date` ensuring exactly one dispatch per calendar day across container restarts.
    - Automated report containing: Network Health Score, ISP, online mesh nodes, active clients breakdown by frequency band (**6 GHz, 5 GHz, 2.4 GHz, Ethernet**), Gateway Speed Test and Ping latency.
    - **"Generate & Send Digest Now"** button for immediate on-demand dispatch.
 5. **One-Click Gaming / Focus Mode (Low Latency):**
    - Located in the top header: pauses tagged background streaming/downloading devices with a single click to eliminate latency and jitter for competitive gaming setups.
-6. **IPv6 Pinhole Firewall Rules (v1.7.0 - Issue #90):**
+6. **IPv6 Pinhole Firewall Rules:**
    - Visual controls in Network Settings to create and revoke IPv6 firewall pinhole rules for TCP/UDP ports on specific local devices directly to the internet.

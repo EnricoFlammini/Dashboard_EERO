@@ -4,7 +4,7 @@ title: 10. Statistics, Device Data Usage & Data Export Center
 icon: chart-bar
 summary: Device data usage suite, Top Bandwidth Hogs, network distribution charts, and RFC 4180 CSV/JSON export.
 ---
-### Network Analytics, Data Usage & Data Export Center (v1.5.0)
+### Network Analytics, Data Usage & Data Export Center
 
 * **Device Data Usage Insights Suite:**
   - Open the **"Data Usage"** tab in any device details modal to inspect bandwidth consumption across 3 distinct time horizons: **Last 24 Hours** (hourly Mbps throughput), **Last 7 Days** (daily totals), and **Last 30 Days** (monthly summary).

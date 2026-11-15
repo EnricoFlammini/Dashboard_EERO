@@ -11,7 +11,7 @@ summary: On-demand speed testing, historical performance tracking, RSSI signal a
 * **Historical Charts & Statistics:**
   - Visual time-series graph of speeds and latency over days and weeks.
   - Aggregate statistics including average download/upload, maximum peak speeds, and average ping.
-* **Wi-Fi Signal Quality & Mesh Coverage (v1.7.0 - Issues #110, #113):**
+* **Wi-Fi Signal Quality & Mesh Coverage:**
   - **Historical RSSI Logging & Universal dBm Parsing:** The background poller continuously samples wireless signal levels, normalizing strings with units (`"-78 dBm"`), floats, and nested structures into clean integer dBm values in `[-120, -1]`.
   - **Household Average Signal & Quality Bands:** High-level KPI and percentage breakdown across *Excellent* (≥ -50 dBm), *Good* (-51 to -65 dBm), *Fair* (-66 to -75 dBm), and *Critical* (< -75 dBm).
   - **Instant Live Fallback & Weak Signal Watchlist:** Merges active wireless clients directly from poller RAM cache so overview KPIs and the **Weak Signal Watchlist** (`< -75 dBm`) populate immediately on startup before historical aggregation.

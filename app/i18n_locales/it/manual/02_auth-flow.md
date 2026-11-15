@@ -26,13 +26,13 @@ Una volta effettuato l'accesso locale (o se l'autenticazione locale non è richi
    - Se desideri esplorare l'applicazione senza inserire credenziali, puoi attivare la modalità dimostrativa con il pulsante dedicato o impostando `DEMO_MODE=true` nel file `.env`.
    - Se sei già autenticato con il tuo account reale, puoi cliccare in qualunque momento sul pulsante **"✨ Demo Mode"** posizionato nella parte inferiore della barra laterale sinistra per visualizzare i dati demo senza perdere la sessione. Quando la modalità demo è attiva, il pulsante assume una vivace colorazione verde smeraldo con indicatore ad alta visibilità **"DEMO ATTIVA"** (e un badge di stato sincronizzato compare nell'header superiore); cliccando nuovamente si torna all'istante alla rete live con **"⚡ Torna a Live"**.
 
-#### 3. Autenticazione Nativa Amazon OAuth2 / PKCE (v1.7.0 - Issue #93)
+#### 3. Autenticazione Nativa Amazon OAuth2 / PKCE
 Per gli account eero collegati a un profilo Amazon (dove l'accesso via email/SMS non mostra reti o fallisce con errore 401), la dashboard integra il flusso ufficiale federato **Amazon OAuth2 con PKCE S256 (RFC 7636)**:
 1. **Accesso Amazon:** Clicca sul pulsante **"🛒 Accedi con Amazon"** nella modale di login per avviare il flusso con `code_verifier` crittografico sicuro.
 2. **Autorizzazione nel Browser:** Effettua il login su Amazon e concedi l'accesso ai servizi eero; al termine verrai reindirizzato all'URL ufficiale Amazon `/ap/maplanding`.
 3. **Collegamento Istantaneo:** Copia l'intero URL di reindirizzamento o il parametro `code`, incollalo nel campo dedicato della dashboard e clicca su **"Collega Account eero"**. La sessione viene scambiata con il token di accesso e salvata in `session.json`.
 
-#### 4. Sicurezza Globale & Enforcement `REQUIRE_LOCAL_AUTH` (v1.7.0 - GHSA-r5vj-jfjp-m88q)
+#### 4. Sicurezza Globale & Enforcement `REQUIRE_LOCAL_AUTH`
 Per ambienti esposti o reti LAN condivise, impostando `REQUIRE_LOCAL_AUTH=true` nel file `.env`:
 - Tutte le rotte API (`/api/*`) e le metriche Prometheus (`/metrics`) vengono protette da middleware globale che richiede una sessione utente locale valida.
 - Sono esposti pubblicamente solo gli endpoint essenziali di health check e login (`/api/health`, `/api/auth/local/*`, `/api/system/language`), prevenendo qualsiasi lettura o modifica non autorizzata da apparati terzi sulla LAN.

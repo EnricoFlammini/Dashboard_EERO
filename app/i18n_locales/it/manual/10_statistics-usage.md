@@ -4,7 +4,7 @@ title: 10. Statistiche, Consumo Dati Dispositivi & Centro Esportazione
 icon: chart-bar
 summary: Suite di consumo dati per dispositivo, widget Top Bandwidth Hogs, grafici di distribuzione e Centro Esportazione CSV/JSON.
 ---
-### Statistiche Avanzate, Consumo Dati & Data Export Center (v1.5.0)
+### Statistiche Avanzate, Consumo Dati & Data Export Center
 
 * **Analisi del Consumo Dati per Dispositivo:**
   - Accedendo alla scheda **"Consumo Dati"** nel modale del dispositivo, è possibile analizzare il volume di traffico scaricato e caricato su 3 orizzonti temporali: **Ultime 24 ore** (con andamento orario in Mbps), **Ultimi 7 giorni** (consumo giornaliero) e **Ultimi 30 giorni** (panoramica mensile).

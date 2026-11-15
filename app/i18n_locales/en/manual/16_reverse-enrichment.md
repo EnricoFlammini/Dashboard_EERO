@@ -4,7 +4,7 @@ title: 16. Reverse Client Enrichment & IPv6 ULA Discovery
 icon: arrows-right-left
 summary: Bidirectional secondary interface enrichment from local DNS engines, IPv6 Unique Local Address (ULA) discovery, and Recently Joined clients.
 ---
-### Reverse Client Enrichment & IPv6 ULA Discovery (v1.6.0)
+### Reverse Client Enrichment & IPv6 ULA Discovery
 
 In dual-stack home networks, connected devices frequently query local DNS resolvers (such as AdGuard Home, Pi-hole, Technitium) using **IPv6 ULA** (*Unique Local Address*, prefixes `fc00::/7` and `fd00::/8`). Because this traffic remains strictly on local Layer 2 switches and never traverses the WAN gateway, the eero cloud platform has zero visibility into these ULA assignments.
 

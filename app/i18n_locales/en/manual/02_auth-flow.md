@@ -26,13 +26,13 @@ Once local authentication is complete (or if local authentication is not require
    - To explore the interface without entering real credentials, activate Demo Mode using the button on the login screen or by setting `DEMO_MODE=true` in `.env`.
    - If authenticated, you can switch anytime using the **"✨ Demo Mode"** button in the lower left sidebar to inspect mock telemetry without losing your live session. When active, it displays a vibrant emerald green button with an explicit **"DEMO ACTIVE"** indicator (and a top header status pill); clicking **"⚡ Switch to Live"** returns immediately to your live network.
 
-#### 3. Native Amazon OAuth2 / PKCE Login (v1.7.0 - Issue #93)
+#### 3. Native Amazon OAuth2 / PKCE Login
 For eero accounts linked to an Amazon profile (where standard email/SMS login returns no networks or encounters 401 errors), the dashboard provides official federated **Amazon OAuth2 with PKCE S256 (RFC 7636)**:
 1. **Amazon Login:** Click **"🛒 Login with Amazon"** in the login modal to initiate a cryptographically secure PKCE flow.
 2. **Browser Authorization:** Sign in to Amazon and grant permissions; upon completion you will be redirected to the Amazon `/ap/maplanding` landing page.
 3. **Instant Linking:** Copy either the full redirect URL or the `code` parameter, paste it into the dashboard callback input, and click **"Link eero Account"**. The session is exchanged for access credentials and persisted to `session.json`.
 
-#### 4. Global Security & `REQUIRE_LOCAL_AUTH` Enforcement (v1.7.0 - GHSA-r5vj-jfjp-m88q)
+#### 4. Global Security & `REQUIRE_LOCAL_AUTH` Enforcement
 For exposed environments or shared LANs, setting `REQUIRE_LOCAL_AUTH=true` in `.env`:
 - Enforces valid local session authentication across all API endpoints (`/api/*`) and Prometheus metrics (`/metrics`).
 - Leaves only essential health check and login routes publicly reachable (`/api/health`, `/api/auth/local/*`, `/api/system/language`), preventing unauthorized local network inspection or modification.

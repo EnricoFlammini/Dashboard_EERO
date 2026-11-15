@@ -4,7 +4,7 @@ title: 15. Architettura Offline-First & Asset Locali
 icon: shield-check
 summary: Resilienza totale della dashboard con font e librerie salvati in locale, zero dipendenze CDN esterne e funzionamento air-gapped.
 ---
-### Architettura Offline-First & Asset Locali (v1.6.0)
+### Architettura Offline-First & Asset Locali
 
 La dashboard adotta un'architettura 100% offline-first per garantire privacy assoluta, velocità istantanea di rendering e operatività anche in assenza di connettività internet o in blackout WAN:
 

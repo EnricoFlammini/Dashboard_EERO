@@ -9,9 +9,9 @@ summary: Profile, custom names, category icons, local notes, DHCP reservations, 
 * **Device Detail Modal:**
   - **Custom Name & Category:** Assign categories (Computer, Mobile, Smart Home, Entertainment, Gaming, Server/NAS, Other) saved to the local SQLite database.
   - **Local Notes & Documentation:** Free-form notes for tracking device location, service ports, or internal credentials.
-  - **Dual-Stack IPv6 Addresses & 1-Click Copy (v1.5.0 - Issue #43):** Dedicated box in the General tab listing all IPv6 addresses with category badges (*SLAAC / Global* vs *Link-Local*) and a 1-click clipboard copy button with visual feedback.
+  - **Dual-Stack IPv6 Addresses & 1-Click Copy:** Dedicated box in the General tab listing all IPv6 addresses with category badges (*SLAAC / Global* vs *Link-Local*) and a 1-click clipboard copy button with visual feedback.
   - **DHCP Reservation (Static IP):** Bind a permanent IP address to a client with automated conflict checking and reassignment support.
-  - **Integrated Port Forwarding & IPv6 Firewall (Issue #90):** Create and delete IPv4 port forwarding rules (External WAN Port -> Internal LAN Port) and IPv6 TCP/UDP pinhole firewall rules linked to client addresses.
+  - **Integrated Port Forwarding & IPv6 Firewall:** Create and delete IPv4 port forwarding rules (External WAN Port -> Internal LAN Port) and IPv6 TCP/UDP pinhole firewall rules linked to client addresses.
   - **Change Profile:** Pick another eero profile in the General tab; the change applies at once with an inline confirmation (needs the *Edit devices* permission).
   - **Category as Icon Buttons:** Click an icon to set the category; the device icon follows it. **Auto-detect** resets to the type eero reports.
   - **Read-Only Details & RAM Cache Sync:** MAC, reported hostname, manufacturer/model, last active, Wi-Fi standard/width, guest flag, live rates, and first seen; metadata updates immediately refresh the background poller RAM cache without waiting for the next polling cycle.

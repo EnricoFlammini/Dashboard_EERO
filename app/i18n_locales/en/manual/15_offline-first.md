@@ -4,7 +4,7 @@ title: 15. Offline-First Architecture & Local Assets
 icon: shield-check
 summary: Total dashboard resilience with 100% locally bundled fonts and libraries, zero external CDN dependencies, and air-gapped operation.
 ---
-### Offline-First Architecture & Local Assets (v1.6.0)
+### Offline-First Architecture & Local Assets
 
 The dashboard adopts a 100% offline-first architecture to deliver maximum privacy, instant page rendering, and uninterrupted reliability even during internet outages or WAN blackouts:
 

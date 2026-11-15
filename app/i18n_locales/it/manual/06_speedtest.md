@@ -11,7 +11,7 @@ summary: Esecuzione test di velocità, storico misurazioni, analisi del segnale 
 * **Grafico Storico & Statistiche:**
   - Grafico temporale di velocità e latenza nel corso di giorni e settimane.
   - Statistiche aggregate con velocità media di download/upload, picchi massimi di velocità e ping medio.
-* **Qualità Wi-Fi & Copertura Mesh (v1.7.0 - Issues #110, #113):**
+* **Qualità Wi-Fi & Copertura Mesh:**
   - **Registro Storico RSSI (dBm) & Parsing Universale:** Il poller campiona e memorizza in SQLite i livelli di segnale wireless convertendo deterministicamente ogni formato (interi, float, stringhe con unità come `"-78 dBm"` o campi annidati `signal_avg`) in valori dBm puliti nell'intervallo `[-120, -1]`.
   - **Segnale Medio & Fasce di Qualità:** KPI con livello medio dell'intera abitazione e ripartizione per fasce: *Eccellente* (≥ -50 dBm), *Buono* (-51 a -65 dBm), *Discreto* (-66 a -75 dBm), *Critico* (< -75 dBm).
   - **Popolamento Live Istantaneo & Watchlist Segnale Debole:** L'overview unisce in tempo reale i client wireless attivi dalla cache del poller, garantendo che i KPI, le barre percentuali e la **Weak Signal Watchlist** (`< -75 dBm`) siano sempre popolati anche al primissimo avvio prima dell'accumulo storico.

@@ -4,7 +4,7 @@ title: 11. System Logging & Advanced Diagnostics
 icon: terminal
 summary: Live log viewer console, dynamic log levels (DEBUG/INFO/WARNING/ERROR), retention policies, export and secure clearing.
 ---
-### System Logging & Advanced Diagnostics (v1.6.0)
+### System Logging & Advanced Diagnostics
 
 The **Controls & Guest QR** tab now features Card 7 dedicated to **System Logs & Diagnostics**:
 

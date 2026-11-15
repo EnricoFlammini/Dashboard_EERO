@@ -4,7 +4,7 @@ title: 16. Reverse Client Enrichment & Scoperta IPv6 ULA
 icon: arrows-right-left
 summary: Arricchimento bidirezionale delle interfacce secondarie dai server DNS locali, discovery IPv6 Unique Local Address (ULA) e client Recently Joined.
 ---
-### Reverse Client Enrichment & Scoperta IPv6 ULA (v1.6.0)
+### Reverse Client Enrichment & Scoperta IPv6 ULA
 
 Nelle reti dual-stack, i dispositivi interrogano spesso i server DNS locali (AdGuard Home, Pi-hole, Technitium) utilizzando indirizzi **IPv6 ULA** (*Unique Local Address*, prefissi `fc00::/7` e `fd00::/8`). Poiché questo traffico rimane confinato a livello Layer 2 locale e non attraversa la WAN, il cloud eero non ha visibilità su tali indirizzi.
 

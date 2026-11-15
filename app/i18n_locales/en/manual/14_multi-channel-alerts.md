@@ -4,17 +4,17 @@ title: 14. Multi-Channel Alerts & Emergency Notifications
 icon: bell
 summary: Multi-channel dispatcher (Telegram, Discord, Webhook, Pushover) and specialized alerts for bufferbloat, mesh quality and security.
 ---
-### Multi-Channel Alerts & Emergency Notifications (v1.6.0)
+### Multi-Channel Alerts & Emergency Notifications
 
 The notification engine features a unified multi-channel dispatch architecture for critical alerts and network events:
 
-* **Supported Channels (v1.7.0):**
+* **Supported Channels:**
   - **Telegram Bot:** Instant HTML-formatted alerts with direct node and client details.
   - **Discord Webhook:** Rich embed cards with color-coded severity bars and structured fields.
   - **Pushover:** High-priority mobile push notifications for immediate delivery.
-  - **Native Ntfy (sh) (Issue #90):** Public `ntfy.sh` or self-hosted server dispatch with priority tags and bearer token authentication.
+  - **Native Ntfy (sh):** Public `ntfy.sh` or self-hosted server dispatch with priority tags and bearer token authentication.
   - **Generic Webhook:** Raw JSON payloads for custom pipelines (Node-RED, n8n, Home Assistant).
-* **Visual UI Controls & Secret Masking (Issues #100, GHSA-r5vj-jfjp-m88q):**
+* **Visual UI Controls & Secret Masking:**
   - All channels include dedicated UI configuration cards under *Settings -> Controls* with instant **Test Message** buttons.
   - Bot tokens and webhook URLs are masked with `••••••••` to prevent credential leakage.
 * **Integrated Specialized Alerts:**

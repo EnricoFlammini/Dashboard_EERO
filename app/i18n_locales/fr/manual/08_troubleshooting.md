@@ -1,0 +1,27 @@
+---
+id: troubleshooting
+title: 8. Résolution des problèmes, Mises à jour & FAQ
+icon: wrench
+summary: FAQ sur la télémétrie, mise à jour automatique Docker, sécurité, sauvegardes et dépannage.
+---
+### Questions fréquentes & Résolution des problèmes
+
+* **Comment fonctionne la mise à jour automatique du conteneur Docker ?**
+  - La suite vérifie régulièrement la disponibilité de nouvelles versions sur Docker Hub et GitHub Releases.
+  - Si le socket Docker (`/var/run/docker.sock`) est monté, un clic sur **"Mettre à jour le conteneur"** télécharge la nouvelle image et recrée le conteneur en conservant le volume `./data`.
+* **Quelles informations proviennent directement de l'infrastructure eero ?**
+  - L'état de connexion, l'adresse IP locale, le MAC, le nœud de rattachement, la bande de fréquence (**2.4 GHz, 5 GHz, 6 GHz ou Câblé**), le canal, le niveau RSSI en **dBm** et le débit de liaison physique (**PHY Link Rate**).
+* **Sécurité & Protection des données :**
+  - **Protection CORS & CSRF :** Accès cross-origin restreint par défaut et validation des requêtes mutantes.
+  - **Nettoyage des identifiants Wi-Fi :** Les mots de passe du réseau sont systématiquement expurgés des données publiques d'aperçu.
+  - **Permissions strictes sur session.json :** Créé avec des droits restreints `0600` accessibles uniquement au processus du conteneur.
+* **Que faire si la connexion eero expire ?**
+  - Cliquez sur **Déconnexion** dans le menu latéral puis réitérez la procédure d'authentification (SMS, e-mail ou Amazon OAuth2).
+* **Comment sauvegarder la configuration locale ?**
+  - L'ensemble des données personnalisées (noms, catégories, notes, historiques, règles) réside dans `./data/metrics.db`. Il suffit de sauvegarder le dossier `./data`.
+* **Pourquoi la connexion SMS/e-mail échoue-t-elle avec une erreur 401 ?**
+  - Si votre compte eero est associé à un profil Amazon, utilisez l'option **"Connexion avec Amazon (OAuth2 / PKCE)"** dans la modale d'accès.
+* **Comment configurer le Custom & Split DNS ?**
+  - Définissez les variables d'environnement `CUSTOM_DNS_SERVERS` et `CUSTOM_DNS_DOMAINS` pour résoudre directement les domaines locaux via vos serveurs DNS internes.
+* **Comment fonctionne l'autoréparation SQLite ?**
+  - En cas de corruption liée à un arrêt brusque, le moteur applique une récupération en 3 phases (`REINDEX`, recréation de table, sauvegarde et reconstruction) en créant une copie `.corrupt.bak`.

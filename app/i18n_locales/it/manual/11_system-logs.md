@@ -4,7 +4,7 @@ title: 11. Gestione Log di Sistema & Diagnostica Avanzata
 icon: terminal
 summary: Console live dei log, livelli di dettaglio dinamici (DEBUG/INFO/WARNING/ERROR), retention, esportazione e svuotamento sicuro.
 ---
-### Gestione Log di Sistema & Diagnostica Avanzata (v1.6.0)
+### Gestione Log di Sistema & Diagnostica Avanzata
 
 La scheda **Controlli & QR Ospiti** include ora la Card 7 dedicata alla **Gestione Log & Diagnostica**:
 
