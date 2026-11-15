@@ -659,7 +659,7 @@
           </button>
 
           <!-- Demo Mode Toggle Button -->
-          <template x-if="isDemoMode">
+          <template x-if="can('action_toggle_demo') && isDemoMode">
             <button 
               id="btn-demo-mode-active"
               @click="toggleDemoMode(false)"
@@ -683,7 +683,7 @@
             </button>
           </template>
 
-          <template x-if="!isDemoMode">
+          <template x-if="can('action_toggle_demo') && !isDemoMode">
             <button 
               id="btn-demo-mode-inactive"
               @click="toggleDemoMode(true)"
@@ -737,7 +737,9 @@
           <select 
             x-model="currentLanguage" 
             @change="setLanguage($event.target.value)"
-            class="text-[11px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] rounded-lg px-2 py-1 transition cursor-pointer focus:outline-none">
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="text-[11px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] rounded-lg px-2 py-1 transition focus:outline-none">
             <template x-for="code in supportedLanguages" :key="code">
               <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
             </template>
@@ -774,8 +776,10 @@
           <!-- Language Toggle Button with Flag Icon -->
           <button 
             @click="cycleLanguage()" 
-            class="w-10 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
-            :title="t('header.switch_language_title')">
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition" 
+            :title="currentUser && !can('action_change_language') ? t('auth_local.no_access') : t('header.switch_language_title')">
             <span x-text="languageFlag(currentLanguage)"></span>
           </button>
           <!-- Logout Button (when logged in) -->
@@ -6692,7 +6696,7 @@
         </div>
 
         <!-- Demo Mode Quick Start Button -->
-        <div class="pt-3 border-t border-slate-200 dark:border-slate-800">
+        <div x-show="can('action_toggle_demo')" class="pt-3 border-t border-slate-200 dark:border-slate-800">
           <button 
             @click="startDemoSession()"
             class="w-full py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-400 dark:border-amber-500/20 text-xs font-semibold shadow-sm dark:shadow-none transition cursor-pointer">
@@ -8914,7 +8918,9 @@
           <select 
             x-model="currentLanguage" 
             @change="setLanguage($event.target.value)"
-            class="text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-xl px-2.5 py-2 transition cursor-pointer focus:outline-none">
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-xl px-2.5 py-2 transition focus:outline-none">
             <template x-for="code in supportedLanguages" :key="code">
               <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
             </template>

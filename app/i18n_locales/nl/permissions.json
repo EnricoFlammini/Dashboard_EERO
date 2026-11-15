@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Beheer gast-wifi",
   "action_toggle_guest_desc": "Gastnetwerk in-/uitschakelen en gastreferenties opnieuw genereren",
   "action_run_speedtest_label": "Snelheidstest op aanvraag uitvoeren",
-  "action_run_speedtest_desc": "Activeer handmatig nieuwe snelheidstests op gatewayhardware"
+  "action_run_speedtest_desc": "Activeer handmatig nieuwe snelheidstests op gatewayhardware",
+  "action_toggle_demo_label": "Demomodus in-/uitschakelen",
+  "action_toggle_demo_desc": "Schakelen tussen gesimuleerde demomodus en live netwerk",
+  "action_change_language_label": "Systeemtaal wijzigen",
+  "action_change_language_desc": "Standaardtaal voor het systeem en meldingen instellen"
 }

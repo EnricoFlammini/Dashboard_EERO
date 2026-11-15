@@ -43,6 +43,8 @@ ACTION_SCOPES: List[Dict[str, str]] = [
     {"key": "action_system_backup"},
     {"key": "action_toggle_guest"},
     {"key": "action_run_speedtest"},
+    {"key": "action_toggle_demo"},
+    {"key": "action_change_language"},
 ]
 
 ALL_READ_PERMISSION_KEYS: List[str] = [p["key"] for p in READ_SCOPES]
@@ -61,7 +63,9 @@ UI_PERMISSION_KEYS: List[str] = [
     "action_manage_rules",
     "action_sync_dns",
     "action_manage_users",
-    "action_system_backup"
+    "action_system_backup",
+    "action_toggle_demo",
+    "action_change_language",
 ]
 
 

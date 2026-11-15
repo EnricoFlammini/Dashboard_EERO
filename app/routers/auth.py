@@ -78,7 +78,7 @@ async def get_auth_status():
     }
 
 
-@router.post("/mode", dependencies=[Depends(require_permission("__admin__"))])
+@router.post("/mode", dependencies=[Depends(require_permission("action_toggle_demo"))])
 async def switch_mode(payload: ModeSwitchRequest):
     """Passa istantaneamente tra Demo Mode e Live Network preservando il token reale."""
     eero_client.set_demo_mode(payload.demo)

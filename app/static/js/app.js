@@ -1050,6 +1050,9 @@ document.addEventListener('alpine:init', () => {
     // language; the page-load call must not, or every browser that opens the
     // dashboard would overwrite it.
     async setLanguage(lang, { syncServer = true } = {}) {
+      if (this.currentUser && !this.can('action_change_language') && syncServer) {
+        return;
+      }
       this.currentLanguage = this.supportedLanguages.includes(lang) ? lang : 'en';
       localStorage.setItem('eero_lang', this.currentLanguage);
       document.documentElement.lang = this.currentLanguage;
@@ -1063,7 +1066,7 @@ document.addEventListener('alpine:init', () => {
       this.translationsLoaded = Object.keys(this.translations).length > 0;
       document.body.classList.remove('i18n-pending');
       if (this.translationsLoaded) document.title = this.t('app_title');
-      if (syncServer) {
+      if (syncServer && this.can('action_change_language')) {
         try {
           await fetch('/api/system/language', {
             method: 'POST',
@@ -1463,6 +1466,10 @@ document.addEventListener('alpine:init', () => {
 
     // Header toggle: steps through supportedLanguages in order.
     cycleLanguage() {
+      if (this.currentUser && !this.can('action_change_language')) {
+        this.showToast(this.t('toasts.error'), this.t('auth_local.no_access'), 'error');
+        return;
+      }
       const list = this.supportedLanguages;
       const next = list[(list.indexOf(this.currentLanguage) + 1) % list.length];
       return this.setLanguage(next);
@@ -1651,6 +1658,10 @@ document.addEventListener('alpine:init', () => {
     },
 
     async toggleDemoMode(enableDemo) {
+      if (this.currentUser && !this.can('action_toggle_demo')) {
+        this.showToast(this.t('toasts.error'), this.t('auth_local.no_access'), 'error');
+        return;
+      }
       this.authLoading = true;
       try {
         const resp = await fetch('/api/auth/mode', {
@@ -1673,9 +1684,12 @@ document.addEventListener('alpine:init', () => {
             ? (this.t('js.toggle_demo_mode.demo_mode_active_your'))
             : (this.t('js.toggle_demo_mode.live_network_active_real'));
           this.showToast(title, msg, "info");
+        } else {
+          this.showToast(this.t('toasts.error'), data.detail || this.t('toasts.operation_failed'), 'error');
         }
       } catch (err) {
         console.error("Failed to toggle demo mode:", err);
+        this.showToast(this.t('toasts.error'), String(err), 'error');
       } finally {
         this.authLoading = false;
       }
@@ -6216,7 +6230,7 @@ document.addEventListener('alpine:init', () => {
       if (preset === 'all') {
         const allKeys = this.permissionsCatalog.length 
           ? this.permissionsCatalog.map(p => p.key) 
-          : ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns', 'action_manage_users', 'action_system_backup'];
+          : ['view_topology', 'view_clients', 'view_analytics', 'view_logs', 'action_reboot_nodes', 'action_pause_devices', 'action_manage_rules', 'action_sync_dns', 'action_manage_users', 'action_system_backup', 'action_toggle_demo', 'action_change_language'];
         this.userForm.permissions = allKeys;
         this.userForm.role = 'admin';
       } else if (preset === 'readonly') {

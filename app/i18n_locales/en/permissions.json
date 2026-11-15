@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Control Guest Wi-Fi",
   "action_toggle_guest_desc": "Enable/disable guest network and regenerate guest credentials",
   "action_run_speedtest_label": "Run Speed Test On-Demand",
-  "action_run_speedtest_desc": "Manually trigger new speed tests on gateway hardware"
+  "action_run_speedtest_desc": "Manually trigger new speed tests on gateway hardware",
+  "action_toggle_demo_label": "Toggle Demo Mode",
+  "action_toggle_demo_desc": "Switch between simulated Demo mode and live eero network",
+  "action_change_language_label": "Change System Language",
+  "action_change_language_desc": "Configure default system and notification language"
 }

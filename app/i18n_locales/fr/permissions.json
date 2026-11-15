@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Contrôler le Wi-Fi invité",
   "action_toggle_guest_desc": "Activer/désactiver le réseau invité et régénérer les informations d'identification des invités",
   "action_run_speedtest_label": "Exécuter un test de vitesse à la demande",
-  "action_run_speedtest_desc": "Déclenchez manuellement de nouveaux tests de vitesse sur le matériel de la passerelle"
+  "action_run_speedtest_desc": "Déclenchez manuellement de nouveaux tests de vitesse sur le matériel de la passerelle",
+  "action_toggle_demo_label": "Basculer en Mode Démo",
+  "action_toggle_demo_desc": "Basculer entre le mode Démo simulé et le réseau réel Live",
+  "action_change_language_label": "Modifier la Langue du Système",
+  "action_change_language_desc": "Configurer la langue par défaut du système et des notifications"
 }

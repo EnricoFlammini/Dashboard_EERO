@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Controlar Wi-Fi de convidados",
   "action_toggle_guest_desc": "Ativar/desativar rede de convidados e regenerar credenciais de convidados",
   "action_run_speedtest_label": "Execute o teste de velocidade sob demanda",
-  "action_run_speedtest_desc": "Acionar manualmente novos testes de velocidade no hardware do gateway"
+  "action_run_speedtest_desc": "Acionar manualmente novos testes de velocidade no hardware do gateway",
+  "action_toggle_demo_label": "Alternar Modo Demo",
+  "action_toggle_demo_desc": "Alternar entre o modo Demo simulado e a rede real Live",
+  "action_change_language_label": "Alterar Idioma do Sistema",
+  "action_change_language_desc": "Configurar o idioma padrão do sistema e das notificações"
 }

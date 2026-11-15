@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Steuern Sie das Gast-WLAN",
   "action_toggle_guest_desc": "Gastnetzwerk aktivieren/deaktivieren und Gastanmeldeinformationen neu generieren",
   "action_run_speedtest_label": "Geschwindigkeitstest bei Bedarf ausführen",
-  "action_run_speedtest_desc": "Lösen Sie manuell neue Geschwindigkeitstests auf der Gateway-Hardware aus"
+  "action_run_speedtest_desc": "Lösen Sie manuell neue Geschwindigkeitstests auf der Gateway-Hardware aus",
+  "action_toggle_demo_label": "Demo-Modus umschalten",
+  "action_toggle_demo_desc": "Umschalten zwischen simuliertem Demo-Modus und Live-Netzwerk",
+  "action_change_language_label": "Systemsprache ändern",
+  "action_change_language_desc": "Standardsprache für System und Benachrichtigungen festlegen"
 }

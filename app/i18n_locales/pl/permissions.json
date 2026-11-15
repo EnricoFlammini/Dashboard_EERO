@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Kontroluj Wi-Fi dla gości",
   "action_toggle_guest_desc": "Włącz/wyłącz sieć gościnną i ponownie wygeneruj poświadczenia gościa",
   "action_run_speedtest_label": "Uruchom test prędkości na żądanie",
-  "action_run_speedtest_desc": "Ręcznie uruchom nowe testy szybkości na sprzęcie bramy"
+  "action_run_speedtest_desc": "Ręcznie uruchom nowe testy szybkości na sprzęcie bramy",
+  "action_toggle_demo_label": "Przełączanie trybu demonstracyjnego",
+  "action_toggle_demo_desc": "Przełączanie między symulowanym trybem Demo a siecią rzeczywistą",
+  "action_change_language_label": "Zmiana języka systemu",
+  "action_change_language_desc": "Konfiguracja domyślnego języka systemu i powiadomień"
 }

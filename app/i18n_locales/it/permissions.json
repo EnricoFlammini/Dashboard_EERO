@@ -36,5 +36,9 @@
   "action_toggle_guest_label": "Controllo Rete Wi-Fi Ospiti",
   "action_toggle_guest_desc": "Attivazione/disattivazione rete ospiti e rigenerazione password",
   "action_run_speedtest_label": "Esecuzione Speed Test su richiesta",
-  "action_run_speedtest_desc": "Esecuzione manuale di nuovi Speed Test sull'hardware gateway"
+  "action_run_speedtest_desc": "Esecuzione manuale di nuovi Speed Test sull'hardware gateway",
+  "action_toggle_demo_label": "Attivazione Modalità Demo",
+  "action_toggle_demo_desc": "Passaggio tra la modalità Demo simulata e la rete reale Live",
+  "action_change_language_label": "Modifica Lingua di Sistema",
+  "action_change_language_desc": "Configurazione della lingua predefinita di sistema e delle notifiche"
 }

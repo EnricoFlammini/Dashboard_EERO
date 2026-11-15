@@ -2780,6 +2780,21 @@ async def run_all_tests():
         res_guest_op = await client.post("/api/network/guest", json={"enabled": True}, headers=op_headers)
         runner.assert_true(res_guest_op.status_code == 403, "Operatore privo di 'action_toggle_guest' bloccato su /network/guest con HTTP 403 Forbidden")
 
+        # Operatore NON ha 'action_toggle_demo' -> richiesta bloccata con HTTP 403 Forbidden!
+        res_demo_op = await client.post("/api/auth/mode", json={"demo": True}, headers=op_headers)
+        runner.assert_true(res_demo_op.status_code == 403, "Operatore privo di 'action_toggle_demo' bloccato su /api/auth/mode con HTTP 403 Forbidden")
+
+        # Operatore NON ha 'action_change_language' -> richiesta bloccata con HTTP 403 Forbidden!
+        res_lang_op = await client.post("/api/system/language", json={"language": "en"}, headers=op_headers)
+        runner.assert_true(res_lang_op.status_code == 403, "Operatore privo di 'action_change_language' bloccato su /api/system/language con HTTP 403 Forbidden")
+
+        # Admin ha sempre accesso a /api/auth/mode e /api/system/language di default
+        res_demo_admin = await client.post("/api/auth/mode", json={"demo": True}, headers=admin_headers)
+        runner.assert_true(res_demo_admin.status_code == 200, "Admin accede con successo a /api/auth/mode (HTTP 200)")
+
+        res_lang_admin = await client.post("/api/system/language", json={"language": "it"}, headers=admin_headers)
+        runner.assert_true(res_lang_admin.status_code == 200, "Admin imposta con successo la lingua di sistema su /api/system/language (HTTP 200)")
+
         # Richiesta con token Bearer corrotto/falso -> HTTP 401 Unauthorized
         res_fake_token = await client.post("/api/network/reboot", headers={"Authorization": "Bearer FakeInvalidToken12345"})
         runner.assert_true(res_fake_token.status_code == 401, "Richiesta con token di sessione corrotto restituisce HTTP 401 Unauthorized")
@@ -3861,6 +3876,8 @@ async def run_all_tests():
         # Gating RBAC can(...) sui pulsanti amministrativi nel menu
         runner.assert_true("can('action_manage_users')" in index_html, "Voce 'Gestione Utenti' protetta da can('action_manage_users')")
         runner.assert_true("can('action_system_backup')" in index_html, "Voce 'Backup & Ripristino' protetta da can('action_system_backup')")
+        runner.assert_true("can('action_toggle_demo')" in index_html, "Pulsante 'Modalità Demo' protetto da can('action_toggle_demo')")
+        runner.assert_true("can('action_change_language')" in index_html, "Selettore lingua protetto da can('action_change_language')")
 
         # Verifica elementi UI Modulo 3 in index.html
         runner.assert_true("telemetryStale" in index_html or "telemetryAuthExpired" in index_html, "Banner Telemetry Resilience (Issue #55) integrato in index.html")

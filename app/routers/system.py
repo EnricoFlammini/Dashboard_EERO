@@ -29,7 +29,7 @@ async def get_system_language():
     return {"status": "success", "language": lang}
 
 
-@router.post("/language", dependencies=[Depends(require_permission("__admin__"))])
+@router.post("/language", dependencies=[Depends(require_permission("action_change_language"))])
 async def set_system_language(payload: LanguageRequest):
     """Aggiorna e persiste la lingua preferita per la dashboard e le notifiche."""
     lang = payload.language.lower().strip()
