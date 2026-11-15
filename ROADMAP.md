@@ -16,7 +16,11 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86) & 🌍 European i18n** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test ed espansione a 7 nuove lingue europee. |
-| **v1.8.0** | 📦 **Multi-Platform Native & Desktop Installers (Linux, Windows, macOS, HA Add-on, PyPI, Unraid CA, Synology NAS), 🔔 Apprise Notifications & 🛠️ Maintenance Mode UI (Discussion #109, Issue #110)** | Distribuzione oltre Docker e integrazione NAS/Enterprise: installer nativo Linux `systemd` (Debian/Ubuntu/Raspberry Pi/Proxmox LXC), app Desktop Windows (`.exe`) e macOS (`.dmg` - `@stevehoek`) con tray/webview, Home Assistant Add-on ufficiale, pacchetto `pipx`/PyPI, template ufficiale **Unraid Community Applications** (`@rvs007`), pacchetto/auto-update one-click per **Synology NAS** (`@jonmacdonald`), canale notifiche universale **Apprise** per Microsoft Teams, Slack, Google Chat, Gotify e 100+ servizi (`@richlilly2004`) e schermata/banner Web UI informativa per operazioni di manutenzione, riparazione DB e housekeeping (`@stevehoek` - Issue #110). |
+| **v1.8.0** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame & 🛠️ Maintenance Mode UI (#110, #111, #115-#118)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), e banner/overlay informativo Web UI per auto-riparazione SQLite e manutenzione (#117 - `@stevehoek`). |
+| **v1.8.1** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
+| **v1.8.2** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
+| **v1.8.3** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
+| **v1.9.0** | 🌐 **Multi-Network Architecture & Simultaneous Polling (Issue #114)** | Supporto completo alla gestione contemporanea di più reti eero da una singola istanza della dashboard: poller multi-tenant, caching isolato per `network_id` e navigazione indipendente in schede del browser separate senza conflitti server-side (#114 - `@stevehoek`). |
 
 ---
 
@@ -82,14 +86,26 @@ gantt
     Amazon Echo 'eero Built-in' Nodes (Issue #96)      :done, v1_7_echo, after v1_7_theme, 2d
     Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
     Devices Card View, Richer Home Cards & Product Images (PR #107):done, v1_7_cards, after v1_7_fixes, 2d
-    section v1.8.0 - Installazione Multi-Piattaforma, NAS & Apprise
-    Path & Runtime Detection (DATA_DIR / MEIPASS / Update UI) :active, v1_8_core, after v1_7_cards, 2d
-    Apprise Universal Notifications (Teams, Slack, GChat, Gotify) :v1_8_apprise, after v1_8_core, 2d
-    Maintenance & Housekeeping Mode UI Overlay (Issue #110)      :v1_8_maint, after v1_8_apprise, 1d
-    Unraid Community Apps XML & Synology NAS Package/Auto-Update  :v1_8_nas, after v1_8_maint, 2d
-    Linux Native Installer (systemd / Proxmox LXC / .deb)      :v1_8_linux, after v1_8_nas, 3d
-    Desktop App Windows (.exe) & macOS (.dmg) via CI/CD        :v1_8_desktop, after v1_8_linux, 5d
-    Home Assistant Add-on & PyPI (pipx) Package                :v1_8_ha, after v1_8_desktop, 2d
+    section v1.8.0 - Core Foundations, Apprise & Quick Wins
+    Path & Runtime Detection (DATA_DIR / MEIPASS) (#118) :active, v1_8_core, after v1_7_cards, 2d
+    Apprise Universal Notifications (#111)              :v1_8_apprise, after v1_8_core, 2d
+    Public WAN IP & Double-NAT Detection (#115)         :v1_8_wan, after v1_8_apprise, 1d
+    Homelab Embed iFrame & Kiosk Mode (#116)            :v1_8_kiosk, after v1_8_wan, 1d
+    Maintenance & Housekeeping Mode UI Overlay (#117)   :v1_8_maint, after v1_8_kiosk, 1d
+    section v1.8.1 - NAS & Proxmox Community
+    Unraid Community Apps XML Template (#120)           :v1_81_unraid, after v1_8_maint, 2d
+    Synology Container Manager Seamless Update (#121)   :v1_81_syno, after v1_81_unraid, 2d
+    Proxmox VE Community Script LXC (#119)              :v1_81_proxmox, after v1_81_syno, 2d
+    Linux Native systemd Installer & .deb (#122)        :v1_81_linux, after v1_81_proxmox, 2d
+    section v1.8.2 - Home Assistant & NextDNS
+    Home Assistant OS Add-on with Ingress (#123)        :v1_82_ha, after v1_81_linux, 3d
+    NextDNS Cloud Rewrites Sync REST API (#124)         :v1_82_nextdns, after v1_82_ha, 2d
+    PyPI (pipx) Package Distribution (#125)             :v1_82_pypi, after v1_82_nextdns, 1d
+    section v1.8.3 - Desktop Apps
+    Windows Native Desktop App (.exe) (#126)            :v1_83_win, after v1_82_pypi, 3d
+    macOS Native Desktop App (.dmg) (#127)              :v1_83_mac, after v1_83_win, 3d
+    section v1.9.0 - Multi-Network Architecture
+    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_83_mac, 5d
 ```
 
 ---
@@ -969,49 +985,100 @@ gantt
 
 ---
 
-### 📦 Release v1.8.0 — Installazione Multi-Piattaforma (Linux, Desktop Windows/macOS, HA Add-on, PyPI, Unraid, Synology NAS) & Notifiche Universali Apprise (Discussion #109)
+### 📦 Release v1.8.0 — Core Multi-Platform Foundations, Notifiche Universali Apprise, Public WAN IP, Homelab Kiosk & Maintenance Mode UI (Discussion #109, Issues #110, #111, #115-#118)
 
-> **Obiettivo:** Rendere la dashboard installabile e aggiornabile con 1 clic su qualsiasi ambiente (Linux bare-metal/LXC, Desktop Windows e macOS, Home Assistant OS, Unraid Community Applications, Synology NAS e PyPI) ed estendere il sistema di notifiche a Microsoft Teams, Slack, Google Chat, Gotify e oltre 100 destinazioni tramite Apprise.
+> **Obiettivo:** Consolidare le fondamenta multi-piattaforma del core, arricchire il monitoraggio con il vero IP pubblico WAN anche dietro router/doppio NAT, abilitare l'incorporamento in dashboard Homelab (Homarr/Dashy/tablet), introdurre il canale notifiche universale Apprise (100+ destinazioni) e la schermata di manutenzione/housekeeping per SQLite.
 
-#### 1. ⚙️ Adeguamenti Core Multi-Piattaforma (`app/config.py`, `app/main.py`, Update UI)
-- [ ] **Risoluzione Dinamica Path & Bundle (`sys._MEIPASS`):** Supporto trasparente ai percorsi statici e template quando l'app viene eseguita da eseguibile PyInstaller.
-- [ ] **Directory Dati Standard per OS (`DATA_DIR` fallback):** Utilizzo automatico di `~/.local/share/eero-dashboard` / `/var/lib/eero-dashboard` (Linux), `%APPDATA%\eero-dashboard` (Windows) e `~/Library/Application Support/eero-dashboard` (macOS) quando `DATA_DIR` non è impostato.
-- [ ] **Rilevamento Ambiente nella Pagina Aggiornamenti:** Distinzione tra runtime `docker`, `systemd`, `desktop`, `synology`, `unraid` e `pypi` nella scheda *Verifica aggiornamenti* per mostrare istruzioni e azioni di aggiornamento coerenti con l'installazione attiva.
+#### 1. ⚙️ Adeguamenti Core Multi-Piattaforma (`app/config.py`, `app/main.py`, Update UI) (Issue #118)
+- [ ] **Risoluzione Dinamica Path & Bundle (`sys._MEIPASS`):** Supporto trasparente ai percorsi statici e template quando l'app viene eseguita da pacchetto/bundle (Issue #118).
+- [ ] **Directory Dati Standard per OS (`DATA_DIR` fallback):** Utilizzo automatico di `~/.local/share/eero-dashboard` / `/var/lib/eero-dashboard` (Linux), `%APPDATA%\eero-dashboard` (Windows) e `~/Library/Application Support/eero-dashboard` (macOS) quando `DATA_DIR` non è impostato (Issue #118).
+- [ ] **Rilevamento Ambiente nella Pagina Aggiornamenti:** Distinzione tra runtime `docker`, `systemd`, `desktop`, `synology`, `unraid`, `ha_addon` e `pypi` nella scheda *Verifica aggiornamenti* per mostrare istruzioni coerenti con l'ambiente attivo (Issue #118).
 
-#### 2. 🐧 Linux Nativo (`systemd` / Proxmox LXC / Raspberry Pi)
-- [ ] **Script Installer One-Liner (`install.sh`) & Pacchetto `.deb`:** Installazione automatizzata in `/opt/eero-dashboard` con `.venv` isolato, utente di servizio dedicato, `DATA_DIR=/var/lib/eero-dashboard` e unit `systemd` (`eero-dashboard.service`) con auto-start e log su `journalctl`.
+#### 2. 🌐 Rilevamento Public WAN IP & Doppio NAT (Issue #115 — @BaRaD5)
+- [ ] **Rilevamento Deterministico True Public IP:** Meccanismo leggero di lookup IP pubblico (tramite query DNS TXT a Cloudflare/Google in `dns_cache.py` o fallback REST `api.ipify.org`) quando l'eero si trova in bridge o in cascata dietro router operatore con IP WAN privato RFC 1918 (`192.168.x.x`, `10.x.x.x`) (Issue #115).
+- [ ] **Endpoint Dedicato & Card Overview:** Esposizione su `GET /api/network/public-ip` con cache a basso rate-limit (15-30m) nel poller e visualizzazione affiancata dell'IP WAN locale ed esterno nella panoramica di rete (Issue #115).
 
-#### 3. 🖥️ App Desktop Windows (`.exe`) & macOS (`.dmg` — Feedback @stevehoek)
-- [ ] **Launcher Tray + Finestra Nativa (`PyInstaller` + `pystray` + `pywebview`):**
-  - Avvio automatico di Uvicorn in background su `127.0.0.1`, icona in System Tray / Menu Bar macOS (*Apri Dashboard*, *Avvio all'accesso*, *Esci*) e apertura in finestra nativa (`WebView2` su Windows, `WebKit` su macOS) o browser.
-  - Intercettazione automatica opzionale del callback Amazon OAuth2 `/ap/maplanding` nella finestra WebView integrata.
-- [ ] **Build Automatica via GitHub Actions:** Workflow dedicato su `windows-latest` (`.exe` / installer) e `macos-latest` (`.app` / `.dmg` Universal Binaries per Apple Silicon & Intel).
+#### 3. 🖥️ Supporto Embed Dashboard Homelab & Vista Kiosk (Issue #116 — @stevehoek)
+- [ ] **Configurazione Flessibile iFrame (`X-Frame-Options` / CSP `frame-ancestors`):** Introduzione della variabile d'ambiente `ALLOW_IFRAME_EMBED` o impostazione origini fidate per consentire l'embed sicuro in dashboard esterne come Homarr, Dashy, Flame o Glance (Issue #116).
+- [ ] **Vista Kiosk / Widget Compatta (`/kiosk` / `/widget`):** Interfaccia SPA ultra-leggera priva di sidebar ed elementi superflui, ottimizzata per vecchi iPad a parete o display touch (Issue #116).
+- [ ] **Endpoint Summary per Widget:** `GET /api/widget/summary` con metriche essenziali (stato WAN, velocità, numero dispositivi, health score) consumabile direttamente da widget generici (Issue #116).
 
-#### 4. 🏠 Home Assistant Add-on & 📦 PyPI (`pipx`)
-- [ ] **Home Assistant Add-on Repository:** Aggiunta di `repository.yaml` e `config.yaml` per l'installazione con 1 clic da Home Assistant OS.
-- [ ] **Pacchetto Python (`pyproject.toml` / PyPI):** Pubblicazione su PyPI con comando CLI `eero-dashboard` installabile via `pipx install eero-dashboard` (con extra opzionale `eero-dashboard[apprise]`).
-
-#### 5. 🗄️ Unraid Community Applications & Synology NAS Native Integration (Discussion #109 — @rvs007, @jonmacdonald)
-- [ ] **Template Ufficiale Unraid Community Applications (`unraid/eero-dashboard.xml` — @rvs007):**
-  - Manifesto XML conforme allo schema Unraid CA per l'installazione e l'aggiornamento con 1 clic direttamente dall'app store *Apps* di Unraid (senza necessità del Docker Compose Manager).
-  - Pre-configurazione automatica di porta WebUI (`8085`), volume persistente `/mnt/user/appdata/eero-dashboard -> /app/data`, icona ufficiale e variabili opzionali (`TZ`, `DASHBOARD_LANG`, `REQUIRE_LOCAL_AUTH`).
-- [ ] **Pacchetto & Auto-Update Seamless per Synology NAS DSM 7.2+ (@jonmacdonald):**
-  - Pacchetto Synology `.spk` / progetto preconfigurato per Synology *Package Center* / *Container Manager* pensato per dispositivi NAS sempre accesi 24/7 sulla LAN.
-  - Configurazione predefinita per l'aggiornamento automatico o a 1 clic direttamente dalla UI della Dashboard (tramite socket `/var/run/docker.sock` o helper dedicato) senza dover riconfigurare o ricreare manualmente il container ad ogni nuova release.
-
-#### 6. 🔔 Gateway Notifiche Universale Apprise: Microsoft Teams, Slack, Google Chat, Gotify & 100+ Servizi (Discussion #109 — @richlilly2004)
+#### 4. 🔔 Gateway Notifiche Universale Apprise: Teams, Slack, Google Chat, Gotify & 100+ Servizi (Issue #111 — @richlilly2004)
 - [ ] **Canale `send_apprise_message()` Non-Bloccante in `notifications.py`:**
-  - Integrazione della libreria `apprise` (inclusa di default nell'immagine Docker e come extra `eero-dashboard[apprise]` nei pacchetti nativi) eseguita in thread separato (`asyncio.to_thread`) con pre-caricamento asincrono dei plugin all'avvio per latenza zero al primo alert.
-  - Supporto diretto agli URL **Microsoft Teams Workflows** (`powerplatform.com` / `logic.azure.com`), **Slack**, **Google Chat**, **Gotify**, **Matrix** ed **Email**, con mappatura automatica delle severità (`info`, `success`, `warning`, `failure`) e conversione del markup HTML localizzato in tutte e 9 le lingue.
+  - Integrazione della libreria `apprise` (inclusa di default nell'immagine Docker ed extra `[apprise]`) eseguita in thread separato (`asyncio.to_thread`) con pre-caricamento asincrono all'avvio per latenza zero al primo alert (Issue #111).
+  - Supporto diretto ad URL **Microsoft Teams Workflows**, **Slack**, **Google Chat**, **Gotify**, **Matrix** ed **Email**, con mappatura automatica delle severità e conversione HTML localizzato in tutte le lingue supportate (Issue #111).
 - [ ] **Pannello UI, Mascheramento Segreti & Pulsante di Test:**
-  - Aggiunta di `apprise_enabled` e `apprise_urls` (mascherato con `••••••••` in `GET /api/automations/notifications` come gli altri segreti) nella scheda *Notifiche & Webhook* con test di invio immediato e note di configurazione nel manuale.
+  - Campi `apprise_enabled` e `apprise_urls` (mascherato con `••••••••` nelle API) nella scheda *Notifiche & Webhook* con test immediato e documentazione (Issue #111).
 
-#### 7. 🛠️ Schermata & Banner di Manutenzione Web UI per Operazioni di Background (Issue #110 — Feedback @stevehoek)
+#### 5. 🛠️ Schermata & Banner di Manutenzione Web UI per Operazioni di Background (Issue #117 — Feedback @stevehoek)
 - [ ] **Maintenance / Housekeeping State Interceptor (`/api/health` & Middleware):**
-  - Esposizione di uno stato `status: "maintenance"` (con dettagli `stage`, `message` ed eventuale stima di avanzamento) durante operazioni di sistema pesanti: auto-riparazione o ricostruzione indici SQLite (`repair_if_malformed`), compattazione retention rollup, pulizia `VACUUM` programmata o sincronizzazione iniziale a freddo al boot.
-- [ ] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby Server / Plex):**
-  - Overlay visivo o banner Fluent animato con spinner e messaggio descrittivo localizzato in 9 lingue (es. *"Manutenzione database in corso... Ottimizzazione integrità e indici SQLite, attendere qualche secondo"*), evitando che l'utente veda la schermata apparire temporaneamente "offline" o bloccata al riavvio del container.
-  - Meccanismo di auto-reconnect polling ad alta frequenza (ogni 2 secondi) su `/api/health` che ripristina istantaneamente l'interfaccia interattiva non appena la manutenzione termina, senza costringere a ricaricare manualmente la pagina nel browser.
+  - Esposizione di uno stato `status: "maintenance"` (con dettagli stage e messaggio) durante operazioni intensive: auto-riparazione indici SQLite (`repair_if_malformed`), compattazione retention rollup, pulizia `VACUUM` programmata o sincronizzazione iniziale a freddo al boot (Issue #117).
+- [ ] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby/Plex):**
+  - Overlay visivo animato con messaggio descrittivo localizzato (es. *"Manutenzione database in corso... Ottimizzazione indici SQLite, attendere qualche secondo"*), prevenendo l'impressione di crash o stato offline (Issue #117).
+  - Auto-reconnect polling ad alta frequenza (ogni 2 secondi) su `/api/health` con ripristino istantaneo della dashboard alla conclusione della manutenzione (Issue #117).
+
+---
+
+### 🗄️ Release v1.8.1 — Ecosistema NAS & Proxmox Community (Discussion #109, Issues #119-#122)
+
+> **Obiettivo:** Portare Dashboard_EERO nei principali app store e cataloghi homelab dedicati a NAS e virtualizzazione domestica con installazione 1-clic e aggiornamenti trasparenti.
+
+#### 1. 🐧 Script Ufficiale Proxmox VE Community (Issue #119 — @BaRaD5)
+- [ ] **Integrazione con `community-scripts/ProxmoxVE`:** Pull Request ufficiale con script `ct/eero-dashboard.sh` e `install/eero-dashboard-install.sh` per installazione automatizzata 1-clic di un LXC container Debian 12 minimale con Python 3 e unit `systemd`, con footprint di soli ~60-80 MB di RAM (Issue #119).
+
+#### 2. 🗄️ Template Ufficiale Unraid Community Applications (Issue #120 — @rvs007)
+- [ ] **Manifesto XML Unraid CA (`unraid/eero-dashboard.xml`):** Template conforme allo schema ufficiale Unraid CA con pre-configurazione WebUI port (`8085`), volume dati persistente `/mnt/user/appdata/eero-dashboard -> /app/data`, icone ufficiali e variabili predefinite per installazione con 1 clic dall'app store *Apps* (Issue #120).
+
+#### 3. 📦 Synology NAS DSM 7.2+ Container Manager (Issue #121 — @jonmacdonald)
+- [ ] **Deploy & Auto-Update Seamless per Synology NAS:** Template e automazione aggiornamenti one-click per Container Manager di Synology DSM tramite socket Docker `/var/run/docker.sock` o webhook, prevenendo la ricreazione manuale del container (Issue #121).
+
+#### 4. 🐧 Linux Nativo (`systemd` / Raspberry Pi / .deb) (Issue #122)
+- [ ] **Script Installer One-Liner (`install.sh`) & Pacchetto `.deb`:** Installazione automatizzata in `/opt/eero-dashboard` con `.venv` isolato, utente di servizio `eero`, `DATA_DIR=/var/lib/eero-dashboard` e unit `systemd` (`eero-dashboard.service`) con auto-start e log su `journalctl` (Issue #122).
+
+---
+
+### 🏠 Release v1.8.2 — Home Assistant OS Add-on (Ingress), NextDNS Cloud Sync & PyPI (Discussion #109, Issues #123-#125)
+
+> **Obiettivo:** Integrazione nativa in Home Assistant OS con visualizzazione nella barra laterale, sincronizzazione DNS estesa a NextDNS e distribuzione Python standalone.
+
+#### 1. 🏠 Home Assistant OS Add-on con Supporto Ingress (Issue #123 — @tekzer0)
+- [ ] **Repository Add-on Dedicata (`Dashboard_EERO-ha-addon`):** Creazione repository ufficiale con `repository.yaml`, `config.yaml`, `build.yaml` e Dockerfile multi-arch (amd64, aarch64) (Issue #123).
+- [ ] **Supporto Nativo HA Ingress:** Configurazione `ingress: true` e gestione dinamica del reverse-proxy path (`root_path` FastAPI) per visualizzare la dashboard direttamente nella sidebar dell'app Home Assistant (Issue #123).
+- [ ] **Auto-Connessione Broker MQTT Mosquitto:** Riconoscimento automatico del broker MQTT locale di Home Assistant se presente sulla rete interna (Issue #123).
+
+#### 2. 🛡️ Sincronizzazione Nomi Dispositivi con NextDNS (Issue #124 — @XprofQ)
+- [ ] **Worker `nextdns_sync.py` via REST API:** Integrazione con l'API Cloud di NextDNS (`https://api.nextdns.io/profiles/{profile_id}/rewrites`) per sincronizzare automaticamente i nomi personalizzati e gli indirizzi IP dei client eero nelle DNS Rewrites del profilo NextDNS (Issue #124).
+- [ ] **Pannello di Configurazione NextDNS:** Campi dedicati per `NextDNS API Key`, `Profile ID` e toggle di sincronizzazione automatica nella scheda *Impostazioni DNS* (Issue #124).
+
+#### 3. 📦 Pacchetto Standalone PyPI / `pipx` (Issue #125)
+- [ ] **Pubblicazione su PyPI (`pyproject.toml`):** Definizione console script `eero-dashboard` per esecuzione diretta via `pipx install eero-dashboard` con extra opzionale `[apprise]` (Issue #125).
+
+---
+
+### 🖥️ Release v1.8.3 — Applicazioni Desktop Native Windows & macOS (Discussion #109, Issues #126, #127)
+
+> **Obiettivo:** Offrire un'esperienza applicativa desktop standalone con icone nella barra delle applicazioni / menu bar e finestra integrata senza necessità di Docker.
+
+#### 1. 🪟 App Desktop Windows (.exe con System Tray & WebView2) (Issue #126)
+- [ ] **Launcher Tray + WebView2 (`PyInstaller` + `pystray` + `pywebview`):** Server Uvicorn in background su `127.0.0.1`, icona System Tray con menu (*Apri Dashboard*, *Avvio all'accesso*, *Esci*) e finestra nativa Edge WebView2 (Issue #126).
+- [ ] **CI/CD Build Windows:** Workflow GitHub Actions dedicato con output installer `.msi` / `.exe` portabile (Issue #126).
+
+#### 2. 🍏 App Desktop macOS (.dmg Universal Binary con Menu Bar) (Issue #127 — @stevehoek)
+- [ ] **Menu Bar App + WebKit WebView:** Icona nella barra dei menu superiore di macOS, avvio automatico all'accesso e finestra nativa WebKit con bundle `.app` e pacchetto `.dmg` (Issue #127).
+- [ ] **Universal Binary Apple Silicon & Intel:** Compilazione automatizzata via GitHub Actions (`macos-latest`) per architetture `arm64` e `x86_64` (Issue #127).
+
+---
+
+### 🌐 Release v1.9.0 — Architettura Multi-Rete & Polling Simultaneo (Issue #114 — @stevehoek)
+
+> **Obiettivo:** Consentire la gestione e visualizzazione contemporanea di più reti eero (es. "Home" e "Cottage") da una singola istanza della dashboard.
+
+#### 1. 🌐 Refactoring Multi-Tenant del Background Poller & Cache
+- [ ] **Polling a Rotazione per Tutte le Reti dell'Account:** Aggiornamento del `background_poller` per iterare ed estrarre la telemetria di tutte le reti mesh autorizzate (`available_networks`), mantenendo cache RAM distinte per `network_id` (Issue #114).
+- [ ] **Isolamento Metriche & Storico SQLite:** Partizionamento deterministico delle serie storiche, notifiche e snapshot per `network_id` (Issue #114).
+
+#### 2. 🖥️ Navigazione Client-Side Indipendente Multi-Scheda
+- [ ] **Selezione Rete Guidata da URL o Parametro di Sessione Client:** Passaggio da stato server-side a parametro client-side (es. `/network/{network_id}` o header di richiesta), permettendo a due o più schede del browser collegate alla stessa istanza di monitorare reti differenti contemporaneamente senza interferenze (Issue #114).
 
 ---
 

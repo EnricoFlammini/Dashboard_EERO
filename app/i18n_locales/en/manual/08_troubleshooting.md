@@ -23,5 +23,11 @@ summary: Frequently asked questions regarding telemetry, in-app Docker auto-upda
   - If you encounter authorization errors, click the **Logout** button or re-authenticate from the login modal with a fresh 6-digit OTP code.
 * **How do I back up local configurations and custom metadata?**
   - All custom device names, categories, notes, notification settings, signal history, and AdGuard settings are stored in `./data/metrics.db`. To create a complete backup, copy the `./data` directory to your computer or backup storage.
+* **Why does email/SMS login return no networks or fail with 401 (Issue #93)?**
+  - If your eero account was linked or migrated to an Amazon profile, legacy email/SMS login is rejected by eero cloud. Use the **"Login with Amazon (OAuth2 / PKCE)"** section in the login modal to authenticate via the official federated flow.
+* **How do I resolve local LAN FQDNs using Custom & Split DNS (Issue #98)?**
+  - If your container cannot resolve internal LAN domains (e.g. `adguard.home.lan`), set the environment variables `CUSTOM_DNS_SERVERS` (e.g. `192.168.4.13`) and `CUSTOM_DNS_DOMAINS` (e.g. `*.home.lan=192.168.4.13`). The built-in resolver performs direct UDP lookups with IPv4-first ordering without altering container host files.
+* **What happens if the SQLite database corrupts during an unclean shutdown (Issue #110)?**
+  - The suite includes an automatic 3-stage self-healing engine (`repair_if_malformed`): it first attempts `REINDEX`, then rebuilds damaged tables, and if the file header itself is corrupt, transparently salvages all configuration/devices and reconstructs a clean database while preserving a `.corrupt.bak` backup.
 * **Rate Limiting Protection:**
   - The system polls eero cloud at controlled intervals (default 10s-30s) and serves all web client queries directly from RAM, completely eliminating the risk of cloud API blocks.

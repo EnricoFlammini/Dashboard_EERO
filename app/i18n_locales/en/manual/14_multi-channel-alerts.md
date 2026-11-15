@@ -8,11 +8,15 @@ summary: Multi-channel dispatcher (Telegram, Discord, Webhook, Pushover) and spe
 
 The notification engine features a unified multi-channel dispatch architecture for critical alerts and network events:
 
-* **Supported Channels:**
+* **Supported Channels (v1.7.0):**
   - **Telegram Bot:** Instant HTML-formatted alerts with direct node and client details.
   - **Discord Webhook:** Rich embed cards with color-coded severity bars and structured fields.
   - **Pushover:** High-priority mobile push notifications for immediate delivery.
+  - **Native Ntfy (sh) (Issue #90):** Public `ntfy.sh` or self-hosted server dispatch with priority tags and bearer token authentication.
   - **Generic Webhook:** Raw JSON payloads for custom pipelines (Node-RED, n8n, Home Assistant).
+* **Visual UI Controls & Secret Masking (Issues #100, GHSA-r5vj-jfjp-m88q):**
+  - All channels include dedicated UI configuration cards under *Settings -> Controls* with instant **Test Message** buttons.
+  - Bot tokens and webhook URLs are masked with `••••••••` to prevent credential leakage.
 * **Integrated Specialized Alerts:**
   - **Bufferbloat Degradation Warning:** Triggered when loaded latency degrades significantly (Grade D or F, or loaded delta > 100ms).
   - **Mesh Node Signal Anomaly:** Proactive notice on DFS radar interference or weak wireless backhaul.

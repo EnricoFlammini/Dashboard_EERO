@@ -20,3 +20,8 @@ summary: Network Health Score, node status cards, and one-click actions.
 * **Quick Node Actions:**
   - **Reboot Network:** Dispatches a controlled reboot command across the entire mesh infrastructure.
   - **Reboot Single Node:** Reboots only the selected node without disrupting the rest of the household.
+* **Advanced Mesh Features (v1.7.0):**
+  - **Amazon Echo "eero Built-in" Extenders (Issue #96):** Automatic synthesis and display of compatible Amazon Echo devices extending mesh Wi-Fi coverage. Highlighted with a distinctive **`eero Built-in`** badge, real-time client association counts, and safety suppression of unsupported reboot commands.
+  - **Bridge Mode Primary Gateway Election (Issue #105):** In Bridge Mode (where all nodes report `gateway: false`), the suite deterministically elects the true primary gateway by evaluating `is_primary_node` and non-eero upstream WAN LLDP neighbors.
+  - **Official eero Product Imagery:** Every mesh node card displays an authentic product photo of its hardware model (eero Pro 6E, Max 7, 6+, Beacon, Outdoor 7, Echo Dot, etc.) for instant physical recognition.
+  - **Streaming AI Assistant & Placement Test (Issues #90, #102):** Interactive SSE streaming mesh diagnostics (`/api/network/assistant`), RF node placement assessment (`Placement Test`), Guardian VPN status, and serial number node onboarding.

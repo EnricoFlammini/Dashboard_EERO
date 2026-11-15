@@ -24,3 +24,6 @@ The dashboard provides a native **Prometheus / OpenMetrics** export endpoint for
 * **Prebuilt Grafana Dashboard Template:**
   - Ready-to-import dashboard located at `deploy/grafana/eero_dashboard.json`.
   - Features 13 preconfigured panels covering speed gauges, historical bandwidth curves, frequency breakdowns, and mesh node statuses.
+* **Authentication & RBAC Security (v1.7.0):**
+  - The `/metrics` endpoint is protected by the `view_topology` RBAC permission.
+  - When `REQUIRE_LOCAL_AUTH=true` is enabled (Security Advisory GHSA-r5vj-jfjp-m88q), requests to `/metrics` require an authenticated local session. In homelab environments where the Prometheus scraper does not support session cookies, keep `REQUIRE_LOCAL_AUTH=false` (relying on network-level firewall or reverse proxy access control) or forward requests through an authenticated reverse proxy.

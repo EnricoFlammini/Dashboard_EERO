@@ -15,4 +15,5 @@ summary: Live device list and card view, sorting, filtering, Wi-Fi band badges, 
 * **List or Cards View:** Switch with the **List / Cards** toggle. Cards show 3–4 devices per row with all table fields plus manufacturer and last seen; the Columns menu applies to List view only.
 * **Live Activity Animation:** Cards glow and rate bars shimmer while a device moves data.
 * **Open Details from Name or IP:** In List view, click the name or IP (not only the pencil) to open the device.
-* **Search Includes Vendor Data:** Matches manufacturer, model and reported hostname too.
+* **Quick Search `Ctrl+K` & Vendor Data:** Search across manufacturer, model, and reported hostname, or press **Ctrl+K** / **Cmd+K** anywhere to focus device search instantly.
+* **Compact Band/Channel Stacking:** Frequency band and wireless channel are vertically stacked (`5 GHz` above `CH 36`) to optimize horizontal table space.

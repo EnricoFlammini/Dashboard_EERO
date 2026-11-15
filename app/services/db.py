@@ -1321,7 +1321,7 @@ class DBService:
                 return None
         if isinstance(val, dict):
             for k in ("rx_rssi", "rssi", "signal_dbm", "signal_avg", "signal", "signal_strength", "dbm", "rx_rate_info", "tx_rate_info"):
-                parsed = DatabaseService.parse_rssi_int(val.get(k))
+                parsed = DBService.parse_rssi_int(val.get(k))
                 if parsed is not None:
                     return parsed
             return None

@@ -4,7 +4,7 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.7.0] - 2026-11-06
+## [1.7.0] - 2026-11-15
 
 ### Vista a Schede Dispositivi & Dettagli Modificabili (PR #107 - @todddube)
 * **Schede compatte:** interruttore Elenco/Schede, 3–4 dispositivi per riga con tutti i campi, animazione live durante il traffico, nome/IP cliccabili nell'elenco, ricerca più stretta e filtri più larghi.

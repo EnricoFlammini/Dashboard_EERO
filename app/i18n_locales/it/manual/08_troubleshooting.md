@@ -23,5 +23,11 @@ summary: FAQ su telemetria, motore di auto-aggiornamento Docker, sicurezza, back
   - Se ricevi un errore di autorizzazione, clicca sul pulsante **Disconnetti** nella barra laterale o nella schermata di login e riesegui la procedura di ricezione del codice OTP a 6 cifre.
 * **Come effettuare il backup delle configurazioni e metadati locali?**
   - Tutti i dati personalizzati (nomi personalizzati, categorie, note, impostazioni notifiche, storico segnale e AdGuard) sono contenuti nel file `./data/metrics.db`. Per fare un backup completo, è sufficiente copiare la cartella `./data` sul tuo computer o archivio cloud.
+* **Perché il login email/SMS non mostra reti o fallisce con errore 401 (Issue #93)?**
+  - Se il tuo account eero è stato collegato o migrato ad Amazon, l'accesso tradizionale via email/SMS viene disabilitato dai server eero. Utilizza la sezione **"Accedi con Amazon (OAuth2 / PKCE)"** nella modale di login per autenticarti tramite il flusso federato sicuro.
+* **Come risolvere FQDN interni e domini locali con Custom & Split DNS (Issue #98)?**
+  - Se il container non riesce a risolvere host interni della tua LAN (es. `adguard.casa.lan`), puoi impostare le variabili d'ambiente `CUSTOM_DNS_SERVERS` (es. `192.168.4.13`) e `CUSTOM_DNS_DOMAINS` (es. `*.casa.lan=192.168.4.13`). Il resolver integrato eseguirà query UDP dirette con priorità IPv4-first, senza bisogno di modificare i file di sistema.
+* **Come interviene l'auto-riparazione automatica SQLite se il database si danneggia (Issue #110)?**
+  - In caso di arresto brusco del server durante un checkpoint WAL, la suite attiva un motore di self-healing a 3 stadi (`repair_if_malformed`): tenta prima una reindicizzazione con `REINDEX`, poi ricrea la tabella compromessa, e se il file è corrotto esegue un salvataggio integrale delle impostazioni e ricrea un database pulito, conservando una copia `.corrupt.bak`.
 * **Protezione da Rate Limiting:**
   - L'applicazione interroga il cloud eero a intervalli definiti dal poller (default 10s-30s) e risponde a tutte le richieste dell'interfaccia direttamente dalla memoria RAM del server, azzerando il rischio di blocco da parte dei server eero.

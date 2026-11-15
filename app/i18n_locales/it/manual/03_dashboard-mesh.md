@@ -20,3 +20,8 @@ summary: Interpretazione dello Health Score, stato dei nodi e controlli rapidi.
 * **Azioni Rapide sui Nodi:**
   - **Riavvio Rete:** Invia un comando di riavvio controllato a tutta l'infrastruttura.
   - **Riavvio Singolo Nodo:** Riavvia unicamente il nodo selezionato senza interrompere il resto della casa.
+* **Funzionalità Mesh Avanzate (v1.7.0):**
+  - **Estensori Amazon Echo "eero Built-in" (Issue #96):** Rilevamento automatico e sintesi dei dispositivi Amazon Echo compatibili che estendono la copertura mesh Wi-Fi. Sono evidenziati con il badge dedicato **`eero Built-in`**, conteggio dei client associati e blocco di sicurezza del pulsante di riavvio non supportato.
+  - **Elezione Gateway Primario in Bridge Mode (Issue #105):** In modalità Bridge (dove tutti i nodi riportano `gateway: false`), la suite riconosce deterministicamente il vero router primario verificando il flag `is_primary_node` e i neighbor LLDP non-eero della porta WAN, evitando selezioni arbitrarie.
+  - **Immagini Ufficiali Hardware eero:** Ogni nodo mesh è accompagnato dalla foto ufficiale del modello hardware specifico (eero Pro 6E, Max 7, 6+, Beacon, Outdoor 7, Echo Dot, ecc.) per un immediato riconoscimento visivo.
+  - **Assistente AI Streaming & Placement Test (Issues #90, #102):** Diagnostica interattiva mesh in streaming SSE (`/api/network/assistant`), verifica del posizionamento RF nodi (`Placement Test`), stato Guardian VPN e aggiunta nodi tramite codice seriale.

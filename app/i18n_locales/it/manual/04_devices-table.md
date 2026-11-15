@@ -15,4 +15,5 @@ summary: Elenco e schede live dei client, ordinamento, filtri, badge bande Wi-Fi
 * **Vista Elenco o Schede:** Cambia con l'interruttore **Elenco / Schede**. Le schede mostrano 3–4 dispositivi per riga con tutti i campi della tabella più produttore e ultima attività; il menu Colonne vale solo per la vista Elenco.
 * **Animazione di Attività Live:** Le schede si illuminano e le barre pulsano mentre il dispositivo trasferisce dati.
 * **Dettagli da Nome o IP:** Nella vista Elenco clicca sul nome o sull'IP (non solo sulla matita) per aprire il dispositivo.
-* **Ricerca con Dati del Produttore:** Cerca anche per produttore, modello e hostname segnalato.
+* **Ricerca Rapida `Ctrl+K` & Dati Produttore:** Cerca per produttore, modello e hostname segnalato, oppure premi **Ctrl+K** / **Cmd+K** per attivare istantaneamente la ricerca da qualsiasi punto della dashboard.
+* **Layout Frequenza Compatto:** Banda radio e canale wireless sono impilati verticalmente (`5 GHz` sopra `CH 36`) per massima leggibilità su ogni risoluzione.

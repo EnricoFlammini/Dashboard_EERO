@@ -21,6 +21,9 @@ La dashboard espone un endpoint nativo conforme alle specifiche **Prometheus / O
   - `eero_mesh_nodes_total` & `eero_mesh_nodes_online`: Stato e conteggio dei nodi mesh.
   - `eero_bufferbloat_grade_numeric` & latenze (`unloaded`, `download`, `upload` in ms).
   - `eero_bandwidth_rx_bytes_total` & `eero_bandwidth_tx_bytes_total`: Contatori cumulativi di traffico.
-* **Template Dashboard Grafana Incluso:**
+* **Prebuilt Grafana Dashboard Template:**
   - File pronto all'uso disponibile in `deploy/grafana/eero_dashboard.json`.
   - Comprende 13 pannelli grafici (gauge di salute, grafici di velocità, ripartizione bande Wi-Fi, metriche bufferbloat e stato nodi).
+* **Autenticazione & Sicurezza RBAC (v1.7.0):**
+  - L'endpoint `/metrics` è protetto dal permesso RBAC `view_topology`.
+  - Se `REQUIRE_LOCAL_AUTH=true` è attivo (Advisory GHSA-r5vj-jfjp-m88q), le richieste verso `/metrics` richiedono una sessione utente locale autenticata. Per ambienti homelab con scraper Prometheus privi di gestione sessioni cookie, mantenere `REQUIRE_LOCAL_AUTH=false` (proteggendo l'accesso via reverse proxy o firewall LAN) oppure inoltrare lo scraping tramite proxy autenticato.
