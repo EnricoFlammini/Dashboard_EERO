@@ -234,7 +234,7 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(normalized[1]["is_primary_node"])
 
     def test_issue_96_echo_builtin_extender_reconciliation(self):
-        """Issue #96: Reconcile Echo Built-in virtual nodes from connected devices and proxied flags."""
+        """Issue #96: Reconcile Echo Built-in virtual nodes from connected devices, proxied flags, and persistence."""
         base_eeros = [
             {"id": "gw_1", "name": "Studio (Gateway)", "is_gateway": True, "wired": True, "status": "online"}
         ]
@@ -249,22 +249,101 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
             {
                 "id": "echo_harmony",
                 "hostname": "Harmony Echo Dot",
+                "model": "Echo Dot (5th Gen)",
+                "manufacturer": "Amazon Technologies Inc.",
                 "mac": "aa:bb:cc:dd:ee:ff",
                 "ip": "192.168.4.88",
-                "connected": True,
-                "is_proxied_node": True,
+                "connected": False,  # eero cloud reports connected: False on the station record
+            },
+            {
+                "id": "echo_miami",
+                "hostname": "Miami Echo",
+                "model": "Echo",
+                "manufacturer": "Amazon",
+                "mac": "aa:bb:cc:dd:ee:11",
+                "ip": "192.168.4.89",
+                "connected": False,
+                "connected_eero_name": "Studio (Gateway)",
             }
         ]
 
-        result = BackgroundPoller.reconcile_echo_extender_nodes(base_eeros, devices)
+        known_specs = {}
+        result = BackgroundPoller.reconcile_echo_extender_nodes(base_eeros, devices, known_specs=known_specs)
         result_names = [n["name"] for n in result]
 
         self.assertIn("Bedroom Echo Spot", result_names)
         self.assertIn("Harmony Echo Dot", result_names)
+        self.assertIn("Miami Echo", result_names)
+
         echo_node = next(n for n in result if n["name"] == "Bedroom Echo Spot")
         self.assertTrue(echo_node["is_echo_node"])
         self.assertEqual(echo_node["backhaul_type"], "eero Built-in (Wi-Fi)")
         self.assertEqual(echo_node["status"], "online")
+
+        # Miami and Harmony are online because they are active on LAN with assigned IP
+        harmony_node = next(n for n in result if n["name"] == "Harmony Echo Dot")
+        self.assertEqual(harmony_node["status"], "online")
+        miami_node = next(n for n in result if n["name"] == "Miami Echo")
+        self.assertEqual(miami_node["status"], "online")
+
+        # Test persistence: on the next poll, even if client_phone disconnects, Bedroom Echo Spot persists
+        devices_next = [
+            {
+                "id": "echo_harmony",
+                "hostname": "Harmony Echo Dot",
+                "model": "Echo Dot",
+                "ip": "192.168.4.88",
+            }
+        ]
+        result_next = BackgroundPoller.reconcile_echo_extender_nodes(base_eeros, devices_next, known_specs=known_specs)
+        next_names = [n["name"] for n in result_next]
+        self.assertIn("Bedroom Echo Spot", next_names)
+
+    async def test_issue_128_mqtt_gone_away_device_purge(self):
+        """Issue #128: Devices that disappear from eero cloud are purged from Home Assistant MQTT after 2 cycles."""
+        from app.services.mqtt_client import MQTTService
+
+        service = MQTTService()
+        service._discovery_enabled = True
+        service._published_tracker_configs = {
+            "aabbccddeeff": "My Laptop",
+            "112233445566": "Old Gone Away Device",
+        }
+        service._tracker_last_state = {
+            "aabbccddeeff": "home",
+            "112233445566": "not_home",
+        }
+
+        published_messages = []
+        async def mock_publish(client, topic, payload, retain=False):
+            published_messages.append((topic, payload, retain))
+
+        service._publish_message = mock_publish
+
+        telemetry_cycle_1 = {
+            "devices": [
+                {"mac": "aa:bb:cc:dd:ee:ff", "hostname": "My Laptop", "connected": True}
+                # "112233445566" is missing from eero cloud
+            ],
+            "eeros": [],
+            "health_score": 95,
+        }
+
+        # Cycle 1: Device is missing for the first time -> marked not_home
+        await service.publish_telemetry(None, telemetry_cycle_1)
+        self.assertEqual(service._stale_device_counter.get("112233445566"), 1)
+        self.assertIn("112233445566", service._published_tracker_configs)
+
+        # Cycle 2: Device is missing for the second consecutive time -> purged from Home Assistant!
+        await service.publish_telemetry(None, telemetry_cycle_1)
+        self.assertNotIn("112233445566", service._published_tracker_configs)
+        self.assertNotIn("112233445566", service._tracker_last_state)
+        self.assertNotIn("112233445566", service._stale_device_counter)
+
+        # Check that empty payload with retain=True was sent to discovery config topic
+        purge_topic = f"{service._ha_prefix}/device_tracker/{service._base_topic}_112233445566/config"
+        purge_msg = next((msg for msg in published_messages if msg[0] == purge_topic and msg[1] == "" and msg[2] is True), None)
+        self.assertIsNotNone(purge_msg, "Expected empty retained MQTT message on discovery config topic to purge entity")
 
 
 if __name__ == "__main__":

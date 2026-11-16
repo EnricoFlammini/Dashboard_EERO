@@ -49,6 +49,7 @@ class MQTTService:
         self._published_tracker_configs: Dict[str, str] = {}
         self._tracker_cap_logged = False
         self._tracker_last_state: Dict[str, str] = {}
+        self._stale_device_counter: Dict[str, int] = {}
         self._stats: Dict[str, Any] = {
             "messages_published": 0,
             "discovery_topics_published": 0,
@@ -459,6 +460,23 @@ class MQTTService:
                 hostname = dev.get("hostname") or dev.get("nickname") or f"eero_device_{mac[-4:]}"
                 is_connected = bool(dev.get("connected"))
 
+                # Dispositivi Amazon Echo "eero Built-in": se il dispositivo funge da nodo mesh attivo ed è online,
+                # il suo stato di presenza deve essere 'home' (Issue #96)
+                if not is_connected and (dev.get("is_echo_node") or dev.get("is_proxied_node")):
+                    is_connected = True
+                elif not is_connected and nodes:
+                    dev_name_clean = hostname.strip().lower()
+                    dev_ip_clean = str(dev.get("ip") or "").strip()
+                    matching_node = next((n for n in nodes if (
+                        n.get("status") in ("online", "active") and (
+                            (mac and str(n.get("mac_address") or "").replace(":", "").lower() == mac)
+                            or (dev_ip_clean and str(n.get("ip") or "").strip() == dev_ip_clean)
+                            or (dev_name_clean and str(n.get("name") or n.get("location") or "").strip().lower() == dev_name_clean)
+                        )
+                    )), None)
+                    if matching_node:
+                        is_connected = True
+
                 tracker_config_topic = f"{self._ha_prefix}/device_tracker/{base}_{mac}/config"
                 tracker_state_topic = f"{base}/device/{mac}/state"
                 tracker_attr_topic = f"{base}/device/{mac}/attributes"
@@ -499,12 +517,34 @@ class MQTTService:
                 if (idx + 1) % 10 == 0:
                     await asyncio.sleep(0.005)
 
-            # 4. Dispositivi rimossi o non presenti nel ciclo corrente: se prima erano 'home', invia 'not_home'
-            stale_macs = set(self._tracker_last_state.keys()) - current_cycle_macs
-            for stale_mac in stale_macs:
-                if self._tracker_last_state.get(stale_mac) != "not_home":
-                    await self._publish_message(client, f"{base}/device/{stale_mac}/state", "not_home", retain=False)
-                    self._tracker_last_state[stale_mac] = "not_home"
+            # Reset contatore assenza per dispositivi confermati presenti in questo ciclo
+            for mac in current_cycle_macs:
+                self._stale_device_counter.pop(mac, None)
+
+            # 4. Dispositivi rimossi o non presenti nel ciclo corrente (Issue #92 & Issue #128)
+            # Solo se la rete ha restituito dispositivi validi (protegge da glitch API o network drop transitori)
+            if current_cycle_macs:
+                stale_macs = set(self._published_tracker_configs.keys()) - current_cycle_macs
+                for stale_mac in stale_macs:
+                    count = self._stale_device_counter.get(stale_mac, 0) + 1
+                    self._stale_device_counter[stale_mac] = count
+
+                    if count == 1:
+                        # 1° ciclo di assenza: imposta tempestivamente lo stato su 'not_home'
+                        if self._tracker_last_state.get(stale_mac) != "not_home":
+                            await self._publish_message(client, f"{base}/device/{stale_mac}/state", "not_home", retain=False)
+                            self._tracker_last_state[stale_mac] = "not_home"
+                    elif count >= 2:
+                        # 2+ cicli consecutivi di assenza completa: dispositivo dimenticato/rimosso da eero (Issue #128)
+                        # Invia payload vuoto con retain=True sul discovery topic per eliminarlo da Home Assistant
+                        tracker_config_topic = f"{self._ha_prefix}/device_tracker/{base}_{stale_mac}/config"
+                        await self._publish_message(client, tracker_config_topic, "", retain=True)
+                        await self._publish_message(client, f"{base}/device/{stale_mac}/state", "", retain=False)
+                        await self._publish_message(client, f"{base}/device/{stale_mac}/attributes", "", retain=False)
+                        self._published_tracker_configs.pop(stale_mac, None)
+                        self._tracker_last_state.pop(stale_mac, None)
+                        self._stale_device_counter.pop(stale_mac, None)
+                        logger.info("Purged gone-away MQTT device tracker for %s from Home Assistant", stale_mac)
 
     async def _worker_loop(self):
         """Background asynchronous MQTT client loop with auto-reconnect."""

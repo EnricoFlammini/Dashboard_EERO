@@ -68,6 +68,9 @@ class BackgroundPoller:
         self.cached_health_details: Dict[str, Any] = {}
         self.cached_iot_anomalies: List[Dict[str, Any]] = []
         
+        # Tracking eero Built-in Echo extender nodes across polling cycles (Issue #96)
+        self._known_echo_specs: Dict[str, Dict[str, Any]] = {}
+
         # Tracking states for alert detection
         self._poll_lock: asyncio.Lock = asyncio.Lock()
         self._known_macs: Set[str] = set()
@@ -923,7 +926,21 @@ class BackgroundPoller:
                 self._initial_macs_loaded = True
 
             # 2.45 Riconciliazione nodi Amazon Echo "eero Built-in" / proxied_nodes (Issue #96)
-            eeros = self.reconcile_echo_extender_nodes(eeros, enriched_devices, network_details)
+            eeros = self.reconcile_echo_extender_nodes(eeros, enriched_devices, network_details, self._known_echo_specs)
+
+            # Allineamento stato dispositivi Echo online (Issue #96):
+            # Se il dispositivo corrisponde a un nodo Echo Built-in online, impostalo come connesso
+            echo_node_names = {
+                str(n.get("name") or n.get("location") or "").strip().lower()
+                for n in eeros
+                if n.get("is_echo_node") and n.get("status") in ("online", "active")
+            }
+            if echo_node_names:
+                for dev_copy in enriched_devices:
+                    d_name = str(dev_copy.get("hostname") or dev_copy.get("nickname") or dev_copy.get("name") or "").strip().lower()
+                    if d_name and d_name in echo_node_names:
+                        dev_copy["connected"] = True
+                        dev_copy["is_echo_node"] = True
 
             # 2.5 Risoluzione robusta dei nodi eero per ciascun dispositivo
             eero_by_key: Dict[str, Dict[str, Any]] = {}
@@ -1385,12 +1402,13 @@ class BackgroundPoller:
         eeros: List[Dict[str, Any]],
         enriched_devices: List[Dict[str, Any]],
         network_details: Optional[Dict[str, Any]] = None,
+        known_specs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Rileva e sintetizza i nodi Amazon Echo con "eero Built-in" (Issue #96).
         L'API eero non include i dispositivi Amazon Echo in /2.2/networks/{id}/eeros, ma
         i client connessi a un Echo riportano `source.location` = nome dell'Echo (o `is_proxied_node: true`),
-        oppure la rete espone `proxied_nodes`.
+        oppure la rete espone `proxied_nodes` o dispositivi Echo configurati come extender.
         """
         result_eeros = list(eeros or [])
         existing_names = set()
@@ -1413,15 +1431,25 @@ class BackgroundPoller:
                 if val and val.lower() not in ("dispositivo sconosciuto", "unknown device"):
                     dev_by_name[val.lower()] = dev
 
+        # Mantieni persistenza dei nodi Echo precedentemente registrati (Issue #96)
         virtual_echo_specs: Dict[str, Dict[str, Any]] = {}
+        if isinstance(known_specs, dict):
+            for k, v in known_specs.items():
+                if isinstance(v, dict):
+                    virtual_echo_specs[k] = dict(v)
 
-        # 1. Controlla `proxied_nodes` nei dettagli della rete (se esposto dall'API eero)
+        # 1. Controlla `proxied_nodes` o metadati extender nei dettagli della rete (se esposti dall'API eero)
         if isinstance(network_details, dict):
-            proxied = network_details.get("proxied_nodes")
+            proxied = (
+                network_details.get("proxied_nodes")
+                or network_details.get("amazon")
+                or network_details.get("for_amazon")
+                or network_details.get("extenders")
+            )
             proxied_list = []
             if isinstance(proxied, dict):
                 if proxied.get("enabled") is not False:
-                    proxied_list = proxied.get("devices") or proxied.get("nodes") or []
+                    proxied_list = proxied.get("devices") or proxied.get("nodes") or proxied.get("extenders") or []
             elif isinstance(proxied, list):
                 proxied_list = proxied
             for p_node in proxied_list:
@@ -1492,6 +1520,34 @@ class BackgroundPoller:
                 elif dev.get("connected"):
                     virtual_echo_specs[d_name_low]["status"] = "online"
 
+        # 2c. Riconoscimento dispositivi Amazon Echo presenti nella rete quando la mesh include nodi Built-in (Issue #96)
+        has_mesh_builtin_echoes = (
+            bool(virtual_echo_specs)
+            or any(bool(d.get("connected_to_proxied_node")) or "echo" in str(d.get("connected_eero_name") or "").lower() for d in enriched_devices or [])
+        )
+        if has_mesh_builtin_echoes:
+            for dev in enriched_devices or []:
+                d_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").strip()
+                d_model = str(dev.get("model") or "").strip().lower()
+                d_mfg = str(dev.get("manufacturer") or "").strip().lower()
+                d_name_low = d_name.lower()
+                if not d_name or d_name_low in existing_names or d_name_low in virtual_echo_specs:
+                    continue
+
+                is_echo_device = (
+                    ("echo" in d_name_low or "echo" in d_model)
+                    and ("amazon" in d_mfg or "amazon" in d_name_low or "echo" in d_name_low or "echo" in d_model)
+                )
+                if is_echo_device:
+                    virtual_echo_specs[d_name_low] = {
+                        "name": d_name,
+                        "id": str(dev.get("id") or dev.get("serial") or dev.get("mac") or ""),
+                        "ip": str(dev.get("ip") or ""),
+                        "mac": str(dev.get("mac") or ""),
+                        "model": dev.get("model") or "Amazon Echo (eero Built-in)",
+                        "status": "online" if (dev.get("connected") or dev.get("ip")) else "offline",
+                    }
+
         # 3. Costruisci i nodi virtuali arricchiti con i metadati del dispositivo Echo se presente in LAN
         for key_low, spec in virtual_echo_specs.items():
             echo_dev = dev_by_name.get(key_low)
@@ -1499,8 +1555,26 @@ class BackgroundPoller:
             node_id = spec["id"] or f"echo_{slug}"
             node_ip = spec["ip"] or (str(echo_dev.get("ip") or "") if echo_dev else "")
             node_mac = spec["mac"] or (str(echo_dev.get("mac") or "") if echo_dev else "")
-            if echo_dev and echo_dev.get("connected"):
+
+            # Determinazione robusta dello stato Online del nodo Echo (Issue #96):
+            # Un nodo extender è online se:
+            # - ha almeno un client attualmente connesso ad esso, OPPURE
+            # - il dispositivo Echo stesso è presente in LAN con un IP attivo e non è marcato offline
+            has_connected_clients = any(
+                d.get("connected") and str(d.get("connected_eero_name") or "").strip().lower() == key_low
+                for d in enriched_devices or []
+            )
+            is_echo_device_online = bool(
+                echo_dev and (
+                    echo_dev.get("connected") is True
+                    or (node_ip and str(echo_dev.get("status") or "").lower() not in ("offline", "disconnected"))
+                )
+            )
+
+            if has_connected_clients or is_echo_device_online:
                 spec["status"] = "online"
+            elif spec.get("status") != "online":
+                spec["status"] = "offline"
 
             virtual_node = {
                 "id": node_id,
@@ -1519,12 +1593,17 @@ class BackgroundPoller:
                 "backhaul_type": "eero Built-in (Wi-Fi)",
                 "mesh_quality_bars": 4 if spec["status"] == "online" else 0,
                 "os_version": "eero Built-in",
-                "connected_clients_count": 0,
+                "connected_clients_count": sum(1 for d in enriched_devices or [] if d.get("connected") and str(d.get("connected_eero_name") or "").strip().lower() == key_low),
                 "ethernet_ports": [],
             }
             result_eeros.append(virtual_node)
             existing_names.add(key_low)
             existing_ids.add(node_id.lower())
+
+        # Salva la cache dei nodi noti se il dizionario è passato per riferimento
+        if isinstance(known_specs, dict):
+            known_specs.clear()
+            known_specs.update(virtual_echo_specs)
 
         return result_eeros
 
