@@ -4,7 +4,7 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
-## [1.7.0] - 2026-11-15
+## [1.7.0] - 2026-11-16
 
 ### Dashboard Semplificata per Utenti Base & Controllo Accessi RBAC
 * **Vista Semplificata Reattiva:** Introduzione di una modalità alternativa ultra-pulita nella Panoramica (Overview) dedicata agli utenti non tecnici o con profilo Viewer, con persistenza della selezione in `localStorage`.
