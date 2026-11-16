@@ -16,7 +16,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105, #129), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104, #128), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86), 🌍 European i18n & 🌟 Simplified Basic Dashboard** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" con persistenza e stato presenza Home Assistant (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105, #129), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103, pulizia entità rimosse "gone-away" #128), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test, espansione a 7 nuove lingue europee e dashboard alternativa super-semplificata per utenti base. |
-| **v1.8.0** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame & 🛠️ Maintenance Mode UI (#110, #111, #115-#118)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), e banner/overlay informativo Web UI per auto-riparazione SQLite e manutenzione (#117 - `@stevehoek`). |
+| **v1.8.0** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame, 🛠️ Maintenance UI & 📖 In-App Guides (#110, #111, #115-#118)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), banner informativo Web UI per auto-riparazione SQLite/manutenzione (#117 - `@stevehoek`) e guide contestuali puntuali passo-passo per utenti non esperti su tutte le funzioni (Pushover, Telegram, Discord, Ntfy, DNS, Automazioni). |
 | **v1.8.1** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
 | **v1.8.2** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
 | **v1.8.3** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
@@ -93,6 +93,7 @@ gantt
     Public WAN IP & Double-NAT Detection (#115)         :v1_8_wan, after v1_8_apprise, 1d
     Homelab Embed iFrame & Kiosk Mode (#116)            :v1_8_kiosk, after v1_8_wan, 1d
     Maintenance & Housekeeping Mode UI Overlay (#117)   :v1_8_maint, after v1_8_kiosk, 1d
+    In-App Step-by-Step Guides for Non-Tech Users       :v1_8_guides, after v1_8_maint, 2d
     section v1.8.1 - NAS & Proxmox Community
     Unraid Community Apps XML Template (#120)           :v1_81_unraid, after v1_8_maint, 2d
     Synology Container Manager Seamless Update (#121)   :v1_81_syno, after v1_81_unraid, 2d
@@ -999,9 +1000,9 @@ gantt
 
 ---
 
-### 📦 Release v1.8.0 — Core Multi-Platform Foundations, Notifiche Universali Apprise, Public WAN IP, Homelab Kiosk & Maintenance Mode UI (Discussion #109, Issues #110, #111, #115-#118)
+### 📦 Release v1.8.0 — Core Multi-Platform Foundations, Notifiche Universali Apprise, Public WAN IP, Homelab Kiosk, Maintenance Mode UI & Guide In-App per Utenti Non Esperti (Discussion #109, Issues #110, #111, #115-#118)
 
-> **Obiettivo:** Consolidare le fondamenta multi-piattaforma del core, arricchire il monitoraggio con il vero IP pubblico WAN anche dietro router/doppio NAT, abilitare l'incorporamento in dashboard Homelab (Homarr/Dashy/tablet), introdurre il canale notifiche universale Apprise (100+ destinazioni) e la schermata di manutenzione/housekeeping per SQLite.
+> **Obiettivo:** Consolidare le fondamenta multi-piattaforma del core, arricchire il monitoraggio con il vero IP pubblico WAN anche dietro router/doppio NAT, abilitare l'incorporamento in dashboard Homelab (Homarr/Dashy/tablet), introdurre il canale notifiche universale Apprise (100+ destinazioni), la schermata di manutenzione/housekeeping per SQLite e guide integrate passo-passo a misura di utenti non tecnici per ogni funzionalità della dashboard.
 
 #### 1. ⚙️ Adeguamenti Core Multi-Piattaforma (`app/config.py`, `app/main.py`, Update UI) (Issue #118)
 - [ ] **Risoluzione Dinamica Path & Bundle (`sys._MEIPASS`):** Supporto trasparente ai percorsi statici e template quando l'app viene eseguita da pacchetto/bundle (Issue #118).
@@ -1030,6 +1031,16 @@ gantt
 - [ ] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby/Plex):**
   - Overlay visivo animato con messaggio descrittivo localizzato (es. *"Manutenzione database in corso... Ottimizzazione indici SQLite, attendere qualche secondo"*), prevenendo l'impressione di crash o stato offline (Issue #117).
   - Auto-reconnect polling ad alta frequenza (ogni 2 secondi) su `/api/health` con ripristino istantaneo della dashboard alla conclusione della manutenzione (Issue #117).
+
+#### 6. 📖 Manuali Puntuali & Guide Guidate Step-by-Step per Utenti Non Esperti
+- [ ] **Guide Step-by-Step Integrate nei Pannelli di Configurazione:**
+  - Guide pratiche, chiare e prive di gergo tecnico accessibili con un clic direttamente da ogni scheda o pannello con modale o cassetto informativo dedicato.
+  - Esempio Notifiche Pushover: pulsante *"Come configurare Pushover sul telefono"* con la procedura guidata in 3 passaggi (1. Installazione app Pushover su iOS/Android e login; 2. Recupero User Key e creazione API Token dell'applicazione su pushover.net; 3. Inserimento credenziali e test immediato con invio notifica di prova con suono sul telefono).
+  - Guide analoghe integrate per tutti gli altri canali: Telegram (creazione bot via @BotFather e recupero Chat ID con @userinfobot), Discord (creazione Webhook canale server), Ntfy (scelta topic pubblico o self-hosted), Webhook generico e Apprise.
+- [ ] **Tooltip Esplicativi & Pulsanti Help (?) per Ogni Funzione:**
+  - Introduzione di pulsanti di aiuto rapido `?` accanto a tutte le voci e sezioni più tecniche (Pi-hole, AdGuard Home, Custom/Split DNS, MQTT, regole firewall IPv6, Nightly Maintenance, ecc.) che spieghino chiaramente cosa fa la funzione, perché attivarla e come compilarla, assumendo che l'utente finale non abbia competenze sistemistiche o di networking.
+- [ ] **Arricchimento del Manuale Utente Multilingua in-app:**
+  - Espansione dei 16 capitoli del manuale utente in tutte le 9 lingue (`app/i18n_locales/<lang>/manual/`) con sezioni "Guida Passo-Passo" e illustrazioni pratiche per tutte le funzionalità operative della suite.
 
 ---
 
