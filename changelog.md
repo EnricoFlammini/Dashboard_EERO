@@ -33,10 +33,11 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
 * **Riconoscimento Automatico & Sintesi Nodi `eero Built-in` (`reconcile_echo_extender_nodes`):**
   * Intercettazione automatica degli speaker Amazon Echo (Echo Dot, Echo Spot, Echo 4th Gen) che estendono la rete Wi-Fi tramite **eero Built-in**, correlando i campi `proxied_nodes`, `source.is_proxied_node` e `source.location` con i dispositivi Echo rilevati nella LAN.
   * Visualizzazione dei nodi Echo nella griglia **Mesh Topology & eero Nodes** con badge distintivo **`eero Built-in`**, stato real-time, conteggio dei client agganciati (`connected_clients_count`) e nascondimento automatico del pulsante *"Restart Node"* per i nodi virtuali.
+  * Persistenza in RAM dei nodi extender noti tra cicli di polling (`_known_echo_specs`), inclusione degli Echo attivi anche con 0 client associati, isolamento dello stato online del nodo da disconnessioni temporanee dei client e flag `connected=True` sui client Echo per garantire lo stato `home` sul device tracker MQTT di Home Assistant.
 
-### Elezione Corretta Primary Gateway in Bridge Mode (Issue #105 - @ncolon)
+### Elezione Corretta Primary Gateway in Bridge Mode (Issues #105, #129 - @ncolon, @tef67)
 * **Priorità a `is_primary_node` & Neighbor LLDP Upstream (`_is_gateway_node`):**
-  * In modalità Bridge (dove `gateway: false` su tutti gli eero e `gateway_ip` è assente), l'elezione del Gateway Primario verifica in ordine prioritario il flag booleano nativo `is_primary_node: True` e la presenza di un apparato non-eero (`EdgeRouter`, switch/router ISP) tra i neighbor LLDP della porta WAN (`has_upstream_wan_lldp`), evitando che venga eletto il primo nodo cablato in ordine alfabetico.
+  * In modalità Bridge (dove `gateway: false` su tutti gli eero e `gateway_ip` è assente), l'elezione del Gateway Primario verifica in ordine prioritario i flag booleani nativi `is_primary_node: True` e `isPrimaryNode: True` (risolvendo le anomalie di elezione in reti a nodi multipli tutti cablati - Issue #129) e la presenza di un apparato non-eero (`EdgeRouter`, switch/router ISP) tra i neighbor LLDP della porta WAN (`has_upstream_wan_lldp`), evitando che venga eletto arbitrariamente il primo nodo cablato in ordine alfabetico.
 
 ### Pi-hole v6, AdGuard Home & DNS Sync Resiliente (Issues #98, #99 - @Hatton920, @jpatchMC)
 * **Unico Proprietario per Indirizzo IPv4 (`ip_owner` - Issue #99):**
@@ -47,12 +48,13 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Formattazione diagnostica esplicita (`_describe_dns_exception`) per le eccezioni `httpx` prive di messaggio testuale e caricamento delle password salvate in `scan_all_adguard_instances()`.
   * Richiesta esplicita di reinserimento password nella UI (`saved_url`) solo quando viene modificato l'URL di un'istanza DNS esistente per prevenire invii involontari di credenziali verso un host differente.
 
-### Home Assistant MQTT: Unità `Mbit/s`, Telemetria Live Rapida, `last_seen_connected` & Rename Dinamico (Issues #101, #103, #104 - @markharrison, @jpatchMC)
+### Home Assistant MQTT: Unità `Mbit/s`, Telemetria Live Rapida, `last_seen_connected`, Rename Dinamico & Purge Gone-Away (Issues #101, #103, #104, #128 - @markharrison, @jpatchMC)
 * **Unità Standard `Mbit/s` & Intervallo Telemetria Live Separato (Issue #104):**
   * Aggiornato `unit_of_measurement` da `"Mbps"` a `"Mbit/s"` sui sensori `wan_download` e `wan_upload` per piena conformità con `SensorDeviceClass.DATA_RATE` di Home Assistant.
   * Introdotto `MQTT_LIVE_INTERVAL` / `live_interval` (configurabile da `.env` e dalla modale UI MQTT; `0` = disabilitato) con metodo dedicato `publish_live_telemetry()` per pubblicare ad alta frequenza (es. ogni 5s) i soli sensori live (`wan_download`, `wan_upload`, `clients_count` e `{base_topic}/live`) lasciando `device_tracker` e sensori lenti sull'intervallo standard `publish_interval`.
 * **Attributo `last_seen_connected` (Issue #101):** Aggiunto l'attributo `"last_seen_connected"` (valorizzato con `last_active`) sul topic JSON degli attributi di ogni `device_tracker`.
 * **Ri-pubblicazione Automatica Discovery al Cambio Nome (Issue #103):** Evoluto `_published_tracker_configs` in dizionario `mac -> hostname` così che il topic `config` venga immediatamente aggiornato quando un dispositivo acquisisce il proprio hostname reale dopo il primo rilevamento OUI.
+* **Pulizia Automatica Dispositivi Rimossi da eero ("gone-away" - Issue #128):** Quando un client scompare dalla rete eero per 2 cicli di polling consecutivi (`_stale_device_counter`), viene inviato un payload vuoto retained sul topic di discovery MQTT (`homeassistant/device_tracker/{mac}/config`) per rimuovere l'entità dal registro di Home Assistant eliminando lo stato residuo `"Unknown"`.
 
 ### Security Hardening & Enforcement Globale `REQUIRE_LOCAL_AUTH` (Advisory GHSA-r5vj-jfjp-m88q)
 * **Middleware Globale `enforce_local_auth` (`app/main.py`):** Quando `REQUIRE_LOCAL_AUTH=true`, ogni richiesta verso `/api/*` e `/metrics` richiede una sessione valida, ad eccezione della allowlist pubblica esplicita (`GET /api/health`, `GET /api/auth/local/status`, `POST /api/auth/local/setup`, `POST /api/auth/local/login`, `POST /api/auth/local/logout`, `GET /api/system/language`). Esposto anche il flag `require_local_auth` in `GET /api/auth/local/status`.
