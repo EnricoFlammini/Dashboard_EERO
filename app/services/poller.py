@@ -1471,6 +1471,27 @@ class BackgroundPoller:
             elif dev.get("connected"):
                 virtual_echo_specs[c_name_low]["status"] = "online"
 
+        # 2b. Controlla dispositivi registrati direttamente come nodi proxy / eero Built-in
+        for dev in enriched_devices or []:
+            if dev.get("is_proxied_node"):
+                d_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").strip()
+                if not d_name:
+                    continue
+                d_name_low = d_name.lower()
+                if d_name_low in existing_names:
+                    continue
+                if d_name_low not in virtual_echo_specs:
+                    virtual_echo_specs[d_name_low] = {
+                        "name": d_name,
+                        "id": str(dev.get("id") or dev.get("serial") or dev.get("mac") or ""),
+                        "ip": str(dev.get("ip") or ""),
+                        "mac": str(dev.get("mac") or ""),
+                        "model": str(dev.get("model") or "Amazon Echo (eero Built-in)"),
+                        "status": "online" if dev.get("connected") else "offline",
+                    }
+                elif dev.get("connected"):
+                    virtual_echo_specs[d_name_low]["status"] = "online"
+
         # 3. Costruisci i nodi virtuali arricchiti con i metadati del dispositivo Echo se presente in LAN
         for key_low, spec in virtual_echo_specs.items():
             echo_dev = dev_by_name.get(key_low)

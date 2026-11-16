@@ -1024,6 +1024,15 @@ class EeroClient:
             ""
         )
 
+        # Primary Node in Bridge Mode (Issue #105 & Issue #129)
+        node["is_primary_node"] = bool(
+            node.get("is_primary_node") is True or
+            node.get("isPrimaryNode") is True or
+            node.get("is_primary") is True or
+            node.get("isPrimary") is True or
+            node.get("primary") is True
+        )
+
         # Gateway (Issue #19 fix: non fare casting booleano indiscriminato su stringhe URL)
         node["is_gateway"] = self._is_gateway_node(node)
 
@@ -1866,6 +1875,12 @@ class EeroClient:
             dev["connected_eero_name"] = c_name
             dev["connected_eero_url"] = c_url
             dev["connected_to_proxied_node"] = c_is_proxied
+            dev["is_proxied_node"] = bool(
+                dev.get("is_proxied_node")
+                or dev.get("isProxiedNode")
+                or dev.get("is_proxy_node")
+                or dev.get("isProxyNode")
+            )
 
             # Usage / Throughput rates (STRICT REAL DATA ONLY)
             usage = dev.get("usage")

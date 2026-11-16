@@ -198,6 +198,74 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
         self.assertIn(':selected="(h - 1) === Number(digestSettings.hour)"', html)
         self.assertIn(':selected="d.mac_address === selectedSignalDeviceMac"', html)
 
+    def test_issue_129_bridge_mode_primary_node_normalization_and_election(self):
+        """Issue #129: Bridge mode with multiple wired nodes must elect the node with is_primary_node as Gateway."""
+        raw_nodes = [
+            {
+                "url": "/2.2/eeros/101",
+                "id": "101",
+                "location": "Garage",
+                "gateway": False,
+                "is_primary_node": False,
+                "ethernet_ports": [{"port": 1, "isWanPort": True, "speed": "1000 Mbps"}],
+            },
+            {
+                "url": "/2.2/eeros/102",
+                "id": "102",
+                "location": "Garden",
+                "gateway": False,
+                "is_primary_node": False,
+                "ethernet_ports": [{"port": 1, "isWanPort": True, "speed": "1000 Mbps"}],
+            },
+            {
+                "url": "/2.2/eeros/103",
+                "id": "103",
+                "location": "Living (Pro 7)",
+                "gateway": False,
+                "isPrimaryNode": True,  # camelCase variant
+                "ethernet_ports": [{"port": 1, "isWanPort": True, "speed": "2500 Mbps"}],
+            },
+        ]
+
+        normalized = [eero_client._normalize_eero_node(n) for n in raw_nodes]
+        self.assertTrue(normalized[2]["is_primary_node"])
+        self.assertTrue(normalized[2]["is_gateway"])
+        self.assertFalse(normalized[0]["is_primary_node"])
+        self.assertFalse(normalized[1]["is_primary_node"])
+
+    def test_issue_96_echo_builtin_extender_reconciliation(self):
+        """Issue #96: Reconcile Echo Built-in virtual nodes from connected devices and proxied flags."""
+        base_eeros = [
+            {"id": "gw_1", "name": "Studio (Gateway)", "is_gateway": True, "wired": True, "status": "online"}
+        ]
+        devices = [
+            {
+                "id": "client_phone",
+                "hostname": "John Phone",
+                "connected": True,
+                "connected_eero_name": "Bedroom Echo Spot",
+                "connected_to_proxied_node": True,
+            },
+            {
+                "id": "echo_harmony",
+                "hostname": "Harmony Echo Dot",
+                "mac": "aa:bb:cc:dd:ee:ff",
+                "ip": "192.168.4.88",
+                "connected": True,
+                "is_proxied_node": True,
+            }
+        ]
+
+        result = BackgroundPoller.reconcile_echo_extender_nodes(base_eeros, devices)
+        result_names = [n["name"] for n in result]
+
+        self.assertIn("Bedroom Echo Spot", result_names)
+        self.assertIn("Harmony Echo Dot", result_names)
+        echo_node = next(n for n in result if n["name"] == "Bedroom Echo Spot")
+        self.assertTrue(echo_node["is_echo_node"])
+        self.assertEqual(echo_node["backhaul_type"], "eero Built-in (Wi-Fi)")
+        self.assertEqual(echo_node["status"], "online")
+
 
 if __name__ == "__main__":
     unittest.main()
