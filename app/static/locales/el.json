@@ -628,7 +628,7 @@
     "mqtt_never": "Ποτέ",
     "mqtt_username_placeholder": "π.χ. mqtt-χρήστης",
     "dns_password_placeholder_adguard": "Κωδικός πρόσβασης AdGuard",
-    "dns_token_placeholder_pihole": "διακριτικό WEBPASSWORD / SID συνεδρίας",
+    "dns_token_placeholder_pihole": "Κωδικός πρόσβασης Web (συνιστάται για v6) / Κωδικός εφαρμογής (με app_sudo)",
     "dns_token_placeholder_generic": "Token ή κωδικός πρόσβασης API",
     "dns_default_name": "Διακομιστής DNS",
     "dns_default_name_n": "Διακομιστής DNS {n}",

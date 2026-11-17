@@ -1161,6 +1161,20 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 * **Causa Radice:** La banda di frequenza Wi-Fi (2.4 GHz, 5 GHz, 6 GHz) e il numero di canale radio occupavano due colonne separate o erano disposti orizzontalmente con spaziatura eccessiva.
 * **Risoluzione:** Riorganizzato il template Alpine.js in `index.html` e `styles.css` per impilare verticalmente la frequenza Wi-Fi direttamente sopra il numero di canale in un'unica cella compatta, preservando chiarezza e riducendo l'ingombro orizzontale.
 
+### Issue #90 — Notification Settings Persistence with Local Auth & IPv6 Pinhole 404 (@le0-o0o)
+* **Sintomo:** Salvataggio delle configurazioni di notifica (Ntfy, Telegram, ecc.) che si resettavano al reload con autenticazione locale attiva (`REQUIRE_LOCAL_AUTH=true`), ed errore HTTP 404 sul recupero delle regole firewall pinhole IPv6.
+* **Causa Radice:** Nel frontend `app.js` le chiamate REST di notifica e automazione erano prive di `getAuthHeaders()`, scatenando un rifiuto 401 trasparente; in `eero_client.py` l'endpoint `/firewall_rules` veniva invocato prima della risoluzione del `current_network_id` generando una doppia barra (`//firewall_rules`) e falliva sulle reti in Bridge Mode dove il firewall cloud è disattivato.
+* **Risoluzione:** Aggiunti gli header di autenticazione e toast esplicito in `app.js`; introdotta risoluzione preventiva del `network_id`, sanitizzazione da slash, fallback ad endpoint alternativi e messaggio informativo per la Bridge Mode.
+
+### Issue #132 — Pi-hole v6 App Password Read-Only Session Sync Failure (@SecurityJon)
+* **Sintomo:** Il test di connessione verso Pi-hole v6 aveva esito positivo ("Test Connection" verde), ma la sincronizzazione dei client DNS falliva con errore HTTP 403 (`Unable to change configuration (read-only)`).
+* **Causa Radice:** In Pi-hole v6, le sessioni create tramite App Password sono vincolate per impostazione predefinita alla sola lettura (`webserver.api.app_sudo = false`). Le chiamate `GET` (test di connettività) hanno esito positivo, mentre le scritture `PATCH` o `PUT` su `/api/config/*` vengono respinte da `pihole-FTL`.
+* **Risoluzione:** Implementata sonda non distruttiva di scrittura in `_test_pihole` per segnalare immediatamente le sessioni in sola lettura; interruzione immediata con errore descrittivo `dns.pihole_v6_readonly_error` in `_sync_single_pihole`; aggiornamento dei placeholder e delle traduzioni in tutte le 9 lingue per chiarire l'uso della Password Web di amministrazione (oppure App Password con `app_sudo`).
+
+### Issue #131 — Home / Guest Network Device Separation (@SecurityJon)
+* **Sintomo:** La dashboard e l'integrazione Home Assistant non distinguevano visivamente né funzionalmente i dispositivi collegati alla rete Wi-Fi Ospiti rispetto alla rete principale.
+* **Risoluzione Pianificata (v1.8.0):** Estrazione del flag `is_guest` in `_normalize_device()`, badge visivo e filtro rapido nella UI Dispositivi, e pubblicazione dell'attributo `is_guest` nel topic MQTT per consentire automazioni di presenza in Home Assistant.
+
 ---
 
 ## 9. Guida al Troubleshooting & FAQ per l'Utente

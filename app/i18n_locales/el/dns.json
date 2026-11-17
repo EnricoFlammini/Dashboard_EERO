@@ -48,5 +48,6 @@
   "ssrf_unspecified": "Δεν επιτρέπεται απροσδιόριστη διεύθυνση ({ip})",
   "ssrf_cloud_metadata": "Δεν επιτρέπεται ο δεσμευμένος κεντρικός υπολογιστής μεταδεδομένων cloud ({host})",
   "ssrf_unparseable": "Δεν είναι δυνατή η ανάλυση της διεύθυνσης URL: {error}",
-  "ssrf_url_rejected": "Δεν επιτρέπεται η διεύθυνση URL (Anti-SSRF): {reason}"
+  "ssrf_url_rejected": "Δεν επιτρέπεται η διεύθυνση URL (Anti-SSRF): {reason}",
+  "pihole_v6_readonly_error": "Η συνεδρία Pi-hole v6 είναι μόνο για ανάγνωση. Εισαγάγετε τον κωδικό πρόσβασης διαχειριστή Web Pi-hole ή ενεργοποιήστε το 'app_sudo' στις ρυθμίσεις API του Pi-hole."
 }

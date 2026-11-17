@@ -1042,6 +1042,14 @@ gantt
 - [ ] **Arricchimento del Manuale Utente Multilingua in-app:**
   - Espansione dei 16 capitoli del manuale utente in tutte le 9 lingue (`app/i18n_locales/<lang>/manual/`) con sezioni "Guida Passo-Passo" e illustrazioni pratiche per tutte le funzionalità operative della suite.
 
+#### 7. 👥 Riconoscimento & Separazione Dispositivi Rete Ospiti (Guest Network) (Issue #131 — @SecurityJon)
+- [ ] **Estrazione & Normalizzazione `is_guest` nei Dispositivi (`eero_client.py`):**
+  - Mappatura sistematica del flag booleano `is_guest: true/false` fornito dagli endpoint `/devices` e `/networks/{id}/devices` di eero Cloud all'interno di `_normalize_device()`.
+- [ ] **Badge Visivo & Filtro Rete nella Tabella e Schede Dispositivi (`index.html` & `app.js`):**
+  - Distintivo visivo dedicato (*Ospite* / *Guest*) sui client collegati al Wi-Fi ospiti e nuovo filtro rapido per isolare o visualizzare esclusivamente i dispositivi ospiti rispetto alla rete principale.
+- [ ] **Attributo `is_guest` & Automazioni Home Assistant via MQTT (`mqtt_client.py`):**
+  - Esposizione del campo booleano `"is_guest"` e `"network_type": "guest" | "home"` nel payload degli attributi MQTT (`{base_topic}/device/{mac}/attributes`), consentendo ad automazioni di Home Assistant di rilevare immediatamente quando un ospite si unisce alla rete.
+
 ---
 
 ### 🗄️ Release v1.8.1 — Ecosistema NAS & Proxmox Community (Discussion #109, Issues #119-#122)

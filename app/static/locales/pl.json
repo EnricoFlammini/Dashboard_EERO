@@ -628,7 +628,7 @@
     "mqtt_never": "Nigdy",
     "mqtt_username_placeholder": "np. użytkownik mqtt",
     "dns_password_placeholder_adguard": "Hasło AdGuard",
-    "dns_token_placeholder_pihole": "Token WEBPASSWORD / SID sesji",
+    "dns_token_placeholder_pihole": "Hasło Web (zalecane dla v6) / Hasło aplikacji (z app_sudo)",
     "dns_token_placeholder_generic": "Token API lub hasło",
     "dns_default_name": "Serwer DNS",
     "dns_default_name_n": "Serwer DNS {n}",

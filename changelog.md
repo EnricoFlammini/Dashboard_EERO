@@ -4,6 +4,20 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0 Build 3] - 2026-11-17
+
+### Rilevamento Sessioni Read-Only & Supporto App Password Pi-hole v6 (Issue #132 - @SecurityJon)
+* **Verifica Proattiva Permessi di Scrittura nel Test Connessione (`dns_manager.py`):**
+  * Introdotta una sonda di scrittura non distruttiva (`PATCH /api/config`) nel test di connettività Pi-hole v6 (`_test_pihole`) per rilevare preventivamente se la sessione dispone dei privilegi per modificare la configurazione dei record DNS.
+  * In presenza di sessioni in sola lettura (generate tramite App Password di Pi-hole v6 senza il parametro `app_sudo` abilitato), il test segnala immediatamente l'esito negativo con codice HTTP 403 e messaggio esplicativo `dns.pihole_v6_readonly_error`, prevenendo falsi positivi di connessione riuscita.
+* **Gestione Resiliente & Interruzione Immediata durante il Sync (`dns_manager.py`):**
+  * In `_sync_single_pihole`, intercettato l'errore HTTP 403 (`read-only` / `not allowed to modify`) sia nella chiamata batch `PATCH` sia nel loop di fallback `PUT`. La sincronizzazione si interrompe istantaneamente restituendo la notifica localizzata, evitando decine di tentativi `PUT` falliti e proteggendo i log di sistema da messaggi ridondanti.
+* **Placeholder & Messaggi Guida Localizzati in 9 Lingue (`dns.json`, `locales/*.json`):**
+  * Aggiornato il placeholder del campo token/password per Pi-hole in tutte le 9 lingue supportate (en, it, de, es, fr, nl, pl, pt, el), indicando chiaramente che per la v6 è consigliata la Password Web di amministrazione oppure una App Password con `app_sudo` attivo.
+  * Aggiunto il messaggio d'aiuto `pihole_v6_readonly_error` in tutte le lingue per guidare l'utente alla risoluzione istantanea senza necessità di interventi su configurazioni o container.
+* **Pianificazione Funzionalità Rete Ospiti su Roadmap (Issue #131 - @SecurityJon):**
+  * Formalizzata in `ROADMAP.md` sotto la release **v1.8.0** l'integrazione completa dei dispositivi su rete ospiti: mappatura `is_guest` in `_normalize_device()`, badge visivo e filtri rapidi dedicati nella tabella e schede dispositivi, ed esposizione dell'attributo `is_guest` nel topic MQTT per automazioni Home Assistant.
+
 ## [1.7.0 Build 2] - 2026-11-17
 
 ### Correzioni Notifiche Ntfy, Persistenza Automazioni & Regole Firewall IPv6 (Issue #90 - @le0-o0o)

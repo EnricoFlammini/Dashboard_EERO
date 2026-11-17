@@ -48,5 +48,6 @@
   "ssrf_unspecified": "Endereço não especificado não permitido ({ip})",
   "ssrf_cloud_metadata": "Host de metadados de nuvem reservado não permitido ({host})",
   "ssrf_unparseable": "O URL não pode ser analisado: {error}",
-  "ssrf_url_rejected": "URL não permitido (Anti-SSRF): {reason}"
+  "ssrf_url_rejected": "URL não permitido (Anti-SSRF): {reason}",
+  "pihole_v6_readonly_error": "A sessão do Pi-hole v6 é somente leitura. Insira sua senha de administrador Web do Pi-hole ou ative 'app_sudo' nas configurações da API do Pi-hole."
 }

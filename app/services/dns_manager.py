@@ -555,6 +555,27 @@ class DNSManager:
                         existing = data["config"]["dns"].get("hosts") or []
                     elif "hosts" in data and isinstance(data.get("hosts"), list):
                         existing = data.get("hosts") or []
+
+                    # Verifica se la sessione dispone di permessi di scrittura (non read-only come le App Password senza app_sudo)
+                    is_readonly = False
+                    try:
+                        probe_patch = await client.patch(f"{url}/api/config", json={"config": {}}, headers=v6_headers)
+                        if probe_patch.status_code == 403 and any(
+                            k in probe_patch.text.lower() for k in ("read-only", "not allowed", "forbidden")
+                        ):
+                            is_readonly = True
+                    except Exception:
+                        pass
+
+                    if is_readonly:
+                        return {
+                            "success": False,
+                            "status_code": 403,
+                            "normalized_url": url,
+                            "message": tr("dns.pihole_v6_readonly_error"),
+                            "existing_clients_count": len(existing)
+                        }
+
                     return {
                         "success": True,
                         "status_code": 200,
@@ -1071,6 +1092,20 @@ class DNSManager:
                             "message": tr("dns.pihole_v6_sync_ok", count=synced, zone_label=zone_label)
                         }
 
+                    # Se la sessione è in sola lettura (es. App Password senza app_sudo abilitato), interrompi con errore esplicito
+                    if patch_res.status_code == 403 and any(k in patch_res.text.lower() for k in ("read-only", "not allowed", "forbidden")):
+                        log_event(
+                            logger, logging.WARNING, "log_ops.pihole_v6_patch_status",
+                            status=patch_res.status_code, response=patch_res.text[:200],
+                        )
+                        return {
+                            "success": False,
+                            "added": 0,
+                            "updated": 0,
+                            "failed": len(prepared_clients),
+                            "message": tr("dns.pihole_v6_readonly_error")
+                        }
+
                     log_event(
                         logger, logging.WARNING, "log_ops.pihole_v6_patch_status",
                         status=patch_res.status_code, response=patch_res.text[:200],
@@ -1099,6 +1134,18 @@ class DNSManager:
                         put_res = await client.put(f"{url}/api/config/dns/hosts/{val_quoted}", headers=v6_headers)
                         if put_res.status_code in (200, 201, 204) or (put_res.status_code == 400 and "already present" in put_res.text.lower()):
                             put_synced += 1
+                        elif put_res.status_code == 403 and any(k in put_res.text.lower() for k in ("read-only", "not allowed", "forbidden")):
+                            log_event(
+                                logger, logging.WARNING, "log_ops.pihole_v6_put_host_failed",
+                                ip=ip, name=target_name, status=put_res.status_code, response=put_res.text[:150],
+                            )
+                            return {
+                                "success": False,
+                                "added": put_synced,
+                                "updated": 0,
+                                "failed": len(prepared_clients) - put_synced,
+                                "message": tr("dns.pihole_v6_readonly_error")
+                            }
                         else:
                             log_event(
                                 logger, logging.WARNING, "log_ops.pihole_v6_put_host_failed",
