@@ -4,6 +4,21 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0 Build 2] - 2026-11-17
+
+### Correzioni Notifiche Ntfy, Persistenza Automazioni & Regole Firewall IPv6 (Issue #90 - @le0-o0o)
+* **Persistenza Notifiche Ntfy & Automazioni con Local Auth / RBAC (`app.js`, `automations.py`):**
+  * Risolto il problema per cui le impostazioni di notifica Ntfy (e altri canali) sembravano salvate ma si resettavano al ricaricamento della pagina. Le chiamate `fetch` su `saveNotificationSettings()`, `fetchNotificationSettings()` e `testNotifications()` ora includono gli header di autenticazione `this.getAuthHeaders()`, prevenendo il rifiuto `401 Unauthorized` / `403 Forbidden` quando è attiva la sicurezza locale (`REQUIRE_LOCAL_AUTH=true`).
+  * Estesa la protezione con `this.getAuthHeaders()` e verifica `if (!res.ok)` a tutte le funzioni operative di controllo in background (`saveNightMode`, `fetchNightMode`, `toggleFocusMode`, `fetchFocusMode`, `saveDnsSettings`, `saveAdGuardSettings`, `saveMqttSettings`, `saveDigestSettings`, `triggerDigest`).
+  * Inserito il controllo `if (!res.ok)` con parsing del messaggio di errore restituito dal server e notifica toast esplicita all'utente in caso di fallimento.
+  * Mascheramento di sicurezza del token privato `ntfy_token` tramite `_NOTIFICATION_SECRET_FIELDS` su `GET /api/automations/notifications`.
+
+* **Risoluzione Robusta & Fallback Endpoint Firewall IPv6 Pinhole (`eero_client.py`, `network.py`):**
+  * Risolto l'errore `HTTP 404 Not Found` su `GET /2.2/networks//firewall_rules`: `get_ipv6_firewall_rules`, `add_ipv6_firewall_rule`, `delete_ipv6_firewall_rule`, `run_placement_test`, `get_guardian_vpn_status`, `set_guardian_vpn_status` e `register_eero_node` risolvono ora preventivamente il `current_network_id` invocando `await self.fetch_account_info()` se non ancora presente in memoria.
+  * Applicata la sanificazione rigorosa di `clean_net_id` (strip e rimozione dei caratteri slash finali/iniziali).
+  * Aggiunto il meccanismo di fallback automatico ad endpoint cloud alternativi (`/networks/{id}/firewall_rules`, `/networks/{id}/ipv6/firewall_rules`, `/networks/{id}/pinholes`) ed estrazione delle regole embedded dai dettagli della rete.
+  * Messaggio di diagnostica esplicito ed esplicativo qualora il Cloud API risponda 404 a causa di reti eero in **Bridge Mode** (dove la gestione firewall pinhole è disattivata dall'architettura eero) o con protocollo IPv6 disabilitato nell'app eero.
+
 ## [1.7.0] - 2026-11-16
 
 ### Dashboard Semplificata per Utenti Base & Controllo Accessi RBAC
