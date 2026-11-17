@@ -3938,7 +3938,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchFocusMode() {
       try {
-        const res = await fetch('/api/automations/focus-mode');
+        const res = await fetch('/api/automations/focus-mode', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         if (json.status === 'success') {
           this.focusModeActive = json.active;
@@ -3954,10 +3957,13 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/focus-mode', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ active: targetState })
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json.detail || json.message || `HTTP ${res.status}`);
+        }
         this.focusModeActive = json.active;
         const title = targetState 
           ? (this.t('js.toggle_focus_mode.gaming_mode_activated'))
@@ -3976,7 +3982,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchNightMode() {
       try {
-        const res = await fetch('/api/automations/night-mode');
+        const res = await fetch('/api/automations/night-mode', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         if (json.status === 'success') {
           this.nightMode = json;
@@ -3988,11 +3997,15 @@ document.addEventListener('alpine:init', () => {
 
     async saveNightMode() {
       try {
-        await fetch('/api/automations/night-mode', {
+        const res = await fetch('/api/automations/night-mode', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(this.nightMode)
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || errData.message || `HTTP ${res.status}`);
+        }
         const title = this.t('js.save_night_mode.night_mode');
         const msg = this.t('js.save_night_mode.led_schedule_saved_successfully');
         this.showToast(title, msg, "success");
@@ -4004,7 +4017,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchNotificationSettings() {
       try {
-        const res = await fetch('/api/automations/notifications');
+        const res = await fetch('/api/automations/notifications', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         if (json.status === 'success') {
           this.notificationSettings = {
@@ -4019,14 +4035,18 @@ document.addEventListener('alpine:init', () => {
 
     async saveNotificationSettings() {
       try {
-        await fetch('/api/automations/notifications', {
+        const res = await fetch('/api/automations/notifications', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             ...this.notificationSettings,
             language: this.currentLanguage
           })
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || errData.message || `HTTP ${res.status}`);
+        }
         const title = this.t('js.save_notification_settings.notifications_saved');
         const msg = this.t('js.save_notification_settings.alert_channel_settings_updated');
         this.showToast(title, msg, "success");
@@ -4040,10 +4060,13 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/notifications/test', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ language: this.currentLanguage })
         });
-        const json = await res.json();
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json.detail || json.message || `HTTP ${res.status}`);
+        }
         const title = this.t('js.test_notifications.test_sent');
         const okLabel = this.t('js.test_notifications.status_ok');
         const noLabel = this.t('js.test_notifications.status_no');
@@ -4076,7 +4099,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchDnsSettings() {
       try {
-        const res = await fetch('/api/automations/dns');
+        const res = await fetch('/api/automations/dns', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json().catch(() => ({}));
         if (json.status === 'success') {
           this.dnsSettings = {
@@ -4183,7 +4209,7 @@ document.addEventListener('alpine:init', () => {
         };
         const res = await fetch('/api/automations/dns', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4221,7 +4247,7 @@ document.addEventListener('alpine:init', () => {
         };
         const res = await fetch('/api/automations/dns/test', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4249,7 +4275,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/dns/test', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({})
         });
         const json = await res.json().catch(() => ({}));
@@ -4276,7 +4302,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/dns/sync', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ instance_id: inst.id })
         });
         const json = await res.json().catch(() => ({}));
@@ -4304,7 +4330,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/dns/sync', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({})
         });
         const json = await res.json().catch(() => ({}));
@@ -4331,7 +4357,10 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async fetchAdGuardSettings() {
       try {
-        const res = await fetch('/api/automations/adguard');
+        const res = await fetch('/api/automations/adguard', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json().catch(() => ({}));
         if (json.status === 'success') {
           this.adguardSettings = {
@@ -4368,7 +4397,7 @@ document.addEventListener('alpine:init', () => {
         };
         const res = await fetch('/api/automations/adguard', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4405,7 +4434,7 @@ document.addEventListener('alpine:init', () => {
         };
         const res = await fetch('/api/automations/adguard/test', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4438,7 +4467,7 @@ document.addEventListener('alpine:init', () => {
         };
         const res = await fetch('/api/automations/adguard/sync', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4465,7 +4494,10 @@ document.addEventListener('alpine:init', () => {
     // =========================================================================
     async fetchMqttSettings() {
       try {
-        const res = await fetch('/api/automations/mqtt/config');
+        const res = await fetch('/api/automations/mqtt/config', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         const cfg = (json && typeof json === 'object') ? (json.config || json) : null;
         if (cfg && typeof cfg === 'object') {
@@ -4529,7 +4561,7 @@ document.addEventListener('alpine:init', () => {
 
         const res = await fetch('/api/automations/mqtt/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
@@ -4569,7 +4601,7 @@ document.addEventListener('alpine:init', () => {
         }
         const res = await fetch('/api/automations/mqtt/test', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: payload ? JSON.stringify(payload) : null
         });
         const json = await res.json().catch(() => ({}));
@@ -4596,7 +4628,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/mqtt/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ enabled: nextState })
         });
         const json = await res.json().catch(() => ({}));
@@ -4619,7 +4651,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchAlerts() {
       try {
-        const res = await fetch('/api/automations/alerts');
+        const res = await fetch('/api/automations/alerts', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         if (json.status === 'success') {
           this.alertsList = json.alerts || [];
@@ -4631,7 +4666,10 @@ document.addEventListener('alpine:init', () => {
 
     async fetchDigestSettings() {
       try {
-        const res = await fetch('/api/automations/digest');
+        const res = await fetch('/api/automations/digest', {
+          headers: this.getAuthHeaders()
+        });
+        if (!res.ok) return;
         const json = await res.json();
         if (json.status === 'success') {
           this.digestSettings.enabled = Boolean(json.enabled);
@@ -4660,7 +4698,7 @@ document.addEventListener('alpine:init', () => {
           : 21;
         const res = await fetch('/api/automations/digest', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             enabled: Boolean(this.digestSettings.enabled),
             hour: targetHour
@@ -4691,7 +4729,7 @@ document.addEventListener('alpine:init', () => {
       try {
         const res = await fetch('/api/automations/digest/generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ language: this.currentLanguage })
         });
         const json = await res.json();

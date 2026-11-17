@@ -4379,10 +4379,18 @@ class EeroClient:
     # =====================================================================
 
     async def get_ipv6_firewall_rules(self, network_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Recupera le regole del firewall IPv6 (pinhole) su /2.2/networks/{id}/firewall_rules (Issue #90)."""
-        net_id = network_id or self.current_network_id
-        if not net_id:
+        """Recupera le regole del firewall IPv6 (pinhole) con risoluzione automatica e fallback endpoint (Issue #90)."""
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for IPv6 rules: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
+        if not clean_net_id:
             return []
+
         if self.is_demo_mode:
             return list(self._demo_state.setdefault("ipv6_firewall_rules", [
                 {
@@ -4394,39 +4402,81 @@ class EeroClient:
                     "enabled": True,
                 }
             ]))
+
+        candidate_endpoints = [
+            f"{EERO_API_BASE}/networks/{clean_net_id}/firewall_rules",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/ipv6/firewall_rules",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/pinholes",
+        ]
+
         try:
             async with self._client_session() as client:
-                resp = await client.get(
-                    f"{EERO_API_BASE}/networks/{net_id}/firewall_rules",
-                    headers=self._get_headers()
-                )
-                if resp.status_code == 200:
-                    raw_data = resp.json().get("data", [])
-                    rules = raw_data.get("rules", []) if isinstance(raw_data, dict) else (raw_data if isinstance(raw_data, list) else [])
-                    normalized = []
-                    for idx, r in enumerate(rules):
-                        if not isinstance(r, dict):
-                            continue
-                        r_url = str(r.get("url") or "")
-                        r_id = str(r.get("id") or (r_url.split("/")[-1] if r_url else f"rule_{idx}"))
-                        normalized.append({
-                            "id": r_id,
-                            "url": r_url,
-                            "device_name": r.get("device_name") or r.get("nickname") or r.get("hostname") or r.get("mac") or "Device",
-                            "mac": r.get("mac") or r.get("device_mac") or "",
-                            "protocol": str(r.get("protocol") or "tcp").lower(),
-                            "ports": str(r.get("ports") or r.get("port_range") or r.get("port") or ""),
-                            "enabled": bool(r.get("enabled", True)),
-                        })
-                    return normalized
+                for endpoint in candidate_endpoints:
+                    try:
+                        resp = await client.get(endpoint, headers=self._get_headers())
+                        if resp.status_code == 200:
+                            raw_data = resp.json().get("data", [])
+                            rules = raw_data.get("rules", []) if isinstance(raw_data, dict) else (raw_data if isinstance(raw_data, list) else [])
+                            normalized = []
+                            for idx, r in enumerate(rules):
+                                if not isinstance(r, dict):
+                                    continue
+                                r_url = str(r.get("url") or "")
+                                r_id = str(r.get("id") or (r_url.rstrip("/").split("/")[-1] if r_url else f"rule_{idx}"))
+                                normalized.append({
+                                    "id": r_id,
+                                    "url": r_url,
+                                    "device_name": r.get("device_name") or r.get("nickname") or r.get("hostname") or r.get("mac") or "Device",
+                                    "mac": r.get("mac") or r.get("device_mac") or "",
+                                    "protocol": str(r.get("protocol") or "tcp").lower(),
+                                    "ports": str(r.get("ports") or r.get("port_range") or r.get("port") or ""),
+                                    "enabled": bool(r.get("enabled", True)),
+                                })
+                            return normalized
+                    except Exception as sub_err:
+                        logger.debug(f"Candidate endpoint {endpoint} error: {sub_err}")
+
+                # Fallback: check network details for embedded firewall/pinhole rules
+                try:
+                    resp_net = await client.get(f"{EERO_API_BASE}/networks/{clean_net_id}", headers=self._get_headers())
+                    if resp_net.status_code == 200:
+                        net_data = resp_net.json().get("data", {})
+                        embedded_rules = net_data.get("firewall_rules") or net_data.get("ipv6_firewall_rules") or net_data.get("pinholes") or []
+                        if isinstance(embedded_rules, list) and embedded_rules:
+                            normalized = []
+                            for idx, r in enumerate(embedded_rules):
+                                if not isinstance(r, dict):
+                                    continue
+                                r_url = str(r.get("url") or "")
+                                r_id = str(r.get("id") or (r_url.rstrip("/").split("/")[-1] if r_url else f"rule_{idx}"))
+                                normalized.append({
+                                    "id": r_id,
+                                    "url": r_url,
+                                    "device_name": r.get("device_name") or r.get("nickname") or r.get("hostname") or r.get("mac") or "Device",
+                                    "mac": r.get("mac") or r.get("device_mac") or "",
+                                    "protocol": str(r.get("protocol") or "tcp").lower(),
+                                    "ports": str(r.get("ports") or r.get("port_range") or r.get("port") or ""),
+                                    "enabled": bool(r.get("enabled", True)),
+                                })
+                            return normalized
+                except Exception as net_err:
+                    logger.debug(f"Fallback network details error: {net_err}")
+
         except Exception as e:
             logger.debug(f"IPv6 firewall rules fetch error: {e}")
         return []
 
     async def add_ipv6_firewall_rule(self, rule: Dict[str, Any], network_id: Optional[str] = None) -> Dict[str, Any]:
         """Crea una nuova regola pinhole nel firewall IPv6 (Issue #90)."""
-        net_id = network_id or self.current_network_id
-        if not net_id:
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for IPv6 rules: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
+        if not clean_net_id:
             raise ValueError(tr("eero.no_network_selected"))
         mac = str(rule.get("mac") or "").strip()
         ports = str(rule.get("ports") or "").strip()
@@ -4454,47 +4504,85 @@ class EeroClient:
             "ports": ports,
             "enabled": True,
         }
+        candidate_endpoints = [
+            f"{EERO_API_BASE}/networks/{clean_net_id}/firewall_rules",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/ipv6/firewall_rules",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/pinholes",
+        ]
+        last_status = 0
         async with self._client_session() as client:
-            resp = await client.post(
-                f"{EERO_API_BASE}/networks/{net_id}/firewall_rules",
-                headers=self._get_headers(),
-                json=payload,
-            )
-            if resp.status_code in (200, 201, 204):
-                data = resp.json().get("data", payload) if resp.text else payload
-                return {"status": "success", "rule": data}
-            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+            for endpoint in candidate_endpoints:
+                try:
+                    resp = await client.post(endpoint, headers=self._get_headers(), json=payload)
+                    if resp.status_code in (200, 201, 204):
+                        data = resp.json().get("data", payload) if resp.text else payload
+                        return {"status": "success", "rule": data}
+                    last_status = resp.status_code
+                except Exception as sub_err:
+                    logger.debug(f"Candidate endpoint {endpoint} error: {sub_err}")
+
+            if last_status == 404:
+                raise RuntimeError(
+                    "eero Cloud API returned HTTP 404. IPv6 firewall rules (pinholes) are unavailable or disabled by eero on this network (e.g. Bridge Mode or IPv6 inactive)."
+                )
+            raise RuntimeError(f"Cloud API returned HTTP {last_status or 500}")
 
     async def delete_ipv6_firewall_rule(self, rule_id: str, network_id: Optional[str] = None) -> Dict[str, Any]:
         """Elimina una regola dal firewall IPv6 (Issue #90)."""
-        net_id = network_id or self.current_network_id
-        if not net_id:
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for IPv6 rules: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
+        if not clean_net_id:
             raise ValueError(tr("eero.no_network_selected"))
         if self.is_demo_mode:
             rules = self._demo_state.setdefault("ipv6_firewall_rules", [])
             self._demo_state["ipv6_firewall_rules"] = [r for r in rules if str(r.get("id")) != str(rule_id)]
             return {"status": "success", "deleted_id": rule_id}
 
+        clean_rule_id = str(rule_id or "").strip().rstrip("/").split("/")[-1]
+        candidate_endpoints = [
+            f"{EERO_API_BASE}/networks/{clean_net_id}/firewall_rules/{clean_rule_id}",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/ipv6/firewall_rules/{clean_rule_id}",
+            f"{EERO_API_BASE}/networks/{clean_net_id}/pinholes/{clean_rule_id}",
+        ]
+        last_status = 0
         async with self._client_session() as client:
-            resp = await client.delete(
-                f"{EERO_API_BASE}/networks/{net_id}/firewall_rules/{rule_id}",
-                headers=self._get_headers(),
-            )
-            if resp.status_code in (200, 202, 204):
-                return {"status": "success", "deleted_id": rule_id}
-            raise RuntimeError(f"Cloud API returned HTTP {resp.status_code}")
+            for endpoint in candidate_endpoints:
+                try:
+                    resp = await client.delete(endpoint, headers=self._get_headers())
+                    if resp.status_code in (200, 202, 204):
+                        return {"status": "success", "deleted_id": clean_rule_id}
+                    last_status = resp.status_code
+                except Exception as sub_err:
+                    logger.debug(f"Candidate endpoint {endpoint} error: {sub_err}")
+
+            if last_status in (200, 202, 204):
+                return {"status": "success", "deleted_id": clean_rule_id}
+            raise RuntimeError(f"Cloud API returned HTTP {last_status or 500}")
 
     async def run_placement_test(self, location: str = "New Node", network_id: Optional[str] = None) -> Dict[str, Any]:
         """Esegue o valuta il test di posizionamento RF dei nodi mesh (/2.2/networks/{id}/placement_test)."""
-        net_id = network_id or self.current_network_id
-        if not net_id:
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for placement test: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
+        if not clean_net_id:
             raise ValueError(tr("eero.no_network_selected"))
 
         if not self.is_demo_mode:
             try:
                 async with self._client_session() as client:
                     resp = await client.post(
-                        f"{EERO_API_BASE}/networks/{net_id}/placement_test",
+                        f"{EERO_API_BASE}/networks/{clean_net_id}/placement_test",
                         headers=self._get_headers(),
                         json={"location": location},
                     )
@@ -4536,7 +4624,14 @@ class EeroClient:
 
     async def get_guardian_vpn_status(self, network_id: Optional[str] = None) -> Dict[str, Any]:
         """Restituisce lo stato di eero Plus Guardian VPN (/2.2/networks/{id}/guardian_vpn)."""
-        net_id = network_id or self.current_network_id
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for Guardian VPN: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
         if self.is_demo_mode:
             vpn_enabled = bool(self._demo_state.get("guardian_vpn_enabled", False))
             return {
@@ -4545,12 +4640,12 @@ class EeroClient:
                 "enabled": vpn_enabled,
                 "provider": "Guardian (eero Plus)",
             }
-        if not net_id:
+        if not clean_net_id:
             return {"status": "error", "supported": False, "enabled": False}
         try:
             async with self._client_session() as client:
                 resp = await client.get(
-                    f"{EERO_API_BASE}/networks/{net_id}/guardian_vpn",
+                    f"{EERO_API_BASE}/networks/{clean_net_id}/guardian_vpn",
                     headers=self._get_headers(),
                 )
                 if resp.status_code == 200:
@@ -4573,15 +4668,22 @@ class EeroClient:
 
     async def set_guardian_vpn_status(self, enabled: bool, network_id: Optional[str] = None) -> Dict[str, Any]:
         """Attiva o disattiva eero Plus Guardian VPN se supportato dall'account."""
-        net_id = network_id or self.current_network_id
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for Guardian VPN toggle: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
         if self.is_demo_mode:
             self._demo_state["guardian_vpn_enabled"] = bool(enabled)
             return {"status": "success", "enabled": bool(enabled)}
-        if not net_id:
+        if not clean_net_id:
             raise ValueError(tr("eero.no_network_selected"))
         async with self._client_session() as client:
             resp = await client.put(
-                f"{EERO_API_BASE}/networks/{net_id}/guardian_vpn",
+                f"{EERO_API_BASE}/networks/{clean_net_id}/guardian_vpn",
                 headers=self._get_headers(),
                 json={"enabled": bool(enabled)},
             )
@@ -4591,11 +4693,18 @@ class EeroClient:
 
     async def register_eero_node(self, serial: str, location: str = "Living Room", network_id: Optional[str] = None) -> Dict[str, Any]:
         """Registra (onboarding) un nuovo nodo fisico eero tramite numero di serie su /2.2/networks/{id}/eeros."""
-        net_id = network_id or self.current_network_id
+        if not self.current_network_id and not settings.demo_mode:
+            try:
+                await self.fetch_account_info()
+            except Exception as e:
+                logger.debug(f"Account info fetch error for register node: {e}")
+
+        raw_id = network_id or self.current_network_id
+        clean_net_id = str(raw_id or "").strip().rstrip("/").split("/")[-1]
         clean_serial = str(serial or "").strip().upper()
         if not clean_serial or len(clean_serial) < 6:
             raise ValueError("Valid eero serial number is required")
-        if not net_id:
+        if not clean_net_id:
             raise ValueError(tr("eero.no_network_selected"))
 
         if self.is_demo_mode:
@@ -4620,6 +4729,7 @@ class EeroClient:
 
         async with self._client_session() as client:
             resp = await client.post(
+                f"{EERO_API_BASE}/networks/{clean_net_id}/eeros",
                 f"{EERO_API_BASE}/networks/{net_id}/eeros",
                 headers=self._get_headers(),
                 json={"serial": clean_serial, "location": location},
