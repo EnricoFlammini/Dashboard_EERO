@@ -16,11 +16,12 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.6.1** | 🎛️ **Table Columns, 🏠 MQTT UI, 🛡️ Hardening, 🔐 "Ricordami" Auth & 🗄️ Synology DSM** | Selettore visuale colonne + Modale visuale MQTT / Home Assistant + Hardening CVE Docker Scout + Gestione sessioni con opzione "Ricordami" + Template di deploy per Synology DSM 7.2+ Container Manager (PR #66). |
 | **v1.6.2** | 🚀 **Auto-Update Prompt, 🌐 100% i18n, 🛡️ Pi-hole RFC 1123, 🏠 MQTT Tracking, 🔒 TLS Logs, 🕒 Local TZ, 🧹 ULA Retention & 🎨 UI Polish** | Proposta aggiornamenti con changelog ridotto, parità traduzioni 100% e manuale Markdown per lingua (PR #79, PR #94, PR #97, Issue #82), Pi-hole v6 RFC 1123 (Issue #83), persistenza & tracking MQTT con stato not_home (Issue #81, #92), logging SSLCertVerificationError (Issue #89), visualizzazione log in fuso orario locale browser (Issue #91), retention ULA 7gg & pulizia manuale (Issue #88), fix Firefox (Issue #80), serializzazione webhook (Issue #85), layout compatto banda/canale e auto-fit colonne (PR #95, PR #97) e rifiniture UI/UX (Issue #84). |
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105, #129), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104, #128), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86), 🌍 European i18n & 🌟 Simplified Basic Dashboard** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" con persistenza e stato presenza Home Assistant (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105, #129), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103, pulizia entità rimosse "gone-away" #128), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test, espansione a 7 nuove lingue europee e dashboard alternativa super-semplificata per utenti base. |
-| **v1.8.0** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame, 🛠️ Maintenance UI & 📖 In-App Guides (#110, #111, #115-#118)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), banner informativo Web UI per auto-riparazione SQLite/manutenzione (#117 - `@stevehoek`) e guide contestuali puntuali passo-passo per utenti non esperti su tutte le funzioni (Pushover, Telegram, Discord, Ntfy, DNS, Automazioni). |
-| **v1.8.1** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
-| **v1.8.2** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
-| **v1.8.3** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
-| **v1.8.4** | 🤖 **AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione** | Assistente AI per diagnosi immediata con 1-clic su errori e warning dei log (Knowledge Base locale offline a zero costi + LLM/Ollama opzionale), validazione preventiva delle configurazioni (Setup Copilot) e spiegazioni guidate in linguaggio naturale. |
+| **v1.8.0** | 🧹 **Clean Architecture, Code Modularization & Technical Debt Elimination** | Rifattorizzazione profonda e semplificazione del codice: estrazione mock demo in fixture separate, modularizzazione di `eero_client.py` per domini, scomposizione di `app.js` in moduli/store ESM puliti, divisione di `index.html` in componenti Jinja2 e consolidamento helper DRY con parità funzionale al 100% e test di regressione. |
+| **v1.8.1** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame, 🛠️ Maintenance UI, 📖 In-App Guides & 👥 Guest Network (#110, #111, #115-#118, #131)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), banner informativo Web UI per auto-riparazione SQLite/manutenzione (#117 - `@stevehoek`), guide contestuali puntuali passo-passo per utenti non esperti su tutte le funzioni, e separazione/riconoscimento dispositivi su rete ospiti con automazioni Home Assistant (#131 - `@SecurityJon`). |
+| **v1.8.2** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
+| **v1.8.3** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
+| **v1.8.4** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
+| **v1.8.5** | 🤖 **AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione** | Assistente AI per diagnosi immediata con 1-clic su errori e warning dei log (Knowledge Base locale offline a zero costi + LLM/Ollama opzionale), validazione preventiva delle configurazioni (Setup Copilot) e spiegazioni guidate in linguaggio naturale. |
 | **v1.9.0** | 🌐 **Multi-Network Architecture & Simultaneous Polling (Issue #114)** | Supporto completo alla gestione contemporanea di più reti eero da una singola istanza della dashboard: poller multi-tenant, caching isolato per `network_id` e navigazione indipendente in schede del browser separate senza conflitti server-side (#114 - `@stevehoek`). |
 
 ---
@@ -88,31 +89,37 @@ gantt
     Bridge Gateway, Pi-hole IP Owner, MQTT & UI Fixes (#98-#105):done, v1_7_fixes, 2026-11-06, 3d
     Devices Card View, Richer Home Cards & Product Images (PR #107):done, v1_7_cards, after v1_7_fixes, 2d
     Simplified Basic Dashboard & RBAC (action_demo, action_lang):done, v1_7_simple, after v1_7_cards, 1d
-    section v1.8.0 - Core Foundations, Apprise & Quick Wins
-    Path & Runtime Detection (DATA_DIR / MEIPASS) (#118) :active, v1_8_core, after v1_7_simple, 2d
-    Apprise Universal Notifications (#111)              :v1_8_apprise, after v1_8_core, 2d
-    Public WAN IP & Double-NAT Detection (#115)         :v1_8_wan, after v1_8_apprise, 1d
-    Homelab Embed iFrame & Kiosk Mode (#116)            :v1_8_kiosk, after v1_8_wan, 1d
-    Maintenance & Housekeeping Mode UI Overlay (#117)   :v1_8_maint, after v1_8_kiosk, 1d
-    In-App Step-by-Step Guides for Non-Tech Users       :v1_8_guides, after v1_8_maint, 2d
-    section v1.8.1 - NAS & Proxmox Community
-    Unraid Community Apps XML Template (#120)           :v1_81_unraid, after v1_8_maint, 2d
-    Synology Container Manager Seamless Update (#121)   :v1_81_syno, after v1_81_unraid, 2d
-    Proxmox VE Community Script LXC (#119)              :v1_81_proxmox, after v1_81_syno, 2d
-    Linux Native systemd Installer & .deb (#122)        :v1_81_linux, after v1_81_proxmox, 2d
-    section v1.8.2 - Home Assistant & NextDNS
-    Home Assistant OS Add-on with Ingress (#123)        :v1_82_ha, after v1_81_linux, 3d
-    NextDNS Cloud Rewrites Sync REST API (#124)         :v1_82_nextdns, after v1_82_ha, 2d
-    PyPI (pipx) Package Distribution (#125)             :v1_82_pypi, after v1_82_nextdns, 1d
-    section v1.8.3 - Desktop Apps
-    Windows Native Desktop App (.exe) (#126)            :v1_83_win, after v1_82_pypi, 3d
-    macOS Native Desktop App (.dmg) (#127)              :v1_83_mac, after v1_83_win, 3d
-    section v1.8.4 - AI Copilot & Log Doctor
-    Log Doctor & Proactive Knowledge Base Matching     :v1_84_doc, after v1_83_mac, 3d
-    Setup Copilot & Preventive Config Validation       :v1_84_copilot, after v1_84_doc, 2d
-    Optional Conversational LLM / Ollama Module        :v1_84_llm, after v1_84_copilot, 2d
+    section v1.8.0 - Clean Architecture & Modularization
+    Demo Fixtures Extraction & Backend Split            :active, v1_80_clean_be, after v1_7_simple, 3d
+    Modular ESM Split of app.js & Alpine Stores         :v1_80_clean_fe, after v1_80_clean_be, 4d
+    Template De-monolithing index.html Partials         :v1_80_clean_tpl, after v1_80_clean_fe, 2d
+    Full Regression Test Suite Hardening                :v1_80_clean_tests, after v1_80_clean_tpl, 2d
+    section v1.8.1 - Core Foundations, Apprise & Quick Wins
+    Path & Runtime Detection (DATA_DIR / MEIPASS) (#118):v1_81_core, after v1_80_clean_tests, 2d
+    Apprise Universal Notifications (#111)              :v1_81_apprise, after v1_81_core, 2d
+    Public WAN IP & Double-NAT Detection (#115)         :v1_81_wan, after v1_81_apprise, 1d
+    Homelab Embed iFrame & Kiosk Mode (#116)            :v1_81_kiosk, after v1_81_wan, 1d
+    Maintenance & Housekeeping Mode UI Overlay (#117)   :v1_81_maint, after v1_81_kiosk, 1d
+    In-App Step-by-Step Guides for Non-Tech Users       :v1_81_guides, after v1_81_maint, 2d
+    Guest Network Device Separation & MQTT (#131)       :v1_81_guest, after v1_81_guides, 2d
+    section v1.8.2 - NAS & Proxmox Community
+    Unraid Community Apps XML Template (#120)           :v1_82_unraid, after v1_81_guest, 2d
+    Synology Container Manager Seamless Update (#121)   :v1_82_syno, after v1_82_unraid, 2d
+    Proxmox VE Community Script LXC (#119)              :v1_82_proxmox, after v1_82_syno, 2d
+    Linux Native systemd Installer & .deb (#122)        :v1_82_linux, after v1_82_proxmox, 2d
+    section v1.8.3 - Home Assistant & NextDNS
+    Home Assistant OS Add-on with Ingress (#123)        :v1_83_ha, after v1_82_linux, 3d
+    NextDNS Cloud Rewrites Sync REST API (#124)         :v1_83_nextdns, after v1_83_ha, 2d
+    PyPI (pipx) Package Distribution (#125)             :v1_83_pypi, after v1_83_nextdns, 1d
+    section v1.8.4 - Desktop Apps
+    Windows Native Desktop App (.exe) (#126)            :v1_84_win, after v1_83_pypi, 3d
+    macOS Native Desktop App (.dmg) (#127)              :v1_84_mac, after v1_84_win, 3d
+    section v1.8.5 - AI Copilot & Log Doctor
+    Log Doctor & Proactive Knowledge Base Matching     :v1_85_doc, after v1_84_mac, 3d
+    Setup Copilot & Preventive Config Validation       :v1_85_copilot, after v1_85_doc, 2d
+    Optional Conversational LLM / Ollama Module        :v1_85_llm, after v1_85_copilot, 2d
     section v1.9.0 - Multi-Network Architecture
-    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_84_llm, 5d
+    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_85_llm, 5d
 ```
 
 ---
@@ -1005,7 +1012,46 @@ gantt
 
 ---
 
-### 📦 Release v1.8.0 — Core Multi-Platform Foundations, Notifiche Universali Apprise, Public WAN IP, Homelab Kiosk, Maintenance Mode UI & Guide In-App per Utenti Non Esperti (Discussion #109, Issues #110, #111, #115-#118)
+### 🧹 Release v1.8.0 — Clean Architecture, Code Modularization & Technical Debt Elimination
+
+> **Obiettivo:** Snellire, pulire e modularizzare l'intera architettura del codice sorgente (backend, frontend e template) prima dell'introduzione di nuove funzionalità complesse, eliminando debiti tecnici e garantendo al 100% l'assoluta parità funzionale e zero regressioni.
+
+#### 1. 🐍 Scomposizione & Modularizzazione Backend (`eero_client.py` & Services)
+- [ ] **Estrazione Dati Mock & Demo State (`app/services/demo_fixtures.py`):**
+  - Spostamento di oltre 1.500 righe di dizionari statici, stati simulati (`_demo_state`) e fixture demo fuori da `eero_client.py` in un modulo dedicato, rendendo il client cloud snello e focalizzato solo sulle chiamate reali.
+- [ ] **Modularizzazione per Domini Funzionali (Domain Services / Mixin):**
+  - Riorganizzazione dei metodi di `eero_client.py` in sottomoduli logici o mixin: `devices`, `mesh_nodes`, `network_settings`, `firewall_ipv6`, `vpn_guardian`.
+- [ ] **Helper di Chiamata Resiliente Unificato (DRY HTTP Dispatcher):**
+  - Centralizzazione della logica di fallback degli endpoint e gestione errori (`urls_to_try`, sanificazione slash, normalizzazione ID) in un unico dispatcher generico riutilizzabile, eliminando decine di blocchi `try/except` duplicati.
+
+#### 2. ⚡ Modularizzazione Frontend Alpine.js (`app/static/js/app.js`)
+- [ ] **Scomposizione del Monolite di 7.200 Righe in Moduli ESM / Store:**
+  - Suddivisione del file monolitico `app.js` in store e sottomoduli Alpine.js specializzati caricati nativamente:
+    - `js/modules/auth.js` (Login locale, RBAC, sessioni e Amazon OAuth2 PKCE).
+    - `js/modules/devices.js` (Tabella dispositivi, vista a schede, filtri, sorting, edit profili/metadati).
+    - `js/modules/mesh.js` (Topologia nodi, nodi Echo Built-in, placement test e controlli LED/reboot).
+    - `js/modules/dns.js` (Integrazione e sync AdGuard Home, Pi-hole v5/v6, Technitium).
+    - `js/modules/automations.js` (Notifiche Telegram/Pushover/Discord/Ntfy, Daily Digest, MQTT HA).
+    - `js/modules/diagnostics.js` (Health score, roaming advisor, speedtest e analytics).
+- [ ] **Pulizia Variabili Globali e Funzioni Utility:**
+  - Consolidamento delle utility di formattazione (date, velocità, fusi orari, clamp nomi) in `js/utils.js`.
+
+#### 3. 🎨 Scomposizione Template Jinja2 (`app/templates/index.html`)
+- [ ] **Componentizzazione dei Template Parziali (Partials):**
+  - Divisione del monolite `index.html` da 4.000 righe in componenti Jinja2 inclusi via `{% include %}`:
+    - `templates/components/header.html` (Barra superiore, selettore reti, toggle vista, notifiche).
+    - `templates/components/sidebar.html` (Menu navigazione laterale e badge stato).
+    - `templates/components/overview_technical.html` & `overview_simple.html` (Viste dashboard).
+    - `templates/components/devices_section.html` (Tabella e griglia schede dispositivi).
+    - `templates/modals/*.html` (Modali dedicate per ciascuna funzionalità: salute, speedtest, DNS, MQTT, ecc.).
+
+#### 4. 🧪 Blindatura Test Suite & Garanzia di Parità Funzionale (Zero Regressioni)
+- [ ] **Test di Caratterizzazione Pre-Refactoring:**
+  - Espansione della suite `tests/` per verificare e garantire a ogni passaggio la totale invarianza dei contratti API REST, risposte JSON, gestione permessi RBAC e fallback.
+
+---
+
+### 📦 Release v1.8.1 — Core Multi-Platform Foundations, Notifiche Universali Apprise, Public WAN IP, Homelab Kiosk, Maintenance Mode UI & Guide In-App per Utenti Non Esperti (Discussion #109, Issues #110, #111, #115-#118, #131)
 
 > **Obiettivo:** Consolidare le fondamenta multi-piattaforma del core, arricchire il monitoraggio con il vero IP pubblico WAN anche dietro router/doppio NAT, abilitare l'incorporamento in dashboard Homelab (Homarr/Dashy/tablet), introdurre il canale notifiche universale Apprise (100+ destinazioni), la schermata di manutenzione/housekeeping per SQLite e guide integrate passo-passo a misura di utenti non tecnici per ogni funzionalità della dashboard.
 
@@ -1057,7 +1103,7 @@ gantt
 
 ---
 
-### 🗄️ Release v1.8.1 — Ecosistema NAS & Proxmox Community (Discussion #109, Issues #119-#122)
+### 🗄️ Release v1.8.2 — Ecosistema NAS & Proxmox Community (Discussion #109, Issues #119-#122)
 
 > **Obiettivo:** Portare Dashboard_EERO nei principali app store e cataloghi homelab dedicati a NAS e virtualizzazione domestica con installazione 1-clic e aggiornamenti trasparenti.
 
@@ -1075,7 +1121,7 @@ gantt
 
 ---
 
-### 🏠 Release v1.8.2 — Home Assistant OS Add-on (Ingress), NextDNS Cloud Sync & PyPI (Discussion #109, Issues #123-#125)
+### 🏠 Release v1.8.3 — Home Assistant OS Add-on (Ingress), NextDNS Cloud Sync & PyPI (Discussion #109, Issues #123-#125)
 
 > **Obiettivo:** Integrazione nativa in Home Assistant OS con visualizzazione nella barra laterale, sincronizzazione DNS estesa a NextDNS e distribuzione Python standalone.
 
@@ -1093,7 +1139,7 @@ gantt
 
 ---
 
-### 🖥️ Release v1.8.3 — Applicazioni Desktop Native Windows & macOS (Discussion #109, Issues #126, #127)
+### 🖥️ Release v1.8.4 — Applicazioni Desktop Native Windows & macOS (Discussion #109, Issues #126, #127)
 
 > **Obiettivo:** Offrire un'esperienza applicativa desktop standalone con icone nella barra delle applicazioni / menu bar e finestra integrata senza necessità di Docker.
 
@@ -1107,7 +1153,7 @@ gantt
 
 ---
 
-### 🤖 Release v1.8.4 — AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione
+### 🤖 Release v1.8.5 — AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione
 
 > **Obiettivo:** Dotare la dashboard di un assistente AI integrato e leggero per supportare proattivamente gli utenti non tecnici nell'interpretazione degli errori di log, nella risoluzione guidata dei warning e nella validazione interattiva delle configurazioni.
 
