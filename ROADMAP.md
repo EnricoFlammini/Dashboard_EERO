@@ -20,6 +20,7 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.8.1** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
 | **v1.8.2** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
 | **v1.8.3** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
+| **v1.8.4** | 🤖 **AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione** | Assistente AI per diagnosi immediata con 1-clic su errori e warning dei log (Knowledge Base locale offline a zero costi + LLM/Ollama opzionale), validazione preventiva delle configurazioni (Setup Copilot) e spiegazioni guidate in linguaggio naturale. |
 | **v1.9.0** | 🌐 **Multi-Network Architecture & Simultaneous Polling (Issue #114)** | Supporto completo alla gestione contemporanea di più reti eero da una singola istanza della dashboard: poller multi-tenant, caching isolato per `network_id` e navigazione indipendente in schede del browser separate senza conflitti server-side (#114 - `@stevehoek`). |
 
 ---
@@ -106,8 +107,12 @@ gantt
     section v1.8.3 - Desktop Apps
     Windows Native Desktop App (.exe) (#126)            :v1_83_win, after v1_82_pypi, 3d
     macOS Native Desktop App (.dmg) (#127)              :v1_83_mac, after v1_83_win, 3d
+    section v1.8.4 - AI Copilot & Log Doctor
+    Log Doctor & Proactive Knowledge Base Matching     :v1_84_doc, after v1_83_mac, 3d
+    Setup Copilot & Preventive Config Validation       :v1_84_copilot, after v1_84_doc, 2d
+    Optional Conversational LLM / Ollama Module        :v1_84_llm, after v1_84_copilot, 2d
     section v1.9.0 - Multi-Network Architecture
-    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_83_mac, 5d
+    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_84_llm, 5d
 ```
 
 ---
@@ -1099,6 +1104,33 @@ gantt
 #### 2. 🍏 App Desktop macOS (.dmg Universal Binary con Menu Bar) (Issue #127 — @stevehoek)
 - [ ] **Menu Bar App + WebKit WebView:** Icona nella barra dei menu superiore di macOS, avvio automatico all'accesso e finestra nativa WebKit con bundle `.app` e pacchetto `.dmg` (Issue #127).
 - [ ] **Universal Binary Apple Silicon & Intel:** Compilazione automatizzata via GitHub Actions (`macos-latest`) per architetture `arm64` e `x86_64` (Issue #127).
+
+---
+
+### 🤖 Release v1.8.4 — AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione
+
+> **Obiettivo:** Dotare la dashboard di un assistente AI integrato e leggero per supportare proattivamente gli utenti non tecnici nell'interpretazione degli errori di log, nella risoluzione guidata dei warning e nella validazione interattiva delle configurazioni.
+
+#### 1. 🩺 Log Doctor: Diagnosi Proattiva Errori & Warning con 1 Clic
+- [ ] **Rilevamento Intelligente nel Live Log Viewer (`index.html` & `app.js`):**
+  - Integrazione di un pulsante contestuale `💡 Come Risolvere` o `🩺 Diagnosi Assistita` accanto a ogni riga di livello `WARNING` o `ERROR` nella console dei log live.
+  - Apertura di una modale o cassetto laterale esplicativo che traduce il messaggio tecnico in spiegazioni chiare e comprensibili nella lingua attiva dell'utente.
+- [ ] **Knowledge Base Deterministica Locale (Offline, Istantanea & Senza Costi):**
+  - Motore di matching ad alta precisione in `app/services/ai_assistant.py` basato sui pattern consolidati di `EERO_DASHBOARD_KNOWLEDGE_BASE.md` (es. permessi read-only Pi-hole v6 / `app_sudo`, certificati SSL non verificati, eero Bridge mode 404, rate-limit cloud eero, lock SQLite, token notifiche invalidi, sticky client roaming).
+  - Tempo di risposta immediato (< 10 ms), zero allucinazioni e conformità totale alla privacy (nessun dato, IP o credenziale inviato all'esterno).
+
+#### 2. 🛡️ Assistente alla Configurazione Preventivo (Setup Copilot)
+- [ ] **Validazione Guidata nei Moduli Operativi:**
+  - Pulsante *"Verifica Configurazione"* nei form complessi (DNS Multi-Engine, Notifiche Telegram/Pushover/Discord/Ntfy, MQTT Home Assistant, Amazon OAuth2 PKCE).
+  - Analisi preventiva delle incongruenze (es. App Password Pi-hole vs Web Password, porte occupate, formati webhook errati, token troncati) prima del salvataggio, prevenendo errori a runtime.
+- [ ] **Badge Notifica di Sistema per Errori Silenti:**
+  - Segnalatore visivo non invasivo nell'header della dashboard in caso di errori critici in background, con riepilogo in linguaggio naturale e suggerimento della contromisura.
+
+#### 3. 💬 Agente Conversazionale Opzionale (LLM Provider / Ollama Locale)
+- [ ] **Integrazione Opzionale LLM (Gemini API, OpenAI o Ollama):**
+  - Modulo opzionale configurabile dall'utente con inserimento facoltativo di API Key (es. Google Gemini Free Tier, OpenAI) o endpoint Ollama homelab locale (`http://localhost:11434`).
+  - Chatbot contestuale per domande libere di networking e supporto (es. *"Perché il mio laptop si collega a 2.4 GHz invece che a 5 GHz?"*, *"Come posso ottimizzare il posizionamento dei miei nodi eero?"*).
+  - Sanitizzazione rigorosa e automatica di tutti i prompt (mascheramento preventivo di password, token, MAC address reali e IP pubblici prima dell'eventuale inoltro all'LLM esterno).
 
 ---
 
