@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - test
+    paths-ignore:
+      - 'ROADMAP.md'
+      - 'roadmap.md'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       custom_tag:
