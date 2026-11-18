@@ -966,15 +966,14 @@ class DNSManager:
 
         # Mappatura dei target attivi che la dashboard sta sincronizzando: hostname.lower() -> active IP
         managed_active_targets: Dict[str, str] = {}
-        active_ip_to_host: Dict[str, str] = {}
         for client_item in prepared_clients:
             ip = client_item.get("ip")
             hostname = client_item.get("hostname")
             if not ip or not hostname:
                 continue
-            target_name = f"{hostname}.{raw_zone}" if raw_zone else hostname
+            safe_host = sanitize_dns_hostname(hostname, fallback=f"device-{ip.split('.')[-1] if '.' in ip else 'client'}")
+            target_name = f"{safe_host}.{raw_zone}" if raw_zone else safe_host
             managed_active_targets[target_name.lower().strip()] = ip.strip()
-            active_ip_to_host[ip.strip().lower()] = target_name.lower().strip()
 
         try:
             async with httpx.AsyncClient(timeout=10.0, verify=not insecure_tls, follow_redirects=True) as client:
@@ -1046,14 +1045,11 @@ class DNSManager:
                                         seen_pairs.add(pair_key)
                                         retained_entries.append((e_ip, e_host))
                         else:
-                            if prune_stale and e_ip.lower() in active_ip_to_host:
-                                stale_records.append(f"{e_ip} {e_host}")
-                            else:
-                                # Record personalizzato non gestito: preserva integralmente
-                                pair_key = (e_ip.lower(), e_host_lower)
-                                if pair_key not in seen_pairs:
-                                    seen_pairs.add(pair_key)
-                                    retained_entries.append((e_ip, e_host))
+                            # Record personalizzato non gestito (alias locale, CNAME o dominio manuale): preserva SEMPRE integralmente (Issue #134)
+                            pair_key = (e_ip.lower(), e_host_lower)
+                            if pair_key not in seen_pairs:
+                                seen_pairs.add(pair_key)
+                                retained_entries.append((e_ip, e_host))
 
                     # Aggiunta/aggiornamento dei target attivi
                     synced = 0
@@ -1184,9 +1180,6 @@ class DNSManager:
                                         if e_ip.lower() != active_ip.lower():
                                             v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
                                             await client.get(v5_del_url)
-                                    elif e_ip.lower() in active_ip_to_host and active_ip_to_host[e_ip.lower()] != e_domain.lower():
-                                        v5_del_url = f"{url}/admin/api.php?customdns&action=delete&ip={e_ip}&domain={e_domain}&auth={token}"
-                                        await client.get(v5_del_url)
                     except Exception as e:
                         log_event(logger, logging.WARNING, "log_ops.pihole_v5_prune_check_failed", error=_describe_dns_exception(e))
 

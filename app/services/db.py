@@ -740,9 +740,6 @@ class DBService:
     async def get_device_metrics_history(self, mac_address: str, hours: int = 24) -> List[Dict[str, Any]]:
         return []
 
-    async def get_top_bandwidth_hogs(self, hours: int = 24, limit: int = 10) -> List[Dict[str, Any]]:
-        return []
-
     # ----------------- SPEEDTESTS -----------------
     async def save_speedtest(
         self,
@@ -1632,7 +1629,7 @@ class DBService:
                             mac = str(s.get("mac_address") or s.get("mac") or "").lower().strip()
                             if not mac:
                                 continue
-                            hostname = s.get("hostname") or s.get("nickname") or s.get("custom_name") or mac
+                            hostname = s.get("custom_name") or s.get("nickname") or s.get("hostname") or mac
                             rx_bytes = float(s.get("rx_bytes") or 0.0)
                             tx_bytes = float(s.get("tx_bytes") or 0.0)
                             down_mbps = float(s.get("download_rate_mbps") or 0.0)
@@ -1889,30 +1886,42 @@ class DBService:
             "total_bytes": tot_val,
         }
 
-    async def get_top_bandwidth_hogs(self, network_id: Optional[str] = None, limit: int = 5, period: str = "daily", is_demo: int = 0) -> List[Dict[str, Any]]:
+    async def get_top_bandwidth_hogs(
+        self,
+        network_id: Optional[str] = None,
+        limit: int = 5,
+        period: str = "daily",
+        is_demo: int = 0,
+        hours: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """Restituisce la classifica dei dispositivi che consumano più banda (Top Hogs)."""
         now = datetime.now(timezone.utc)
-        hours = 24 if period == "daily" else (168 if period == "weekly" else 720)
-        cutoff = (now - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-        cutoff_z = (now - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        calc_hours = hours if hours is not None else (24 if period == "daily" else (168 if period == "weekly" else 720))
+        cutoff = (now - timedelta(hours=calc_hours)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff_z = (now - timedelta(hours=calc_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # Routing veloce: per weekly e monthly, verifica prima la tabella aggregata device_usage_hourly
-        if period in ("weekly", "monthly") and is_demo == 0:
+        if period in ("weekly", "monthly") and is_demo == 0 and hours is None:
             async with self.get_connection() as db:
                 h_query = """
-                    SELECT mac_address, hostname,
-                           SUM(rx_bytes_delta) as sum_rx,
-                           SUM(tx_bytes_delta) as sum_tx,
-                           AVG(avg_down_mbps) as avg_down,
-                           AVG(avg_up_mbps) as avg_up
-                    FROM device_usage_hourly
-                    WHERE hour_timestamp >= ? AND is_demo = ?
+                    SELECT h.mac_address,
+                           COALESCE(m.custom_name, h.hostname, h.mac_address) as hostname,
+                           m.custom_name,
+                           m.category,
+                           m.custom_icon,
+                           SUM(h.rx_bytes_delta) as sum_rx,
+                           SUM(h.tx_bytes_delta) as sum_tx,
+                           AVG(h.avg_down_mbps) as avg_down,
+                           AVG(h.avg_up_mbps) as avg_up
+                    FROM device_usage_hourly h
+                    LEFT JOIN device_metadata m ON LOWER(m.mac_address) = LOWER(h.mac_address)
+                    WHERE h.hour_timestamp >= ? AND h.is_demo = ?
                 """
                 h_params: List[Any] = [cutoff, is_demo]
                 if network_id:
-                    h_query += " AND network_id = ?"
+                    h_query += " AND h.network_id = ?"
                     h_params.append(str(network_id))
-                h_query += " GROUP BY mac_address ORDER BY (SUM(rx_bytes_delta) + SUM(tx_bytes_delta)) DESC LIMIT ?"
+                h_query += " GROUP BY h.mac_address ORDER BY (SUM(h.rx_bytes_delta) + SUM(h.tx_bytes_delta)) DESC LIMIT ?"
                 h_params.append(limit)
 
                 h_cur = await db.execute(h_query, tuple(h_params))
@@ -1922,31 +1931,48 @@ class DBService:
                     for hr in h_rows:
                         f_rx = round(float(hr["sum_rx"] or 0), 1)
                         f_tx = round(float(hr["sum_tx"] or 0), 1)
+                        resolved_name = hr["custom_name"] or hr["hostname"] or hr["mac_address"]
                         results.append({
                             "mac": hr["mac_address"],
-                            "hostname": hr["hostname"] or hr["mac_address"],
+                            "mac_address": hr["mac_address"],
+                            "hostname": resolved_name,
+                            "nickname": resolved_name,
+                            "display_name": resolved_name,
+                            "custom_name": hr["custom_name"],
+                            "category": hr["category"] or "Altro",
+                            "custom_icon": hr["custom_icon"] or "device",
                             "rx_bytes": f_rx,
                             "tx_bytes": f_tx,
                             "total_bytes": f_rx + f_tx,
+                            "total_rx_bytes": f_rx,
+                            "total_tx_bytes": f_tx,
                             "avg_down_mbps": round(float(hr["avg_down"] or 0), 2),
                             "avg_up_mbps": round(float(hr["avg_up"] or 0), 2),
+                            "avg_download_rate": round(float(hr["avg_down"] or 0), 2),
+                            "avg_upload_rate": round(float(hr["avg_up"] or 0), 2),
                         })
                     return results
 
         async with self.get_connection() as db:
             query = """
-                SELECT mac_address, hostname, MAX(rx_bytes) as max_rx, MAX(tx_bytes) as max_tx,
-                       MIN(rx_bytes) as min_rx, MIN(tx_bytes) as min_tx,
-                       AVG(download_mbps) as avg_down, AVG(upload_mbps) as avg_up
-                FROM device_usage_history
-                WHERE (timestamp >= ? OR timestamp >= ?) AND is_demo = ?
+                SELECT h.mac_address,
+                       COALESCE(m.custom_name, h.hostname, h.mac_address) as hostname,
+                       m.custom_name,
+                       m.category,
+                       m.custom_icon,
+                       MAX(h.rx_bytes) as max_rx, MAX(h.tx_bytes) as max_tx,
+                       MIN(h.rx_bytes) as min_rx, MIN(h.tx_bytes) as min_tx,
+                       AVG(h.download_mbps) as avg_down, AVG(h.upload_mbps) as avg_up
+                FROM device_usage_history h
+                LEFT JOIN device_metadata m ON LOWER(m.mac_address) = LOWER(h.mac_address)
+                WHERE (h.timestamp >= ? OR h.timestamp >= ?) AND h.is_demo = ?
             """
             params: List[Any] = [cutoff, cutoff_z, is_demo]
             if network_id:
-                query += " AND network_id = ?"
+                query += " AND h.network_id = ?"
                 params.append(str(network_id))
 
-            query += " GROUP BY mac_address ORDER BY (MAX(rx_bytes) + MAX(tx_bytes)) DESC LIMIT ?"
+            query += " GROUP BY h.mac_address ORDER BY (MAX(h.rx_bytes) + MAX(h.tx_bytes)) DESC LIMIT ?"
             params.append(limit)
 
             cursor = await db.execute(query, tuple(params))
@@ -1988,14 +2014,25 @@ class DBService:
                 final_rx = m_rx
                 final_tx = m_tx
 
+            resolved_name = r["custom_name"] or r["hostname"] or r["mac_address"]
             results.append({
                 "mac": r["mac_address"],
-                "hostname": r["hostname"],
+                "mac_address": r["mac_address"],
+                "hostname": resolved_name,
+                "nickname": resolved_name,
+                "display_name": resolved_name,
+                "custom_name": r["custom_name"],
+                "category": r["category"] or "Altro",
+                "custom_icon": r["custom_icon"] or "device",
                 "rx_bytes": final_rx,
                 "tx_bytes": final_tx,
                 "total_bytes": final_rx + final_tx,
+                "total_rx_bytes": final_rx,
+                "total_tx_bytes": final_tx,
                 "avg_down_mbps": round(float(r["avg_down"] or 0), 2),
                 "avg_up_mbps": round(float(r["avg_up"] or 0), 2),
+                "avg_download_rate": round(float(r["avg_down"] or 0), 2),
+                "avg_upload_rate": round(float(r["avg_up"] or 0), 2),
             })
         return results
 

@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 import string
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -382,15 +382,68 @@ async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
             for d in sorted_devs:
                 rx_b = round(float(d.get("rx_bytes") or 0) * demo_factor, 1)
                 tx_b = round(float(d.get("tx_bytes") or 0) * demo_factor, 1)
+                d_name = d.get("custom_name") or d.get("nickname") or d.get("hostname") or d.get("mac")
                 hogs.append({
                     "mac": d.get("mac"),
-                    "hostname": d.get("nickname") or d.get("hostname") or d.get("mac"),
+                    "mac_address": d.get("mac"),
+                    "nickname": d_name,
+                    "hostname": d_name,
+                    "display_name": d_name,
+                    "custom_name": d.get("custom_name"),
+                    "category": d.get("category") or "Altro",
+                    "custom_icon": d.get("custom_icon") or "device",
+                    "ip": d.get("ip"),
                     "rx_bytes": rx_b,
                     "tx_bytes": tx_b,
                     "total_bytes": rx_b + tx_b,
                     "avg_down_mbps": float(d.get("download_rate_mbps") or 0),
                     "avg_up_mbps": float(d.get("upload_rate_mbps") or 0),
                 })
+        else:
+            # Arricchimento puntuale dei Top Hogs con i metadati live (nickname personalizzato, icone, categoria)
+            cached_by_mac: Dict[str, Dict[str, Any]] = {}
+            for d in (background_poller.cached_devices or []):
+                m = str(d.get("mac") or d.get("mac_address") or "").lower().strip()
+                if m:
+                    cached_by_mac[m] = d
+
+            meta_by_mac = await db_service.get_all_device_metadata()
+
+            for h in hogs:
+                m = str(h.get("mac") or "").lower().strip()
+                cached_dev = cached_by_mac.get(m)
+                meta = meta_by_mac.get(m)
+
+                best_name = None
+                if meta and meta.get("custom_name") and meta["custom_name"].strip():
+                    best_name = meta["custom_name"].strip()
+                elif cached_dev:
+                    best_name = (
+                        cached_dev.get("custom_name")
+                        or cached_dev.get("nickname")
+                        or cached_dev.get("hostname")
+                    )
+
+                if not best_name and h.get("hostname") and str(h.get("hostname")).lower() != m:
+                    best_name = h["hostname"]
+
+                final_name = best_name or h.get("hostname") or h.get("mac")
+                h["nickname"] = final_name
+                h["hostname"] = final_name
+                h["display_name"] = final_name
+
+                if cached_dev:
+                    if not h.get("category") or h.get("category") == "Altro":
+                        h["category"] = cached_dev.get("category") or (meta.get("category") if meta else "Altro")
+                    if not h.get("custom_icon") or h.get("custom_icon") == "device":
+                        h["custom_icon"] = cached_dev.get("custom_icon") or (meta.get("custom_icon") if meta else "device")
+                    if "ip" not in h:
+                        h["ip"] = cached_dev.get("ip")
+                elif meta:
+                    if not h.get("category") or h.get("category") == "Altro":
+                        h["category"] = meta.get("category") or "Altro"
+                    if not h.get("custom_icon") or h.get("custom_icon") == "device":
+                        h["custom_icon"] = meta.get("custom_icon") or "device"
 
         return {
             "status": "success",
