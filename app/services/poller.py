@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import zoneinfo
 from datetime import datetime, timezone, time as dt_time
 from typing import Any, Dict, List, Optional, Set
@@ -928,17 +929,23 @@ class BackgroundPoller:
             # 2.45 Riconciliazione nodi Amazon Echo "eero Built-in" / proxied_nodes (Issue #96)
             eeros = self.reconcile_echo_extender_nodes(eeros, enriched_devices, network_details, self._known_echo_specs)
 
-            # Allineamento stato dispositivi Echo online (Issue #96):
-            # Se il dispositivo corrisponde a un nodo Echo Built-in online, impostalo come connesso
+            # Allineamento stato dispositivi Echo online (Issue #96, #135):
+            # Se il dispositivo corrisponde a un nodo Echo Built-in online, impostalo come connesso e segnalo come nodo Echo
             echo_node_names = {
                 str(n.get("name") or n.get("location") or "").strip().lower()
                 for n in eeros
                 if n.get("is_echo_node") and n.get("status") in ("online", "active")
             }
-            if echo_node_names:
+            echo_node_macs = {
+                str(n.get("mac_address") or n.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
+                for n in eeros
+                if n.get("is_echo_node") and (n.get("mac_address") or n.get("mac"))
+            }
+            if echo_node_names or echo_node_macs:
                 for dev_copy in enriched_devices:
                     d_name = str(dev_copy.get("hostname") or dev_copy.get("nickname") or dev_copy.get("name") or "").strip().lower()
-                    if d_name and d_name in echo_node_names:
+                    d_mac = str(dev_copy.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
+                    if (d_mac and d_mac in echo_node_macs) or (d_name and d_name in echo_node_names):
                         dev_copy["connected"] = True
                         dev_copy["is_echo_node"] = True
 
@@ -1424,12 +1431,73 @@ class BackgroundPoller:
             if n_serial:
                 existing_ids.add(n_serial)
 
+        # Mappe di lookup indicizzate per risoluzione multi-criterio dispositivo Echo (Issue #96, #135)
         dev_by_name: Dict[str, Dict[str, Any]] = {}
+        dev_by_mac: Dict[str, Dict[str, Any]] = {}
+        dev_by_id: Dict[str, Dict[str, Any]] = {}
+        dev_by_clean_name: Dict[str, Dict[str, Any]] = {}
+        echo_client_devices: List[Dict[str, Any]] = []
+
         for dev in enriched_devices or []:
+            mac_clean = str(dev.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
+            if mac_clean:
+                dev_by_mac[mac_clean] = dev
+            d_id = str(dev.get("id") or "").strip().lower()
+            if d_id:
+                dev_by_id[d_id] = dev
+            d_serial = str(dev.get("serial") or "").strip().lower()
+            if d_serial:
+                dev_by_id[d_serial] = dev
+
             for field in ("hostname", "nickname", "display_name", "name"):
                 val = str(dev.get(field) or "").strip()
                 if val and val.lower() not in ("dispositivo sconosciuto", "unknown device"):
                     dev_by_name[val.lower()] = dev
+                    clean_val = "".join(ch for ch in val.lower() if ch.isalnum())
+                    if clean_val:
+                        dev_by_clean_name[clean_val] = dev
+
+            d_name_low = str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").lower()
+            d_model_low = str(dev.get("model") or "").lower()
+            d_mfg_low = str(dev.get("manufacturer") or "").lower()
+            if "echo" in d_name_low or "echo" in d_model_low or "amazon" in d_mfg_low:
+                echo_client_devices.append(dev)
+
+        def _match_echo_device(spec_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+            """Associa una specifica di nodo Built-in al rispettivo record dispositivo in LAN (Issue #135)."""
+            # 1. Match per MAC address
+            s_mac = str(spec_data.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
+            if s_mac and s_mac in dev_by_mac:
+                return dev_by_mac[s_mac]
+
+            # 2. Match per ID o Seriale
+            s_id = str(spec_data.get("id") or "").strip().lower()
+            if s_id and s_id in dev_by_id:
+                return dev_by_id[s_id]
+
+            # 3. Match per nome esatto
+            s_name = str(spec_data.get("name") or "").strip().lower()
+            if s_name and s_name in dev_by_name:
+                return dev_by_name[s_name]
+
+            # 4. Match per nome normalizzato alfanumerico
+            s_clean = "".join(ch for ch in s_name if ch.isalnum())
+            if s_clean and s_clean in dev_by_clean_name:
+                return dev_by_clean_name[s_clean]
+
+            # 5. Match per token / parole chiave comuni nei dispositivi Echo
+            if s_name and echo_client_devices:
+                noise_words = {"echo", "dot", "spot", "show", "plus", "studio", "pop", "amazon", "gen", "4th", "5th", "builtin"}
+                s_tokens = set(re.findall(r"\w+", s_name)) - noise_words
+                for edev in echo_client_devices:
+                    edev_name = str(edev.get("nickname") or edev.get("hostname") or edev.get("name") or "").lower()
+                    edev_tokens = set(re.findall(r"\w+", edev_name)) - noise_words
+                    if s_tokens and edev_tokens and (s_tokens == edev_tokens or s_tokens.issubset(edev_tokens) or edev_tokens.issubset(s_tokens)):
+                        return edev
+                    if edev_name and (edev_name in s_name or s_name in edev_name):
+                        return edev
+
+            return None
 
         # Mantieni persistenza dei nodi Echo precedentemente registrati (Issue #96)
         virtual_echo_specs: Dict[str, Dict[str, Any]] = {}
@@ -1460,13 +1528,19 @@ class BackgroundPoller:
                 p_name = str(p_node.get("nickname") or p_node.get("name") or p_node.get("location") or "").strip()
                 if not p_name or p_name.lower() in existing_names:
                     continue
+                p_status_raw = str(p_node.get("status") or p_node.get("state") or "").lower()
+                is_p_online = (
+                    p_status_raw in ("online", "active", "ready", "connected")
+                    or p_node.get("connected") is True
+                    or (p_node.get("connected") is None and p_node.get("enabled") is not False)
+                )
                 virtual_echo_specs[p_name.lower()] = {
                     "name": p_name,
                     "id": str(p_node.get("id") or p_node.get("serial") or ""),
                     "ip": str(p_node.get("ip") or p_node.get("ipv4") or ""),
-                    "mac": str(p_node.get("mac") or ""),
+                    "mac": str(p_node.get("mac") or p_node.get("mac_address") or p_node.get("wifi_mac") or ""),
                     "model": str(p_node.get("model") or "Amazon Echo (eero Built-in)"),
-                    "status": "online" if p_node.get("connected", True) else "offline",
+                    "status": "online" if is_p_online else "offline",
                 }
 
         # 2. Controlla i client che puntano a un `connected_eero_name` non presente tra i nodi fisici eero
@@ -1520,48 +1594,25 @@ class BackgroundPoller:
                 elif dev.get("connected"):
                     virtual_echo_specs[d_name_low]["status"] = "online"
 
-        # 2c. Riconoscimento dispositivi Amazon Echo presenti nella rete quando la mesh include nodi Built-in (Issue #96)
-        has_mesh_builtin_echoes = (
-            bool(virtual_echo_specs)
-            or any(bool(d.get("connected_to_proxied_node")) or "echo" in str(d.get("connected_eero_name") or "").lower() for d in enriched_devices or [])
-        )
-        if has_mesh_builtin_echoes:
-            for dev in enriched_devices or []:
-                d_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").strip()
-                d_model = str(dev.get("model") or "").strip().lower()
-                d_mfg = str(dev.get("manufacturer") or "").strip().lower()
-                d_name_low = d_name.lower()
-                if not d_name or d_name_low in existing_names or d_name_low in virtual_echo_specs:
-                    continue
-
-                is_echo_device = (
-                    ("echo" in d_name_low or "echo" in d_model)
-                    and ("amazon" in d_mfg or "amazon" in d_name_low or "echo" in d_name_low or "echo" in d_model)
-                )
-                if is_echo_device:
-                    virtual_echo_specs[d_name_low] = {
-                        "name": d_name,
-                        "id": str(dev.get("id") or dev.get("serial") or dev.get("mac") or ""),
-                        "ip": str(dev.get("ip") or ""),
-                        "mac": str(dev.get("mac") or ""),
-                        "model": dev.get("model") or "Amazon Echo (eero Built-in)",
-                        "status": "online" if (dev.get("connected") or dev.get("ip")) else "offline",
-                    }
-
-        # 3. Costruisci i nodi virtuali arricchiti con i metadati del dispositivo Echo se presente in LAN
+        # 3. Costruisci i nodi virtuali arricchiti con i metadati del dispositivo Echo presente in LAN (Issue #96, #135)
         for key_low, spec in virtual_echo_specs.items():
-            echo_dev = dev_by_name.get(key_low)
+            echo_dev = _match_echo_device(spec)
             slug = "".join(ch if ch.isalnum() else "_" for ch in key_low).strip("_") or "node"
-            node_id = spec["id"] or f"echo_{slug}"
-            node_ip = spec["ip"] or (str(echo_dev.get("ip") or "") if echo_dev else "")
-            node_mac = spec["mac"] or (str(echo_dev.get("mac") or "") if echo_dev else "")
+            node_id = spec.get("id") or (str(echo_dev.get("id") or echo_dev.get("serial") or "") if echo_dev else "") or f"echo_{slug}"
+            node_ip = spec.get("ip") or (str(echo_dev.get("ip") or "") if echo_dev else "")
+            node_mac = spec.get("mac") or (str(echo_dev.get("mac") or "") if echo_dev else "")
+            node_model = spec.get("model") or (str(echo_dev.get("model") or "") if echo_dev else "") or "Amazon Echo (eero Built-in)"
 
-            # Determinazione robusta dello stato Online del nodo Echo (Issue #96):
+            # Determinazione robusta dello stato Online del nodo Echo (Issue #96, #135):
             # Un nodo extender è online se:
-            # - ha almeno un client attualmente connesso ad esso, OPPURE
-            # - il dispositivo Echo stesso è presente in LAN con un IP attivo e non è marcato offline
+            # - ha almeno un client attualmente connesso ad esso; OPPURE
+            # - il dispositivo Echo stesso è presente in LAN con stato connesso o IP attivo; OPPURE
+            # - proviene da proxied_nodes ed è registrato/abilitato come attivo
             has_connected_clients = any(
-                d.get("connected") and str(d.get("connected_eero_name") or "").strip().lower() == key_low
+                d.get("connected") and (
+                    str(d.get("connected_eero_name") or "").strip().lower() == key_low
+                    or (node_id and str(d.get("connected_eero_id") or "").strip().lower() == node_id.lower())
+                )
                 for d in enriched_devices or []
             )
             is_echo_device_online = bool(
@@ -1573,6 +1624,8 @@ class BackgroundPoller:
 
             if has_connected_clients or is_echo_device_online:
                 spec["status"] = "online"
+            elif spec.get("status") == "online" and (echo_dev is None or echo_dev.get("connected") is not False):
+                spec["status"] = "online"
             elif spec.get("status") != "online":
                 spec["status"] = "offline"
 
@@ -1582,7 +1635,7 @@ class BackgroundPoller:
                 "url": f"/2.2/eeros/{node_id}",
                 "name": spec["name"],
                 "location": spec["name"],
-                "model": spec["model"] or "Amazon Echo (eero Built-in)",
+                "model": node_model,
                 "ip": node_ip,
                 "mac_address": node_mac,
                 "status": spec["status"],
@@ -1593,7 +1646,13 @@ class BackgroundPoller:
                 "backhaul_type": "eero Built-in (Wi-Fi)",
                 "mesh_quality_bars": 4 if spec["status"] == "online" else 0,
                 "os_version": "eero Built-in",
-                "connected_clients_count": sum(1 for d in enriched_devices or [] if d.get("connected") and str(d.get("connected_eero_name") or "").strip().lower() == key_low),
+                "connected_clients_count": sum(
+                    1 for d in enriched_devices or []
+                    if d.get("connected") and (
+                        str(d.get("connected_eero_name") or "").strip().lower() == key_low
+                        or (node_id and str(d.get("connected_eero_id") or "").strip().lower() == node_id.lower())
+                    )
+                ),
                 "ethernet_ports": [],
             }
             result_eeros.append(virtual_node)

@@ -268,7 +268,15 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
         ]
 
         known_specs = {}
-        result = BackgroundPoller.reconcile_echo_extender_nodes(base_eeros, devices, known_specs=known_specs)
+        network_details = {
+            "proxied_nodes": [
+                {"name": "Harmony Echo Dot", "mac": "aa:bb:cc:dd:ee:ff"},
+                {"name": "Miami Echo", "mac": "aa:bb:cc:dd:ee:11"},
+            ]
+        }
+        result = BackgroundPoller.reconcile_echo_extender_nodes(
+            base_eeros, devices, network_details=network_details, known_specs=known_specs
+        )
         result_names = [n["name"] for n in result]
 
         self.assertIn("Bedroom Echo Spot", result_names)
