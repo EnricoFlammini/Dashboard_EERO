@@ -762,6 +762,7 @@
     "contrib_willfulmer": "Kody QR dla sieci Wi-Fi Open Guest (wydanie nr 63), przejrzystość dostarczania Daily Digest (wydanie nr 64) oraz informacje zwrotne dotyczące pierwszego zobaczenia urządzenia/dostosowania stołu (wydanie nr 60)",
     "contrib_jonmacdonald": "Rywalizacja o blokadę SQLite i rozwiązywanie współbieżności z limitem czasu zajętości wynoszącym 60 s (wydanie nr 62) i uzgadnianie bramy przełączania (wydanie nr 26)",
     "contrib_todddube": "Oficjalny przewodnik wdrażania rozwiązania Synology DSM 7.2+ Container Manager i szablon tworzenia (PR nr 66) oraz pasek filtrów Bandwidth Hogs / lokalizacja ustawień administratora i poprawka modułu pobierającego kategorie (PR nr 67)",
+    "contrib_securityjon": "Weryfikacja uprawnień sesji hasła aplikacji Pi-hole v6 i wykrywanie trybu tylko do odczytu (Issue #132), zachowanie niezarządzanych niestandardowych lokalnych rekordów DNS podczas synchronizacji (Issue #134) oraz rozwiązywanie pseudonimów urządzeń w Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Pozdrowienia dla @BaRaD5 (buforowanie zapytań DNS), @phutmacher (wybór bramy podstawowej), @txrangersxx (program rozpoznawania identyfikatorów sieci), @nextlevel2023 (UX logowania do Amazon) i u/djbills (izolacja tagów Docker).",
     "close": "Zamknij",
     "crafted_prefix": "Wykonane z ❤️ przez",

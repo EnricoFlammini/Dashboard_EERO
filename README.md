@@ -463,6 +463,7 @@ A heartfelt thank you to the open-source contributors and community members whos
 * **[@tekzer0](https://github.com/tekzer0):** Robust account network discovery, `EERO_NETWORK_ID` env fallback, and zero-network resilience (#69).
 * **[@mrtekkid](https://github.com/mrtekkid):** Multi-tier selective data compaction, timestamp expression indexes, and universal bitrate parsing (#73).
 * **[@XprofQ](https://github.com/XprofQ):** Identification of WAN bufferbloat reporting bug and duration unit localization suggestions (#71).
+* **[@SecurityJon](https://github.com/SecurityJon):** Pi-hole v6 App Password session permission verification & read-only detection (#132), unmanaged custom local DNS record preservation during sync (#134), and custom device nickname resolution in Top Bandwidth Hogs (#133).
 * **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
 
 ---
@@ -818,6 +819,7 @@ Un ringraziamento sincero a tutti gli utenti e contributori open-source che con 
 * **[@tekzer0](https://github.com/tekzer0):** Rilevamento account multi-rete eero resiliente, fallback su variabile d'ambiente `EERO_NETWORK_ID` e guida visiva a zero-reti (#69).
 * **[@mrtekkid](https://github.com/mrtekkid):** Compattazione selettiva multi-tier per abbattimento del consumo CPU del Retention Worker, indici B-tree su espressioni temporali e parsing universale dei bitrate con unità di misura (#73).
 * **[@XprofQ](https://github.com/XprofQ):** Segnalazione bug di visualizzazione Bufferbloat WAN e proposta di standardizzazione delle abbreviazioni di durata temporale (#71).
+* **[@SecurityJon](https://github.com/SecurityJon):** Rilevamento permessi di sessione e gestione modalità read-only con App Password su Pi-hole v6 (#132), preservazione integrale dei record DNS locali personalizzati durante il sync (#134) e risoluzione accurata dei nickname/nomi personalizzati nella panoramica Top Bandwidth Hogs (#133).
 * **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---

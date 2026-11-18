@@ -762,6 +762,7 @@
     "contrib_willfulmer": "Códigos QR Wi-Fi abertos para convidados (edição nº 63), transparência de entrega do Daily Digest (edição nº 64) e feedback de personalização da mesa/visto pela primeira vez no dispositivo (edição nº 60)",
     "contrib_jonmacdonald": "Contenção de bloqueio SQLite e resolução de simultaneidade com tempo limite de ocupação de 60 anos (Problema nº 62) e reconciliação de gateway de switch (Problema nº 26)",
     "contrib_todddube": "Guia oficial de implantação e modelo de composição do Synology DSM 7.2+ Container Manager (PR # 66) e barra de filtro Bandwidth Hogs / localização de configuração de administrador e correção de getter de categoria (PR # 67)",
+    "contrib_securityjon": "Verificação de permissões de sessão de senha de aplicativo no Pi-hole v6 e detecção de somente leitura (Issue #132), preservação de registros DNS locais personalizados durante a sincronização (Issue #134) e resolução de apelidos de dispositivos em Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Grite para @BaRaD5 (cache de consulta DNS), @phutmacher (eleição de gateway primário), @txrangersxx (resolvedor de ID de rede), @nextlevel2023 (UX de login da Amazon) e u/djbills (isolamento de tag Docker).",
     "close": "Fechar",
     "crafted_prefix": "Feito com ❤️ por",

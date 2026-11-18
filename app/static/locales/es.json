@@ -762,6 +762,7 @@
     "contrib_willfulmer": "Códigos QR de Open Guest Wi-Fi (Problema n.° 63), transparencia de entrega del resumen diario (Problema n.° 64) y comentarios sobre la personalización de la tabla/primera vista del dispositivo (Problema n.° 60)",
     "contrib_jonmacdonald": "Contención de bloqueo de SQLite y resolución de simultaneidad con tiempo de espera de actividad de 60 segundos (Problema n.° 62) y reconciliación de la puerta de enlace del conmutador (Problema n.° 26)",
     "contrib_todddube": "Guía oficial de implementación y plantilla de redacción de Synology DSM 7.2+ Container Manager (PR n.° 66) y barra de filtro Bandwidth Hogs/localización de configuración de administrador y corrección del captador de categorías (PR n.° 67)",
+    "contrib_securityjon": "Verificación de permisos de sesión de Contraseña de Aplicación en Pi-hole v6 y detección de solo lectura (Issue #132), preservación de registros DNS locales personalizados durante la sincronización (Issue #134) y resolución de apodos de dispositivos en Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Un saludo a @BaRaD5 (almacenamiento en caché de consultas DNS), @phutmacher (elección de puerta de enlace principal), @txrangersxx (resolución de ID de red), @nextlevel2023 (UX de inicio de sesión de Amazon) y u/djbills (aislamiento de etiquetas Docker).",
     "close": "Cerrar",
     "crafted_prefix": "Elaborado con ❤️ por",

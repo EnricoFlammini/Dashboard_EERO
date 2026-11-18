@@ -4,6 +4,23 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0 Build 4] - 2026-11-18
+
+### Preservazione Record DNS Locali Personalizzati su Pi-hole & Risoluzione Nomi Top Bandwidth Hogs (Issue #134, #133 - @SecurityJon)
+* **Preservazione Integrale dei Record DNS Locali Personalizzati su Pi-hole (`dns_manager.py` - Issue #134):**
+  * Rimosso il controllo inverso IP-to-hostname (`active_ip_to_host`) nelle procedure di sincronizzazione sia per Pi-hole v6 che per Pi-hole v5 legacy.
+  * La rimozione automatica dei record obsoleti (`prune_stale_ips`) ora opera rigorosamente con criterio di allowlist: vengono aggiornati o potati unicamente i record i cui domini appartengono agli apparati gestiti dalla dashboard e il cui indirizzo IP è effettivamente variato.
+  * Qualsiasi record DNS locale, alias o CNAME configurato manualmente su Pi-hole (es. `plex.home`, `vault.home` puntanti all'IP di un server o NAS sulla LAN) viene preservato integralmente e mai cancellato o sovrascritto.
+  * Aggiunti test di regressione dedicati (`test_issue_134_pihole_unmanaged.py`) che validano la conservazione di tutti i record locali non gestiti durante la sincronizzazione batch REST (`PATCH /api/config`) e fallback `PUT/DELETE`.
+* **Risoluzione Nomi Dispositivi e Nickname nella Panoramica Top Bandwidth Hogs (`network.py`, `db.py` - Issue #133):**
+  * Nelle query aggregate (`GROUP BY mac_address`) sulle tabelle storiche `device_usage_history` e `device_usage_hourly`, introdotta una `LEFT JOIN` con `device_metadata` e la clausola `COALESCE(m.custom_name, h.hostname, h.mac_address)`, impedendo a SQLite di selezionare arbitrariamente l'identificativo MAC grezzo del primo campionamento.
+  * L'endpoint `/api/network/top-hogs` ora arricchisce proattivamente ogni elemento restituito con la cache in tempo reale del `background_poller` (`nickname`, `custom_name`, `hostname`) e con le annotazioni persistenti di `device_metadata`, allineando la scheda panoramica al modale di dettaglio dispositivo.
+  * Nella registrazione dei nuovi campioni di telemetria (`record_device_usage_samples`), invertito l'ordine di priorità per favorire `custom_name` e il `nickname` eero rispetto all'hostname DHCP di base.
+  * Supportato il parametro `hours` in `get_top_bandwidth_hogs` rimuovendo il vecchio stub non implementato.
+  * Aggiunti test di regressione dedicati (`test_issue_133_top_hogs_names.py`).
+* **Riconoscimento & Ringraziamenti Speciali (@SecurityJon):**
+  * Inserito **@SecurityJon** nella *Community Hall of Fame & Special Thanks* in `README.md` (sezioni IT ed EN), nella Knowledge Base di progetto e nel modale in-app *About & Crediti* della Dashboard in tutte le 9 lingue europee.
+
 ## [1.7.0 Build 3] - 2026-11-17
 
 ### Rilevamento Sessioni Read-Only & Supporto App Password Pi-hole v6 (Issue #132 - @SecurityJon)

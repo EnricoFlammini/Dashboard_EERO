@@ -762,6 +762,7 @@
     "contrib_willfulmer": "QR Code Wi-Fi per reti ospiti aperte (Issue #63), trasparenza Riepilogo giornaliero (Issue #64) e feedback su primo accesso/personalizzazione tabella (Issue #60)",
     "contrib_jonmacdonald": "Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (Issue #62) & riconciliazione switch gateway (Issue #26)",
     "contrib_todddube": "Guida ufficiale e template Docker Compose per Synology DSM 7.2+ Container Manager (PR #66) e internazionalizzazione (i18n) barra filtri Bandwidth Hogs e setup admin (PR #67)",
+    "contrib_securityjon": "Rilevamento permessi di sessione e gestione read-only con App Password su Pi-hole v6 (Issue #132), preservazione integrale record DNS locali personalizzati durante il sync (Issue #134) e risoluzione nickname in Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Grazie a @BaRaD5 (cache query DNS), @phutmacher (elezione primary gateway), @txrangersxx (network ID resolver), @nextlevel2023 (feedback login Amazon) e u/djbills (Docker tag isolation).",
     "close": "Chiudi",
     "crafted_prefix": "Realizzato con ❤️ da",

@@ -762,6 +762,7 @@
     "contrib_willfulmer": "Öffnen Sie Gast-WLAN-QR-Codes (Problem Nr. 63), Daily Digest-Liefertransparenz (Problem Nr. 64) und Feedback zum ersten Mal gesehenen Gerät/Tabellenanpassung (Problem Nr. 60)",
     "contrib_jonmacdonald": "SQLite-Sperrenkonflikt und Parallelitätsauflösung mit 60-Sekunden-Zeitüberschreitung (Problem Nr. 62) und Switch-Gateway-Abstimmung (Problem Nr. 26)",
     "contrib_todddube": "Offizielle Synology DSM 7.2+ Container Manager-Bereitstellungsanleitung und Erstellungsvorlage (PR Nr. 66) und Bandwidth Hogs-Filterleiste/Administrator-Setup-Lokalisierung und Kategorie-Getter-Korrektur (PR Nr. 67)",
+    "contrib_securityjon": "Pi-hole v6 App-Passwort-Sitzungsberechtigungsprüfung & Nur-Lese-Erkennung (Issue #132), Erhalt nicht verwalteter lokaler benutzerdefinierter DNS-Einträge während der Synchronisierung (Issue #134) und Auflösung von Gerätenicknames in Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Grüße an @BaRaD5 (DNS-Abfrage-Caching), @phutmacher (Wahl des primären Gateways), @txrangersxx (Netzwerk-ID-Resolver), @nextlevel2023 (Amazon-Login-UX) und u/djbills (Docker-Tag-Isolierung).",
     "close": "Schließen",
     "crafted_prefix": "Hergestellt mit ❤️ von",

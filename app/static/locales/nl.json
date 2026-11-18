@@ -762,6 +762,7 @@
     "contrib_willfulmer": "Open QR-codes voor Wi-Fi voor gasten (uitgave #63), transparantie van de dagelijkse samenvatting (uitgave #64) en feedback over het eerst gezien apparaat/tafelaanpassing (uitgave #60)",
     "contrib_jonmacdonald": "SQLite-vergrendelingsconflicten en gelijktijdigheidsoplossing met time-out voor bezet gebruik (probleem nr. 62) en afstemming van switchgateway (probleem nr. 26)",
     "contrib_todddube": "Officiële Synology DSM 7.2+ Container Manager-implementatiehandleiding en opstelsjabloon (PR #66) en Bandwidth Hogs-filterbalk / lokalisatie van beheerdersinstellingen en oplossing voor categoriegetter (PR #67)",
+    "contrib_securityjon": "Pi-hole v6 app-wachtwoord sessie-machtigingsverificatie & alleen-lezen detectie (Issue #132), behoud van niet-beheerde aangepaste lokale DNS-records tijdens synchronisatie (Issue #134) en resolutie van apparaat-bijnamen in Top Bandwidth Hogs (Issue #133)",
     "contrib_bug_hunters_desc": "Shoutout naar @BaRaD5 (caching van DNS-query's), @phutmacher (verkiezing van de primaire gateway), @txrangersxx (netwerk-ID-resolver), @nextlevel2023 (Amazon login UX) en u/djbills (Docker-tagisolatie).",
     "close": "Sluit",
     "crafted_prefix": "Gemaakt met ❤️ door",
