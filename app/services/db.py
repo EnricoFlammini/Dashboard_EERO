@@ -15,6 +15,28 @@ from app.i18n import LEGACY_FIELD_LANGUAGES, localized_fields, tr
 logger = logging.getLogger(__name__)
 
 
+# A counter decrease is a genuine reset (reconnect/reboot) only when the new
+# value drops below this fraction of the high-water mark. Smaller dips are
+# stale/jitter samples from the eero API and must not add the full lifetime
+# counter to the totals. See https://github.com/EnricoFlammini/Dashboard_EERO/issues/136
+COUNTER_RESET_RATIO = 0.10
+
+
+def counter_delta(curr: float, hwm: float) -> tuple[float, float]:
+    """Delta for one step of a monotonically increasing counter.
+
+    Returns ``(delta, new_hwm)``. A rise above the high-water mark adds the
+    growth; a drop below ``COUNTER_RESET_RATIO`` of the mark is a genuine
+    reset and adds the new counter value; anything in between is jitter and
+    adds nothing while the high-water mark is kept.
+    """
+    if curr >= hwm:
+        return curr - hwm, curr
+    if hwm > 0 and curr < hwm * COUNTER_RESET_RATIO:
+        return curr, curr
+    return 0.0, hwm
+
+
 def _anomaly_description_map(row: Dict[str, Any]) -> Dict[str, str]:
     """Returns the {lang: description} map of an anomaly payload or SQLite row.
 
@@ -1752,34 +1774,31 @@ class DBService:
                 sim_time += step_delta
             points = base_points
 
-        # Calcolo aggregati delta totali per l'intero periodo gestendo eventuali reset/standby
+        # Calcolo aggregati delta totali per l'intero periodo gestendo eventuali reset/standby.
+        # Un calo del contatore conta come reset solo se scende sotto il 10% del
+        # massimo visto finora, altrimenti e' un campione stale/jitter e viene ignorato
+        # (issue #136: un piccolo calo sommava l'intero contatore lifetime).
         delta_rx = 0.0
         delta_tx = 0.0
+        rx_hwm = float(points[0].get("rx_bytes") or 0.0) if points else 0.0
+        tx_hwm = float(points[0].get("tx_bytes") or 0.0) if points else 0.0
         for i in range(1, len(points)):
-            p_prev = points[i - 1]
             p_curr = points[i]
-            rx_prev = float(p_prev.get("rx_bytes") or 0.0)
             rx_curr = float(p_curr.get("rx_bytes") or 0.0)
-            tx_prev = float(p_prev.get("tx_bytes") or 0.0)
             tx_curr = float(p_curr.get("tx_bytes") or 0.0)
 
-            if rx_curr >= rx_prev:
-                delta_rx += (rx_curr - rx_prev)
-            else:
-                # Reset rilevato (es. standby del PC, disconnessione o cambio antenna eero)
-                delta_rx += rx_curr
-
-            if tx_curr >= tx_prev:
-                delta_tx += (tx_curr - tx_prev)
-            else:
-                delta_tx += tx_curr
+            d_rx, rx_hwm = counter_delta(rx_curr, rx_hwm)
+            delta_rx += d_rx
+            d_tx, tx_hwm = counter_delta(tx_curr, tx_hwm)
+            delta_tx += d_tx
 
         total_usage_bytes = delta_rx + delta_tx
-        last_p = points[-1]
 
-        rx_val = delta_rx if delta_rx > 0 else float(last_p.get("rx_bytes") or 0.0)
-        tx_val = delta_tx if delta_tx > 0 else float(last_p.get("tx_bytes") or 0.0)
-        tot_val = total_usage_bytes if total_usage_bytes > 0 else (rx_val + tx_val)
+        # Nessun fallback al contatore lifetime quando il delta e' 0: un
+        # contatore fermo significa 0 byte trasferiti, non l'intero lifetime.
+        rx_val = delta_rx
+        tx_val = delta_tx
+        tot_val = total_usage_bytes
 
         # Parsing temporale dei campioni
         parsed_points = []
@@ -2008,11 +2027,16 @@ class DBService:
             elif has_deep_history and min_rx > 0 and m_rx >= min_rx:
                 d_rx = m_rx - min_rx
                 d_tx = m_tx - min_tx
-                final_rx = d_rx if d_rx > 0 else m_rx
-                final_tx = d_tx if d_tx > 0 else m_tx
+                # Nessun fallback al contatore lifetime quando il delta e' 0:
+                # un contatore fermo significa 0 byte trasferiti (issue #136).
+                final_rx = d_rx
+                final_tx = d_tx
             else:
-                final_rx = m_rx
-                final_tx = m_tx
+                # Stesso criterio del ramo con storico profondo: mai riportare
+                # il contatore lifetime come uso del periodo (issue #136).
+                # Con un solo campione il delta e' 0 (nessun uso misurato).
+                final_rx = m_rx - min_rx
+                final_tx = m_tx - min_tx
 
             resolved_name = r["custom_name"] or r["hostname"] or r["mac_address"]
             results.append({
@@ -2123,8 +2147,16 @@ class DBService:
                     p_rx = float(prev_sample["rx_bytes"] or 0.0)
                     first_tx = float(points[0]["tx_bytes"] or 0.0)
                     p_tx = float(prev_sample["tx_bytes"] or 0.0)
-                    delta_rx += (first_rx - p_rx) if first_rx >= p_rx else first_rx
-                    delta_tx += (first_tx - p_tx) if first_tx >= p_tx else first_tx
+                    # Stessa regola high-water-mark del resto del modulo
+                    # (issue #136): un piccolo calo non e' un reset.
+                    d_rx, rx_hwm = counter_delta(first_rx, p_rx)
+                    delta_rx += d_rx
+                    d_tx, tx_hwm = counter_delta(first_tx, p_tx)
+                    delta_tx += d_tx
+                else:
+                    # Nessun campione precedente: il primo punto dell'ora e' la base.
+                    rx_hwm = float(points[0]["rx_bytes"] or 0.0)
+                    tx_hwm = float(points[0]["tx_bytes"] or 0.0)
 
                 for i, pt in enumerate(points):
                     last_net = pt["network_id"] or last_net
@@ -2135,12 +2167,12 @@ class DBService:
                     up_speeds.append(u_mb)
 
                     if i > 0:
-                        rx_prev = float(points[i-1]["rx_bytes"] or 0.0)
                         rx_curr = float(pt["rx_bytes"] or 0.0)
-                        tx_prev = float(points[i-1]["tx_bytes"] or 0.0)
                         tx_curr = float(pt["tx_bytes"] or 0.0)
-                        delta_rx += (rx_curr - rx_prev) if rx_curr >= rx_prev else rx_curr
-                        delta_tx += (tx_curr - tx_prev) if tx_curr >= tx_prev else tx_curr
+                        d_rx, rx_hwm = counter_delta(rx_curr, rx_hwm)
+                        delta_rx += d_rx
+                        d_tx, tx_hwm = counter_delta(tx_curr, tx_hwm)
+                        delta_tx += d_tx
 
                 avg_down = round(sum(down_speeds) / len(down_speeds), 2) if down_speeds else 0.0
                 max_down = round(max(down_speeds), 2) if down_speeds else 0.0
