@@ -5,10 +5,14 @@ Verifies that:
    are promoted to virtual mesh extender nodes.
 2. Regular Echo smart speakers on the LAN (not enabled as Built-in nodes) remain normal client devices and are NOT added to the mesh.
 3. Enabled Echo Built-in nodes are matched against LAN client devices using multi-criteria lookup (MAC, ID, exact/clean/token name),
-   accurately inheriting their real LAN IP and maintaining Online status (green indicator).
+   accurately inheriting their real LAN IP and maintaining Online status (green indicator), even when eero cloud reports
+   connected: False on the Echo station record or when 0 clients are currently connected.
+4. Extenders reporting enabled: False (or standby) in proxied_nodes are not dropped.
+5. Normalizer and poller alignment mark Echo extender stations as connected=True in enriched_devices.
 """
 import unittest
 from app.services.poller import BackgroundPoller
+from app.services.eero_client import EeroClient
 
 
 class TestIssue135EchoNodes(unittest.TestCase):
@@ -20,7 +24,10 @@ class TestIssue135EchoNodes(unittest.TestCase):
             {"id": "node_office", "name": "Office", "is_gateway": False, "ip": "192.168.4.21", "status": "online", "model": "eero Pro 7"},
         ]
 
-        # 2. Solo 3 Echo abilitati come eero Built-in nel cloud eero (dettagli di rete proxied_nodes)
+        # 2. Solo 3 Echo abilitati come eero Built-in nel cloud eero:
+        # - Oasis Echo Spot: 1 client connesso
+        # - Miami Echo: 0 client connessi, connected: False
+        # - Harmony Echo Dot: enabled: False (standby / low-power), connected: False
         network_details = {
             "proxied_nodes": [
                 {
@@ -28,7 +35,7 @@ class TestIssue135EchoNodes(unittest.TestCase):
                     "id": "echo_oasis_id",
                     "mac": "11:22:33:44:55:01",
                     "status": "active",
-                    "connected": False,  # eero cloud proxied record can be connected: False
+                    "connected": False,
                 },
                 {
                     "name": "Miami Echo",
@@ -42,15 +49,27 @@ class TestIssue135EchoNodes(unittest.TestCase):
                     "id": "echo_harmony_id",
                     "mac": "11:22:33:44:55:03",
                     "status": "online",
+                    "enabled": False,  # Standby / low-power in cloud API
                     "connected": False,
                 },
             ]
         }
 
-        # 3. Dispositivi sulla LAN: 6 Echo totali presenti in casa
-        # - 3 abilitati come Built-in
+        # 3. Dispositivi sulla LAN:
+        # - 3 Echo Built-in (con telemetria Wi-Fi verso i nodi fisici, anche se connected: False dal cloud)
         # - 3 normali smart speaker Alexa NON abilitati come nodi eero (Office Echo, Spectre Echo, Echo 4th Gen)
+        # - 1 client connesso a Oasis Echo Spot
         devices = [
+            # Client connesso a Oasis
+            {
+                "id": "client_phone",
+                "mac": "99:88:77:66:55:44",
+                "hostname": "Mark iPhone",
+                "ip": "192.168.4.99",
+                "connected": True,
+                "connected_eero_name": "Oasis Echo Spot",
+                "connected_eero_id": "echo_oasis_id",
+            },
             # Echo 1 (abilitato): Oasis - notare il nome parziale nel DHCP/nickname ("Oasis")
             {
                 "id": "dev_oasis",
@@ -60,26 +79,35 @@ class TestIssue135EchoNodes(unittest.TestCase):
                 "connected": True,
                 "model": "Echo Spot",
                 "manufacturer": "Amazon Technologies Inc.",
+                "signal_rssi": -55,
+                "connected_eero_name": "Studio",
             },
-            # Echo 2 (abilitato): Miami - match per MAC e nome
+            # Echo 2 (abilitato): Miami - 0 client connessi, connected: False da API eero
             {
                 "id": "dev_miami",
                 "mac": "11:22:33:44:55:02",
                 "hostname": "Miami Echo",
                 "ip": "192.168.4.51",
-                "connected": True,
+                "connected": False,  # Simula payload eero con connected: False
                 "model": "Echo",
                 "manufacturer": "Amazon",
+                "signal_rssi": -65,
+                "connected_eero_name": "Ironworks",
+                "channel": 36,
             },
-            # Echo 3 (abilitato): Harmony
+            # Echo 3 (abilitato): Harmony - enabled: False in proxied_nodes, connected: False in devices, IP assente
             {
                 "id": "dev_harmony",
                 "mac": "11:22:33:44:55:03",
                 "hostname": "Harmony Echo Dot",
-                "ip": "192.168.4.52",
-                "connected": True,
+                "ip": None,
+                "connected": False,
                 "model": "Echo Dot (5th Gen)",
-                "manufacturer": "Amazon",
+                "manufacturer": "Amazon Technologies Inc.",
+                "signal_rssi": -73,
+                "connected_eero_name": "Ironworks",
+                "channel": 40,
+                "wireless": True,
             },
             # Echo 4 (NON abilitato): Spectre Echo
             {
@@ -133,19 +161,47 @@ class TestIssue135EchoNodes(unittest.TestCase):
         self.assertNotIn("Office Echo", result_names)
         self.assertNotIn("Echo (4th Gen) 2", result_names)
 
-        # Verifica 4: I 3 nodi Built-in devono essere ONLINE e avere il loro IP LAN reale
+        # Verifica 4: Tutti e 3 i nodi Built-in DEVONO essere ONLINE (green indicator)
         oasis_node = next(n for n in result if n["name"] == "Oasis Echo Spot")
         self.assertEqual(oasis_node["status"], "online")
         self.assertEqual(oasis_node["ip"], "192.168.4.50")
         self.assertEqual(oasis_node["mac_address"], "11:22:33:44:55:01")
+        self.assertEqual(oasis_node["connected_clients_count"], 1)
 
         miami_node = next(n for n in result if n["name"] == "Miami Echo")
         self.assertEqual(miami_node["status"], "online")
         self.assertEqual(miami_node["ip"], "192.168.4.51")
+        self.assertEqual(miami_node["connected_clients_count"], 0)
 
         harmony_node = next(n for n in result if n["name"] == "Harmony Echo Dot")
         self.assertEqual(harmony_node["status"], "online")
-        self.assertEqual(harmony_node["ip"], "192.168.4.52")
+        self.assertEqual(harmony_node["mac_address"], "11:22:33:44:55:03")
+
+    def test_device_normalizer_echo_wifi_connected_fallback(self):
+        """Verifica che _normalize_device imposti connected=True per Echo con telemetria Wi-Fi attiva."""
+        raw_dev = {
+            "id": "dev_echo_test",
+            "nickname": "Harmony Echo Dot",
+            "mac": "40:d7:2e:01:02:03",
+            "model": "Echo Dot (5th Gen)",
+            "connected": False,  # eero cloud invia False
+            "status": "disconnected",
+            "connectivity": {
+                "signal": "-73 dBm",
+                "rx_bitrate": "6 Mbps",
+                "tx_bitrate": "6 Mbps",
+                "frequency": "5 GHz",
+                "channel": 40,
+            },
+            "source": {
+                "location": "Ironworks",
+            },
+        }
+        client = EeroClient()
+        norm = client._normalize_device(raw_dev)
+        self.assertTrue(norm["connected"], "Echo device with live Wi-Fi signal and source node should be marked connected")
+        self.assertEqual(norm["connected_eero_name"], "Ironworks")
+        self.assertEqual(norm["signal_rssi"], -73)
 
 
 if __name__ == "__main__":

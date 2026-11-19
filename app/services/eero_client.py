@@ -1882,6 +1882,21 @@ class EeroClient:
                 or dev.get("isProxyNode")
             )
 
+            # Se il dispositivo è un Echo o nodo extender Built-in con telemetria Wi-Fi attiva,
+            # assicura lo stato 'connected' anche se il cloud eero segnala connected: false nel payload (Issue #135)
+            if not dev.get("connected"):
+                is_echo_or_proxied = (
+                    dev.get("is_proxied_node")
+                    or dev.get("connected_to_proxied_node")
+                    or "echo" in str(dev.get("model") or "").lower()
+                    or "echo" in str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").lower()
+                )
+                if is_echo_or_proxied and (
+                    (dev.get("signal_rssi") is not None and dev.get("connected_eero_name"))
+                    or (dev.get("channel") and dev.get("connected_eero_name"))
+                ):
+                    dev["connected"] = True
+
             # Usage / Throughput rates (STRICT REAL DATA ONLY)
             usage = dev.get("usage")
             down_rate = float(dev.get("download_rate_mbps") or dev.get("down_mbps") or dev.get("down_rate") or 0.0)

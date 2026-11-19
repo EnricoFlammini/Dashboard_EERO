@@ -930,24 +930,29 @@ class BackgroundPoller:
             eeros = self.reconcile_echo_extender_nodes(eeros, enriched_devices, network_details, self._known_echo_specs)
 
             # Allineamento stato dispositivi Echo online (Issue #96, #135):
-            # Se il dispositivo corrisponde a un nodo Echo Built-in online, impostalo come connesso e segnalo come nodo Echo
-            echo_node_names = {
-                str(n.get("name") or n.get("location") or "").strip().lower()
+            # Se il dispositivo corrisponde a un nodo Echo Built-in online o con telemetria attiva,
+            # impostalo come connesso, contrassegnalo come nodo Echo e sincronizza l'IP se mancante.
+            echo_nodes_by_name = {
+                str(n.get("name") or n.get("location") or "").strip().lower(): n
                 for n in eeros
-                if n.get("is_echo_node") and n.get("status") in ("online", "active")
+                if n.get("is_echo_node")
             }
-            echo_node_macs = {
-                str(n.get("mac_address") or n.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
+            echo_nodes_by_mac = {
+                str(n.get("mac_address") or n.get("mac") or "").replace(":", "").replace("-", "").strip().lower(): n
                 for n in eeros
                 if n.get("is_echo_node") and (n.get("mac_address") or n.get("mac"))
             }
-            if echo_node_names or echo_node_macs:
+            if echo_nodes_by_name or echo_nodes_by_mac:
                 for dev_copy in enriched_devices:
                     d_name = str(dev_copy.get("hostname") or dev_copy.get("nickname") or dev_copy.get("name") or "").strip().lower()
                     d_mac = str(dev_copy.get("mac") or "").replace(":", "").replace("-", "").strip().lower()
-                    if (d_mac and d_mac in echo_node_macs) or (d_name and d_name in echo_node_names):
-                        dev_copy["connected"] = True
+                    matched_node = echo_nodes_by_mac.get(d_mac) or echo_nodes_by_name.get(d_name)
+                    if matched_node:
                         dev_copy["is_echo_node"] = True
+                        if matched_node.get("status") in ("online", "active") or dev_copy.get("signal_rssi") is not None:
+                            dev_copy["connected"] = True
+                        if not dev_copy.get("ip") and matched_node.get("ip"):
+                            dev_copy["ip"] = matched_node["ip"]
 
             # 2.5 Risoluzione robusta dei nodi eero per ciascun dispositivo
             eero_by_key: Dict[str, Dict[str, Any]] = {}
@@ -1508,32 +1513,67 @@ class BackgroundPoller:
 
         # 1. Controlla `proxied_nodes` o metadati extender nei dettagli della rete (se esposti dall'API eero)
         if isinstance(network_details, dict):
-            proxied = (
-                network_details.get("proxied_nodes")
-                or network_details.get("amazon")
-                or network_details.get("for_amazon")
-                or network_details.get("extenders")
-            )
+            raw_sources = [
+                network_details.get("proxied_nodes"),
+                network_details.get("amazon"),
+                network_details.get("for_amazon"),
+                network_details.get("extenders"),
+                network_details.get("built_in"),
+                network_details.get("eero_builtin"),
+                network_details.get("amazon_echo"),
+            ]
             proxied_list = []
-            if isinstance(proxied, dict):
-                if proxied.get("enabled") is not False:
-                    proxied_list = proxied.get("devices") or proxied.get("nodes") or proxied.get("extenders") or []
-            elif isinstance(proxied, list):
-                proxied_list = proxied
+            for src in raw_sources:
+                if not src:
+                    continue
+                if isinstance(src, list):
+                    proxied_list.extend(src)
+                elif isinstance(src, dict):
+                    if src.get("name") or src.get("nickname") or src.get("mac") or src.get("id"):
+                        proxied_list.append(src)
+                    for subkey in ("devices", "nodes", "extenders", "proxied_nodes", "echo_devices", "list"):
+                        subval = src.get(subkey)
+                        if isinstance(subval, list):
+                            proxied_list.extend(subval)
+                        elif isinstance(subval, dict):
+                            proxied_list.append(subval)
+
             for p_node in proxied_list:
                 if not isinstance(p_node, dict):
                     continue
-                if p_node.get("enabled") is False:
-                    continue
-                p_name = str(p_node.get("nickname") or p_node.get("name") or p_node.get("location") or "").strip()
+                p_name = str(
+                    p_node.get("nickname")
+                    or p_node.get("name")
+                    or p_node.get("location")
+                    or p_node.get("display_name")
+                    or p_node.get("device_name")
+                    or p_node.get("hostname")
+                    or p_node.get("custom_name")
+                    or p_node.get("amazon_name")
+                    or p_node.get("label")
+                    or p_node.get("title")
+                    or ""
+                ).strip()
+                p_mac = str(p_node.get("mac") or p_node.get("mac_address") or p_node.get("wifi_mac") or "").replace(":", "").replace("-", "").strip().lower()
+                p_id = str(p_node.get("id") or p_node.get("serial") or "").strip().lower()
+
+                # Se il nome manca nel record del nodo proxy, prova a risolverlo dal dispositivo LAN corrispondente (Issue #135)
+                if not p_name:
+                    dev_match = None
+                    if p_mac and p_mac in dev_by_mac:
+                        dev_match = dev_by_mac[p_mac]
+                    elif p_id and p_id in dev_by_id:
+                        dev_match = dev_by_id[p_id]
+                    if dev_match:
+                        p_name = str(dev_match.get("nickname") or dev_match.get("hostname") or dev_match.get("name") or "").strip()
+
                 if not p_name or p_name.lower() in existing_names:
                     continue
+
                 p_status_raw = str(p_node.get("status") or p_node.get("state") or "").lower()
-                is_p_online = (
-                    p_status_raw in ("online", "active", "ready", "connected")
-                    or p_node.get("connected") is True
-                    or (p_node.get("connected") is None and p_node.get("enabled") is not False)
-                )
+                is_p_offline = p_status_raw in ("offline", "disconnected", "unreachable", "red")
+                is_p_online = not is_p_offline
+
                 virtual_echo_specs[p_name.lower()] = {
                     "name": p_name,
                     "id": str(p_node.get("id") or p_node.get("serial") or ""),
@@ -1541,6 +1581,7 @@ class BackgroundPoller:
                     "mac": str(p_node.get("mac") or p_node.get("mac_address") or p_node.get("wifi_mac") or ""),
                     "model": str(p_node.get("model") or "Amazon Echo (eero Built-in)"),
                     "status": "online" if is_p_online else "offline",
+                    "from_proxied_nodes": True,
                 }
 
         # 2. Controlla i client che puntano a un `connected_eero_name` non presente tra i nodi fisici eero
@@ -1604,10 +1645,10 @@ class BackgroundPoller:
             node_model = spec.get("model") or (str(echo_dev.get("model") or "") if echo_dev else "") or "Amazon Echo (eero Built-in)"
 
             # Determinazione robusta dello stato Online del nodo Echo (Issue #96, #135):
-            # Un nodo extender è online se:
+            # Un nodo extender Built-in è online se:
             # - ha almeno un client attualmente connesso ad esso; OPPURE
-            # - il dispositivo Echo stesso è presente in LAN con stato connesso o IP attivo; OPPURE
-            # - proviene da proxied_nodes ed è registrato/abilitato come attivo
+            # - il dispositivo fisico Echo ha connettività/telemetria Wi-Fi attiva verso la rete; OPPURE
+            # - proviene da proxied_nodes ed è registrato/abilitato senza stato esplicito offline
             has_connected_clients = any(
                 d.get("connected") and (
                     str(d.get("connected_eero_name") or "").strip().lower() == key_low
@@ -1615,19 +1656,26 @@ class BackgroundPoller:
                 )
                 for d in enriched_devices or []
             )
-            is_echo_device_online = bool(
+
+            # Controllo se il dispositivo fisico Echo ha telemetria o connettività Wi-Fi attiva
+            dev_has_active_wifi = bool(
                 echo_dev and (
                     echo_dev.get("connected") is True
-                    or (node_ip and str(echo_dev.get("status") or "").lower() not in ("offline", "disconnected"))
+                    or echo_dev.get("signal_rssi") is not None
+                    or echo_dev.get("connected_eero_name")
+                    or echo_dev.get("channel")
+                    or float(echo_dev.get("rx_bytes") or 0.0) > 0.0
+                    or (node_ip and str(echo_dev.get("status") or "").lower() not in ("offline", "disconnected", "unreachable"))
                 )
             )
 
-            if has_connected_clients or is_echo_device_online:
-                spec["status"] = "online"
-            elif spec.get("status") == "online" and (echo_dev is None or echo_dev.get("connected") is not False):
-                spec["status"] = "online"
-            elif spec.get("status") != "online":
-                spec["status"] = "offline"
+            is_echo_node_online = bool(
+                has_connected_clients
+                or dev_has_active_wifi
+                or (spec.get("from_proxied_nodes") and spec.get("status") != "offline")
+            )
+
+            spec["status"] = "online" if is_echo_node_online else "offline"
 
             virtual_node = {
                 "id": node_id,
