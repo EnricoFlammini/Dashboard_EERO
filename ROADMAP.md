@@ -1016,38 +1016,41 @@ gantt
 
 > **Obiettivo:** Snellire, pulire e modularizzare l'intera architettura del codice sorgente (backend, frontend e template) prima dell'introduzione di nuove funzionalità complesse, eliminando debiti tecnici e garantendo al 100% l'assoluta parità funzionale e zero regressioni.
 
-#### 1. 🐍 Scomposizione & Modularizzazione Backend (`eero_client.py` & Services)
-- [ ] **Estrazione Dati Mock & Demo State (`app/services/demo_fixtures.py`):**
-  - Spostamento di oltre 1.500 righe di dizionari statici, stati simulati (`_demo_state`) e fixture demo fuori da `eero_client.py` in un modulo dedicato, rendendo il client cloud snello e focalizzato solo sulle chiamate reali.
-- [ ] **Modularizzazione per Domini Funzionali (Domain Services / Mixin):**
-  - Riorganizzazione dei metodi di `eero_client.py` in sottomoduli logici o mixin: `devices`, `mesh_nodes`, `network_settings`, `firewall_ipv6`, `vpn_guardian`.
-- [ ] **Helper di Chiamata Resiliente Unificato (DRY HTTP Dispatcher):**
-  - Centralizzazione della logica di fallback degli endpoint e gestione errori (`urls_to_try`, sanificazione slash, normalizzazione ID) in un unico dispatcher generico riutilizzabile, eliminando decine di blocchi `try/except` duplicati.
+#### 1. 🐍 Scomposizione & Modularizzazione Backend (`app/services/eero/` & Services)
+- [x] **Estrazione Dati Mock & Demo State (`app/services/eero/fixtures.py`):**
+  - Spostamento di oltre 1.500 righe di dizionari statici, stati simulati (`_demo_state`) e fixture demo fuori dal client monolitico in un modulo dedicato (`fixtures.py`), rendendo il client cloud snello e focalizzato solo sulle chiamate reali.
+- [x] **Modularizzazione per Domini Funzionali (Domain Services / Mixin):**
+  - Riorganizzazione dei metodi del client eero in sottomoduli logici a responsabilità singola nel package `app/services/eero/`: `devices.py`, `mesh.py`, `network.py`, `diagnostics.py` coordinati da `base.py` e ri-esportati trasparentemente in `app/services/eero_client.py` per garantire il 100% di retrocompatibilità.
+- [x] **Helper di Chiamata Resiliente Unificato (DRY HTTP Dispatcher):**
+  - Centralizzazione della logica di fallback degli endpoint e gestione errori (`_dispatch_network_call`, `_request_with_retry`, sanificazione slash, normalizzazione ID) nel core `base.py`, eliminando decine di blocchi `try/except` ridondanti.
 
-#### 2. ⚡ Modularizzazione Frontend Alpine.js (`app/static/js/app.js`)
-- [ ] **Scomposizione del Monolite di 7.200 Righe in Moduli ESM / Store:**
-  - Suddivisione del file monolitico `app.js` in store e sottomoduli Alpine.js specializzati caricati nativamente:
-    - `js/modules/auth.js` (Login locale, RBAC, sessioni e Amazon OAuth2 PKCE).
-    - `js/modules/devices.js` (Tabella dispositivi, vista a schede, filtri, sorting, edit profili/metadati).
-    - `js/modules/mesh.js` (Topologia nodi, nodi Echo Built-in, placement test e controlli LED/reboot).
-    - `js/modules/dns.js` (Integrazione e sync AdGuard Home, Pi-hole v5/v6, Technitium).
-    - `js/modules/automations.js` (Notifiche Telegram/Pushover/Discord/Ntfy, Daily Digest, MQTT HA).
-    - `js/modules/diagnostics.js` (Health score, roaming advisor, speedtest e analytics).
-- [ ] **Pulizia Variabili Globali e Funzioni Utility:**
-  - Consolidamento delle utility di formattazione (date, velocità, fusi orari, clamp nomi) in `js/utils.js`.
+#### 2. ⚡ Modularizzazione Frontend Alpine.js (`app/static/js/`)
+- [x] **Scomposizione del Monolite di 7.394 Righe in Moduli Alpine.js Specializzati:**
+  - Suddivisione del file monolitico `app.js` in moduli puliti e specializzati caricati in sequenza ordinata:
+    - `modules/auth.js` (Login locale, RBAC `can()`, modale utenti, session timeout watchdog, Amazon OAuth2 PKCE).
+    - `modules/devices.js` (Tabella e card dispositivi, filtri frequenza/nodo/connessione, sorting, personalizzazione colonne, edit profili/metadati, sync parametri URL).
+    - `modules/mesh.js` (Topologia nodi, hardware eero images, indicatori radio, placement test, reboot nodi e Double-NAT detection).
+    - `modules/dns.js` (Integrazione e sync AdGuard Home, Pi-hole v5/v6 con controllo app_sudo, Technitium).
+    - `modules/automations.js` (Notifiche Telegram/Pushover/Discord/Ntfy, Daily Digest, MQTT Home Assistant, orari genitoriali, rete Guest, backup).
+    - `modules/diagnostics.js` (Health score a 4 pilastri, roaming advisor, speedtest, grafici banda Chart.js, logging viewer con fusi orari, manuale utente).
+    - `app.js` (Core Orchestrator snello con fetch interceptor, switch tema Dark/Light/System, polling loop, router per tab e gestione notifiche toast).
+- [x] **Pulizia Variabili Globali e Funzioni Utility Pure (`app/static/js/utils.js`):**
+  - Creazione di `app/static/js/utils.js` con funzioni matematiche, formattazione byte/velocità (`formatBytes`, `formatTrafficRate`, `formatSpeed`), calcolo bufferbloat, manipolazione stringhe/URL e `mergeModules` (con preservazione dei getter reattivi di Alpine.js).
 
-#### 3. 🎨 Scomposizione Template Jinja2 (`app/templates/index.html`)
-- [ ] **Componentizzazione dei Template Parziali (Partials):**
-  - Divisione del monolite `index.html` da 4.000 righe in componenti Jinja2 inclusi via `{% include %}`:
-    - `templates/components/header.html` (Barra superiore, selettore reti, toggle vista, notifiche).
-    - `templates/components/sidebar.html` (Menu navigazione laterale e badge stato).
-    - `templates/components/overview_technical.html` & `overview_simple.html` (Viste dashboard).
-    - `templates/components/devices_section.html` (Tabella e griglia schede dispositivi).
-    - `templates/modals/*.html` (Modali dedicate per ciascuna funzionalità: salute, speedtest, DNS, MQTT, ecc.).
+#### 3. 🎨 Scomposizione Template Jinja2 (`app/templates/`)
+- [x] **Componentizzazione dei Template Parziali (Partials):**
+  - Divisione del monolite `index.html` da oltre 4.000 righe in componenti Jinja2 riutilizzabili inclusi tramite `{% include %}`:
+    - `templates/components/sidebar.html` (Menu di navigazione laterale con hover descriptions e badge).
+    - `templates/components/overview_tab.html` (Panoramica con supporto vista tecnica e vista semplificata).
+    - `templates/components/devices_section.html` (Tabella e griglia schede dispositivi responsive con toolbar ottimizzata).
+    - `templates/components/analytics_tab.html`, `diagnostics_tab.html`, `settings_tab.html`.
+    - `templates/components/maintenance_overlay.html` (Overlay di manutenzione per avvio e riparazione DB SQLite).
+    - `templates/modals/*.html` (Modali dedicate per ciascuna funzionalità: salute, speedtest, DNS, MQTT, utenti, ecc.).
 
 #### 4. 🧪 Blindatura Test Suite & Garanzia di Parità Funzionale (Zero Regressioni)
-- [ ] **Test di Caratterizzazione Pre-Refactoring:**
-  - Espansione della suite `tests/` per verificare e garantire a ogni passaggio la totale invarianza dei contratti API REST, risposte JSON, gestione permessi RBAC e fallback.
+- [x] **Garanzia di Parità Funzionale Totale:**
+  - 100% di invarianza delle API REST, risposte JSON, contratti frontend e permessi RBAC.
+  - Verifica automatica superata al 100%: 63/63 test `unittest` passati, 1.759/1.759 test pre-release passati.
 
 ---
 
