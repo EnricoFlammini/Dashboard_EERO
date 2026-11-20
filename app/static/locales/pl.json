@@ -45,6 +45,25 @@
     "settings_export": "Eksport danych",
     "eero_news_short": "Informacje o wydaniu"
   },
+  "nav_hints": {
+    "dashboard": "Stan sieci w skrócie: połączenie internetowe, węzły mesh, wynik kondycji i urządzenia zużywające najwięcej pasma.",
+    "devices": "Wszystkie urządzenia w sieci: wyszukuj, filtruj, zmieniaj nazwy, wstrzymuj lub blokuj.",
+    "speedtest": "Uruchamiaj testy prędkości internetu i przeglądaj wcześniejsze wyniki, w tym opóźnienie pod obciążeniem.",
+    "guests": "Dane Wi-Fi dla gości i kod QR do udostępnienia odwiedzającym.",
+    "quality_analytics": "Jakość sygnału Wi-Fi, zasięg mesh i historia zużycia danych.",
+    "settings": "Sterowanie siecią, użytkownicy, kopia zapasowa, eksport danych i aktualizacje.",
+    "settings_controls": "Sterowanie siecią, dostęp dla gości, automatyzacje i harmonogramy.",
+    "settings_users": "Lokalne konta panelu i uprawnienia każdego z nich.",
+    "settings_backup": "Utwórz kopię zapasową lub przywróć ustawienia i historię panelu.",
+    "settings_export": "Pobierz dane urządzeń i zużycia w formacie CSV lub JSON.",
+    "settings_updates": "Sprawdź, czy jest nowsza wersja panelu, i zainstaluj ją.",
+    "eero_news": "Najnowsze informacje o wydaniach eeroOS i wiadomości ze społeczności.",
+    "health": "Co obniża wynik kondycji sieci i jak to naprawić.",
+    "changelog": "Co zmieniło się w każdej wersji tego panelu.",
+    "quick_help": "Przewodnik krok po kroku i pełna instrukcja obsługi.",
+    "about": "Wersja, podziękowania i linki do projektu.",
+    "theme_cycle": "Motyw: {current}. Kliknij, aby przełączyć na {next}."
+  },
   "guests_page": {
     "title": "Dostęp do Wi-Fi dla gości",
     "subtitle": "Zeskanuj kod QR smartfonem, aby natychmiast połączyć się z siecią dla gości",

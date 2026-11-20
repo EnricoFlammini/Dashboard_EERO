@@ -45,6 +45,25 @@
     "settings_export": "Esporta Dati",
     "eero_news_short": "Note di Rilascio"
   },
+  "nav_hints": {
+    "dashboard": "Lo stato della rete a colpo d'occhio: connessione internet, nodi mesh, punteggio di salute e dispositivi che consumano più banda.",
+    "devices": "Tutti i dispositivi della rete: cerca, filtra, rinomina, metti in pausa o blocca.",
+    "speedtest": "Esegui test di velocità internet e consulta i risultati passati, inclusa la latenza sotto carico.",
+    "guests": "Dettagli del Wi-Fi ospiti e un codice QR da condividere con i visitatori.",
+    "quality_analytics": "Qualità del segnale Wi-Fi, copertura mesh e storico del consumo dati.",
+    "settings": "Controlli di rete, utenti, backup, esportazione dati e aggiornamenti.",
+    "settings_controls": "Controlli di rete, accesso ospiti, automazioni e programmazioni.",
+    "settings_users": "Account locali della dashboard e cosa può fare ciascuno.",
+    "settings_backup": "Esegui il backup o ripristina impostazioni e storico della dashboard.",
+    "settings_export": "Scarica i dati di dispositivi e consumi in CSV o JSON.",
+    "settings_updates": "Verifica se esiste una versione più recente della dashboard e installala.",
+    "eero_news": "Ultime note di rilascio di eeroOS e novità dalla community.",
+    "health": "Cosa sta abbassando il punteggio di salute della rete e come risolverlo.",
+    "changelog": "Le novità di ogni versione di questa dashboard.",
+    "quick_help": "Guida passo passo e manuale utente completo.",
+    "about": "Versione, riconoscimenti e link del progetto.",
+    "theme_cycle": "Tema: {current}. Clicca per passare a {next}."
+  },
   "guests_page": {
     "title": "Accesso Wi-Fi Ospiti",
     "subtitle": "Inquadra il codice QR con lo smartphone per connetterti istantaneamente alla rete ospiti",

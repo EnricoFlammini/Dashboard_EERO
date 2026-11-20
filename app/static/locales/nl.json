@@ -45,6 +45,25 @@
     "settings_export": "Gegevensexport",
     "eero_news_short": "Releaseopmerkingen"
   },
+  "nav_hints": {
+    "dashboard": "De netwerkstatus in één oogopslag: internetverbinding, mesh-nodes, gezondheidsscore en de grootste bandbreedtegebruikers.",
+    "devices": "Alle apparaten in je netwerk: zoeken, filteren, hernoemen, pauzeren of blokkeren.",
+    "speedtest": "Voer internetsnelheidstests uit en bekijk eerdere resultaten, inclusief latentie onder belasting.",
+    "guests": "Gegevens van het gastnetwerk en een QR-code om met bezoekers te delen.",
+    "quality_analytics": "Wifi-signaalkwaliteit, mesh-dekking en geschiedenis van het dataverbruik.",
+    "settings": "Netwerkbediening, gebruikers, back-up, gegevensexport en updates.",
+    "settings_controls": "Netwerkbediening, gasttoegang, automatiseringen en schema's.",
+    "settings_users": "Lokale dashboardaccounts en wat elk account mag doen.",
+    "settings_backup": "Maak een back-up of herstel de instellingen en geschiedenis van het dashboard.",
+    "settings_export": "Download apparaat- en verbruiksgegevens als CSV of JSON.",
+    "settings_updates": "Zoek naar een nieuwere dashboardversie en installeer die.",
+    "eero_news": "Nieuwste release notes van eeroOS en community-updates.",
+    "health": "Wat je netwerkgezondheidsscore omlaag haalt, en hoe je het oplost.",
+    "changelog": "Wat er in elke versie van dit dashboard is veranderd.",
+    "quick_help": "Stapsgewijze handleiding en de volledige gebruikershandleiding.",
+    "about": "Versie, dankbetuigingen en projectlinks.",
+    "theme_cycle": "Thema: {current}. Klik om over te schakelen naar {next}."
+  },
   "guests_page": {
     "title": "Wi-Fi-toegang voor gasten",
     "subtitle": "Scan de QR-code met uw smartphone om direct verbinding te maken met het gastnetwerk",

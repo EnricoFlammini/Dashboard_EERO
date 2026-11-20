@@ -45,6 +45,25 @@
     "settings_export": "Datenexport",
     "eero_news_short": "Versionshinweise"
   },
+  "nav_hints": {
+    "dashboard": "Der Netzwerkstatus auf einen Blick: Internetverbindung, Mesh-Knoten, Health Score und die größten Bandbreitennutzer.",
+    "devices": "Alle Geräte in deinem Netzwerk: suchen, filtern, umbenennen, pausieren oder sperren.",
+    "speedtest": "Internet-Geschwindigkeitstests durchführen und frühere Ergebnisse ansehen, einschließlich Latenz unter Last.",
+    "guests": "Gäste-WLAN-Details und ein QR-Code zum Teilen mit Besuchern.",
+    "quality_analytics": "WLAN-Signalqualität, Mesh-Abdeckung und Verlauf der Datennutzung.",
+    "settings": "Netzwerksteuerung, Benutzer, Backup, Datenexport und Updates.",
+    "settings_controls": "Netzwerksteuerung, Gastzugang, Automatisierungen und Zeitpläne.",
+    "settings_users": "Lokale Dashboard-Konten und was jedes davon darf.",
+    "settings_backup": "Einstellungen und Verlauf des Dashboards sichern oder wiederherstellen.",
+    "settings_export": "Geräte- und Nutzungsdaten als CSV oder JSON herunterladen.",
+    "settings_updates": "Nach einer neueren Dashboard-Version suchen und sie installieren.",
+    "eero_news": "Neueste eeroOS-Versionshinweise und Community-Neuigkeiten.",
+    "health": "Was deinen Netzwerk-Health-Score senkt und wie du es behebst.",
+    "changelog": "Was sich in jeder Version dieses Dashboards geändert hat.",
+    "quick_help": "Schritt-für-Schritt-Anleitung und vollständiges Benutzerhandbuch.",
+    "about": "Version, Danksagungen und Projektlinks.",
+    "theme_cycle": "Design: {current}. Klicken, um zu {next} zu wechseln."
+  },
   "guests_page": {
     "title": "Gast-WLAN-Zugang",
     "subtitle": "Scannen Sie den QR-Code mit Ihrem Smartphone, um sich sofort mit dem Gastnetzwerk zu verbinden",
