@@ -4,5 +4,6 @@
   "admin_only": "Esta operación está restringida a administradores.",
   "permission_denied": "Permiso insuficiente: se requiere autorización '{permission}'.",
   "auth_required_operation": "Se requiere autenticación para esta operación",
-  "cross_origin_blocked": "Solicitud de origen cruzado bloqueada"
+  "cross_origin_blocked": "Solicitud de origen cruzado bloqueada",
+  "maintenance_in_progress": "El panel está realizando tareas de mantenimiento. Inténtalo de nuevo en un momento."
 }

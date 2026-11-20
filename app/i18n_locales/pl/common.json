@@ -4,5 +4,6 @@
   "admin_only": "Ta operacja jest dostępna tylko dla administratorów.",
   "permission_denied": "Niewystarczające uprawnienia: wymagana autoryzacja „{permission}”.",
   "auth_required_operation": "Uwierzytelnienie wymagane dla tej operacji",
-  "cross_origin_blocked": "Zablokowano żądanie między źródłami"
+  "cross_origin_blocked": "Zablokowano żądanie między źródłami",
+  "maintenance_in_progress": "Panel wykonuje prace konserwacyjne. Spróbuj ponownie za chwilę."
 }

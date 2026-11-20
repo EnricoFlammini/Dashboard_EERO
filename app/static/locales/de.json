@@ -1692,5 +1692,13 @@
       "led_on": "LED an",
       "scheduled_reboot": "Geplanter Neustart"
     }
+  },
+  "maintenance": {
+    "title": "Wartung läuft",
+    "stage_starting": "Start und Prüfung der Datenbank…",
+    "stage_db_repair": "Die Datenbank wird repariert. Einstellungen und Gerätenamen bleiben erhalten.",
+    "stage_startup_failed": "Start fehlgeschlagen. Prüfe die Container-Logs und starte das Dashboard neu.",
+    "auto_reload": "Diese Seite lädt automatisch neu, sobald das Dashboard bereit ist.",
+    "elapsed": "Läuft seit {seconds}s"
   }
 }

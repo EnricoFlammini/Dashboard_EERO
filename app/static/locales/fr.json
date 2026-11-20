@@ -1692,5 +1692,13 @@
       "led_on": "LED allumée",
       "scheduled_reboot": "Redémarrage programmé"
     }
+  },
+  "maintenance": {
+    "title": "Maintenance en cours",
+    "stage_starting": "Démarrage et vérification de la base de données…",
+    "stage_db_repair": "Réparation de la base de données. Vos réglages et noms d'appareils sont conservés.",
+    "stage_startup_failed": "Échec du démarrage. Consultez les journaux du conteneur, puis redémarrez le tableau de bord.",
+    "auto_reload": "Cette page se recharge automatiquement dès que le tableau de bord est prêt.",
+    "elapsed": "En cours depuis {seconds}s"
   }
 }

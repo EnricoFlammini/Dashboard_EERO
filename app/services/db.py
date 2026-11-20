@@ -11,6 +11,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 import aiosqlite
 from app.config import settings
 from app.i18n import LEGACY_FIELD_LANGUAGES, localized_fields, tr
+from app.services.maintenance import STAGE_DB_REPAIR, maintenance_state
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,10 @@ class DBService:
         2. DROP & CREATE della tabella ad alta frequenza `device_signal_history`.
         3. Salvage trasparente in memoria delle tabelle di configurazione/stato e ricostruzione pulita del file .db.
         """
+        with maintenance_state.stage_scope(STAGE_DB_REPAIR):
+            return await self._repair_malformed(error)
+
+    async def _repair_malformed(self, error: Optional[Exception]) -> bool:
         async with self._repair_lock:
             logger.warning(f"SQLite auto-repair triggered on {self.db_path} (cause: {error})")
             # Stadio 1: REINDEX in-place

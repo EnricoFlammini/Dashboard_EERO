@@ -1692,5 +1692,13 @@
       "led_on": "LED aan",
       "scheduled_reboot": "Geplande herstart"
     }
+  },
+  "maintenance": {
+    "title": "Onderhoud bezig",
+    "stage_starting": "Opstarten en database controleren…",
+    "stage_db_repair": "De database wordt hersteld. Je instellingen en apparaatnamen blijven behouden.",
+    "stage_startup_failed": "Opstarten mislukt. Bekijk de containerlogs en start het dashboard opnieuw.",
+    "auto_reload": "Deze pagina laadt vanzelf opnieuw zodra het dashboard klaar is.",
+    "elapsed": "Bezig sinds {seconds}s"
   }
 }

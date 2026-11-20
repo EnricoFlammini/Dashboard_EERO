@@ -4,5 +4,6 @@
   "admin_only": "This operation is restricted to administrators.",
   "permission_denied": "Insufficient permission: '{permission}' authorization required.",
   "auth_required_operation": "Authentication required for this operation",
-  "cross_origin_blocked": "Cross-origin request blocked"
+  "cross_origin_blocked": "Cross-origin request blocked",
+  "maintenance_in_progress": "The dashboard is running maintenance. Try again in a moment."
 }
