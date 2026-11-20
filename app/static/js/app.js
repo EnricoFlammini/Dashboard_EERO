@@ -98,6 +98,18 @@ document.addEventListener('alpine:init', () => {
       this.sidebarCollapsed = !this.sidebarCollapsed;
       localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
     },
+    // Sidebar hover text: a one-line description, prefixed by the label when the menu is collapsed to icons.
+    navTitle(label, hintKey) {
+      const hint = this.t('nav_hints.' + hintKey);
+      return this.sidebarCollapsed ? `${label} — ${hint}` : hint;
+    },
+    themeCycleTitle() {
+      const next = { light: 'dark', dark: 'system', system: 'light' }[this.currentTheme] || 'light';
+      return this.t('nav_hints.theme_cycle', {
+        current: this.t('header.theme_' + this.currentTheme),
+        next: this.t('header.theme_' + next),
+      });
+    },
     getDeviceIconPath(cat) {
       const c = (cat || '').toLowerCase();
       if (c.includes('game') || c.includes('gaming') || c.includes('console') || c.includes('playstation') || c.includes('xbox') || c.includes('nintendo') || c.includes('switch')) {

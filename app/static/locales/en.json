@@ -45,6 +45,25 @@
     "settings_export": "Data Export",
     "eero_news_short": "Release Notes"
   },
+  "nav_hints": {
+    "dashboard": "Network status at a glance: internet connection, mesh nodes, health score and top bandwidth users.",
+    "devices": "Every device on your network: search, filter, rename, pause or block.",
+    "speedtest": "Run internet speed tests and review past results, including latency under load.",
+    "guests": "Guest Wi-Fi details and a QR code to share with visitors.",
+    "quality_analytics": "Wi-Fi signal quality, mesh coverage and data usage history.",
+    "settings": "Network controls, users, backup, data export and updates.",
+    "settings_controls": "Network controls, guest access, automations and schedules.",
+    "settings_users": "Local dashboard accounts and what each one is allowed to do.",
+    "settings_backup": "Back up or restore the dashboard's settings and history.",
+    "settings_export": "Download device and usage data as CSV or JSON.",
+    "settings_updates": "Check for a newer dashboard version and install it.",
+    "eero_news": "Latest eeroOS release notes and community updates.",
+    "health": "What is lowering your network health score, and how to fix it.",
+    "changelog": "What changed in each version of this dashboard.",
+    "quick_help": "Step-by-step guide and the full user manual.",
+    "about": "Version, credits and project links.",
+    "theme_cycle": "Theme: {current}. Click to switch to {next}."
+  },
   "guests_page": {
     "title": "Guest Wi-Fi Access",
     "subtitle": "Scan the QR code with your smartphone to connect instantly to the guest network",

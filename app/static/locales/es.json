@@ -45,6 +45,25 @@
     "settings_export": "Exportación de datos",
     "eero_news_short": "Notas de la versión"
   },
+  "nav_hints": {
+    "dashboard": "El estado de la red de un vistazo: conexión a internet, nodos mesh, puntuación de salud y los dispositivos que más ancho de banda usan.",
+    "devices": "Todos los dispositivos de tu red: busca, filtra, renombra, pausa o bloquea.",
+    "speedtest": "Haz pruebas de velocidad de internet y revisa resultados anteriores, incluida la latencia bajo carga.",
+    "guests": "Los datos del Wi-Fi de invitados y un código QR para compartir con las visitas.",
+    "quality_analytics": "Calidad de la señal Wi-Fi, cobertura mesh e historial de uso de datos.",
+    "settings": "Controles de red, usuarios, copia de seguridad, exportación de datos y actualizaciones.",
+    "settings_controls": "Controles de red, acceso de invitados, automatizaciones y horarios.",
+    "settings_users": "Cuentas locales del panel y lo que puede hacer cada una.",
+    "settings_backup": "Haz una copia de seguridad o restaura los ajustes y el historial del panel.",
+    "settings_export": "Descarga los datos de dispositivos y de uso en CSV o JSON.",
+    "settings_updates": "Busca una versión más reciente del panel e instálala.",
+    "eero_news": "Últimas notas de versión de eeroOS y novedades de la comunidad.",
+    "health": "Qué está bajando la puntuación de salud de tu red y cómo solucionarlo.",
+    "changelog": "Qué cambió en cada versión de este panel.",
+    "quick_help": "Guía paso a paso y manual de usuario completo.",
+    "about": "Versión, créditos y enlaces del proyecto.",
+    "theme_cycle": "Tema: {current}. Haz clic para cambiar a {next}."
+  },
   "guests_page": {
     "title": "Acceso Wi-Fi para invitados",
     "subtitle": "Escanee el código QR con su teléfono inteligente para conectarse instantáneamente a la red de invitados",
