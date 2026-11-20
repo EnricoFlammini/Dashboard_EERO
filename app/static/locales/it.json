@@ -198,7 +198,12 @@
     "connected_to_node": "Collegato a {node}",
     "not_connected": "Non connesso",
     "no_devices_found": "Nessun dispositivo trovato",
-    "show_more_devices": "Mostra altri dispositivi"
+    "show_more_devices": "Mostra altri dispositivi",
+    "public_ip_label": "IP pubblico:",
+    "public_ip_unknown": "non disponibile",
+    "double_nat": "Doppio NAT",
+    "double_nat_tooltip": "eero è dietro un altro router: il suo indirizzo WAN è privato, quindi il traffico attraversa due livelli di NAT. Mettere il router dell'ISP in modalità bridge evita problemi con port forwarding e giochi online.",
+    "cgnat_tooltip": "Il tuo ISP usa il NAT di classe carrier (100.64.0.0/10): l'IP pubblico è condiviso con altri clienti, quindi le connessioni in ingresso e il port forwarding non funzionano."
   },
   "devices": {
     "traffic_dl_total": "DL cumulativo:",

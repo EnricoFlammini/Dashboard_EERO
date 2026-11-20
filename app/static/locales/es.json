@@ -198,7 +198,12 @@
     "connected_to_node": "Conectado a {node}",
     "not_connected": "No conectado",
     "no_devices_found": "No se encontraron dispositivos",
-    "show_more_devices": "Mostrar más dispositivos"
+    "show_more_devices": "Mostrar más dispositivos",
+    "public_ip_label": "IP pública:",
+    "public_ip_unknown": "no disponible",
+    "double_nat": "Doble NAT",
+    "double_nat_tooltip": "eero está detrás de otro router: su dirección WAN es privada, así que el tráfico atraviesa dos niveles de NAT. Poner el router del ISP en modo puente evita problemas con el reenvío de puertos y los juegos en línea.",
+    "cgnat_tooltip": "Tu ISP usa CGNAT (100.64.0.0/10): la IP pública se comparte con otros clientes, así que las conexiones entrantes y el reenvío de puertos no funcionarán."
   },
   "devices": {
     "traffic_dl_total": "Descarga total:",

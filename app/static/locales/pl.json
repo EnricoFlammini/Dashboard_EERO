@@ -198,7 +198,12 @@
     "connected_to_node": "Połączono z {node}",
     "not_connected": "Nie połączono",
     "no_devices_found": "Nie znaleziono urządzeń",
-    "show_more_devices": "Pokaż więcej urządzeń"
+    "show_more_devices": "Pokaż więcej urządzeń",
+    "public_ip_label": "Publiczny IP:",
+    "public_ip_unknown": "niedostępny",
+    "double_nat": "Podwójny NAT",
+    "double_nat_tooltip": "eero działa za innym routerem: jego adres WAN jest prywatny, więc ruch przechodzi przez dwie warstwy NAT. Przełączenie routera dostawcy w tryb mostu pozwala uniknąć problemów z przekierowaniem portów i grami online.",
+    "cgnat_tooltip": "Twój dostawca używa CGNAT (100.64.0.0/10): publiczny IP jest współdzielony z innymi klientami, więc połączenia przychodzące i przekierowanie portów nie będą działać."
   },
   "devices": {
     "traffic_dl_total": "Całkowite pobranie:",

@@ -38,6 +38,7 @@ services:
       - REQUIRE_LOCAL_AUTH=${REQUIRE_LOCAL_AUTH:-false}
       - CUSTOM_DNS_SERVERS=${CUSTOM_DNS_SERVERS:-}
       - CUSTOM_DNS_DOMAINS=${CUSTOM_DNS_DOMAINS:-}
+      - PUBLIC_IP_LOOKUP=${PUBLIC_IP_LOOKUP:-true}
       - MQTT_LIVE_INTERVAL=${MQTT_LIVE_INTERVAL:-0}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]

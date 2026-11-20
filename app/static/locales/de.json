@@ -198,7 +198,12 @@
     "connected_to_node": "Verbunden mit {node}",
     "not_connected": "Nicht verbunden",
     "no_devices_found": "Keine Geräte gefunden",
-    "show_more_devices": "Weitere Geräte anzeigen"
+    "show_more_devices": "Weitere Geräte anzeigen",
+    "public_ip_label": "Öffentliche IP:",
+    "public_ip_unknown": "nicht verfügbar",
+    "double_nat": "Doppeltes NAT",
+    "double_nat_tooltip": "eero steht hinter einem weiteren Router: Seine WAN-Adresse ist privat, der Datenverkehr läuft also durch zwei NAT-Ebenen. Den Router des Anbieters in den Bridge-Modus zu schalten, vermeidet Probleme mit Portweiterleitung und Online-Spielen.",
+    "cgnat_tooltip": "Dein Anbieter nutzt Carrier-Grade-NAT (100.64.0.0/10): Die öffentliche IP wird mit anderen Kunden geteilt, eingehende Verbindungen und Portweiterleitungen funktionieren daher nicht."
   },
   "devices": {
     "traffic_dl_total": "Gesamtdownload:",

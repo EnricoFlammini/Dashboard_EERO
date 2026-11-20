@@ -100,6 +100,9 @@ try:
         custom_dns_servers: str = os.getenv("CUSTOM_DNS_SERVERS", "")
         custom_dns_domains: str = os.getenv("CUSTOM_DNS_DOMAINS", "")
 
+        # Public WAN IP lookup over HTTPS when eero reports a private WAN IP (Issue #115)
+        public_ip_lookup: bool = os.getenv("PUBLIC_IP_LOOKUP", "true").lower() in ("true", "1", "yes")
+
         # Multi-Channel Alerts: Discord, Pushover & Ntfy (v1.6.0 / v1.7.0)
         discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
         discord_alerts_enabled: bool = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
@@ -197,6 +200,7 @@ except ImportError:
             self.mqtt_live_interval = int(os.getenv("MQTT_LIVE_INTERVAL", "0"))
             self.custom_dns_servers = os.getenv("CUSTOM_DNS_SERVERS", "")
             self.custom_dns_domains = os.getenv("CUSTOM_DNS_DOMAINS", "")
+            self.public_ip_lookup = os.getenv("PUBLIC_IP_LOOKUP", "true").lower() in ("true", "1", "yes")
             self.discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "")
             self.discord_alerts_enabled = os.getenv("DISCORD_ALERTS_ENABLED", "false").lower() in ("true", "1", "yes")
             self.pushover_user_key = os.getenv("PUSHOVER_USER_KEY", "")
