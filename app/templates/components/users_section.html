@@ -1,0 +1,221 @@
+    <!-- =================================================================== -->
+    <!-- SUB-TAB 6.2: GESTIONE UTENTI & PERMESSI (RBAC) -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'settings-users'" class="space-y-6 animate-fade-in" style="display: none;">
+      <div class="glass-panel rounded-2xl p-6 space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.06] dark:border-white/5 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white" x-text="t('settings_users.title')"></h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('settings_users.subtitle')"></p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <template x-if="userModalMode === 'list' && can('action_manage_users')">
+              <button 
+                @click="startCreateUser()"
+                class="px-4 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white text-xs font-bold transition shadow-sm cursor-pointer flex items-center space-x-1.5 active:scale-95">
+                <span class="text-sm font-bold">+</span>
+                <span x-text="t('users_modal.add_user')"></span>
+              </button>
+            </template>
+            <template x-if="userModalMode !== 'list' && can('action_manage_users')">
+              <button 
+                @click="userModalMode = 'list'"
+                class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer">
+                <span x-text="t('users_modal.back_to_list')"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Admin Login Required Notice (when not logged in or missing action_manage_users) -->
+        <div x-show="!can('action_manage_users')" class="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl shrink-0">🔐</span>
+            <div>
+              <span class="font-bold text-amber-900 dark:text-amber-200 block text-xs" x-text="t('auth_local.admin_required_title')"></span>
+              <p class="text-slate-600 dark:text-slate-400 mt-0.5" x-text="t('auth_local.admin_required_desc')"></p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            @click="openLocalLoginModal()"
+            class="shrink-0 px-4 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-sm shadow-sky-500/20 cursor-pointer flex items-center space-x-1.5 self-start sm:self-auto active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            <span x-text="t('auth_local.login_as_admin_btn')"></span>
+          </button>
+        </div>
+
+        <!-- Mode 1: Table List View -->
+        <div x-show="userModalMode === 'list' && can('action_manage_users')" class="space-y-4">
+          <div x-show="usersLoading" class="py-12 text-center text-xs text-slate-400">
+            <span class="animate-spin inline-block mr-2">⏳</span> <span x-text="t('users_modal.loading_users')"></span>
+          </div>
+
+          <div x-show="!usersLoading">
+            <template x-if="localUsersList && localUsersList.length > 0">
+              <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-black/[0.01] dark:bg-white/[0.01]">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-black/[0.02] dark:bg-white/[0.03] text-slate-500 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                      <th class="p-3.5" x-text="t('users_modal.col_user')"></th>
+                      <th class="p-3.5" x-text="t('users_modal.col_role')"></th>
+                      <th class="p-3.5" x-text="t('users_modal.col_permissions')"></th>
+                      <th class="p-3.5" x-text="t('users_modal.col_status')"></th>
+                      <th class="p-3.5 text-right" x-text="t('users_modal.col_actions')"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 dark:divide-slate-800/80 font-medium">
+                    <template x-for="u in localUsersList" :key="u.id">
+                      <tr class="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
+                        <td class="p-3.5">
+                          <div class="font-bold text-slate-900 dark:text-white" x-text="u.username"></div>
+                          <div class="text-[11px] text-slate-500" x-text="u.display_name || '---'"></div>
+                        </td>
+                        <td class="p-3.5">
+                          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase"
+                                :class="u.role === 'admin' ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20' : (u.role === 'operator' ? 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/20' : 'bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20')"
+                                x-text="u.role || (u.is_admin ? 'admin' : 'operator')"></span>
+                        </td>
+                        <td class="p-3.5">
+                          <div class="font-mono text-[11px] text-slate-600 dark:text-slate-400" x-text="formatUserPermissionsCount(u)"></div>
+                        </td>
+                        <td class="p-3.5">
+                          <span class="inline-flex items-center space-x-1.5 text-[11px]" :class="u.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'">
+                            <span class="w-2 h-2 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                            <span x-text="u.is_active ? t('users_modal.status_active') : t('users_modal.status_inactive')"></span>
+                          </span>
+                        </td>
+                        <td class="p-3.5 text-right space-x-1.5">
+                          <button 
+                            @click="startEditUser(u)"
+                            class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-sky-600 hover:bg-sky-500/10 transition cursor-pointer"
+                            :title="t('users_modal.edit_user')">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                          </button>
+                          <button 
+                            @click="deleteLocalUser(u.id, u.username)"
+                            class="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-500/10 transition cursor-pointer"
+                            :title="t('users_modal.delete_user')">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          </button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+
+            <template x-if="!localUsersList || localUsersList.length === 0">
+              <div class="py-12 text-center text-slate-400 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                <div class="text-3xl">👥</div>
+                <div class="font-semibold text-xs" x-text="t('users_modal.no_users')"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Mode 2: In-place Create / Edit View -->
+        <div x-show="userModalMode !== 'list' && can('action_manage_users')" class="space-y-6">
+          <form @submit.prevent="saveLocalUser()" class="space-y-5 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.username')"></label>
+                <input type="text" x-model="userForm.username" :disabled="userModalMode === 'edit'" required class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none disabled:opacity-50">
+              </div>
+
+              <div>
+                <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.display_name')"></label>
+                <input type="text" x-model="userForm.display_name" :placeholder="t('users_modal.display_name_placeholder')" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('users_modal.role')"></label>
+                <select x-model="userForm.role" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+                  <option value="admin" x-text="t('auth_local.role_admin')"></option>
+                  <option value="operator" x-text="t('auth_local.role_operator')"></option>
+                  <option value="viewer" x-text="t('auth_local.role_viewer')"></option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  <span x-text="t('auth_local.password')"></span>
+                  <span x-show="userModalMode === 'edit'" class="text-[10px] text-slate-400 font-normal ml-1" x-text="'(' + t('users_modal.password_placeholder') + ')'"></span>
+                </label>
+                <input type="password" x-model="userForm.password" :required="userModalMode === 'create'" placeholder="••••••••" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+              </div>
+            </div>
+
+            <!-- Active Toggle -->
+            <div class="flex items-center space-x-3 p-3.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-slate-200 dark:border-slate-800">
+              <button 
+                type="button"
+                @click="userForm.is_active = !userForm.is_active"
+                :class="userForm.is_active ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'"
+                class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
+                <span :class="userForm.is_active ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"></span>
+              </button>
+              <div class="flex flex-col">
+                <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="t('users_modal.is_active')"></span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400" x-text="userForm.is_active ? t('users_modal.active_desc_enabled') : t('users_modal.active_desc_disabled')"></span>
+              </div>
+            </div>
+
+            <!-- Granular RBAC Permissions Section -->
+            <div class="space-y-3 pt-3 border-t border-black/[0.06] dark:border-white/5">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h4 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <span>🔐</span>
+                  <span x-text="t('users_modal.permissions_title')"></span>
+                </h4>
+
+                <!-- Quick Presets -->
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button type="button" @click="applyPermissionPreset('all')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 transition cursor-pointer" x-text="t('users_modal.preset_all')"></button>
+                  <button type="button" @click="applyPermissionPreset('operator')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/20 transition cursor-pointer" x-text="t('users_modal.preset_operator')"></button>
+                  <button type="button" @click="applyPermissionPreset('readonly')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-500/10 hover:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-500/20 transition cursor-pointer" x-text="t('users_modal.preset_readonly')"></button>
+                  <button type="button" @click="applyPermissionPreset('none')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/20 transition cursor-pointer" x-text="t('users_modal.preset_none')"></button>
+                </div>
+              </div>
+
+              <!-- iOS Toggle Switches for Each Permission -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <template x-for="perm in permissionsForDisplay()" :key="perm.key">
+                  <div class="p-3 rounded-xl border flex items-center justify-between transition-all duration-200"
+                       :class="userForm.permissions.includes(perm.key) ? 'bg-[#0067c0]/5 dark:bg-sky-500/10 border-[#0067c0]/30 dark:border-sky-500/30' : 'bg-black/[0.02] dark:bg-white/[0.02] border-slate-200 dark:border-slate-800 opacity-70'">
+                    <div class="space-y-0.5 pr-2">
+                      <div class="font-bold text-[11px] text-slate-900 dark:text-white" x-text="permissionLabel(perm)"></div>
+                      <div class="font-mono text-[9px] text-slate-400" x-text="perm.key"></div>
+                    </div>
+
+                    <!-- iOS Toggle Switch -->
+                    <button 
+                      type="button"
+                      @click="toggleUserPermission(perm.key)"
+                      :class="userForm.permissions.includes(perm.key) ? 'bg-[#0067c0] dark:bg-sky-500' : 'bg-slate-300 dark:bg-slate-700'"
+                      class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none">
+                      <span :class="userForm.permissions.includes(perm.key) ? 'translate-x-4' : 'translate-x-0'" class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"></span>
+                    </button>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="pt-4 border-t border-black/[0.06] dark:border-white/5 flex items-center justify-end space-x-2">
+              <button type="button" @click="userModalMode = 'list'" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300 transition cursor-pointer" x-text="t('users_modal.cancel')"></button>
+              <button type="submit" class="px-5 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-md shadow-sky-500/20 cursor-pointer flex items-center space-x-1.5" x-text="t('users_modal.save_user')"></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+

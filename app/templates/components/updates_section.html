@@ -1,0 +1,163 @@
+    <!-- =================================================================== -->
+    <!-- SUB-TAB 6.5: VERIFICA AGGIORNAMENTI -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'settings-updates'" class="space-y-6 animate-fade-in" style="display: none;">
+      <!-- Header & Action Card -->
+      <div class="glass-panel rounded-2xl p-6 space-y-5 border border-amber-500/20 bg-amber-500/[0.02] dark:bg-gradient-to-r dark:from-slate-900/90 dark:to-amber-950/20">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.06] dark:border-white/5 pb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-xl shrink-0">
+              🐳
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span x-text="t('settings_updates.title')"></span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/20 font-bold" x-text="'v' + fullVersion"></span>
+              </h2>
+              <p class="text-xs text-slate-600 dark:text-slate-400" x-text="t('settings_updates.subtitle')"></p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button 
+              @click="checkForUpdates(true)" 
+              :disabled="isCheckingUpdate || isTriggeringUpdate"
+              class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-transparent text-xs font-semibold flex items-center space-x-1.5 shadow-sm dark:shadow-none transition disabled:opacity-40 cursor-pointer">
+              <svg class="w-3.5 h-3.5" :class="isCheckingUpdate ? 'animate-spin text-amber-500' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span x-text="isCheckingUpdate ? t('settings_updates.checking') : t('settings_updates.recheck_btn')"></span>
+            </button>
+
+            <template x-if="updateInfo && updateInfo.can_auto_install && currentUser && (currentUser.is_admin || currentUser.role === 'admin')">
+              <button 
+                @click="triggerAutoUpdate()" 
+                :disabled="isTriggeringUpdate"
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-50 cursor-pointer">
+                <span>⚡</span>
+                <span x-text="isTriggeringUpdate ? t('update_modal.updating_short') : t('update_modal.update_now_short')"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- 3-box summary -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('controls.docker_installed_version')"></span>
+            <span class="font-bold text-slate-900 dark:text-white font-mono text-sm" x-text="'v' + fullVersion"></span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('controls.docker_socket_status')"></span>
+            <span class="font-bold font-mono text-sm" :class="updateInfo.docker_socket_available ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400'" x-text="updateInfo.docker_socket_available ? t('controls.docker_socket_detected') : t('controls.docker_socket_not_mounted')"></span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('controls.docker_latest_release')"></span>
+            <span class="font-bold text-amber-600 dark:text-amber-400 font-mono text-sm" x-text="updateInfo.latest_full_version ? 'v' + updateInfo.latest_full_version : (updateInfo.latest_version ? 'v' + updateInfo.latest_version : '---')"></span>
+          </div>
+        </div>
+
+        <!-- Runtime: where this instance runs and which branch it was built from -->
+        <template x-if="runtimeInfo">
+          <div class="p-3.5 rounded-xl bg-white/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none text-xs space-y-3">
+            <span class="text-slate-600 dark:text-slate-500 block text-[11px] font-medium" x-text="t('settings_updates.runtime_title')"></span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_environment')"></span>
+                <span class="font-bold text-slate-900 dark:text-white text-sm"
+                      :class="runtimeInfo.environment === 'local' ? 'text-violet-700 dark:text-violet-300' : 'text-sky-700 dark:text-sky-300'"
+                      x-text="(runtimeInfo.environment === 'local' ? '💻 ' : '🐳 ') + runtimeEnvironmentLabel()"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_branch')"></span>
+                <span class="font-bold font-mono text-sm block truncate"
+                      :class="runtimeInfo.git_branch ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400'"
+                      :title="runtimeInfo.git_branch || ''"
+                      x-text="runtimeInfo.git_branch || t('settings_updates.runtime_unknown')"></span>
+                <span class="font-mono text-[10px] text-slate-400" x-show="runtimeInfo.git_commit" x-text="runtimeInfo.git_commit"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_host')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" :title="runtimeInfo.hostname" x-text="runtimeInfo.hostname"></span>
+              </div>
+              <div class="min-w-0">
+                <span class="text-slate-500 dark:text-slate-500 block text-[10px] uppercase tracking-wider font-semibold" x-text="t('settings_updates.runtime_platform')"></span>
+                <span class="font-bold font-mono text-sm text-slate-900 dark:text-white block truncate" x-text="'Python ' + runtimeInfo.python_version + ' · ' + runtimeInfo.os"></span>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed"
+               x-text="runtimeInfo.git_source === 'checkout' ? t('settings_updates.runtime_source_checkout')
+                     : runtimeInfo.git_source === 'build' ? t('settings_updates.runtime_source_build')
+                     : t('settings_updates.runtime_source_missing')"></p>
+          </div>
+        </template>
+
+        <!-- Banner state -->
+        <template x-if="!updateInfo.update_available">
+          <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center space-x-3">
+            <span class="text-emerald-500 dark:text-emerald-400 text-2xl">✅</span>
+            <div class="space-y-0.5">
+              <span class="font-bold text-emerald-800 dark:text-emerald-300 block" x-text="t('update_modal.banner_up_to_date_title')"></span>
+              <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.banner_up_to_date_desc', { version: fullVersion })"></p>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="updateInfo.update_available">
+          <div class="p-4 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs flex items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl">🚀</span>
+              <div class="space-y-0.5">
+                <span class="font-bold text-amber-900 dark:text-amber-300 block" x-text="t('update_modal.banner_update_title', { version: updateInfo.latest_full_version || updateInfo.latest_version })"></span>
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed" x-text="t('update_modal.banner_update_desc')"></p>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Condensed Changelog in Settings Updates -->
+        <template x-if="updateInfo.condensed_changelog && updateInfo.condensed_changelog.length">
+          <div class="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+              <label class="block text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                <span x-text="t('update_modal.condensed_changelog_title')"></span>
+              </label>
+              <button 
+                @click="toggleFullReleaseNotes()" 
+                class="text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-medium cursor-pointer"
+                x-text="showFullReleaseNotes ? t('update_modal.hide_full_notes') : t('update_modal.show_full_notes')">
+              </button>
+            </div>
+            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+              <template x-for="(item, idx) in updateInfo.condensed_changelog" :key="idx">
+                <div class="flex items-start space-x-2 text-slate-800 dark:text-slate-200">
+                  <span class="text-amber-500 dark:text-amber-400 font-bold shrink-0">•</span>
+                  <span class="leading-snug" x-text="item"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Release Notes Box -->
+        <template x-if="(updateInfo.release_notes || updateInfo.release_title) && (showFullReleaseNotes || !updateInfo.condensed_changelog || !updateInfo.condensed_changelog.length)">
+          <div class="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <label class="block text-slate-700 dark:text-slate-400 text-xs font-semibold" x-text="updateInfo.update_available ? t('update_modal.release_notes') : t('update_modal.latest_notes_title')"></label>
+            <div class="max-h-48 overflow-y-auto p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-300 font-mono whitespace-pre-wrap leading-relaxed" x-text="updateInfo.release_notes || updateInfo.release_title"></div>
+          </div>
+        </template>
+
+        <!-- Command Fallback -->
+        <div class="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium" x-text="t('update_modal.manual_title')"></span>
+          <div class="flex items-center space-x-2">
+            <code class="flex-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-800 dark:text-amber-300 px-3 py-2.5 rounded-xl font-mono text-xs select-all overflow-x-auto" x-text="updateInfo.cli_command || 'docker compose pull && docker compose up -d'"></code>
+            <button 
+              @click="copyCliCommand()" 
+              class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-transparent shadow-sm dark:shadow-none text-xs font-semibold transition flex items-center space-x-1 shrink-0 cursor-pointer"
+              :class="copiedCliCommand ? 'text-emerald-600 dark:text-emerald-400' : ''">
+              <span x-text="copiedCliCommand ? '✓ ' + t('update_modal.copied') : t('update_modal.copy_command')"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+

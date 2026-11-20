@@ -1,0 +1,99 @@
+    <!-- =================================================================== -->
+    <!-- TAB 4: SPEED TEST & DIAGNOSTICS -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'speedtest'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Big Gauge & Action Trigger -->
+      <div class="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <div class="max-w-md w-full">
+          
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1" x-text="t('speedtest.title')"></h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-6" x-text="t('speedtest.subtitle')"></p>
+
+          <!-- Action Button / Progress -->
+          <div class="flex flex-col items-center">
+            <button 
+              @click="runSpeedtest()"
+              :disabled="speedtestRunning || !can('action_run_speedtest')"
+              :class="!can('action_run_speedtest') ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
+              class="w-40 h-40 rounded-full bg-gradient-to-tr from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-lg shadow-2xl shadow-sky-500/30 flex flex-col items-center justify-center space-y-1 transition-transform active:scale-95 disabled:opacity-50">
+              <svg class="w-8 h-8" :class="speedtestRunning ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              <span x-text="speedtestRunning ? t('speedtest.running_btn') : t('speedtest.run_btn')"></span>
+            </button>
+
+            <!-- Read-Only Notice when lacking action_run_speedtest -->
+            <div x-show="!can('action_run_speedtest')" class="mt-4 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium flex items-center space-x-1.5 shadow-xs">
+              <span>🔒</span>
+              <span x-text="t('speedtest.readonly_notice')"></span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div x-show="speedtestRunning" class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-6 overflow-hidden">
+              <div class="bg-gradient-to-r from-sky-400 to-emerald-400 h-2 transition-all duration-300" :style="`width: ${speedtestProgress}%`"></div>
+            </div>
+          </div>
+
+          <!-- Latest Result Badge with Bufferbloat -->
+          <div class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-100/90 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-center">
+            <div>
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('speedtest.download')"></div>
+              <div class="text-base sm:text-lg font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(1) + ' Mbps'"></div>
+            </div>
+            <div>
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('speedtest.upload')"></div>
+              <div class="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(1) + ' Mbps'"></div>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+              <div class="text-[10px] text-slate-600 dark:text-slate-400 uppercase font-semibold" x-text="t('bufferbloat.badge_title')"></div>
+              <div class="mt-1 inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-lg border font-mono font-bold text-xs"
+                   :class="getBufferbloatGrade(latestSpeedtest).class">
+                <span x-text="getBufferbloatGrade(latestSpeedtest).grade"></span>
+                <span class="text-[10px] font-normal" x-text="'• ' + getBufferbloatGrade(latestSpeedtest).label"></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Historical Speedtest Chart & Stats -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Chart -->
+        <div class="lg:col-span-2 glass-panel rounded-2xl p-6">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4" x-text="t('speedtest.chart_title')"></h3>
+          <div class="chart-frame chart-frame-lg">
+            <canvas id="speedtestHistoryChart" style="width: 100%; height: 100%; display: block;"></canvas>
+          </div>
+        </div>
+
+        <!-- Performance Stats Cards -->
+        <div class="glass-panel rounded-2xl p-6 space-y-4 flex flex-col justify-between">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('speedtest.stats_title')"></h3>
+          
+          <div class="space-y-3 text-xs">
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.avg_download')"></span>
+              <span class="font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="(speedtestStats.avg_download || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.max_download')"></span>
+              <span class="font-bold text-sky-700 dark:text-sky-300 font-mono" x-text="(speedtestStats.max_download || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.avg_upload')"></span>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="(speedtestStats.avg_upload || 0) + ' Mbps'"></span>
+            </div>
+            <div class="flex justify-between p-3 rounded-xl bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <span class="text-slate-600 dark:text-slate-400 font-medium" x-text="t('speedtest.total_tests')"></span>
+              <span class="font-bold text-slate-900 dark:text-white font-mono" x-text="speedtestStats.total_tests || 0"></span>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 text-center" x-text="t('speedtest.schedule_info')"></div>
+        </div>
+
+      </div>
+
+    </div>
+

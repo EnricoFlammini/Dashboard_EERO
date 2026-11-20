@@ -20,6 +20,26 @@ import ipaddress
 import json
 import httpx
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+import re
+
+# Monkeypatch Path.read_text for index.html to expand Jinja2 components and modals dynamically
+_orig_path_read_text = Path.read_text
+
+def _expanded_path_read_text(self, *args, **kwargs):
+    content = _orig_path_read_text(self, *args, **kwargs)
+    path_str = str(self).replace("\\", "/")
+    if path_str.endswith("app/templates/index.html"):
+        base_dir = self.parent
+        def _repl(m):
+            inc_file = base_dir / m.group(1).strip("'\"")
+            if inc_file.exists():
+                return _expanded_path_read_text(inc_file, *args, **kwargs)
+            return m.group(0)
+        return re.sub(r'\{%\s*include\s+([^\s%]+)\s*%\}', _repl, content)
+    return content
+
+Path.read_text = _expanded_path_read_text
 
 # Configure UTF-8 stdout for Windows console
 if sys.platform == "win32":
@@ -4652,8 +4672,7 @@ async def run_all_tests():
         runner.assert_true("isTableColumnVisible(" in _app_js, "app.js implementa isTableColumnVisible")
         runner.assert_true("eero_device_columns" in _app_js, "app.js persiste su localStorage 'eero_device_columns'")
 
-        with open("app/templates/index.html", "r", encoding="utf-8") as _f_html:
-            _index_html = _f_html.read()
+        _index_html = Path("app/templates/index.html").read_text(encoding="utf-8")
         runner.assert_true("toggleTableColumn" in _index_html, "index.html contiene il selettore colonne con checkbox toggle")
         runner.assert_true("isTableColumnVisible('first_seen')" in _index_html, "index.html supporta visibilità colonna first_seen")
 
@@ -5712,8 +5731,7 @@ async def run_all_tests():
         # Test Issue #80: formatSpeed definition in app.js and call in index.html
         with open("app/static/js/app.js", "r", encoding="utf-8") as _fjs:
             _app_js_content = _fjs.read()
-        with open("app/templates/index.html", "r", encoding="utf-8") as _fhtml:
-            _index_html_content = _fhtml.read()
+        _index_html_content = Path("app/templates/index.html").read_text(encoding="utf-8")
         runner.assert_true("formatSpeed(mbps)" in _app_js_content, "Metodo formatSpeed definito in app.js (Issue #80)")
         runner.assert_true("formatSpeed(" in _index_html_content, "Chiamata a formatSpeed presente in index.html (Issue #80)")
 

@@ -1,0 +1,91 @@
+    <!-- =================================================================== -->
+    <!-- TAB 4: ACCESSO OSPITI (SOLO QR CODE & CONDIVISIONE) -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'guests'" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Top Action & Title Bar -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <svg class="w-6 h-6 text-[#0067c0] dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+            </svg>
+            <span x-text="t('guests_page.title')"></span>
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" x-text="t('guests_page.subtitle')"></p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button 
+            @click="fetchGuestNetwork()"
+            class="px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition flex items-center space-x-2 cursor-pointer">
+            <svg class="w-4 h-4 text-[#0067c0] dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span x-text="t('header.refresh')"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Guest Card -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center text-center relative overflow-hidden max-w-2xl mx-auto shadow-xl border border-black/[0.06] dark:border-white/10">
+        
+        <!-- Status Pill -->
+        <div class="mb-5 inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold shadow-xs"
+             :class="guestNetwork.enabled ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'">
+          <span class="w-2.5 h-2.5 rounded-full" :class="guestNetwork.enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+          <span x-text="guestNetwork.enabled ? t('guests_page.status_active') : t('guests_page.status_inactive')"></span>
+        </div>
+
+        <!-- Network SSID Name -->
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight mb-2" x-text="guestNetwork.name || 'eero-guest'"></h3>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mb-8" x-text="t('guests_page.scan_instruction')"></p>
+
+        <!-- QR Code Container -->
+        <div class="relative p-5 rounded-2xl bg-white shadow-2xl border border-slate-200 dark:border-slate-700 mb-8 transition-transform hover:scale-[1.02]">
+          <template x-if="guestQrCodeUrl">
+            <img :src="guestQrCodeUrl" :alt="t('guests_page.qr_alt')" class="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl">
+          </template>
+          <template x-if="!guestQrCodeUrl">
+            <div class="w-56 h-56 sm:w-64 sm:h-64 flex flex-col items-center justify-center text-slate-400">
+              <span class="text-4xl mb-2">📱</span>
+              <span class="text-xs" x-text="t('guests_page.qr_not_available')"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Copy Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
+          <button 
+            @click="copyGuestCredentials()"
+            class="w-full sm:w-auto flex-1 px-5 py-3 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold text-xs shadow-md shadow-sky-500/20 transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span x-text="t('guests_page.copy_credentials')"></span>
+          </button>
+          
+          <button 
+            @click="copyGuestPassword()"
+            class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-2 cursor-pointer active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            <span x-text="guestNetwork.password ? t('guests_page.copy_password') : t('guests_page.open_network_label')"></span>
+          </button>
+        </div>
+
+        <!-- Help Callout & Settings Redirection Link -->
+        <div x-show="currentUser" class="mt-8 pt-6 border-t border-black/[0.06] dark:border-white/5 w-full flex items-center justify-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+          <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>
+            <span x-text="t('guests_page.settings_redirect_hint')"></span>
+            <button 
+              @click="setTab('settings-controls')"
+              class="ml-1 text-[#0067c0] dark:text-sky-400 font-semibold hover:underline cursor-pointer inline-flex items-center space-x-0.5">
+              <span x-text="t('guests_page.go_to_settings')"></span>
+              <span>→</span>
+            </button>
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+

@@ -1,0 +1,119 @@
+      <!-- TELEMETRY RESILIENCE BANNER (Issue #55) -->
+      <template x-if="telemetryStale || telemetryAuthExpired">
+        <div class="mb-5 p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-3 shadow-lg"
+             :class="telemetryAuthExpired ? 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-200' : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-200'">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                 :class="telemetryAuthExpired ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold" x-text="telemetryAuthExpired ? t('resilience.auth_expired_title') : t('resilience.stale_data_title')"></div>
+              <div class="text-[11px] opacity-85" x-text="telemetryAuthExpired ? t('resilience.auth_expired_desc') : t('resilience.stale_data_desc')"></div>
+            </div>
+          </div>
+          <button 
+            @click="telemetryAuthExpired ? (showLogoutModal = true) : manualRefresh()"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+            :class="telemetryAuthExpired ? 'bg-rose-600 text-white hover:bg-rose-500 shadow-sm' : 'bg-amber-600 text-white hover:bg-amber-500 shadow-sm'"
+            x-text="telemetryAuthExpired ? t('resilience.relogin_btn') : t('resilience.retry_btn')">
+          </button>
+        </div>
+      </template>
+
+      <!-- NO NETWORKS FOUND BANNER (Issue #69) -->
+      <template x-if="noNetworksFound">
+        <div class="mb-5 p-4 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg bg-indigo-500/10 border-indigo-500/30 text-indigo-900 dark:text-indigo-200">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold" x-text="t('resilience.no_networks_title')"></div>
+              <div class="text-[11px] opacity-85" x-text="t('resilience.no_networks_desc')"></div>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button 
+              @click="manualRefresh()"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 shadow-sm"
+              x-text="t('resilience.retry_btn')">
+            </button>
+            <button 
+              @click="showLogoutModal = true"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm"
+              x-text="t('resilience.relogin_btn')">
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- UPDATE PROMPT BANNER WITH CONDENSED CHANGELOG (v1.6.2) -->
+      <template x-if="updateInfo && updateInfo.update_available && showUpdatePrompt">
+        <div class="mb-6 p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-600/15 backdrop-blur-md shadow-xl shadow-amber-950/20 transition-all duration-300 relative overflow-hidden space-y-4">
+          <!-- Top Row: Icon, Title, Version Badge, and Dismiss (X) -->
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start space-x-3.5 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0 text-amber-500 dark:text-amber-400 shadow-sm">
+                <span>🚀</span>
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-200" x-text="t('update_modal.prompt_title', { version: updateInfo.latest_full_version || updateInfo.latest_version })"></h3>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 shrink-0">
+                    <span x-text="'v' + fullVersion + ' → v' + (updateInfo.latest_full_version || updateInfo.latest_version)"></span>
+                  </span>
+                </div>
+                <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 leading-relaxed" x-text="t('update_modal.prompt_desc')"></p>
+              </div>
+            </div>
+            <button 
+              @click="dismissUpdatePrompt(true)" 
+              class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition shrink-0 cursor-pointer"
+              :title="t('update_modal.prompt_later')">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+
+          <!-- Condensed Changelog Highlights -->
+          <div class="p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-amber-500/20 space-y-2.5">
+            <div class="flex items-center space-x-2 text-xs font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+              <span x-text="t('update_modal.condensed_changelog_title')"></span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+              <template x-for="(item, idx) in (updateInfo.condensed_changelog && updateInfo.condensed_changelog.length ? updateInfo.condensed_changelog : [t('update_modal.no_highlights')])" :key="idx">
+                <div class="flex items-start space-x-2 text-slate-800 dark:text-slate-200">
+                  <span class="text-amber-500 dark:text-amber-400 font-bold shrink-0 leading-tight">•</span>
+                  <span class="leading-snug" x-text="item"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Decision Action Buttons -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div class="flex items-center space-x-2">
+              <button 
+                @click="proceedUpdateFromPrompt()" 
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center space-x-1.5 cursor-pointer">
+                <span>⚡</span>
+                <span x-text="t('update_modal.prompt_proceed')"></span>
+              </button>
+              <button 
+                @click="openUpdateModal(false, true)" 
+                class="px-3.5 py-2 rounded-xl bg-white/80 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold shadow-sm transition flex items-center space-x-1 cursor-pointer">
+                <span x-text="t('update_modal.prompt_view_details')"></span>
+              </button>
+            </div>
+            <button 
+              @click="dismissUpdatePrompt(true)" 
+              class="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium underline underline-offset-2 transition cursor-pointer"
+              x-text="t('update_modal.prompt_later')">
+            </button>
+          </div>
+        </div>
+      </template>

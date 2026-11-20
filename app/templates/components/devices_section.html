@@ -1,0 +1,1251 @@
+    <!-- =================================================================== -->
+    <!-- TAB 2: DEVICE MANAGEMENT -->
+    <!-- =================================================================== -->
+    <div x-show="currentTab === 'devices' && deviceFiltersReady" class="space-y-6 animate-fade-in" style="display: none;">
+      
+      <!-- Filters and Search Bar -->
+      <div class="device-filter-panel glass-panel rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
+        
+        <!-- Primary Toolbar: Search Bar + Quick Actions -->
+        <div class="device-filter-primary flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          
+          <!-- Search Input with Integrated Clear Button -->
+          <div class="device-search relative flex-1 min-w-0 md:flex-[1_1_0%]">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input 
+              id="device-quick-search-input"
+              type="text" 
+              x-model="deviceSearchQuery"
+              @keydown.window.ctrl.k.prevent="setTab('devices'); $nextTick(() => document.getElementById('device-quick-search-input')?.focus())"
+              @keydown.window.meta.k.prevent="setTab('devices'); $nextTick(() => document.getElementById('device-quick-search-input')?.focus())"
+              :placeholder="t('devices.search_placeholder')"
+              class="glass-input w-full pl-10 pr-16 py-2.5 rounded-xl text-sm"
+              :aria-label="t('devices.search_placeholder')">
+            <kbd x-show="!deviceSearchQuery" class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-black/[0.05] dark:bg-white/[0.08] text-slate-400 dark:text-slate-500 border border-black/[0.08] dark:border-white/[0.1] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">Ctrl+K</kbd>
+            <button 
+              x-show="deviceSearchQuery" 
+              x-cloak 
+              @click="deviceSearchQuery = ''" 
+              type="button" 
+              class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+              :title="t('devices.clear_search')">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+
+          <!-- Toolbar Quick Controls -->
+          <div class="device-filter-controls flex items-center gap-2 md:flex-[2_1_0%] md:min-w-0 flex-wrap sm:flex-nowrap">
+            
+            <!-- Result Counter Badge -->
+            <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 shadow-xs">
+              <span class="font-bold text-slate-900 dark:text-white" x-text="filteredDevices.length"></span>
+              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + t('common.devices')"></span>
+            </div>
+
+            <!-- List / Cards view toggle (desktop; mobile always uses its compact card list) -->
+            <div class="hidden md:inline-flex items-center rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-black/[0.03] dark:bg-white/[0.04] p-0.5 shadow-xs" role="group" :aria-label="t('devices.view_mode')">
+              <button type="button" @click="setDeviceViewMode('list')"
+                :class="deviceViewMode === 'list' ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                :aria-pressed="deviceViewMode === 'list'" :title="t('devices.view_list')"
+                class="inline-flex items-center justify-center p-2 rounded-lg transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              </button>
+              <button type="button" @click="setDeviceViewMode('cards')"
+                :class="deviceViewMode === 'cards' ? 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                :aria-pressed="deviceViewMode === 'cards'" :title="t('devices.view_cards')"
+                class="inline-flex items-center justify-center p-2 rounded-lg transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg>
+              </button>
+            </div>
+
+            <!-- Connected Only Toggle Pill -->
+            <button 
+              type="button"
+              @click="showConnectedOnly = !showConnectedOnly"
+              :class="showConnectedOnly 
+                ? 'bg-sky-500/15 dark:bg-sky-500/20 border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold shadow-xs' 
+                : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none">
+              <span class="w-2 h-2 rounded-full transition-all" :class="showConnectedOnly ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50 scale-110' : 'bg-slate-400 dark:bg-slate-500'"></span>
+              <span x-text="t('devices.filter_connected_only')"></span>
+            </button>
+
+            <!-- New Devices Filter Pill (Issue #60) -->
+            <button 
+              type="button"
+              @click="selectedCategoryFilter = selectedCategoryFilter === 'new' ? 'all' : 'new'"
+              :class="selectedCategoryFilter === 'new' 
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs' 
+                : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none"
+              :title="t('devices.filter_new_tooltip')">
+              <span class="text-xs">✨</span>
+              <span x-text="t('devices.filter_new_tag')"></span>
+              <span x-show="devices.filter(d => d.is_new).length > 0" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-700 dark:text-emerald-300" x-text="devices.filter(d => d.is_new).length"></span>
+            </button>
+
+            <!-- Column Customizer Dropdown (Desktop Only >= md - Issue #60) -->
+            <div x-show="deviceViewMode === 'list'" class="hidden md:block md:flex-1 relative" @click.outside="if (openDeviceDropdown === 'columns') closeDeviceDropdowns()">
+              <button 
+                type="button"
+                @click.stop="toggleDeviceDropdown('columns')"
+                :class="openDeviceDropdown === 'columns' ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                class="device-toggle-pill w-full justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs"
+                :title="t('devices.columns_button_tooltip')"
+                :aria-label="t('devices.columns_button')"
+                :aria-expanded="openDeviceDropdown === 'columns'">
+                <svg class="w-3.5 h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4v16m6-16v16M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg>
+                <span x-text="t('devices.columns_button')"></span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/[0.06] dark:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-semibold" x-text="getActiveColumnsCount() + '/8'"></span>
+                <svg class="w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'columns' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </button>
+
+              <!-- Columns Dropdown Menu -->
+              <div 
+                x-show="openDeviceDropdown === 'columns'" 
+                x-cloak 
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-75"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+                class="absolute right-0 top-full mt-1.5 w-60 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 p-2.5 space-y-2 text-xs">
+                
+                <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/80 dark:border-slate-800">
+                  <span class="font-semibold text-slate-900 dark:text-white" x-text="t('devices.columns_title')"></span>
+                  <button 
+                    type="button" 
+                    @click="resetTableColumns()" 
+                    class="text-[11px] font-medium text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                    x-text="t('devices.columns_reset')">
+                  </button>
+                </div>
+
+                <div class="space-y-1 max-h-64 overflow-y-auto pr-0.5">
+                  <!-- Fixed Col: Name -->
+                  <div class="flex items-center justify-between px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 select-none">
+                    <span class="flex items-center gap-2">
+                      <span class="w-3.5 h-3.5 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-700 text-slate-500 text-[10px]">✓</span>
+                      <span x-text="t('devices.col_device')"></span>
+                    </span>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-60" x-text="t('devices.columns_fixed')"></span>
+                  </div>
+
+                  <!-- Toggleable Columns -->
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.address" @change="toggleTableColumn('address')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_ip_mac')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.profile" @change="toggleTableColumn('profile')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_profile')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.node" @change="toggleTableColumn('node')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_node')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.band" @change="toggleTableColumn('band')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_band')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.signal" @change="toggleTableColumn('signal')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_signal')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.traffic" @change="toggleTableColumn('traffic')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_traffic')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.first_seen" @change="toggleTableColumn('first_seen')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_first_seen')"></span>
+                    </span>
+                  </label>
+
+                  <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none transition">
+                    <span class="flex items-center gap-2">
+                      <input type="checkbox" :checked="deviceTableColumns.status" @change="toggleTableColumn('status')" class="rounded text-sky-600 focus:ring-sky-500 w-3.5 h-3.5 border-slate-300 dark:border-slate-700 dark:bg-slate-800">
+                      <span class="text-slate-800 dark:text-slate-200" x-text="t('devices.col_status')"></span>
+                    </span>
+                  </label>
+
+                  <!-- Fixed Col: Actions -->
+                  <div class="flex items-center justify-between px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 select-none">
+                    <span class="flex items-center gap-2">
+                      <span class="w-3.5 h-3.5 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-700 text-slate-500 text-[10px]">✓</span>
+                      <span x-text="t('devices.col_actions')"></span>
+                    </span>
+                    <span class="text-[10px] uppercase font-bold tracking-wider opacity-60" x-text="t('devices.columns_fixed')"></span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Refresh Dispositivi -->
+            <button 
+              type="button"
+              @click="manualRefresh()"
+              :disabled="isRefreshing"
+              class="device-refresh-btn p-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] hover:bg-sky-500/10 dark:hover:bg-sky-500/20 text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 border border-slate-200/80 dark:border-white/[0.08] transition cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+              :title="t('devices.refresh_title')"
+              :aria-label="t('devices.refresh_title')">
+              <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- Mobile Fast Filter Chips (< md) -->
+        <div class="md:hidden space-y-2 pt-1">
+          <!-- Quick Band Chips Row -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button 
+              type="button" 
+              @click="selectedBandFilter = 'all'"
+              :class="selectedBandFilter === 'all' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer"
+              x-text="t('devices.filter_all_bands')">
+            </button>
+            <button 
+              type="button" 
+              @click="selectedCategoryFilter = selectedCategoryFilter === 'new' ? 'all' : 'new'"
+              :class="selectedCategoryFilter === 'new' ? 'bg-emerald-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer flex items-center gap-1">
+              <span>✨</span>
+              <span x-text="t('devices.filter_new_tag')"></span>
+              <span x-show="devices.filter(d => d.is_new).length > 0" class="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-white/20" x-text="devices.filter(d => d.is_new).length"></span>
+            </button>
+            <button 
+              type="button" 
+              @click="selectedBandFilter = '6GHz'"
+              :class="selectedBandFilter === '6GHz' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer">
+              6 GHz
+            </button>
+            <button 
+              type="button" 
+              @click="selectedBandFilter = '5GHz'"
+              :class="selectedBandFilter === '5GHz' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer">
+              5 GHz
+            </button>
+            <button 
+              type="button" 
+              @click="selectedBandFilter = '2.4GHz'"
+              :class="selectedBandFilter === '2.4GHz' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer">
+              2.4 GHz
+            </button>
+            <button 
+              type="button" 
+              @click="selectedBandFilter = 'wired'"
+              :class="selectedBandFilter === 'wired' ? 'bg-sky-500 text-white font-bold shadow-xs' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-300'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs transition cursor-pointer"
+              x-text="t('devices.filter_band_wired')">
+            </button>
+
+            <!-- Toggle Advanced Filters Accordion Button -->
+            <button 
+              type="button" 
+              @click="showMobileDeviceFilters = !showMobileDeviceFilters"
+              :class="(showMobileDeviceFilters || selectedNodeFilter !== 'all' || selectedCategoryFilter !== 'all' || selectedProfileFilter !== 'all' || selectedIpTypeFilter !== 'all') ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 font-bold' : 'bg-black/[0.04] dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border-transparent'"
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs border flex items-center gap-1 transition cursor-pointer">
+              <span x-text="t('devices.filters')"></span>
+              <svg class="w-3 h-3 transition-transform" :class="showMobileDeviceFilters ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+          </div>
+
+          <!-- Advanced Filters Accordion for Mobile -->
+          <div x-show="showMobileDeviceFilters" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+            <!-- Sort Selector for mobile (Issue #60) -->
+            <select x-model="deviceSortField" @change="if (deviceSortField === 'first_seen') deviceSortDirection = 'desc'" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="name" x-text="t('devices.sort_by') + ' ' + t('devices.sort_name')"></option>
+              <option value="first_seen" x-text="t('devices.sort_by') + ' ' + t('devices.sort_first_seen')"></option>
+              <option value="ip" x-text="t('devices.sort_by') + ' ' + t('devices.sort_ip')"></option>
+              <option value="signal" x-text="t('devices.sort_by') + ' ' + t('devices.sort_signal')"></option>
+              <option value="download" x-text="t('devices.sort_by') + ' ' + t('devices.sort_download')"></option>
+              <option value="upload" x-text="t('devices.sort_by') + ' ' + t('devices.sort_upload')"></option>
+              <option value="status" x-text="t('devices.sort_by') + ' ' + t('devices.sort_status')"></option>
+            </select>
+
+            <!-- Node Selector for mobile -->
+            <select x-model="selectedNodeFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="all" x-text="t('devices.filter_all_nodes')"></option>
+              <template x-for="node in eeros" :key="node.id">
+                <option :value="node.id" x-text="node.name + (node.is_gateway ? ' (' + t('common.gateway') + ')' : '')"></option>
+              </template>
+            </select>
+
+            <!-- Category Selector for mobile -->
+            <select x-model="selectedCategoryFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="all" x-text="t('devices.filter_all_categories')"></option>
+              <option value="new" x-text="t('devices.filter_new_devices')"></option>
+              <option value="favorites" x-text="t('devices.filter_favorites')"></option>
+              <option value="Computers" x-text="t('devices.cat_computer')"></option>
+              <option value="Entertainment" x-text="t('devices.cat_entertainment')"></option>
+              <option value="Home and Office" x-text="t('devices.cat_home_office')"></option>
+              <option value="Mobile" x-text="t('devices.cat_mobile')"></option>
+              <option value="Gaming" x-text="t('devices.cat_gaming')"></option>
+              <option value="Audio" x-text="t('devices.cat_audio')"></option>
+            </select>
+
+            <!-- Profile Selector for mobile -->
+            <select x-model="selectedProfileFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="all" x-text="t('devices.filter_all_profiles')"></option>
+              <option value="unassigned" x-text="t('devices.filter_unassigned')"></option>
+              <template x-for="prof in profiles" :key="prof.id">
+                <option :value="prof.id" x-text="localized(prof, 'name')"></option>
+              </template>
+            </select>
+
+            <!-- IP Type Selector for mobile -->
+            <select x-model="selectedIpTypeFilter" class="glass-input w-full px-2.5 py-1.5 rounded-lg text-xs">
+              <option value="all" x-text="t('devices.filter_all_assignments')"></option>
+              <option value="static" x-text="t('devices.filter_only_static')"></option>
+              <option value="dhcp" x-text="t('devices.filter_only_dhcp')"></option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Secondary Toolbar: Filter & Sort Dropdowns in a Balanced Full-Width Grid (Desktop Only >= md) -->
+        <div class="device-filter-grid hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-6 gap-2.5" @click.outside="closeDeviceDropdowns()" @keydown.escape.window="closeDeviceDropdowns()">
+          
+          <!-- Band Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('band')"
+              :class="[
+                selectedBandFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'band' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_bands')"
+              :aria-expanded="openDeviceDropdown === 'band'">
+              <span class="truncate pr-1.5" x-text="getBandFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'band' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'band'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedBandFilter = 'all'; closeDeviceDropdowns()" :class="selectedBandFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_bands')"></span>
+                <span x-show="selectedBandFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '6GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '6GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_6ghz')"></span>
+                <span x-show="selectedBandFilter === '6GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '5GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '5GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_5ghz')"></span>
+                <span x-show="selectedBandFilter === '5GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = '2.4GHz'; closeDeviceDropdowns()" :class="selectedBandFilter === '2.4GHz' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_24ghz')"></span>
+                <span x-show="selectedBandFilter === '2.4GHz'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedBandFilter = 'wired'; closeDeviceDropdowns()" :class="selectedBandFilter === 'wired' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_band_wired')"></span>
+                <span x-show="selectedBandFilter === 'wired'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Node Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('node')"
+              :class="[
+                selectedNodeFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'node' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_nodes')"
+              :aria-expanded="openDeviceDropdown === 'node'">
+              <span class="truncate pr-1.5" x-text="getNodeFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'node' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'node'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedNodeFilter = 'all'; closeDeviceDropdowns()" :class="selectedNodeFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_nodes')"></span>
+                <span x-show="selectedNodeFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <template x-for="e in eeros" :key="e.id || e.serial">
+                <button type="button" @click="selectedNodeFilter = (e.id || e.serial); closeDeviceDropdowns()" :class="selectedNodeFilter === (e.id || e.serial) ? 'is-selected' : ''" class="device-filter-option">
+                  <span class="truncate" x-text="e.name"></span>
+                  <span x-show="selectedNodeFilter === (e.id || e.serial)" class="text-xs">✓</span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('category')"
+              :class="[
+                selectedCategoryFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'category' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_categories')"
+              :aria-expanded="openDeviceDropdown === 'category'">
+              <span class="truncate pr-1.5" x-text="getCategoryFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'category' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'category'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedCategoryFilter = 'all'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_categories')"></span>
+                <span x-show="selectedCategoryFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'favorites'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'favorites' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_favorites')"></span>
+                <span x-show="selectedCategoryFilter === 'favorites'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'new'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'new' ? 'is-selected' : ''" class="device-filter-option">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span x-text="t('devices.filter_new_tag')"></span>
+                </span>
+                <span x-show="selectedCategoryFilter === 'new'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Computer'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Computer' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_computer')"></span>
+                <span x-show="selectedCategoryFilter === 'Computer'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Mobile'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Mobile' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_mobile')"></span>
+                <span x-show="selectedCategoryFilter === 'Mobile'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Smart Home'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Smart Home' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_smarthome')"></span>
+                <span x-show="selectedCategoryFilter === 'Smart Home'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Intrattenimento'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Intrattenimento' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_entertainment')"></span>
+                <span x-show="selectedCategoryFilter === 'Intrattenimento'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Gaming'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Gaming' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_gaming')"></span>
+                <span x-show="selectedCategoryFilter === 'Gaming'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Server/Rete'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Server/Rete' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_server')"></span>
+                <span x-show="selectedCategoryFilter === 'Server/Rete'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedCategoryFilter = 'Altro'; closeDeviceDropdowns()" :class="selectedCategoryFilter === 'Altro' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.cat_other')"></span>
+                <span x-show="selectedCategoryFilter === 'Altro'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Profile Filter -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('profile')"
+              :class="[
+                selectedProfileFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'profile' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_profiles')"
+              :aria-expanded="openDeviceDropdown === 'profile'">
+              <span class="truncate pr-1.5" x-text="getProfileFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'profile' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'profile'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedProfileFilter = 'all'; closeDeviceDropdowns()" :class="selectedProfileFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_profiles')"></span>
+                <span x-show="selectedProfileFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedProfileFilter = 'unassigned'; closeDeviceDropdowns()" :class="selectedProfileFilter === 'unassigned' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_unassigned')"></span>
+                <span x-show="selectedProfileFilter === 'unassigned'" class="text-xs">✓</span>
+              </button>
+              <template x-for="prof in profiles" :key="prof.id">
+                <button type="button" @click="selectedProfileFilter = prof.id; closeDeviceDropdowns()" :class="selectedProfileFilter === prof.id ? 'is-selected' : ''" class="device-filter-option">
+                  <span class="truncate" x-text="'👤 ' + localized(prof, 'name')"></span>
+                  <span x-show="selectedProfileFilter === prof.id" class="text-xs">✓</span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- IP Type Filter (Static / DHCP) -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('ip')"
+              :class="[
+                selectedIpTypeFilter !== 'all' ? 'is-active' : '',
+                openDeviceDropdown === 'ip' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.filter_all_assignments')"
+              :aria-expanded="openDeviceDropdown === 'ip'">
+              <span class="truncate pr-1.5" x-text="getIpTypeFilterLabel()"></span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'ip' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'ip'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu">
+              <button type="button" @click="selectedIpTypeFilter = 'all'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'all' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_all_assignments')"></span>
+                <span x-show="selectedIpTypeFilter === 'all'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedIpTypeFilter = 'static'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'static' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_only_static')"></span>
+                <span x-show="selectedIpTypeFilter === 'static'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="selectedIpTypeFilter = 'dhcp'; closeDeviceDropdowns()" :class="selectedIpTypeFilter === 'dhcp' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.filter_only_dhcp')"></span>
+                <span x-show="selectedIpTypeFilter === 'dhcp'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sort Dropdown (Issue #60) -->
+          <div class="device-filter-select-wrapper relative sm:col-span-1 md:col-span-2 xl:col-span-1">
+            <button 
+              type="button"
+              @click.stop="toggleDeviceDropdown('sort')"
+              :class="[
+                deviceSortField !== 'name' ? 'is-active' : '',
+                openDeviceDropdown === 'sort' ? 'ring-2 ring-sky-500/40 border-sky-500' : ''
+              ]"
+              class="device-filter-btn glass-input w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition shadow-xs cursor-pointer select-none"
+              :aria-label="t('devices.sort_by')"
+              :aria-expanded="openDeviceDropdown === 'sort'">
+              <span class="truncate pr-1.5 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                <span x-text="getSortLabel()"></span>
+              </span>
+              <svg class="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 transition-transform duration-150" :class="openDeviceDropdown === 'sort' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div 
+              x-show="openDeviceDropdown === 'sort'" 
+              x-cloak 
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="opacity-0 -translate-y-1 scale-98"
+              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+              x-transition:leave-end="opacity-0 -translate-y-1 scale-98"
+              class="device-filter-dropdown-menu xl:right-0 xl:left-auto">
+              <button type="button" @click="deviceSortField = 'name'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'name' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_name')"></span>
+                <span x-show="deviceSortField === 'name'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'first_seen'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'first_seen' ? 'is-selected' : ''" class="device-filter-option">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span x-text="t('devices.sort_first_seen')"></span>
+                </span>
+                <span x-show="deviceSortField === 'first_seen'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'ip'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'ip' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_ip')"></span>
+                <span x-show="deviceSortField === 'ip'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'signal'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'signal' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_signal')"></span>
+                <span x-show="deviceSortField === 'signal'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'download'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'download' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_download')"></span>
+                <span x-show="deviceSortField === 'download'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'upload'; deviceSortDirection = 'desc'; closeDeviceDropdowns()" :class="deviceSortField === 'upload' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_upload')"></span>
+                <span x-show="deviceSortField === 'upload'" class="text-xs">✓</span>
+              </button>
+              <button type="button" @click="deviceSortField = 'status'; deviceSortDirection = 'asc'; closeDeviceDropdowns()" :class="deviceSortField === 'status' ? 'is-selected' : ''" class="device-filter-option">
+                <span x-text="t('devices.sort_status')"></span>
+                <span x-show="deviceSortField === 'status'" class="text-xs">✓</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mark all as seen (Issue #60): visible only with the "New" filter active -->
+      <div x-show="selectedCategoryFilter === 'new' && can('action_edit_devices') && devices.some(d => d.is_new)" x-cloak class="flex justify-end">
+        <button
+          type="button"
+          @click="setDevicesSeen(devices.filter(d => d.is_new).map(d => d.mac || d.mac_address))"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span x-text="t('devices.mark_all_seen') + ' (' + devices.filter(d => d.is_new).length + ')'"></span>
+        </button>
+      </div>
+
+      <!-- Devices Table (Desktop Only >= md) -->
+      <div x-show="deviceViewMode === 'list'" class="hidden md:block device-table-panel glass-panel rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div class="device-table-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)] min-h-[380px] relative">
+          <table class="device-table w-full text-left border-collapse text-xs"
+                 x-effect="filteredDevices; JSON.stringify(deviceTableColumns); currentLanguage; $nextTick(() => fitDeviceNameColumn())">
+            <caption class="sr-only" x-text="t('devices.title')"></caption>
+            <thead class="sticky top-0 z-20 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+              <tr class="text-slate-700 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                
+                <!-- Col: Device / Name -->
+                <th @click="toggleDeviceSort('name')" class="device-col-name py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_device')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'name' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'name' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'name'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: IP / MAC -->
+                <th x-show="isTableColumnVisible('address')" @click="toggleDeviceSort('ip')" class="device-col-address py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_ip_mac')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'ip' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'ip' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'ip'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Profile / User -->
+                <th x-show="isTableColumnVisible('profile')" @click="toggleDeviceSort('profile')" class="device-col-profile py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_profile')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'profile' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'profile' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'profile'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Node -->
+                <th x-show="isTableColumnVisible('node')" @click="toggleDeviceSort('node')" class="device-col-node py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_node')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'node' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'node' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'node'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Band -->
+                <th x-show="isTableColumnVisible('band')" @click="toggleDeviceSort('band')" class="device-col-band py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_band')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'band' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'band' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'band'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Signal -->
+                <th x-show="isTableColumnVisible('signal')" @click="toggleDeviceSort('signal')" class="device-col-signal py-3.5 px-4 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_signal')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'signal' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'signal' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'signal'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Traffic (Download & Upload) -->
+                <th x-show="isTableColumnVisible('traffic')" class="device-col-traffic device-th-traffic py-3 px-2 select-none group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1 text-[11px]">
+                    <div @click="toggleDeviceSort('download')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'download' ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400'" :title="t('devices.col_download')">
+                      <span>↓DL</span>
+                      <svg x-show="deviceSortField === 'download' && deviceSortDirection === 'asc'" class="w-3 h-3 text-sky-600 dark:text-sky-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'download' && deviceSortDirection === 'desc'" class="w-3 h-3 text-sky-600 dark:text-sky-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                    <span class="text-slate-300 dark:text-slate-600">/</span>
+                    <div @click="toggleDeviceSort('upload')" class="cursor-pointer inline-flex items-center hover:text-slate-900 dark:hover:text-white transition" :class="deviceSortField === 'upload' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'" :title="t('devices.col_upload')">
+                      <span>↑UL</span>
+                      <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'asc'" class="w-3 h-3 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'upload' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                    <button @click.stop="showUsageInfoModal = true" type="button" class="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-sky-500 hover:text-white text-slate-500 dark:text-slate-300 text-[9px] font-bold inline-flex items-center justify-center cursor-pointer transition ml-0.5" :title="t('device_modal.usage_info_btn_title')">?</button>
+                  </div>
+                </th>
+
+                <!-- Col: First Seen (Issue #60) -->
+                <th x-show="isTableColumnVisible('first_seen')" @click="toggleDeviceSort('first_seen')" class="device-col-first-seen py-3.5 px-3 cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center space-x-1.5">
+                    <span x-text="t('devices.col_first_seen')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'first_seen' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'first_seen' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'first_seen' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'first_seen'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Status -->
+                <th x-show="isTableColumnVisible('status')" @click="toggleDeviceSort('status')" class="device-col-status device-th-status py-3.5 px-3 text-center cursor-pointer select-none hover:text-slate-900 dark:hover:text-white transition group sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md">
+                  <div class="flex items-center justify-center space-x-1.5">
+                    <span x-text="t('devices.col_status')"></span>
+                    <span class="inline-flex items-center text-xs" :class="deviceSortField === 'status' ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-400'">
+                      <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'asc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                      <svg x-show="deviceSortField === 'status' && deviceSortDirection === 'desc'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      <svg x-show="deviceSortField !== 'status'" class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </span>
+                  </div>
+                </th>
+
+                <!-- Col: Actions -->
+                <th class="device-col-actions py-3.5 px-2 text-right sticky top-0 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md"><span class="sr-only" x-text="t('devices.col_actions')"></span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
+              <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
+                <tr class="device-table-row hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  
+                  <!-- Name & Icon -->
+                  <td class="device-name-cell py-3 px-4">
+                    <div class="device-identity flex items-center gap-3">
+                      <div class="w-8 h-8 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(dev.custom_icon || dev.category || dev.device_type)"></path></svg>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex min-w-0 items-center gap-1.5 flex-wrap">
+                          <div @click="openDeviceModal(dev)" @keydown.enter="openDeviceModal(dev)" tabindex="0" role="button" class="device-name min-w-0 font-bold text-slate-900 dark:text-white text-sm cursor-pointer hover:text-sky-600 dark:hover:text-sky-400 hover:underline focus:outline-none focus-visible:underline" :title="t('devices.edit_rules')" :aria-label="(dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')) + ' — ' + t('devices.edit_rules')" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></div>
+                          <template x-if="dev.is_new">
+                            <span
+                              @click="if (can('action_edit_devices')) setDevicesSeen([dev.mac || dev.mac_address])"
+                              :class="can('action_edit_devices') ? 'cursor-pointer hover:bg-emerald-500/30' : ''"
+                              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40 shadow-xs"
+                              :title="t('devices.first_seen_badge_tooltip') + (dev.first_seen ? ' ' + formatFirstSeenFull(dev.first_seen) : '') + (can('action_edit_devices') ? ' — ' + t('devices.new_badge_click_hint') : '')">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              <span x-text="t('devices.new_badge')"></span>
+                            </span>
+                          </template>
+                          <template x-if="dev.is_favorite">
+                            <span class="text-amber-500 dark:text-amber-400 text-xs" :title="t('devices.filter_favorites')">⭐</span>
+                          </template>
+                          <template x-if="dev.is_low_latency_target">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" :title="t('devices.badge_gaming_target')" x-text="t('devices.badge_gaming_target')"></span>
+                          </template>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-500 flex-wrap">
+                          <span class="truncate" x-text="formatCategoryName(dev.category)"></span>
+                          <template x-if="dev.first_seen">
+                            <span class="inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-normal shrink-0" :title="t('devices.first_seen_badge_tooltip') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                              <span>•</span>
+                              <svg class="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              <span class="font-mono font-medium" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                            </span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- IP & MAC with Static / DHCP badge -->
+                  <td x-show="isTableColumnVisible('address')" class="device-address-cell py-3 px-4 font-mono" :data-label="t('devices.col_ip_mac')">
+                    <!-- The DHCP/STATIC badge wraps under the IP when the column is narrow instead of spilling into the next column -->
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span @click="openDeviceModal(dev)" @keydown.enter="openDeviceModal(dev)" tabindex="0" role="button" class="text-slate-900 dark:text-slate-200 font-bold text-xs cursor-pointer hover:text-sky-600 dark:hover:text-sky-400 hover:underline focus:outline-none focus-visible:underline" :title="t('devices.edit_rules')" x-text="dev.ip || '---'"></span>
+                      <template x-if="dev.is_static">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 tracking-wider inline-flex items-center shadow-xs dark:shadow-none" :title="t('devices.badge_static')">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 inline-block mr-1"></span><span x-text="t('devices.badge_static')"></span>
+                        </span>
+                      </template>
+                      <template x-if="!dev.is_static">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border border-slate-400 dark:border-slate-600 tracking-wider inline-flex items-center shadow-xs dark:shadow-none" :title="t('devices.badge_dhcp')">
+                          <span class="w-1.5 h-1.5 rounded-full bg-slate-600 dark:bg-slate-400 inline-block mr-1"></span><span x-text="t('devices.badge_dhcp')"></span>
+                        </span>
+                      </template>
+                    </div>
+                    <div class="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 font-medium flex items-center space-x-1.5">
+                      <span x-text="dev.mac || dev.mac_address"></span>
+                      <template x-if="dev.ipv6 || (dev.ipv6_all && dev.ipv6_all.length)">
+                        <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30" :title="(dev.ipv6_all || [dev.ipv6]).join('\n')">IPv6</span>
+                      </template>
+                      <template x-if="dev.has_discovered_ips || (dev.ipv6_details && dev.ipv6_details.some(d => d.origin === 'ndp_discovered'))">
+                        <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-fuchsia-100 dark:bg-fuchsia-950/60 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-400 dark:border-fuchsia-500/40" :title="t('devices.badge_ula_enriched_tooltip')" x-text="t('devices.badge_ula_enriched')"></span>
+                      </template>
+                    </div>
+                  </td>
+
+                  <!-- Profile / User -->
+                  <td x-show="isTableColumnVisible('profile')" class="device-profile-cell py-3 px-4" :data-label="t('devices.col_profile')">
+                    <template x-if="dev.profile_name">
+                      <!-- Long profile names truncate with an ellipsis on one line; the full name is in the tooltip -->
+                      <span class="device-profile inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-950 dark:text-sky-300 border border-sky-400 dark:border-sky-500/40 shadow-xs dark:shadow-none" :title="dev.profile_name">
+                        <span class="shrink-0">👤</span>
+                        <span class="min-w-0 truncate leading-snug" x-text="dev.profile_name"></span>
+                      </span>
+                    </template>
+                    <template x-if="!dev.profile_name">
+                      <span class="text-[11px] text-slate-500 dark:text-slate-400 italic" x-text="t('profiles.total_unassigned')"></span>
+                    </template>
+                  </td>
+
+                  <!-- Connected eero -->
+                  <td x-show="isTableColumnVisible('node')" class="device-node-cell py-3 px-4 text-slate-900 dark:text-slate-200" :data-label="t('devices.col_node')">
+                    <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                      <span class="font-semibold" x-text="dev.connected_eero_name || t('common.gateway')"></span>
+                      <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
+                        <span 
+                          class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 flex items-center space-x-0.5 cursor-help"
+                          :title="localized(dev.roaming_advisor, 'advice')">
+                          <span>🔄</span>
+                          <span x-text="t('devices.sticky_roaming_badge')"></span>
+                        </span>
+                      </template>
+                    </div>
+                  </td>
+
+                  <!-- Band / Channel -->
+                  <td x-show="isTableColumnVisible('band')" class="device-band-cell py-3 px-4" :data-label="t('devices.col_band')">
+                    <div class="flex flex-col items-start gap-1">
+                      <span 
+                        class="px-2.5 py-0.5 rounded text-[10px] font-mono font-extrabold shadow-xs dark:shadow-none inline-block"
+                        :class="{
+                          'bg-cyan-100 dark:bg-cyan-950/60 text-cyan-950 dark:text-cyan-300 border border-cyan-400 dark:border-cyan-500/40': (dev.wireless_band === '6GHz' || dev.frequency_band === '6 GHz' || dev.frequency_band === '6GHz' || (dev.channel && dev.channel > 177)),
+                          'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-300 border border-indigo-400 dark:border-indigo-500/40': (dev.wireless_band !== '6GHz' && dev.frequency_band !== '6 GHz' && dev.frequency_band !== '6GHz' && (!dev.channel || dev.channel <= 177) && (dev.wireless_band === '5GHz' || dev.frequency_band === '5 GHz' || dev.frequency_band === '5GHz' || (dev.channel && dev.channel >= 32))),
+                          'bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-300 border border-amber-400 dark:border-amber-500/40': (dev.wireless_band !== '6GHz' && dev.frequency_band !== '6 GHz' && dev.frequency_band !== '6GHz' && (dev.wireless_band === '2.4GHz' || dev.frequency_band === '2.4 GHz' || dev.frequency_band === '2.4GHz' || (dev.channel && dev.channel >= 1 && dev.channel <= 14))),
+                          'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40': (dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired')
+                        }"
+                        x-text="(dev.wireless === false || dev.connection_type === 'wired' || dev.frequency_band === 'Ethernet' || dev.frequency_band === 'Cablato' || dev.frequency_band === 'Wired') ? t('common.ethernet') : (dev.frequency_band && dev.frequency_band !== 'Cablato' && dev.frequency_band !== 'Ethernet' ? dev.frequency_band : (dev.wireless_band || (dev.channel && dev.channel <= 14 ? '2.4 GHz' : (dev.channel && dev.channel > 177 ? '6 GHz' : '5 GHz'))))">
+                      </span>
+                      <template x-if="dev.channel">
+                        <span class="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">CH <span x-text="dev.channel"></span></span>
+                      </template>
+                    </div>
+                  </td>
+
+                  <!-- Signal & PHY Link Speed (Real Eero API data) -->
+                  <td x-show="isTableColumnVisible('signal')" class="py-3 px-4 font-mono text-xs" :data-label="t('devices.col_signal')">
+                    <template x-if="dev.wireless">
+                      <div>
+                        <template x-if="dev.signal_rssi">
+                          <div class="text-slate-900 dark:text-slate-200 font-semibold" x-text="dev.signal_rssi + ' dBm'"></div>
+                        </template>
+                        <template x-if="dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)">
+                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="'PHY: ' + (dev.phy_rate || dev.connectivity.rx_bitrate)"></div>
+                        </template>
+                        <template x-if="!dev.signal_rssi && !dev.phy_rate && (!dev.connectivity || !dev.connectivity.rx_bitrate)">
+                          <div class="text-[10px] text-slate-600 dark:text-slate-400" x-text="dev.connected ? 'Wi-Fi' : t('devices.status_offline')"></div>
+                        </template>
+                      </div>
+                    </template>
+                    <template x-if="!dev.wireless">
+                      <div>
+                        <div class="text-emerald-700 dark:text-emerald-400 font-bold" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired')"></div>
+                        <div class="text-[10px] text-slate-600 dark:text-slate-400" x-show="dev.ethernet_speed" x-text="t('dashboard.backhaul_wired')"></div>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- Traffic (Download & Upload) -->
+                  <td x-show="isTableColumnVisible('traffic')" class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic')">
+                    <template x-if="(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05)">
+                      <div class="flex flex-col leading-tight">
+                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.download_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.download_rate_mbps + ' Mbps' : '')">
+                          ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                          <span x-show="dev.download_rate_mbps > 0.05" class="text-[10px] text-sky-500 dark:text-sky-400 font-medium ml-1" x-text="'(' + formatTrafficRate(dev.download_rate_mbps) + ')'"></span>
+                        </span>
+                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.upload_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.upload_rate_mbps + ' Mbps' : '')">
+                          ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                          <span x-show="dev.upload_rate_mbps > 0.05" class="text-[9px] text-emerald-500 dark:text-emerald-400 font-normal ml-1" x-text="'(' + formatTrafficRate(dev.upload_rate_mbps) + ')'"></span>
+                        </span>
+                      </div>
+                    </template>
+                    <template x-if="!(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05) && !dev.wireless">
+                      <div class="flex flex-col leading-tight cursor-help" :title="t('devices.wired_traffic_tooltip')">
+                        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                          ↓ —
+                        </span>
+                        <span class="text-[10px] text-slate-400 dark:text-slate-500">
+                          ↑ — <span class="text-[9px] text-slate-400/80 dark:text-slate-500/80 font-normal ml-0.5" x-text="'(' + t('devices.wired_tag') + ')'"></span>
+                        </span>
+                      </div>
+                    </template>
+                    <template x-if="!(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05) && dev.wireless">
+                      <div class="flex flex-col leading-tight">
+                        <span class="text-xs font-bold text-sky-600/70 dark:text-sky-400/70" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
+                          ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                        </span>
+                        <span class="text-[10px] font-medium text-emerald-600/70 dark:text-emerald-400/70" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
+                          ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                        </span>
+                      </div>
+                    </template>
+                  </td>
+
+                  <!-- First Seen (Issue #60) -->
+                  <td x-show="isTableColumnVisible('first_seen')" class="device-first-seen-cell py-3 px-3 font-mono text-xs whitespace-nowrap" :data-label="t('devices.col_first_seen')">
+                    <template x-if="dev.first_seen">
+                      <div class="flex items-center space-x-1.5" :title="t('devices.first_seen_badge_tooltip') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                        <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-slate-700 dark:text-slate-300 font-medium" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                      </div>
+                    </template>
+                    <template x-if="!dev.first_seen">
+                      <span class="text-slate-400 dark:text-slate-600 text-[11px]">—</span>
+                    </template>
+                  </td>
+
+                  <!-- Status (Online/Offline) -->
+                  <td x-show="isTableColumnVisible('status')" class="device-status-cell py-3 px-3 text-center whitespace-nowrap" :data-label="t('devices.col_status')">
+                    <template x-if="dev.connected">
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-500/40 shadow-xs dark:shadow-none" x-text="t('devices.status_online')"></span>
+                    </template>
+                    <template x-if="!dev.connected">
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-400 dark:border-slate-700 shadow-xs dark:shadow-none" x-text="t('devices.status_offline')"></span>
+                    </template>
+                  </td>
+
+                  <!-- Action Buttons -->
+                  <td class="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+                    <!-- Detail Modal Trigger -->
+                    <button 
+                      @click="openDeviceModal(dev)"
+                      class="device-edit-button inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
+                      :title="t('devices.edit_rules')">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                  </td>
+
+                </tr>
+              </template>
+
+              <!-- Dynamic Empty State -->
+              <template x-if="filteredDevices.length === 0">
+                <tr class="device-empty-row">
+                  <td :colspan="getActiveColumnsCount() + 2" class="py-12 px-4 text-center text-slate-500">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                      <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                      <span class="text-sm font-medium text-slate-400" x-text="t('devices.no_devices_found')"></span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Devices Cards (Desktop >= md, when view mode is "cards") -->
+      <div x-show="deviceViewMode === 'cards'" x-cloak class="device-cards hidden md:block">
+        <div class="device-cards-grid grid grid-cols-3 xl:grid-cols-4 gap-3">
+          <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
+            <div @click="openDeviceModal(dev)" @keydown.enter="openDeviceModal(dev)" tabindex="0" role="button"
+                 class="device-card glass-panel rounded-xl p-2.5 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-sky-500/40 hover:shadow-md transition cursor-pointer flex flex-col gap-2 min-w-0"
+                 :data-activity="deviceActivityLevel(dev)"
+                 :class="dev.connected ? '' : 'opacity-70'">
+
+              <!-- Header: icon + live dot, name, category, status + edit -->
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="relative shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(dev.custom_icon || dev.category || dev.device_type)"></path></svg>
+                  <span class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900"
+                        :class="[dev.connected ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50' : 'bg-slate-400', deviceActivityLevel(dev) > 0 ? 'device-live-dot' : '']"
+                        :title="dev.connected ? t('devices.status_online') : t('devices.status_offline')"></span>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="font-bold text-sm text-slate-900 dark:text-white truncate" :title="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></span>
+                    <template x-if="dev.is_favorite"><span class="text-amber-500 text-xs shrink-0" :title="t('devices.filter_favorites')">⭐</span></template>
+                    <template x-if="dev.is_new">
+                      <span @click.stop="if (can('action_edit_devices')) setDevicesSeen([dev.mac || dev.mac_address])"
+                            class="shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40"
+                            :title="can('action_edit_devices') ? t('devices.new_badge_click_hint') : ''" x-text="t('devices.new_badge')"></span>
+                    </template>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-500 min-w-0">
+                    <span class="truncate" :title="deviceVendorLabel(dev)" x-text="formatCategoryName(dev.category) + (deviceVendorLabel(dev) ? ' · ' + deviceVendorLabel(dev) : '')"></span>
+                    <span class="font-mono text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="dev.mac || dev.mac_address"></span>
+                  </div>
+                </div>
+                <div class="shrink-0 flex items-center gap-1.5">
+                  <button type="button" @click.stop="openDeviceModal(dev)" :title="t('devices.edit_rules')" :aria-label="t('devices.edit_rules')"
+                          class="inline-flex items-center justify-center p-1 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Address: IP + Static/DHCP on the left, MAC on the right -->
+              <div class="flex items-center gap-2 font-mono min-w-0" >
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-xs font-bold text-slate-900 dark:text-slate-200 shrink-0" x-text="dev.ip || '---'"></span>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-wider border shrink-0"
+                        :class="dev.is_static ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-200 border-slate-400 dark:border-slate-600'"
+                        x-text="dev.is_static ? t('devices.badge_static') : t('devices.badge_dhcp')"></span>
+                </div>
+                <span class="ml-auto shrink-0 px-2 py-0.5 rounded-full text-[9px] font-extrabold border"
+                      :class="dev.connected ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40' : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-400 dark:border-slate-700'"
+                      x-text="dev.connected ? t('devices.status_online') : t('devices.status_offline')"></span>
+              </div>
+
+              <!-- Connection + flag badges on one wrapping row -->
+              <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px]" :title="dev.wireless && (dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate)) ? 'PHY ' + (dev.phy_rate || dev.connectivity.rx_bitrate) : ''">
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold border"
+                      :class="dev.wireless ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-300 border-indigo-400 dark:border-indigo-500/40' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-950 dark:text-emerald-300 border-emerald-400 dark:border-emerald-500/40'"
+                      x-text="deviceBandLabel(dev)"></span>
+                <template x-if="dev.channel"><span class="font-mono font-bold text-slate-700 dark:text-slate-300">CH <span x-text="dev.channel"></span></span></template>
+                <template x-if="dev.wireless && dev.signal_rssi">
+                  <span class="inline-flex items-center gap-1 font-mono font-semibold text-slate-900 dark:text-slate-200">
+                    <span class="rssi-bar" aria-hidden="true"><template x-for="n in 5" :key="n"><span :style="'height:' + (n * 20) + '%;' + (n <= deviceSignalBars(dev) ? 'background-color:#10b981' : '')"></span></template></span>
+                    <span x-text="dev.signal_rssi + ' dBm'"></span>
+                  </span>
+                </template>
+                <template x-if="dev.wireless && (dev.phy_rate || (dev.connectivity && dev.connectivity.rx_bitrate))">
+                  <span class="font-mono text-slate-600 dark:text-slate-400" x-text="(dev.phy_rate || dev.connectivity.rx_bitrate).replace(' MBit/s', ' Mb').replace(' Mbit/s', ' Mb')"></span>
+                </template>
+                <template x-if="!dev.wireless">
+                  <span class="font-mono font-bold text-emerald-700 dark:text-emerald-400" x-text="dev.ethernet_speed || t('dashboard.backhaul_wired')"></span>
+                </template>
+                <template x-if="dev.wireless && (dev.phy_type || dev.channel_width)">
+                  <span class="font-mono text-slate-600 dark:text-slate-400" :title="t('device_modal.wifi_standard') + ' / ' + t('device_modal.channel_width')" x-text="[dev.phy_type, dev.channel_width].filter(Boolean).join(' ')"></span>
+                </template>
+                <template x-if="dev.is_guest">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-violet-100 dark:bg-violet-950/60 text-violet-800 dark:text-violet-300 border border-violet-300 dark:border-violet-500/30" x-text="t('devices.badge_guest')" :title="t('device_modal.guest_network')"></span>
+                </template>
+                <template x-if="dev.is_paused || dev.paused || dev.is_local_paused">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30" x-text="'⏸'" :title="t('devices.badge_paused')"></span>
+                </template>
+                <template x-if="dev.is_low_latency_target">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-rose-500/15 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30" x-text="'🎮'" :title="t('devices.badge_gaming_target')"></span>
+                </template>
+                <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 cursor-help" :title="t('devices.sticky_roaming_badge') + ' — ' + localized(dev.roaming_advisor, 'advice')">🔄</span>
+                </template>
+                <template x-if="dev.ipv6 || (dev.ipv6_all && dev.ipv6_all.length)">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-500/30" :title="(dev.ipv6_all || [dev.ipv6]).join('\n')">IPv6</span>
+                </template>
+                <template x-if="dev.has_discovered_ips || (dev.ipv6_details && dev.ipv6_details.some(d => d.origin === 'ndp_discovered'))">
+                  <span class="px-1.5 py-0.5 rounded font-bold bg-fuchsia-100 dark:bg-fuchsia-950/60 text-fuchsia-800 dark:text-fuchsia-300 border border-fuchsia-400 dark:border-fuchsia-500/40" :title="t('devices.badge_ula_enriched') + ' — ' + t('devices.badge_ula_enriched_tooltip')">ULA</span>
+                </template>
+              </div>
+
+              <!-- Notes (only when set) -->
+              <template x-if="dev.custom_notes">
+                <div class="text-[11px] italic text-slate-500 dark:text-slate-400 truncate" :title="dev.custom_notes" x-text="dev.custom_notes"></div>
+              </template>
+
+              <!-- Live throughput, download and upload side by side: arrows bob, bars shimmer, card glows when moving data -->
+              <div class="grid grid-cols-2 gap-2.5 font-mono">
+                <div class="min-w-0" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0)">
+                  <div class="flex items-baseline justify-between gap-1 text-[11px]">
+                    <span class="font-bold text-sky-600 dark:text-sky-400 truncate"><span class="device-arrow-down">↓</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.download_rate_mbps) : '0 Mbps'" x-effect="dev.download_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.download_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                    
+                  </div>
+                  <div class="device-activity-track mt-1"><div class="device-activity-fill is-down" :style="'width:' + (dev.connected ? deviceRatePercent(dev.download_rate_mbps) : 0) + '%'"></div></div>
+                </div>
+                <div class="min-w-0" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0)">
+                  <div class="flex items-baseline justify-between gap-1 text-[11px]">
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400 truncate"><span class="device-arrow-up">↑</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.upload_rate_mbps) : '0 Mbps'" x-effect="dev.upload_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.upload_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                    
+                  </div>
+                  <div class="device-activity-track mt-1"><div class="device-activity-fill is-up" :style="'width:' + (dev.connected ? deviceRatePercent(dev.upload_rate_mbps) : 0) + '%'"></div></div>
+                </div>
+              </div>
+
+              <!-- Footer: profile, node, first seen on a single line -->
+              <div class="mt-auto pt-2 border-t border-slate-200 dark:border-slate-800/60 flex items-center justify-between gap-2 min-w-0 text-[11px] text-slate-600 dark:text-slate-400">
+                <div class="min-w-0 flex items-center gap-1.5 truncate">
+                  <span class="truncate" :title="dev.profile_name || t('profiles.total_unassigned')">
+                    <span>👤</span> <span :class="dev.profile_name ? 'font-semibold text-slate-700 dark:text-slate-300' : 'italic'" x-text="dev.profile_name || t('profiles.total_unassigned')"></span>
+                  </span>
+                  <span class="text-slate-400 dark:text-slate-600">•</span>
+                  <span class="truncate" :title="t('devices.col_node')" x-text="dev.connected_eero_name || t('common.gateway')"></span>
+                </div>
+                <template x-if="!dev.connected && dev.last_active">
+                  <div class="shrink-0 inline-flex items-center gap-1 text-[10px]" :title="t('device_modal.last_active') + ' ' + formatFirstSeenFull(dev.last_active)">
+                    <span x-text="t('devices.last_seen_short')"></span>
+                    <span class="font-mono" x-text="formatFirstSeenRelative(dev.last_active)"></span>
+                  </div>
+                </template>
+                <template x-if="(dev.connected || !dev.last_active) && dev.first_seen">
+                  <div class="shrink-0 inline-flex items-center gap-1 text-[10px]" :title="t('devices.first_seen_badge_tooltip') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                    <span class="font-mono" x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div x-show="filteredDevices.length === 0" class="py-12 text-center text-slate-500">
+          <p class="text-sm font-semibold" x-text="t('devices.no_devices_found')"></p>
+        </div>
+      </div>
+
+      <!-- MOBILE DEVICES CARDS LIST (< 768px) -->
+      <div class="md:hidden space-y-2.5 select-none">
+        <template x-for="dev in filteredDevices" :key="dev.mac || dev.mac_address">
+          <div 
+            @click="openDeviceModal(dev)"
+            class="p-3.5 rounded-2xl bg-white dark:bg-[#262626] border border-black/[0.06] dark:border-white/[0.08] shadow-xs active:scale-[0.98] transition cursor-pointer hover:border-sky-500/40">
+            
+            <div class="flex items-center justify-between gap-3">
+              <!-- Left: Device Icon with online/offline dot -->
+              <div class="relative shrink-0 w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/60 dark:border-white/[0.06] flex items-center justify-center text-sky-600 dark:text-sky-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="getDeviceIconPath(dev.category)"></path>
+                </svg>
+                <!-- Online status dot -->
+                <span class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-[#262626]" 
+                      :class="dev.connected ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50' : 'bg-slate-400'"></span>
+              </div>
+
+              <!-- Center: Device Main Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-sm text-slate-900 dark:text-white truncate" x-text="dev.custom_name || dev.nickname || dev.hostname || t('devices.generic_device')"></span>
+                  <template x-if="dev.is_new">
+                    <span
+                      @click="if (can('action_edit_devices')) { $event.stopPropagation(); setDevicesSeen([dev.mac || dev.mac_address]); }"
+                      class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 dark:border-emerald-500/40"
+                      :title="can('action_edit_devices') ? t('devices.new_badge_click_hint') : ''"
+                      x-text="t('devices.new_badge')"></span>
+                  </template>
+                  <template x-if="dev.is_favorite">
+                    <span class="text-amber-500 text-xs">⭐</span>
+                  </template>
+                  <!-- Band / Wired badge -->
+                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase whitespace-nowrap" 
+                        :class="dev.wireless ? 'bg-sky-500/15 text-sky-700 dark:text-sky-300' : 'bg-slate-500/15 text-slate-700 dark:text-slate-300'"
+                        x-text="dev.wireless ? (dev.frequency ? dev.frequency.replace(' ', '') : 'Wi-Fi') : t('devices.wired_tag')"></span>
+                  <!-- Sticky Roaming badge -->
+                  <template x-if="dev.roaming_advisor && dev.roaming_advisor.is_sticky">
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 whitespace-nowrap" x-text="t('devices.sticky_badge')"></span>
+                  </template>
+                </div>
+                
+                <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span class="font-mono text-[11px] text-slate-600 dark:text-slate-300 font-semibold" x-text="dev.ip || 'No IP'"></span>
+                  <span>•</span>
+                  <span class="truncate" x-text="dev.connected_eero_name || t('common.gateway')"></span>
+                  <template x-if="dev.first_seen && formatFirstSeenRelative(dev.first_seen)">
+                    <span class="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 shrink-0" :title="t('device_modal.first_seen') + ' ' + formatFirstSeenFull(dev.first_seen)">
+                      <span>•</span>
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span x-text="formatFirstSeenRelative(dev.first_seen)"></span>
+                    </span>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Right: Real-time speed / signal & Chevron -->
+              <div class="shrink-0 flex items-center gap-2 text-right">
+                <div class="flex flex-col items-end">
+                  <template x-if="dev.connected && (dev.rx_rate > 0.05 || dev.tx_rate > 0.05)">
+                    <div class="flex flex-col items-end leading-tight">
+                      <template x-if="dev.rx_rate > 0.05">
+                        <span class="font-mono text-[11px] font-bold text-sky-600 dark:text-sky-400" x-text="'↓ ' + formatSpeed(dev.rx_rate)"></span>
+                      </template>
+                      <template x-if="dev.tx_rate > 0.05">
+                        <span class="font-mono text-[10px] font-medium text-emerald-600 dark:text-emerald-400" x-text="'↑ ' + formatSpeed(dev.tx_rate)"></span>
+                      </template>
+                    </div>
+                  </template>
+                  <template x-if="dev.connected && dev.wireless && dev.signal_bars">
+                    <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400" x-text="'📶 ' + dev.signal_bars + '/5'"></span>
+                  </template>
+                  <template x-if="dev.connected && !dev.wireless">
+                    <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">🔌 GbE</span>
+                  </template>
+                  <template x-if="!dev.connected">
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase" x-text="t('devices.status_offline')"></span>
+                  </template>
+                </div>
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Empty state on mobile -->
+        <div x-show="filteredDevices.length === 0" class="py-12 text-center text-slate-500">
+          <p class="text-sm font-semibold" x-text="t('devices.no_devices_found')"></p>
+        </div>
+      </div>
+    </div>
+
+

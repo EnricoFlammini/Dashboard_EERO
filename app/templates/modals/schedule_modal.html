@@ -1,0 +1,154 @@
+  <!-- ===================================================================== -->
+  <!-- MODAL: PARENTAL SCHEDULING RULE EDITOR (Module 3) -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showScheduleModal" 
+    x-cloak
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true">
+    
+    <div @click.away="showScheduleModal = false" class="glass-panel-elevated w-full max-w-lg rounded-2xl p-6 space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="scheduleModalMode === 'create' ? t('schedules.add_btn') : t('schedules.edit_title')"></h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('schedules.modal_subtitle')"></p>
+          </div>
+        </div>
+        <button @click="showScheduleModal = false" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form @submit.prevent="saveSchedule()" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.rule_name')"></label>
+          <input type="text" x-model="scheduleForm.name" required :placeholder="t('schedules.rule_name_placeholder')" class="glass-input w-full px-3 py-2 rounded-xl font-medium focus:outline-none">
+        </div>
+
+        <!-- Days Selector -->
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5" x-text="t('schedules.days')"></label>
+          <div class="flex flex-wrap gap-1.5">
+            <template x-for="d in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']" :key="d">
+              <button 
+                type="button"
+                @click="toggleScheduleDay(d)"
+                class="px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer"
+                :class="scheduleForm.days.includes(d) ? 'bg-[#0067c0] text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'"
+                x-text="t('common.weekday_short.' + d)">
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <!-- Time Range -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="isRebootSchedule() ? t('schedules.reboot_time') : t('schedules.start_time')"></label>
+            <input 
+              type="time" 
+              x-model="scheduleForm.start_time" 
+              @input="if (isRebootSchedule()) scheduleForm.end_time = scheduleForm.start_time" 
+              required 
+              class="glass-input w-full px-3 py-2 rounded-xl font-mono focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" :class="isRebootSchedule() ? 'opacity-50 text-slate-400 dark:text-slate-500' : ''">
+              <span x-text="t('schedules.end_time')"></span>
+              <span x-show="isRebootSchedule()" class="text-[10px] font-normal italic ml-1" x-text="t('schedules.not_applicable_reboot')"></span>
+            </label>
+            <input 
+              type="time" 
+              x-model="scheduleForm.end_time" 
+              :disabled="isRebootSchedule()" 
+              :required="!isRebootSchedule()"
+              :class="isRebootSchedule() ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-slate-800/80 text-slate-400 border-dashed border-slate-300 dark:border-slate-700' : ''"
+              class="glass-input w-full px-3 py-2 rounded-xl font-mono focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Target Type and ID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.target_type')"></label>
+            <select x-model="scheduleForm.target_type" @change="onScheduleTargetTypeChange()" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+              <optgroup :label="t('schedules.group_profiles')">
+                <option value="profile" x-text="t('schedules.target_user')"></option>
+                <option value="all_profiles" x-text="t('schedules.target_all_users')"></option>
+              </optgroup>
+              <optgroup :label="t('schedules.group_nodes')">
+                <option value="node_led" x-text="t('schedules.target_node_led')"></option>
+                <option value="all_nodes_led" x-text="t('schedules.target_all_nodes_led')"></option>
+                <option value="node_reboot" x-text="t('schedules.target_node_reboot')"></option>
+                <option value="all_nodes_reboot" x-text="t('schedules.target_all_nodes_reboot')"></option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.target_id')"></label>
+            
+            <!-- Utente Singolo: dropdown profili reali eero -->
+            <template x-if="scheduleForm.target_type === 'profile'">
+              <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+                <option value="" disabled x-text="t('schedules.select_user_placeholder')"></option>
+                <template x-for="p in (profiles || [])" :key="p.id">
+                  <option :value="p.id" x-text="localized(p, 'name') + (p.devices && p.devices.length ? ' (' + t('schedules.profile_devices_count', { count: p.devices.length }) + ')' : '')"></option>
+                </template>
+              </select>
+            </template>
+
+            <!-- Tutti gli Utenti -->
+            <template x-if="scheduleForm.target_type === 'all_profiles'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_users_desc')"></div>
+            </template>
+
+            <!-- Nodo Mesh Singolo (Luce LED o Riavvio): dropdown nodi reali eero -->
+            <template x-if="scheduleForm.target_type === 'node_led' || scheduleForm.target_type === 'node_reboot'">
+              <select x-model="scheduleForm.target_id" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+                <option value="" disabled x-text="t('schedules.select_node_placeholder')"></option>
+                <template x-for="node in (eeros || [])" :key="node.id || node.serial">
+                  <option :value="node.id || node.serial" x-text="(node.name || node.location || 'eero') + (node.model ? ' (' + node.model + ')' : '')"></option>
+                </template>
+              </select>
+            </template>
+
+            <!-- Tutti i Nodi: Luce LED -->
+            <template x-if="scheduleForm.target_type === 'all_nodes_led'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_nodes_desc')"></div>
+            </template>
+
+            <!-- Tutti i Nodi: Riavvio -->
+            <template x-if="scheduleForm.target_type === 'all_nodes_reboot'">
+              <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-slate-500 font-semibold" x-text="t('schedules.all_nodes_reboot_desc')"></div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Action -->
+        <div>
+          <label class="block text-slate-700 dark:text-slate-300 font-semibold mb-1" x-text="t('schedules.action')"></label>
+          <select x-model="scheduleForm.action" class="glass-input w-full px-3 py-2 rounded-xl font-semibold focus:outline-none">
+            <template x-for="opt in getScheduleActionOptions()" :key="opt.value">
+              <option :value="opt.value" x-text="opt.label"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Buttons -->
+        <div class="pt-3 border-t border-black/[0.06] dark:border-white/5 flex items-center justify-end space-x-2">
+          <button type="button" @click="showScheduleModal = false" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300 transition cursor-pointer" x-text="t('schedules.cancel')"></button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#0067c0] hover:bg-[#005299] text-white font-bold transition shadow-md shadow-sky-500/20 cursor-pointer" x-text="t('schedules.save_btn')"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+

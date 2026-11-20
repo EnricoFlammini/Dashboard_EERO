@@ -193,7 +193,18 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
 
     def test_issues_86_and_113_template_bindings(self):
         """Issue #86 & #113: index.html must include color-scheme meta and :selected bindings on x-for <select> options."""
-        html = Path("app/templates/index.html").read_text(encoding="utf-8")
+        import re
+
+        def _get_expanded_html(path: Path) -> str:
+            raw = path.read_text(encoding="utf-8")
+            base = path.parent
+            return re.sub(
+                r"\{%\s*include\s+['\"]([^'\"]+)['\"]\s*%\}",
+                lambda m: _get_expanded_html(base / m.group(1)) if (base / m.group(1)).exists() else m.group(0),
+                raw,
+            )
+
+        html = _get_expanded_html(Path("app/templates/index.html"))
         self.assertIn('<meta name="color-scheme" content="light dark">', html)
         self.assertIn(':selected="(h - 1) === Number(digestSettings.hour)"', html)
         self.assertIn(':selected="d.mac_address === selectedSignalDeviceMac"', html)

@@ -1,0 +1,136 @@
+  <!-- ===================================================================== -->
+  <!-- TOP APP BAR (WINDOWS 11 FLUENT HEADER) -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#2b2b2b]/85 backdrop-blur-xl border-b border-black/[0.06] dark:border-white/[0.08] shadow-sm transition-colors duration-200">
+    <div class="app-header w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo & Sidebar Toggle Button -->
+      <div class="app-brand flex items-center space-x-3 min-w-0">
+        <!-- Sidebar Toggle Button (Collapse / Expand) -->
+        <button 
+          id="btn-sidebar-toggle-header"
+          @click="toggleSidebar()" 
+          :aria-expanded="!sidebarCollapsed"
+          class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-black/[0.05] dark:hover:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.08] transition active:scale-95 cursor-pointer focus:outline-none mr-0.5"
+          :title="sidebarCollapsed ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')">
+          <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0067c0] to-indigo-600 dark:from-[#38bdf8] dark:to-indigo-500 flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
+          </svg>
+        </div>
+        <div class="app-brand-copy min-w-0">
+          <div class="app-brand-row flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">eero <span class="text-[#0067c0] dark:text-[#60cdff] font-semibold">Dashboard</span></h1>
+          </div>
+
+          <!-- Multi-Network Selector & Hot-Swap (Issue #22) -->
+          <div class="relative" x-data="{ openNetDropdown: false }" x-show="currentUser">
+            <button 
+              @click="openNetDropdown = !openNetDropdown"
+              @click.away="openNetDropdown = false"
+              class="flex items-center space-x-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium hover:text-[#0067c0] dark:hover:text-sky-400 px-1 py-0.5 rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition group cursor-pointer"
+              :title="t('header.switch_network_title')">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="font-semibold truncate max-w-[160px] sm:max-w-[220px]" x-text="network.name || t('mesh_infra')"></span>
+              <template x-if="availableNetworks && availableNetworks.length > 1">
+                <svg class="w-3 h-3 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform duration-150" :class="openNetDropdown ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </template>
+            </button>
+
+            <!-- Dropdown Menu Reti Mesh -->
+            <div 
+              x-show="openNetDropdown && availableNetworks && availableNetworks.length > 1"
+              x-transition:enter="transition ease-out duration-100"
+              x-transition:enter-start="transform opacity-0 scale-95"
+              x-transition:enter-end="transform opacity-100 scale-100"
+              x-transition:leave="transition ease-in duration-75"
+              x-transition:leave-start="transform opacity-100 scale-100"
+              x-transition:leave-end="transform opacity-0 scale-95"
+              class="absolute left-0 mt-1 w-64 bg-white/95 dark:bg-[#202020]/95 backdrop-blur-xl rounded-xl shadow-xl border border-black/[0.08] dark:border-white/[0.1] py-1.5 z-50 focus:outline-none"
+              style="display: none;">
+              <div class="px-3 py-1 text-[10px] uppercase font-bold tracking-wider text-slate-400 border-b border-black/[0.05] dark:border-white/[0.05]" x-text="t('header.available_networks')"></div>
+              <template x-for="net in availableNetworks" :key="net.id">
+                <button 
+                  @click="switchActiveNetwork(net.id); openNetDropdown = false"
+                  class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#0067c0]/10 dark:hover:bg-white/[0.08] transition cursor-pointer"
+                  :class="net.id === activeNetworkId ? 'font-bold text-[#0067c0] dark:text-sky-400 bg-black/[0.02] dark:bg-white/[0.04]' : 'text-slate-700 dark:text-slate-200'">
+                  <div class="flex items-center space-x-2 truncate">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+                    <div class="truncate">
+                      <div class="truncate" x-text="net.name"></div>
+                      <div class="text-[9px] text-slate-400 font-mono" x-text="'ID: ' + net.id + (net.role ? ' • ' + net.role : '')"></div>
+                    </div>
+                  </div>
+                  <template x-if="net.id === activeNetworkId">
+                    <svg class="w-4 h-4 text-emerald-500 shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  </template>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Right Actions: Refresh & Local Auth Account -->
+      <div class="app-header-actions flex items-center space-x-2.5 shrink-0">
+        
+        <!-- Refresh Button -->
+        <button 
+          @click="manualRefresh()"
+          :disabled="isRefreshing"
+          :aria-label="isRefreshing ? t('header.refreshing') : t('header.refresh')"
+          class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+          :title="t('header.refresh_title')">
+          <svg class="w-4 h-4" :class="isRefreshing ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span class="hidden sm:inline" x-text="isRefreshing ? t('header.refreshing') : t('header.refresh')"></span>
+        </button>
+
+        <!-- Local Admin / User Login Button (when not logged in) -->
+        <template x-if="!currentUser">
+          <button 
+            @click="openLocalLoginModal()"
+            class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0067c0]/10 hover:bg-[#0067c0]/20 text-[#0067c0] dark:text-sky-400 border border-[#0067c0]/30 dark:border-sky-500/30 transition-all active:scale-95 cursor-pointer shadow-xs"
+            :title="t('auth_local.login_btn_title')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+            </svg>
+            <span class="hidden sm:inline" x-text="t('auth_local.login_btn')"></span>
+          </button>
+        </template>
+
+        <!-- Current Local User Badge & Logout (when logged in) -->
+        <template x-if="currentUser">
+          <div class="flex items-center space-x-1.5 pl-1.5 border-l border-black/[0.08] dark:border-white/[0.08]">
+            <div class="flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08]">
+              <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-[#0067c0] to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">
+                <span x-text="(currentUser.display_name || currentUser.username || 'A').charAt(0).toUpperCase()"></span>
+              </div>
+              <div class="hidden md:flex flex-col text-left">
+                <span class="text-xs font-bold leading-none text-slate-800 dark:text-slate-200" x-text="currentUser.display_name || currentUser.username"></span>
+                <span class="text-[9px] font-mono leading-none text-slate-400 uppercase mt-0.5" x-text="roleLabel((currentUser.is_admin || currentUser.role === 'admin') ? 'admin' : currentUser.role)"></span>
+              </div>
+            </div>
+            <button 
+              @click="performLocalLogout()"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+              :title="t('header.logout_title')">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+            </button>
+          </div>
+        </template>
+      </div>
+
+    </div>
+  </header>

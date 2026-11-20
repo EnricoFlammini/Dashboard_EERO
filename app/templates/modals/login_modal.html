@@ -1,0 +1,128 @@
+  <!-- ===================================================================== -->
+  <!-- LOGIN & 2FA OTP MODAL (WHEN NOT AUTHENTICATED) -->
+  <!-- ===================================================================== -->
+  <template x-if="authChecked && !isAuthenticated">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div class="glass-panel-elevated w-full max-w-md rounded-3xl p-8 space-y-6 text-center border border-sky-500/20">
+        
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 mx-auto flex items-center justify-center shadow-xl shadow-sky-500/30">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white" x-text="t('auth.title')"></h2>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-1" x-text="t('auth.subtitle')"></p>
+        </div>
+
+        <!-- Step 1: Email/Phone Input -->
+        <div x-show="!otpSent" class="space-y-4 text-left">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 dark:text-slate-400 mb-1" x-text="t('auth.identifier_label')"></label>
+            <input 
+              type="text" 
+              x-model="loginIdentifier" 
+              :placeholder="t('auth.identifier_placeholder')" 
+              class="glass-input w-full px-4 py-3 rounded-xl text-sm font-medium">
+          </div>
+          <button 
+            @click="requestOtp()"
+            :disabled="authLoading || !loginIdentifier"
+            class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm shadow-lg shadow-sky-600/30 transition disabled:opacity-50 cursor-pointer">
+            <span x-text="authLoading ? t('auth.sending_otp') : t('auth.send_otp')"></span>
+          </button>
+        </div>
+
+        <!-- Step 2: OTP Verification Input -->
+        <div x-show="otpSent" class="space-y-4 text-left" style="display: none;">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 dark:text-slate-400 mb-1" x-text="t('auth.otp_label')"></label>
+            <input 
+              type="text" 
+              x-model="otpCode" 
+              placeholder="123456" 
+              maxlength="8"
+              class="glass-input w-full px-4 py-3 rounded-xl text-center text-lg font-mono tracking-widest font-bold">
+          </div>
+          <button 
+            @click="verifyOtp()"
+            :disabled="authLoading || !otpCode"
+            class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition disabled:opacity-50 cursor-pointer">
+            <span x-text="authLoading ? t('auth.verifying_otp') : t('auth.verify_otp')"></span>
+          </button>
+          <button @click="otpSent = false" class="w-full text-center text-xs text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white cursor-pointer" x-text="t('auth.change_identifier')"></button>
+        </div>
+
+        <!-- Amazon OAuth2 / PKCE Login Flow (Issue #93) -->
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2.5 text-left">
+          <button 
+            type="button"
+            @click="startAmazonOAuth()"
+            :disabled="authLoading"
+            class="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white/10 dark:hover:bg-white/15 text-white text-xs font-bold border border-slate-700 transition flex items-center justify-center space-x-2 cursor-pointer">
+            <span>🛒</span>
+            <span x-text="t('auth.amazon_login_btn')"></span>
+          </button>
+
+          <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-900 dark:text-sky-200 space-y-1 leading-relaxed">
+            <div class="font-bold flex items-center gap-1.5">
+              <span>ℹ️</span>
+              <span x-text="t('auth.amazon_guide_title')"></span>
+            </div>
+            <div x-text="t('auth.amazon_guide_step1')"></div>
+            <div x-text="t('auth.amazon_guide_step2')"></div>
+            <div x-text="t('auth.amazon_guide_step3')"></div>
+          </div>
+
+          <div x-show="showAmazonCallbackInput" class="space-y-2 pt-1" style="display: none;">
+            <label class="block text-[11px] font-medium text-slate-600 dark:text-slate-400" x-text="t('auth.amazon_callback_label')"></label>
+            <div class="flex space-x-1.5">
+              <input 
+                type="text" 
+                x-model="amazonCallbackCode" 
+                :placeholder="t('auth.amazon_callback_placeholder')" 
+                class="glass-input flex-1 px-3 py-2 rounded-xl text-xs font-mono">
+              <button 
+                type="button"
+                @click="submitAmazonOAuthExchange()"
+                :disabled="authLoading || !amazonCallbackCode"
+                class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition cursor-pointer disabled:opacity-50"
+                x-text="t('auth.amazon_exchange_btn')">
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Demo Mode Quick Start Button -->
+        <div x-show="can('action_toggle_demo')" class="pt-3 border-t border-slate-200 dark:border-slate-800">
+          <button 
+            @click="startDemoSession()"
+            class="w-full py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-400 dark:border-amber-500/20 text-xs font-semibold shadow-sm dark:shadow-none transition cursor-pointer">
+            ✨ <span x-text="t('demo_mode')"></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </template>
+
+  <!-- ===================================================================== -->
+  <!-- TOAST ALERTS NOTIFICATIONS -->
+  <!-- ===================================================================== -->
+  <div class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div 
+        class="pointer-events-auto max-w-sm rounded-xl p-4 shadow-2xl border backdrop-blur-xl flex items-start space-x-3 transition-all animate-fade-in"
+        :class="{
+          'bg-emerald-950/90 border-emerald-500/40 text-emerald-100': toast.type === 'success',
+          'bg-rose-950/90 border-rose-500/40 text-rose-100': toast.type === 'error',
+          'bg-amber-950/90 border-amber-500/40 text-amber-100': toast.type === 'warning',
+          'bg-slate-900/90 border-sky-500/40 text-slate-100': toast.type === 'info'
+        }">
+        <div class="flex-1">
+          <div class="text-xs font-bold" x-text="toast.title"></div>
+          <div class="text-xs mt-0.5 opacity-90" x-text="toast.message"></div>
+        </div>
+      </div>
+    </template>
+  </div>
+

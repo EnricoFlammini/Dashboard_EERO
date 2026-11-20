@@ -1,0 +1,685 @@
+      <!-- =================================================================== -->
+      <!-- TAB 1: OVERVIEW & MESH TOPOLOGY -->
+      <!-- =================================================================== -->
+      <div x-show="currentTab === 'overview'" class="space-y-6 animate-fade-in">
+      
+      <!-- Dashboard View Mode Switcher -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-black/[0.05] dark:border-white/[0.05]">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight" x-text="dashboardViewMode === 'simple' ? t('dashboard.view_simple_title') : t('dashboard.view_advanced_title')"></h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400" x-text="t('dashboard.mesh_topology_sub')"></p>
+        </div>
+        <div class="inline-flex p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-xl border border-slate-300/50 dark:border-slate-700/60 shadow-xs text-xs self-start sm:self-auto">
+          <button 
+            type="button"
+            @click="setDashboardViewMode('simple')"
+            :class="dashboardViewMode === 'simple' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+            class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer"
+            :title="t('dashboard.view_simple_title')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span x-text="t('dashboard.view_simple')"></span>
+          </button>
+          <button 
+            type="button"
+            @click="setDashboardViewMode('advanced')"
+            :class="dashboardViewMode === 'advanced' ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium'"
+            class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer"
+            :title="t('dashboard.view_advanced_title')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span x-text="t('dashboard.view_advanced')"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- VISTA SEMPLIFICATA (BASIC USERS) -->
+      <!-- =================================================================== -->
+      <div x-show="dashboardViewMode === 'simple'" class="space-y-6">
+
+        <!-- 4 Card Semplificate -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+          <!-- 1. Stato Internet WAN Semplificato (Cliccabile come in avanzata per aprire Salute Rete) -->
+          <div class="glass-panel rounded-2xl p-5 relative overflow-hidden flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+               role="button" tabindex="0" :title="t('health_modal.health_tooltip')"
+               @click="openHealthModal()"
+               @keydown.enter.prevent="openHealthModal()"
+               @keydown.space.prevent="openHealthModal()">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.wan_status')"></span>
+              <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
+            </div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
+            <div class="mt-2 text-xs text-slate-600 dark:text-slate-400 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
+
+            <!-- Salute Rete -->
+            <div class="mt-auto pt-4">
+              <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                <span x-text="t('dashboard.health_short')"></span>
+                <span class="font-mono font-semibold"
+                      :class="healthScore >= 85 ? 'text-emerald-600 dark:text-emerald-400' : (healthScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')"
+                      x-text="healthScore + '/100'"></span>
+              </div>
+              <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700/70 overflow-hidden">
+                <div class="h-full rounded-full transition-all"
+                     :class="healthScore >= 85 ? 'bg-emerald-500' : (healthScore >= 60 ? 'bg-amber-500' : 'bg-rose-500')"
+                     :style="`width: ${Math.max(0, Math.min(100, healthScore))}%`"></div>
+              </div>
+              <div class="mt-2 flex items-center space-x-1 text-[10px] text-slate-500 dark:text-slate-400" x-show="lastPollTime">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span x-text="formatFirstSeenRelative(lastPollTime)"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Stato Rete & Nodi Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.mesh_nodes_status')"></span>
+              <svg class="w-4 h-4 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="onlineNodeCount + ' / ' + (eeros.length || 1)"></div>
+            <div class="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-snug" x-text="onlineNodeCount === eeros.length ? t('dashboard.all_nodes_online') : t('dashboard.nodes_count_label', { online: onlineNodeCount, total: eeros.length })"></div>
+
+            <!-- Nodi Mesh Indicatori -->
+            <div class="mt-auto pt-4 flex items-center justify-between text-[11px]" x-show="eeros.length">
+              <span class="text-slate-500 dark:text-slate-400" x-text="t('dashboard.nodes_online', { online: onlineNodeCount, total: eeros.length })"></span>
+              <span class="flex items-center space-x-1">
+                <template x-for="node in eeros" :key="node.id || node.serial">
+                  <span class="w-2.5 h-2.5 rounded-full" :title="node.name"
+                        :class="['online', 'green'].includes(node.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(node.status) ? 'bg-amber-400' : 'bg-rose-500')"></span>
+                </template>
+              </span>
+            </div>
+          </div>
+
+          <!-- 3. Client Connessi Semplificato (Cliccabile come in avanzata per aprire Dispositivi) -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+               role="button" tabindex="0"
+               @click="openConnectedDevices()"
+               @keydown.enter.prevent="openConnectedDevices()"
+               @keydown.space.prevent="openConnectedDevices()">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.connected_devices')"></span>
+              <svg class="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+            <div class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
+            <div class="mt-1 text-xs text-slate-600 dark:text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
+
+            <!-- Footer con link visuale a tutti i dispositivi -->
+            <div class="mt-auto pt-4 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+              <span x-text="t('dashboard.clients_known', { count: connectedClientSummary.known })"></span>
+              <span class="text-sky-600 dark:text-sky-400 font-semibold flex items-center space-x-1">
+                <span x-text="t('nav.devices')"></span>
+                <span>→</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 4. Ultimo Speedtest Semplificato -->
+          <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+               role="button" tabindex="0" :title="t('dashboard.speedtest_open')"
+               @click="setTab('speedtest')"
+               @keydown.enter.prevent="setTab('speedtest')"
+               @keydown.space.prevent="setTab('speedtest')">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap" x-show="latestSpeedtest.timestamp" x-text="formatFirstSeenRelative(latestSpeedtest.timestamp)"></span>
+                <svg class="w-4 h-4 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+            </div>
+
+            <template x-if="Number(latestSpeedtest.download_mbps) > 0">
+              <div class="flex flex-col flex-1">
+                <div class="flex items-baseline space-x-2">
+                  <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(0)"></span>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">↓ Mbps</span>
+                  <span class="text-slate-400">/</span>
+                  <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(0)"></span>
+                  <span class="text-xs text-slate-600 dark:text-slate-400">↑ Mbps</span>
+                </div>
+
+                <div class="mt-2 flex items-center justify-between text-xs">
+                  <span class="text-slate-600 dark:text-slate-400">
+                    <span x-text="t('dashboard.speedtest_ping')"></span>
+                    <span class="font-mono font-semibold text-violet-600 dark:text-violet-400" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></span>
+                  </span>
+                  <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold"
+                        :class="getBufferbloatGrade(latestSpeedtest).class"
+                        :title="getBufferbloatGrade(latestSpeedtest).label"
+                        x-text="getBufferbloatGrade(latestSpeedtest).grade"></span>
+                </div>
+
+                <svg x-show="speedtestSparkline" class="mt-3 w-full h-7 text-sky-500 dark:text-sky-400" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" :aria-label="t('dashboard.speedtest_trend')">
+                  <polyline fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" :points="speedtestSparkline"></polyline>
+                </svg>
+
+                <div class="mt-auto pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400" x-show="Number(speedtestStats.total_tests) > 0">
+                  <span>
+                    <span x-text="t('dashboard.speedtest_avg')"></span>
+                    <span class="font-mono font-semibold text-slate-700 dark:text-slate-300" x-text="'↓' + Number(speedtestStats.avg_download || 0).toFixed(0) + ' ↑' + Number(speedtestStats.avg_upload || 0).toFixed(0)"></span>
+                  </span>
+                  <span x-text="t('dashboard.speedtest_count', { count: speedtestStats.total_tests })"></span>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="!(Number(latestSpeedtest.download_mbps) > 0)">
+              <div class="flex-1 flex flex-col justify-center">
+                <div class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="t('dashboard.speedtest_none')"></div>
+                <div class="mt-1 text-xs text-sky-600 dark:text-sky-400" x-text="t('dashboard.speedtest_open') + ' →'"></div>
+              </div>
+            </template>
+          </div>
+
+        </div>
+
+        <!-- Topologia Nodi Mesh Semplificata (Immagini Dispositivi Ingrandite & Visuali) -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-2 pt-2">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="eero in eeros" :key="eero.id || eero.serial">
+              <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
+                <div>
+                  <!-- Node Header -->
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center space-x-4 min-w-0">
+                      <!-- Immagine Dispositivo Ingrandita & Più Visuale (w-20 h-20) -->
+                      <template x-if="getEeroProductImage(eero)">
+                        <div class="w-20 h-20 rounded-2xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center p-2 shrink-0 shadow-sm">
+                          <img :src="getEeroProductImage(eero)" :alt="eero.model || 'eero'" class="w-full h-full object-contain drop-shadow-md">
+                        </div>
+                      </template>
+                      <template x-if="!getEeroProductImage(eero) && eero.is_echo_node">
+                        <div class="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl shrink-0 shadow-sm">
+                          🔊
+                        </div>
+                      </template>
+                      <template x-if="!getEeroProductImage(eero) && !eero.is_echo_node">
+                        <div class="w-20 h-20 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 shrink-0 shadow-sm">
+                          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                      </template>
+
+                      <div class="min-w-0">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400 shadow-md shadow-emerald-500/40' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"></span>
+                          <h3 class="font-bold text-slate-900 dark:text-white text-lg truncate" x-text="eero.name"></h3>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 truncate font-medium" x-show="eero.model" x-text="eero.model"></p>
+                      </div>
+                    </div>
+
+                    <!-- Badges -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <template x-if="eero.is_gateway">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider" x-text="t('common.gateway')"></span>
+                      </template>
+                      <template x-if="eero.is_echo_node">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 tracking-wider" x-text="t('dashboard.echo_builtin_badge')"></span>
+                      </template>
+                    </div>
+                  </div>
+
+                  <!-- Node Specs Semplificate (Solo Client Connessi e Stato) -->
+                  <div class="mt-5 space-y-2.5 border-t border-slate-200 dark:border-slate-800/80 pt-3.5 text-xs">
+                    <!-- Connected Clients Count (Cliccabile per aprire Dispositivi filtrati per nodo) -->
+                    <button type="button"
+                            @click="openConnectedDevices(eero.id || eero.name)"
+                            class="w-full flex justify-between items-center text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer">
+                      <span x-text="t('dashboard.connected_clients')"></span>
+                      <span class="font-bold text-sm text-slate-900 dark:text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
+                    </button>
+                    <!-- Operating Status -->
+                    <div class="flex justify-between items-center text-slate-600 dark:text-slate-400" x-show="eero.status">
+                      <span x-text="t('dashboard.status')"></span>
+                      <span :class="['online', 'green'].includes(eero.status) ? 'text-emerald-600 dark:text-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')" class="font-semibold" x-text="formatNodeStatus(eero)"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- VISTA AVANZATA (DEFAULT / TECNICA) -->
+      <!-- =================================================================== -->
+      <div x-show="dashboardViewMode === 'advanced'" class="space-y-6">
+      <!-- WAN Status & Summary Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        <!-- WAN Card -->
+        <div class="glass-panel rounded-2xl p-5 relative overflow-hidden flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+             role="button" tabindex="0" :title="t('health_modal.health_tooltip')"
+             @click="openHealthModal()"
+             @keydown.enter.prevent="openHealthModal()"
+             @keydown.space.prevent="openHealthModal()">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.wan_status')"></span>
+            <span class="w-2.5 h-2.5 rounded-full" :class="['online', 'green'].includes(network.status) ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-rose-500 shadow-lg shadow-rose-500/50'"></span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight" x-text="['online', 'green'].includes(network.status) ? t('devices.status_online') : t('devices.status_offline')"></div>
+            <span x-show="network.ipv6_enabled" class="px-1.5 py-0.5 rounded border text-[10px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30">IPv6</span>
+          </div>
+          <div class="mt-2 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center space-x-1">
+            <span x-text="t('dashboard.wan_ip')"></span>
+            <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
+          </div>
+          <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate" x-text="network.isp || t('dashboard.isp_connected')"></div>
+
+          <!-- Network health score -->
+          <div class="mt-auto pt-3">
+            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+              <span x-text="t('dashboard.health_short')"></span>
+              <span class="font-mono font-semibold"
+                    :class="healthScore >= 85 ? 'text-emerald-600 dark:text-emerald-400' : (healthScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')"
+                    x-text="healthScore + '/100'"></span>
+            </div>
+            <div class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700/70 overflow-hidden">
+              <div class="h-full rounded-full transition-all"
+                   :class="healthScore >= 85 ? 'bg-emerald-500' : (healthScore >= 60 ? 'bg-amber-500' : 'bg-rose-500')"
+                   :style="`width: ${Math.max(0, Math.min(100, healthScore))}%`"></div>
+            </div>
+            <div class="mt-2 flex items-center space-x-1 text-[10px] text-slate-500 dark:text-slate-400" x-show="lastPollTime">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span x-text="formatFirstSeenRelative(lastPollTime)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gateway Node Card -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.node_gateway')"></span>
+            <svg class="w-4 h-4 text-sky-500 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          </div>
+          <div class="text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate" x-text="gatewayNode.name || t('dashboard.node_gateway')"></div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate" x-show="gatewayNode.model" x-text="gatewayNode.model"></div>
+          <div class="mt-2 space-y-0.5 text-[11px] text-slate-600 dark:text-slate-400">
+            <div class="flex items-center space-x-1">
+              <span x-text="t('dashboard.lan_ip')"></span>
+              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="gatewayNode.ip || network.gateway_ip || '192.168.4.1'"></span>
+            </div>
+            <div class="flex items-center space-x-1" x-show="network.subnet_mask">
+              <span x-text="t('dashboard.subnet')"></span>
+              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="network.subnet_mask"></span>
+            </div>
+            <div class="truncate">DNS: <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="formatDnsServers(network.dns_servers || network.dns)"></span></div>
+            <div class="flex items-center space-x-1" x-show="gatewayNode.os_version">
+              <span x-text="t('dashboard.firmware')"></span>
+              <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="gatewayNode.os_version"></span>
+            </div>
+          </div>
+
+          <!-- Mesh nodes online -->
+          <div class="mt-auto pt-3 flex items-center justify-between text-[11px]" x-show="eeros.length">
+            <span class="text-slate-500 dark:text-slate-400" x-text="t('dashboard.nodes_online', { online: onlineNodeCount, total: eeros.length })"></span>
+            <span class="flex items-center space-x-1">
+              <template x-for="node in eeros" :key="node.id || node.serial">
+                <span class="w-2 h-2 rounded-full" :title="node.name"
+                      :class="['online', 'green'].includes(node.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(node.status) ? 'bg-amber-400' : 'bg-rose-500')"></span>
+              </template>
+            </span>
+          </div>
+        </div>
+
+        <!-- Connected Clients Count -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+             role="button" tabindex="0"
+             @click="openConnectedDevices()"
+             @keydown.enter.prevent="openConnectedDevices()"
+             @keydown.space.prevent="openConnectedDevices()">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.connected_devices')"></span>
+            <svg class="w-4 h-4 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </div>
+          <div class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight" x-text="devices.filter(d=>d.connected).length || realtimeMetrics.connected_clients_count"></div>
+          <div class="mt-1 text-xs text-slate-600 dark:text-slate-400" x-text="t('dashboard.active_in_mesh')"></div>
+
+          <!-- Band / wired split -->
+          <template x-if="connectedClientSummary.total > 0">
+            <div class="mt-3">
+              <div class="flex h-1.5 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700/70">
+                <template x-for="seg in connectedClientSummary.segments" :key="seg.key">
+                  <div class="h-full" :class="seg.color" :style="`width: ${seg.count / connectedClientSummary.total * 100}%`" :title="seg.label + ': ' + seg.count"></div>
+                </template>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                <template x-for="seg in connectedClientSummary.segments" :key="seg.key">
+                  <span class="flex items-center space-x-1">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="seg.color"></span>
+                    <span x-text="seg.label"></span>
+                    <span class="font-mono font-semibold text-slate-800 dark:text-slate-200" x-text="seg.count"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Known / guests / new -->
+          <div class="mt-auto pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span x-text="t('dashboard.clients_known', { count: connectedClientSummary.known })"></span>
+            <span class="flex items-center space-x-2">
+              <span x-show="connectedClientSummary.guests > 0" x-text="t('dashboard.clients_guests', { count: connectedClientSummary.guests })"></span>
+              <span x-show="connectedClientSummary.fresh > 0" class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 font-semibold" x-text="t('dashboard.clients_new', { count: connectedClientSummary.fresh })"></span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Last Speedtest Preview -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col cursor-pointer hover-glow transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+             role="button" tabindex="0" :title="t('dashboard.speedtest_open')"
+             @click="setTab('speedtest')"
+             @keydown.enter.prevent="setTab('speedtest')"
+             @keydown.space.prevent="setTab('speedtest')">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400" x-text="t('dashboard.last_speedtest')"></span>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap" x-show="latestSpeedtest.timestamp" x-text="formatFirstSeenRelative(latestSpeedtest.timestamp)"></span>
+              <svg class="w-4 h-4 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+          </div>
+
+          <template x-if="Number(latestSpeedtest.download_mbps) > 0">
+            <div class="flex flex-col flex-1">
+              <!-- Latest download / upload -->
+              <div class="flex items-baseline space-x-2">
+                <span class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-mono" x-text="Number(latestSpeedtest.download_mbps || 0).toFixed(0)"></span>
+                <span class="text-xs text-slate-600 dark:text-slate-400">↓ Mbps</span>
+                <span class="text-slate-400">/</span>
+                <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400 font-mono" x-text="Number(latestSpeedtest.upload_mbps || 0).toFixed(0)"></span>
+                <span class="text-xs text-slate-600 dark:text-slate-400">↑ Mbps</span>
+              </div>
+
+              <!-- Ping & bufferbloat grade -->
+              <div class="mt-2 flex items-center justify-between text-xs">
+                <span class="text-slate-600 dark:text-slate-400">
+                  <span x-text="t('dashboard.speedtest_ping')"></span>
+                  <span class="font-mono font-semibold text-violet-600 dark:text-violet-400" x-text="Number(latestSpeedtest.ping_ms || 0).toFixed(0) + ' ms'"></span>
+                </span>
+                <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold"
+                      :class="getBufferbloatGrade(latestSpeedtest).class"
+                      :title="getBufferbloatGrade(latestSpeedtest).label"
+                      x-text="getBufferbloatGrade(latestSpeedtest).grade"></span>
+              </div>
+
+              <!-- Download trend sparkline -->
+              <svg x-show="speedtestSparkline" class="mt-3 w-full h-7 text-sky-500 dark:text-sky-400" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" :aria-label="t('dashboard.speedtest_trend')">
+                <polyline fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" :points="speedtestSparkline"></polyline>
+              </svg>
+
+              <!-- Overall averages -->
+              <div class="mt-auto pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400" x-show="Number(speedtestStats.total_tests) > 0">
+                <span>
+                  <span x-text="t('dashboard.speedtest_avg')"></span>
+                  <span class="font-mono font-semibold text-slate-700 dark:text-slate-300" x-text="'↓' + Number(speedtestStats.avg_download || 0).toFixed(0) + ' ↑' + Number(speedtestStats.avg_upload || 0).toFixed(0)"></span>
+                </span>
+                <span x-text="t('dashboard.speedtest_count', { count: speedtestStats.total_tests })"></span>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="!(Number(latestSpeedtest.download_mbps) > 0)">
+            <div class="flex-1 flex flex-col justify-center">
+              <div class="text-sm font-semibold text-slate-700 dark:text-slate-300" x-text="t('dashboard.speedtest_none')"></div>
+              <div class="mt-1 text-xs text-sky-600 dark:text-sky-400" x-text="t('dashboard.speedtest_open') + ' →'"></div>
+            </div>
+          </template>
+        </div>
+
+      </div>
+
+      <!-- Quick Actions Header & Topology -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+        <div class="flex items-center space-x-2">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white"><span x-text="t('dashboard.mesh_topology')"></span> (<span x-text="eeros.length"></span>)</h2>
+          <button @click="openContextHelp('dashboard-mesh')" class="text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition" :title="t('dashboard.mesh_topology_sub')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </button>
+        </div>
+        
+        <!-- Global Actions -->
+        <div class="flex items-center space-x-3">
+          <button 
+            x-show="can('action_reboot_nodes')"
+            @click="rebootNetwork()"
+            class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-700 border border-rose-300 dark:bg-rose-600/20 dark:hover:bg-rose-600/30 dark:text-rose-400 dark:border-rose-500/30 transition flex items-center space-x-1.5 shadow-sm dark:shadow-none cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span x-text="t('dashboard.restart_network_btn')"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mesh Nodes Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="eero in eeros" :key="eero.id || eero.serial">
+          <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800 hover-glow transition-all flex flex-col justify-between">
+            <div>
+              <!-- Node Header -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center space-x-3 min-w-0">
+                  <template x-if="getEeroProductImage(eero)">
+                    <div
+                      class="w-12 h-12 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center p-1.5 shrink-0 shadow-xs">
+                      <img :src="getEeroProductImage(eero)" :alt="eero.model || 'eero'"
+                        class="w-full h-full object-contain drop-shadow-xs">
+                    </div>
+                  </template>
+                  <template x-if="!getEeroProductImage(eero) && eero.is_echo_node">
+                    <div
+                      class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shrink-0">
+                      🔊
+                    </div>
+                  </template>
+                  <div class="min-w-0">
+                    <div class="flex items-center space-x-2">
+                      <span class="w-2.5 h-2.5 rounded-full shrink-0" :class="['online', 'green'].includes(eero.status) ? 'bg-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"></span>
+                      <h3 class="font-bold text-slate-900 dark:text-white text-base truncate" x-text="eero.name"></h3>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 truncate" x-show="eero.model" x-text="eero.model"></p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <template x-if="eero.is_gateway">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-500/30 uppercase tracking-wider" x-text="t('common.gateway')"></span>
+                  </template>
+                  <template x-if="eero.is_echo_node">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 tracking-wider" x-text="t('dashboard.echo_builtin_badge')"></span>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Node Specs & Info -->
+              <div class="mt-4 space-y-2 border-t border-b border-slate-200 dark:border-slate-800/80 py-3 text-xs">
+                <!-- IP Address -->
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.ip || eero.is_gateway">
+                  <span x-text="t('dashboard.ip_address')"></span>
+                  <span class="font-mono text-slate-900 dark:text-slate-200 font-semibold" x-text="eero.ip || 'DHCP'"></span>
+                </div>
+                <!-- Backhaul (hide if single gateway node and no mesh backhaul) -->
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="!eero.is_gateway || eero.backhaul_type || eeros.length > 1">
+                  <span x-text="t('dashboard.backhaul')"></span>
+                  <span class="font-semibold" :class="formatBackhaul(eero).includes('6 GHz') ? 'text-sky-600 dark:text-sky-400' : 'text-emerald-600 dark:text-emerald-400'" x-text="formatBackhaul(eero)"></span>
+                </div>
+                <!-- Connected Clients Count -->
+                <button type="button"
+                        @click="openConnectedDevices(eero.id || eero.name)"
+                        class="w-full flex justify-between text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer">
+                  <span x-text="t('dashboard.connected_clients')"></span>
+                  <span class="font-bold text-slate-900 dark:text-white" x-text="eero.connected_clients_count !== undefined ? eero.connected_clients_count : ((devices.filter(d => d.connected && (d.connected_eero_id === eero.id || d.connected_eero_name === eero.name)).length) || 0)"></span>
+                </button>
+                <!-- Operating Status -->
+                <div class="flex justify-between text-slate-600 dark:text-slate-400" x-show="eero.status">
+                  <span x-text="t('dashboard.status')"></span>
+                  <span :class="['online', 'green'].includes(eero.status) ? 'text-emerald-600 dark:text-emerald-400' : (['rebooting', 'yellow'].includes(eero.status) || String(eero.state || '').toUpperCase() === 'REBOOTING' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')" class="font-semibold" x-text="formatNodeStatus(eero)"></span>
+                </div>
+                <!-- Firmware OS Version -->
+                <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                  <span x-text="t('dashboard.firmware')"></span>
+                  <span class="font-mono text-slate-800 dark:text-slate-300 text-[11px] font-medium" x-text="eero.os_version || t('dashboard.updated')"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Node Controls -->
+            <div class="mt-4 flex items-center justify-between pt-2">
+              <span class="text-[11px] text-slate-600 dark:text-slate-500 flex items-center space-x-1 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+                <span x-text="t('dashboard.mesh_active')"></span>
+              </span>
+
+              <button 
+                x-show="can('action_reboot_nodes') && !eero.is_echo_node"
+                @click="rebootEero(eero)"
+                class="px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-600 border border-slate-300 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 dark:border-slate-700 transition flex items-center space-x-1 shadow-sm dark:shadow-none cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span x-text="t('dashboard.restart_node_btn')"></span>
+              </button>
+            </div>
+
+          </div>
+        </template>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- TOP BANDWIDTH HOGS (v1.5.0 - Device Insights Suite) -->
+      <!-- =================================================================== -->
+      <div class="glass-panel rounded-2xl p-5 border border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white" x-text="t('top_hogs.title')"></h3>
+              <p class="text-xs text-slate-500" x-text="t('top_hogs.subtitle')"></p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs self-start sm:self-auto">
+            <button 
+              type="button"
+              @click="fetchTopHogs('daily')" 
+              class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
+              :class="topHogsPeriod === 'daily' ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              x-text="t('top_hogs.period_daily')">
+            </button>
+            <button 
+              type="button"
+              @click="fetchTopHogs('weekly')" 
+              class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
+              :class="topHogsPeriod === 'weekly' ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              x-text="t('top_hogs.period_weekly')">
+            </button>
+            <button 
+              type="button"
+              @click="fetchTopHogs('monthly')" 
+              class="px-3 py-1 rounded-lg font-medium transition cursor-pointer"
+              :class="topHogsPeriod === 'monthly' ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+              x-text="t('top_hogs.period_monthly')">
+            </button>
+          </div>
+        </div>
+
+        <!-- Module 3 Multi-Filters Bar (Issue #48) -->
+        <div class="flex flex-wrap items-center gap-2 mb-3.5 pb-3 border-b border-black/[0.05] dark:border-white/[0.05] text-xs">
+          <!-- Category Filter -->
+          <div class="flex items-center space-x-1.5">
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_category')"></span>
+            <select x-model="hogsCategoryFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
+              <template x-for="cat in availableCategories" :key="cat">
+                <option :value="cat" x-text="formatCategoryName(cat)"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Frequency Band Filter -->
+          <div class="flex items-center space-x-1.5">
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_band')"></span>
+            <select x-model="hogsBandFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
+              <option value="all" x-text="t('top_hogs.filter_all')"></option>
+              <option value="6ghz">6 GHz</option>
+              <option value="5ghz">5 GHz</option>
+              <option value="2.4ghz">2.4 GHz</option>
+              <option value="wired" x-text="t('top_hogs.filter_wired')"></option>
+            </select>
+          </div>
+
+          <!-- Mesh Node Filter -->
+          <div class="flex items-center space-x-1.5">
+            <span class="text-slate-500 font-semibold text-[11px]" x-text="t('top_hogs.filter_node')"></span>
+            <select x-model="hogsNodeFilter" class="bg-black/[0.03] dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none max-w-[140px] truncate">
+              <option value="all" x-text="t('top_hogs.filter_all_nodes')"></option>
+              <template x-for="eero in eeros" :key="eero.id">
+                <option :value="eero.id" x-text="eero.location || eero.model || eero.id"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <button 
+            x-show="hogsCategoryFilter !== 'all' || hogsBandFilter !== 'all' || hogsNodeFilter !== 'all'"
+            @click="hogsCategoryFilter = 'all'; hogsBandFilter = 'all'; hogsNodeFilter = 'all'"
+            class="px-2 py-1 rounded-lg text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition cursor-pointer">
+            ✕ <span x-text="t('top_hogs.reset')"></span>
+          </button>
+        </div>
+
+        <!-- Loading state -->
+        <div x-show="topHogsLoading" class="py-8 flex justify-center items-center space-x-2 text-slate-500 text-xs">
+          <svg class="w-5 h-5 animate-spin text-sky-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          <span x-text="t('top_hogs.loading')"></span>
+        </div>
+
+        <!-- Hogs Table / Cards -->
+        <div x-show="!topHogsLoading" class="overflow-x-auto">
+          <template x-if="getFilteredTopHogs() && getFilteredTopHogs().length > 0">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <template x-for="(hog, index) in getFilteredTopHogs()" :key="hog.mac || index">
+                <div 
+                  @click="openDeviceDetailByMac(hog.mac)"
+                  class="glass-card-subtle p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-sky-500/40 transition cursor-pointer flex items-center justify-between group">
+                  <div class="flex items-center space-x-3 truncate">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center font-mono font-bold text-xs"
+                      :class="index === 0 ? 'bg-amber-500 text-white' : (index === 1 ? 'bg-slate-300 dark:bg-slate-600 text-slate-800 dark:text-white' : (index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'))"
+                      x-text="index + 1">
+                    </div>
+                    <div class="truncate">
+                      <div class="font-bold text-xs text-slate-900 dark:text-white group-hover:text-sky-500 transition truncate" x-text="hog.nickname || hog.hostname || hog.mac"></div>
+                      <div class="text-[10px] font-mono text-slate-500 truncate" x-text="hog.mac"></div>
+                    </div>
+                  </div>
+                  <div class="text-right flex-shrink-0 ml-2 space-y-0.5">
+                    <div class="text-xs font-mono font-bold text-sky-600 dark:text-sky-400 flex items-center justify-end space-x-1" :title="t('devices.col_download')">
+                      <span class="text-slate-400 text-[10px] font-normal">DL</span>
+                      <span>↓</span>
+                      <span x-text="formatBytes(hog.rx_bytes)"></span>
+                    </div>
+                    <div class="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end space-x-1" :title="t('devices.col_upload')">
+                      <span class="text-slate-400 text-[10px] font-normal">UL</span>
+                      <span>↑</span>
+                      <span x-text="formatBytes(hog.tx_bytes)"></span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template x-if="!getFilteredTopHogs() || getFilteredTopHogs().length === 0">
+            <div class="text-center py-6 text-slate-400 text-xs" x-text="t('top_hogs.no_data')"></div>
+          </template>
+        </div>
+      </div>
+
+      </div>
+    </div>
+

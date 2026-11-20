@@ -1,0 +1,321 @@
+  <!-- ===================================================================== -->
+  <!-- MOBILE DRAWER MENU OVERLAY (< 768px) -->
+  <!-- ===================================================================== -->
+  <div 
+    x-show="showMobileMenu" 
+    x-cloak
+    class="fixed inset-0 z-50 md:hidden"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true">
+    
+    <!-- Scrim Backdrop -->
+    <div 
+      x-show="showMobileMenu"
+      x-transition:enter="transition-opacity ease-out duration-200"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      x-transition:leave="transition-opacity ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+      @click="closeMobileMenu()"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+    <!-- Drawer Panel (slides up from bottom) -->
+    <div 
+      x-show="showMobileMenu"
+      x-transition:enter="transition ease-out duration-250 transform"
+      x-transition:enter-start="translate-y-full"
+      x-transition:enter-end="translate-y-0"
+      x-transition:leave="transition ease-in duration-200 transform"
+      x-transition:leave-start="translate-y-0"
+      x-transition:leave-end="translate-y-full"
+      class="fixed inset-x-0 bottom-0 max-h-[85vh] bg-white dark:bg-[#1a2234] border-t border-slate-200 dark:border-slate-800 rounded-t-3xl shadow-2xl flex flex-col overflow-hidden safe-area-bottom">
+      
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#0067c0] to-indigo-600 dark:from-[#38bdf8] dark:to-indigo-500 flex items-center justify-center text-white font-bold shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white" x-text="t('nav.menu')"></h3>
+            <p class="text-[11px] text-slate-500 font-mono" x-text="network.name || 'eero Network'"></p>
+          </div>
+        </div>
+        <button 
+          @click="closeMobileMenu()" 
+          class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Drawer Content: Navigation Links -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        
+        <!-- Primary Navigation Items -->
+        <div class="space-y-1">
+          <!-- Dashboard & Mesh -->
+          <button 
+            x-show="currentUser"
+            @click="setTab('overview'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'overview' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              <span class="text-sm" x-text="t('nav.dashboard')"></span>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- Dispositivi -->
+          <button 
+            x-show="currentUser"
+            @click="setTab('devices'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'devices' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <span class="text-sm" x-text="t('nav.devices')"></span>
+            </div>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 font-mono" x-text="t('common.online_count', { n: devices.length })"></span>
+          </button>
+
+          <!-- 3. Speed test -->
+          <button 
+            x-show="currentUser"
+            @click="setTab('speedtest'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'speedtest' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span class="text-sm" x-text="t('nav.speedtest_only')"></span>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- 4. Ospiti -->
+          <button 
+            @click="setTab('guests'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'guests' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+              </svg>
+              <span class="text-sm" x-text="t('nav.guests')"></span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span x-show="guestNetwork && guestNetwork.enabled" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </button>
+
+          <!-- Note di Rilascio eeroOS (Mobile Drawer) -->
+          <button 
+            @click="setTab('news'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="currentTab === 'news' ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+              </svg>
+              <span class="text-sm" x-text="t('nav.eero_news')"></span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <template x-if="eeroNewsData && eeroNewsData.update_available">
+                <span class="px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">NEW</span>
+              </template>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </button>
+
+          <!-- 5. Qualità e analytics -->
+          <button 
+            x-show="currentUser"
+            @click="setTab('quality-analytics'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+            :class="(currentTab === 'quality-analytics' || currentTab === 'analytics') ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              <span class="text-sm" x-text="t('nav.quality_analytics')"></span>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- 6. Impostazioni (Accordion in Mobile Drawer) -->
+          <div x-show="currentUser" class="pt-1">
+            <button 
+              @click="toggleSettingsMenu()"
+              class="w-full flex items-center justify-between p-3 rounded-xl transition cursor-pointer"
+              :class="isSettingsTab() ? 'bg-[#0067c0]/10 text-[#0067c0] dark:bg-sky-500/15 dark:text-sky-400 font-semibold' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300'">
+              <div class="flex items-center space-x-3">
+                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="text-sm font-semibold" x-text="t('nav.settings')"></span>
+              </div>
+              <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="settingsExpanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <!-- Submenu Items -->
+            <div x-show="settingsExpanded" class="pl-6 pr-1 py-1 space-y-1">
+              <!-- 6.1 Controlli & Ospiti -->
+              <button 
+                @click="setTab('settings-controls'); closeMobileMenu()"
+                class="w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition cursor-pointer"
+                :class="(currentTab === 'settings-controls' || currentTab === 'automations' || currentTab === 'controls') ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'">
+                <span x-text="t('nav.settings_controls')"></span>
+              </button>
+
+              <!-- 6.2 Gestione Utenti & Permessi -->
+              <button 
+                x-show="can('action_manage_users')"
+                @click="setTab('settings-users'); closeMobileMenu()"
+                class="w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition cursor-pointer"
+                :class="currentTab === 'settings-users' ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'">
+                <span x-text="t('nav.settings_users')"></span>
+              </button>
+
+              <!-- 6.3 Backup & Ripristino -->
+              <button 
+                x-show="can('action_system_backup')"
+                @click="setTab('settings-backup'); closeMobileMenu()"
+                class="w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition cursor-pointer"
+                :class="currentTab === 'settings-backup' ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'">
+                <span x-text="t('nav.settings_backup')"></span>
+              </button>
+
+              <!-- 6.4 Download Dati -->
+              <button 
+                @click="setTab('settings-export'); closeMobileMenu()"
+                class="w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition cursor-pointer"
+                :class="currentTab === 'settings-export' ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'">
+                <span x-text="t('nav.settings_export')"></span>
+              </button>
+
+              <!-- 6.5 Verifica aggiornamenti -->
+              <button 
+                @click="setTab('settings-updates'); closeMobileMenu()"
+                class="w-full flex items-center justify-between p-2.5 rounded-lg text-xs transition cursor-pointer"
+                :class="currentTab === 'settings-updates' ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'">
+                <span x-text="t('nav.settings_updates')"></span>
+                <template x-if="updateInfo && updateInfo.update_available">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                </template>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider Line (Fluent Clean Separator) -->
+        <div x-show="currentUser" class="my-2 border-t border-slate-200 dark:border-slate-800/80"></div>
+
+        <!-- Tools & Additional Actions -->
+        <div class="space-y-1">
+          <!-- Network Health -->
+          <button 
+            x-show="currentUser"
+            @click="openHealthModal(); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
+            <div class="flex items-center space-x-3">
+              <span class="w-2.5 h-2.5 rounded-full" :class="healthScore >= 90 ? 'bg-emerald-500' : (healthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500')"></span>
+              <span class="text-sm font-medium" x-text="t('dashboard.health_score')"></span>
+            </div>
+            <span class="text-xs font-mono font-bold" x-text="healthScore + '/100'"></span>
+          </button>
+
+          <!-- Changelog Modal -->
+          <button 
+            @click="openChangelogModal(); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+              <span class="text-sm font-medium" x-text="t('header.changelog_title')"></span>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- Quick Help Modal -->
+          <button 
+            x-show="currentUser"
+            @click="openContextHelp('intro'); closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm font-medium" x-text="t('header.quick_help')"></span>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+
+          <!-- About Modal -->
+          <button 
+            @click="showAboutModal = true; closeMobileMenu()"
+            class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-slate-700 dark:text-slate-300 transition cursor-pointer">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm font-medium" x-text="t('about_modal.title')"></span>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400" x-text="'v' + fullVersion"></span>
+          </button>
+
+        </div>
+
+        <!-- Appearance & Language & Logout -->
+        <div class="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-2">
+          <!-- Theme Switcher -->
+          <div class="flex-1 flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.05] p-1 rounded-xl">
+            <button 
+              @click="setTheme('light')" 
+              :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="flex-1 py-1.5 rounded-lg text-xs transition flex items-center justify-center cursor-pointer">
+              ☀️ <span class="ml-1" x-text="t('header.theme_light')"></span>
+            </button>
+            <button 
+              @click="setTheme('dark')" 
+              :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="flex-1 py-1.5 rounded-lg text-xs transition flex items-center justify-center cursor-pointer">
+              🌙 <span class="ml-1" x-text="t('header.theme_dark')"></span>
+            </button>
+            <button 
+              @click="setTheme('system')" 
+              :class="currentTheme === 'system' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="flex-1 py-1.5 rounded-lg text-xs transition flex items-center justify-center cursor-pointer">
+              💻 <span class="ml-1" x-text="t('header.theme_system')"></span>
+            </button>
+          </div>
+
+          <!-- Language Selector -->
+          <select 
+            x-model="currentLanguage" 
+            @change="setLanguage($event.target.value)"
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="text-xs font-semibold bg-black/[0.04] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700/80 rounded-xl px-2.5 py-2 transition focus:outline-none">
+            <template x-for="code in supportedLanguages" :key="code">
+              <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+            </template>
+          </select>
+
+          <!-- Login Button (when unauthenticated) -->
+          <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal(); closeMobileMenu()"
+            class="p-2.5 rounded-xl bg-[#0067c0]/10 text-[#0067c0] dark:text-sky-400 hover:bg-[#0067c0]/20 transition cursor-pointer flex items-center space-x-1"
+            :title="t('auth_local.login_btn')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            <span class="text-xs font-bold" x-text="t('auth_local.login_btn')"></span>
+          </button>
+
+          <!-- Logout Button (when logged in) -->
+          <button 
+            x-show="currentUser"
+            @click="showLogoutModal = true; closeMobileMenu()"
+            class="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer"
+            :title="t('auth_local.logout')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+

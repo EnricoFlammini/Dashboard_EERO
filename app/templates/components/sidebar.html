@@ -1,0 +1,504 @@
+    <!-- LEFT SIDEBAR (Desktop Only >= 768px) -->
+    <aside 
+      class="sidebar-container hidden md:flex sticky top-16 h-[calc(100vh-4rem)] flex-col border-r border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#262626]/95 backdrop-blur-xl z-30 shrink-0 select-none overflow-hidden shadow-[1px_0_10px_rgba(0,0,0,0.02)]"
+      :class="sidebarCollapsed ? 'w-[68px] sidebar-collapsed' : 'w-64 sidebar-expanded'">
+
+      <!-- Top Scrollable Navigation & Tools Items -->
+      <div class="flex-1 overflow-y-auto overflow-x-hidden p-3 sidebar-nav-group space-y-1.5 w-full no-scrollbar min-h-0">
+
+        <!-- Collapse / Expand Quick Toggle Header in Sidebar (Without Title) -->
+        <div class="flex items-center justify-end px-2 py-1 mb-1">
+          <button 
+            id="btn-sidebar-toggle-aside"
+            @click="toggleSidebar()"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer flex items-center justify-center"
+            :class="sidebarCollapsed ? 'w-10 h-8 mx-auto' : ''"
+            :title="sidebarCollapsed ? t('nav.expand_sidebar') : t('nav.collapse_sidebar')">
+            <svg x-show="sidebarCollapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
+            </svg>
+            <svg x-show="!sidebarCollapsed" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 1. Dashboard & Mesh -->
+        <button 
+          x-show="currentUser"
+          @click="setTab('overview')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'overview'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.dashboard') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.dashboard')"></span>
+        </button>
+
+        <!-- 2. Dispositivi -->
+        <button 
+          x-show="currentUser"
+          @click="setTab('devices')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'devices'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? (t('nav.devices') + ' (' + devices.length + ')') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.devices')"></span>
+          <span 
+            x-show="!sidebarCollapsed"
+            class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-black/[0.05] dark:bg-white/[0.08] text-slate-700 dark:text-slate-300" 
+            x-text="devices.length">
+          </span>
+          <span 
+            x-show="sidebarCollapsed && devices.length"
+            class="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-[#0067c0] dark:bg-sky-500 text-white shadow-sm" 
+            x-text="devices.length">
+          </span>
+        </button>
+
+        <!-- 3. Speed test -->
+        <button 
+          x-show="currentUser"
+          @click="setTab('speedtest')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'speedtest'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.speedtest_only') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.speedtest_only')"></span>
+        </button>
+
+        <!-- 4. Ospiti -->
+        <button 
+          @click="setTab('guests')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'guests'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.guests') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+            </svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.guests')"></span>
+          <span x-show="!sidebarCollapsed && guestNetwork && guestNetwork.enabled" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        </button>
+
+        <!-- 5. Qualità e analytics -->
+        <button 
+          x-show="currentUser"
+          @click="setTab('quality-analytics')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            (currentTab === 'quality-analytics' || currentTab === 'analytics')
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.quality_analytics') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.quality_analytics')"></span>
+        </button>
+
+        <!-- 6. Impostazioni (Accordion) -->
+        <div x-show="currentUser" class="w-full">
+          <button 
+            @click="toggleSettingsMenu()"
+            :class="[
+              sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start',
+              isSettingsTab()
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+            ]"
+            class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+            :title="sidebarCollapsed ? t('nav.settings') : ''">
+            <div class="w-5 h-5 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 transition-transform group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+            </div>
+            <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.settings')"></span>
+            <svg x-show="!sidebarCollapsed" class="w-4 h-4 ml-auto text-slate-400 transition-transform duration-200" :class="settingsExpanded ? 'rotate-90 text-[#0067c0] dark:text-sky-400' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Sottomenu Impostazioni -->
+          <div 
+            x-show="settingsExpanded && !sidebarCollapsed" 
+            class="pl-4 pr-1 py-1 space-y-1 mt-1 border-l-2 border-slate-200 dark:border-slate-700/80 ml-5 transition-all">
+            
+            <!-- 6.1 Controlli & Ospiti -->
+            <button 
+              @click="setTab('settings-controls')"
+              :class="(currentTab === 'settings-controls' || currentTab === 'automations' || currentTab === 'controls')
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
+              class="w-full flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+              <svg class="w-3.5 h-3.5 mr-2 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+              <span class="truncate" x-text="t('nav.settings_controls')"></span>
+            </button>
+
+            <!-- 6.2 Gestione Utenti & Permessi -->
+            <button 
+              x-show="can('action_manage_users')"
+              @click="setTab('settings-users')"
+              :class="currentTab === 'settings-users'
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
+              class="w-full flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+              <svg class="w-3.5 h-3.5 mr-2 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+              <span class="truncate" x-text="t('nav.settings_users')"></span>
+            </button>
+
+            <!-- 6.3 Backup & Ripristino -->
+            <button 
+              x-show="can('action_system_backup')"
+              @click="setTab('settings-backup')"
+              :class="currentTab === 'settings-backup'
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
+              class="w-full flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+              <svg class="w-3.5 h-3.5 mr-2 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+              <span class="truncate" x-text="t('nav.settings_backup')"></span>
+            </button>
+
+            <!-- 6.4 Download Dati -->
+            <button 
+              @click="setTab('settings-export')"
+              :class="currentTab === 'settings-export'
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
+              class="w-full flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
+              <svg class="w-3.5 h-3.5 mr-2 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              <span class="truncate" x-text="t('nav.settings_export')"></span>
+            </button>
+
+            <!-- 6.5 Verifica aggiornamenti -->
+            <button 
+              @click="setTab('settings-updates')"
+              :class="currentTab === 'settings-updates'
+                ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
+              class="w-full flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer relative">
+              <svg class="w-3.5 h-3.5 mr-2 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span class="truncate flex-1 text-left" x-text="t('nav.settings_updates')"></span>
+              <template x-if="updateInfo && updateInfo.update_available">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+              </template>
+            </button>
+          </div>
+        </div>
+
+        <!-- Divider Line (Fluent Clean Separator) -->
+        <div x-show="currentUser" class="my-2 border-t border-black/[0.06] dark:border-white/[0.08]"></div>
+
+        <!-- Note di Rilascio / eeroOS News (v1.6.0) -->
+        <button 
+          @click="setTab('news')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            currentTab === 'news'
+              ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold border-[#0067c0]/30 dark:border-sky-500/40 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.eero_news') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('nav.eero_news')"></span>
+          <!-- Update badge indicator if available -->
+          <template x-if="eeroNewsData && eeroNewsData.update_available">
+            <span 
+              x-show="!sidebarCollapsed"
+              class="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 animate-pulse">
+              NEW
+            </span>
+          </template>
+          <template x-if="eeroNewsData && eeroNewsData.update_available && sidebarCollapsed">
+            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white dark:border-[#262626] animate-ping"></span>
+          </template>
+        </button>
+
+        <!-- Network Health Score -->
+        <button 
+          x-show="currentUser"
+          @click="openHealthModal()"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? (t('dashboard.health_score') + ': ' + healthScore + '/100') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <span class="w-2.5 h-2.5 rounded-full" :class="healthScore >= 90 ? 'bg-emerald-500' : (healthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500')"></span>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('dashboard.health_score')"></span>
+          <span x-show="!sidebarCollapsed" class="ml-2 text-xs font-mono font-bold" x-text="healthScore + '/100'"></span>
+        </button>
+
+        <!-- Visualizza Changelog -->
+        <button 
+          @click="openChangelogModal()"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('nav.changelog') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('nav.changelog')"></span>
+        </button>
+
+        <!-- Guida & Manuale Rapido -->
+        <button 
+          x-show="currentUser"
+          @click="openContextHelp('intro')"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? t('header.quick_help') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate" x-text="t('header.quick_help')"></span>
+        </button>
+
+        <!-- About & Crediti -->
+        <button 
+          @click="showAboutModal = true"
+          :class="[
+            sidebarCollapsed 
+              ? 'w-11 h-11 mx-auto justify-center p-0' 
+              : 'w-full px-3 py-2.5 justify-start',
+            'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
+          ]"
+          class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+          :title="sidebarCollapsed ? (t('about_modal.title') + ' (v' + fullVersion + ')') : ''">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <span x-show="!sidebarCollapsed" class="ml-3 truncate flex-1 text-left" x-text="t('about_modal.title')"></span>
+          <span x-show="!sidebarCollapsed" class="text-[10px] font-mono text-slate-400" x-text="'v' + fullVersion"></span>
+        </button>
+        <!-- Gaming Focus Mode Button -->
+        <div x-show="currentUser" class="pt-2 mt-1 border-t border-black/[0.06] dark:border-white/[0.08] space-y-2 w-full">
+          <button 
+            id="btn-gaming-mode"
+            @click="toggleFocusMode()"
+            :class="[
+              sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start',
+              focusModeActive 
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 border-rose-600' 
+                : 'bg-black/[0.03] dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] border-black/[0.06] dark:border-white/[0.08]'
+            ]"
+            class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
+            :title="t('header.gaming_tooltip')">
+            <div class="w-5 h-5 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+              <div class="font-bold text-xs" x-text="t('nav.gaming_mode')"></div>
+              <div class="text-[10px] opacity-80" x-text="focusModeActive ? t('nav.gaming_active') : t('nav.gaming_disabled')"></div>
+            </div>
+            <span x-show="sidebarCollapsed && focusModeActive" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
+          </button>
+
+          <!-- Demo Mode Toggle Button -->
+          <template x-if="can('action_toggle_demo') && isDemoMode">
+            <button 
+              id="btn-demo-mode-active"
+              @click="toggleDemoMode(false)"
+              :class="sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start'"
+              class="flex items-center rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400 shadow-md shadow-emerald-600/30 transition-all cursor-pointer group relative"
+              :title="hasSavedLiveToken ? t('header.live_switch_title') : t('header.live_login_title')">
+              <div class="w-5 h-5 flex items-center justify-center shrink-0">
+                <span class="text-base group-hover:scale-110 transition-transform">✨</span>
+              </div>
+              <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+                <div class="font-black text-xs text-white flex items-center space-x-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+                  <span x-text="t('nav.demo_active')"></span>
+                </div>
+                <div class="text-[10px] text-emerald-100 font-semibold" x-text="hasSavedLiveToken ? ('→ ' + t('header.switch_to_live')) : ('→ ' + t('header.live_login_btn'))"></div>
+              </div>
+              <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626] animate-ping"></span>
+              <span x-show="sidebarCollapsed" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-white dark:border-[#262626]"></span>
+            </button>
+          </template>
+
+          <template x-if="can('action_toggle_demo') && !isDemoMode">
+            <button 
+              id="btn-demo-mode-inactive"
+              @click="toggleDemoMode(true)"
+              :class="sidebarCollapsed 
+                ? 'w-11 h-11 mx-auto justify-center p-0' 
+                : 'w-full px-3 py-2.5 justify-start'"
+              class="flex items-center rounded-xl text-xs font-semibold bg-black/[0.03] hover:bg-amber-500/15 dark:bg-white/[0.05] dark:hover:bg-amber-500/15 text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] hover:border-amber-500/30 transition-all cursor-pointer group relative"
+              :title="t('header.demo_switch_title')">
+              <div class="w-5 h-5 flex items-center justify-center shrink-0 text-amber-600 dark:text-amber-400">
+                <span class="text-base group-hover:scale-110 transition-transform">✨</span>
+              </div>
+              <div x-show="!sidebarCollapsed" class="ml-3 text-left truncate flex-1">
+                <div class="font-bold text-xs" x-text="t('nav.demo_mode')"></div>
+                <div class="text-[10px] opacity-75" x-text="t('nav.demo_activate')"></div>
+              </div>
+            </button>
+          </template>
+        </div>
+
+      </div>
+
+      <!-- Pinned Bottom Controls (Always visible at bottom) -->
+      <div class="shrink-0 p-2.5 sm:p-3 border-t border-black/[0.06] dark:border-white/[0.08] bg-white/95 dark:bg-[#262626]/95 backdrop-blur-md w-full">
+        <!-- Expanded State -->
+        <div x-show="!sidebarCollapsed" class="flex items-center justify-between gap-1.5 w-full">
+          <!-- Theme Switcher -->
+          <div class="flex items-center bg-black/[0.04] dark:bg-white/[0.06] p-0.5 rounded-lg border border-black/[0.06] dark:border-white/[0.08] shrink-0">
+            <button 
+              @click="setTheme('light')" 
+              :class="currentTheme === 'light' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="p-1 rounded-md text-xs transition cursor-pointer" 
+              :title="t('header.theme_light')">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
+            <button 
+              @click="setTheme('dark')" 
+              :class="currentTheme === 'dark' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="p-1 rounded-md text-xs transition cursor-pointer" 
+              :title="t('header.theme_dark')">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+            <button 
+              @click="setTheme('system')" 
+              :class="currentTheme === 'system' ? 'bg-white dark:bg-[#383838] text-[#0067c0] dark:text-[#60cdff] shadow-sm font-bold' : 'text-slate-500 dark:text-slate-400'"
+              class="p-1 rounded-md text-xs transition cursor-pointer" 
+              :title="t('header.theme_system')">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </button>
+          </div>
+          <!-- Language Selector -->
+          <select 
+            x-model="currentLanguage" 
+            @change="setLanguage($event.target.value)"
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="text-[11px] font-semibold bg-black/[0.04] dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-black/[0.06] dark:border-white/[0.08] rounded-lg px-2 py-1 transition focus:outline-none">
+            <template x-for="code in supportedLanguages" :key="code">
+              <option :value="code" :selected="code === currentLanguage" x-text="languageFlag(code) + ' ' + code.toUpperCase()"></option>
+            </template>
+          </select>
+          <!-- Logout Button (when logged in) -->
+          <button 
+            x-show="currentUser"
+            @click="showLogoutModal = true"
+            class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer shrink-0"
+            :title="t('header.logout')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
+          <!-- Login Button (when not logged in) -->
+          <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal()"
+            class="p-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition cursor-pointer shrink-0"
+            :title="t('auth_local.login_btn')">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+
+        <!-- Collapsed State (w-[68px]) -->
+        <div x-show="sidebarCollapsed" class="flex flex-col items-center space-y-1.5 w-full">
+          <!-- Theme Toggle Button -->
+          <button 
+            @click="setTheme(currentTheme === 'light' ? 'dark' : (currentTheme === 'dark' ? 'system' : 'light'))" 
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
+            :title="t('header.theme_toggle_title')">
+            <svg x-show="currentTheme === 'light'" class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg x-show="currentTheme === 'dark'" class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            <svg x-show="currentTheme === 'system'" class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          </button>
+          <!-- Language Toggle Button with Flag Icon -->
+          <button 
+            @click="cycleLanguage()" 
+            :disabled="currentUser && !can('action_change_language')"
+            :class="currentUser && !can('action_change_language') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-sm hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition" 
+            :title="currentUser && !can('action_change_language') ? t('auth_local.no_access') : t('header.switch_language_title')">
+            <span x-text="languageFlag(currentLanguage)"></span>
+          </button>
+          <!-- Logout Button (when logged in) -->
+          <button 
+            x-show="currentUser"
+            @click="showLogoutModal = true" 
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-rose-500 hover:bg-rose-500/10 transition cursor-pointer" 
+            :title="t('header.logout')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          </button>
+          <!-- Login Button (when not logged in) -->
+          <button 
+            x-show="!currentUser"
+            @click="openLocalLoginModal()" 
+            class="w-10 h-8 rounded-lg flex items-center justify-center text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition cursor-pointer" 
+            :title="t('auth_local.login_btn')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+          </button>
+        </div>
+      </div>
+    </aside>

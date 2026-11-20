@@ -1,0 +1,92 @@
+  <!-- ===================================================================== -->
+  <!-- MOBILE BOTTOM NAVIGATION BAR (< 768px) -->
+  <!-- ===================================================================== -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#1a2234]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/80 shadow-2xl px-1 py-1 flex items-center justify-around safe-area-bottom select-none">
+    
+    <!-- Tab 1: Dashboard -->
+    <button 
+      x-show="currentUser"
+      @click="setTab('overview')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer"
+      :class="currentTab === 'overview' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+      </svg>
+      <span class="text-[10px] leading-tight" x-text="t('nav.dashboard_short')"></span>
+    </button>
+
+    <!-- Tab 2: Dispositivi (with counter badge) -->
+    <button 
+      x-show="currentUser"
+      @click="setTab('devices')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer relative"
+      :class="currentTab === 'devices' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <div class="relative">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+        <span 
+          x-show="devices.length"
+          class="absolute -top-1 -right-2 text-[9px] font-bold px-1 rounded-full bg-sky-500 text-white min-w-[15px] text-center"
+          x-text="devices.length"></span>
+      </div>
+      <span class="text-[10px] leading-tight" x-text="t('nav.devices')"></span>
+    </button>
+
+    <!-- Tab 3: Speed Test -->
+    <button 
+      x-show="currentUser"
+      @click="setTab('speedtest')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer"
+      :class="currentTab === 'speedtest' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      </svg>
+      <span class="text-[10px] leading-tight" x-text="t('nav.speedtest_short')"></span>
+    </button>
+
+    <!-- Tab 4: Ospiti -->
+    <button 
+      @click="setTab('guests')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer relative"
+      :class="currentTab === 'guests' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <div class="relative">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+        </svg>
+        <template x-if="guestNetwork && guestNetwork.enabled">
+          <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500"></span>
+        </template>
+      </div>
+      <span class="text-[10px] leading-tight" x-text="t('nav.guests_short') || t('nav.guests')"></span>
+    </button>
+
+    <!-- Tab eeroOS News (when unauthenticated) -->
+    <button 
+      x-show="!currentUser"
+      @click="setTab('news')"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer relative"
+      :class="currentTab === 'news' ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <div class="relative">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+        </svg>
+        <template x-if="eeroNewsData && eeroNewsData.update_available">
+          <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+        </template>
+      </div>
+      <span class="text-[10px] leading-tight" x-text="t('nav.eero_news_short')"></span>
+    </button>
+
+    <!-- Tab 5: Menu Drawer (Hamburger) -->
+    <button 
+      @click="toggleMobileMenu()"
+      class="flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition cursor-pointer"
+      :class="showMobileMenu ? 'text-[#0067c0] dark:text-[#38bdf8] font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+      <span class="text-[10px] leading-tight" x-text="t('nav.menu_short')"></span>
+    </button>
+  </nav>
+
