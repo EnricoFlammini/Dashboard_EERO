@@ -15,6 +15,7 @@ from app.routers.dependencies import require_admin, require_permission
 from app.services.db import db_service
 from app.services.eero_client import eero_client, EERO_API_BASE
 from app.services.poller import background_poller
+from app.services.public_ip import public_ip_service
 from app.services.qrcode_gen import generate_wifi_qr_code
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,14 @@ async def get_network_overview():
         "status": "success",
         "data": cached
     }
+
+
+@router.get("/public-ip", dependencies=[Depends(require_permission("view_topology"))])
+async def get_public_ip(refresh: bool = False):
+    """IP pubblico reale e rilevamento doppio NAT / CGNAT anche dietro modem/router dell'ISP (Issue #115)."""
+    network = background_poller.get_cached_state().get("network") or {}
+    data = await public_ip_service.resolve(network.get("public_ip"), force=refresh)
+    return {"status": "success", "data": data}
 
 
 @router.get("/health-breakdown", dependencies=[Depends(require_permission("view_topology"))])

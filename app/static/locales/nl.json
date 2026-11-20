@@ -179,7 +179,12 @@
     "connected_to_node": "Verbonden met {node}",
     "not_connected": "Niet verbonden",
     "no_devices_found": "Geen apparaten gevonden",
-    "show_more_devices": "Meer apparaten weergeven"
+    "show_more_devices": "Meer apparaten weergeven",
+    "public_ip_label": "Openbaar IP:",
+    "public_ip_unknown": "niet beschikbaar",
+    "double_nat": "Dubbele NAT",
+    "double_nat_tooltip": "eero zit achter een andere router: het WAN-adres is privé, dus het verkeer gaat door twee NAT-lagen. De router van de provider in bridge-modus zetten voorkomt problemen met port forwarding en online gamen.",
+    "cgnat_tooltip": "Je provider gebruikt carrier-grade NAT (100.64.0.0/10): het openbare IP wordt gedeeld met andere klanten, dus inkomende verbindingen en port forwarding werken niet."
   },
   "devices": {
     "traffic_dl_total": "Totale download:",

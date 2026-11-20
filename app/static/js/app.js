@@ -145,6 +145,9 @@ document.addEventListener('alpine:init', () => {
 
     // Live Dashboard & Network State
     network: {},
+    // Public WAN IP & double-NAT detection (Issue #115)
+    publicIpInfo: null,
+    publicIpFetchedAt: 0,
     eeros: [],
     devices: [],
     healthScore: 100,
@@ -2125,6 +2128,7 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'success') {
           this.network = json.data.network || {};
+          this.fetchPublicIp();
           this.eeros = json.data.eeros || [];
           this.healthScore = json.data.health_score || 100;
           this.healthDetails = json.data.health_details || null;
@@ -2138,6 +2142,20 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Fetch overview error:", err);
+      }
+    },
+
+    async fetchPublicIp() {
+      // The server caches lookups for 30 minutes; re-ask every 5 or when eero's WAN IP changes.
+      const wanChanged = this.publicIpInfo && this.publicIpInfo.eero_wan_ip !== (this.network.public_ip || null);
+      if (this.publicIpInfo && !wanChanged && Date.now() - this.publicIpFetchedAt < 300000) return;
+      this.publicIpFetchedAt = Date.now();
+      try {
+        const res = await fetch('/api/network/public-ip');
+        const json = await res.json();
+        if (json.status === 'success') this.publicIpInfo = json.data;
+      } catch (err) {
+        console.error("Fetch public IP error:", err);
       }
     },
 
