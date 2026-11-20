@@ -6,9 +6,11 @@ summary: Häufige Fragen zur Telemetrie, Docker-Auto-Update, Sicherheit, Backups
 ---
 ### Häufige Fragen & Fehlerbehebung
 
-* **Wie funktioniert das Docker-Container-Update direkt aus der Web-App?**
-  - Die Suite prüft regelmäßig neue Versionen auf Docker Hub und GitHub Releases.
-  - Bei eingebundenem Docker-Socket (`/var/run/docker.sock`) lädt ein Klick auf **"Container jetzt aktualisieren"** das neue Image herunter und startet den Container unter Beibehaltung des `./data`-Volumes neu.
+* **Wie aktualisiere ich das Dashboard?**
+  - Das Dashboard prüft Docker Hub und GitHub Releases auf neue Versionen und zeigt ein Update-Symbol an, sobald eine erscheint.
+  - Zum Aktualisieren führe `docker compose pull && docker compose up -d` in dem Ordner aus, in dem deine `docker-compose.yml` liegt. Der Ordner `./data` bleibt erhalten.
+  - Auf einem Synology-NAS nutze **Container Manager → Projekt → Aktion → Erstellen** oder lass den DSM-Aufgabenplaner automatisch aktualisieren. Siehe die [Synology-Anleitung](https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/deploy/synology/README.md).
+  - Die Schaltfläche **Container jetzt aktualisieren (1-Klick)** benötigt den im Container eingebundenen Docker-Socket (`/var/run/docker.sock`). Derzeit lädt sie nur das neue Image herunter; führe danach den obigen Befehl aus, um darauf umzustellen.
 * **Welche Gerätedaten stammen direkt von eero?**
   - Verbindungsstatus, lokale IP, MAC-Adresse, verbundener Mesh-Knoten, Frequenzband (**2.4 GHz, 5 GHz, 6 GHz oder Kabel**), Funkkanal, Signalstärke in **dBm** und physikalische Link-Geschwindigkeit (**PHY Link Rate**).
 * **Sicherheits-Hardening & Datenschutz:**

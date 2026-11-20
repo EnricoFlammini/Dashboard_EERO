@@ -6,9 +6,11 @@ summary: Często zadawane pytania dotyczące telemetrii, aktualizacji Docker, be
 ---
 ### Często Zadawane Pytania i Diagnostyka
 
-* **Jak działa automatyczna aktualizacja kontenera Docker z poziomu aplikacji?**
-  - Pakiet cyklicznie sprawdza dostępność nowych wydań na Docker Hub i GitHub Releases.
-  - Przy podłączonym gnieździe Docker (`/var/run/docker.sock`) kliknięcie **"Zaktualizuj kontener teraz"** pobiera nowy obraz i odtwarza kontener z zachowaniem wolumenu `./data`.
+* **Jak zaktualizować panel?**
+  - Panel sprawdza nowe wersje na Docker Hub i GitHub Releases i pokazuje plakietkę aktualizacji, gdy pojawi się nowe wydanie.
+  - Aby zaktualizować, uruchom `docker compose pull && docker compose up -d` w folderze z plikiem `docker-compose.yml`. Folder `./data` zostaje zachowany.
+  - Na serwerze NAS Synology użyj **Container Manager → Projekt → Akcja → Kompiluj** albo pozwól, by Harmonogram zadań DSM aktualizował go automatycznie. Zobacz [przewodnik Synology](https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/deploy/synology/README.md).
+  - Przycisk **Zaktualizuj kontener teraz (1 kliknięcie)** wymaga gniazda Docker (`/var/run/docker.sock`) podłączonego do kontenera. Na razie tylko pobiera nowy obraz, więc potem uruchom powyższe polecenie, aby na niego przejść.
 * **Jakie dane urządzeń pochodzą bezpośrednio z infrastruktury eero?**
   - Stan połączenia, lokalny IP, adres MAC, węzeł nadrzędny, pasmo częstotliwości (**2.4 GHz, 5 GHz, 6 GHz lub Przewodowe**), kanał, moc sygnału w **dBm** oraz fizyczna prędkość połączenia (**PHY Link Rate**).
 * **Zabezpieczenia i Ochrona Danych:**

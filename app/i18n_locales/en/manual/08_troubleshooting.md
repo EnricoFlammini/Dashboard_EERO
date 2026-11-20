@@ -6,10 +6,11 @@ summary: Frequently asked questions regarding telemetry, in-app Docker auto-upda
 ---
 ### Troubleshooting, Docker Updates & FAQ
 
-* **How does In-App 1-Click Docker Auto-Update work?**
-  - The dashboard automatically checks for new releases on Docker Hub and GitHub Releases.
-  - If the Docker Socket is mounted (`/var/run/docker.sock`), clicking "Update Container Now" pulls the latest image, recreates the container preserving your `./data` volume, and reloads the browser once the new version is healthy.
-  - Watchtower Webhook triggers and assisted terminal copy commands are also supported.
+* **How do I update the dashboard?**
+  - The dashboard checks Docker Hub and GitHub Releases for new versions and shows an update badge when one is out.
+  - To update, run `docker compose pull && docker compose up -d` in the folder that holds your `docker-compose.yml`. Your `./data` folder is kept.
+  - On a Synology NAS, use **Container Manager → Project → Action → Build**, or let DSM Task Scheduler update it automatically. See the [Synology guide](https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/deploy/synology/README.md).
+  - The **Update Container Now (1-Click)** button needs the Docker socket (`/var/run/docker.sock`) mounted in the container. For now it only downloads the new image, so run the command above afterwards to switch to it.
 * **Which client metrics come directly from eero hardware?**
   - The dashboard reads client connection state (Online/Offline), local IP address, MAC Address, connected mesh node (Gateway or Beacon), Wi-Fi frequency band (**2.4 GHz, 5 GHz, 6 GHz, or Wired Ethernet**), wireless channel (**CH**), RSSI signal strength in **dBm**, and negotiated physical rate (**PHY Link Rate**).
 * **Security Hardening & Data Protection:**

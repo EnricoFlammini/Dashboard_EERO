@@ -6,10 +6,11 @@ summary: FAQ su telemetria, motore di auto-aggiornamento Docker, sicurezza, back
 ---
 ### Domande Frequenti & Troubleshooting
 
-* **Come funziona il motore di Auto-Update Docker in-App?**
-  - La dashboard controlla periodicamente la presenza di nuove versioni su Docker Hub e GitHub Releases.
-  - Se è montato il Docker Socket (`/var/run/docker.sock`), facendo clic su **"Aggiorna Container Ora"** l'applicazione scaricherà la nuova immagine, ricreerà il container preservando il volume `./data` e ricaricherà il browser quando la nuova versione è operativa.
-  - In alternativa sono supportati trigger via **Watchtower Webhook** e modalità assistita da riga di comando.
+* **Come si aggiorna la dashboard?**
+  - La dashboard controlla le nuove versioni su Docker Hub e GitHub Releases e mostra un badge di aggiornamento quando ne esce una.
+  - Per aggiornare, esegui `docker compose pull && docker compose up -d` nella cartella che contiene il tuo `docker-compose.yml`. La cartella `./data` viene conservata.
+  - Su un NAS Synology usa **Container Manager → Progetto → Azione → Compila**, oppure lascia che l'Utilità di pianificazione di DSM aggiorni in automatico. Consulta la [guida Synology](https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/deploy/synology/README.md).
+  - Il pulsante **Aggiorna Container Ora (1 clic)** richiede il socket Docker (`/var/run/docker.sock`) montato nel container. Per ora scarica soltanto la nuova immagine: esegui poi il comando qui sopra per passare alla nuova versione.
 * **Quali dati sui dispositivi provengono direttamente dall'infrastruttura eero?**
   - La dashboard interroga l'infrastruttura eero leggendo: lo stato di connessione (Online/Offline), l'indirizzo IP locale, il MAC Address, il nodo mesh a cui sono associati (Gateway o Beacon), la banda radio Wi-Fi (**2.4 GHz, 5 GHz, 6 GHz o Cablato (Ethernet)**), il canale wireless (**CH**), il livello del segnale in **dBm** e la velocità di link fisico negoziata (**PHY Link Rate**).
 * **Hardening di Sicurezza & Protezione Dati:**
