@@ -16,7 +16,20 @@ const context = {
   clearInterval
 };
 
-vm.runInNewContext(fs.readFileSync('app/static/js/app.js', 'utf8'), context);
+const jsFiles = [
+  'app/static/js/utils.js',
+  'app/static/js/modules/auth.js',
+  'app/static/js/modules/devices.js',
+  'app/static/js/modules/mesh.js',
+  'app/static/js/modules/dns.js',
+  'app/static/js/modules/automations.js',
+  'app/static/js/modules/diagnostics.js',
+  'app/static/js/app.js'
+];
+for (const file of jsFiles) {
+  vm.runInNewContext(fs.readFileSync(file, 'utf8'), context);
+}
+
 const app = factory();
 const expectedUrl = '/devices?search=%F0%9F%93%B1+Sala&band=5GHz&node=eero_01_gateway&category=Server%2FRete&profile=prof_01&assignment=dhcp&connected=true';
 

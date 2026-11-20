@@ -22,13 +22,36 @@ import httpx
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import re
+import builtins
+import io
 
-# Monkeypatch Path.read_text for index.html to expand Jinja2 components and modals dynamically
+# Monkeypatch Path.read_text and builtins.open to expand Jinja2 includes and modular JS files dynamically
 _orig_path_read_text = Path.read_text
+_orig_builtin_open = builtins.open
+
+def _get_combined_app_js():
+    js_dir = Path("app/static/js")
+    order = [
+        js_dir / "utils.js",
+        js_dir / "modules" / "auth.js",
+        js_dir / "modules" / "devices.js",
+        js_dir / "modules" / "mesh.js",
+        js_dir / "modules" / "dns.js",
+        js_dir / "modules" / "automations.js",
+        js_dir / "modules" / "diagnostics.js",
+        js_dir / "app.js",
+    ]
+    parts = []
+    for f in order:
+        if f.exists():
+            parts.append(_orig_path_read_text(f, encoding="utf-8"))
+    return "\n".join(parts)
 
 def _expanded_path_read_text(self, *args, **kwargs):
-    content = _orig_path_read_text(self, *args, **kwargs)
     path_str = str(self).replace("\\", "/")
+    if path_str.endswith("app/static/js/app.js"):
+        return _get_combined_app_js()
+    content = _orig_path_read_text(self, *args, **kwargs)
     if path_str.endswith("app/templates/index.html"):
         base_dir = self.parent
         def _repl(m):
@@ -40,6 +63,15 @@ def _expanded_path_read_text(self, *args, **kwargs):
     return content
 
 Path.read_text = _expanded_path_read_text
+
+def _expanded_builtin_open(file, *args, **kwargs):
+    file_str = str(file).replace("\\", "/")
+    mode = args[0] if args else kwargs.get("mode", "r")
+    if file_str.endswith("app/static/js/app.js") and "r" in mode and "w" not in mode and "+" not in mode:
+        return io.StringIO(_get_combined_app_js())
+    return _orig_builtin_open(file, *args, **kwargs)
+
+builtins.open = _expanded_builtin_open
 
 # Configure UTF-8 stdout for Windows console
 if sys.platform == "win32":

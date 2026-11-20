@@ -93,7 +93,14 @@
   <!-- Lucide Icons Local Bundle (Offline - Issue #58) -->
   <script src="/static/vendor/lucide.min.js"></script>
 
-  <!-- App Logic -->
+  <!-- App Modules & Logic -->
+  <script src="/static/js/utils.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/auth.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/devices.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/mesh.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/dns.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/automations.js?v={{ app_version }}.b{{ build_number }}"></script>
+  <script src="/static/js/modules/diagnostics.js?v={{ app_version }}.b{{ build_number }}"></script>
   <script src="/static/js/app.js?v={{ app_version }}.b{{ build_number }}"></script>
 
   <!-- Critical Layout Fix: Sidebar Strict Width on Desktop, Hidden on Mobile -->
