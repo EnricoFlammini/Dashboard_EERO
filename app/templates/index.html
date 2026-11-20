@@ -1619,10 +1619,10 @@
       <div class="device-filter-panel glass-panel rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-sm">
         
         <!-- Primary Toolbar: Search Bar + Quick Actions -->
-        <div class="device-filter-primary flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div class="device-filter-primary flex flex-wrap items-center justify-between gap-3">
           
           <!-- Search Input with Integrated Clear Button -->
-          <div class="device-search relative flex-1 min-w-0 md:flex-[1_1_0%]">
+          <div class="device-search relative min-w-0 flex-[1_1_18rem]">
             <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
@@ -1648,12 +1648,13 @@
           </div>
 
           <!-- Toolbar Quick Controls -->
-          <div class="device-filter-controls flex items-center gap-2 md:flex-[2_1_0%] md:min-w-0 flex-wrap sm:flex-nowrap">
+          <div class="device-filter-controls flex flex-wrap items-center gap-2 grow min-w-0">
             
             <!-- Result Counter Badge -->
             <div class="px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap flex items-center gap-1.5 shadow-xs">
               <span class="font-bold text-slate-900 dark:text-white" x-text="filteredDevices.length"></span>
-              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length + ' ' + t('common.devices')"></span>
+              <span class="text-slate-400 dark:text-slate-500 font-normal" x-text="'/ ' + devices.length"></span>
+              <span class="hidden sm:inline text-slate-400 dark:text-slate-500 font-normal" x-text="t('common.devices')"></span>
             </div>
 
             <!-- List / Cards view toggle (desktop; mobile always uses its compact card list) -->
@@ -1679,7 +1680,7 @@
               :class="showConnectedOnly 
                 ? 'bg-sky-500/15 dark:bg-sky-500/20 border-sky-500/30 text-sky-700 dark:text-sky-300 font-bold shadow-xs' 
                 : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none">
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none whitespace-nowrap">
               <span class="w-2 h-2 rounded-full transition-all" :class="showConnectedOnly ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50 scale-110' : 'bg-slate-400 dark:bg-slate-500'"></span>
               <span x-text="t('devices.filter_connected_only')"></span>
             </button>
@@ -1691,7 +1692,7 @@
               :class="selectedCategoryFilter === 'new' 
                 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold shadow-xs' 
                 : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none"
+              class="device-toggle-pill md:flex-1 md:justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none whitespace-nowrap"
               :title="t('devices.filter_new_tooltip')">
               <span class="text-xs">✨</span>
               <span x-text="t('devices.filter_new_tag')"></span>
@@ -1704,7 +1705,7 @@
                 type="button"
                 @click.stop="toggleDeviceDropdown('columns')"
                 :class="openDeviceDropdown === 'columns' ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300' : 'bg-black/[0.03] dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-                class="device-toggle-pill w-full justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs"
+                class="device-toggle-pill w-full justify-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border transition cursor-pointer select-none shadow-xs whitespace-nowrap"
                 :title="t('devices.columns_button_tooltip')"
                 :aria-label="t('devices.columns_button')"
                 :aria-expanded="openDeviceDropdown === 'columns'">
