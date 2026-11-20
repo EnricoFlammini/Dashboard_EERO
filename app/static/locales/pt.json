@@ -45,6 +45,25 @@
     "settings_export": "Exportação de dados",
     "eero_news_short": "Notas de versão"
   },
+  "nav_hints": {
+    "dashboard": "O estado da rede num relance: ligação à internet, nós mesh, pontuação de saúde e os dispositivos que mais largura de banda usam.",
+    "devices": "Todos os dispositivos da sua rede: pesquisar, filtrar, mudar o nome, pausar ou bloquear.",
+    "speedtest": "Faça testes de velocidade da internet e reveja resultados anteriores, incluindo a latência sob carga.",
+    "guests": "Os dados do Wi-Fi de convidados e um código QR para partilhar com visitas.",
+    "quality_analytics": "Qualidade do sinal Wi-Fi, cobertura mesh e histórico de utilização de dados.",
+    "settings": "Controlos de rede, utilizadores, cópia de segurança, exportação de dados e atualizações.",
+    "settings_controls": "Controlos de rede, acesso de convidados, automatizações e horários.",
+    "settings_users": "Contas locais do painel e o que cada uma pode fazer.",
+    "settings_backup": "Faça uma cópia de segurança ou restaure as definições e o histórico do painel.",
+    "settings_export": "Transfira os dados de dispositivos e de utilização em CSV ou JSON.",
+    "settings_updates": "Procure uma versão mais recente do painel e instale-a.",
+    "eero_news": "Notas de versão mais recentes do eeroOS e novidades da comunidade.",
+    "health": "O que está a baixar a pontuação de saúde da sua rede e como corrigir.",
+    "changelog": "O que mudou em cada versão deste painel.",
+    "quick_help": "Guia passo a passo e o manual do utilizador completo.",
+    "about": "Versão, créditos e ligações do projeto.",
+    "theme_cycle": "Tema: {current}. Clique para mudar para {next}."
+  },
   "guests_page": {
     "title": "Acesso Wi-Fi para convidados",
     "subtitle": "Digitalize o código QR com seu smartphone para conectar-se instantaneamente à rede de convidados",
@@ -179,7 +198,12 @@
     "connected_to_node": "Conectado a {node}",
     "not_connected": "Não conectado",
     "no_devices_found": "Nenhum dispositivo encontrado",
-    "show_more_devices": "Mostrar mais dispositivos"
+    "show_more_devices": "Mostrar mais dispositivos",
+    "public_ip_label": "IP público:",
+    "public_ip_unknown": "indisponível",
+    "double_nat": "NAT duplo",
+    "double_nat_tooltip": "O eero está atrás de outro router: o endereço WAN é privado, por isso o tráfego passa por duas camadas de NAT. Colocar o router do ISP em modo bridge evita problemas com reencaminhamento de portas e jogos online.",
+    "cgnat_tooltip": "O seu ISP usa CGNAT (100.64.0.0/10): o IP público é partilhado com outros clientes, por isso as ligações de entrada e o reencaminhamento de portas não funcionam."
   },
   "devices": {
     "traffic_dl_total": "Download total:",
@@ -1692,5 +1716,13 @@
       "led_on": "LED ligado",
       "scheduled_reboot": "Reinicialização agendada"
     }
+  },
+  "maintenance": {
+    "title": "Manutenção em curso",
+    "stage_starting": "A iniciar e a verificar a base de dados…",
+    "stage_db_repair": "A reparar a base de dados. As suas definições e nomes de dispositivos são preservados.",
+    "stage_startup_failed": "Falha ao iniciar. Verifique os registos do contentor e reinicie o painel.",
+    "auto_reload": "Esta página recarrega sozinha assim que o painel estiver pronto.",
+    "elapsed": "Em curso há {seconds}s"
   }
 }

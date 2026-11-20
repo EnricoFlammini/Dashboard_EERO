@@ -4,5 +4,6 @@
   "admin_only": "Esta operação é restrita a administradores.",
   "permission_denied": "Permissão insuficiente: autorização '{permission}' necessária.",
   "auth_required_operation": "Autenticação necessária para esta operação",
-  "cross_origin_blocked": "Solicitação de origem cruzada bloqueada"
+  "cross_origin_blocked": "Solicitação de origem cruzada bloqueada",
+  "maintenance_in_progress": "O painel está em manutenção. Tente novamente daqui a pouco."
 }

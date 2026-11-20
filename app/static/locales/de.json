@@ -45,6 +45,25 @@
     "settings_export": "Datenexport",
     "eero_news_short": "Versionshinweise"
   },
+  "nav_hints": {
+    "dashboard": "Der Netzwerkstatus auf einen Blick: Internetverbindung, Mesh-Knoten, Health Score und die größten Bandbreitennutzer.",
+    "devices": "Alle Geräte in deinem Netzwerk: suchen, filtern, umbenennen, pausieren oder sperren.",
+    "speedtest": "Internet-Geschwindigkeitstests durchführen und frühere Ergebnisse ansehen, einschließlich Latenz unter Last.",
+    "guests": "Gäste-WLAN-Details und ein QR-Code zum Teilen mit Besuchern.",
+    "quality_analytics": "WLAN-Signalqualität, Mesh-Abdeckung und Verlauf der Datennutzung.",
+    "settings": "Netzwerksteuerung, Benutzer, Backup, Datenexport und Updates.",
+    "settings_controls": "Netzwerksteuerung, Gastzugang, Automatisierungen und Zeitpläne.",
+    "settings_users": "Lokale Dashboard-Konten und was jedes davon darf.",
+    "settings_backup": "Einstellungen und Verlauf des Dashboards sichern oder wiederherstellen.",
+    "settings_export": "Geräte- und Nutzungsdaten als CSV oder JSON herunterladen.",
+    "settings_updates": "Nach einer neueren Dashboard-Version suchen und sie installieren.",
+    "eero_news": "Neueste eeroOS-Versionshinweise und Community-Neuigkeiten.",
+    "health": "Was deinen Netzwerk-Health-Score senkt und wie du es behebst.",
+    "changelog": "Was sich in jeder Version dieses Dashboards geändert hat.",
+    "quick_help": "Schritt-für-Schritt-Anleitung und vollständiges Benutzerhandbuch.",
+    "about": "Version, Danksagungen und Projektlinks.",
+    "theme_cycle": "Design: {current}. Klicken, um zu {next} zu wechseln."
+  },
   "guests_page": {
     "title": "Gast-WLAN-Zugang",
     "subtitle": "Scannen Sie den QR-Code mit Ihrem Smartphone, um sich sofort mit dem Gastnetzwerk zu verbinden",
@@ -179,7 +198,12 @@
     "connected_to_node": "Verbunden mit {node}",
     "not_connected": "Nicht verbunden",
     "no_devices_found": "Keine Geräte gefunden",
-    "show_more_devices": "Weitere Geräte anzeigen"
+    "show_more_devices": "Weitere Geräte anzeigen",
+    "public_ip_label": "Öffentliche IP:",
+    "public_ip_unknown": "nicht verfügbar",
+    "double_nat": "Doppeltes NAT",
+    "double_nat_tooltip": "eero steht hinter einem weiteren Router: Seine WAN-Adresse ist privat, der Datenverkehr läuft also durch zwei NAT-Ebenen. Den Router des Anbieters in den Bridge-Modus zu schalten, vermeidet Probleme mit Portweiterleitung und Online-Spielen.",
+    "cgnat_tooltip": "Dein Anbieter nutzt Carrier-Grade-NAT (100.64.0.0/10): Die öffentliche IP wird mit anderen Kunden geteilt, eingehende Verbindungen und Portweiterleitungen funktionieren daher nicht."
   },
   "devices": {
     "traffic_dl_total": "Gesamtdownload:",
@@ -1692,5 +1716,13 @@
       "led_on": "LED an",
       "scheduled_reboot": "Geplanter Neustart"
     }
+  },
+  "maintenance": {
+    "title": "Wartung läuft",
+    "stage_starting": "Start und Prüfung der Datenbank…",
+    "stage_db_repair": "Die Datenbank wird repariert. Einstellungen und Gerätenamen bleiben erhalten.",
+    "stage_startup_failed": "Start fehlgeschlagen. Prüfe die Container-Logs und starte das Dashboard neu.",
+    "auto_reload": "Diese Seite lädt automatisch neu, sobald das Dashboard bereit ist.",
+    "elapsed": "Läuft seit {seconds}s"
   }
 }

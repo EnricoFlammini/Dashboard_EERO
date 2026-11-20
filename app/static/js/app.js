@@ -14,7 +14,13 @@
     if (!sameOriginApi || typeof input !== 'string') return nativeFetch(input, init);
     const headers = new Headers(init.headers || {});
     if (!headers.has('X-Dashboard-Lang')) headers.set('X-Dashboard-Lang', document.documentElement.lang || 'en');
-    return nativeFetch(input, { ...init, headers });
+    return nativeFetch(input, { ...init, headers }).then((res) => {
+      // Startup or database repair in progress (Issue #117): let the app show its maintenance overlay.
+      if (res.status === 503 && res.headers.has('X-Dashboard-Maintenance')) {
+        window.dispatchEvent(new CustomEvent('eero-maintenance'));
+      }
+      return res;
+    });
   };
 })();
 
@@ -98,6 +104,18 @@ document.addEventListener('alpine:init', () => {
       this.sidebarCollapsed = !this.sidebarCollapsed;
       localStorage.setItem('eero_sidebar_collapsed', this.sidebarCollapsed);
     },
+    // Sidebar hover text: a one-line description, prefixed by the label when the menu is collapsed to icons.
+    navTitle(label, hintKey) {
+      const hint = this.t('nav_hints.' + hintKey);
+      return this.sidebarCollapsed ? `${label} — ${hint}` : hint;
+    },
+    themeCycleTitle() {
+      const next = { light: 'dark', dark: 'system', system: 'light' }[this.currentTheme] || 'light';
+      return this.t('nav_hints.theme_cycle', {
+        current: this.t('header.theme_' + this.currentTheme),
+        next: this.t('header.theme_' + next),
+      });
+    },
     getDeviceIconPath(cat) {
       const c = (cat || '').toLowerCase();
       if (c.includes('game') || c.includes('gaming') || c.includes('console') || c.includes('playstation') || c.includes('xbox') || c.includes('nintendo') || c.includes('switch')) {
@@ -145,6 +163,9 @@ document.addEventListener('alpine:init', () => {
 
     // Live Dashboard & Network State
     network: {},
+    // Public WAN IP & double-NAT detection (Issue #115)
+    publicIpInfo: null,
+    publicIpFetchedAt: 0,
     eeros: [],
     devices: [],
     healthScore: 100,
@@ -940,6 +961,11 @@ document.addEventListener('alpine:init', () => {
     // Toast Notification System
     toasts: [],
 
+    // Maintenance overlay (Issue #117): { stage, since } while the server reports maintenance
+    maintenance: null,
+    maintenanceElapsed: 0,
+    maintenancePollTimer: null,
+
     // =========================================================================
     // INITIALIZATION & I18N
     // =========================================================================
@@ -970,11 +996,15 @@ document.addEventListener('alpine:init', () => {
       }
 
       // Versione, lingua e stato auth sono indipendenti: caricati in parallelo per ridurre l'attesa al refresh
+      if (typeof window !== 'undefined') {
+        window.addEventListener('eero-maintenance', () => this.enterMaintenance());
+      }
       const syncVersion = async () => {
         try {
-          const healthRes = await fetch('/api/health');
+          const healthRes = await fetch('/api/health', { cache: 'no-store' });
+          const hData = await healthRes.json().catch(() => ({}));
+          if (hData.maintenance) this.enterMaintenance(hData.maintenance);
           if (healthRes.ok) {
-            const hData = await healthRes.json();
             if (hData.full_version) this.fullVersion = hData.full_version;
             if (hData.build_number) this.buildNumber = String(hData.build_number);
             if (hData.version) this.appVersion = hData.version;
@@ -986,6 +1016,8 @@ document.addEventListener('alpine:init', () => {
         this.setLanguage(this.currentLanguage, { syncServer: false }),
         this.checkAuthStatus()
       ]);
+      // The dashboard reloads once maintenance ends; skip the login prompt and data loads meanwhile.
+      if (this.maintenance) return;
       await this.checkLocalAuthSession();
       await this.loadSessionTimeoutSetting();
       this.initInactivityWatchdog();
@@ -2125,6 +2157,7 @@ document.addEventListener('alpine:init', () => {
         const json = await res.json();
         if (json.status === 'success') {
           this.network = json.data.network || {};
+          this.fetchPublicIp();
           this.eeros = json.data.eeros || [];
           this.healthScore = json.data.health_score || 100;
           this.healthDetails = json.data.health_details || null;
@@ -2138,6 +2171,20 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (err) {
         console.error("Fetch overview error:", err);
+      }
+    },
+
+    async fetchPublicIp() {
+      // The server caches lookups for 30 minutes; re-ask every 5 or when eero's WAN IP changes.
+      const wanChanged = this.publicIpInfo && this.publicIpInfo.eero_wan_ip !== (this.network.public_ip || null);
+      if (this.publicIpInfo && !wanChanged && Date.now() - this.publicIpFetchedAt < 300000) return;
+      this.publicIpFetchedAt = Date.now();
+      try {
+        const res = await fetch('/api/network/public-ip');
+        const json = await res.json();
+        if (json.status === 'success') this.publicIpInfo = json.data;
+      } catch (err) {
+        console.error("Fetch public IP error:", err);
       }
     },
 
@@ -3508,6 +3555,34 @@ document.addEventListener('alpine:init', () => {
         console.error("Auto-update trigger error:", err);
         this.pollForHealthAndReload();
       }
+    },
+
+    // =========================================================================
+    // MAINTENANCE OVERLAY (Issue #117)
+    // =========================================================================
+    enterMaintenance(info = null) {
+      if (info) this.maintenance = info;
+      else if (!this.maintenance) this.maintenance = { stage: 'starting', since: null };
+      if (this.maintenancePollTimer) return;
+      const tick = async () => {
+        try {
+          const res = await fetch('/api/health', { cache: 'no-store' });
+          const data = await res.json();
+          if (data.maintenance) {
+            this.maintenance = data.maintenance;
+          } else if (data.status === 'healthy') {
+            clearInterval(this.maintenancePollTimer);
+            window.location.reload();
+            return;
+          }
+        } catch (e) {
+          // Server restarting: keep the overlay and try again on the next tick.
+        }
+        const since = this.maintenance && this.maintenance.since ? Date.parse(this.maintenance.since) : NaN;
+        this.maintenanceElapsed = Number.isNaN(since) ? 0 : Math.max(0, Math.round((Date.now() - since) / 1000));
+      };
+      this.maintenancePollTimer = setInterval(tick, 2000);
+      tick();
     },
 
     pollForHealthAndReload() {

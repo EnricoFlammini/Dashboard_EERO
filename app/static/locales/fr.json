@@ -45,6 +45,25 @@
     "settings_export": "Exportation de données",
     "eero_news_short": "Notes de version"
   },
+  "nav_hints": {
+    "dashboard": "L'état du réseau en un coup d'œil : connexion internet, nœuds mesh, score de santé et plus gros consommateurs de bande passante.",
+    "devices": "Tous les appareils de votre réseau : rechercher, filtrer, renommer, mettre en pause ou bloquer.",
+    "speedtest": "Lancez des tests de débit et consultez les résultats précédents, y compris la latence sous charge.",
+    "guests": "Les détails du Wi-Fi invité et un QR code à partager avec vos visiteurs.",
+    "quality_analytics": "Qualité du signal Wi-Fi, couverture mesh et historique de consommation de données.",
+    "settings": "Contrôles réseau, utilisateurs, sauvegarde, export de données et mises à jour.",
+    "settings_controls": "Contrôles réseau, accès invité, automatisations et plannings.",
+    "settings_users": "Les comptes locaux du tableau de bord et ce que chacun peut faire.",
+    "settings_backup": "Sauvegardez ou restaurez les réglages et l'historique du tableau de bord.",
+    "settings_export": "Téléchargez les données des appareils et de consommation en CSV ou JSON.",
+    "settings_updates": "Recherchez une version plus récente du tableau de bord et installez-la.",
+    "eero_news": "Dernières notes de version d'eeroOS et actualités de la communauté.",
+    "health": "Ce qui fait baisser votre score de santé réseau, et comment y remédier.",
+    "changelog": "Les nouveautés de chaque version de ce tableau de bord.",
+    "quick_help": "Guide pas à pas et manuel utilisateur complet.",
+    "about": "Version, remerciements et liens du projet.",
+    "theme_cycle": "Thème : {current}. Cliquez pour passer à {next}."
+  },
   "guests_page": {
     "title": "Accès Wi-Fi invité",
     "subtitle": "Scannez le code QR avec votre smartphone pour vous connecter instantanément au réseau invité",
@@ -179,7 +198,12 @@
     "connected_to_node": "Connecté à {node}",
     "not_connected": "Non connecté",
     "no_devices_found": "Aucun appareil trouvé",
-    "show_more_devices": "Afficher plus d'appareils"
+    "show_more_devices": "Afficher plus d'appareils",
+    "public_ip_label": "IP publique :",
+    "public_ip_unknown": "indisponible",
+    "double_nat": "Double NAT",
+    "double_nat_tooltip": "eero se trouve derrière un autre routeur : son adresse WAN est privée, le trafic traverse donc deux niveaux de NAT. Passer la box du FAI en mode bridge évite les problèmes de redirection de ports et de jeux en ligne.",
+    "cgnat_tooltip": "Votre FAI utilise le CGNAT (100.64.0.0/10) : l'IP publique est partagée avec d'autres clients, les connexions entrantes et la redirection de ports ne fonctionneront donc pas."
   },
   "devices": {
     "traffic_dl_total": "Téléchargement total :",
@@ -1692,5 +1716,13 @@
       "led_on": "LED allumée",
       "scheduled_reboot": "Redémarrage programmé"
     }
+  },
+  "maintenance": {
+    "title": "Maintenance en cours",
+    "stage_starting": "Démarrage et vérification de la base de données…",
+    "stage_db_repair": "Réparation de la base de données. Vos réglages et noms d'appareils sont conservés.",
+    "stage_startup_failed": "Échec du démarrage. Consultez les journaux du conteneur, puis redémarrez le tableau de bord.",
+    "auto_reload": "Cette page se recharge automatiquement dès que le tableau de bord est prêt.",
+    "elapsed": "En cours depuis {seconds}s"
   }
 }

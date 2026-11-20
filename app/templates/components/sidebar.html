@@ -36,7 +36,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.dashboard') : ''">
+          :title="navTitle(t('nav.dashboard'), 'dashboard')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           </div>
@@ -56,7 +56,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? (t('nav.devices') + ' (' + devices.length + ')') : ''">
+          :title="navTitle((t('nav.devices') + ' (' + devices.length + ')'), 'devices')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
           </div>
@@ -86,7 +86,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.speedtest_only') : ''">
+          :title="navTitle(t('nav.speedtest_only'), 'speedtest')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
@@ -105,7 +105,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.guests') : ''">
+          :title="navTitle(t('nav.guests'), 'guests')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
@@ -128,7 +128,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.quality_analytics') : ''">
+          :title="navTitle(t('nav.quality_analytics'), 'quality_analytics')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           </div>
@@ -148,7 +148,7 @@
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
             ]"
             class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-            :title="sidebarCollapsed ? t('nav.settings') : ''">
+            :title="navTitle(t('nav.settings'), 'settings')">
             <div class="w-5 h-5 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 transition-transform group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -169,6 +169,7 @@
             <!-- 6.1 Controlli & Ospiti -->
             <button 
               @click="setTab('settings-controls')"
+              :title="t('nav_hints.settings_controls')"
               :class="(currentTab === 'settings-controls' || currentTab === 'automations' || currentTab === 'controls')
                 ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
@@ -181,6 +182,7 @@
             <button 
               x-show="can('action_manage_users')"
               @click="setTab('settings-users')"
+              :title="t('nav_hints.settings_users')"
               :class="currentTab === 'settings-users'
                 ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
@@ -193,6 +195,7 @@
             <button 
               x-show="can('action_system_backup')"
               @click="setTab('settings-backup')"
+              :title="t('nav_hints.settings_backup')"
               :class="currentTab === 'settings-backup'
                 ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
@@ -204,6 +207,7 @@
             <!-- 6.4 Download Dati -->
             <button 
               @click="setTab('settings-export')"
+              :title="t('nav_hints.settings_export')"
               :class="currentTab === 'settings-export'
                 ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
@@ -215,6 +219,7 @@
             <!-- 6.5 Verifica aggiornamenti -->
             <button 
               @click="setTab('settings-updates')"
+              :title="t('nav_hints.settings_updates')"
               :class="currentTab === 'settings-updates'
                 ? 'bg-[#0067c0]/15 text-[#0067c0] dark:bg-sky-500/20 dark:text-sky-400 font-bold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]'"
@@ -243,7 +248,7 @@
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.eero_news') : ''">
+          :title="navTitle(t('nav.eero_news'), 'eero_news')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
@@ -274,7 +279,7 @@
             'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? (t('dashboard.health_score') + ': ' + healthScore + '/100') : ''">
+          :title="navTitle((t('dashboard.health_score') + ': ' + healthScore + '/100'), 'health')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <span class="w-2.5 h-2.5 rounded-full" :class="healthScore >= 90 ? 'bg-emerald-500' : (healthScore >= 70 ? 'bg-amber-500' : 'bg-rose-500')"></span>
           </div>
@@ -292,7 +297,7 @@
             'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('nav.changelog') : ''">
+          :title="navTitle(t('nav.changelog'), 'changelog')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
           </div>
@@ -310,7 +315,7 @@
             'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? t('header.quick_help') : ''">
+          :title="navTitle(t('header.quick_help'), 'quick_help')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
@@ -327,7 +332,7 @@
             'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] border-transparent'
           ]"
           class="flex items-center rounded-xl text-xs font-semibold border transition-all cursor-pointer group relative"
-          :title="sidebarCollapsed ? (t('about_modal.title') + ' (v' + fullVersion + ')') : ''">
+          :title="navTitle((t('about_modal.title') + ' (v' + fullVersion + ')'), 'about')">
           <div class="w-5 h-5 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
@@ -469,7 +474,7 @@
           <button 
             @click="setTheme(currentTheme === 'light' ? 'dark' : (currentTheme === 'dark' ? 'system' : 'light'))" 
             class="w-10 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition cursor-pointer" 
-            :title="t('header.theme_toggle_title')">
+            :title="themeCycleTitle()">
             <svg x-show="currentTheme === 'light'" class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             <svg x-show="currentTheme === 'dark'" class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             <svg x-show="currentTheme === 'system'" class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
