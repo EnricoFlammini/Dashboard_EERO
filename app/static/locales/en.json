@@ -1711,5 +1711,13 @@
       "led_on": "LED On",
       "scheduled_reboot": "Scheduled Reboot"
     }
+  },
+  "maintenance": {
+    "title": "Maintenance in progress",
+    "stage_starting": "Starting up and checking the database…",
+    "stage_db_repair": "Repairing the database. Your settings and device names are being preserved.",
+    "stage_startup_failed": "Startup failed. Check the container logs, then restart the dashboard.",
+    "auto_reload": "This page reloads by itself as soon as the dashboard is ready.",
+    "elapsed": "Running for {seconds}s"
   }
 }

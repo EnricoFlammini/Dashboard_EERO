@@ -1711,5 +1711,13 @@
       "led_on": "Dioda LED włączona",
       "scheduled_reboot": "Zaplanowane ponowne uruchomienie"
     }
+  },
+  "maintenance": {
+    "title": "Trwa konserwacja",
+    "stage_starting": "Uruchamianie i sprawdzanie bazy danych…",
+    "stage_db_repair": "Trwa naprawa bazy danych. Twoje ustawienia i nazwy urządzeń zostaną zachowane.",
+    "stage_startup_failed": "Uruchomienie nie powiodło się. Sprawdź logi kontenera i uruchom panel ponownie.",
+    "auto_reload": "Strona odświeży się sama, gdy panel będzie gotowy.",
+    "elapsed": "Trwa od {seconds}s"
   }
 }

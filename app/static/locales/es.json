@@ -1711,5 +1711,13 @@
       "led_on": "LED encendido",
       "scheduled_reboot": "Reinicio programado"
     }
+  },
+  "maintenance": {
+    "title": "Mantenimiento en curso",
+    "stage_starting": "Iniciando y comprobando la base de datos…",
+    "stage_db_repair": "Reparando la base de datos. Se conservan tus ajustes y los nombres de los dispositivos.",
+    "stage_startup_failed": "Error al iniciar. Revisa los registros del contenedor y reinicia el panel.",
+    "auto_reload": "Esta página se recarga sola en cuanto el panel esté listo.",
+    "elapsed": "En curso desde hace {seconds}s"
   }
 }

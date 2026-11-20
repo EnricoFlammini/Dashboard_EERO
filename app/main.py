@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -21,6 +22,7 @@ from app.routers import (
     metrics, network, profiles, schedules, speedtest, system, users
 )
 from app.services.db import db_service
+from app.services.maintenance import STAGE_STARTING, STAGE_STARTUP_FAILED, maintenance_state
 from app.services.eero_client import eero_client
 from app.services.poller import background_poller
 from app.services.dns_cache import enable_dns_cache, disable_dns_cache
@@ -33,21 +35,8 @@ logging.basicConfig(
 logger = logging.getLogger("eero_dashboard")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
-    logger.info("=" * 60)
-    log_event(logger, logging.INFO, "log_system.app_starting", app_name=settings.app_name, version=settings.app_version)
-    log_event(logger, logging.INFO, "log_system.data_directory", path=settings.data_path.resolve())
-    logger.info("=" * 60)
-
-    # 0. Attivazione In-Memory DNS Caching & Custom/Split DNS (Issue #24, Issue #98)
-    enable_dns_cache(
-        ttl_seconds=300,
-        custom_servers=settings.custom_dns_servers,
-        custom_domains=settings.custom_dns_domains,
-    )
-
+async def _start_services():
+    """Database, logging, eero session and background workers, in dependency order."""
     # 1. Inizializzazione Database SQLite
     await db_service.init_db()
 
@@ -79,9 +68,61 @@ async def lifespan(app: FastAPI):
     from app.services.mqtt_client import mqtt_service
     await mqtt_service.start()
 
+
+# A normal startup finishes inside this window, exactly as before. A slower one (SQLite auto-repair,
+# long migrations) keeps running in the background while the API reports maintenance (Issue #117).
+STARTUP_GRACE_SECONDS = 3.0
+
+
+async def _run_startup():
+    with maintenance_state.stage_scope(STAGE_STARTING):
+        await _start_services()
+
+
+def _on_background_startup_done(task: asyncio.Task) -> None:
+    if task.cancelled() or task.exception() is None:
+        return
+    logger.error("Application startup failed", exc_info=task.exception())
+    # Keep the API gated: the UI shows the failure instead of a half-initialised dashboard.
+    maintenance_state.begin(STAGE_STARTUP_FAILED)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gestione ciclo di vita dell'applicazione: avvio database e poller in background."""
+    logger.info("=" * 60)
+    log_event(logger, logging.INFO, "log_system.app_starting", app_name=settings.app_name, version=settings.app_version)
+    log_event(logger, logging.INFO, "log_system.data_directory", path=settings.data_path.resolve())
+    logger.info("=" * 60)
+
+    # 0. Attivazione In-Memory DNS Caching & Custom/Split DNS (Issue #24, Issue #98)
+    enable_dns_cache(
+        ttl_seconds=300,
+        custom_servers=settings.custom_dns_servers,
+        custom_domains=settings.custom_dns_domains,
+    )
+
+    startup = asyncio.create_task(_run_startup())
+    await asyncio.wait({startup}, timeout=STARTUP_GRACE_SECONDS)
+    if startup.done():
+        startup.result()  # a fast failure still aborts the app, as before
+    else:
+        logger.warning("Startup is still running (database housekeeping); serving the maintenance page until it completes.")
+        startup.add_done_callback(_on_background_startup_done)
+
     yield
 
+    if not startup.done():
+        startup.cancel()
+        try:
+            await startup
+        except asyncio.CancelledError:
+            pass
+
     # Chiusura pulita dei processi in background
+    from app.services.log_service import log_service
+    from app.services.mqtt_client import mqtt_service
+    from app.services.retention_worker import retention_worker
     log_event(logger, logging.INFO, "log_system.shutdown_started")
     await mqtt_service.stop()
     await retention_worker.stop()
@@ -222,6 +263,27 @@ async def enforce_local_auth(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def gate_api_during_maintenance(request: Request, call_next):
+    """While startup or a database repair is running, answers API calls with 503 so the UI can show its maintenance overlay (Issue #117)."""
+    path = request.url.path
+    if maintenance_state.active and (path.startswith("/api/") or path == "/metrics") and path != "/api/health":
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "maintenance",
+                # This middleware runs before bind_request_language, so the language is read here.
+                "detail": i18n.tr(
+                    "common.maintenance_in_progress",
+                    request.headers.get("x-dashboard-lang") or request.headers.get("accept-language"),
+                ),
+                "maintenance": maintenance_state.snapshot(),
+            },
+            headers={"Retry-After": "2", "X-Dashboard-Maintenance": maintenance_state.stage or ""},
+        )
+    return await call_next(request)
+
+
 # Definizione Percorsi Static e Template
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -253,7 +315,7 @@ app.include_router(analytics.router)
 @app.get("/api/health")
 async def healthcheck():
     """Endpoint di controllo salute per Docker Healthcheck."""
-    return {
+    payload = {
         "status": "healthy",
         "version": settings.app_version,
         "build_number": settings.build_number,
@@ -262,6 +324,14 @@ async def healthcheck():
         "is_authenticated": eero_client.is_authenticated,
         "demo_mode": settings.demo_mode or (bool(eero_client.user_token) and eero_client.user_token.startswith("demo_")),
     }
+    if maintenance_state.active:
+        # Still HTTP 200 during housekeeping, so the Docker healthcheck does not restart a container mid-repair;
+        # a failed startup answers 503 and the container turns unhealthy.
+        payload["status"] = "error" if maintenance_state.failed else "maintenance"
+        payload["maintenance"] = maintenance_state.snapshot()
+        if maintenance_state.failed:
+            return JSONResponse(status_code=503, content=payload)
+    return payload
 
 
 @app.get("/api/diagnostics/iot-anomalies", dependencies=[Depends(require_permission("view_topology"))])

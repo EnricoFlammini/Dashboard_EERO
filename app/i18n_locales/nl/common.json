@@ -4,5 +4,6 @@
   "admin_only": "Deze bewerking is beperkt tot beheerders.",
   "permission_denied": "Onvoldoende toestemming: autorisatie '{permission}' vereist.",
   "auth_required_operation": "Authenticatie vereist voor deze bewerking",
-  "cross_origin_blocked": "Cross-origin verzoek geblokkeerd"
+  "cross_origin_blocked": "Cross-origin verzoek geblokkeerd",
+  "maintenance_in_progress": "Het dashboard voert onderhoud uit. Probeer het zo opnieuw."
 }

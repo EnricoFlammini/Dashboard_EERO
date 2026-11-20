@@ -4,5 +4,6 @@
   "admin_only": "Dieser Vorgang ist auf Administratoren beschränkt.",
   "permission_denied": "Unzureichende Berechtigung: „{permission}“-Autorisierung erforderlich.",
   "auth_required_operation": "Für diesen Vorgang ist eine Authentifizierung erforderlich",
-  "cross_origin_blocked": "Cross-Origin-Anfrage blockiert"
+  "cross_origin_blocked": "Cross-Origin-Anfrage blockiert",
+  "maintenance_in_progress": "Das Dashboard führt gerade Wartungsarbeiten durch. Bitte gleich erneut versuchen."
 }

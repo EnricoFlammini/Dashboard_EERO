@@ -1711,5 +1711,13 @@
       "led_on": "LED ligado",
       "scheduled_reboot": "Reinicialização agendada"
     }
+  },
+  "maintenance": {
+    "title": "Manutenção em curso",
+    "stage_starting": "A iniciar e a verificar a base de dados…",
+    "stage_db_repair": "A reparar a base de dados. As suas definições e nomes de dispositivos são preservados.",
+    "stage_startup_failed": "Falha ao iniciar. Verifique os registos do contentor e reinicie o painel.",
+    "auto_reload": "Esta página recarrega sozinha assim que o painel estiver pronto.",
+    "elapsed": "Em curso há {seconds}s"
   }
 }

@@ -1711,5 +1711,13 @@
       "led_on": "Accensione LED",
       "scheduled_reboot": "Riavvio Programmato"
     }
+  },
+  "maintenance": {
+    "title": "Manutenzione in corso",
+    "stage_starting": "Avvio e controllo del database…",
+    "stage_db_repair": "Riparazione del database in corso. Impostazioni e nomi dei dispositivi vengono conservati.",
+    "stage_startup_failed": "Avvio non riuscito. Controlla i log del container, poi riavvia la dashboard.",
+    "auto_reload": "La pagina si ricarica da sola appena la dashboard è pronta.",
+    "elapsed": "In corso da {seconds}s"
   }
 }
