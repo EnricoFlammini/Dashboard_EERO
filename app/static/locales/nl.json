@@ -414,7 +414,9 @@
     "profile_removed": "Apparaat uit zijn profiel verwijderd",
     "profile_saving": "Profiel bijwerken…",
     "type_auto": "Automatisch detecteren",
-    "wifi_standard": "Wifi-standaard"
+    "wifi_standard": "Wifi-standaard",
+    "echo_builtin_toggle": "eero Built-in repeater",
+    "echo_builtin_desc": "Schakel dit Echo-apparaat in als eero Built-in mesh-repeater (ondersteunt 0 verbonden clients)"
   },
   "profiles": {
     "title": "Familieprofielen en cloudgebruikers",

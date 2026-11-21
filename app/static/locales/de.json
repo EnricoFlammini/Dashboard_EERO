@@ -414,7 +414,9 @@
     "profile_removed": "Gerät aus seinem Profil entfernt",
     "profile_saving": "Profil wird aktualisiert…",
     "type_auto": "Automatisch erkennen",
-    "wifi_standard": "WLAN-Standard"
+    "wifi_standard": "WLAN-Standard",
+    "echo_builtin_toggle": "eero Built-in Extender",
+    "echo_builtin_desc": "Aktiviert dieses Echo-Gerät als eero Built-in Mesh-Extender (unterstützt 0 verbundene Clients)"
   },
   "profiles": {
     "title": "Familienprofile und Cloud-Benutzer",

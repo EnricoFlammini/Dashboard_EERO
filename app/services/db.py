@@ -313,6 +313,7 @@ class DBService:
                     is_low_latency_target INTEGER DEFAULT 0,
                     profile_id TEXT,
                     dns_sync_excluded INTEGER DEFAULT 0,
+                    is_echo_builtin INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
@@ -325,6 +326,10 @@ class DBService:
                 pass
             try:
                 await db.execute("ALTER TABLE device_metadata ADD COLUMN dns_sync_excluded INTEGER DEFAULT 0;")
+            except Exception:
+                pass
+            try:
+                await db.execute("ALTER TABLE device_metadata ADD COLUMN is_echo_builtin INTEGER DEFAULT 0;")
             except Exception:
                 pass
 
@@ -1093,7 +1098,8 @@ class DBService:
                     UPDATE device_metadata
                     SET custom_name = ?, custom_icon = ?, category = ?, 
                         custom_notes = ?, static_ip = ?, is_favorite = ?, 
-                        is_low_latency_target = ?, profile_id = ?, dns_sync_excluded = ?, updated_at = ?
+                        is_low_latency_target = ?, profile_id = ?, dns_sync_excluded = ?, 
+                        is_echo_builtin = ?, updated_at = ?
                     WHERE LOWER(mac_address) = ?
                     """,
                     (
@@ -1106,6 +1112,7 @@ class DBService:
                         1 if bool(updated.get("is_low_latency_target", False)) else 0,
                         updated.get("profile_id"),
                         1 if bool(updated.get("dns_sync_excluded", False)) else 0,
+                        1 if bool(updated.get("is_echo_builtin", False)) else 0,
                         now,
                         mac_clean
                     )
@@ -1124,6 +1131,7 @@ class DBService:
                 "is_low_latency_target": 1 if bool(kwargs.get("is_low_latency_target", False)) else 0,
                 "profile_id": kwargs.get("profile_id"),
                 "dns_sync_excluded": 1 if bool(kwargs.get("dns_sync_excluded", False)) else 0,
+                "is_echo_builtin": 1 if bool(kwargs.get("is_echo_builtin", False)) else 0,
                 "created_at": now,
                 "updated_at": now,
             }
@@ -1131,8 +1139,8 @@ class DBService:
                 await db.execute(
                     """
                     INSERT INTO device_metadata 
-                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, dns_sync_excluded, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (mac_address, custom_name, custom_icon, category, custom_notes, static_ip, is_favorite, is_low_latency_target, profile_id, dns_sync_excluded, is_echo_builtin, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         mac_clean,
@@ -1145,6 +1153,7 @@ class DBService:
                         new_item["is_low_latency_target"],
                         new_item["profile_id"],
                         new_item["dns_sync_excluded"],
+                        new_item["is_echo_builtin"],
                         new_item["created_at"],
                         new_item["updated_at"]
                     )

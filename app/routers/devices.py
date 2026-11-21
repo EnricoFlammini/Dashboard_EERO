@@ -26,6 +26,7 @@ class DeviceMetadataRequest(BaseModel):
     is_favorite: Optional[bool] = False
     is_low_latency_target: Optional[bool] = False
     dns_sync_excluded: Optional[bool] = False
+    is_echo_builtin: Optional[bool] = False
 
 
 class DeviceSeenRequest(BaseModel):

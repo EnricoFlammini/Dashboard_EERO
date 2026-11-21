@@ -637,7 +637,8 @@ document.addEventListener('alpine:init', () => {
       custom_notes: '',
       is_favorite: false,
       is_low_latency_target: false,
-      dns_sync_excluded: false
+      dns_sync_excluded: false,
+      is_echo_builtin: false
     },
     deviceReservation: null,
     deviceForwards: [],
@@ -2962,7 +2963,8 @@ document.addEventListener('alpine:init', () => {
         custom_notes: device.custom_notes || '',
         is_favorite: Boolean(device.is_favorite),
         is_low_latency_target: Boolean(device.is_low_latency_target),
-        dns_sync_excluded: Boolean(device.dns_sync_excluded)
+        dns_sync_excluded: Boolean(device.dns_sync_excluded),
+        is_echo_builtin: Boolean(device.is_echo_builtin)
       };
 
       this.deviceSelectedProfileId = device.profile_id || '';
@@ -3200,7 +3202,8 @@ document.addEventListener('alpine:init', () => {
           custom_notes: this.deviceMetadataForm.custom_notes,
           is_favorite: Boolean(this.deviceMetadataForm.is_favorite),
           is_low_latency_target: Boolean(this.deviceMetadataForm.is_low_latency_target),
-          dns_sync_excluded: Boolean(this.deviceMetadataForm.dns_sync_excluded)
+          dns_sync_excluded: Boolean(this.deviceMetadataForm.dns_sync_excluded),
+          is_echo_builtin: Boolean(this.deviceMetadataForm.is_echo_builtin)
         });
 
         const title = this.t('toasts.saved');
@@ -3208,6 +3211,7 @@ document.addEventListener('alpine:init', () => {
         this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
+        await this.fetchMeshNodes();
       } catch (err) {
         const title = this.t('js.save_device_metadata.save_error');
         this.showToast(title, err.message, "error");

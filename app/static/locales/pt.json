@@ -414,7 +414,9 @@
     "profile_removed": "Dispositivo removido do perfil",
     "profile_saving": "Atualizando perfil…",
     "type_auto": "Detecção automática",
-    "wifi_standard": "Padrão Wi-Fi"
+    "wifi_standard": "Padrão Wi-Fi",
+    "echo_builtin_toggle": "Extensor eero Built-in",
+    "echo_builtin_desc": "Ative este dispositivo Echo como extensor de malha eero Built-in (suporta 0 clientes conectados)"
   },
   "profiles": {
     "title": "Perfis familiares e usuários da nuvem",

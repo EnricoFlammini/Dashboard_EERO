@@ -49,7 +49,7 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
     async def test_issue_110_signal_overview_merges_live_cached_devices(self):
         """Issue #110: get_signal_overview must include live wireless devices (< -75 dBm) even if DB history is empty."""
         orig_db_path = db_service.db_path
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
             try:
                 db_service.db_path = Path(tmpdir) / "test_sig_110.db"
                 await db_service.init_db()
@@ -108,7 +108,7 @@ class TestIssues86_110_112_113(unittest.IsolatedAsyncioTestCase):
     async def test_issue_112_fresh_install_no_alert_burst_after_unauthenticated_demo_poll(self):
         """Issue #112: A pre-login Demo poll must not flip initial discovery and trigger alerts on first real login."""
         orig_db_path = db_service.db_path
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
             try:
                 db_service.db_path = Path(tmpdir) / "test_issue_112.db"
                 await db_service.init_db()
