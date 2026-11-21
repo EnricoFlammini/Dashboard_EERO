@@ -4,12 +4,13 @@
   <div 
     x-show="showLocalLoginModal" 
     x-cloak
+    @click.self="showLocalLoginModal = false"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
     style="display: none;"
     role="dialog"
     aria-modal="true">
     
-    <div @click.away="showLocalLoginModal = false" class="glass-panel-elevated w-full max-w-md rounded-2xl p-6 space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="glass-panel-elevated w-full max-w-md rounded-2xl p-6 space-y-5 border border-slate-200 dark:border-slate-800 shadow-2xl">
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3">
         <div class="flex items-center space-x-3">

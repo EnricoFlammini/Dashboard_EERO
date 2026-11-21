@@ -144,6 +144,7 @@ class BackgroundPoller:
         dev_copy["is_favorite"] = bool(meta.get("is_favorite", False))
         dev_copy["is_low_latency_target"] = bool(meta.get("is_low_latency_target", False))
         dev_copy["dns_sync_excluded"] = bool(meta.get("dns_sync_excluded", False))
+        dev_copy["is_echo_builtin"] = bool(meta.get("is_echo_builtin", False))
 
     def update_cached_device_metadata(self, mac: str, meta: Dict[str, Any]):
         """Aggiorna subito i metadati del dispositivo nella cache RAM, senza attendere il prossimo ciclo di polling."""
@@ -152,6 +153,13 @@ class BackgroundPoller:
             if (d.get("mac") or d.get("mac_address") or "").lower() == mac:
                 # Il dict in cache contiene già default_category/default_icon di eero, quindi fa da sorgente
                 self._apply_device_metadata(d, dict(d), meta)
+
+        # Riconcilia immediatamente i nodi Echo se un dispositivo è stato abilitato/disabilitato come eero Built-in (Issue #135)
+        if "is_echo_builtin" in meta and self.cached_eeros:
+            base_physical = [n for n in self.cached_eeros if not n.get("is_echo_node")]
+            self.cached_eeros = self.reconcile_echo_extender_nodes(
+                base_physical, self.cached_devices, self.cached_network, self._known_echo_specs
+            )
 
     def invalidate_cache(self):
         """Invalida completamente la cache in RAM per consentire l'hot-swap immediato tra reti."""
@@ -949,6 +957,13 @@ class BackgroundPoller:
                     matched_node = echo_nodes_by_mac.get(d_mac) or echo_nodes_by_name.get(d_name)
                     if matched_node:
                         dev_copy["is_echo_node"] = True
+                        if not dev_copy.get("is_echo_builtin"):
+                            dev_copy["is_echo_builtin"] = True
+                            if d_mac and not is_demo_poll:
+                                try:
+                                    await db_service.upsert_device_metadata(d_mac, is_echo_builtin=True)
+                                except Exception:
+                                    pass
                         if matched_node.get("status") in ("online", "active") or dev_copy.get("signal_rssi") is not None:
                             dev_copy["connected"] = True
                         if not dev_copy.get("ip") and matched_node.get("ip"):
@@ -1614,9 +1629,9 @@ class BackgroundPoller:
             elif dev.get("connected"):
                 virtual_echo_specs[c_name_low]["status"] = "online"
 
-        # 2b. Controlla dispositivi registrati direttamente come nodi proxy / eero Built-in
+        # 2b. Controlla dispositivi registrati direttamente come nodi proxy / eero Built-in (Issue #96, #135)
         for dev in enriched_devices or []:
-            if dev.get("is_proxied_node"):
+            if dev.get("is_proxied_node") or dev.get("is_echo_builtin"):
                 d_name = str(dev.get("nickname") or dev.get("hostname") or dev.get("name") or "").strip()
                 if not d_name:
                     continue

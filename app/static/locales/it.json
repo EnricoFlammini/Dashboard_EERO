@@ -414,7 +414,9 @@
     "last_active": "Ultima attività",
     "guest_network": "Rete ospiti",
     "wifi_standard": "Standard Wi-Fi",
-    "channel_width": "Larghezza canale"
+    "channel_width": "Larghezza canale",
+    "echo_builtin_toggle": "Extender eero Built-in",
+    "echo_builtin_desc": "Abilita questo Echo come extender mesh eero Built-in (supporta 0 client connessi)"
   },
   "profiles": {
     "title": "Profili Famiglia & Utenti Cloud",

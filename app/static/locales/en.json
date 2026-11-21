@@ -414,7 +414,9 @@
     "last_active": "Last active",
     "guest_network": "Guest network",
     "wifi_standard": "Wi-Fi standard",
-    "channel_width": "Channel width"
+    "channel_width": "Channel width",
+    "echo_builtin_toggle": "eero Built-in Extender",
+    "echo_builtin_desc": "Enable this Echo device as an eero Built-in mesh extender (supports 0 connected clients)"
   },
   "profiles": {
     "title": "Family Profiles & Cloud Users",

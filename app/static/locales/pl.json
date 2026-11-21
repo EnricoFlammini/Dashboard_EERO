@@ -414,7 +414,9 @@
     "profile_removed": "Urządzenie usunięte z profilu",
     "profile_saving": "Aktualizowanie profilu…",
     "type_auto": "Wykryj automatycznie",
-    "wifi_standard": "Standard Wi-Fi"
+    "wifi_standard": "Standard Wi-Fi",
+    "echo_builtin_toggle": "Wzmacniacz eero Built-in",
+    "echo_builtin_desc": "Włącz to urządzenie Echo jako wzmacniacz siatki eero Built-in (obsługuje 0 połączonych klientów)"
   },
   "profiles": {
     "title": "Profile rodzinne i użytkownicy chmury",

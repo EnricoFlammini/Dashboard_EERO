@@ -6,9 +6,11 @@ summary: Veelgestelde vragen over telemetrie, Docker auto-update, beveiliging, b
 ---
 ### Veelgestelde Vragen & Probleemoplossing
 
-* **Hoe werkt de automatische Docker-containerupdate via de webapp?**
-  - De suite controleert geregeld op nieuwe versies via Docker Hub en GitHub Releases.
-  - Met een gekoppelde Docker-socket (`/var/run/docker.sock`) downloadt een klik op **"Container nu bijwerken"** de nieuwste image en herstart de container met behoud van het `./data`-volume.
+* **Hoe werk ik het dashboard bij?**
+  - Het dashboard controleert Docker Hub en GitHub Releases op nieuwe versies en toont een update-badge zodra er een uit is.
+  - Voer om bij te werken `docker compose pull && docker compose up -d` uit in de map met je `docker-compose.yml`. De map `./data` blijft behouden.
+  - Gebruik op een Synology-NAS **Container Manager → Project → Actie → Bouwen**, of laat DSM Taakplanner automatisch bijwerken. Zie de [Synology-handleiding](https://github.com/EnricoFlammini/Dashboard_EERO/blob/main/deploy/synology/README.md).
+  - De knop **Update de container nu (1 klik)** heeft de Docker-socket (`/var/run/docker.sock`) nodig, gekoppeld in de container. Voorlopig downloadt hij alleen de nieuwe image; voer daarna de opdracht hierboven uit om erop over te stappen.
 * **Welke apparaatgegevens zijn rechtstreeks afkomstig van eero?**
   - Verbindingsstatus, lokaal IP, MAC-adres, verbonden mesh-knooppunt, frequentieband (**2.4 GHz, 5 GHz, 6 GHz of bekabeld**), kanaal, signaalsterkte in **dBm** en fysieke verbindingssnelheid (**PHY Link Rate**).
 * **Beveiliging & Gegevensbescherming:**

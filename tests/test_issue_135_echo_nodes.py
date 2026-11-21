@@ -203,6 +203,51 @@ class TestIssue135EchoNodes(unittest.TestCase):
         self.assertEqual(norm["connected_eero_name"], "Ironworks")
         self.assertEqual(norm["signal_rssi"], -73)
 
+    def test_echo_builtin_user_configured_metadata_with_zero_clients(self):
+        """Verifica che un Echo marcato is_echo_builtin compaia come nodo mesh anche senza proxied_nodes e con 0 client."""
+        base_eeros = [
+            {"id": "eero_01", "name": "Studio", "is_gateway": True, "status": "online"},
+            {"id": "eero_02", "name": "Ironworks", "is_gateway": False, "status": "online"},
+        ]
+        devices = [
+            {
+                "id": "dev_echo_harmony",
+                "hostname": "Harmony Echo Dot",
+                "mac": "fc:e9:d8:e6:71:ac",
+                "ip": "192.168.4.52",
+                "model": "Echo Dot (5th Gen)",
+                "connected": True,
+                "connected_eero_name": "Studio",
+                "is_echo_builtin": True,  # Abilitato manualmente o persistito
+            },
+            {
+                "id": "dev_echo_speaker",
+                "hostname": "Normal Living Room Echo",
+                "mac": "11:22:33:44:55:99",
+                "ip": "192.168.4.99",
+                "model": "Echo (4th Gen)",
+                "connected": True,
+                "connected_eero_name": "Studio",
+                "is_echo_builtin": False,  # Non abilitato
+            }
+        ]
+        # Nessun proxied_nodes nei dettagli di rete, 0 client connessi ad Harmony Echo Dot
+        result = BackgroundPoller.reconcile_echo_extender_nodes(
+            base_eeros, devices, network_details={}, known_specs={}
+        )
+        result_names = [n["name"] for n in result]
+
+        self.assertIn("Harmony Echo Dot", result_names, "Harmony Echo Dot con is_echo_builtin deve comparire tra i nodi")
+        self.assertNotIn("Normal Living Room Echo", result_names, "Echo non abilitato non deve comparire tra i nodi")
+
+        harmony_node = next(n for n in result if n["name"] == "Harmony Echo Dot")
+        self.assertEqual(harmony_node["status"], "online")
+        self.assertEqual(harmony_node["connected_clients_count"], 0)
+        self.assertEqual(harmony_node["ip"], "192.168.4.52")
+        self.assertEqual(harmony_node["mac_address"], "fc:e9:d8:e6:71:ac")
+        self.assertTrue(harmony_node["is_echo_node"])
+
+
 
 if __name__ == "__main__":
     unittest.main()

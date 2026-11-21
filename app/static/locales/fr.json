@@ -414,7 +414,9 @@
     "profile_removed": "Appareil retiré de son profil",
     "profile_saving": "Mise à jour du profil…",
     "type_auto": "Détection automatique",
-    "wifi_standard": "Norme Wi-Fi"
+    "wifi_standard": "Norme Wi-Fi",
+    "echo_builtin_toggle": "Répéteur eero Built-in",
+    "echo_builtin_desc": "Active cet appareil Echo comme répéteur maillé eero Built-in (prend en charge 0 client connecté)"
   },
   "profiles": {
     "title": "Profils familiaux et utilisateurs du cloud",

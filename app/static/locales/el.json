@@ -414,7 +414,9 @@
     "profile_removed": "Η συσκευή αφαιρέθηκε από το προφίλ της",
     "profile_saving": "Ενημέρωση προφίλ…",
     "type_auto": "Αυτόματη ανίχνευση",
-    "wifi_standard": "Πρότυπο Wi-Fi"
+    "wifi_standard": "Πρότυπο Wi-Fi",
+    "echo_builtin_toggle": "Αναμεταδότης eero Built-in",
+    "echo_builtin_desc": "Ενεργοποίηση αυτής της συσκευής Echo ως αναμεταδότη eero Built-in (υποστηρίζει 0 συνδεδεμένους πελάτες)"
   },
   "profiles": {
     "title": "Οικογενειακά Προφίλ & Χρήστες Cloud",
