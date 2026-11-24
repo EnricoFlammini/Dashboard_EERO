@@ -18,10 +18,10 @@ I rilasci seguono il formato di versionamento del progetto (`MAJOR.MINOR.PATCH`)
 | **v1.7.0** | 🚀 **Amazon OAuth (#93), 🔊 Echo Nodes (#96), 🌉 Bridge Gateway Fix (#105, #129), 🛡️ Pi-hole & DNS (#98, #99), 🏠 MQTT & Pushover UI (#100, #101, #103, #104, #128), 🤖 AI Checklist (#102), 🛡️ IPv6 Firewall & Ntfy (#90), 🎨 System Theme (#86), 🌍 European i18n & 🌟 Simplified Basic Dashboard** | Autenticazione nativa Amazon OAuth2/PKCE (#93), nodi mesh extender Amazon Echo "eero Built-in" con persistenza e stato presenza Home Assistant (#96), elezione Gateway primario in Bridge Mode via `is_primary_node` & LLDP (#105, #129), deduplicazione IP e pruning conflitti Pi-hole (#99), risoluzione DNS custom e preservazione credenziali (#98), UI completa per Pushover & Discord (#100), fix MQTT (`Mbit/s` #104, `last_seen_connected` #101, auto-update nome discovery #103, pulizia entità rimosse "gone-away" #128), verifica stato Band Steering in AI Diagnostics (#102), regole firewall IPv6 & ntfy (#90), tema OS a 3 stati (#86), AI Chatbot, placement test, espansione a 7 nuove lingue europee e dashboard alternativa super-semplificata per utenti base. |
 | **v1.8.0** | 🧹 **Clean Architecture, Code Modularization & Technical Debt Elimination** | Rifattorizzazione profonda e semplificazione del codice: estrazione mock demo in fixture separate, modularizzazione di `eero_client.py` per domini, scomposizione di `app.js` in moduli/store ESM puliti, divisione di `index.html` in componenti Jinja2 e consolidamento helper DRY con parità funzionale al 100% e test di regressione. |
 | **v1.8.1** | 🚀 **Core Multi-Platform Foundations, 🔔 Apprise Notifications, 🌐 Public WAN IP, 🖥️ Homelab Kiosk/iFrame, 🛠️ Maintenance UI, 📖 In-App Guides & 👥 Guest Network (#110, #111, #115-#118, #131)** | Fondamenta per distribuzioni multi-piattaforma (`DATA_DIR` per OS, `sys._MEIPASS`), canale notifiche universale **Apprise** per Teams/Slack/Google Chat/Gotify (#111 - `@richlilly2004`), rilevamento e API per vero IP pubblico WAN anche dietro modem/doppio NAT (#115 - `@BaRaD5`), supporto embed per dashboard Homelab (Homarr/Dashy) e vista Kiosk (#116 - `@stevehoek`), banner informativo Web UI per auto-riparazione SQLite/manutenzione (#117 - `@stevehoek`), guide contestuali puntuali passo-passo per utenti non esperti su tutte le funzioni, e separazione/riconoscimento dispositivi su rete ospiti con automazioni Home Assistant (#131 - `@SecurityJon`). |
-| **v1.8.2** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetto `.deb` (#122). |
+| **v1.8.2** | 🗄️ **NAS & Proxmox Community Ecosystem (Unraid CA, Synology NAS, Proxmox VE Community Script, Linux systemd) (#119-#122)** | Template ufficiale **Unraid Community Applications** (#120 - `@rvs007`), supporto seamless auto-update e deploy per **Synology NAS** Container Manager (#121 - `@jonmacdonald`), script ufficiale 1-clic in **Proxmox VE Community Scripts** in LXC Debian (#119 - `@BaRaD5`) e installer nativo Linux con unit `systemd` e pacchetti `.deb` / `.rpm` (#122 - `@jpatchMC`). |
 | **v1.8.3** | 🏠 **Home Assistant OS Add-on (Ingress), 🛡️ NextDNS Cloud Rewrites Sync & 📦 PyPI Package (#123-#125)** | Add-on ufficiale per **Home Assistant OS** con visualizzazione nativa nella sidebar via Ingress (#123 - `@tekzer0`), sincronizzazione automatica nomi host/IP con le Rewrites di **NextDNS** via REST API (#124 - `@XprofQ`) e pubblicazione su **PyPI** con installatore CLI standalone `pipx` (#125). |
 | **v1.8.4** | 🖥️ **Native Desktop Applications (Windows .exe & macOS .dmg Universal Binary con Tray/WebView) (#126, #127)** | Applicazione nativa Windows con installer/portabile `.exe`, System Tray icon e finestra WebView2 (#126) e applicazione nativa macOS con pacchetto `.dmg` Universal Binary (Apple Silicon/Intel), icona Menu Bar e WebKit (#127 - `@stevehoek`). |
-| **v1.8.5** | 🤖 **AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione** | Assistente AI per diagnosi immediata con 1-clic su errori e warning dei log (Knowledge Base locale offline a zero costi + LLM/Ollama opzionale), validazione preventiva delle configurazioni (Setup Copilot) e spiegazioni guidate in linguaggio naturale. |
+| **v1.8.5** | 🤖 **AI In-App Copilot, 🩺 Log Doctor & 📡 Per-Node Wi-Fi Radio Telemetry (#145)** | Assistente AI per diagnosi immediata con 1-clic su errori e warning dei log (Knowledge Base locale offline a zero costi + LLM/Ollama opzionale), validazione preventiva delle configurazioni (Setup Copilot) e statistiche radio Wi-Fi storiche a 24h per nodo/banda (RSSI, carico Airtime/busyness e metriche RF - #145 `@rvs007`). |
 | **v1.9.0** | 🌐 **Multi-Network Architecture & Simultaneous Polling (Issue #114)** | Supporto completo alla gestione contemporanea di più reti eero da una singola istanza della dashboard: poller multi-tenant, caching isolato per `network_id` e navigazione indipendente in schede del browser separate senza conflitti server-side (#114 - `@stevehoek`). |
 
 ---
@@ -106,7 +106,7 @@ gantt
     Unraid Community Apps XML Template (#120)           :v1_82_unraid, after v1_81_guest, 2d
     Synology Container Manager Seamless Update (#121)   :v1_82_syno, after v1_82_unraid, 2d
     Proxmox VE Community Script LXC (#119)              :v1_82_proxmox, after v1_82_syno, 2d
-    Linux Native systemd Installer & .deb (#122)        :v1_82_linux, after v1_82_proxmox, 2d
+    Linux Native systemd Installer, .deb & .rpm (#122)  :v1_82_linux, after v1_82_proxmox, 2d
     section v1.8.3 - Home Assistant & NextDNS
     Home Assistant OS Add-on with Ingress (#123)        :v1_83_ha, after v1_82_linux, 3d
     NextDNS Cloud Rewrites Sync REST API (#124)         :v1_83_nextdns, after v1_83_ha, 2d
@@ -114,12 +114,13 @@ gantt
     section v1.8.4 - Desktop Apps
     Windows Native Desktop App (.exe) (#126)            :v1_84_win, after v1_83_pypi, 3d
     macOS Native Desktop App (.dmg) (#127)              :v1_84_mac, after v1_84_win, 3d
-    section v1.8.5 - AI Copilot & Log Doctor
+    section v1.8.5 - AI Copilot, Log Doctor & Radio Stats
     Log Doctor & Proactive Knowledge Base Matching     :v1_85_doc, after v1_84_mac, 3d
     Setup Copilot & Preventive Config Validation       :v1_85_copilot, after v1_85_doc, 2d
     Optional Conversational LLM / Ollama Module        :v1_85_llm, after v1_85_copilot, 2d
+    Per-Node Wi-Fi Radio Stats & 24h Graph (#145)      :v1_85_radio, after v1_85_llm, 3d
     section v1.9.0 - Multi-Network Architecture
-    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_85_llm, 5d
+    Multi-Network Simultaneous Polling & Cache (#114)   :v1_9_multinet, after v1_85_radio, 5d
 ```
 
 ---
@@ -1119,8 +1120,8 @@ gantt
 #### 3. 📦 Synology NAS DSM 7.2+ Container Manager (Issue #121 — @jonmacdonald)
 - [ ] **Deploy & Auto-Update Seamless per Synology NAS:** Template e automazione aggiornamenti one-click per Container Manager di Synology DSM tramite socket Docker `/var/run/docker.sock` o webhook, prevenendo la ricreazione manuale del container (Issue #121).
 
-#### 4. 🐧 Linux Nativo (`systemd` / Raspberry Pi / .deb) (Issue #122)
-- [ ] **Script Installer One-Liner (`install.sh`) & Pacchetto `.deb`:** Installazione automatizzata in `/opt/eero-dashboard` con `.venv` isolato, utente di servizio `eero`, `DATA_DIR=/var/lib/eero-dashboard` e unit `systemd` (`eero-dashboard.service`) con auto-start e log su `journalctl` (Issue #122).
+#### 4. 🐧 Linux Nativo (`systemd` / Raspberry Pi / .deb / .rpm) (Issue #122 — @jpatchMC)
+- [ ] **Script Installer One-Liner (`install.sh`) & Pacchetti `.deb` / `.rpm`:** Installazione automatizzata in `/opt/eero-dashboard` con `.venv` isolato, utente di servizio `eero`, `DATA_DIR=/var/lib/eero-dashboard`, unit `systemd` (`eero-dashboard.service`) con auto-start e log su `journalctl` e workflow di pacchettizzazione nativa Debian/Ubuntu (`.deb`) e Fedora/RHEL/Rocky (`.rpm`) (Issue #122).
 
 ---
 
@@ -1156,9 +1157,9 @@ gantt
 
 ---
 
-### 🤖 Release v1.8.5 — AI In-App Copilot, Log Doctor & Assistenza Interattiva alla Configurazione
+### 🤖 Release v1.8.5 — AI In-App Copilot, Log Doctor, Assistenza alla Configurazione & Statistiche Radio Wi-Fi per Nodo (Issue #145)
 
-> **Obiettivo:** Dotare la dashboard di un assistente AI integrato e leggero per supportare proattivamente gli utenti non tecnici nell'interpretazione degli errori di log, nella risoluzione guidata dei warning e nella validazione interattiva delle configurazioni.
+> **Obiettivo:** Dotare la dashboard di un assistente AI integrato e leggero per supportare proattivamente gli utenti nell'interpretazione degli errori di log e nella validazione delle configurazioni, affiancato da un sistema avanzato di telemetria e grafici storici a 24 ore per le radio Wi-Fi di ciascun nodo eero per diagnosticare saturazione e disconnessioni IoT senza richiedere abbonamenti aggiuntivi.
 
 #### 1. 🩺 Log Doctor: Diagnosi Proattiva Errori & Warning con 1 Clic
 - [ ] **Rilevamento Intelligente nel Live Log Viewer (`index.html` & `app.js`):**
@@ -1180,6 +1181,15 @@ gantt
   - Modulo opzionale configurabile dall'utente con inserimento facoltativo di API Key (es. Google Gemini Free Tier, OpenAI) o endpoint Ollama homelab locale (`http://localhost:11434`).
   - Chatbot contestuale per domande libere di networking e supporto (es. *"Perché il mio laptop si collega a 2.4 GHz invece che a 5 GHz?"*, *"Come posso ottimizzare il posizionamento dei miei nodi eero?"*).
   - Sanitizzazione rigorosa e automatica di tutti i prompt (mascheramento preventivo di password, token, MAC address reali e IP pubblici prima dell'eventuale inoltro all'LLM esterno).
+
+#### 4. 📡 Statistiche Radio Wi-Fi per Nodo & Grafico Storico Rolling 24h (Issue #145 — @rvs007)
+- [ ] **Storicizzazione Telemetria Radio per Nodo & Banda (`node_radio_history` Multi-Network Ready):**
+  - Campionamento periodico nel `background_poller` per ciascun nodo eero e singola banda di frequenza (`2.4 GHz`, `5 GHz`, `6 GHz`) su nuova tabella SQLite già predisposta con `network_id` (compatibilità nativa con `v1.9.0`) e retention automatica rolling.
+- [ ] **Approccio Trasparente a Doppio Livello (100% Telemetria Autentica, Zero Metriche Fittizie):**
+  - *Livello 1 — Metriche RF Native Cloud (se esposte):* estrazione automatica di `busyness` / `channel_utilization`, `noise_floor` (dBm) e indicatori di interferenza qualora presenti nei payload `/eeros` o disponibili sull'account (es. **eero Plus**).
+  - *Livello 2 — Metriche Radio Calcolate per Tutti gli Utenti (senza eero Plus):* calcolo deterministico dai parametri reali dei client attestati su ciascuna radio del nodo: **RSSI medio / minimo / P10 (dBm)**, qualità backhaul wireless, conteggio client attivi, throughput aggregato per radio e **stima del carico Airtime locale (%)** ($\sum \text{Throughput}_i / \text{PHY Bitrate}_i$), etichettata in modo trasparente come carico radio locale stimato (distinto dal rumore RF ambientale esterno).
+- [ ] **Grafico Interattivo Rolling 24h & Correlazione Diagnostica IoT:**
+  - Vista grafica interattiva (Chart.js) a 24 ore per ciascun nodo eero con filtro per banda (`2.4 / 5 / 6 GHz`) per individuare picchi di congestione prolungati e degrado del segnale sui dispositivi IoT, integrata con gli avvisi proattivi di *AI Network Diagnostics* e *Log Doctor* (Issue #145).
 
 ---
 
