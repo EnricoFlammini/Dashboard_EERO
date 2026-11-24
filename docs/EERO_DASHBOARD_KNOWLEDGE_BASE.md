@@ -599,6 +599,12 @@ A seguito di un Vulnerability Assessment sistematico sul codice sorgente condott
   * Modalità alternativa con toggle reattivo Base/Avanzata (memorizzato in `localStorage`), con impostazione automatica su Base per gli utenti con ruolo `viewer`.
   * Schede top semplificate e private di dettagli tecnici (esclusi IP WAN/LAN, IPv6, subnet, DNS e firmware OS), con foto e riquadri hardware dei nodi eero ingranditi a 80×80 px (`w-20 h-20`), badge Gateway/Echo Built-in, interattività ripristinata su WAN Status (Health modal) e Client Connessi / conteggio nodi (apertura Dispositivi filtrati).
   * Nuovi permessi granulari RBAC: `action_toggle_demo` (controllo/toggle modalità demo) e `action_change_language` (cambio lingua di sistema e interfaccia) con assegnazione predefinita all'amministratore e gestione nel catalogo utenti locali.
+* **IP Pubblico WAN, Double-NAT / CGNAT, Overlay di Manutenzione, Direzione Traffico Client & Stabilizzazione Build 5 (Issues #115, #117, #121, #132-#136, #142, #144, PR #137-#141):**
+  * Lookup IP pubblico esterno (`app/services/public_ip.py`, `GET /api/network/public-ip`, `PUBLIC_IP_LOOKUP=true`, cache 30 min) con rilevamento automatico Double-NAT / CGNAT (`100.64.0.0/10`) nella card WAN (#115, PR #140).
+  * Overlay reattivo di manutenzione (`app/services/maintenance.py`, `/api/health`) durante il bootstrap o l'auto-riparazione SQLite con ricaricamento automatico a completamento (#117, PR #139).
+  * Normalizzazione prospettiva radio AP vs client (`tx_bytes` AP → `download_bytes` client, `rx_bytes` AP → `upload_bytes` client) su poller, Top Bandwidth Hogs, tabella/schede, ordinamento e riepiloghi consumi senza alterare lo schema SQLite (#144), affiancata da protezione anti-jitter sui contatori (#136, PR #137) e arricchimento nomi personalizzati nei Top Hogs (#133).
+  * Sonda permessi scrittura `app_sudo` per App Password Pi-hole v6 (#132) e preservazione incondizionata dei record DNS locali manuali tramite allowlist (#134).
+  * Flag persistente `is_echo_builtin` su `device_metadata` con toggle manuale (`🔊`) per gli estensori Echo a 0 client e risoluzione stato standby (#135), toolbar Dispositivi responsive per tablet/portrait (PR #138), protezione modale login da chiusura accidentale con 1Password (`@mousedown.self`, #142) e guida aggiornamenti automatici via Task Scheduler su Synology DSM (#121, PR #141).
 
 ---
 
@@ -830,7 +836,9 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | **POST** | `/api/auth/logout` | Disconnette la sessione cloud e ripulisce la cache | Nessuno |
 | **GET** | `/api/network/list` | Elenco di tutte le reti dell'account e rete attiva (v1.5.0) | Nessuno |
 | **POST** | `/api/network/switch` | Switch dinamico a caldo della rete attiva (v1.5.0) | `{"network_id": "..."}` |
+| **GET** | `/api/health` | Stato operativo applicazione ed eventuale fase di manutenzione all'avvio / riparazione SQLite (v1.7.0 - #117) | Nessuno |
 | **GET** | `/api/network/overview` | Panoramica stato WAN, nodi mesh e Health Score | Nessuno |
+| **GET** | `/api/network/public-ip` | Indirizzo IPv4 pubblico esterno e rilevamento Double-NAT / CGNAT (v1.7.0 - #115) | `?force=true` opzionale |
 | **GET** | `/api/network/top-hogs` | Classifica dispositivi con maggior consumo dati (v1.5.0) | `?period=daily|weekly|monthly&limit=5` |
 | **GET** | `/api/network/health-breakdown` | Dettaglio diagnostico a 4 pilastri dell'Health Score | Nessuno |
 | **POST** | `/api/network/enrichment/neighbors` | Ingestion esterna mapping IP-MAC da AdGuard/cron (v1.6.0) | `{"source": "...", "mappings": [...]}` |
@@ -944,7 +952,11 @@ Tutti gli endpoint rispondono in formato JSON con intestazione `application/json
 | `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Percorso socket Docker per consentire l'auto-update in-app |
 | `WATCHTOWER_URL` | `""` | URL opzionale webhook Watchtower per triggerare il pull dell'immagine |
 | `UPDATE_CHECK_INTERVAL_HOURS`| `6` | Frequenza controllo nuove versioni su Docker Hub (ore) |
-| `DASHBOARD_LANG` | `"en"` | Lingua predefinita della dashboard e delle notifiche Telegram: qualsiasi codice in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`) |
+| `PUBLIC_IP_LOOKUP` | `true` | Se `true`, esegue lookup HTTPS multi-provider (cache 30 min) del vero IPv4 pubblico quando l'eero ha IP WAN privato/CGNAT (v1.7.0 - #115) |
+| `MQTT_LIVE_INTERVAL` | `0` | Intervallo rapido in secondi (`0` = disattivato) per la pubblicazione telemetria WAN live su MQTT (v1.7.0 - #104) |
+| `CUSTOM_DNS_SERVERS` | `""` | Server DNS locali separati da virgola per risoluzione FQDN interni nel container (v1.7.0 - #98) |
+| `CUSTOM_DNS_DOMAINS` | `""` | Regole split-DNS per dominio specifico, es. `*.casa.lan=192.168.4.13` (v1.7.0 - #98) |
+| `DASHBOARD_LANG` | `"en"` | Lingua predefinita della dashboard e delle notifiche: qualsiasi codice in `SUPPORTED_LANGUAGES` (`en`, `it`, `fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`) |
 | `CORS_ORIGINS` | `""` | Origini consentite per chiamate Cross-Origin (separate da virgola, es. `http://localhost:3000`) |
 | `API_DOCS` | `false` | Se `true`, abilita la documentazione interattiva Swagger UI (`/docs`, `/redoc`, `/openapi.json`) |
 
@@ -1184,7 +1196,32 @@ Questa sezione documenta le cause radice dei bug riscontrati durante lo sviluppo
 
 ### Issue #131 — Home / Guest Network Device Separation (@SecurityJon)
 * **Sintomo:** La dashboard e l'integrazione Home Assistant non distinguevano visivamente né funzionalmente i dispositivi collegati alla rete Wi-Fi Ospiti rispetto alla rete principale.
-* **Risoluzione Pianificata (v1.8.0):** Estrazione del flag `is_guest` in `_normalize_device()`, badge visivo e filtro rapido nella UI Dispositivi, e pubblicazione dell'attributo `is_guest` nel topic MQTT per consentire automazioni di presenza in Home Assistant.
+* **Risoluzione Pianificata (v1.8.1):** Estrazione del flag `is_guest` in `_normalize_device()`, badge visivo e filtro rapido nella UI Dispositivi, e pubblicazione dell'attributo `is_guest` nel topic MQTT per consentire automazioni di presenza in Home Assistant.
+
+### Issue #115 & PR #140 — Public WAN IP & Double-NAT / CGNAT Detection (@BaRaD5 / @todddube)
+* **Sintomo:** In topologie Bridge Mode o con router/ONT ISP a monte in doppio NAT o CGNAT, il campo IP WAN mostrava unicamente l'indirizzo privato della LAN intermedia (`192.168.x.x` / `100.64.x.x`), impedendo di conoscere il reale IP pubblico esterno.
+* **Risoluzione:** Introdotto `app/services/public_ip.py` ed endpoint `GET /api/network/public-ip` (configurabile via `PUBLIC_IP_LOOKUP`, cache 30m, fallback HTTPS su `ipify`, `icanhazip`, AWS `checkip`) con badge Double-NAT / CGNAT e visualizzazione congiunta nella card Stato WAN.
+
+### Issue #117 & PR #139 — Startup & SQLite Repair Maintenance Overlay (@stevehoek / @todddube)
+* **Sintomo:** Durante avvii su database SQLite di grandi dimensioni o cicli di auto-riparazione (`repair_if_malformed`), il server non rispondeva subito o restituiva errori temporanei facendo sembrare il container bloccato.
+* **Risoluzione:** Avvio asincrono non bloccante in `app/main.py` coordinato da `app/services/maintenance.py`: `/api/health` resta immediatamente raggiungibile esponendo la fase di manutenzione corrente, mentre il frontend mostra un overlay dedicato con ricaricamento automatico al termine.
+
+### Issue #135 — Echo "eero Built-in" Standby Status & Zero-Client Persistence (@markharrison)
+* **Sintomo:** Alcuni speaker Amazon Echo standard venivano inclusi erroneamente tra i nodi mesh, mentre veri estensori Echo Built-in con 0 client collegati potevano risultare offline o scomparire dalla topologia; inoltre browser con file lingua in cache non mostravano l'etichetta del nuovo controllo.
+* **Risoluzione:** Ristretta l'inferenza ai soli nodi proxied/extender confermati, verificato `wireless_mode` e connettività stazione per distinguere lo standby dall'offline, e introdotto il flag persistente `is_echo_builtin` su `device_metadata` con toggle manuale (`🔊`) nel modale dispositivo e cache-busting tramite `BUILD_NUMBER`.
+
+### Issue #136 & PR #137 — Bandwidth Counter Reset Jitter Spike (@Huyvux12)
+* **Sintomo:** Piccole oscillazioni all'indietro dei contatori cumulativi di traffico riportati dal cloud venivano interpretate come reset completi del contatore, sommando l'intero valore assoluto e gonfiando i consumi storici.
+* **Risoluzione:** In `db.py` vengono trattati come reset hardware solo i cali netti significativi rispetto al valore precedente, ignorando il jitter minore e azzerando il delta sui campioni singoli iniziali.
+
+### Issue #142 — 1Password Autofill Closing Local Login Modal
+* **Sintomo:** Cliccando sul menu di riempimento automatico di 1Password sopra la modale di login locale, il rilascio del mouse all'esterno del riquadro faceva scattare `@click.self` sul backdrop chiudendo la modale.
+* **Risoluzione:** Sostituito `@click.self` con `@mousedown.self` sullo sfondo della modale di login.
+
+### Issue #144 — Reversed Upload and Download Totals in Top Hogs & Devices (@rvs007 / @SecurityJon / @jpatchMC)
+* **Sintomo:** I volumi di Download e Upload apparivano invertiti nella card Top Bandwidth Hogs, nell'elenco/schede dispositivi e nei totali del modale dispositivo.
+* **Causa Radice:** I contatori hardware dei nodi eero (`rx_bytes` e `tx_bytes`) sono espressi dal punto di vista della radio dell'Access Point: `tx_bytes` sono i byte trasmessi dall'AP verso il dispositivo (**Download** del client) e `rx_bytes` i byte ricevuti dall'AP dal dispositivo (**Upload** del client).
+* **Risoluzione:** Normalizzata la mappatura in `poller.py`, `db.py`, `network.py`, `app.js` e `index.html` esponendo esplicitamente `download_bytes = tx_bytes` e `upload_bytes = rx_bytes` senza modificare i nomi delle colonne grezze in SQLite.
 
 ---
 

@@ -97,9 +97,9 @@ gantt
     section v1.8.1 - Core Foundations, Apprise & Quick Wins
     Path & Runtime Detection (DATA_DIR / MEIPASS) (#118):v1_81_core, after v1_80_clean_tests, 2d
     Apprise Universal Notifications (#111)              :v1_81_apprise, after v1_81_core, 2d
-    Public WAN IP & Double-NAT Detection (#115)         :v1_81_wan, after v1_81_apprise, 1d
+    Public WAN IP & Double-NAT Detection (#115)         :done, v1_81_wan, after v1_81_apprise, 1d
     Homelab Embed iFrame & Kiosk Mode (#116)            :v1_81_kiosk, after v1_81_wan, 1d
-    Maintenance & Housekeeping Mode UI Overlay (#117)   :v1_81_maint, after v1_81_kiosk, 1d
+    Maintenance & Housekeeping Mode UI Overlay (#117)   :done, v1_81_maint, after v1_81_kiosk, 1d
     In-App Step-by-Step Guides for Non-Tech Users       :v1_81_guides, after v1_81_maint, 2d
     Guest Network Device Separation & MQTT (#131)       :v1_81_guest, after v1_81_guides, 2d
     section v1.8.2 - NAS & Proxmox Community
@@ -1061,9 +1061,9 @@ gantt
 - [ ] **Directory Dati Standard per OS (`DATA_DIR` fallback):** Utilizzo automatico di `~/.local/share/eero-dashboard` / `/var/lib/eero-dashboard` (Linux), `%APPDATA%\eero-dashboard` (Windows) e `~/Library/Application Support/eero-dashboard` (macOS) quando `DATA_DIR` non è impostato (Issue #118).
 - [ ] **Rilevamento Ambiente nella Pagina Aggiornamenti:** Distinzione tra runtime `docker`, `systemd`, `desktop`, `synology`, `unraid`, `ha_addon` e `pypi` nella scheda *Verifica aggiornamenti* per mostrare istruzioni coerenti con l'ambiente attivo (Issue #118).
 
-#### 2. 🌐 Rilevamento Public WAN IP & Doppio NAT (Issue #115 — @BaRaD5)
-- [ ] **Rilevamento Deterministico True Public IP:** Meccanismo leggero di lookup IP pubblico (tramite query DNS TXT a Cloudflare/Google in `dns_cache.py` o fallback REST `api.ipify.org`) quando l'eero si trova in bridge o in cascata dietro router operatore con IP WAN privato RFC 1918 (`192.168.x.x`, `10.x.x.x`) (Issue #115).
-- [ ] **Endpoint Dedicato & Card Overview:** Esposizione su `GET /api/network/public-ip` con cache a basso rate-limit (15-30m) nel poller e visualizzazione affiancata dell'IP WAN locale ed esterno nella panoramica di rete (Issue #115).
+#### 2. 🌐 Rilevamento Public WAN IP & Doppio NAT (Issue #115 — @BaRaD5, PR #140 — @todddube) *(Anticipata in v1.7.0)*
+- [x] **Rilevamento Deterministico True Public IP:** Meccanismo leggero di lookup IP pubblico HTTPS multi-provider (`ipify` / `icanhazip` / AWS `checkip` in `public_ip.py`, `PUBLIC_IP_LOOKUP=true`) quando l'eero si trova in bridge o in cascata dietro router operatore con IP WAN privato RFC 1918 o CGNAT (`100.64.0.0/10`) (Issue #115).
+- [x] **Endpoint Dedicato & Card Overview:** Esposizione su `GET /api/network/public-ip` con cache a basso rate-limit (30m) e visualizzazione affiancata dell'IP WAN locale ed esterno nella panoramica di rete (Issue #115).
 
 #### 3. 🖥️ Supporto Embed Dashboard Homelab & Vista Kiosk (Issue #116 — @stevehoek)
 - [ ] **Configurazione Flessibile iFrame (`X-Frame-Options` / CSP `frame-ancestors`):** Introduzione della variabile d'ambiente `ALLOW_IFRAME_EMBED` o impostazione origini fidate per consentire l'embed sicuro in dashboard esterne come Homarr, Dashy, Flame o Glance (Issue #116).
@@ -1077,12 +1077,12 @@ gantt
 - [ ] **Pannello UI, Mascheramento Segreti & Pulsante di Test:**
   - Campi `apprise_enabled` e `apprise_urls` (mascherato con `••••••••` nelle API) nella scheda *Notifiche & Webhook* con test immediato e documentazione (Issue #111).
 
-#### 5. 🛠️ Schermata & Banner di Manutenzione Web UI per Operazioni di Background (Issue #117 — Feedback @stevehoek)
-- [ ] **Maintenance / Housekeeping State Interceptor (`/api/health` & Middleware):**
-  - Esposizione di uno stato `status: "maintenance"` (con dettagli stage e messaggio) durante operazioni intensive: auto-riparazione indici SQLite (`repair_if_malformed`), compattazione retention rollup, pulizia `VACUUM` programmata o sincronizzazione iniziale a freddo al boot (Issue #117).
-- [ ] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby/Plex):**
-  - Overlay visivo animato con messaggio descrittivo localizzato (es. *"Manutenzione database in corso... Ottimizzazione indici SQLite, attendere qualche secondo"*), prevenendo l'impressione di crash o stato offline (Issue #117).
-  - Auto-reconnect polling ad alta frequenza (ogni 2 secondi) su `/api/health` con ripristino istantaneo della dashboard alla conclusione della manutenzione (Issue #117).
+#### 5. 🛠️ Schermata & Banner di Manutenzione Web UI per Operazioni di Background (Issue #117 — @stevehoek, PR #139 — @todddube) *(Anticipata in v1.7.0)*
+- [x] **Maintenance / Housekeeping State Interceptor (`/api/health` & Middleware):**
+  - Esposizione di uno stato `maintenance` (con dettagli `stage` e tempo trascorso) durante operazioni intensive all'avvio e auto-riparazione indici SQLite (`repair_if_malformed`) (Issue #117).
+- [x] **Splash Screen & Banner Informatico UI Non-Bloccante (stile Emby/Plex):**
+  - Overlay visivo animato con messaggio descrittivo localizzato, prevenendo l'impressione di crash o stato offline (Issue #117).
+  - Auto-reconnect polling ad alta frequenza su `/api/health` con ripristino istantaneo della dashboard alla conclusione della manutenzione (Issue #117).
 
 #### 6. 📖 Manuali Puntuali & Guide Guidate Step-by-Step per Utenti Non Esperti
 - [ ] **Guide Step-by-Step Integrate nei Pannelli di Configurazione:**
