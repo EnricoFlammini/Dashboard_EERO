@@ -50,20 +50,26 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🌟 Key Features
 
+* **🌐 Public WAN IP, Double-NAT / CGNAT Detection & Startup Maintenance Overlay (v1.7.0 - Issues #115, #117, PR #139, PR #140):**
+  - **True External WAN IP (#115):** Automatic multi-provider HTTPS lookup (`GET /api/network/public-ip`, `PUBLIC_IP_LOOKUP=true`, cached 30 min) displaying the real public IPv4 address alongside private RFC 1918 or CGNAT (`100.64.0.0/10`) WAN addresses when eero operates in Bridge Mode or behind an ISP router.
+  - **Startup & SQLite Repair Overlay (#117):** Reactive maintenance screen (`maintenance` state in `/api/health`) shown during initial cold-start housekeeping or automatic SQLite index recovery, automatically reloading once ready.
+* **📊 Client-Perspective Traffic Direction, Counter Jitter Guard & Top Hogs Nicknames (v1.7.0 - Issues #133, #136, #144, PR #137):**
+  - **Normalized Download / Upload Direction (#144):** Maps AP radio `tx_bytes` to client **Download** (`download_bytes`) and `rx_bytes` to client **Upload** (`upload_bytes`) consistently across real-time poller throughput, Top Bandwidth Hogs, Devices table/cards/sorting, and usage history summaries.
+  - **Counter Jitter Resilience & Friendly Names (#133, #136):** Enriches Top Bandwidth Hogs with custom nicknames and treats only genuine large counter drops as hardware resets, preventing telemetry jitter spikes.
 * **🌟 Simplified Basic Dashboard & Granular RBAC Permissions (v1.7.0):**
   - **Instant View Switcher:** Reactive toggle in the Overview header between the comprehensive **Advanced View** and a clean **Basic View** tailored for non-technical users, persisted in `localStorage` (defaulting to Basic View for Viewer roles).
   - **De-cluttered Essential Cards:** Streamlined WAN Status, Mesh Nodes count with visual health dots, Connected Clients, and Last Speed Test without technical distractions (hidden WAN/LAN IPs, subnets, DNS servers, and firmware OS).
   - **Large High-Definition Mesh Node Cards:** Enlarged 80×80 px official hardware images (`w-20 h-20`), dedicated Gateway / Echo Built-in badges, and hidden reboot controls.
   - **Interactive Quick Links:** Clickable WAN tile (opens Network Health modal) and Connected Clients tile / node client counters (opens Devices filtered by active status or node).
   - **Granular RBAC Permissions:** Added `action_toggle_demo` and `action_change_language` to the local user authorization catalog.
-* **🗂️ Devices Card View, Editable Details & Clickable Home Cards (v1.7.0 - PR #107):**
-  - **List / Cards Toggle:** Compact 3–4 column live-animated device cards alongside the default table, clickable name/IP, inline profile assignment (`action_edit_devices`), icon-based category picker with Auto-detect reset, manufacturer/model, Wi-Fi standard/width, and immediate RAM cache refresh on save.
+* **🗂️ Devices Card View, Responsive Toolbar, Editable Details & Clickable Home Cards (v1.7.0 - PR #107, PR #138, Issue #142):**
+  - **List / Cards Toggle & Tablet Toolbar:** Compact 3–4 column live-animated device cards alongside the default table, responsive portrait/tablet toolbar keeping every control accessible, sidebar hover descriptions, 1Password-safe local login modal (`@mousedown.self`), clickable name/IP, inline profile assignment (`action_edit_devices`), icon-based category picker with Auto-detect reset, and immediate RAM cache refresh on save.
   - **Richer Dashboard Cards & eero Product Images:** Clickable WAN Status (health bar + IPv6 badge), Primary Gateway (subnet, firmware, mesh node dots), Connected Clients (6/5/2.4 GHz + wired split), Last Speed Test (ping, bufferbloat grade, sparkline), and official eero product images next to each mesh node on Home.
 * **🔑 Native Amazon OAuth2 / PKCE Login (v1.7.0 - Issue #93):** Native OpenID/PKCE (`S256`) login flow via `device_auth_access` (`GET /api/auth/amazon/login-url`, `POST /api/auth/amazon/exchange`) with immediate localized 3-step instructions inside the login modal, alongside classic Email/SMS OTP.
-* **🔊 Amazon Echo "eero Built-in" Nodes & Bridge Mode Gateway Election (v1.7.0 - Issues #96, #105, #129):**
-  - **Echo Built-in Extenders (#96):** Automatic synthesis of virtual Amazon Echo extender nodes (`reconcile_echo_extender_nodes`) with `eero Built-in` badge, LAN IP enrichment, RAM persistence across poll cycles, Home Assistant presence tracker support (`home`), and hidden reboot button.
+* **🔊 Amazon Echo "eero Built-in" Nodes & Bridge Mode Gateway Election (v1.7.0 - Issues #96, #105, #129, #135):**
+  - **Echo Built-in Extenders (#96, #135):** Automatic synthesis of virtual Amazon Echo extender nodes (`reconcile_echo_extender_nodes`) with `eero Built-in` badge, accurate standby/station resolution, persistent manual toggle (`🔊` `is_echo_builtin`) in Device Details for zero-client extenders, Home Assistant presence tracker support (`home`), and hidden reboot button.
   - **Bridge Mode Primary Gateway (#105, #129):** Prioritizes `is_primary_node=True` and `isPrimaryNode=True` alongside non-eero upstream WAN LLDP neighbors (`has_upstream_wan_lldp=True`) when `gateway=False` in Bridge Mode, resolving primary node election across all-wired setups.
-* **🛡️ Pi-hole v6, AdGuard Home, Custom/Split DNS & IPv4-First Resolver (v1.7.0 - Issues #98, #99):** Single active IPv4 owner (`ip_owner`), automatic pruning of reassigned DHCP leases on Pi-hole v6 / AdGuard Home, IPv4-first (`AF_INET`) DNS cache ordering, native **Custom & Split DNS** resolver (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`), and preserved credentials unless a server URL changes.
+* **🛡️ Pi-hole v6 Read-Only Check, Custom Record Preservation, Custom/Split DNS & IPv4-First Resolver (v1.7.0 - Issues #98, #99, #132, #134):** Proactive Pi-hole v6 write-permission verification (`app_sudo` check for App Passwords), strict allowlist pruning preserving all manually created local DNS records and CNAMEs, single active IPv4 owner (`ip_owner`), IPv4-first (`AF_INET`) DNS cache ordering, native **Custom & Split DNS** resolver (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`), and preserved credentials unless a server URL changes.
 * **🏠 Home Assistant MQTT, Live Telemetry Interval & Multi-Notifier Controls (v1.7.0 - Issues #90, #100, #101, #103, #104, #128):** Standardized `Mbit/s` WAN discovery unit, optional high-frequency **Live WAN Telemetry Interval** (`MQTT_LIVE_INTERVAL` / `live_interval`), `last_seen_connected` tracker attribute, 1000-device tracker cap, instant MQTT discovery republish on rename, automatic cleanup of forgotten/removed devices ("gone-away") via retained empty discovery payloads, and complete UI panels for Telegram, Webhook, Discord, Pushover, and native Ntfy.
 * **🔒 Global `REQUIRE_LOCAL_AUTH` Enforcement & Security Hardening (v1.7.0 - GHSA-r5vj-jfjp-m88q):** Global `enforce_local_auth` middleware across all `/api/*` and `/metrics` routes when `REQUIRE_LOCAL_AUTH=true`, complete RBAC permission coverage across all endpoints, masked notification secrets (`••••••••`) on `GET /api/automations/notifications`, protocol-relative `//host` link blocking in Markdown, and trusted-proxy validation for `X-Forwarded-For`.
 * **🤖 AI Diagnostics, IPv6 Firewall, Placement Test, Guardian VPN & 9 Languages (v1.7.0 - Issues #86, #90, #102):** Streaming eero AI Diagnostic Assistant, Band Steering pre-check, IPv6 Firewall management, RF Placement Test, Guardian VPN toggle, serial node registration, 3-state theme selector (**Light / Dark / System** with native `<meta name="color-scheme" content="light dark">` + `colorScheme` sync), global `Ctrl+K` search, and 100% parity across 9 European languages (`en`, `it`, `fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`).
@@ -158,7 +164,7 @@ Self-hosted, containerized web dashboard and management suite for **Amazon eero*
 
 ## 🚀 Quick Start
 
-> **📦 Planned for v1.8.x (Beyond Docker):** Native **Linux** (`systemd` / Proxmox LXC / Unraid / Synology in v1.8.1), **Home Assistant Add-on & PyPI (`pipx`)** (v1.8.2), and **Windows** (`.exe`) & **macOS** (`.dmg`) Desktop apps with system tray & WebView (v1.8.3) are scheduled on the [Roadmap](ROADMAP.md).
+> **📦 Planned for v1.8.x (Beyond Docker):** Native **Linux** (`systemd` / `.deb` / `.rpm` / Proxmox LXC / Unraid / Synology in v1.8.2), **Home Assistant Add-on & PyPI (`pipx`)** (v1.8.3), and **Windows** (`.exe`) & **macOS** (`.dmg`) Desktop apps with system tray & WebView (v1.8.4) are scheduled on the [Roadmap](ROADMAP.md).
 
 ### Option A: 1-Line `docker run` (Recommended)
 
@@ -239,6 +245,10 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 | `WEBHOOK_URL` | *(optional)* | HTTP POST endpoint that receives events as JSON |
 | `DAILY_DIGEST_HOUR` | `21` | Hour (0-23 in local timezone) for automated daily summary dispatch |
 | `EERO_NETWORK_ID` | *(empty)* | Specific eero network ID to monitor (useful for accounts with multiple networks or delegated access) |
+| `PUBLIC_IP_LOOKUP` | `true` | Look up the real external public IPv4 over HTTPS (cached 30 min) when eero reports a private/CGNAT WAN IP (`false` disables outbound lookup) |
+| `MQTT_LIVE_INTERVAL` | `0` | Optional high-frequency interval in seconds (`0` = disabled) to publish live WAN throughput & client count sensors on MQTT |
+| `CUSTOM_DNS_SERVERS` | *(empty)* | Comma-separated local DNS server IPs for resolving internal FQDNs inside the container |
+| `CUSTOM_DNS_DOMAINS` | *(empty)* | Domain-specific split-DNS rules (e.g. `*.casa.lan=192.168.4.13`) |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
 
 ---
@@ -425,7 +435,7 @@ Open **http://localhost:8099**, sign in with the `ADMIN_USER` / `ADMIN_PASSWORD`
   ```
 * **Translations:** every user-visible string lives in `app/static/locales/<lang>.json` (frontend) and `app/i18n_locales/<lang>/*.json` (backend). Add a key to every language in `SUPPORTED_LANGUAGES`; the test suite checks key parity.
 * **Manual & changelog:** the in-app manual sections live in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + Markdown body) and the release summary in `app/i18n_locales/<lang>/changelog_summary.md`; a missing file falls back to the English one.
-* **`DASHBOARD_LANG`** accepts any code in `SUPPORTED_LANGUAGES` (`app/i18n.py`, currently `en`, `it`).
+* **`DASHBOARD_LANG`** accepts any code in `SUPPORTED_LANGUAGES` (`app/i18n.py`: `en`, `it`, `fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`).
 
 ### Adding a language
 
@@ -458,13 +468,16 @@ A heartfelt thank you to the open-source contributors and community members whos
 * **[@WillFulmer](https://github.com/WillFulmer):** Universal Wi-Fi Alliance QR codes for open guest networks (`T:nopass`) (#63) and multi-channel Daily Digest delivery transparency (#64).
 * **[@jonmacdonald](https://github.com/jonmacdonald):** SQLite concurrency & lock contention resolution via write locks and 60s busy timeout (#62), and primary gateway switch reconciliation (#26).
 * **[@stevehoek](https://github.com/stevehoek):** Multi-network switching, English localization of Telegram Daily Digest (#37, #38), and daily digest restart idempotency verification (#70).
-* **[@todddube](https://github.com/todddube):** Official Synology DSM 7.2+ Container Manager deployment guide and ready-to-paste Docker Compose template (#66), and configurable daily digest hour support (#70).
+* **[@todddube](https://github.com/todddube):** Devices Card View, editable details & official eero product images (#107), responsive Devices toolbar & sidebar enhancements (#138), startup/SQLite maintenance overlay (#139), public WAN IP & Double-NAT/CGNAT detection (#140), Synology DSM 7.2+ Container Manager deployment & Task Scheduler auto-update guide (#66, #141), full translation parity (#78, #79, #94, #95), and configurable daily digest hour (#70).
 * **[@onefish2](https://github.com/onefish2):** LAN IPv4 subnet prioritization for multi-address container hosts and intelligent Pi-hole v6 stale record pruning (#72).
 * **[@tekzer0](https://github.com/tekzer0):** Robust account network discovery, `EERO_NETWORK_ID` env fallback, and zero-network resilience (#69).
 * **[@mrtekkid](https://github.com/mrtekkid):** Multi-tier selective data compaction, timestamp expression indexes, and universal bitrate parsing (#73).
 * **[@XprofQ](https://github.com/XprofQ):** Identification of WAN bufferbloat reporting bug and duration unit localization suggestions (#71).
-* **[@SecurityJon](https://github.com/SecurityJon):** Pi-hole v6 App Password session permission verification & read-only detection (#132), unmanaged custom local DNS record preservation during sync (#134), and custom device nickname resolution in Top Bandwidth Hogs (#133).
-* **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
+* **[@SecurityJon](https://github.com/SecurityJon):** Pi-hole v6 App Password session permission verification & read-only detection (#132), unmanaged custom local DNS record preservation during sync (#134), custom device nickname resolution in Top Bandwidth Hogs (#133), and client download/upload direction verification (#144).
+* **[@markharrison](https://github.com/markharrison):** Amazon Echo "eero Built-in" extender node discovery, standby resolution & manual persistence toggle (#96, #135), and Home Assistant MQTT offline tracker & live telemetry enhancements (#92, #104).
+* **[@rvs007](https://github.com/rvs007):** Pushover & Discord notification UI controls (#100) and AP radio TX/RX perspective normalization for client download/upload totals (#144).
+* **[@Huyvux12](https://github.com/Huyvux12):** Resilient bandwidth counter delta calculation preventing telemetry jitter from triggering false counter resets (#136, #137).
+* **Bug Hunters & Testers:** Shoutout to **@BaRaD5** (local DNS caching & Public WAN IP #115), **@davidpshaw** (Amazon OAuth2 PKCE #93), **@le0-o0o** (IPv6 firewall & Ntfy #90), **@ncolon** & **@tef67** (Bridge Mode gateway election #105, #129), **@richlilly2004** (Pi-hole RFC 1123 #83), **@phutmacher** (gateway election), **@txrangersxx** (network ID resolver), **@nextlevel2023** (Amazon login UX), and **u/djbills** on Reddit (Docker Hub tag isolation).
 
 ---
 
@@ -505,20 +518,26 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🌟 Caratteristiche Principali
 
+* **🌐 IP Pubblico WAN, Rilevamento Doppio NAT / CGNAT & Overlay di Manutenzione (v1.7.0 - Issues #115, #117, PR #139, PR #140):**
+  - **Vero IP Pubblico Esterno (#115):** Lookup HTTPS multi-provider (`GET /api/network/public-ip`, `PUBLIC_IP_LOOKUP=true`, cache 30 min) che affianca il vero indirizzo IPv4 pubblico quando l'eero opera in Bridge Mode o dietro router ISP/CGNAT (`100.64.0.0/10`).
+  - **Overlay di Avvio & Auto-Riparazione SQLite (#117):** Schermata informativa non bloccante (`maintenance` in `/api/health`) durante il bootstrap o la riparazione automatica degli indici SQLite, con ricaricamento automatico a completamento avvenuto.
+* **📊 Direzione Download/Upload Client, Protezione Jitter Contatori & Nomi Top Hogs (v1.7.0 - Issues #133, #136, #144, PR #137):**
+  - **Direzione Traffico Normalizzata (#144):** Mappatura coerente di `tx_bytes` dell'AP a **Download** client (`download_bytes`) e `rx_bytes` a **Upload** client (`upload_bytes`) su throughput live, Top Bandwidth Hogs, tabella/schede dispositivi, ordinamento e storico consumi.
+  - **Resilienza Contatori & Nickname (#133, #136):** Risoluzione prioritaria dei nomi personalizzati nei Top Bandwidth Hogs e distinzione tra jitter fisiologico e reali reset hardware dei contatori.
 * **🌟 Dashboard Semplificata per Utenti Base & Permessi RBAC Granulari (v1.7.0):**
   - **Interruttore Vista Istantaneo:** Toggle reattivo nella testata della Panoramica per passare tra la vista **Avanzata** completa e la vista **Base** pensata per utenti non tecnici, con preferenza persistita in `localStorage` (e predefinita per il ruolo Viewer).
   - **Top Card Essenziali:** Schede WAN, Nodi e Client prive di elementi tecnici (esclusi IP WAN/LAN, IPv6, subnet, DNS e firmware OS), con punteggio Salute Rete, ISP, conteggio nodi operativi e speed test completo di grafico sparkline.
   - **Card Nodi Mesh con Immagini Ingrandite a 80×80 px:** Dispositivi eero con riquadri visivi in alta definizione (`w-20 h-20`), badge dedicati (Gateway / Echo Built-in) e rimozione dei pulsanti di riavvio non necessari agli utenti base.
   - **Navigazione Rapida:** Click sul tile WAN per aprire i dettagli Salute Rete e click sul tile Client Connessi o sul conteggio di un singolo nodo per aprire la scheda Dispositivi già filtrata.
   - **Permessi Granulari:** Nuovi controlli `action_toggle_demo` e `action_change_language` nel catalogo utenti locali e RBAC.
-* **🗂️ Vista a Schede Dispositivi, Dettagli Modificabili & Card Home Cliccabili (v1.7.0 - PR #107):**
-  - **Interruttore Elenco / Schede:** Schede compatte a 3–4 colonne animate durante il traffico, nome/IP cliccabili, cambio profilo inline (`action_edit_devices`), selettore categoria con icone e ripristino automatico, produttore/modello, standard/larghezza Wi-Fi e aggiornamento immediato della cache RAM al salvataggio.
+* **🗂️ Vista a Schede Dispositivi, Toolbar Responsive, Dettagli Modificabili & Card Home Cliccabili (v1.7.0 - PR #107, PR #138, Issue #142):**
+  - **Interruttore Elenco / Schede & Toolbar Tablet:** Schede compatte a 3–4 colonne animate durante il traffico, toolbar Dispositivi ottimizzata per tablet e portrait, descrizioni hover sulla sidebar, modale login locale compatibile con 1Password (`@mousedown.self`), cambio profilo inline (`action_edit_devices`), selettore categoria con icone e aggiornamento immediato della cache RAM al salvataggio.
   - **Card Dashboard Arricchite & Immagini Prodotti eero:** Card cliccabili per Stato WAN (barra salute + badge IPv6), Gateway Primario (subnet, firmware, pallini nodi mesh), Client Connessi (ripartizione 6/5/2.4 GHz e cablati), Ultimo Speed Test (ping, voto bufferbloat, sparkline) e immagini ufficiali dei dispositivi eero accanto ai nodi mesh nella Home.
 * **🔑 Autenticazione Nativa Amazon OAuth2 / PKCE (v1.7.0 - Issue #93):** Flusso OpenID/PKCE (`S256`) nativo via `device_auth_access` (`GET /api/auth/amazon/login-url`, `POST /api/auth/amazon/exchange`) con istruzioni guidate in 3 passaggi visibili subito nella modale di accesso in tutte e 9 le lingue, oltre al classico OTP Email/SMS.
-* **🔊 Nodi Amazon Echo "eero Built-in" & Elezione Gateway in Bridge Mode (v1.7.0 - Issues #96, #105, #129):**
-  - **Estensori Echo Built-in (#96):** Sintesi automatica dei nodi virtuali Amazon Echo (`reconcile_echo_extender_nodes`) con badge `eero Built-in`, correlazione IP LAN, persistenza in RAM tra i cicli, stato presenza Home Assistant (`home`) e protezione dai riavvii non applicabili.
+* **🔊 Nodi Amazon Echo "eero Built-in" & Elezione Gateway in Bridge Mode (v1.7.0 - Issues #96, #105, #129, #135):**
+  - **Estensori Echo Built-in (#96, #135):** Sintesi automatica dei nodi virtuali Amazon Echo (`reconcile_echo_extender_nodes`) con badge `eero Built-in`, risoluzione accurata stato standby/online, toggle manuale persistente (`🔊` `is_echo_builtin`) nel modale dispositivo per estensori con 0 client, stato presenza Home Assistant (`home`) e protezione dai riavvii non applicabili.
   - **Gateway Primario in Bridge Mode (#105, #129):** Priorità a `is_primary_node=True` e `isPrimaryNode=True` e rilevamento neighbor LLDP non-eero sulla porta WAN (`has_upstream_wan_lldp=True`), risolvendo l'elezione primaria su configurazioni a nodi multipli tutti cablati.
-* **🛡️ Pi-hole v6, AdGuard Home, Custom/Split DNS & Resolver IPv4-First (v1.7.0 - Issues #98, #99):** Unico proprietario IPv4 attivo (`ip_owner`), pruning automatico dei lease riassegnati su Pi-hole v6 e AdGuard Home, ordinamento DNS `AF_INET` IPv4-first, **Custom & Split DNS** nativo (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`) e preservazione delle credenziali salvate finché non cambia l'URL del server.
+* **🛡️ Pi-hole v6 Read-Only Check, Preservazione Record DNS, Custom/Split DNS & Resolver IPv4-First (v1.7.0 - Issues #98, #99, #132, #134):** Sonda proattiva sui permessi di scrittura Pi-hole v6 (`app_sudo` per App Password), potatura con allowlist rigorosa che preserva intatti tutti i record DNS locali e CNAME non gestiti, unico proprietario IPv4 attivo (`ip_owner`), ordinamento DNS `AF_INET` IPv4-first, **Custom & Split DNS** nativo (`CUSTOM_DNS_SERVERS`, `CUSTOM_DNS_DOMAINS`) e preservazione delle credenziali salvate finché non cambia l'URL del server.
 * **🏠 Home Assistant MQTT, Telemetria Live Rapida & Pannelli Notifiche Completi (v1.7.0 - Issues #90, #100, #101, #103, #104, #128):** Unità WAN standardizzata a `Mbit/s`, intervallo opzionale ad alta frequenza per i sensori WAN live (`MQTT_LIVE_INTERVAL` / `live_interval`), attributo `last_seen_connected` sui device tracker, limite alzato a 1000 apparati, ri-pubblicazione discovery istantanea alla rinomina, rimozione automatica ("gone-away") delle entità dimenticate con payload di discovery vuoto retained e controlli UI completi per Telegram, Webhook, Discord, Pushover e Ntfy nativo.
 * **🔒 Enforcement Globale `REQUIRE_LOCAL_AUTH` & Security Hardening (v1.7.0 - GHSA-r5vj-jfjp-m88q):** Middleware globale `enforce_local_auth` su tutte le rotte `/api/*` e `/metrics` quando `REQUIRE_LOCAL_AUTH=true`, copertura RBAC completa su tutti gli endpoint, mascheramento segreti (`••••••••`) in `GET /api/automations/notifications`, blocco link `//host` nel parser Markdown e validazione proxy fidati per `X-Forwarded-For`.
 * **🤖 Assistente AI, Firewall IPv6, Placement Test, Guardian VPN & 9 Lingue Europee (v1.7.0 - Issues #86, #90, #102):** Assistente AI diagnostico in streaming SSE, verifica stato `band_steering`, regole Firewall IPv6, Placement Test RF, toggle Guardian VPN, registrazione nodo via seriale, selettore tema a 3 stati (**Chiaro / Scuro / Sistema** con sincronizzazione nativa `<meta name="color-scheme" content="light dark">` + `colorScheme`), scorciatoia `Ctrl+K` e parità al 100% su 9 lingue europee (`en`, `it`, `fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`).
@@ -613,7 +632,7 @@ Dashboard web e suite di gestione containerizzata per reti mesh Wi-Fi **Amazon e
 
 ## 🚀 Avvio Rapido
 
-> **📦 In programma per la serie v1.8.x (Oltre Docker):** Sono pianificate nella [Roadmap](ROADMAP.md) le installazioni native **Linux** (`systemd` / Proxmox LXC / Unraid / Synology nella v1.8.1), l'**Add-on Home Assistant & PyPI (`pipx`)** (nella v1.8.2) e le app Desktop **Windows** (`.exe`) e **macOS** (`.dmg`) con tray icon e WebView (nella v1.8.3).
+> **📦 In programma per la serie v1.8.x (Oltre Docker):** Sono pianificate nella [Roadmap](ROADMAP.md) le installazioni native **Linux** (`systemd` / `.deb` / `.rpm` / Proxmox LXC / Unraid / Synology nella v1.8.2), l'**Add-on Home Assistant & PyPI (`pipx`)** (nella v1.8.3) e le app Desktop **Windows** (`.exe`) e **macOS** (`.dmg`) con tray icon e WebView (nella v1.8.4).
 
 ### Opzione A: Comando Diretto `docker run` (Consigliato)
 
@@ -693,6 +712,10 @@ Template Docker Compose preconfigurato e guida passo-passo per Synology DSM 7.2+
 | `DAILY_DIGEST_HOUR` | `21` | Ora di invio del riepilogo giornaliero (0-23 nel fuso locale) |
 | `TZ` | `Europe/Rome` | Fuso orario dell'applicazione per timestamp e riepilogo giornaliero (default nei compose forniti; l'immagine senza compose usa `UTC`) |
 | `EERO_NETWORK_ID` | *(vuoto)* | ID specifico della rete eero da monitorare (utile per account con reti multiple o permessi delegati) |
+| `PUBLIC_IP_LOOKUP` | `true` | Rileva il vero IPv4 pubblico esterno via HTTPS (cache 30 min) quando l'eero riporta un IP WAN privato o CGNAT (`false` disabilita il controllo esterno) |
+| `MQTT_LIVE_INTERVAL` | `0` | Intervallo rapido opzionale in secondi (`0` = disattivato) per pubblicare i sensori WAN live e numero client su MQTT |
+| `CUSTOM_DNS_SERVERS` | *(vuoto)* | Indirizzi IP dei server DNS locali (separati da virgola) per risolvere FQDN interni nel container |
+| `CUSTOM_DNS_DOMAINS` | *(vuoto)* | Regole split-DNS per dominio (es. `*.casa.lan=192.168.4.13`) |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
 | `CORS_ORIGINS` | *(vuoto)* | Origini browser aggiuntive autorizzate a chiamare le API, separate da virgola (es. `http://homeassistant.local:8123`). Lasciare vuoto salvo che un'altra web app debba chiamare le API della dashboard dal browser. Le richieste di modifica (POST/PUT/PATCH/DELETE) da qualsiasi altra origine web ricevono 403; i client senza header `Origin` (curl, Home Assistant REST, script) non sono toccati. Se un reverse proxy riscrive l'header `Host` senza impostare `X-Forwarded-Host`, aggiungere qui l'URL pubblico della dashboard. `*` ripristina il vecchio comportamento aperto a tutti (sconsigliato). |
 
@@ -780,7 +803,7 @@ Apri **http://localhost:8099**, accedi con `ADMIN_USER` / `ADMIN_PASSWORD` impos
   ```
 * **Traduzioni:** ogni stringa visibile all'utente vive in `app/static/locales/<lang>.json` (frontend) e `app/i18n_locales/<lang>/*.json` (backend). Aggiungi la chiave in ogni lingua di `SUPPORTED_LANGUAGES`; la suite di test verifica la parità delle chiavi.
 * **Manuale & changelog:** i capitoli del manuale in-app vivono in `app/i18n_locales/<lang>/manual/<NN>_<slug>.md` (front matter `id`/`title`/`icon`/`summary` + corpo Markdown) e il sommario delle release in `app/i18n_locales/<lang>/changelog_summary.md`; un file mancante ricade su quello inglese.
-* **`DASHBOARD_LANG`** accetta qualsiasi codice presente in `SUPPORTED_LANGUAGES` (`app/i18n.py`, attualmente `en`, `it`).
+* **`DASHBOARD_LANG`** accetta qualsiasi codice presente in `SUPPORTED_LANGUAGES` (`app/i18n.py`: `en`, `it`, `fr`, `es`, `de`, `nl`, `pt`, `pl`, `el`).
 
 ### Aggiungere una lingua
 
@@ -814,13 +837,16 @@ Un ringraziamento sincero a tutti gli utenti e contributori open-source che con 
 * **[@jonmacdonald](https://github.com/jonmacdonald):** Risoluzione lock contention SQLite e concorrenza con busy timeout a 60s (#62) e riconciliazione switch gateway in topologie complesse (#26).
 * **[@jimcampbell100](https://github.com/jimcampbell100):** Ispiratore del Multi-Network Fleet Management (#22).
 * **[@stevehoek](https://github.com/stevehoek):** Switch multi-rete (#37), localizzazione inglese del Telegram Daily Digest (#38) e verifica dell'idempotenza del digest ai riavvii (#70).
-* **[@todddube](https://github.com/todddube):** Guida ufficiale di installazione e template Docker Compose per Synology DSM 7.2+ Container Manager (#66), internazionalizzazione (i18n) barra filtri Top Bandwidth Hogs, ripristino getter categorie Alpine.js, callout setup admin (#67) e supporto all'orario personalizzato del Daily Digest (#70).
+* **[@todddube](https://github.com/todddube):** Vista a Schede Dispositivi, dettagli modificabili & immagini ufficiali hardware eero (#107), toolbar Dispositivi responsive & miglioramenti sidebar (#138), overlay di manutenzione avvio/SQLite (#139), IP pubblico WAN & rilevamento Double-NAT/CGNAT (#140), guida ufficiale e aggiornamenti automatici via Task Scheduler per Synology DSM 7.2+ (#66, #141), parità completa delle traduzioni (#78, #79, #94, #95) e orario personalizzato Daily Digest (#70).
 * **[@onefish2](https://github.com/onefish2):** Prioritizzazione IPv4 Subnet LAN per host container multi-indirizzo e pruning intelligente dei record DNS obsoleti per Pi-hole v6 (#72).
 * **[@tekzer0](https://github.com/tekzer0):** Rilevamento account multi-rete eero resiliente, fallback su variabile d'ambiente `EERO_NETWORK_ID` e guida visiva a zero-reti (#69).
 * **[@mrtekkid](https://github.com/mrtekkid):** Compattazione selettiva multi-tier per abbattimento del consumo CPU del Retention Worker, indici B-tree su espressioni temporali e parsing universale dei bitrate con unità di misura (#73).
 * **[@XprofQ](https://github.com/XprofQ):** Segnalazione bug di visualizzazione Bufferbloat WAN e proposta di standardizzazione delle abbreviazioni di durata temporale (#71).
-* **[@SecurityJon](https://github.com/SecurityJon):** Rilevamento permessi di sessione e gestione modalità read-only con App Password su Pi-hole v6 (#132), preservazione integrale dei record DNS locali personalizzati durante il sync (#134) e risoluzione accurata dei nickname/nomi personalizzati nella panoramica Top Bandwidth Hogs (#133).
-* **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
+* **[@SecurityJon](https://github.com/SecurityJon):** Rilevamento permessi di sessione e gestione modalità read-only con App Password su Pi-hole v6 (#132), preservazione integrale dei record DNS locali personalizzati durante il sync (#134), risoluzione accurata dei nickname/nomi personalizzati nella panoramica Top Bandwidth Hogs (#133) e verifica direzione download/upload client (#144).
+* **[@markharrison](https://github.com/markharrison):** Rilevamento nodi extender Amazon Echo "eero Built-in", risoluzione stato standby e toggle manuale di persistenza (#96, #135), più miglioramenti tracker offline e telemetria live MQTT Home Assistant (#92, #104).
+* **[@rvs007](https://github.com/rvs007):** Controlli UI notifiche Pushover & Discord (#100) e normalizzazione prospettiva radio TX/RX per i totali di download e upload client (#144).
+* **[@Huyvux12](https://github.com/Huyvux12):** Calcolo delta resiliente dei contatori di traffico per impedire che il jitter di telemetria causi falsi reset dei consumi (#136, #137).
+* **Bug Hunter & Tester:** Un ringraziamento speciale a **@BaRaD5** (caching query DNS e IP pubblico WAN #115), **@davidpshaw** (login Amazon OAuth2 PKCE #93), **@le0-o0o** (firewall IPv6 e Ntfy #90), **@ncolon** e **@tef67** (elezione gateway Bridge Mode #105, #129), **@richlilly2004** (Pi-hole RFC 1123 #83), **@phutmacher** (elezione primary gateway), **@txrangersxx** (network ID resolver), **@nextlevel2023** (feedback login Amazon) e **u/djbills** su Reddit (isolamento tag Docker Hub).
 
 ---
 

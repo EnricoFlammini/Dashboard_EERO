@@ -4,6 +4,38 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0 Build 5] - 2026-11-24
+
+### Direzione Upload/Download Client & Resilienza Contatori Traffico (Issues #136, #144, PR #137 - @rvs007, @SecurityJon, @jpatchMC, @Huyvux12)
+* **Normalizzazione Prospettiva Radio AP vs Dispositivo Client (`poller.py`, `db.py`, `network.py`, `app.js`, `index.html` - Issue #144):**
+  * Risolta l'inversione tra Download e Upload causata dalla prospettiva hardware delle interfacce radio dei nodi eero (dove `tx_bytes` rappresenta i dati trasmessi dall'AP verso il client, cioè il **Download** del dispositivo, e `rx_bytes` i dati ricevuti dal client, cioè l'**Upload** del dispositivo).
+  * Introdotti i campi espliciti `download_bytes` e `upload_bytes` nelle risposte API e riallineati il calcolo del throughput in tempo reale, la classifica Top Bandwidth Hogs, la tabella e le schede Dispositivi, l'ordinamento per colonne e il riepilogo consumi nel modale dispositivo, preservando intatto lo schema grezzo SQLite (`rx_bytes` / `tx_bytes`).
+  * Aggiunti test unitari dedicati (`tests/test_issue_144_direction.py`).
+* **Protezione da Jitter dei Contatori & Prevenzione Falsi Reset (`db.py` - Issue #136, PR #137 - @Huyvux12):**
+  * Nei calcoli delta di consumo (`get_top_bandwidth_hogs`, `get_device_usage_history`), distinte le piccole oscillazioni fisiologiche di telemetria dai veri azzeramenti hardware dei contatori (riavvio nodo/interfaccia), evitando picchi anomali di traffico stimato e garantendo delta zero quando è presente un singolo campione iniziale.
+  * Aggiunta suite di test di regressione (`tests/test_issue_136_counter_reset_jitter.py`).
+
+### Rilevamento IP Pubblico WAN, Doppio NAT / CGNAT & Overlay di Manutenzione (Issues #115, #117, PR #139, PR #140 - @todddube, @BaRaD5, @stevehoek)
+* **Endpoint IP Pubblico WAN & Rilevamento Automatico Double-NAT / CGNAT (`public_ip.py`, `network.py` - Issue #115, PR #140):**
+  * Nuovo servizio `public_ip.py` ed endpoint `GET /api/network/public-ip` (controllato da `PUBLIC_IP_LOOKUP=true`, con cache di 30 minuti e fallback multi-provider HTTPS su `api.ipify.org`, `ipv4.icanhazip.com` e `checkip.amazonaws.com`).
+  * Quando l'eero riporta un indirizzo WAN privato RFC 1918 (dietro modem/router ISP in cascata o Bridge Mode) o un range Carrier-Grade NAT (`100.64.0.0/10`), la card Stato WAN espone sia l'IP WAN locale sia il vero IP pubblico esterno con badge diagnostico dedicato (`tests/test_issue_115_public_ip.py`).
+* **Overlay Reattivo di Manutenzione all'Avvio e Riparazione SQLite (`maintenance.py`, `main.py` - Issue #117, PR #139):**
+  * Durante le fasi prolungate di bootstrap o di auto-riparazione/housekeeping del database SQLite (`repair_if_malformed`), `/api/health` espone lo stato dettagliato di manutenzione e l'interfaccia web mostra una schermata informativa non bloccante con contatore dei secondi trascorsi e ricaricamento automatico appena i servizi sono pronti (`tests/test_issue_117_maintenance.py`).
+
+### Persistenza & Toggle Manuale Nodi Amazon Echo "eero Built-in" (Issue #135 - @markharrison)
+* **Risoluzione Stato Standby/Online & Controllo Esplicito per Estensori a Zero Client (`poller.py`, `db.py`, `index.html`):**
+  * Eliminata la sovra-inclusione degli speaker Echo privi di funzione extender e affinata la risoluzione dello stato operativo tramite `wireless_mode` e connettività della stazione Wi-Fi (`tests/test_issue_135_echo_nodes.py`).
+  * Aggiunto il flag persistente `is_echo_builtin` nella tabella `device_metadata` con relativo toggle manuale (`🔊`) nel modale dettagli dispositivo, consentendo di fissare stabilmente nella topologia mesh anche gli estensori Amazon Echo con 0 client connessi.
+  * Incrementato `BUILD_NUMBER` a `5` per forzare il refresh automatico dei file di localizzazione nella cache del browser.
+
+### Toolbar Dispositivi Responsive, Sidebar, Fix Modale Login 1Password & Aggiornamenti Synology (Issues #121, #142, PR #138, PR #141 - @todddube, @jonmacdonald)
+* **Toolbar Dispositivi & Navigazione Sidebar (`index.html`, `app.js` - PR #138):**
+  * Ottimizzata la barra strumenti della vista Dispositivi per mantenere visibili e accessibili tutti i filtri e selettori anche su tablet e schermi in orientamento verticale (portrait), aggiunte le descrizioni hover sulle voci della sidebar e reso più immediato il selettore del tema.
+* **Compatibilità Password Manager sulla Modale di Login Locale (`index.html` - Issue #142):**
+  * Sostituito `@click.self` con `@mousedown.self` sullo sfondo della modale di autenticazione locale, evitando che la selezione di una credenziale dal popup di 1Password o altri password manager chiuda accidentalmente la finestra di login.
+* **Aggiornamenti Automatici su Synology DSM & FAQ In-App (`deploy/synology/README.md`, Manuale Cap. 08 - Issue #121, PR #141):**
+  * Documentata la procedura completa di aggiornamento automatico pianificato tramite *Utilità di pianificazione* (Task Scheduler) di Synology DSM 7.2+ e riallineata la FAQ sugli aggiornamenti container nel capitolo Troubleshooting di tutte le 9 lingue.
+
 ## [1.7.0 Build 4] - 2026-11-18
 
 ### Preservazione Record DNS Locali Personalizzati su Pi-hole & Risoluzione Nomi Top Bandwidth Hogs (Issue #134, #133 - @SecurityJon)
@@ -33,7 +65,7 @@ Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/)
   * Aggiornato il placeholder del campo token/password per Pi-hole in tutte le 9 lingue supportate (en, it, de, es, fr, nl, pl, pt, el), indicando chiaramente che per la v6 è consigliata la Password Web di amministrazione oppure una App Password con `app_sudo` attivo.
   * Aggiunto il messaggio d'aiuto `pihole_v6_readonly_error` in tutte le lingue per guidare l'utente alla risoluzione istantanea senza necessità di interventi su configurazioni o container.
 * **Pianificazione Funzionalità Rete Ospiti su Roadmap (Issue #131 - @SecurityJon):**
-  * Formalizzata in `ROADMAP.md` sotto la release **v1.8.0** l'integrazione completa dei dispositivi su rete ospiti: mappatura `is_guest` in `_normalize_device()`, badge visivo e filtri rapidi dedicati nella tabella e schede dispositivi, ed esposizione dell'attributo `is_guest` nel topic MQTT per automazioni Home Assistant.
+  * Formalizzata in `ROADMAP.md` sotto la release **v1.8.1** l'integrazione completa dei dispositivi su rete ospiti: mappatura `is_guest` in `_normalize_device()`, badge visivo e filtri rapidi dedicati nella tabella e schede dispositivi, ed esposizione dell'attributo `is_guest` nel topic MQTT per automazioni Home Assistant.
 
 ## [1.7.0 Build 2] - 2026-11-17
 
