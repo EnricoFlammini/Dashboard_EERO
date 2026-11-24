@@ -670,12 +670,12 @@
                     <div class="text-xs font-mono font-bold text-sky-600 dark:text-sky-400 flex items-center justify-end space-x-1" :title="t('devices.col_download')">
                       <span class="text-slate-400 text-[10px] font-normal">DL</span>
                       <span>↓</span>
-                      <span x-text="formatBytes(hog.rx_bytes)"></span>
+                      <span x-text="formatBytes(hog.download_bytes ?? hog.tx_bytes)"></span>
                     </div>
                     <div class="text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end space-x-1" :title="t('devices.col_upload')">
                       <span class="text-slate-400 text-[10px] font-normal">UL</span>
                       <span>↑</span>
-                      <span x-text="formatBytes(hog.tx_bytes)"></span>
+                      <span x-text="formatBytes(hog.upload_bytes ?? hog.rx_bytes)"></span>
                     </div>
                   </div>
                 </div>

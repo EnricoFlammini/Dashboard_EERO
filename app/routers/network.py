@@ -404,6 +404,8 @@ async def get_top_bandwidth_hogs(limit: int = 5, period: str = "daily"):
                     "ip": d.get("ip"),
                     "rx_bytes": rx_b,
                     "tx_bytes": tx_b,
+                    "download_bytes": tx_b,
+                    "upload_bytes": rx_b,
                     "total_bytes": rx_b + tx_b,
                     "avg_down_mbps": float(d.get("download_rate_mbps") or 0),
                     "avg_up_mbps": float(d.get("upload_rate_mbps") or 0),

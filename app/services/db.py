@@ -1866,8 +1866,9 @@ class DBService:
                     d_tx = max(0.0, cur_tx - prev_tx) if cur_tx >= prev_tx else 0.0
                     dt = max(30.0, cur_epoch - prev_epoch)
 
-                    calc_down = round((d_rx * 8.0) / (dt * 1_000_000.0), 2)
-                    calc_up = round((d_tx * 8.0) / (dt * 1_000_000.0), 2)
+                    # Note: from eero AP perspective, tx is client download and rx is client upload
+                    calc_down = round((d_tx * 8.0) / (dt * 1_000_000.0), 2)
+                    calc_up = round((d_rx * 8.0) / (dt * 1_000_000.0), 2)
 
                     avg_sample_down = sum(s["download_mbps"] for s in samples_in_b) / len(samples_in_b)
                     avg_sample_up = sum(s["upload_mbps"] for s in samples_in_b) / len(samples_in_b)
@@ -1912,10 +1913,14 @@ class DBService:
             "summary": {
                 "rx_bytes": rx_val,
                 "tx_bytes": tx_val,
+                "download_bytes": tx_val,
+                "upload_bytes": rx_val,
                 "total_bytes": tot_val
             },
             "total_rx_bytes": rx_val,
             "total_tx_bytes": tx_val,
+            "download_bytes": tx_val,
+            "upload_bytes": rx_val,
             "total_bytes": tot_val,
         }
 
@@ -1976,6 +1981,8 @@ class DBService:
                             "custom_icon": hr["custom_icon"] or "device",
                             "rx_bytes": f_rx,
                             "tx_bytes": f_tx,
+                            "download_bytes": f_tx,
+                            "upload_bytes": f_rx,
                             "total_bytes": f_rx + f_tx,
                             "total_rx_bytes": f_rx,
                             "total_tx_bytes": f_tx,
@@ -2064,6 +2071,8 @@ class DBService:
                 "custom_icon": r["custom_icon"] or "device",
                 "rx_bytes": final_rx,
                 "tx_bytes": final_tx,
+                "download_bytes": final_tx,
+                "upload_bytes": final_rx,
                 "total_bytes": final_rx + final_tx,
                 "total_rx_bytes": final_rx,
                 "total_tx_bytes": final_tx,

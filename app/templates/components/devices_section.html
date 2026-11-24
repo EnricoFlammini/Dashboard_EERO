@@ -924,12 +924,12 @@
                   <td x-show="isTableColumnVisible('traffic')" class="device-traffic-cell py-2.5 px-2 font-mono whitespace-nowrap overflow-hidden" :data-label="t('devices.col_traffic')">
                     <template x-if="(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05)">
                       <div class="flex flex-col leading-tight">
-                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.download_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.download_rate_mbps + ' Mbps' : '')">
-                          ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                        <span class="text-xs font-bold text-sky-600 dark:text-sky-400" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.download_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.download_rate_mbps + ' Mbps' : '')">
+                          ↓ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
                           <span x-show="dev.download_rate_mbps > 0.05" class="text-[10px] text-sky-500 dark:text-sky-400 font-medium ml-1" x-text="'(' + formatTrafficRate(dev.download_rate_mbps) + ')'"></span>
                         </span>
-                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.upload_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.upload_rate_mbps + ' Mbps' : '')">
-                          ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate') + (dev.upload_rate_mbps > 0.05 ? ' • ' + t('devices.traffic_realtime') + ' ' + dev.upload_rate_mbps + ' Mbps' : '')">
+                          ↑ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
                           <span x-show="dev.upload_rate_mbps > 0.05" class="text-[9px] text-emerald-500 dark:text-emerald-400 font-normal ml-1" x-text="'(' + formatTrafficRate(dev.upload_rate_mbps) + ')'"></span>
                         </span>
                       </div>
@@ -946,11 +946,11 @@
                     </template>
                     <template x-if="!(dev.rx_bytes > 0 || dev.tx_bytes > 0 || dev.download_rate_mbps > 0.05 || dev.upload_rate_mbps > 0.05) && dev.wireless">
                       <div class="flex flex-col leading-tight">
-                        <span class="text-xs font-bold text-sky-600/70 dark:text-sky-400/70" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
-                          ↓ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                        <span class="text-xs font-bold text-sky-600/70 dark:text-sky-400/70" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
+                          ↓ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
                         </span>
-                        <span class="text-[10px] font-medium text-emerald-600/70 dark:text-emerald-400/70" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
-                          ↑ <span x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                        <span class="text-[10px] font-medium text-emerald-600/70 dark:text-emerald-400/70" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.rx_bytes || 0) + ' ' + t('devices.traffic_hw_estimate')">
+                          ↑ <span x-text="formatBytes(dev.rx_bytes || 0)"></span>
                         </span>
                       </div>
                     </template>
@@ -1110,18 +1110,18 @@
 
               <!-- Live throughput, download and upload side by side: arrows bob, bars shimmer, card glows when moving data -->
               <div class="grid grid-cols-2 gap-2.5 font-mono">
-                <div class="min-w-0" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.rx_bytes || 0)">
+                <div class="min-w-0" :title="t('devices.traffic_dl_total') + ' ' + formatBytes(dev.tx_bytes || 0)">
                   <div class="flex items-baseline justify-between gap-1 text-[11px]">
                     <span class="font-bold text-sky-600 dark:text-sky-400 truncate"><span class="device-arrow-down">↓</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.download_rate_mbps) : '0 Mbps'" x-effect="dev.download_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.download_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
-                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.rx_bytes || 0)"></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.tx_bytes || 0)"></span>
                     
                   </div>
                   <div class="device-activity-track mt-1"><div class="device-activity-fill is-down" :style="'width:' + (dev.connected ? deviceRatePercent(dev.download_rate_mbps) : 0) + '%'"></div></div>
                 </div>
-                <div class="min-w-0" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.tx_bytes || 0)">
+                <div class="min-w-0" :title="t('devices.traffic_ul_total') + ' ' + formatBytes(dev.rx_bytes || 0)">
                   <div class="flex items-baseline justify-between gap-1 text-[11px]">
                     <span class="font-bold text-emerald-600 dark:text-emerald-400 truncate"><span class="device-arrow-up">↑</span> <span class="rounded px-0.5" x-text="dev.connected ? deviceRateLabel(dev.upload_rate_mbps) : '0 Mbps'" x-effect="dev.upload_rate_mbps; $el.classList.remove('rate-tick'); void $el.offsetWidth; if (dev.upload_rate_mbps > 0.05) $el.classList.add('rate-tick')"></span></span>
-                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.tx_bytes || 0)"></span>
+                    <span class="text-[9px] text-slate-500 dark:text-slate-400 shrink-0" x-text="formatBytes(dev.rx_bytes || 0)"></span>
                     
                   </div>
                   <div class="device-activity-track mt-1"><div class="device-activity-fill is-up" :style="'width:' + (dev.connected ? deviceRatePercent(dev.upload_rate_mbps) : 0) + '%'"></div></div>

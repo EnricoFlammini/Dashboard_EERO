@@ -181,11 +181,11 @@
               </template>
               <div class="col-span-2">
                 <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_download')"></span>
-                <span class="font-mono font-semibold text-sky-600 dark:text-sky-400"><span x-text="deviceRateLabel(selectedDevice.download_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.rx_bytes || 0)"></span></span>
+                <span class="font-mono font-semibold text-sky-600 dark:text-sky-400"><span x-text="deviceRateLabel(selectedDevice.download_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.download_bytes ?? selectedDevice.tx_bytes ?? 0)"></span></span>
               </div>
               <div class="col-span-2">
                 <span class="text-slate-600 dark:text-slate-400 block text-[11px] font-medium" x-text="t('devices.col_upload')"></span>
-                <span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400"><span x-text="deviceRateLabel(selectedDevice.upload_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.tx_bytes || 0)"></span></span>
+                <span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400"><span x-text="deviceRateLabel(selectedDevice.upload_rate_mbps)"></span> · <span class="text-slate-600 dark:text-slate-400" x-text="formatBytes(selectedDevice.upload_bytes ?? selectedDevice.rx_bytes ?? 0)"></span></span>
               </div>
             </div>
           </template>
@@ -587,14 +587,14 @@
                   <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider" x-text="t('device_modal.usage_download')"></span>
                   <button @click.stop="showUsageInfoModal = true" type="button" class="w-3.5 h-3.5 rounded-full bg-slate-200/80 dark:bg-slate-700/80 hover:bg-sky-500 hover:text-white text-slate-500 dark:text-slate-400 text-[9px] font-bold inline-flex items-center justify-center transition cursor-pointer" :title="t('device_modal.usage_info_btn_title')">?</button>
                 </div>
-                <div class="text-sm font-extrabold text-sky-500 font-mono" x-text="formatBytes(deviceUsageData ? deviceUsageData.summary.rx_bytes : 0)"></div>
+                <div class="text-sm font-extrabold text-sky-500 font-mono" x-text="formatBytes(deviceUsageData ? (deviceUsageData.summary.download_bytes ?? deviceUsageData.summary.tx_bytes) : 0)"></div>
               </div>
               <div class="glass-card-subtle p-2.5 rounded-xl text-center border border-slate-200 dark:border-slate-800 relative group">
                 <div class="flex items-center justify-center space-x-1 mb-0.5">
                   <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider" x-text="t('device_modal.usage_upload')"></span>
                   <button @click.stop="showUsageInfoModal = true" type="button" class="w-3.5 h-3.5 rounded-full bg-slate-200/80 dark:bg-slate-700/80 hover:bg-emerald-500 hover:text-white text-slate-500 dark:text-slate-400 text-[9px] font-bold inline-flex items-center justify-center transition cursor-pointer" :title="t('device_modal.usage_info_btn_title')">?</button>
                 </div>
-                <div class="text-sm font-extrabold text-emerald-500 font-mono" x-text="formatBytes(deviceUsageData ? deviceUsageData.summary.tx_bytes : 0)"></div>
+                <div class="text-sm font-extrabold text-emerald-500 font-mono" x-text="formatBytes(deviceUsageData ? (deviceUsageData.summary.upload_bytes ?? deviceUsageData.summary.rx_bytes) : 0)"></div>
               </div>
               <div class="glass-card-subtle p-2.5 rounded-xl text-center border border-slate-200 dark:border-slate-800 relative group">
                 <div class="flex items-center justify-center space-x-1 mb-0.5">

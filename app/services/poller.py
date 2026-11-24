@@ -1056,25 +1056,29 @@ class BackgroundPoller:
                 calc_down = float(dev_copy.get("download_rate_mbps") or 0.0)
                 calc_up = float(dev_copy.get("upload_rate_mbps") or 0.0)
 
+                # Note: from eero AP radio hardware perspective, tx_bytes is data transmitted
+                # to the client (client Download) and rx_bytes is data received from the client (client Upload).
                 if mac_key in self._prev_device_metrics and dt_sec > 0.5:
                     prev_data = self._prev_device_metrics[mac_key]
                     rx_prev = float(prev_data.get("rx_bytes") or 0.0)
                     tx_prev = float(prev_data.get("tx_bytes") or 0.0)
 
-                    if rx_now >= rx_prev:
-                        delta_rx = rx_now - rx_prev
-                        rate_down = round((delta_rx * 8.0) / (dt_sec * 1_000_000.0), 2)
-                        calc_down = max(calc_down, rate_down)
-
                     if tx_now >= tx_prev:
                         delta_tx = tx_now - tx_prev
-                        rate_up = round((delta_tx * 8.0) / (dt_sec * 1_000_000.0), 2)
+                        rate_down = round((delta_tx * 8.0) / (dt_sec * 1_000_000.0), 2)
+                        calc_down = max(calc_down, rate_down)
+
+                    if rx_now >= rx_prev:
+                        delta_rx = rx_now - rx_prev
+                        rate_up = round((delta_rx * 8.0) / (dt_sec * 1_000_000.0), 2)
                         calc_up = max(calc_up, rate_up)
 
                 dev_copy["download_rate_mbps"] = round(calc_down, 2)
                 dev_copy["upload_rate_mbps"] = round(calc_up, 2)
-                dev_copy["rx_rate"] = dev_copy["download_rate_mbps"]
-                dev_copy["tx_rate"] = dev_copy["upload_rate_mbps"]
+                dev_copy["rx_rate"] = dev_copy["upload_rate_mbps"]
+                dev_copy["tx_rate"] = dev_copy["download_rate_mbps"]
+                dev_copy["download_bytes"] = tx_now
+                dev_copy["upload_bytes"] = rx_now
                 self._prev_device_metrics[mac_key] = {"rx_bytes": rx_now, "tx_bytes": tx_now, "timestamp": now_dt}
 
             self._prev_poll_time = now_dt
