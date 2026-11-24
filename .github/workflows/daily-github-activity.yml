@@ -1,0 +1,83 @@
+name: Daily GitHub Activity Digest
+
+on:
+  schedule:
+    # Esegue ogni giorno alle 07:50 UTC (08:50 CET)
+    - cron: '50 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: read
+  pull-requests: read
+
+jobs:
+  send-activity-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect last 24h issues, PRs, and comments
+        id: collect
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+            const { data: updatedItems } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              since: since,
+              per_page: 50
+            });
+
+            const { data: recentComments } = await github.rest.issues.listCommentsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              since: since,
+              per_page: 50
+            });
+
+            if (updatedItems.length === 0 && recentComments.length === 0) {
+              return 'Nessuna nuova issue, pull request o commento nelle ultime 24 ore.';
+            }
+
+            let report = `Riepilogo attivita ultime 24 ore (${since} -> oggi)\n`;
+            report += `====================================================\n\n`;
+
+            if (updatedItems.length > 0) {
+              report += `ISSUE E PR CREATE O AGGIORNATE (${updatedItems.length}):\n\n`;
+              for (const item of updatedItems) {
+                const kind = item.pull_request ? 'PR' : 'Issue';
+                const cleanBody = (item.body || 'Nessuna descrizione').replace(/\r?\n/g, ' ').slice(0, 400);
+                report += `- [${kind} #${item.number}] (${item.state.toUpperCase()}) ${item.title}\n`;
+                report += `  Autore: ${item.user.login} | Aggiornata: ${item.updated_at}\n`;
+                report += `  Link: ${item.html_url}\n`;
+                report += `  Testo: ${cleanBody}\n\n`;
+              }
+            }
+
+            if (recentComments.length > 0) {
+              report += `NUOVI COMMENTI (${recentComments.length}):\n\n`;
+              for (const c of recentComments) {
+                const issueNum = c.issue_url.split('/').pop();
+                const cleanComment = (c.body || '').replace(/\r?\n/g, ' ').slice(0, 400);
+                report += `- Commento su #${issueNum} da ${c.user.login} (${c.created_at}):\n`;
+                report += `  Link: ${c.html_url}\n`;
+                report += `  Testo: ${cleanComment}\n\n`;
+              }
+            }
+
+            return report;
+          result-encoding: string
+
+      - name: Send email via Gmail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "[Dashboard_EERO] Riepilogo attivita GitHub ultime 24h"
+          to: ${{ secrets.GMAIL_USER }}
+          from: "GitHub Monitor <${{ secrets.GMAIL_USER }}>"
+          body: ${{ steps.collect.outputs.result }}
