@@ -1224,11 +1224,13 @@
             <span x-text="t('dashboard.wan_ip')"></span>
             <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
           </div>
-          <!-- Public IP when eero sits behind another router or carrier-grade NAT (Issue #115) -->
-          <div x-show="publicIpInfo && (publicIpInfo.double_nat || publicIpInfo.cgnat)" x-cloak class="mt-1 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center flex-wrap gap-x-1 gap-y-1">
+          <!-- Public IP whenever it differs from the WAN IP eero reports: behind another router, carrier-grade NAT,
+               or when eero gives no WAN IP at all. The badge appears only for double NAT / CGNAT (Issue #115) -->
+          <div x-show="publicIpInfo && (publicIpInfo.double_nat || publicIpInfo.cgnat || (publicIpInfo.public_ip && publicIpInfo.public_ip !== network.public_ip))" x-cloak class="mt-1 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center flex-wrap gap-x-1 gap-y-1">
             <span x-text="t('dashboard.public_ip_label')"></span>
             <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="(publicIpInfo && publicIpInfo.public_ip) || t('dashboard.public_ip_unknown')"></span>
-            <span class="ml-1 px-1.5 py-0.5 rounded border font-sans text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 cursor-help"
+            <span x-show="publicIpInfo && (publicIpInfo.double_nat || publicIpInfo.cgnat)"
+              class="ml-1 px-1.5 py-0.5 rounded border font-sans text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 cursor-help"
               :title="publicIpInfo && publicIpInfo.cgnat ? t('dashboard.cgnat_tooltip') : t('dashboard.double_nat_tooltip')"
               x-text="publicIpInfo && publicIpInfo.cgnat ? 'CGNAT' : t('dashboard.double_nat')"></span>
           </div>
