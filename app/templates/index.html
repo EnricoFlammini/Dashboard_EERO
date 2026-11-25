@@ -1222,7 +1222,7 @@
           </div>
           <div class="mt-2 text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center space-x-1">
             <span x-text="t('dashboard.wan_ip')"></span>
-            <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="network.public_ip || '0.0.0.0'"></span>
+            <span class="text-sky-600 dark:text-sky-400 font-semibold" x-text="network.public_ip || t('dashboard.public_ip_unknown')"></span>
           </div>
           <!-- Public IP whenever it differs from the WAN IP eero reports: behind another router, carrier-grade NAT,
                or when eero gives no WAN IP at all. The badge appears only for double NAT / CGNAT (Issue #115) -->
