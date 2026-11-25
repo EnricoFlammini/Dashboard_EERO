@@ -67,6 +67,8 @@ try:
 
         # CORS: origini esterne consentite, separate da virgola (vuoto = solo stessa origine)
         cors_origins: str = os.getenv("CORS_ORIGINS", "")
+        # Extra origins allowed to embed the dashboard in an iframe (CSP frame-ancestors, Issue #116)
+        frame_ancestors: str = os.getenv("FRAME_ANCESTORS", "")
 
         # Auto-Update & Docker Integration
         docker_socket_path: str = os.getenv("DOCKER_SOCKET_PATH", "/var/run/docker.sock")
@@ -181,6 +183,7 @@ except ImportError:
             self.watchtower_url = os.getenv("WATCHTOWER_URL", "")
             self.update_check_interval_hours = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "6"))
             self.cors_origins = os.getenv("CORS_ORIGINS", "")
+            self.frame_ancestors = os.getenv("FRAME_ANCESTORS", "")
             self.admin_user = os.getenv("ADMIN_USER", "admin")
             self.admin_password = os.getenv("ADMIN_PASSWORD", "")
             self.require_local_auth = os.getenv("REQUIRE_LOCAL_AUTH", "false").lower() in ("true", "1", "yes")

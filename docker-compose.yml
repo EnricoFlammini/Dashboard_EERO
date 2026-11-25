@@ -36,6 +36,7 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
       - WEBHOOK_URL=${WEBHOOK_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - FRAME_ANCESTORS=${FRAME_ANCESTORS:-}
       - WATCHTOWER_URL=${WATCHTOWER_URL:-}
       # Opzionale: credenziali admin (se vuote, primo avvio richiede Setup Wizard web)
       - ADMIN_USER=${ADMIN_USER:-}

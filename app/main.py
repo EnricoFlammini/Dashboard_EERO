@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -181,12 +182,57 @@ def _is_cross_origin_write(request: Request) -> bool:
     return urlsplit(origin).netloc.lower() != host.split(",")[0].strip().lower()
 
 
+# A CSP frame-ancestors source: *, a scheme (https:), or a host with optional scheme, *. wildcard and port.
+# Paths, quotes other than 'self', and separators are rejected so a value can never inject other directives.
+_FRAME_SOURCE_RE = re.compile(
+    r"^(?:\*|'self'|https?:|(?:https?://)?(?:\*\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*(?::(?:\d{1,5}|\*))?)$",
+    re.IGNORECASE,
+)
+
+
+def build_frame_ancestors_policy(raw: str) -> tuple[str | None, list[str]]:
+    """
+    Builds the CSP frame-ancestors directive from FRAME_ANCESTORS (Issue #116).
+
+    Returns (policy, rejected): policy is None when no extra origin is configured, meaning the
+    default same-origin-only framing applies; rejected lists the entries that are not valid sources.
+    """
+    sources: list[str] = ["'self'"]
+    rejected: list[str] = []
+    for token in re.split(r"[,\s]+", raw or ""):
+        token = token.strip().rstrip("/")
+        if not token:
+            continue
+        if not _FRAME_SOURCE_RE.match(token):
+            rejected.append(token)
+            continue
+        if token.lower() not in (s.lower() for s in sources):
+            sources.append(token)
+    if len(sources) == 1:
+        return None, rejected
+    return "frame-ancestors " + " ".join(sources), rejected
+
+
+FRAME_ANCESTORS_POLICY, _rejected_frame_ancestors = build_frame_ancestors_policy(settings.frame_ancestors)
+if _rejected_frame_ancestors:
+    logger.warning(
+        "FRAME_ANCESTORS: ignoring invalid entries %s (expected origins such as https://homarr.home.lan "
+        "or http://192.168.1.10:7575).",
+        ", ".join(_rejected_frame_ancestors),
+    )
+
+
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Aggiunge header HTTP di sicurezza difensivi raccomandati da OWASP."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    if FRAME_ANCESTORS_POLICY:
+        # X-Frame-Options cannot list other origins, so embedding (Homarr, Dashy, Glance...) uses
+        # CSP frame-ancestors instead; framing stays limited to this origin plus FRAME_ANCESTORS.
+        response.headers["Content-Security-Policy"] = FRAME_ANCESTORS_POLICY
+    else:
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
     return response
