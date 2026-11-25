@@ -14,6 +14,17 @@
     if (!sameOriginApi || typeof input !== 'string') return nativeFetch(input, init);
     const headers = new Headers(init.headers || {});
     if (!headers.has('X-Dashboard-Lang')) headers.set('X-Dashboard-Lang', document.documentElement.lang || 'en');
+    // Send the stored local session token on every API call. Without it, plain
+    // fetch() calls authenticate with the session_token cookie alone, and a
+    // stale cookie then answers 401 on every data call while /me (which sends
+    // the header) still reports the user as logged in: empty Devices page.
+    if (!headers.has('Authorization')) {
+      let token = null;
+      try {
+        token = sessionStorage.getItem('eero_local_auth_token') || localStorage.getItem('eero_local_auth_token');
+      } catch (e) {}
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+    }
     return nativeFetch(input, { ...init, headers }).then((res) => {
       // Startup or database repair in progress (Issue #117): let the app show its maintenance overlay.
       if (res.status === 503 && res.headers.has('X-Dashboard-Maintenance')) {
