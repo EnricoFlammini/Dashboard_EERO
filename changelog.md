@@ -4,6 +4,21 @@ Tutte le modifiche rilevanti, i miglioramenti e le correzioni di bug apportate a
 
 Il formato è basato su [Keep a Changelog](https://keepachangelog.com/it/1.0.0/) e aderisce al versionamento semantico.
 
+## [1.7.0 Build 8] - 2026-11-25
+
+### Gestione Cookie di Sessione Scaduti & Consistenza Header Bearer (PR #148 - @todddube)
+* **Prevenzione Pagine Vuote con Sessione Attiva (`app.js`, `dependencies.py`):**
+  * Risolto il disallineamento tra autenticazione via header `Authorization: Bearer` (usato da `/api/auth/local/me`) e cookie `session_token` (usato dalle chiamate `fetch` standard come `/api/devices` e `/api/network/overview`), per cui un cookie scaduto causava risposte `401` silenziose svuotando la vista Dispositivi mentre l'utente risultava regolarmente autenticato nell'header (riscontrato su Safari / Synology).
+  * Il wrapper globale `window.fetch` in `app.js` allega ora automaticamente il token di sessione locale salvato (`sessionStorage` / `localStorage`) a tutte le chiamate `/api/` same-origin prive di header `Authorization`.
+  * In `require_permission` (`app/routers/dependencies.py`), quando `REQUIRE_LOCAL_AUTH` è disattivato, un token scaduto o non valido giunto esclusivamente tramite cookie `session_token` (senza header `Authorization` né `?token=`) viene ignorato e rimosso (`delete_cookie`) proseguendo come richiesta anonima; restano invariati i rifiuti `401` su header Bearer invalidi o con `REQUIRE_LOCAL_AUTH=true` (`tests/test_stale_session_cookie.py`).
+
+### Visibilità IP Pubblico su Card WAN & Numerazione Build CI Unificata (Issue #115, PR #146 - @todddube, @BaRaD5)
+* **Visualizzazione Sempre Coerente dell'IP Pubblico sulla Card WAN (`index.html` - Issue #115):**
+  * La riga `Public IP:` nella card Stato WAN viene ora mostrata ogni volta che l'indirizzo IP pubblico rilevato differisce dall'IP WAN riportato da eero (coprendo sia Double NAT e CGNAT, sia il caso in cui eero riporti `wan_ip: null` all'avvio o in Bridge Mode), esponendo il badge ambra **Double NAT / CGNAT** solo quando applicabile.
+  * Sostituito il placeholder fittizio `0.0.0.0` con la stringa localizzata `dashboard.public_ip_unknown` (`non disponibile` / `unavailable`) quando l'IP WAN di eero è assente.
+* **Fonte Unica `BUILD_NUMBER` nella Pipeline Docker Hub (`docker-publish.yml`):**
+  * Allineato il workflow di pubblicazione su `main` a leggere `BUILD_NUMBER` dal repository (anziché incrementare automaticamente i tag su Docker Hub a ogni push), aggiunto il controllo preventivo anti-sovrascrittura dei tag `X.Y.Z-build.N` già pubblicati ed esclusa la cartella `.github/**` dai trigger automatici di build Docker, eliminando i falsi avvisi di aggiornamento sulle installazioni `:test`.
+
 ## [1.7.0 Build 5] - 2026-11-24
 
 ### Direzione Upload/Download Client & Resilienza Contatori Traffico (Issues #136, #144, PR #137 - @rvs007, @SecurityJon, @jpatchMC, @Huyvux12)
