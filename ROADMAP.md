@@ -1068,8 +1068,8 @@ gantt
 - [x] **Rilevamento Deterministico True Public IP:** Meccanismo leggero di lookup IP pubblico HTTPS multi-provider (`ipify` / `icanhazip` / AWS `checkip` in `public_ip.py`, `PUBLIC_IP_LOOKUP=true`) quando l'eero si trova in bridge o in cascata dietro router operatore con IP WAN privato RFC 1918 o CGNAT (`100.64.0.0/10`) (Issue #115).
 - [x] **Endpoint Dedicato & Card Overview:** Esposizione su `GET /api/network/public-ip` con cache a basso rate-limit (30m) e visualizzazione affiancata dell'IP WAN locale ed esterno nella panoramica di rete (Issue #115).
 
-#### 3. 🖥️ Supporto Embed Dashboard Homelab & Vista Kiosk (Issue #116 — @stevehoek)
-- [ ] **Configurazione Flessibile iFrame (`X-Frame-Options` / CSP `frame-ancestors`):** Introduzione della variabile d'ambiente `ALLOW_IFRAME_EMBED` o impostazione origini fidate per consentire l'embed sicuro in dashboard esterne come Homarr, Dashy, Flame o Glance (Issue #116).
+#### 3. 🖥️ Supporto Embed Dashboard Homelab & Vista Kiosk (Issue #116 — @stevehoek, PR #147 — @todddube)
+- [x] **Configurazione Flessibile iFrame (`X-Frame-Options` / CSP `frame-ancestors`):** Introduzione della variabile d'ambiente `FRAME_ANCESTORS` per consentire l'embed sicuro in dashboard esterne come Homarr, Dashy, Flame o Glance mantenendo `SameSite=Lax` e protezione anti-injection CSP (Issue #116, PR #147).
 - [ ] **Vista Kiosk / Widget Compatta (`/kiosk` / `/widget`):** Interfaccia SPA ultra-leggera priva di sidebar ed elementi superflui, ottimizzata per vecchi iPad a parete o display touch (Issue #116).
 - [ ] **Endpoint Summary per Widget:** `GET /api/widget/summary` con metriche essenziali (stato WAN, velocità, numero dispositivi, health score) consumabile direttamente da widget generici (Issue #116).
 
