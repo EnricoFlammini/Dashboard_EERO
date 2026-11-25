@@ -250,6 +250,7 @@ A ready-to-paste Compose template and setup guide tailored for Synology DSM 7.2+
 | `CUSTOM_DNS_SERVERS` | *(empty)* | Comma-separated local DNS server IPs for resolving internal FQDNs inside the container |
 | `CUSTOM_DNS_DOMAINS` | *(empty)* | Domain-specific split-DNS rules (e.g. `*.casa.lan=192.168.4.13`) |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated list of extra browser origins allowed to call the API (e.g. `http://homeassistant.local:8123`). Leave empty unless another web app must call the dashboard API from the browser. Write requests (POST/PUT/PATCH/DELETE) from any other web origin are rejected with 403; clients without an `Origin` header (curl, Home Assistant REST, scripts) are not affected. If a reverse proxy rewrites the `Host` header without setting `X-Forwarded-Host`, add the public dashboard URL here. `*` restores the old allow-all behaviour (not recommended). |
+| `FRAME_ANCESTORS` | *(empty)* | Comma-separated origins allowed to embed the dashboard in an iframe, e.g. Homarr, Dashy or Glance (`https://homarr.home.lan,http://192.168.1.10:7575`). Sent as CSP `frame-ancestors` in place of `X-Frame-Options: SAMEORIGIN`. Empty keeps embedding limited to the dashboard itself. Logging in inside the frame requires the embedding page to be on the same site (same domain, or the same IP on another port), because the session cookie is `SameSite=Lax`. `*` allows any site to frame the dashboard (not recommended). |
 
 ---
 
@@ -718,6 +719,7 @@ Template Docker Compose preconfigurato e guida passo-passo per Synology DSM 7.2+
 | `CUSTOM_DNS_DOMAINS` | *(vuoto)* | Regole split-DNS per dominio (es. `*.casa.lan=192.168.4.13`) |
 | `WEBHOOK_URL` | *(opzionale)* | Endpoint HTTP POST per inoltro eventi in formato JSON |
 | `CORS_ORIGINS` | *(vuoto)* | Origini browser aggiuntive autorizzate a chiamare le API, separate da virgola (es. `http://homeassistant.local:8123`). Lasciare vuoto salvo che un'altra web app debba chiamare le API della dashboard dal browser. Le richieste di modifica (POST/PUT/PATCH/DELETE) da qualsiasi altra origine web ricevono 403; i client senza header `Origin` (curl, Home Assistant REST, script) non sono toccati. Se un reverse proxy riscrive l'header `Host` senza impostare `X-Forwarded-Host`, aggiungere qui l'URL pubblico della dashboard. `*` ripristina il vecchio comportamento aperto a tutti (sconsigliato). |
+| `FRAME_ANCESTORS` | *(vuoto)* | Origini autorizzate a incorporare la dashboard in un iframe, separate da virgola, es. Homarr, Dashy o Glance (`https://homarr.home.lan,http://192.168.1.10:7575`). Inviato come CSP `frame-ancestors` al posto di `X-Frame-Options: SAMEORIGIN`. Se vuoto, solo la dashboard stessa può incorporarsi. Il login dentro l'iframe funziona solo se la pagina che lo incorpora è sullo stesso sito (stesso dominio, o stesso IP su un'altra porta), perché il cookie di sessione è `SameSite=Lax`. `*` consente a qualsiasi sito di incorporare la dashboard (sconsigliato). |
 
 ---
 
