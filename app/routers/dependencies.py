@@ -5,7 +5,7 @@ Fornisce get_current_user, require_admin e require_permission(perm_key).
 
 import logging
 from typing import Any, Callable, Dict, Optional
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from app.config import settings
 from app.services.db import db_service
 from app.i18n import log_event, tr
@@ -35,6 +35,13 @@ def _extract_token_from_request(request: Request) -> Optional[str]:
         return query_token.strip()
 
     return None
+
+
+def _token_is_cookie_only(request: Request) -> bool:
+    """True when the session token came from the session_token cookie alone (no Authorization header, no ?token=)."""
+    auth_header = request.headers.get("Authorization") or ""
+    query_token = request.query_params.get("token") or ""
+    return not auth_header.strip() and not query_token.strip() and bool((request.cookies.get("session_token") or "").strip())
 
 
 async def get_current_user_optional(request: Request) -> Optional[Dict[str, Any]]:
@@ -83,17 +90,35 @@ def require_permission(perm_key: str) -> Callable:
     - Se l'utente è un amministratore (is_admin=True), l'operazione è sempre consentita.
     - Se l'utente possiede il permesso perm_key, l'operazione è consentita.
     - Se l'utente non possiede il permesso richiesto, blocca tassativamente con HTTP 403 Forbidden.
+    - Se è stato fornito un token non valido/scaduto, solleva HTTP 401, tranne quando
+      arriva solo dal cookie session_token e require_local_auth è disattivato: il cookie
+      scaduto viene rimosso e la richiesta prosegue come se non ci fosse alcun token.
     - Se la richiesta non include un token:
-        - Se è stato fornito un token non valido/scaduto, solleva HTTP 401.
         - Se require_local_auth è abilitato da env, solleva HTTP 401.
         - Altrimenti consente l'operazione in modalità legacy/unauthenticated.
     """
     async def _dependency(
         request: Request,
+        response: Response,
         user: Optional[Dict[str, Any]] = Depends(get_current_user_optional)
     ) -> Optional[Dict[str, Any]]:
         raw_token = _extract_token_from_request(request)
-        
+
+        # A stale session_token cookie (expired session, or one left behind by an
+        # earlier login) must not lock a browser out of a dashboard that does not
+        # require login: plain fetch() calls carry only the cookie, so every data
+        # call would get 401 while the header-authenticated /me still says
+        # "logged in", and the pages render empty. Drop the cookie and carry on
+        # as an anonymous request, exactly as if it had not been sent.
+        if (
+            raw_token
+            and not user
+            and _token_is_cookie_only(request)
+            and not getattr(settings, "require_local_auth", False)
+        ):
+            response.delete_cookie(key="session_token")
+            raw_token = None
+
         # Token fornito ma non valido o scaduto
         if raw_token and not user:
             raise HTTPException(
