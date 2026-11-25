@@ -9,6 +9,9 @@ on:
       - 'ROADMAP.md'
       - 'roadmap.md'
       - 'docs/**'
+      # Workflow-only changes must not publish a new image (and burn a build number);
+      # run the workflow manually via workflow_dispatch when needed.
+      - '.github/**'
   workflow_dispatch:
     inputs:
       custom_tag:
@@ -49,21 +52,26 @@ jobs:
           if [ -n "${{ inputs.custom_build_number }}" ]; then
             BUILD_NUM="${{ inputs.custom_build_number }}"
             echo "Numero di build manuale impostato: ${BUILD_NUM}"
-          # 2. Rilascio su MAIN: numerazione progressiva legata unicamente a main per la versione corrente
+          # 2. Rilascio su MAIN: the build number comes from the repo's BUILD_NUMBER file, the same
+          #    source the test branch and the running app use, so main's version tag always matches
+          #    the build the app reports. Counting Docker Hub tags instead let main drift ahead of
+          #    BUILD_NUMBER, and every test install then saw a phantom update (e.g. "Build 7" while
+          #    the repo was on Build 5). An existing version tag is never overwritten.
           elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            TAGS_JSON=$(curl -s -H "Cache-Control: no-cache" "https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags?page_size=100&ts=$(date +%s)")
-            DH_LATEST=$(echo "$TAGS_JSON" | jq -r '.results[].name' 2>/dev/null | \
-              grep -E "^${APP_VER}-build\.[0-9]+$" | \
-              sed -E "s/^${APP_VER}-build\.//" | \
-              awk '$1 < 90' | \
-              sort -n | tail -n 1)
-
-            if [ -z "$DH_LATEST" ]; then
-              BUILD_NUM=1
-            else
-              BUILD_NUM=$((DH_LATEST + 1))
+            if [ -f BUILD_NUMBER ]; then
+              BUILD_NUM=$(tr -d '[:space:]' < BUILD_NUMBER)
             fi
-            echo "Build number calcolato per MAIN: ${BUILD_NUM}"
+            if ! echo "$BUILD_NUM" | grep -Eq '^[1-9][0-9]*$'; then
+              echo "::error file=BUILD_NUMBER::BUILD_NUMBER must contain a positive integer (found '${BUILD_NUM}')."
+              exit 1
+            fi
+            TAG_STATUS=$(curl -s -o /dev/null -w '%{http_code}' -H "Cache-Control: no-cache" \
+              "https://hub.docker.com/v2/repositories/${{ env.IMAGE_NAME }}/tags/${APP_VER}-build.${BUILD_NUM}?ts=$(date +%s)")
+            if [ "$TAG_STATUS" = "200" ]; then
+              echo "::error file=BUILD_NUMBER::${{ env.IMAGE_NAME }}:${APP_VER}-build.${BUILD_NUM} is already published. Bump BUILD_NUMBER (or app/__init__.py __version__) before releasing to main."
+              exit 1
+            fi
+            echo "Build number per MAIN (da BUILD_NUMBER): ${BUILD_NUM}"
           # 3. Rilascio su TEST: verra' generato esclusivamente il tag flottante 'test' usando il BUILD_NUMBER del repo
           elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
             if [ -f BUILD_NUMBER ]; then
