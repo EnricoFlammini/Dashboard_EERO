@@ -1089,7 +1089,9 @@ get filteredDevices() {
         this.showToast(title, msg, "success");
         this.showDeviceModal = false;
         await this.fetchDevices();
-        await this.fetchMeshNodes();
+        // Reload the overview too: it carries `eeros`, so the Mesh Topology picks up
+        // an eero Built-in toggle right away instead of on the next poll (#135).
+        await this.fetchOverview();
       } catch (err) {
         const title = this.t('js.save_device_metadata.save_error');
         this.showToast(title, err.message, "error");
