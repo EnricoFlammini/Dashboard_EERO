@@ -249,5 +249,24 @@ class TestIssue135EchoNodes(unittest.TestCase):
 
 
 
+class TestIssue135FrontendMethodCalls(unittest.TestCase):
+    """Saving device details with the eero Built-in toggle showed
+    "Save Error: this.fetchMeshNodes is not a function": the save handler
+    called a method that was never defined. Guard the whole component,
+    which on 1.8.0 is app.js plus the modules merged into it."""
+
+    def test_every_this_method_call_is_defined(self):
+        import re
+        from pathlib import Path
+
+        files = [Path("app/static/js/app.js")] + sorted(Path("app/static/js/modules").glob("*.js"))
+        js = "".join(f.read_text(encoding="utf-8") for f in files)
+        defined = set(re.findall(r"^\s*(?:async\s+)?(?:get\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{", js, re.M))
+        defined |= set(re.findall(r"^\s*([A-Za-z_$][\w$]*)\s*:", js, re.M))
+        called = set(re.findall(r"this\.([A-Za-z_$][\w$]*)\s*\(", js))
+        alpine_magics = {"$nextTick", "$watch", "$dispatch"}
+        self.assertEqual(sorted(called - defined - alpine_magics), [])
+
+
 if __name__ == "__main__":
     unittest.main()
